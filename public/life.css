@@ -1991,7 +1991,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (min-width:821px){
   .crumbbar, .note-crumbs {
     position:sticky; top:44px; z-index:22;
-    margin:0 calc(-1 * clamp(20px,4vw,52px)) 12px; padding:9px clamp(20px,4vw,52px) 11px;
+    /* -30px cancels the pane's 30px top padding, so the bar sits FLUSH under the
+       tab strip at rest and never slides - an anchor that never moves. (Robin.) */
+    margin:-30px calc(-1 * clamp(20px,4vw,52px)) 12px; padding:9px clamp(20px,4vw,52px) 11px;
     background:color-mix(in srgb,var(--paper) 92%,transparent); backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
   }

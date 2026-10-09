@@ -16851,22 +16851,33 @@ if (typeof document !== 'undefined') {
 function connectedEventsHtml(n) {
   if (n.sharedBy && !n.canEdit) return '';
   const links = noteEventLinks(n);
-  const linkedIds = new Set(links.map((x) => evBaseId(x)));
-  const pool = state.noteEvents;
-  if (pool === undefined) loadNoteEvents();
-  const q = ((state.note && state.note.eventQuery) || '').trim().toLowerCase();
-  const nt = (n.title || '').trim().toLowerCase();
-  let sugg = [];
-  if (Array.isArray(pool) && !q && nt.length >= 3) sugg = pool.filter((ev) => { const et = (ev.title || '').toLowerCase(); return !linkedIds.has(evBaseId(ev)) && et && (et.includes(nt) || nt.includes(et)); }).slice(0, 4);
-  let results = [];
-  if (Array.isArray(pool) && q) results = pool.filter((ev) => !linkedIds.has(evBaseId(ev)) && (ev.title || '').toLowerCase().includes(q)).slice(0, 8);
-  const evRow = (ev) => `<button class="nt-result" data-note-link-event="${esc(evBaseId(ev))}"><span class="ga-t">◑ ${esc(ev.title || 'Event')}${ev.date ? ` <span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`;
+  if (state.noteEvents === undefined) loadNoteEvents();
   const cards = links.map((ev) => `<div class="ce-card"><button class="ce-open" data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</button><button class="ce-x" data-note-unlink-event="${esc(evBaseId(ev))}" title="Disconnect">×</button></div>`).join('');
   return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Connected events${links.length ? ` · ${links.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No events linked yet.</div>'}</div>
-    ${sugg.length ? `<div class="ce-sugg"><div class="ce-sugg-h">You might mean</div>${sugg.map(evRow).join('')}</div>` : ''}
-    <input class="sel nt-search" data-note-event-q placeholder="Search an event to link…" value="${esc((state.note && state.note.eventQuery) || '')}" autocomplete="off">
-    ${results.length ? `<div class="nt-results">${results.map(evRow).join('')}</div>` : ''}</details>`;
+    ${noteEventConnectPickerHtml()}</details>`;
+}
+// Instant connect-dropdown for events (same pattern as Connected pages). Default
+// list leads with events whose title echoes the note's, then by date. (Robin.)
+function noteEventConnRows() {
+  const n = state.note && state.note.current; if (!n) return '';
+  const pool = state.noteEvents;
+  if (!Array.isArray(pool)) { loadNoteEvents(); return '<div class="ov-muted" style="padding:6px 2px">Loading…</div>'; }
+  const linkedIds = new Set(noteEventLinks(n).map((x) => evBaseId(x)));
+  const q = ((state.note && state.note.eventQuery) || '').trim().toLowerCase();
+  const nt = (n.title || '').trim().toLowerCase();
+  let list = pool.filter((ev) => !linkedIds.has(evBaseId(ev)) && (ev.title || '').trim());
+  if (q) list = list.filter((ev) => (ev.title || '').toLowerCase().includes(q));
+  else list = list.slice().sort((a, b) => {
+    const am = nt.length >= 3 && (a.title || '').toLowerCase().includes(nt) ? 0 : 1;
+    const bm = nt.length >= 3 && (b.title || '').toLowerCase().includes(nt) ? 0 : 1;
+    return am - bm || String(a.date || '').localeCompare(String(b.date || ''));
+  });
+  list = list.slice(0, 10);
+  return list.length ? list.map((ev) => `<button class="nconn-item" data-note-link-event="${esc(evBaseId(ev))}"><span class="sp-ico">◑</span><span class="sp-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="nconn-area">${esc(evShortDate(ev.date))}</span>` : ''}</button>`).join('') : `<div class="ov-muted" style="padding:6px 2px">${q ? 'No events match.' : 'No events to connect.'}</div>`;
+}
+function noteEventConnectPickerHtml() {
+  return `<details class="nconn"><summary>🔗 Connect an event</summary><input class="sel nconn-q" data-note-event-q placeholder="Search your events…" value="${esc((state.note && state.note.eventQuery) || '')}" autocomplete="off"><div class="nconn-list" id="nevent-list">${noteEventConnRows()}</div></details>`;
 }
 function noteLinkEvent(baseId) {
   const n = state.note && state.note.current; if (!n) return;
@@ -16972,13 +16983,24 @@ function eventUnlinkNote(noteId) {
 function noteTasksHtml(noteId) {
   const all = state.allTasks || [];
   const linked = all.filter((t) => t.props && t.props.note === noteId && !t.props.done);
-  const q = ((state.note && state.note.taskQuery) || '').trim().toLowerCase();
-  const results = q ? all.filter((t) => t.props && t.props.note !== noteId && !t.props.done && (t.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
   return `<details class="note-tasks nside-card" data-nside="tasks" ${noteCardOpen('tasks', linked.length > 0) ? 'open' : ''}><summary class="sub-h">Tasks${linked.length ? ` · ${linked.length}` : ''}</summary>
     <div class="nt-linked">${linked.map((t) => `<div class="nt-row"><span class="nt-dot"></span><span class="ga-t" data-open-task="${t.id}">${esc(t.title || 'Untitled')}</span><button class="ghost nt-unlink" data-note-task-unlink="${t.id}" title="Unlink">×</button></div>`).join('') || '<div class="home-empty" style="padding:6px 0 2px">No tasks linked yet.</div>'}</div>
-    <input class="sel nt-search" data-note-task-q placeholder="Search a task to link…" value="${esc((state.note && state.note.taskQuery) || '')}">
-    ${results.length ? `<div class="nt-results">${results.map((t) => `<button class="nt-result" data-note-task-link="${t.id}"><span class="ga-t">${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
+    ${noteTaskConnectPickerHtml()}
     <button class="ghost nt-new" data-note-new-task>+ New task for this note</button></details>`;
+}
+// The same instant connect-dropdown "Connected pages" uses, for tasks. Shows a
+// ranked list of tasks to link (recent first), filtered live. (Robin.)
+function noteTaskConnRows() {
+  const n = state.note && state.note.current; if (!n) return '';
+  const all = state.allTasks || [];
+  const q = ((state.note && state.note.taskQuery) || '').trim().toLowerCase();
+  let list = all.filter((t) => t.props && t.props.note !== n.id && !t.props.done);
+  if (q) list = list.filter((t) => (t.title || '').toLowerCase().includes(q));
+  list = list.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 10);
+  return list.length ? list.map((t) => `<button class="nconn-item" data-note-task-link="${t.id}"><span class="sp-ico">✓</span><span class="sp-t">${esc(t.title || 'Untitled')}</span></button>`).join('') : `<div class="ov-muted" style="padding:6px 2px">${q ? 'No tasks match.' : 'No other tasks to connect.'}</div>`;
+}
+function noteTaskConnectPickerHtml() {
+  return `<details class="nconn"><summary>🔗 Connect a task</summary><input class="sel nconn-q" data-note-task-q placeholder="Search your tasks…" value="${esc((state.note && state.note.taskQuery) || '')}" autocomplete="off"><div class="nconn-list" id="ntask-list">${noteTaskConnRows()}</div></details>`;
 }
 function renderNoteTasks() { const el = document.querySelector('.note-tasks'); if (el && state.note) el.outerHTML = noteTasksHtml(state.note.current.id); }
 async function linkTaskToNote(taskId, noteId) {
@@ -17009,15 +17031,22 @@ function noteContactsHtml(n) {
   if (state.contacts === undefined) { loadContacts().then(() => { if (state.view.type === 'note') renderNote(); }).catch(() => {}); }
   const ids = blockContactIds(n);
   const linked = ids.map((id) => findContact(id)).filter(Boolean);
-  const linkedSet = new Set(ids.map(String));
-  const q = ((state.note && state.note.contactQuery) || '').trim().toLowerCase();
-  const results = q ? (state.contacts || []).filter((c) => !linkedSet.has(String(c.id)) && (c.title || '').toLowerCase().includes(q)).slice(0, 8) : [];
   const cards = linked.map((c) => `<div class="ce-card"><button class="ce-open" data-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button class="ce-x" data-note-unlink-contact="${c.id}" title="Disconnect">×</button></div>`).join('');
-  const cRow = (c) => `<button class="nt-result" data-note-link-contact="${c.id}"><span class="ga-t"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span>${esc(c.title || 'Unnamed')}</span><span class="nt-link-ic">＋ Link</span></button>`;
   return `<details class="note-contacts nside-card" data-nside="contacts" ${noteCardOpen('contacts', ids.length > 0) ? 'open' : ''}><summary class="sub-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No contacts linked yet.</div>'}</div>
-    <input class="sel nt-search" data-note-contact-q placeholder="Search a contact to link…" value="${esc((state.note && state.note.contactQuery) || '')}" autocomplete="off">
-    ${results.length ? `<div class="nt-results">${results.map(cRow).join('')}</div>` : ''}</details>`;
+    ${noteContactConnectPickerHtml()}</details>`;
+}
+function noteContactConnRows() {
+  const n = state.note && state.note.current; if (!n) return '';
+  const linkedSet = new Set(blockContactIds(n).map(String));
+  const q = ((state.note && state.note.contactQuery) || '').trim().toLowerCase();
+  let list = (state.contacts || []).filter((c) => !linkedSet.has(String(c.id)));
+  if (q) list = list.filter((c) => (c.title || '').toLowerCase().includes(q));
+  list = list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).slice(0, 10);
+  return list.length ? list.map((c) => `<button class="nconn-item" data-note-link-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="sp-t">${esc(c.title || 'Unnamed')}</span></button>`).join('') : `<div class="ov-muted" style="padding:6px 2px">${q ? 'No contacts match.' : 'No contacts to connect.'}</div>`;
+}
+function noteContactConnectPickerHtml() {
+  return `<details class="nconn"><summary>🔗 Connect a contact</summary><input class="sel nconn-q" data-note-contact-q placeholder="Search your contacts…" value="${esc((state.note && state.note.contactQuery) || '')}" autocomplete="off"><div class="nconn-list" id="ncontact-list">${noteContactConnRows()}</div></details>`;
 }
 function renderNoteContacts() { const el = document.querySelector('.note-contacts'); if (el && state.note && state.note.current) { const w = document.createElement('div'); w.innerHTML = noteContactsHtml(state.note.current); if (w.firstElementChild) el.replaceWith(w.firstElementChild); } }
 function noteLinkContact(cid) {
@@ -18068,9 +18097,9 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-areas-sort]')) { state.areasSort = e.target.value; try { localStorage.setItem('life.areas.sort', state.areasSort); } catch {} renderAreasList(); }
   if (e.target.matches('[data-home-area-sort]')) { try { localStorage.setItem('life.home.areaSort', e.target.value); } catch {} renderHome(); return; }
   if (e.target.matches('[data-pomo-target]')) { const v = e.target.value; pomo.target = v ? { kind: v.split(':')[0], id: v.split(':').slice(1).join(':'), label: e.target.selectedOptions[0].textContent } : null; savePomo(); }
-  if (e.target.matches('[data-note-task-q]') && state.note) { const pos = e.target.selectionStart; state.note.taskQuery = e.target.value; renderNoteTasks(); const i = document.querySelector('[data-note-task-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
-  if (e.target.matches('[data-note-event-q]') && state.note) { const pos = e.target.selectionStart; state.note.eventQuery = e.target.value; renderNoteEvents(); const i = document.querySelector('[data-note-event-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
-  if (e.target.matches('[data-note-contact-q]') && state.note) { const pos = e.target.selectionStart; state.note.contactQuery = e.target.value; renderNoteContacts(); const i = document.querySelector('[data-note-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
+  if (e.target.matches('[data-note-task-q]') && state.note) { state.note.taskQuery = e.target.value; const el = document.getElementById('ntask-list'); if (el) el.innerHTML = noteTaskConnRows(); return; }
+  if (e.target.matches('[data-note-event-q]') && state.note) { state.note.eventQuery = e.target.value; const el = document.getElementById('nevent-list'); if (el) el.innerHTML = noteEventConnRows(); return; }
+  if (e.target.matches('[data-note-contact-q]') && state.note) { state.note.contactQuery = e.target.value; const el = document.getElementById('ncontact-list'); if (el) el.innerHTML = noteContactConnRows(); return; }
   if (e.target.matches('[data-pe-note-q]') && state.practiceEdit) { const pos = e.target.selectionStart; state.practiceEdit._noteQ = e.target.value; renderPeAttach(); const i = document.querySelector('[data-pe-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-cb-note-q]') && state.contact_open) { state.contact_open.cbNoteQ = e.target.value; renderContactBoxes('[data-cb-note-q]'); return; }
   if (e.target.matches('[data-cb-task-q]') && state.contact_open) { state.contact_open.cbTaskQ = e.target.value; renderContactBoxes('[data-cb-task-q]'); return; }
