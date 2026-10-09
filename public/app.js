@@ -7520,7 +7520,7 @@ function renderArea() {
   const hlQuotes = (visionHl && visionSnip) ? visionHighlights(visionSnip) : [];
   const hlHtml = hlQuotes.length ? `<div class="vision-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
   const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
-  const visionBodyHtml = `<div class="area-vg"><div class="area-recent-h area-mast-kick">Vision</div>${hlHtml}${visionText}${hlToggle}</div>`;
+  const visionBodyHtml = `<div class="area-vg">${hlHtml}${visionText}${hlToggle}</div>`;
   const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
   // The page has two parts. The TOP changes with the selected tab (Vision / Goals /
@@ -7604,8 +7604,11 @@ function renderArea() {
   if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
   const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length};--h:${h}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
   const topCard = (openTile && tops[openTile]) ? `<div class="area-card area-top-card">${tops[openTile]}</div>` : '';
-  const tabsKicker = TABS.length ? `<div class="area-recent-h area-mast-kick">Vision &amp; Goals</div>` : '';
-  const areaTilesHtml = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topCard}${restHtml}</div>`;
+  const tabsKicker = TABS.length ? `<div class="area-recent-h area-tabs-kick">Vision &amp; Goals</div>` : '';
+  // The open tab's own name as a kicker above its card (Vision on Vision, Goals
+  // on Goals, and so on) - mirrors the "Vision" label Robin liked. (Robin.)
+  const topKick = (openTile && tops[openTile]) ? `<div class="area-recent-h area-tab-kick">${esc(openTile)}</div>` : '';
+  const areaTilesHtml = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part

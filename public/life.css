@@ -7520,7 +7520,8 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 }
 .am-kicker::before { content:""; width:20px; height:2px; border-radius:2px; background:currentColor; opacity:.55; }
 .area-mast .am-plate h1 { margin-top:0; }
-.area-mast-kick { margin-top:2px; }
+.area-tabs-kick { padding-top:16px; }
+.area-tab-kick { margin:0; }
 @media (max-width:560px){
   .am-cover { border-radius:15px; }
   .am-kicker { letter-spacing:.24em; }
