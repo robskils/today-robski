@@ -1067,7 +1067,9 @@ function navBack() {
   // Within Mail, Back first steps back through the boxes you opened (Inbox ->
   // Important -> Back = Inbox), leaving Mail only once you're back at the start.
   if (mailBoxCanBack()) { mailBoxBack(); return; }
-  if (!navHist.length) return;
+  // No view-history (a directly-opened page): the always-on back arrow falls back
+  // to Home rather than doing nothing.
+  if (!navHist.length) { openHome(); return; }
   const prev = navHist.pop();
   // Stepping back through the Home tiles you were looking at: switch the tile in
   // place rather than leaving Home (so Back retraces your tiles, then the page).
@@ -1121,8 +1123,18 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // shown as the editable heading below), leaving just its ancestors - all clickable.
   // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
   const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
-  const back = backAttr ? `<button class="crumb-back" ${backAttr} title="Back">←</button>`
-    : (navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : '');
+  // The back arrow is always present on the bar. With view-history it pops that;
+  // otherwise it steps up one level to the parent crumb (Ledgers, Pages, …), so a
+  // directly-opened page (a restored tab, a deep link) is never a dead end. (Robin.)
+  const parentIdx = opts.omitCurrent ? items.length - 1 : items.length - 2;
+  const parent = parentIdx >= 0 ? items[parentIdx] : null;
+  const back = backAttr
+    ? `<button class="crumb-back" ${backAttr} title="Back" aria-label="Back">←</button>`
+    : navHist.length
+      ? '<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>'
+      : (parent && parent.attr)
+        ? `<button class="crumb-back" ${parent.attr} title="Back" aria-label="Back">←</button>`
+        : '<button class="crumb-back" data-view-home title="Back" aria-label="Back">←</button>';
   const sep = '<span class="crumb-sep">›</span>';
   const t = items.map((c, i) => ((i === items.length - 1 && !opts.omitCurrent)
     ? `<span class="crumb cur">${esc(c.label)}</span>`
@@ -6480,7 +6492,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
@@ -7085,7 +7097,7 @@ function renderAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Ledgers</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">The few domains your life orbits. Open one for its whole dashboard.</p>
+    <p class="t2-sub" style="font-style:normal">Ledgers are the parts of your life that gather around what matters to you - each one holding everything about it in a single place.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
@@ -7440,6 +7452,7 @@ function renderArea() {
   // reopen to look back on what you've done in this area.
   const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'done');
   const h = hueOf(area);
+  const cover = (area.props && area.props.cover) || null;
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
@@ -7507,7 +7520,7 @@ function renderArea() {
   const hlQuotes = (visionHl && visionSnip) ? visionHighlights(visionSnip) : [];
   const hlHtml = hlQuotes.length ? `<div class="vision-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
   const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
-  const visionBodyHtml = `<div class="area-vg">${hlHtml}${visionText}${hlToggle}</div>`;
+  const visionBodyHtml = `<div class="area-vg"><div class="area-recent-h area-mast-kick">Vision</div>${hlHtml}${visionText}${hlToggle}</div>`;
   const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
   // The page has two parts. The TOP changes with the selected tab (Vision / Goals /
@@ -7591,7 +7604,8 @@ function renderArea() {
   if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
   const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length};--h:${h}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
   const topCard = (openTile && tops[openTile]) ? `<div class="area-card area-top-card">${tops[openTile]}</div>` : '';
-  const areaTilesHtml = `${tabBar}<div class="area-tilepanel" style="--h:${h}">${topCard}${restHtml}</div>`;
+  const tabsKicker = TABS.length ? `<div class="area-recent-h area-mast-kick">Vision &amp; Goals</div>` : '';
+  const areaTilesHtml = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topCard}${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -7634,13 +7648,21 @@ function renderArea() {
     </div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
-    <div class="area-hero" style="--h:${h}">
-      <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this area colour" aria-label="Change area colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Page" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Area settings and overview" title="Settings & overview">▾</button></span></h1>
-      ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-      ${areaSentimentHtml(area)}
+    <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
+      <div class="am-cover"${cover && cover.url ? ` style="background-image:url('${esc(cover.url)}')"` : ''}>
+        <span class="am-cover-scrim"></span>
+        ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="${cover ? 'Change cover image' : 'Add a cover image'}"><span class="amc-ic">❏</span>${cover ? 'Change cover' : 'Add cover'}</button>` : ''}
+        ${(cover && cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
+      </div>
+      <div class="am-plate">
+        <div class="am-kicker">Ledger</div>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
+        ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
+        ${areaSentimentHtml(area)}
+      </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-    </div>
+    </header>
     ${areaDash}
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
@@ -7914,6 +7936,60 @@ function openAreaColor() {
   el.querySelector('[data-areacol-slider]').addEventListener('input', (e) => preview(+e.target.value));
   el.querySelector('[data-areacol-cancel]').addEventListener('click', cancel);
   el.querySelector('[data-areacol-done]').addEventListener('click', commit);
+}
+
+// The ledger cover image: search free photos (Unsplash, when a key is set) or
+// paste any image link. Mirrors openAreaColor's dialog. Writes area.props.cover;
+// Remove clears it. The access key stays server-side - the client only ever sees
+// ready-to-use image URLs.
+function openAreaCover() {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  const el = uiDialogHost();
+  const cur = (area.props && area.props.cover) || null;
+  el.innerHTML = `<div class="pal-bg"><div class="ui-dialog-box cover-dialog" style="--h:${hueOf(area)}">
+    <div class="recur-h">Cover image</div>
+    <p class="recur-p">Give <b>${esc(area.title || 'this ledger')}</b> a cover - search free photos, or paste any image link.</p>
+    <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="Search photos - mountains, calm, family…" value="${esc(area.title || '')}"><button class="ui-btn primary cv-go" type="submit">Search</button></form>
+    <div class="cv-results" data-cv-results><div class="cv-hint">Search for a photo, or paste a link below.</div></div>
+    <label class="cv-url-l">Or paste an image URL<div class="cv-url-row"><input class="cv-url" data-cv-url placeholder="https://…/photo.jpg"><button class="ui-btn cv-url-go" data-cv-url-go type="button">Use</button></div></label>
+    <div class="ui-dialog-btns">${cur ? '<button class="ui-btn cv-remove" data-cv-remove>Remove cover</button>' : '<span></span>'}<button class="ui-btn cancel" data-cv-cancel>Close</button></div>
+  </div></div>`;
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  document.addEventListener('keydown', onKey, true);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  const results = el.querySelector('[data-cv-results]');
+  const apply = (cover) => {
+    area.props = { ...(area.props || {}), cover };
+    const s = state.areas.find((x) => x.id === area.id); if (s) s.props = { ...(s.props || {}), cover };
+    api(`/api/blocks/${area.id}`, { method: 'PATCH', body: JSON.stringify({ props: { cover } }) }).catch((e) => toast(e.message));
+    if (cover && cover.dl) api('/api/unsplash/use', { method: 'POST', body: JSON.stringify({ dl: cover.dl }) }).catch(() => {});
+    close(); renderArea();
+  };
+  const runSearch = async () => {
+    const q = el.querySelector('[data-cv-q]').value.trim();
+    if (!q) { results.innerHTML = '<div class="cv-hint">Type a word to search, or paste a link below.</div>'; return; }
+    results.innerHTML = '<div class="cv-hint">Searching…</div>';
+    try {
+      const r = await api(`/api/unsplash?q=${encodeURIComponent(q)}`);
+      if (!r.available) { results.innerHTML = '<div class="cv-hint">Photo search isn’t switched on yet - paste an image link below for now.</div>'; return; }
+      if (!r.results || !r.results.length) { results.innerHTML = '<div class="cv-hint">No photos found - try another word, or paste a link.</div>'; return; }
+      results.innerHTML = `<div class="cv-grid">${r.results.map((p, i) => `<button class="cv-thumb" data-cv-pick="${i}" style="background-image:url('${esc(p.thumb)}')" title="Photo by ${esc(p.by)} on Unsplash" aria-label="Photo by ${esc(p.by)}"></button>`).join('')}</div>`;
+      results.querySelectorAll('[data-cv-pick]').forEach((b) => b.addEventListener('click', () => {
+        const p = r.results[+b.dataset.cvPick];
+        apply({ src: 'unsplash', url: p.url, thumb: p.thumb, by: p.by, byUrl: p.byUrl, link: p.link, dl: p.dl, alt: p.alt, color: p.color });
+      }));
+    } catch (e) { results.innerHTML = `<div class="cv-hint">${esc(e.message || 'Search failed')}</div>`; }
+  };
+  el.querySelector('[data-cv-search]').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
+  el.querySelector('[data-cv-url-go]').addEventListener('click', () => {
+    const u = el.querySelector('[data-cv-url]').value.trim();
+    if (!/^https?:\/\//i.test(u)) { toast('Paste a full image URL (https://…)'); return; }
+    apply({ src: 'url', url: u });
+  });
+  el.querySelector('[data-cv-cancel]').addEventListener('click', close);
+  const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
+  runSearch();
 }
 
 // ── view: calendar ───────────────────────────────────
@@ -13135,7 +13211,7 @@ async function kitSetLast(iso) {
 function renderContactCard() {
   const c = state.contact_open.contact; const p = c.props || {};
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
       <span class="crumb-tools"><button class="star ${p.starred ? 'on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star this contact'}">${p.starred ? '★' : '☆'}</button><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
     ${(() => {
       const areas = blockAreas(c).map((id) => areaById(id)).filter(Boolean);
@@ -14592,7 +14668,7 @@ function renderGoalCard() {
   const selS = keepTitleFocus ? ta0.selectionStart : null;
   const selE = keepTitleFocus ? ta0.selectionEnd : null;
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
@@ -14868,7 +14944,7 @@ function renderBucketCard() {
   const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
       <span class="crumb-tools"><button class="ghost" data-bucket-to-goal="${b.id}" title="Turn this into a goal you're actively working towards">🎯 Make a goal</button><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
     <div class="task-focus">
       <button class="bk-done-btn ${p.status === 'done' ? 'on' : ''}" data-bucket-done="${b.id}" title="Mark as done">${p.status === 'done' ? '✓' : '○'}</button>
@@ -15162,7 +15238,7 @@ function renderWheel() {
       <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
     </section>` : '';
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
     <div class="pane-head"><h1>Wheel of Life</h1></div>
     ${body}${trackHtml}`;
 }
@@ -16067,7 +16143,7 @@ function renderReviewReport() {
     recordHtml = rrSec('record', 'The record', `${tabBar}<div class="rr-tabpanel">${panel}</div>`);
   }
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
     <article class="rr" style="--h:${hue}">
       <div class="rr-eyebrow"><span>${esc(cfg.label)} review${p.doneAt ? ` · submitted ${esc(prettyDate(p.doneAt))}` : ''}</span>${navHtml}</div>
@@ -16158,7 +16234,7 @@ function renderReviewCard() {
   }).join('');
   const wheelHiddenN = state.areas.length - wheelAreas.length;
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); const wk = (p.rtype === 'weekly') ? isoWeekInfo(p.to) : null; return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${wk ? `<span class="rv-dh-week">Week ${wk.week} / ${wk.total}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
@@ -16598,7 +16674,7 @@ async function openVisionCard(id) { const a = await api(`/api/blocks/${id}`); st
 function renderVisionCard() {
   const a = state.vision_open.area; const p = a.props || {};
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
     <div class="task-focus" style="--h:${hueOf(a)}"><span class="vc-dot big"></span><h1 class="vision-h1">${esc(a.title)}</h1></div>
     <label class="tf-field goal-why"><span class="tf-label">Your vision for this area</span><textarea class="sel" id="visioncard-text" rows="4" placeholder="Picture this part of your life at its best — write it in the present tense…">${esc(p.vision || '')}</textarea></label>
     ${attachSection(a)}`;
@@ -16615,7 +16691,7 @@ function renderVisionWall() {
   state.areas.forEach((a) => ((a.props && a.props.attachments) || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: a.id, att: im, hue: hueOf(a), cap: a.title }); }));
   (state.bucket || []).forEach((b) => { const p = b.props || {}; if (p.status === 'done') (p.attachments || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: b.id, att: im, hue: hueOf(areaById(p.area)), cap: b.title, lived: true }); }); });
   $('#pane').innerHTML = `
-    <div class="note-crumbs">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
     <div class="pane-head"><h1>The wall</h1></div>
     <p class="rv-period">The life you're reaching for — and the moments you've lived.</p>
     ${tiles.length ? `<div class="wall-grid">${tiles.map((x) => `<figure class="wall-tile ${x.lived ? 'lived' : ''}" style="--h:${x.hue}"><img data-wimg="${x.block}:${x.att.id}" alt=""><figcaption>${x.lived ? '✓ ' : ''}${esc(x.cap)}</figcaption></figure>`).join('')}</div>` : '<div class="empty" style="padding:50px">Add images to your areas’ visions and to bucket-list moments you’ve lived — they gather here on one wall.</div>'}`;
@@ -18662,6 +18738,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-areas-shared]')) { state.areasSharedOnly = !state.areasSharedOnly; renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
+  if (t.closest('[data-area-cover]')) { openAreaCover(); return; }
   { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
@@ -20336,7 +20413,7 @@ function renderTaskCard() {
   const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top">${navHist.length ? '<button class="crumb-back" data-nav-back title="Back">←</button>' : ''}<button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
       <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
           ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Daybook contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}

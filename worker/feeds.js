@@ -472,3 +472,40 @@ export function suggestFeeds(place) {
   }
   return out;
 }
+
+// ── Unsplash cover-image search ────────────────────────────────────────────
+// A thin server-side proxy so the access key never reaches the browser. Returns
+// a normalised, hotlink-ready result set, or { available:false } when no key is
+// configured (the picker then offers paste-a-URL only). Free Demo tier is plenty
+// for personal use; set UNSPLASH_ACCESS_KEY to switch search on.
+export async function unsplashSearch(key, q, page) {
+  if (!key) return { available: false, results: [] };
+  const query = String(q || '').trim();
+  if (!query) return { available: true, results: [] };
+  const u = `https://api.unsplash.com/search/photos?per_page=24&orientation=landscape&content_filter=high&query=${encodeURIComponent(query)}&page=${Math.max(1, parseInt(page, 10) || 1)}`;
+  let r;
+  try { r = await fetch(u, { headers: { 'Accept-Version': 'v1', Authorization: `Client-ID ${key}` } }); }
+  catch { return { available: true, error: 'network', results: [] }; }
+  if (!r.ok) return { available: true, error: 'http ' + r.status, results: [] };
+  let data = {};
+  try { data = await r.json(); } catch {}
+  const results = (data.results || []).map((p) => ({
+    id: p.id,
+    thumb: (p.urls && (p.urls.small || p.urls.thumb)) || '',
+    url: (p.urls && (p.urls.regular || p.urls.full)) || '',
+    by: (p.user && p.user.name) || 'Unsplash',
+    byUrl: (p.user && p.user.links && p.user.links.html) || 'https://unsplash.com',
+    link: (p.links && p.links.html) || '',
+    dl: (p.links && p.links.download_location) || '',
+    color: p.color || null,
+    alt: (p.alt_description || p.description || query).slice(0, 120),
+  })).filter((x) => x.url);
+  return { available: true, results };
+}
+
+// Unsplash asks that a download be "triggered" when a photo is actually used.
+// Fire-and-forget; failure is harmless.
+export async function unsplashTrigger(key, dl) {
+  if (!key || !dl) return;
+  try { await fetch(`${dl}${dl.includes('?') ? '&' : '?'}client_id=${encodeURIComponent(key)}`); } catch {}
+}

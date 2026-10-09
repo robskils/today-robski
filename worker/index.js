@@ -14,7 +14,7 @@ import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStat
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
-import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds } from './feeds.js';
+import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds, unsplashSearch, unsplashTrigger } from './feeds.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -4534,6 +4534,18 @@ export default {
         for (const sc of srcs) { const res = await fetchSourceEvents(sc.url); if (res.ok) { cache[sc.id] = { url: sc.url, label: sc.label, events: res.events, fetched: Date.now() }; count += res.events.length; } }
         await setSetting(env, 'kv_source_events', JSON.stringify(cache), env.uid);
         return json({ ok: true, count }, request);
+      }
+      // Cover-image search for a ledger masthead (Unsplash). Key-gated: without
+      // UNSPLASH_ACCESS_KEY the picker falls back to pasting an image URL. The
+      // key stays server-side and never reaches the client.
+      if (path === '/api/unsplash' && request.method === 'GET') {
+        const out = await unsplashSearch(env.UNSPLASH_ACCESS_KEY, url.searchParams.get('q'), url.searchParams.get('page'));
+        return json(out, request);
+      }
+      if (path === '/api/unsplash/use' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        await unsplashTrigger(env.UNSPLASH_ACCESS_KEY, b.dl);
+        return json({ ok: true }, request);
       }
       if (path === '/api/review/reconcile' && request.method === 'POST') return reviewReconcile(request, env, json, err);
       if (path === '/api/journal/coach' && request.method === 'POST') return journalCoach(request, env, json, err);

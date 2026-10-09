@@ -7463,6 +7463,87 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-hero h1 .ac-dot, .area-hero h1 .ac-dot-btn { width:13px; height:13px; box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 12%,transparent); }
 .area-meta { font-size:15px; color:var(--ink-3); margin-top:9px; }
 
+/* ── Ledger masthead: a quiet magazine cover band + "Ledger" kicker above the
+   editorial title. A photo when one's set; otherwise a faint patterned wash of
+   the ledger's own colour - so every ledger reads as designed. (Robin.) */
+.area-hero.area-mast { position:static; margin:2px 0 22px; padding:0; border-bottom:0; background:none; }
+.am-cover {
+  position:relative; width:100%; height:clamp(130px,21vw,210px);
+  border-radius:20px; overflow:hidden; isolation:isolate;
+  background:var(--paper-2) center/cover no-repeat;
+  box-shadow:0 1px 2px rgba(0,0,0,.04), 0 26px 50px -34px rgba(0,0,0,.55);
+}
+.area-mast.no-cover .am-cover {
+  height:clamp(96px,14vw,146px);
+  background-image:
+    radial-gradient(color-mix(in srgb,var(--c) 24%,transparent) 1px, transparent 1.7px),
+    linear-gradient(118deg, color-mix(in srgb,var(--c) 15%,var(--card)), color-mix(in srgb,var(--c) 5%,var(--card)));
+  background-size:22px 22px, 100% 100%;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 18%,var(--line));
+}
+.am-cover-scrim { position:absolute; inset:0; pointer-events:none; }
+.area-mast.has-cover .am-cover-scrim {
+  background:linear-gradient(183deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,.12) 78%, rgba(0,0,0,.32) 100%);
+}
+.am-cover-btn {
+  position:absolute; right:12px; bottom:12px; z-index:2;
+  display:inline-flex; align-items:center; gap:7px; padding:7px 13px;
+  border-radius:999px; border:1px solid transparent; cursor:pointer;
+  font-size:13px; font-weight:600; line-height:1;
+  background:color-mix(in srgb,var(--card) 80%,transparent); color:var(--ink);
+  -webkit-backdrop-filter:blur(9px) saturate(1.3); backdrop-filter:blur(9px) saturate(1.3);
+  box-shadow:0 3px 12px -4px rgba(0,0,0,.5);
+  opacity:0; transform:translateY(2px); transition:opacity .15s, transform .12s, border-color .12s;
+}
+.am-cover:hover .am-cover-btn, .am-cover-btn:focus-visible { opacity:1; transform:none; }
+.am-cover-btn:hover { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)); }
+.area-mast.no-cover .am-cover-btn {
+  opacity:1; transform:none;
+  background:color-mix(in srgb,var(--c) 12%,var(--card));
+  border-color:color-mix(in srgb,var(--c) 28%,var(--line));
+  color:color-mix(in srgb,var(--c) 62%,var(--ink));
+}
+.amc-ic { font-size:14px; }
+.am-credit {
+  position:absolute; left:14px; bottom:11px; z-index:2;
+  font-size:11px; letter-spacing:.02em; color:rgba(255,255,255,.92);
+  text-shadow:0 1px 3px rgba(0,0,0,.65); text-decoration:none;
+  opacity:0; transition:opacity .15s;
+}
+.am-cover:hover .am-credit { opacity:1; }
+.am-credit:hover { text-decoration:underline; }
+.am-plate { padding:15px 2px 0; }
+.am-kicker {
+  display:inline-flex; align-items:center; gap:10px;
+  font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.32em;
+  color:color-mix(in srgb,var(--c) 55%,var(--ink-3)); margin:0 0 4px 3px;
+}
+.am-kicker::before { content:""; width:20px; height:2px; border-radius:2px; background:currentColor; opacity:.55; }
+.area-mast .am-plate h1 { margin-top:0; }
+.area-mast-kick { margin-top:2px; }
+@media (max-width:560px){
+  .am-cover { border-radius:15px; }
+  .am-kicker { letter-spacing:.24em; }
+  .am-cover-btn, .am-credit { opacity:1; transform:none; }
+}
+
+/* Cover-image picker (opens from the masthead). */
+.cover-dialog { width:min(580px,94vw); max-height:88vh; overflow:auto; text-align:left; }
+.cover-dialog .recur-p { margin-bottom:12px; }
+.cv-search { display:flex; gap:8px; margin:2px 0 12px; }
+.cover-dialog input { font:inherit; font-size:15px; padding:10px 13px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink); }
+.cover-dialog input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent); }
+.cv-q { flex:1 1 auto; min-width:0; }
+.cv-results { min-height:72px; margin-bottom:14px; }
+.cv-hint { color:var(--ink-3); font-size:14px; padding:16px 2px; }
+.cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(102px,1fr)); gap:8px; }
+.cv-thumb { aspect-ratio:4/3; border-radius:11px; border:1px solid var(--line); background:var(--paper-2) center/cover no-repeat; cursor:pointer; transition:transform .1s, box-shadow .13s, border-color .12s; }
+.cv-thumb:hover { transform:translateY(-2px); border-color:var(--accent); box-shadow:0 12px 24px -12px rgba(0,0,0,.5); }
+.cv-url-l { display:block; font-size:13px; color:var(--ink-3); }
+.cv-url-row { display:flex; gap:8px; margin-top:7px; }
+.cv-url { flex:1 1 auto; min-width:0; }
+.cv-remove { color:var(--danger,#b4453a); margin-right:auto; }
+
 /* Stats as ONE quiet unit: no separate boxes - plain figures on the page, divided
    by hairlines, the number in serif. Reads as a summary line, not four cards. */
 .area-stats { gap:0; align-items:stretch; }
