@@ -5039,6 +5039,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 @media (max-width:640px){ .ov-cols { grid-template-columns:1fr; } }
 .ov-block { min-width:0; }
 .ov-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-bottom:9px; }
+/* Colour block: a collapsible header showing the current colour; options hidden. */
+.ov-colour-h { width:100%; font-family:inherit; background:none; border:0; cursor:pointer; transition:color .12s; }
+.ov-colour-h[aria-expanded="false"] { margin-bottom:0; }
+.ov-colour-h:hover { color:var(--ink-2); }
+.ov-colour-right { display:inline-flex; align-items:center; gap:10px; }
+.ov-colour-cur { width:16px; height:16px; border-radius:50%; background:hsl(var(--h,220) 60% 52%); box-shadow:inset 0 0 0 1px rgba(0,0,0,.14); }
+.ov-colour-chev { color:var(--ink-3); font-size:11px; }
 .ov-invite { padding:5px 11px; font-size:12.5px; font-weight:600; text-transform:none; letter-spacing:0; border-radius:999px; }
 .ov-people { display:flex; flex-direction:column; gap:6px; }
 .ov-person { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:6px; border-radius:10px; background:none; border:0; cursor:pointer; }

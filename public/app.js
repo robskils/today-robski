@@ -7739,10 +7739,14 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-lead-s">${esc(leadBits)}</div>
     </div>`;
   const curHue = hueOf(area);
+  const colourOpen = (() => { try { return localStorage.getItem('life.ovcolour') === '1'; } catch { return false; } })();
   const colourBlock = area.sharedBy ? '' : `<div class="ov-block ov-colour">
-      <div class="ov-h"><span>Colour</span></div>
-      <div class="areacol-swatches ov-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === curHue ? ' on' : ''}" style="--h:${hu}" data-area-sethue="${hu}" aria-label="Colour ${hu}"></button>`).join('')}</div>
-      <div class="ov-muted" style="margin-top:6px">This colour follows the area everywhere - tasks, notes, Home and more.</div>
+      <button class="ov-h ov-colour-h" data-ov-colour-toggle aria-expanded="${colourOpen}" title="${colourOpen ? 'Hide colours' : 'Change colour'}">
+        <span>Colour</span>
+        <span class="ov-colour-right"><span class="ov-colour-cur" style="--h:${curHue}" aria-hidden="true"></span><span class="ov-colour-chev">${colourOpen ? '▾' : '▸'}</span></span>
+      </button>
+      ${colourOpen ? `<div class="areacol-swatches ov-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === curHue ? ' on' : ''}" style="--h:${hu}" data-area-sethue="${hu}" aria-label="Colour ${hu}"></button>`).join('')}</div>
+      <div class="ov-muted" style="margin-top:6px">This colour follows the area everywhere - tasks, notes, Home and more.</div>` : ''}
     </div>`;
   const deadlineBlock = area.sharedBy ? '' : `<div class="ov-block ov-deadline">
       <div class="ov-h"><span>Deadline</span></div>
@@ -18817,6 +18821,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-cover]')) { openAreaCover(); return; }
+  if (t.closest('[data-ov-colour-toggle]')) { try { localStorage.setItem('life.ovcolour', localStorage.getItem('life.ovcolour') === '1' ? '0' : '1'); } catch {} renderArea(); return; }
   { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
