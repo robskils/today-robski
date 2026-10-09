@@ -7533,7 +7533,7 @@ function renderArea() {
   const isFav = (n) => !!(n.props && n.props.fav);
   const starredNotes = notes.filter(isFav);
   const otherNotes = notes.filter((n) => !isFav(n));
-  const noteCard = (n, starred) => `<button class="tbl-card" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
+  const noteCard = (n, starred) => `<button class="tbl-card${privCls(n)}" data-open-note="${n.id}">${starred ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${privChip(n)}</button>`;
   const starredNoteCards = starredNotes.map((n) => noteCard(n, true)).join('');
   const noteCards = otherNotes.map((n) => noteCard(n, false)).join('');
   // Notes & tables in a draggable order (saved on the area as props.noteOrder). The
@@ -7549,13 +7549,13 @@ function renderArea() {
   })();
   const ntCard = (n) => n.kind === 'table'
     ? `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-table="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`
-    : `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${n.props && n.props.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}</button>`;
+    : `<button class="tbl-card noteord-card${privCls(n)}" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${privChip(n)}</button>`;
   const orderedNoteCards = noteTblOrdered.map(ntCard).join('');
   // Everything else that can carry this area, each linking to its own tool.
   const emailCards = emails.map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const contactCards = contacts.map((c) => contactCardHtml(c)).join('');
-  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span></a>` : `<button class="tbl-card"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span></button>`; }).join('');
-  const journalCards = journals.map((j) => `<button class="tbl-card" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span></button>`).join('');
+  const bookmarkCards = bookmarks.map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card${privCls(bm)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span>${privChip(bm)}</a>` : `<button class="tbl-card${privCls(bm)}"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span>${privChip(bm)}</button>`; }).join('');
+  const journalCards = journals.map((j) => `<button class="tbl-card${privCls(j)}" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span>${privChip(j)}</button>`).join('');
   // Owner section control: the owner can hide any part of the page (Vision,
   // Goals, etc.) from area.props.hiddenSecs. Hidden sections vanish for everyone;
   // the owner turns them back on from the overview panel's "Sections" manager.
@@ -12421,6 +12421,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
+  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Ledger">🔒 Private</span>');
   if (!t.props.done && t.props.kstatus === 'doing') out.push('<span class="tbadge doing" title="In the Doing column on the board">Doing</span>');
   if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
@@ -12959,11 +12960,11 @@ function contactCardHtml(c) {
   const starred = !!p.starred;
   const area = areaTags[0];
   const hue = area ? hueOf(area) : null;
-  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ''}>
+  return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}${privCls(c)}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ''}>
     <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
     <span class="cc-star ${starred ? 'on' : ''}" data-contact-star="${c.id}" role="button" title="${starred ? 'Starred - tap to unstar' : 'Star this contact'}">${starred ? '★' : '☆'}</span>
     <span class="contact-av">${esc(initial(c.title || '?'))}</span>
-    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
+    <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
 // Your own Daybook card, shown as a "You" card at the top of Contacts. It's
 // always there (can't be deleted, only hidden) and ties to your Daybook card -
@@ -14717,8 +14718,8 @@ function goalCardMini(g, drag) {
       <div class="gc-barwrap">${barInner}</div>
       <span class="gc-pct"${(active && numManual) ? ` data-goalnum-pct="${g.id}"` : ''}>${pct}%</span>
     </div>`;
-  return `<div class="goal-card" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
-    <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${p.private ? '<span class="tc-lock" title="Private to you">🔒</span>' : ''}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
+  return `<div class="goal-card${privCls(g)}" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
+    <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${privChip(g)}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     ${bar}</div>`;
 }

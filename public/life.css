@@ -181,6 +181,7 @@ button { cursor:pointer; background:none; border:0; }
 .tbadge.snz { color:var(--gold); background:color-mix(in srgb,var(--gold) 15%,transparent); }
 .tbadge.rpt { color:var(--tbl-pink); background:color-mix(in srgb,var(--tbl-pink) 14%,transparent); }
 .tbadge.doing { color:var(--accent); background:color-mix(in srgb,var(--accent) 16%,transparent); }
+.tbadge.priv { color:var(--priv,#8a6d3b); background:color-mix(in srgb,var(--priv,#8a6d3b) 15%,transparent); }
 /* List / Board view switch */
 .view-switch { display:inline-flex; flex:none; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); }
 .view-switch .vs-btn { font:inherit; font-size:13.5px; font-weight:600; padding:9px 13px; color:var(--ink-3); background:transparent; border:0; cursor:pointer; line-height:1; white-space:nowrap; }
@@ -5326,6 +5327,14 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pv-lbl { display:flex; flex-direction:column; }
 .pv-toggle.on .pv-lbl { color:var(--ink); }
 .tc-lock { flex:none; margin-left:6px; font-size:12px; opacity:.7; }
+/* "Private" marker: a labelled chip (not a bare padlock) so it's obvious an item
+   is yours alone inside a shared Ledger, plus a card treatment (dashed edge +
+   faint wash) that reads at a glance. --priv is a warm lock-gold, theme-aware. */
+:root { --priv:#8a6d3b; }
+:root[data-theme='dark'] { --priv:#cbb07a; }
+.priv-chip { display:inline-flex; align-items:center; gap:3px; flex:none; margin-left:7px; font-size:11px; font-weight:700; letter-spacing:.02em; padding:2px 8px; border-radius:999px; color:var(--priv); background:color-mix(in srgb,var(--priv) 14%,transparent); border:1px solid color-mix(in srgb,var(--priv) 32%,transparent); white-space:nowrap; vertical-align:middle; }
+.is-private { border-color:color-mix(in srgb,var(--priv) 40%,var(--line)) !important; border-left:3px solid var(--priv) !important; background:color-mix(in srgb,var(--priv) 6%,var(--card)) !important; }
+.is-private:hover { border-color:color-mix(in srgb,var(--priv) 60%,var(--line)) !important; }
 .note-lock.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
 
 /* Keyboard shortcuts reference */
