@@ -193,9 +193,9 @@ button { cursor:pointer; background:none; border:0; }
 .kcol.kcol-over { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--paper-2)); }
 .kcol-h { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 6px 10px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
 .kcol-c { font-variant-numeric:tabular-nums; }
-.kcol-body { display:flex; flex-direction:column; gap:8px; min-height:40px; flex:1; }
+.kcol-body { display:flex; flex-direction:column; gap:10px; min-height:40px; flex:1; }
 .kcol-empty { color:var(--ink-3); font-size:13px; text-align:center; padding:16px 6px; border:1px dashed var(--line-2); border-radius:10px; opacity:.6; }
-.ktask { --h:220; display:flex; align-items:flex-start; gap:7px; background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h) var(--lane-s) var(--lane-l)); border-radius:11px; padding:9px 10px; box-shadow:var(--shadow-sm); cursor:grab; }
+.ktask { --h:220; display:flex; align-items:flex-start; gap:9px; background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h) var(--lane-s) var(--lane-l)); border-radius:13px; padding:14px 15px; box-shadow:var(--shadow-sm); cursor:grab; }
 .ktask.dragging { opacity:.4; }
 .ktask.done { opacity:.62; }
 .ktask.done .kt-t { text-decoration:line-through; }

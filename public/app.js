@@ -7758,7 +7758,7 @@ function renderArea() {
     const due = area.props && area.props.due;
     const dueRel = due ? deadlineRel(due) : null;
     const dueRow = (due && dueRel) ? `<div class="ev-row ev-click" data-area-tile="Wheel of Life"><span class="ev-time">🎯</span><span class="ev-t">Deadline</span><span class="ev-loc gc-due-${dueRel.c || 'ok'}">${esc(dueRel.t)} · ${esc(dpLabel(due))}</span></div>` : '';
-    const bdayRows = contacts.map((c) => { const d = bdayInDays(c.props && c.props.birthday); return (d >= 0 && d <= 7) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
+    const bdayRows = contacts.map((c) => { const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
       .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
     const beReady = dueRow + bdayRows;
     if (!beReady) return '';
@@ -13587,6 +13587,7 @@ function renderContactCard() {
         ${contactPhoneFields(p)}
         ${contactSocialFields(p)}
         <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
+        ${p.birthday ? (() => { const lead = Number(p.bdayLead) || 7; const OPTS = [[7, 'A week before'], [14, 'Two weeks before'], [30, 'A month before'], [60, 'Two months before'], [90, 'Three months before']]; return `<label class="tf-field"><span class="tf-label">Remind me</span><select id="contactcard-bdaylead" class="sel">${OPTS.map(([v, l]) => `<option value="${v}" ${lead === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`; })() : ''}
         ${contactAddressFields(p)}
         <div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div>
       </div>`
@@ -19541,6 +19542,7 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('cc-email-in') || e.target.classList.contains('cc-phone-cc') || e.target.classList.contains('cc-phone-num')) patchContact(cid, readCardContacts(), true);
     if (e.target.classList.contains('cc-adr-f') || e.target.classList.contains('cc-adr-label')) patchContact(cid, readCardAddresses(), true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
+    if (e.target.id === 'contactcard-bdaylead') patchContact(cid, { bdayLead: Number(e.target.value) || 7 }, true);
     if (e.target.matches('[data-xmas-ideas]')) patchContact(cid, { xmasIdeas: e.target.value.trim() || null }, true);
   }
   if (state.goal_open && state.view.type === 'goalcard') {

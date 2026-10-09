@@ -2745,7 +2745,9 @@ async function homeAlerts(request, env, json) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
     // slice(-5) takes MM-DD from a full date and from a yearless --MM-DD alike.
-    if (p.birthday) { const inDays = daysUntilBday(String(p.birthday).slice(-5)); if (inDays >= 0 && inDays <= 7) birthdays.push({ id: r.id, name: r.title || 'A contact', inDays }); }
+    // A week's notice by default; a contact can carry its own props.bdayLead (days)
+    // so the people who matter most get a longer run-up. Capped at 90. (Robin.)
+    if (p.birthday) { const inDays = daysUntilBday(String(p.birthday).slice(-5)); const lead = Math.min(Math.max(Number(p.bdayLead) || 7, 1), 90); if (inDays >= 0 && inDays <= lead) birthdays.push({ id: r.id, name: r.title || 'A contact', inDays }); }
   }
   birthdays.sort((a, b) => a.inDays - b.inDays);
   const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
