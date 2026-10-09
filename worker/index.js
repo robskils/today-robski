@@ -2109,7 +2109,17 @@ async function searchBlocks(request, env, url) {
       results = await runQuery(words.map(groupSql).join(' AND '), wordBinds);
     }
   }
-  return json(results.map(parseBlock), request);
+  const mapped = results.map(parseBlock);
+  // Row hits: attach the parent table's title so search can say what a row IS
+  // ("Portugal Place") rather than a bare "Row". (Robin.)
+  const tableIds = [...new Set(mapped.filter((b) => b.kind === 'row' && b.parent_id).map((b) => b.parent_id))];
+  if (tableIds.length) {
+    const ph = tableIds.map(() => '?').join(',');
+    const trows = (await env.DB.prepare(`SELECT id, title FROM blocks WHERE user_id = ? AND id IN (${ph})`).bind(env.uid, ...tableIds).all()).results || [];
+    const tmap = {}; for (const r of trows) tmap[r.id] = r.title;
+    for (const b of mapped) { if (b.kind === 'row' && b.parent_id) b.parentTitle = tmap[b.parent_id] || ''; }
+  }
+  return json(mapped, request);
 }
 
 // ── SMS alerts ────────────────────────────────────────────────────────

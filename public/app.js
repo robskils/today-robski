@@ -17712,7 +17712,7 @@ function buildPalette() {
       // within a band, so the worker's relevance order still holds.
       const titleRank = (b) => { const t0 = (b.title || '').toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
       const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
-      state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
+      state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
       state.pal.sel = 0; renderPalItems();
     } catch (e) { toast(e.message); }
   }, 150);
@@ -17728,11 +17728,19 @@ function renderPalette() {
   renderPalItems();
   $('#pal-input').focus();
 }
+// The little type chip. A row shows the table it belongs to ("Portugal Place"),
+// not a bare "Row", so you know which card a hit relates to. (Robin.)
+const PAL_KIND_LABEL = { note: 'Page', table: 'Table', area: 'Ledger', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+function palKindLabel(it) {
+  if (it.kind === 'action') return '↵';
+  if (it.kind === 'row') return it.parentTitle || 'Table';
+  return PAL_KIND_LABEL[it.kind] || it.kind;
+}
 function renderPalItems() {
   const el = $('#pal-list'); if (!el) return;
   const items = state.pal.items;
   el.innerHTML = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
-      <span class="pal-kind ${it.kind === 'action' ? '' : `kmark pal-k-${esc(it.kind)}`}">${it.kind === 'action' ? '↵' : esc(it.kind)}</span>
+      <span class="pal-kind ${it.kind === 'action' ? '' : `kmark pal-k-${esc(it.kind)}`}">${esc(palKindLabel(it))}</span>
       <span class="pal-t">${esc(it.title)}</span>${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : '<div class="pal-empty">No matches.</div>';
 }
 function execItem(it) {
