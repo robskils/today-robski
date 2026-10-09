@@ -4932,6 +4932,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-dash-top { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; }
 .area-dash-top .area-stats { flex:1 1 auto; }
 .area-dash-top .area-addnew { flex:none; align-self:center; }
+.area-dash-acts { display:flex; gap:10px; align-items:center; flex:none; align-self:center; flex-wrap:wrap; justify-content:flex-end; }
+.area-conn-btn { white-space:nowrap; }
 /* Metric cards: one per metric, all the same size, each clicking through to its
    section. A tidy uniform grid, not a content-sized strip. (Robin.) */
 .area-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(122px,1fr)); gap:11px; }

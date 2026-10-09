@@ -7649,10 +7649,12 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  const areaDash = (areaAddBtn || dashStats || rvAreaHtml) ? `<div class="area-dash" style="--h:${h}">
+  // Quick jump to the Connections hub (the "inputs for everything") from the top.
+  const areaConnBtn = (area.sharedBy || secHidden('Connections')) ? '' : '<button class="add-btn wide area-conn-btn" data-area-goto="Connections" title="Jump to Connections"><span class="an-plus">🔗</span>Connect</button>';
+  const areaDash = (areaAddBtn || areaConnBtn || dashStats || rvAreaHtml) ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
-        ${areaAddBtn}
+        <div class="area-dash-acts">${areaConnBtn}${areaAddBtn}</div>
       </div>
       ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
