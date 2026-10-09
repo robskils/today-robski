@@ -7561,6 +7561,8 @@ function renderArea() {
   // and sort to the front, and click through to view their section (which surfaces
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
   const connOpen = areaSecOpen('Connections');
+  const dreamN = journals.filter((j) => (j.props || {}).mode === 'dreams').length;
+  const journalN = journals.length - dreamN;
   const CONN = [
     { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', add: 'data-area-add-note' },
     { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
@@ -7571,6 +7573,8 @@ function renderArea() {
     { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' },
     ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
     { ic: '◑', l: 'Event', n: 0, add: 'data-area-add-event' },
+    { ic: '✎', l: 'Journal', n: journalN, go: 'Reflections', add: 'data-area-add-journal' },
+    { ic: '☾', l: 'Dream', n: dreamN, go: 'Reflections', add: 'data-area-add-dream' },
   ];
   const connCard = (c) => {
     const has = c.n > 0;
@@ -7581,9 +7585,9 @@ function renderArea() {
     return `<button class="${cls}" ${c.add} title="Add a ${esc(c.l.toLowerCase())}">${inner}</button>`;
   };
   const connTiles = CONN.slice().sort((a, b) => (b.n > 0) - (a.n > 0)).map(connCard).join('');
-  const connectSec = area.sharedBy ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
+  const connectSec = (area.sharedBy || secHidden('Connections')) ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
       <div class="area-sec-h"><button class="ash-toggle" data-area-sec="Connections" aria-expanded="${connOpen}" title="${connOpen ? 'Collapse' : 'Expand'}"><span class="acw-chev">${connOpen ? '▾' : '▸'}</span><span class="ash-ic">🔗</span><span class="ash-l">Connections</span></button></div>
-      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Page - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div></div>` : ''}
+      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Ledger - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div><div class="conn-foot"><button class="conn-hide" data-area-hideconn title="Bring it back from the ▾ menu by the title, under Sections">Hide these once you're set up</button></div></div>` : ''}
     </section>`;
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
@@ -7705,7 +7709,7 @@ function areaOverviewHtml(area, c, blocks) {
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks'];
+  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections'];
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
@@ -7884,6 +7888,22 @@ async function areaAddTask() {
   state.taskAddArea = area.id;
   state.taskAdding = true; state.taskFocusArm = Date.now();
   await openTasks(); renderTasks();
+}
+// Add a reflection (journal or dream) filed to this ledger, then open it to
+// write. It then shows in the ledger's Reflections section. (Robin: everything
+// connects to a Ledger.)
+async function areaAddJournal(isDream) {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const date = new Date().toISOString();
+  const prompt = isDream ? 'Describe the dream in as much detail as I can remember - people, places, what happened, and how it ended.' : '';
+  const body = prompt ? `<blockquote>${esc(prompt)}</blockquote><p><br></p>` : '<p><br></p>';
+  const props = isDream ? { date, mode: 'dreams', prompt, area: area.id } : { date, area: area.id };
+  try {
+    const entry = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title: journalDateLabel(date), body, props }) });
+    state.journal = state.journal || { entries: [] };
+    state.journal.entries = state.journal.entries || []; state.journal.entries.unshift(entry);
+    await openJournalEntry(entry.id);
+  } catch (e) { toast(e.message); }
 }
 async function areaAddNote() {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -12614,16 +12634,24 @@ function fmtBirthday(iso) {
 // The Details block read-only: the facts as text and tappable links. Phone dials,
 // email composes, the address carries its Maps links. An Edit flips to the form.
 function contactDetailsView(c, p) {
-  const fact = (icon, inner, href, cls) => href
-    ? `<a class="cc-fact ${cls || ''}" href="${href}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${inner}</span></a>`
-    : `<div class="cc-fact ${cls || ''}"><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${inner}</span></div>`;
+  // The value is a link (mailto/tel) but the row is a plain div, so a tap on the
+  // row's copy button never fires the link. Copy sits quietly to the right of
+  // each contactable detail - click to copy the raw value. (Robin.)
+  const COPY_IC = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>';
+  const copyBtn = (val) => val ? `<button type="button" class="cc-copy" data-copy-val="${esc(val)}" title="Copy" aria-label="Copy">${COPY_IC}</button>` : '';
+  const fact = (icon, inner, href, cls, copyVal) => {
+    const val = href
+      ? `<a class="cc-fact-link" href="${href}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}>${inner}</a>`
+      : inner;
+    return `<div class="cc-fact ${cls || ''}"><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${val}</span>${copyBtn(copyVal)}</div>`;
+  };
   const rows = [];
-  contactEmails(p).forEach((em) => rows.push(fact('✉', esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'))));
-  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact('☎', esc(disp), 'tel:' + esc(tel))); });
+  contactEmails(p).forEach((em) => rows.push(fact('✉', esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'), '', em)));
+  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact('☎', esc(disp), 'tel:' + esc(tel), '', disp)); });
   if (p.birthday) rows.push(fact('🎂', esc(fmtBirthday(p.birthday))));
   const addrs = contactAddresses(p);
   let body = rows.join('');
-  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">📍</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div></div>`;
+  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">📍</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div>${copyBtn(formatAddress(addrs[0]))}</div>`;
   return body || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone, birthday or an address.</p>';
 }
 // Gather every address row on the open card into the array + the mirrored primary.
@@ -18374,6 +18402,7 @@ document.addEventListener('click', (e) => {
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cv = t.closest('[data-copy-val]'); if (cv) { const v = cv.dataset.copyVal || ''; try { navigator.clipboard.writeText(v); toast('Copied'); } catch { toast(v); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
@@ -18753,6 +18782,17 @@ document.addEventListener('click', (e) => {
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
+  if (t.closest('[data-area-add-journal]')) { areaAddJournal(false); return; }
+  if (t.closest('[data-area-add-dream]')) { areaAddJournal(true); return; }
+  if (t.closest('[data-area-hideconn]')) {
+    const a = state.area_open && state.area_open.area; if (!a) return;
+    a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
+    if (!hs.includes('Connections')) hs.push('Connections');
+    a.props.hiddenSecs = hs;
+    api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs } }) }).catch((err) => toast(err.message));
+    toast('Connections hidden - bring it back from ▾ › Sections');
+    renderArea(); return;
+  }
   if (t.closest('[data-area-add-contact]')) { areaAddContact(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
