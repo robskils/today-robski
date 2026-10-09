@@ -7097,7 +7097,7 @@ function renderAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Ledgers</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">Ledgers are the parts of your life that gather around what matters to you - each one holding everything about it in a single place.</p>
+    <p class="t2-sub" style="font-style:normal">A Ledger is a living chapter in your Daybook - everything about what matters, in one place.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
