@@ -4965,7 +4965,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-recent-h { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:400; margin-bottom:11px; }
 /* Almanac voice: the main section labels across the app wear the antique Fell
    small-caps too, so the whole book speaks the same hand. (Robin.) */
-.home-sec-h, .sub-h, .col-h, .ov-h, .goal-group-h, .cts-sec-h, .trk-group-h { font-family:'IM Fell English SC',Georgia,serif; font-weight:400; }
+.home-sec-h, .sub-h, .col-h, .ov-h, .goal-group-h, .cts-sec-h, .trk-group-h,
+.kcol-h, .rv-cardsec-h, .sp-cat-col-h, .home-dl-h, .awt-h, .adv-acts-h, .cal-search-h h2, .wb-recent-h { font-family:'IM Fell English SC',Georgia,serif; font-weight:400; }
 .area-rv { display:flex; flex-direction:column; gap:9px; }
 .area-rv-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:13px 16px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; transition:border-color .12s, transform .12s, box-shadow .12s; }
 .area-rv-item:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
