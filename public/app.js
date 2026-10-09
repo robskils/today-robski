@@ -7427,11 +7427,13 @@ async function setBlockNoSearch(kind, id, on) {
 const AREA_SENTIMENT = ['', 'Struggling', 'Finding its feet', 'Okay', 'Good', 'Thriving'];
 function areaSentimentHtml(area) {
   if (area.props && area.props.reviewOff) return '';   // not tracked in the Wheel - no rating row
+  if (((area.props && area.props.hiddenSecs) || []).includes('Sentiment')) return '';   // hidden; restore in Sections
   const sc = Math.min(Number((area.props || {}).wheelScore) || 0, 5);
   if (!sc) return '';
   const when = (area.props || {}).wheelAt;
   const dots = `<span class="as-dots">${'●'.repeat(sc)}${'○'.repeat(5 - sc)}</span>`;
-  return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span></div>`;
+  const x = area.sharedBy ? '' : '<button class="as-x" data-area-sechide="Sentiment" title="Hide this - put it back in ▾ › Sections" aria-label="Hide">×</button>';
+  return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span>${x}</div>`;
 }
 // Days until a birthday (MM-DD), 0 = today, for the ledger "Today" section.
 function bdayInDays(bday) {
@@ -7753,11 +7755,12 @@ function areaOverviewHtml(area, c, blocks) {
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections'];
+  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
+  const SEC_LABELS = { 'Shared with': 'Who has access', Sentiment: 'Well-being score' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
-      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(k === 'Shared with' ? 'Who has access' : k)}</span></label>`).join('')}</div>
+      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label>`).join('')}</div>
       <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this ledger. Empty sections hide themselves.</div>
     </div>`;
   // How this area figures in reviews: a "key" star (the wheel average is taken from
@@ -18987,6 +18990,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-dream]')) { areaAddJournal(true); return; }
   if (t.closest('[data-area-add-book]')) { areaAddSaved('book'); return; }
   if (t.closest('[data-area-add-film]')) { areaAddSaved('film'); return; }
+  { const sh = t.closest('[data-area-sechide]'); if (sh) { const a = state.area_open && state.area_open.area; if (a) { a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : []; const k = sh.dataset.areaSechide; if (!hs.includes(k)) hs.push(k); a.props.hiddenSecs = hs; api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs } }) }).catch((e) => toast(e.message)); renderArea(); } return; } }
   if (t.closest('[data-area-hideconn]')) {
     const a = state.area_open && state.area_open.area; if (!a) return;
     a.props = a.props || {}; let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];

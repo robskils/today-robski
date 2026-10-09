@@ -1081,6 +1081,9 @@ button { cursor:pointer; background:none; border:0; }
 .area-sentiment .as-lbl { font-size:14px; font-weight:600; color:var(--ink); }
 .area-sentiment .as-sub { font-size:12px; color:var(--ink-3); }
 .area-sentiment.s1 { --as-c:#c4462e; } .area-sentiment.s2 { --as-c:#cc7a33; } .area-sentiment.s3 { --as-c:#c9a227; } .area-sentiment.s4 { --as-c:#6f9f4a; } .area-sentiment.s5 { --as-c:#3f9b6a; }
+.area-sentiment .as-x { margin:-2px -6px -2px 0; width:22px; height:22px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; font-size:15px; line-height:1; color:var(--as-c,var(--ink-3)); opacity:.5; background:transparent; transition:opacity .12s, background .12s; }
+.area-sentiment .as-x:hover { opacity:1; background:color-mix(in srgb,var(--as-c,var(--ink-3)) 18%,transparent); }
+@media (hover:none){ .area-sentiment .as-x { opacity:.7; } }
 .rv-cardhead { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .rv-cardnav { display:inline-flex; align-items:center; gap:6px; margin-left:auto; }
 .rv-navbtn { flex:none; width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:18px; line-height:1; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
