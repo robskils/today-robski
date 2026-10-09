@@ -2172,6 +2172,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nconn-item { display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:none; border:0; padding:7px 6px; border-radius:8px; cursor:pointer; color:var(--ink); font-size:14px; }
 .nconn-item:hover { background:var(--paper); color:var(--accent); }
 .nconn-item .sp-t { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nconn-item .sp-sub { flex:none; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .nconn-area { flex:none; font-size:11px; color:hsl(var(--h,220) 42% 42%); background:hsl(var(--h,220) 60% 52% / .12); border-radius:999px; padding:1px 8px; max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .nconn-item.has-area { border-left:3px solid hsl(var(--h,220) 60% 52%); padding-left:8px; }
 .nconn-item.has-area .sp-ico { color:hsl(var(--h,220) 55% 55%); }

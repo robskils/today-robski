@@ -7657,7 +7657,7 @@ function renderArea() {
     ...(secHidden('Web links') ? [] : [{ ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` }]),
     ...(secHidden('Files') ? [] : [{ ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' }, { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' }]),
     ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
-    { ic: '◑', l: 'Event', n: 0, add: 'data-area-add-event' },
+    { ic: '◑', l: 'Event', n: (state.noteEvents || []).filter((e) => e && !e.feed && String(e.area || '') === String(area.id)).length, go: 'Week', conn: 'event' },
     { ic: '✎', l: 'Journal', n: journalN, go: 'Reflections', add: 'data-area-add-journal' },
     { ic: '☾', l: 'Dream', n: dreamN, go: 'Reflections', add: 'data-area-add-dream' },
     { ic: '📖', l: 'Book', n: bookN, go: 'Saved links', add: 'data-area-add-book' },
@@ -8237,10 +8237,19 @@ function openAreaCover() {
 // (Robin: first option should be search, not add new.)
 function openAreaConnect(kind) {
   const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
-  const LABEL = { note: 'page', task: 'task', contact: 'contact', goal: 'goal' };
-  const ICO = { note: '▤', task: '✓', contact: '👤', goal: '🎯' };
-  if (kind === 'contact' && state.contacts === undefined) loadContacts().then(() => { if (document.getElementById('aconn-list')) document.getElementById('aconn-list').innerHTML = rowsHtml(); }).catch(() => {});
+  const LABEL = { note: 'page', task: 'task', contact: 'contact', goal: 'goal', event: 'event' };
+  const ICO = { note: '▤', task: '✓', contact: '👤', goal: '🎯', event: '◑' };
+  const refresh = () => { const l = document.getElementById('aconn-list'); if (l) l.innerHTML = rowsHtml(); };
+  if (kind === 'contact' && state.contacts === undefined) loadContacts().then(refresh).catch(() => {});
+  // Events aren't blocks: pull the shared calendar pool (loadNoteEvents) and poll
+  // once for it to land, then show those not already on this ledger. (Robin: the
+  // Event connector must let you find an EXISTING event, not only make a new one.)
+  if (kind === 'event') {
+    loadNoteEvents();
+    if (!Array.isArray(state.noteEvents)) { const iv = setInterval(() => { if (Array.isArray(state.noteEvents)) { clearInterval(iv); refresh(); } }, 150); setTimeout(() => clearInterval(iv), 6000); }
+  }
   const collect = () => {
+    if (kind === 'event') return (state.noteEvents || []).filter((e) => e && e.title && !e.feed && String(e.area || '') !== String(area.id));
     let list = [];
     if (kind === 'note') list = [...(state.noteTops || []), ...(state.tables || [])];
     else if (kind === 'task') list = (state.allTasks || state.tasks || []).filter((t) => !(t.props && t.props.done));
@@ -8252,12 +8261,17 @@ function openAreaConnect(kind) {
     const q = (state._aconnQ || '').trim().toLowerCase();
     const all = collect();
     const list = (q ? all.filter((b) => (b.title || '').toLowerCase().includes(q)) : all).slice(0, 14);
-    return list.length ? list.map((b) => `<button class="nconn-item" data-aconn-pick="${b.id}"><span class="sp-ico">${ICO[kind]}</span><span class="sp-t">${esc(b.title || 'Untitled')}</span></button>`).join('') : `<div class="ov-muted" style="padding:8px 2px">${q ? 'No matches.' : `Nothing to connect yet - make a new ${LABEL[kind]} below.`}</div>`;
+    if (!list.length) return `<div class="ov-muted" style="padding:8px 2px">${q ? 'No matches.' : `Nothing to connect yet - make a new ${LABEL[kind]} below.`}</div>`;
+    return list.map((b) => {
+      const sub = kind === 'event' && b.date ? `<span class="sp-sub">${esc(evShortDate(b.date))}</span>` : '';
+      const pid = kind === 'event' ? evBaseId(b) : b.id;
+      return `<button class="nconn-item" data-aconn-pick="${esc(String(pid))}"><span class="sp-ico">${ICO[kind]}</span><span class="sp-t">${esc(b.title || 'Untitled')}</span>${sub}</button>`;
+    }).join('');
   };
   state._aconnQ = '';
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog">
-    <div class="recur-h">Connect a ${LABEL[kind]}</div>
+    <div class="recur-h">Connect ${kind === 'event' ? 'an event' : `a ${LABEL[kind]}`}</div>
     <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this ledger')}</b>, or make a new one.</p>
     <input class="sel nconn-q" data-aconn-q placeholder="Search your ${LABEL[kind]}s…" autocomplete="off">
     <div class="nconn-list" id="aconn-list" style="margin-top:10px">${rowsHtml()}</div>
@@ -8267,16 +8281,21 @@ function openAreaConnect(kind) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
   document.addEventListener('keydown', onKey, true);
   el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
-  el.querySelector('[data-aconn-q]').addEventListener('input', (e) => { state._aconnQ = e.target.value; const l = document.getElementById('aconn-list'); if (l) l.innerHTML = rowsHtml(); });
+  el.querySelector('[data-aconn-cancel]').addEventListener('click', close);
+  el.querySelector('[data-aconn-q]').addEventListener('input', (e) => { state._aconnQ = e.target.value; refresh(); });
   el.querySelector('#aconn-list').addEventListener('click', (e) => {
     const b = e.target.closest('[data-aconn-pick]'); if (!b) return;
     const id = b.dataset.aconnPick;
+    if (kind === 'event') {
+      api('/api/event-area', { method: 'POST', body: JSON.stringify({ eventId: id, area: area.id }) }).then(() => { invalidateAreaWeek(); if (state.cal) state.cal.events = null; const ev = (state.noteEvents || []).find((x) => evBaseId(x) === id); if (ev) ev.area = area.id; if (state.view.type === 'area') renderArea(); toast('Event connected'); }).catch((x) => toast(x.message));
+      close(); return;
+    }
     addBlockArea(kind, id, area.id);
     const host = areaHostBlock(kind, id);
     if (host && state.area_open && !(state.area_open.blocks || []).some((x) => x.id === id)) { state.area_open.blocks = state.area_open.blocks || []; state.area_open.blocks.push(host); }
     close(); if (state.view.type === 'area') renderArea(); toast('Connected');
   });
-  el.querySelector('[data-aconn-new]').addEventListener('click', () => { close(); if (kind === 'note') areaAddNote(); else if (kind === 'task') areaAddTask(); else if (kind === 'contact') areaAddContact(); else if (kind === 'goal') newGoal(area.id).catch((x) => toast(x.message)); });
+  el.querySelector('[data-aconn-new]').addEventListener('click', () => { close(); if (kind === 'note') areaAddNote(); else if (kind === 'task') areaAddTask(); else if (kind === 'contact') areaAddContact(); else if (kind === 'event') areaNewEvent(area.id); else if (kind === 'goal') newGoal(area.id).catch((x) => toast(x.message)); });
   setTimeout(() => { const i = el.querySelector('[data-aconn-q]'); if (i) i.focus(); }, 30);
 }
 

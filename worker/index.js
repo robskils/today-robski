@@ -4489,6 +4489,10 @@ export default {
       // Link (or unlink) an existing event to a contact via the side-map only - no
       // Google round-trip, unlike a full event PATCH.
       if (path === '/api/event-contact' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventContactFor(env, b.eventId, b.contact || null).catch(() => {}); return json({ ok: true }, request); }
+      // Connect (or clear) an existing event's ledger via the side-map only - no
+      // Google round-trip, so you can hook a calendar event to a ledger from the
+      // Connections picker without reopening the event editor.
+      if (path === '/api/event-area' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventAreaFor(env, b.eventId, b.area || null).catch(() => {}); return json({ ok: true }, request); }
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
