@@ -965,6 +965,18 @@ button { cursor:pointer; background:none; border:0; }
 /* Daily review section on the Reviews page: a Today row on top, then only the
    days you actually did a review - never empty days. */
 .rv-daily-sec { margin:0 0 26px; }
+/* Reviews overview: a quiet AI read of where things stand, a para or two. */
+.rv-overview { margin:4px 0 26px; padding:18px 20px; border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line)); border-radius:16px; background:linear-gradient(165deg, color-mix(in srgb,var(--gold) 9%,var(--card)), var(--card) 75%); box-shadow:var(--shadow); }
+.rvo-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.rvo-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; color:var(--ink); }
+.rvo-btn { flex:none; cursor:pointer; font:inherit; font-size:13.5px; font-weight:600; color:var(--gold); background:color-mix(in srgb,var(--gold) 12%,var(--card)); border:1px solid color-mix(in srgb,var(--gold) 34%,var(--line)); border-radius:999px; padding:7px 15px; transition:background .12s, border-color .12s; }
+.rvo-btn:hover:not([disabled]) { background:color-mix(in srgb,var(--gold) 20%,var(--card)); }
+.rvo-btn[disabled] { opacity:.7; cursor:default; }
+.rvo-body { margin-top:13px; font-size:16px; line-height:1.62; color:var(--ink-2); }
+.rvo-body p { margin:0 0 10px; }
+.rvo-body p:last-child { margin-bottom:0; }
+.rvo-loading { font-style:italic; color:var(--ink-3); }
+.rvo-err { color:var(--accent); font-size:14px; }
 .rv-daily-list { display:flex; flex-direction:column; margin-top:6px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card); box-shadow:var(--shadow); }
 .rv-daily-item { display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:13px 16px; border:0; border-bottom:1px solid var(--line); background:none; cursor:pointer; transition:background .12s; }
 .rv-daily-item:last-child { border-bottom:0; }

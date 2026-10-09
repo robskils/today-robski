@@ -14802,6 +14802,46 @@ async function openReviews(rtype) {
   // Reviews page lists them, newest first.
   if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !journalBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
+// A plain-language snapshot of where life stands, for the AI overview. Built
+// only from data we hold or fetch here, every field guarded. (Robin.)
+function reviewOverviewContext(goals, tasks) {
+  const lines = [];
+  const areas = (state.areas || []).filter((a) => !a.sharedBy);
+  const scored = areas.map((a) => { const sc = Math.min(Number((a.props || {}).wheelScore) || 0, 5); return sc ? `${a.title} - ${AREA_SENTIMENT[sc]} (${sc}/5)` : null; }).filter(Boolean);
+  if (scored.length) lines.push('How life areas feel: ' + scored.join('; '));
+  else if (areas.length) lines.push('Life areas: ' + areas.slice(0, 14).map((a) => a.title).join(', '));
+  const openG = (goals || []).filter((g) => (((g.props || {}).status) || 'active') === 'active');
+  if (openG.length) lines.push('Active goals: ' + openG.slice(0, 15).map((g) => { const p = g.props || {}; const dl = p.targetDate ? `, due ${dpLabel(p.targetDate)}` : ''; return `${g.title || 'Untitled'}${dl}`; }).join('; '));
+  const openT = (tasks || []).filter((t) => !(t.props || {}).done && !(t.props || {}).kit);
+  const p1 = openT.filter((t) => (t.props || {}).priority === 'P1');
+  if (tasks) lines.push(`Open tasks: ${openT.length} (P1: ${p1.length}).`);
+  if (p1.length) lines.push('Top priorities: ' + p1.slice(0, 8).map((t) => t.title || 'Untitled').join('; '));
+  const dls = areas.map((a) => { const d = (a.props || {}).due; return d ? `${a.title} (${dpLabel(d)})` : null; }).filter(Boolean);
+  if (dls.length) lines.push('Deadlines: ' + dls.join('; '));
+  lines.push(`Reviews completed so far: ${(state.reviews || []).length}.`);
+  return lines.join('\n');
+}
+async function runReviewOverview() {
+  state.reviewOverview = { loading: true }; renderReviews();
+  try {
+    const [goals, tasks] = await Promise.all([
+      api('/api/blocks?kind=goal').catch(() => []),
+      api('/api/blocks?kind=task').catch(() => []),
+    ]);
+    const context = reviewOverviewContext(goals, tasks);
+    const r = await api('/api/review/overview', { method: 'POST', body: JSON.stringify({ context }) });
+    state.reviewOverview = { text: (r && r.text) || '' };
+  } catch (e) { state.reviewOverview = { error: e.message }; }
+  if (state.view && state.view.type === 'reviews') renderReviews();
+}
+function reviewOverviewHtml() {
+  const o = state.reviewOverview;
+  const body = !o ? ''
+    : o.loading ? '<div class="rvo-body rvo-loading">Reading how things stand…</div>'
+      : o.error ? `<div class="rvo-body rvo-err">${esc(o.error)}</div>`
+        : o.text ? `<div class="rvo-body">${o.text.split(/\n\n+/).map((p) => `<p>${esc(p.trim())}</p>`).join('')}</div>` : '';
+  return `<section class="home-sec rv-overview"><div class="rvo-head"><span class="rvo-t">How am I doing?</span><button class="rvo-btn" data-review-overview ${o && o.loading ? 'disabled' : ''}>${o && o.loading ? '…' : (o && o.text ? '↻ Refresh' : '✦ Give me an overview')}</button></div>${body}</section>`;
+}
 function renderReviews() {
   const daily = modOn('reflect') ? (() => {
     const list = state.dailyReviews || [];
@@ -14824,6 +14864,7 @@ function renderReviews() {
     return;
   }
   $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
+    ${reviewOverviewHtml()}
     ${daily}
     <p class="t2-sub" style="font-style:normal">And the weekly, monthly, quarterly and yearly check-ins.</p>
     ${reviewsBody()}`;
@@ -18944,6 +18985,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   { const rdx = t.closest('[data-review-dismiss]'); if (rdx) { e.preventDefault(); e.stopPropagation(); reviewDismiss(rdx.dataset.reviewDismiss); return; } }
+  if (t.closest('[data-review-overview]')) { runReviewOverview(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
   { const srp = t.closest('[data-start-review-period]'); if (srp) { const [k, from, to] = srp.dataset.startReviewPeriod.split('|'); startReview(k, { from, to }).catch((x) => toast(x.message)); return; } }
   const rre = t.closest('[data-rev-rem-edit]'); if (rre) { const k = rre.dataset.revRemEdit; state.reviewRemOpen = state.reviewRemOpen || {}; state.reviewRemOpen[k] = !state.reviewRemOpen[k]; reReviewRems(); return; }
