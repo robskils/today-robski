@@ -4752,6 +4752,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ev-check:hover { border-color:var(--accent); color:var(--accent); }
 .ev-check:active { background:var(--paper-2); }
 .ev-surfaced { font-size:12px; color:var(--accent); opacity:.9; }
+/* "Coming up" nudge for an event starting soon today - a quiet gold pill, or a
+   live accent when it's now/imminent. */
+.ev-soon { grid-column:2; justify-self:start; margin-top:2px; display:inline-flex; align-items:center; font-size:12px; font-weight:600; color:var(--priv,#8a6d3b); background:color-mix(in srgb,var(--priv,#8a6d3b) 13%,transparent); border-radius:999px; padding:1px 9px; width:fit-content; }
+.ev-soon-now { color:var(--accent); background:color-mix(in srgb,var(--accent) 15%,transparent); }
 /* Remove-from-Today ✕ on a surfaced task (doesn't complete it). Sits at the row
    end, out of the way of the tap-to-open target. */
 .ev-task { position:relative; }

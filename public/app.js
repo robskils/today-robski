@@ -3857,6 +3857,23 @@ async function addTableEntry(id) {
 
 // ── view: home ───────────────────────────────────────
 const hhmm = (m) => `${String((m / 60) | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+// A friendly "coming up" line for an event starting soon today - "in half an
+// hour", "in an hour" - so the Today feed nudges you before a lesson or call.
+// Empty once it has started or when it's more than ~2½ hours off. (Robin.)
+function evSoonLabel(startMin, endMin) {
+  if (startMin == null) return '';
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const d = startMin - nowMin;
+  if (d < 0) return (endMin != null && endMin > nowMin) ? 'on now' : '';
+  if (d <= 3) return 'now';
+  if (d < 23) return `in ${d} min`;
+  if (d < 38) return 'in half an hour';
+  if (d < 53) return `in ${Math.round(d / 5) * 5} min`;
+  if (d < 75) return 'in an hour';
+  if (d < 105) return 'in 1½ hours';
+  if (d <= 150) return `in ${Math.round(d / 60)} hours`;
+  return '';
+}
 // Minutes → a compact human duration: 45m, 1h, 1h 30m.
 const fmtDur = (m) => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60; return h ? (mm ? `${h}h ${mm}m` : `${h}h`) : `${mm}m`; };
 // Morning until noon, then afternoon until NIGHTFALL (your local sunset), then
@@ -5132,7 +5149,9 @@ function renderHome() {
       const withChip = ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : '';
       const ju = eventJoinUrl(it);
       const joinBtn = ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : '';
-      return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${withChip}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}${joinBtn}</div>`;
+      const soon = (off === 0 && !it.allDay) ? evSoonLabel(it.start_min, it.end_min) : '';
+      const soonChip = soon ? `<span class="ev-soon${soon === 'now' || soon === 'on now' ? ' ev-soon-now' : ''}">${soon}</span>` : '';
+      return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${withChip}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${soonChip}${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}${joinBtn}</div>`;
     }
     // (end time stacked under start; duration tag after the title)
     return `<div class="ev-row ev-slot ev-click${it.done ? ' done' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.start_min == null ? 'anytime' : hhmm(it.start_min)}</span><span class="ev-t"><span class="ev-dot" style="--h:${it.hue}"></span>${esc(it.title)}</span>${it.badge ? `<span class="ev-loc">${esc(it.badge)}</span>` : ''}</div>`;
@@ -7764,7 +7783,7 @@ function renderArea() {
     const due = area.props && area.props.due;
     const dueRel = due ? deadlineRel(due) : null;
     const dueRow = (due && dueRel) ? `<div class="ev-row ev-click" data-area-tile="Wheel of Life"><span class="ev-time">🎯</span><span class="ev-t">Deadline</span><span class="ev-loc gc-due-${dueRel.c || 'ok'}">${esc(dueRel.t)} · ${esc(dpLabel(due))}</span></div>` : '';
-    const bdayRows = contacts.map((c) => { const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
+    const bdayRows = contacts.map((c) => { if ((c.props || {}).bdayLead === 0) return null; const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
       .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
     const beReady = dueRow + bdayRows;
     if (!beReady) return '';
@@ -13654,7 +13673,7 @@ function renderContactCard() {
         ${contactPhoneFields(p)}
         ${contactSocialFields(p)}
         <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
-        ${p.birthday ? (() => { const lead = Number(p.bdayLead) || 7; const OPTS = [[7, 'A week before'], [14, 'Two weeks before'], [30, 'A month before'], [60, 'Two months before'], [90, 'Three months before']]; return `<label class="tf-field"><span class="tf-label">Remind me</span><select id="contactcard-bdaylead" class="sel">${OPTS.map(([v, l]) => `<option value="${v}" ${lead === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`; })() : ''}
+        ${p.birthday ? (() => { const lead = p.bdayLead === 0 ? 0 : (Number(p.bdayLead) || 7); const OPTS = [[7, 'A week before'], [14, 'Two weeks before'], [30, 'A month before'], [60, 'Two months before'], [90, 'Three months before'], [0, 'No reminder']]; return `<label class="tf-field"><span class="tf-label">Remind me</span><select id="contactcard-bdaylead" class="sel">${OPTS.map(([v, l]) => `<option value="${v}" ${lead === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`; })() : ''}
         ${contactAddressFields(p)}
         <div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div>
       </div>`
@@ -19623,7 +19642,7 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('cc-email-in') || e.target.classList.contains('cc-phone-cc') || e.target.classList.contains('cc-phone-num')) patchContact(cid, readCardContacts(), true);
     if (e.target.classList.contains('cc-adr-f') || e.target.classList.contains('cc-adr-label')) patchContact(cid, readCardAddresses(), true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
-    if (e.target.id === 'contactcard-bdaylead') patchContact(cid, { bdayLead: Number(e.target.value) || 7 }, true);
+    if (e.target.id === 'contactcard-bdaylead') patchContact(cid, { bdayLead: e.target.value === '0' ? 0 : (Number(e.target.value) || 7) }, true);
     if (e.target.matches('[data-xmas-ideas]')) patchContact(cid, { xmasIdeas: e.target.value.trim() || null }, true);
   }
   if (state.goal_open && state.view.type === 'goalcard') {
