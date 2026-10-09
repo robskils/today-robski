@@ -2161,7 +2161,10 @@ async function searchBlocks(request, env, url) {
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker', 'insight')
       ORDER BY CASE kind WHEN 'area' THEN 0 WHEN 'goal' THEN 1 WHEN 'contact' THEN 2 WHEN 'note' THEN 3 WHEN 'table' THEN 4 WHEN 'task' THEN 5 WHEN 'row' THEN 6 ELSE 7 END, updated_at DESC
       LIMIT 60`;
-  const groupSql = () => `(title LIKE ? OR body LIKE ? OR (kind = 'row' AND props LIKE ?))`;
+  // Alt search terms a person (or AI) added live in props.aliases - matched on the
+  // aliases array only, so a Portuguese-titled thing turns up in English and vice
+  // versa, without a blanket props match dragging in unrelated flags. (Robin.)
+  const groupSql = () => `(title LIKE ? OR body LIKE ? OR json_extract(props, '$.aliases') LIKE ? OR (kind = 'row' AND props LIKE ?))`;
   const runQuery = async (groups, binds) => {
     const sql = `SELECT * FROM blocks WHERE user_id = ? AND archived = 0 AND (${groups}) ${TAIL}`;
     return (await env.DB.prepare(sql).bind(...binds).all()).results || [];
@@ -2169,7 +2172,7 @@ async function searchBlocks(request, env, url) {
   // 1) The whole phrase, any &/and form (variants OR'd together).
   const vs = variants(q);
   const phraseBinds = [env.uid];
-  for (const v of vs) { const l = `%${v}%`; phraseBinds.push(l, l, l); }
+  for (const v of vs) { const l = `%${v}%`; phraseBinds.push(l, l, l, l); }
   let results = await runQuery(vs.map(groupSql).join(' OR '), phraseBinds);
   // 2) Nothing matched the phrase? Fall back to requiring every WORD to appear
   //    somewhere - sensible partial matches instead of a dead end.
@@ -2177,7 +2180,7 @@ async function searchBlocks(request, env, url) {
     const words = clean(q).split(/\s+/).map((w) => w.replace(/&/g, '')).filter((w) => w.length >= 2);
     if (words.length > 1) {
       const wordBinds = [env.uid];
-      for (const w of words) { const l = `%${w}%`; wordBinds.push(l, l, l); }
+      for (const w of words) { const l = `%${w}%`; wordBinds.push(l, l, l, l); }
       results = await runQuery(words.map(groupSql).join(' AND '), wordBinds);
     }
   }

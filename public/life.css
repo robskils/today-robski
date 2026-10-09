@@ -2035,6 +2035,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-crumbs-split .nc-actions .crumb-area { margin-left:0; }
 .note-areas-row { margin:2px 0 14px; }
 .note-areas-row:empty { display:none; }
+/* "Also findable as": alt search terms on a page, as removable chips. */
+.note-aliases { margin:0 0 14px; }
+.note-aliases .na-sum { display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink-3); list-style:none; }
+.note-aliases .na-sum::-webkit-details-marker { display:none; }
+.note-aliases[open] .na-sum { margin-bottom:9px; }
+.na-body { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.alias-chips { display:flex; flex-wrap:wrap; gap:7px; }
+.alias-chips:empty { display:none; }
+.alias-chip { display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 9%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:999px; padding:3px 5px 3px 11px; }
+.alias-x { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:0; background:none; color:var(--ink-3); font-size:14px; line-height:1; cursor:pointer; }
+.alias-x:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,transparent); }
+.alias-in { flex:1; min-width:180px; max-width:340px; margin:0; font-size:14px; }
 .crumb-back { flex:none; width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-2); font-size:18px; border:1px solid var(--line); background:var(--card); transition:background .12s,color .12s,border-color .12s; }
 .crumb-back:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
 .note-crumbs .crumb-back, .area-hero-top .crumb-back { margin-right:2px; }

@@ -17670,6 +17670,32 @@ async function disconnectNote(id) {
     toast('Disconnected');
   } catch (e) { toast(e.message); }
 }
+// "Also findable as": extra search terms on a page (props.aliases) so it turns
+// up under names its title doesn't use - another language, an old name, an
+// acronym. The worker's search matches these. Owner-only. (Robin.)
+function noteAliasesControl(n) {
+  if (n.sharedBy) return '';
+  const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases : [];
+  const chips = al.map((a, i) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-alias-del="${i}" title="Remove">×</button></span>`).join('');
+  return `<details class="note-aliases" ${al.length ? 'open' : ''}><summary class="na-sum">🔎 Also findable as${al.length ? ` · ${al.length}` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-alias-add placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
+}
+async function noteAddAlias(term) {
+  const n = state.note && state.note.current; if (!n || !term) return;
+  n.props = n.props || {};
+  const al = Array.isArray(n.props.aliases) ? n.props.aliases.slice() : [];
+  const t = term.trim(); if (!t || al.some((x) => x.toLowerCase() === t.toLowerCase())) return;
+  al.push(t); n.props.aliases = al;
+  try { await api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
+  renderNote();
+}
+async function noteDelAlias(i) {
+  const n = state.note && state.note.current; if (!n) return;
+  const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases.slice() : [];
+  if (i < 0 || i >= al.length) return;
+  al.splice(i, 1); n.props.aliases = al;
+  try { await api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
+  renderNote();
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -17702,6 +17728,7 @@ function renderNote() {
         ${sharedBanner(n)}
         <div class="note-areas-row">${noteAreasControl(n)}</div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
+        ${noteAliasesControl(n)}
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
@@ -18277,6 +18304,7 @@ document.addEventListener('keydown', (e) => {
   if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-alias-add]')) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; if (v) noteAddAlias(v); return; }
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
   if (e.key === 'Enter' && e.target.id === 'src-loc') { e.preventDefault(); const d = discoverState(); const q = (d.cityInput || e.target.value || '').trim(); if (q) { d.cityInput = q; discoverSuggest({ q }); } return; }
   if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
@@ -19377,6 +19405,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
   { const ada = t.closest('[data-area-day-add]'); if (ada) { const [aid, iso] = ada.dataset.areaDayAdd.split('::'); areaNewEventOnDay(aid, iso); return; } }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
+  { const ad = t.closest('[data-alias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.aliasDel)); return; } }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
