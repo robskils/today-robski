@@ -4961,7 +4961,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    bolder accent caps - so it sits in the same voice as its neighbours. (Robin.) */
 .area-weeksec .ash-l { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; font-weight:400; letter-spacing:.08em; color:var(--ink-3); }
 .aweek { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
-.awk-day { display:grid; grid-template-columns:54px 1fr; align-items:stretch; gap:12px; padding:9px 13px 9px 11px; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); }
+.awk-day { display:grid; grid-template-columns:48px 1fr; align-items:center; gap:12px; padding:5px 14px 5px 11px; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); min-height:46px; }
 .awk-day:first-child { border-top:0; }
 .awk-today { background:color-mix(in srgb,var(--c) 9%,transparent); box-shadow:inset 3px 0 0 var(--c); }
 .awk-date { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding-top:1px; }
@@ -4983,10 +4983,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .aweek-empty { padding:28px 20px; }
 .awk-note { margin:0; font-size:14px; font-style:italic; color:var(--ink-3); text-align:center; }
 /* Per-day + to drop an activity onto a day, quiet until you hover the day. */
-.awk-dayadd { align-self:flex-start; width:25px; height:25px; display:inline-flex; align-items:center; justify-content:center; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--c,var(--ink-3)); font-size:15px; line-height:1; cursor:pointer; opacity:0; transition:opacity .12s, background .12s, border-color .12s; }
-.awk-day:hover .awk-dayadd { opacity:.65; }
+.awk-dayadd { align-self:center; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; border-radius:7px; border:1px solid transparent; background:transparent; color:var(--c,var(--ink-3)); font-size:15px; line-height:1; cursor:pointer; opacity:0; transition:opacity .12s, background .12s, border-color .12s; }
+.awk-day:hover .awk-dayadd { opacity:.6; }
 .awk-dayadd:hover { opacity:1 !important; background:color-mix(in srgb,var(--c) 13%,transparent); border-color:color-mix(in srgb,var(--c) 32%,transparent); }
-.awk-day-empty .awk-evs { min-height:30px; justify-content:center; }
+.awk-day-empty .awk-evs { min-height:0; }
 @media (hover:none){ .awk-dayadd { opacity:.5; } }
 .area-vision-edit { width:100%; box-sizing:border-box; border:1px solid var(--line); background:var(--card); resize:none; overflow:hidden; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
 .area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }

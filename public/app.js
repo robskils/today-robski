@@ -5149,7 +5149,7 @@ function renderHome() {
       const withChip = ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : '';
       const ju = eventJoinUrl(it);
       const joinBtn = ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : '';
-      const soon = (off === 0 && !it.allDay) ? evSoonLabel(it.start_min, it.end_min) : '';
+      const soon = ((state.home.dayOffset || 0) === 0 && !it.allDay) ? evSoonLabel(it.start_min, it.end_min) : '';
       const soonChip = soon ? `<span class="ev-soon${soon === 'now' || soon === 'on now' ? ' ev-soon-now' : ''}">${soon}</span>` : '';
       return `<div class="ev-row ev-click" data-home-cal role="button" tabindex="0" title="Open in the calendar"><span class="ev-time">${it.allDay ? 'all day' : hhmm(it.start_min)}${hasEnd ? `<span class="ev-end">${hhmm(it.end_min)}</span>` : ''}</span><span class="ev-t">${esc(it.title)}${withChip}${hasEnd ? `<span class="ev-dur">${fmtDur(it.end_min - it.start_min)}</span>` : ''}</span>${soonChip}${it.location ? `<span class="ev-loc">${esc(it.location)}</span>` : ''}${joinBtn}</div>`;
     }
@@ -5245,7 +5245,7 @@ function renderHome() {
           const homeGoals = [...fg, ...restGoals];
           const alerts = state.home.alerts || {};
           const off = state.home.dayOffset || 0;
-          const dayNav = `<span class="today-nav">${off > 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button><button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button>` : ''}<button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
+          const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
           const todayRows = evRows + (off === 0 ? surfacedRows : '');
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
