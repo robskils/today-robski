@@ -4711,6 +4711,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .feed-grp { margin:0 0 14px; }
 .feed-grp-h { font-family:'IM Fell English SC',Georgia,serif; font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:6px; }
 .feed-grp .ev-row { border-radius:10px; }
+.area-today { margin:4px 0 22px; }
+.area-today .feed-grp:last-child { margin-bottom:0; }
 .feed-beready .ev-surfaced, .feed-gentle .ev-surfaced { color:color-mix(in srgb,var(--oxblood,#7a2b25) 55%,var(--ink-3)); }
 /* Time in its own column; title and location stack in the second column so a
    long title or address never collides with the other. */
@@ -5023,7 +5025,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Files & photos and Links share a row, half each; one alone fills the width; both
    stack on a narrow screen. */
 .area-dash-fl { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-top:20px; align-items:stretch; }
-.area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links { margin-top:0; }
+.area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links, .area-dash-fl > .area-dash-shared { margin-top:0; }
 /* One consistent heading style across the area's Wall / Files / Links / Shared
    panels, in the area's feature colour. (Links was a serif odd-one-out.) */
 .area-dash-wall > .home-sec-h,

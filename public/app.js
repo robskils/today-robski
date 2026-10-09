@@ -7433,6 +7433,14 @@ function areaSentimentHtml(area) {
   const dots = `<span class="as-dots">${'●'.repeat(sc)}${'○'.repeat(5 - sc)}</span>`;
   return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span></div>`;
 }
+// Days until a birthday (MM-DD), 0 = today, for the ledger "Today" section.
+function bdayInDays(bday) {
+  const mmdd = String(bday || '').slice(-5); const [mm, dd] = mmdd.split('-').map(Number); if (!mm || !dd) return -1;
+  const now = new Date(); const t0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  let diff = Math.round((Date.UTC(now.getFullYear(), mm - 1, dd) - t0) / 86400000);
+  if (diff < 0) diff = Math.round((Date.UTC(now.getFullYear() + 1, mm - 1, dd) - t0) / 86400000);
+  return diff;
+}
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -7564,8 +7572,10 @@ function renderArea() {
   const linkN = blockLinks(area).length;
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
-  const filesLinksRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
+  const filesSecRow = filesSec ? `<div class="area-dash-fl">${filesSec}</div>` : '';
   const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Who has access${memberCount ? ` · ${memberCount + (area.sharedBy ? 0 : 1)}` : ''}</div>${areaMembersBody(area)}</section>`;
+  // Web links and Who-has-access share a row, half each. (Robin.)
+  const linksAccessRow = (linksSec || sharedSec) ? `<div class="area-dash-fl">${linksSec}${sharedSec}</div>` : '';
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
   // and sort to the front, and click through to view their section (which surfaces
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
@@ -7579,6 +7589,7 @@ function renderArea() {
     { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', conn: 'task', add: 'data-area-add-task' },
     ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', conn: 'goal', add: 'data-area-add-goal' }]),
     { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', conn: 'contact', add: 'data-area-add-contact' },
+    { ic: '👥', l: 'Member', n: memberCount || 0, add: 'data-area-invite' },
     ...(secHidden('Web links') ? [] : [{ ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` }]),
     ...(secHidden('Files') ? [] : [{ ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' }, { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' }]),
     ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
@@ -7604,8 +7615,8 @@ function renderArea() {
     </section>`;
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
-  ${filesLinksRow}
-  ${sharedSec}
+  ${filesSecRow}
+  ${linksAccessRow}
   ${connectSec}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals" open><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
@@ -7668,6 +7679,22 @@ function renderArea() {
       </div>
       ${rvAreaHtml ? `<div class="area-recent"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></div>` : ''}
     </div>` : '';
+  // The ledger's own "Today" feed, near the top: the same idea as Home, filtered
+  // to this ledger - what's coming (deadline, birthdays) + do-next here. (Robin.)
+  const lToday = (() => {
+    const due = area.props && area.props.due;
+    const dueRel = due ? deadlineRel(due) : null;
+    const dueRow = (due && dueRel) ? `<div class="ev-row ev-click" data-area-tile="Wheel of Life"><span class="ev-time">🎯</span><span class="ev-t">Deadline</span><span class="ev-loc gc-due-${dueRel.c || 'ok'}">${esc(dueRel.t)} · ${esc(dpLabel(due))}</span></div>` : '';
+    const bdayRows = contacts.map((c) => { const d = bdayInDays(c.props && c.props.birthday); return (d >= 0 && d <= 7) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
+      .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
+    const beReady = dueRow + bdayRows;
+    const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
+    if (!beReady && !doNext) return '';
+    return `<section class="area-today" style="--h:${h}">
+      ${beReady ? `<div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>` : ''}
+      ${doNext ? `<div class="feed-grp"><div class="feed-grp-h">Do next here</div><div class="today-cal">${doNext}</div></div>` : ''}
+    </section>`;
+  })();
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
@@ -7686,6 +7713,7 @@ function renderArea() {
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
     ${areaDash}
+    ${lToday}
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
