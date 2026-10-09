@@ -7656,11 +7656,11 @@ function renderArea() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
-      <div class="am-cover"${cover && cover.url ? ` style="background-image:url('${esc(cover.url)}')"` : ''}>
+      ${cover ? `<div class="am-cover" style="background-image:url('${esc(cover.url)}')">
         <span class="am-cover-scrim"></span>
-        ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="${cover ? 'Change cover image' : 'Add a cover image'}"><span class="amc-ic">❏</span>${cover ? 'Change cover' : 'Add cover'}</button>` : ''}
-        ${(cover && cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
-      </div>
+        ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change cover</button>` : ''}
+        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
+      </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
         <div class="am-kicker">Ledger</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
@@ -7965,15 +7965,40 @@ function openAreaColor() {
 // paste any image link. Mirrors openAreaColor's dialog. Writes area.props.cover;
 // Remove clears it. The access key stays server-side - the client only ever sees
 // ready-to-use image URLs.
+// Downscale a chosen image to a cover-sized JPEG/PNG and upload it to R2 via the
+// public image store, returning a permanent URL to persist on the ledger. (Robin:
+// upload a cover from your computer.)
+async function coverUpload(file) {
+  if (!isImgType(file.type)) throw new Error('Please choose an image');
+  let objUrl, bmp;
+  try {
+    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { objUrl = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Could not read that image')); im.src = objUrl; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error('Could not read that image');
+    const MAX = 1600; const scale = Math.min(1, MAX / Math.max(w, h));
+    const dw = Math.round(w * scale), dh = Math.round(h * scale);
+    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
+    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh); if (bmp.close) bmp.close();
+    const type = /png/i.test(file.type) ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise((res) => cv.toBlob(res, type, 0.85));
+    if (!blob) throw new Error('Could not process that image');
+    const res = await fetch(`/api/mail/sig-img?type=${encodeURIComponent(type)}`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: blob });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
+    return (await res.json()).url;
+  } finally { if (objUrl) URL.revokeObjectURL(objUrl); }
+}
 function openAreaCover() {
   const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
   const el = uiDialogHost();
   const cur = (area.props && area.props.cover) || null;
   el.innerHTML = `<div class="pal-bg"><div class="ui-dialog-box cover-dialog" style="--h:${hueOf(area)}">
     <div class="recur-h">Cover image</div>
-    <p class="recur-p">Give <b>${esc(area.title || 'this ledger')}</b> a cover - search free photos, or paste any image link.</p>
-    <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="Search photos - mountains, calm, family…" value="${esc(area.title || '')}"><button class="ui-btn primary cv-go" type="submit">Search</button></form>
-    <div class="cv-results" data-cv-results><div class="cv-hint">Search for a photo, or paste a link below.</div></div>
+    <p class="recur-p">Upload a photo from your computer, search free photos, or paste a link.</p>
+    <div class="cv-actions">
+      <label class="ui-btn primary cv-upload"><input type="file" accept="image/*" hidden data-cv-file><span class="cv-up-ic">⬆</span>Upload a photo</label>
+      <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="or search free photos…" value="${esc(area.title || '')}"><button class="ui-btn cv-go" type="submit">Search</button></form>
+    </div>
+    <div class="cv-results" data-cv-results></div>
     <label class="cv-url-l">Or paste an image URL<div class="cv-url-row"><input class="cv-url" data-cv-url placeholder="https://…/photo.jpg"><button class="ui-btn cv-url-go" data-cv-url-go type="button">Use</button></div></label>
     <div class="ui-dialog-btns">${cur ? '<button class="ui-btn cv-remove" data-cv-remove>Remove cover</button>' : '<span></span>'}<button class="ui-btn cancel" data-cv-cancel>Close</button></div>
   </div></div>`;
@@ -8004,6 +8029,13 @@ function openAreaCover() {
       }));
     } catch (e) { results.innerHTML = `<div class="cv-hint">${esc(e.message || 'Search failed')}</div>`; }
   };
+  el.querySelector('[data-cv-file]').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!isImgType(f.type)) { toast('Please choose an image'); return; }
+    results.innerHTML = '<div class="cv-hint">Uploading…</div>';
+    try { const u = await coverUpload(f); apply({ src: 'upload', url: u }); }
+    catch (err) { results.innerHTML = `<div class="cv-hint">${esc(err.message || 'Upload failed')}</div>`; }
+  });
   el.querySelector('[data-cv-search]').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
   el.querySelector('[data-cv-url-go]').addEventListener('click', () => {
     const u = el.querySelector('[data-cv-url]').value.trim();
@@ -8012,7 +8044,6 @@ function openAreaCover() {
   });
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
-  runSearch();
 }
 
 // ── view: calendar ───────────────────────────────────
