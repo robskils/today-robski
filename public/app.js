@@ -7575,10 +7575,10 @@ function renderArea() {
   const bookN = bookmarks.filter((b) => (b.props || {}).media === 'book').length;
   const filmN = bookmarks.filter((b) => (b.props || {}).media === 'film').length;
   const CONN = [
-    { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', add: 'data-area-add-note' },
-    { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', add: 'data-area-add-task' },
-    ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', add: 'data-area-add-goal' }]),
-    { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', add: 'data-area-add-contact' },
+    { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', conn: 'note', add: 'data-area-add-note' },
+    { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', conn: 'task', add: 'data-area-add-task' },
+    ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', conn: 'goal', add: 'data-area-add-goal' }]),
+    { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', conn: 'contact', add: 'data-area-add-contact' },
     ...(secHidden('Web links') ? [] : [{ ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` }]),
     ...(secHidden('Files') ? [] : [{ ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' }, { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' }]),
     ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
@@ -7592,6 +7592,7 @@ function renderArea() {
     const has = c.n > 0;
     const inner = `${has ? `<span class="conn-c">${c.n}</span>` : ''}<span class="conn-ic">${c.ic}</span><span class="conn-l">${esc(c.l)}</span>`;
     const cls = `conn-tile${has ? ' has' : ''}`;
+    if (c.conn) return `<button class="${cls}" data-area-connect="${esc(c.conn)}" title="Connect a ${esc(c.l.toLowerCase())}">${inner}</button>`;
     if (has && c.go) return `<button class="${cls}" data-area-goto="${esc(c.go)}" title="View ${esc(c.l.toLowerCase())}">${inner}</button>`;
     if (c.file !== undefined) return `<label class="${cls}" title="Add a ${esc(c.l.toLowerCase())}"><input type="file" ${c.file ? `accept="${c.file}"` : ''} multiple hidden data-att-input="${area.id}">${inner}</label>`;
     return `<button class="${cls}" ${c.add} title="Add a ${esc(c.l.toLowerCase())}">${inner}</button>`;
@@ -8078,6 +8079,53 @@ function openAreaCover() {
   });
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
+}
+// Connect an EXISTING thing to a ledger: clicking a connector tile opens this -
+// search your pages/tasks/contacts/goals first, attach one, or make a new one.
+// (Robin: first option should be search, not add new.)
+function openAreaConnect(kind) {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  const LABEL = { note: 'page', task: 'task', contact: 'contact', goal: 'goal' };
+  const ICO = { note: '▤', task: '✓', contact: '👤', goal: '🎯' };
+  if (kind === 'contact' && state.contacts === undefined) loadContacts().then(() => { if (document.getElementById('aconn-list')) document.getElementById('aconn-list').innerHTML = rowsHtml(); }).catch(() => {});
+  const collect = () => {
+    let list = [];
+    if (kind === 'note') list = [...(state.noteTops || []), ...(state.tables || [])];
+    else if (kind === 'task') list = (state.allTasks || state.tasks || []).filter((t) => !(t.props && t.props.done));
+    else if (kind === 'contact') list = state.contacts || [];
+    else if (kind === 'goal') list = (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done');
+    return list.filter((b) => b && !blockAreas(b).includes(area.id));
+  };
+  const rowsHtml = () => {
+    const q = (state._aconnQ || '').trim().toLowerCase();
+    const all = collect();
+    const list = (q ? all.filter((b) => (b.title || '').toLowerCase().includes(q)) : all).slice(0, 14);
+    return list.length ? list.map((b) => `<button class="nconn-item" data-aconn-pick="${b.id}"><span class="sp-ico">${ICO[kind]}</span><span class="sp-t">${esc(b.title || 'Untitled')}</span></button>`).join('') : `<div class="ov-muted" style="padding:8px 2px">${q ? 'No matches.' : `Nothing to connect yet - make a new ${LABEL[kind]} below.`}</div>`;
+  };
+  state._aconnQ = '';
+  const el = uiDialogHost();
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog">
+    <div class="recur-h">Connect a ${LABEL[kind]}</div>
+    <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this ledger')}</b>, or make a new one.</p>
+    <input class="sel nconn-q" data-aconn-q placeholder="Search your ${LABEL[kind]}s…" autocomplete="off">
+    <div class="nconn-list" id="aconn-list" style="margin-top:10px">${rowsHtml()}</div>
+    <div class="ui-dialog-btns"><button class="ui-btn aconn-new" data-aconn-new>＋ New ${LABEL[kind]}</button><button class="ui-btn cancel" data-aconn-cancel>Close</button></div>
+  </div></div>`;
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  document.addEventListener('keydown', onKey, true);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  el.querySelector('[data-aconn-q]').addEventListener('input', (e) => { state._aconnQ = e.target.value; const l = document.getElementById('aconn-list'); if (l) l.innerHTML = rowsHtml(); });
+  el.querySelector('#aconn-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-aconn-pick]'); if (!b) return;
+    const id = b.dataset.aconnPick;
+    addBlockArea(kind, id, area.id);
+    const host = areaHostBlock(kind, id);
+    if (host && state.area_open && !(state.area_open.blocks || []).some((x) => x.id === id)) { state.area_open.blocks = state.area_open.blocks || []; state.area_open.blocks.push(host); }
+    close(); if (state.view.type === 'area') renderArea(); toast('Connected');
+  });
+  el.querySelector('[data-aconn-new]').addEventListener('click', () => { close(); if (kind === 'note') areaAddNote(); else if (kind === 'task') areaAddTask(); else if (kind === 'contact') areaAddContact(); else if (kind === 'goal') newGoal(area.id).catch((x) => toast(x.message)); });
+  setTimeout(() => { const i = el.querySelector('[data-aconn-q]'); if (i) i.focus(); }, 30);
 }
 
 // ── view: calendar ───────────────────────────────────
@@ -18893,6 +18941,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-cover]')) { openAreaCover(); return; }
+  { const ac = t.closest('[data-area-connect]'); if (ac) { openAreaConnect(ac.dataset.areaConnect); return; } }
   if (t.closest('[data-ov-colour-toggle]')) { try { localStorage.setItem('life.ovcolour', localStorage.getItem('life.ovcolour') === '1' ? '0' : '1'); } catch {} renderArea(); return; }
   { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
