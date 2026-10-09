@@ -3482,6 +3482,7 @@ function renderNav() {
   // The mobile nav drawer closes itself the moment you navigate to a new view.
   if (document.body.classList.contains('nav-drawer-open') && ((v && v.type) || '') !== state.__drawerView) closeNavDrawer();
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
+  if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the ledger
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
@@ -7573,6 +7574,12 @@ function renderArea() {
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
   const canEditArea = !area.sharedBy;
+  // "Preview as member": on a ledger you own AND share, you can flip to see what
+  // the people you share with see - the bits you've kept private are dimmed and
+  // stamped "only you". Owner-only, and only worth offering once it's shared. (Robin.)
+  const canPreviewMember = canEditArea && memberCount > 0;
+  const asMember = canPreviewMember && !!(state.area_open && state.area_open.asMember);
+  document.body.classList.toggle('area-as-member', asMember);
   // The overview reads as one open page, not a wall of little boxes: each part is
   // a quiet heading with its real content laid out directly beneath - note and
   // table cards, goal cards, the task table - the same components the focused
@@ -7817,13 +7824,14 @@ function renderArea() {
       </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
         <div class="am-kicker">Ledger</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         ${areaSentimentHtml(area)}
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
+    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this ledger as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
     ${areaVisionGoals}
     ${areaDash}
     ${lToday}
@@ -12448,7 +12456,7 @@ function taskTableHtml(list, emptyMsg) {
   const th = (c, label, cls) => `<th class="${cls || ''} sortable" data-sort="${c}">${label}${arrow(c)}</th>`;
   const rows = sortTasks(list.slice()).map((t) => {
     const a = areaById(t.props.area); const p = t.props.priority;
-    return `<tr class="tr-task ${t.props.done ? 'done' : ''}" style="--h:${hueOf(a)}" data-task-row="${t.id}">
+    return `<tr class="tr-task ${t.props.done ? 'done' : ''}${privCls(t)}" style="--h:${hueOf(a)}" data-task-row="${t.id}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
@@ -12486,7 +12494,7 @@ function tasksViewToggle(scope) {   // scope: 'tasks' | 'area'
 // A kanban board for a set of tasks (open AND done, so the Done column fills).
 function taskKanbanHtml(list) {
   const sorted = sortTasks(list.slice());
-  const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${p}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
+  const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}${privCls(t)}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${p}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
   const cols = KANBAN_COLS.map(([k, label]) => {
     const items = sorted.filter((t) => kanbanColOf(t) === k);
     const shown = k === 'done' ? items.slice(0, 60) : items;   // cap a long Done pile
@@ -19117,6 +19125,7 @@ document.addEventListener('click', (e) => {
   }
   if (t.closest('[data-area-add-contact]')) { areaAddContact(); return; }
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-area-asmember]')) { if (state.area_open) { state.area_open.asMember = !state.area_open.asMember; renderArea(); } return; }
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }

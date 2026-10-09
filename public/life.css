@@ -5348,6 +5348,23 @@ table.ttable tr:last-child td { border-bottom:0; }
 .priv-chip { display:inline-flex; align-items:center; gap:3px; flex:none; margin-left:7px; font-size:11px; font-weight:700; letter-spacing:.02em; padding:2px 8px; border-radius:999px; color:var(--priv); background:color-mix(in srgb,var(--priv) 14%,transparent); border:1px solid color-mix(in srgb,var(--priv) 32%,transparent); white-space:nowrap; vertical-align:middle; }
 .is-private { border-color:color-mix(in srgb,var(--priv) 40%,var(--line)) !important; border-left:3px solid var(--priv) !important; background:color-mix(in srgb,var(--priv) 6%,var(--card)) !important; }
 .is-private:hover { border-color:color-mix(in srgb,var(--priv) 60%,var(--line)) !important; }
+/* A private table row: tint the row and stripe its first cell (a tr can't carry a
+   left border cleanly), without the card border treatment above. */
+tr.tr-task.is-private { background:color-mix(in srgb,var(--priv) 7%,transparent) !important; border-left:0 !important; }
+tr.tr-task.is-private td:first-child { box-shadow:inset 3px 0 0 var(--priv); }
+/* "Preview as member": the eye toggle in the masthead, the banner, and the dimmed
+   state for private items so you see the shared view with your private bits
+   clearly set apart. */
+.area-asmember-btn { flex:none; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:15px; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+.area-asmember-btn:hover { border-color:color-mix(in srgb,var(--priv) 45%,var(--line)); color:var(--priv); }
+.area-asmember-btn.on { background:color-mix(in srgb,var(--priv) 16%,var(--card)); border-color:color-mix(in srgb,var(--priv) 45%,var(--line)); color:var(--priv); }
+.area-preview-bar { display:flex; align-items:center; gap:11px; margin:2px 0 20px; padding:11px 15px; border:1px solid color-mix(in srgb,var(--priv) 35%,var(--line)); border-radius:13px; background:color-mix(in srgb,var(--priv) 9%,var(--card)); color:var(--ink-2); font-size:14px; }
+.area-preview-bar .apb-ic { font-size:17px; flex:none; }
+.area-preview-bar .apb-t { flex:1; min-width:0; line-height:1.45; }
+.area-preview-bar .apb-exit { flex:none; cursor:pointer; font:inherit; font-weight:600; font-size:13px; padding:6px 14px; border-radius:999px; border:1px solid color-mix(in srgb,var(--priv) 40%,var(--line)); background:var(--card); color:var(--priv); }
+.area-preview-bar .apb-exit:hover { background:color-mix(in srgb,var(--priv) 14%,var(--card)); }
+body.area-as-member .is-private { opacity:.5; filter:grayscale(.2); }
+body.area-as-member tr.tr-task.is-private { opacity:.5; }
 .note-lock.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
 
 /* Keyboard shortcuts reference */
