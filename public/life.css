@@ -5172,6 +5172,23 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Members bar: horizontal cards, tap to message; "+N more" expands the list. */
 .mem-row { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
 .note-members { margin-top:22px; }
+/* Opt-in sharing: lock/unlock each tool, choose all members or a few. */
+.area-share-ctl { margin-top:16px; padding-top:15px; border-top:1px solid var(--line); }
+.as-note { margin:0 0 12px; font-size:13.5px; color:var(--ink-3); line-height:1.5; }
+.as-choose { cursor:pointer; font:inherit; font-size:14px; font-weight:600; color:var(--priv,#8a6d3b); padding:9px 15px; border-radius:11px; border:1px solid color-mix(in srgb,var(--priv,#8a6d3b) 35%,var(--line)); background:color-mix(in srgb,var(--priv,#8a6d3b) 8%,var(--card)); }
+.as-choose:hover { background:color-mix(in srgb,var(--priv,#8a6d3b) 15%,var(--card)); }
+.as-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.as-row { display:flex; align-items:center; gap:11px; flex-wrap:wrap; padding:10px 13px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+.as-row.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 30%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 5%,var(--card)); }
+.as-lock { flex:none; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; border:1px solid var(--line); background:var(--paper); font-size:15px; cursor:pointer; transition:border-color .12s, background .12s; }
+.as-row.on .as-lock { border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 12%,var(--card)); }
+.as-sec-ic { flex:none; font-size:14px; color:var(--ink-3); }
+.as-sec-n { font-size:14.5px; font-weight:600; color:var(--ink); }
+.as-mems { display:flex; flex-wrap:wrap; gap:5px; margin-left:auto; }
+.as-mem { min-width:28px; height:28px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:12px; font-weight:700; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+.as-mem.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 50%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--card)); color:var(--ink); }
+.as-shareall { font-size:13px; }
+.as-empty { font-size:13.5px; color:var(--ink-3); font-style:italic; padding:4px 2px; }
 .note-wall { margin-top:20px; }
 .note-wall-h { cursor:pointer; display:flex; align-items:center; gap:8px; }
 .note-wall-ta { min-height:120px; }

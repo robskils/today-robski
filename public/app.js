@@ -7977,7 +7977,63 @@ function areaMembersBody(area) {
   const shown = exp ? cards : cards.slice(0, LIMIT);
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
-  return (ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
+  return `${(ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`}${areaShareControls(area)}`;
+}
+// Opt-in sharing controls (owner-only, once a ledger has members): each tool is
+// locked by default and you unlock it to share, with all members or a chosen few.
+// An 'open' (legacy) ledger shows a switch to start choosing. (Robin: everything
+// locked by default; unlock to share; our views differ by what each unlocks.)
+const SHARE_SECS = [['Pages and tables', (b) => b.kind === 'note' || b.kind === 'table', '▤'], ['Tasks', (b) => b.kind === 'task', '✓'], ['Contacts', (b) => b.kind === 'contact', '👤'], ['Goals', (b) => b.kind === 'goal', '🎯'], ['Saved links', (b) => b.kind === 'bookmark', '🔖'], ['Reflections', (b) => b.kind === 'journal', '✎'], ['Bucket list', (b) => b.kind === 'bucket', '✦']];
+function areaShareControls(area) {
+  if (area.sharedBy) return '';   // only the owner decides what's shared
+  const shares = (state.area_open && state.area_open.shares) || [];
+  if (!shares.length) return '';  // nothing to share until someone has access
+  const p = area.props || {};
+  if (p.shareMode !== 'optin') {
+    return `<div class="area-share-ctl"><p class="as-note">Everyone you share this ledger with sees everything in it.</p><button class="as-choose" data-area-share-optin>🔒 Choose what to share instead</button></div>`;
+  }
+  const blocks = (state.area_open && state.area_open.blocks) || [];
+  const cfg = p.shareSections || {};
+  const rows = SHARE_SECS.filter(([, test]) => blocks.some(test)).map(([name, , ic]) => {
+    const st = cfg[name];
+    const on = st === 'all' || (Array.isArray(st) && st.length);
+    const mems = on ? `<div class="as-mems"><button class="as-mem ${st === 'all' ? 'on' : ''}" data-area-sec-mem="${esc(name)}::all">All</button>${shares.map((s) => `<button class="as-mem ${Array.isArray(st) && st.map(String).includes(String(s.id)) ? 'on' : ''}" data-area-sec-mem="${esc(name)}::${s.id}" title="${esc(s.name || 'Someone')}">${esc(initial(s.name || '?'))}</button>`).join('')}</div>` : '';
+    return `<div class="as-row ${on ? 'on' : ''}"><button class="as-lock" data-area-sec-share="${esc(name)}" title="${on ? 'Shared - tap to lock' : 'Locked - tap to share'}" aria-pressed="${on}">${on ? '🔓' : '🔒'}</button><span class="as-sec-ic">${ic}</span><span class="as-sec-n">${esc(name)}</span>${mems}</div>`;
+  }).join('');
+  return `<div class="area-share-ctl"><p class="as-note">Members see only what you unlock - everything's locked until you choose. Each person's view can differ.</p><div class="as-list">${rows || '<div class="as-empty">Nothing here to share yet.</div>'}</div><button class="ghost as-shareall" data-area-share-open>Share everything instead</button></div>`;
+}
+function patchAreaShare(patch) {
+  const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
+  a.props = a.props || {}; Object.assign(a.props, patch);
+  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((e) => toast(e.message));
+  renderArea();
+}
+// Switch an 'open' ledger to opt-in, pre-filling every present section to 'all'
+// so nothing a member already sees disappears - then the owner locks from there.
+function areaShareStartOptin() {
+  const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
+  const blocks = (state.area_open && state.area_open.blocks) || [];
+  const cfg = {};
+  SHARE_SECS.forEach(([name, test]) => { if (blocks.some(test)) cfg[name] = 'all'; });
+  patchAreaShare({ shareMode: 'optin', shareSections: cfg });
+}
+function areaSecShareToggle(name) {
+  const a = state.area_open && state.area_open.area; if (!a) return;
+  const cfg = { ...((a.props || {}).shareSections || {}) };
+  const st = cfg[name];
+  if (st === 'all' || (Array.isArray(st) && st.length)) delete cfg[name]; else cfg[name] = 'all';
+  patchAreaShare({ shareSections: cfg });
+}
+function areaSecMember(name, who) {
+  const a = state.area_open && state.area_open.area; if (!a) return;
+  const shares = (state.area_open && state.area_open.shares) || [];
+  const cfg = { ...((a.props || {}).shareSections || {}) };
+  if (who === 'all') { cfg[name] = 'all'; patchAreaShare({ shareSections: cfg }); return; }
+  let list = cfg[name] === 'all' ? shares.map((s) => String(s.id)) : (Array.isArray(cfg[name]) ? cfg[name].map(String) : []);
+  list = list.includes(String(who)) ? list.filter((x) => x !== String(who)) : [...list, String(who)];
+  if (!list.length) delete cfg[name];                 // shared with nobody = locked
+  else cfg[name] = (list.length >= shares.length) ? 'all' : list;
+  patchAreaShare({ shareSections: cfg });
 }
 function areaWallBody(area) {
   const wall = (area.props && area.props.wall) || '';
@@ -19141,6 +19197,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
+  if (t.closest('[data-area-share-optin]')) { areaShareStartOptin(); return; }
+  if (t.closest('[data-area-share-open]')) { patchAreaShare({ shareMode: 'open', shareSections: {} }); return; }
+  { const ss = t.closest('[data-area-sec-share]'); if (ss) { areaSecShareToggle(ss.dataset.areaSecShare); return; } }
+  { const sm = t.closest('[data-area-sec-mem]'); if (sm) { const [nm, who] = sm.dataset.areaSecMem.split('::'); areaSecMember(nm, who); return; } }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   if (t.closest('[data-note-wall-toggle]')) { try { localStorage.setItem('life.note.wall', noteWallOpen() ? '0' : '1'); } catch {} renderNote(); return; }
   { const ag = t.closest('[data-area-goto]'); if (ag) { areaGoto(ag.dataset.areaGoto); return; } }
