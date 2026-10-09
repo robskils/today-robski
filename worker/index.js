@@ -2725,19 +2725,29 @@ async function handleLanes(request, env) {
 // Gentle Home alerts: whose birthday is today, and how many P1 tasks are open.
 // Everything scoped to env.uid - never leak across tenants.
 async function homeAlerts(request, env, json) {
-  const mmdd = localParts(new Date(), TZ).date.slice(5, 10);   // MM-DD in Lisbon
   const [cts, tks] = await Promise.all([
     env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all(),
     env.DB.prepare("SELECT id, title, props, created_at FROM blocks WHERE kind='task' AND archived=0 AND user_id=? ORDER BY created_at DESC").bind(env.uid).all(),
   ]);
   const birthdays = [];
   const contacts = new Map();
+  // A week's notice before a birthday (default), so there's time to do something
+  // nice - inDays 0 = today. (Robin.)
+  const [ty, tm, td] = localParts(new Date(), TZ).date.split('-').map(Number);
+  const t0 = Date.UTC(ty, tm - 1, td);
+  const daysUntilBday = (bmmdd) => {
+    const [mm, dd] = bmmdd.split('-').map(Number); if (!mm || !dd) return -1;
+    let diff = Math.round((Date.UTC(ty, mm - 1, dd) - t0) / 86400000);
+    if (diff < 0) diff = Math.round((Date.UTC(ty + 1, mm - 1, dd) - t0) / 86400000);
+    return diff;
+  };
   for (const r of cts.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
     // slice(-5) takes MM-DD from a full date and from a yearless --MM-DD alike.
-    if (p.birthday && String(p.birthday).slice(-5) === mmdd) birthdays.push({ id: r.id, name: r.title || 'A contact' });
+    if (p.birthday) { const inDays = daysUntilBday(String(p.birthday).slice(-5)); if (inDays >= 0 && inDays <= 7) birthdays.push({ id: r.id, name: r.title || 'A contact', inDays }); }
   }
+  birthdays.sort((a, b) => a.inDays - b.inDays);
   const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
   let p1 = 0; let taskOpen = 0; const p1list = []; const surfaced = []; const keepInTouch = [];
   for (const r of tks.results || []) {

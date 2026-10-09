@@ -4006,7 +4006,7 @@ function homeTodayItems() {
   const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
   // Birthdays (from Contacts) whose day is today lead the list, all-day style.
   if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || [])
-    .filter((b) => !alertDismissed('bday:' + b.id))
+    .filter((b) => !alertDismissed('bday:' + b.id) && (b.inDays || 0) === 0)
     .forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
   for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
@@ -5241,11 +5241,13 @@ function renderHome() {
       <button class="ev-x" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me again in a week" aria-label="Snooze ${esc(k.name || '')} reminder for a week">×</button></div>`;
           }).join('') : '';
           const bdays = (off === 0 && alerts.birthdays) ? alerts.birthdays.filter((b) => !alertDismissed('bday:' + b.id)) : [];
-          const kitCount = kit.length + bdays.length;
-          const bdayRows = bdays.map((b) => `<div class="kit-hrow"><button class="kit-hopen" data-open-contact="${b.id}"><span class="contact-av kit-hav">🎂</span><span class="kit-hnm">${esc(b.name)}</span><span class="kit-hsub">Birthday today</span></button></div>`).join('');
+          // Today's birthdays sit in the timeline; the week ahead gets a "Be ready"
+          // line so there's time to do something nice. (Robin.)
+          const bdaySoon = bdays.filter((b) => (b.inDays || 0) >= 1);
+          const bdaySoonHtml = bdaySoon.length ? `<div class="home-beready"><div class="home-sec-h home-beready-h">Be ready</div>${bdaySoon.map((b) => `<div class="ev-row ev-bday ev-click" data-open-contact="${b.id}" role="button" tabindex="0" title="Open ${esc(b.name || '')}"><span class="ev-time">🎂</span><span class="ev-t">${esc(b.name || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`}</span><button class="ev-bday-x" data-alert-x="bday:${b.id}" title="Hide" aria-label="Hide">×</button></div>`).join('')}</div>` : '';
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
-            today: `${off === 0 ? homeMailAlertHtml() + homeReviewDueBanner() + homeDeadlinesHtml() : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
+            today: `${off === 0 ? homeMailAlertHtml() + homeReviewDueBanner() + homeDeadlinesHtml() + bdaySoonHtml : ''}<div class="today-cal">${state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : ((todayRows + kitTodayRows) || `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`)}</div>`,
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No ledgers yet. Create one from Ledgers.</div>',
