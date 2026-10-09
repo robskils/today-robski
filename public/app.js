@@ -6286,9 +6286,8 @@ function renderWellbeing() {
   const recentHtml = items.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent</span></div><div class="wb-recent-list">${recent}</div></section>` : '';
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.reflect'))}
-    <div class="pane-head home-head wb-hub-head"><h1>${t('nav.reflect')}</h1><p class="wb-hub-sub">A quiet corner to reflect, sit, and check in with yourself.</p></div>
+    <div class="pane-head home-head wb-hub-head"><div class="wb-hub-headmain"><h1>${t('nav.reflect')}</h1><p class="wb-hub-sub">A quiet corner to reflect, sit, and check in with yourself.</p></div>${statsHtml}</div>
     ${wbToolTilesHtml({})}
-    ${statsHtml}
     ${spiritPinnedHtml() + reflectPinsHtml()}
     ${recentHtml}`;
 }
