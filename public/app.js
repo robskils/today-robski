@@ -7823,15 +7823,16 @@ function renderArea() {
     const total = Object.values(byDay).reduce((n, a) => n + a.length, 0);
     const rows = days.map((d) => {
       const evs = byDay[d.iso] || [];
-      const chips = evs.length ? evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
-        : '<span class="awk-empty">·</span>';
-      return `<div class="awk-day${d.today ? ' awk-today' : ''}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}</div></div>`;
+      const chips = evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('');
+      // A quiet per-day + (revealed on hover) adds an activity straight onto that
+      // day, pre-filed to this ledger - how a co-parent fills the week in. Empty
+      // read-only days (a member's view) show a faint dot instead. (Robin.)
+      const addDay = canEditArea ? `<button class="awk-dayadd" data-area-day-add="${area.id}::${d.iso}" title="Add an activity on this day" aria-label="Add on this day">＋</button>` : (evs.length ? '' : '<span class="awk-empty">·</span>');
+      return `<div class="awk-day${d.today ? ' awk-today' : ''}${evs.length ? '' : ' awk-day-empty'}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}${addDay}</div></div>`;
     }).join('');
     const bodyInner = !loaded
       ? '<div class="home-empty">Loading the week…</div>'
-      : total
-        ? `<div class="aweek">${rows}</div>`
-        : '<div class="aweek aweek-empty"><div class="awk-note">Nothing in this ledger for the week ahead.</div></div>';
+      : `<div class="aweek">${rows}</div>`;
     const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this ledger">＋</button>` : '';
     return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
       <div class="area-sec-h">
@@ -8137,6 +8138,16 @@ async function areaNewEvent(id) {
   state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = [];
   renderCalendar();
   // Prefill the new event's page with this one (the form reads ce-area).
+  setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
+}
+// Add an event on a specific day from the ledger's Week ahead - seeds the date
+// AND pre-files it to this ledger, so a co-parent fills the week in place.
+async function areaNewEventOnDay(id, iso) {
+  const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
+  await openCalendar(iso);
+  state.cal.selected = iso; const [yy, mm] = iso.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
+  state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = [];
+  renderCalendar();
   setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
 }
 async function areaAddTask() {
@@ -19245,6 +19256,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-goal]')) { const a = state.area_open && state.area_open.area; if (a) newGoal(a.id).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-asmember]')) { if (state.area_open) { state.area_open.asMember = !state.area_open.asMember; renderArea(); } return; }
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
+  { const ada = t.closest('[data-area-day-add]'); if (ada) { const [aid, iso] = ada.dataset.areaDayAdd.split('::'); areaNewEventOnDay(aid, iso); return; } }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
