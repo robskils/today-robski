@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Pages'], ['reflect', 'Well-being'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Ledgers'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Pages'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Ledgers'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,8 +35,8 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Pages', 'nav.areas': 'Ledgers', 'nav.reflect': 'Well-being', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Well-being', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Pages', 'nav.areas': 'Ledgers', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Reflection', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
@@ -57,8 +57,8 @@ const T_EN = {
   'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected pages', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Pages wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search pages…', 'notes.newnote': '+ New page', 'filter.allareas': 'All Ledgers', 'notes.type.all': 'All', 'notes.type.note': 'Pages', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Ledger', 'palette.search': 'Search pages, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Páginas', 'nav.areas': 'Ledgers', 'nav.reflect': 'Bem-estar', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Bem-estar', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Páginas', 'nav.areas': 'Ledgers', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Reflexão', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
@@ -760,8 +760,8 @@ const HELP = {
       <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
       </ul>
       <p>Make a page or table straight from a ledger, or tag an existing one to it. Rename, recolour, share or add ledgers whenever you like - the whole app follows.</p>` },
-  reflect: { title: 'Well-being', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
-    body: `<p><b>Well-being</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
+  reflect: { title: 'Reflection', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
+    body: `<p><b>Reflection</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
       <ul>
       <li><b>Journal</b> - free-write or start from a prompt. <b>Morning Pages</b> (three stream-of-consciousness pages first thing) is one of the start options. <b>Dig deeper</b> asks one thoughtful follow-up question; <b>Empathy</b> offers a warm reflection; and you can <b>dictate</b> an entry by voice.</li>
       <li><b>Coaching</b> - a running coaching conversation that builds over a session; past sessions are listed to read back.</li>
@@ -781,7 +781,7 @@ const HELP = {
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
-      <p>(The <b>meditation</b> timer now lives in <b>Well-being</b> as its own page.)</p>` },
+      <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
   friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
     body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
       <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
@@ -815,7 +815,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Well-being coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Daybook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Daybook reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
@@ -2493,7 +2493,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
 const AI_USES = [
-  ['wellbeing', 'Well-being companion', 'gentle coaching, a "Dig deeper" question while you journal, and dream reflections', 'Claude'],
+  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, and dream reflections', 'Claude'],
   ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'Claude'],
   ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'Claude'],
   ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
@@ -2707,7 +2707,7 @@ function renderSettings() {
           <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
           <div class="plan-price">Free &amp; Premium</div>
           <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
-          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Well-being &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
+          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflection &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
           <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
           ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', a.aiGeminiSet, 'AIza…')}
           <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
@@ -3420,8 +3420,8 @@ function navGridHtml(v) {
   // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
   // Home quick buttons; Today drops into the Daily group below.
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
-    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
+    ${grp(t('nav.grp.main'), [NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved])}
+    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices, NI.discover])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching, NI.insights])}
@@ -5051,7 +5051,7 @@ function homeDiscoverHtml() {
     modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
     modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
     modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
-    modOn('reflect') ? ['✎', 'Well-being', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
+    modOn('reflect') ? ['✎', 'Reflection', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
   ].filter(Boolean);
   if (!feats.length) return '';
   let hidden = false, open = true;
@@ -17499,7 +17499,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Home', run: () => openHome() },
   { kind: 'action', title: 'Go to Notes', run: () => openNotesList() },
   { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
-  { kind: 'action', title: 'Go to Well-being', run: () => openJournal() },
+  { kind: 'action', title: 'Go to Reflection', run: () => openJournal() },
   { kind: 'action', title: 'Go to Coaching', run: () => openJournal() },
   { kind: 'action', title: 'Go to Practices', run: () => openTracker() },
   { kind: 'action', title: 'Go to Tracker', run: () => openTracker() },
@@ -21606,7 +21606,7 @@ function onbAi() {
     <p class="onb-p">Daybook has a few AI helpers. Bring your own key and you stay in control of the cost - or skip and add one later in Settings.</p>
     ${aiUsesHtml()}
     <div class="onb-provs">
-      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Well-being coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
+      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
       ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
     </div>
     <div class="ai-managed">Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
