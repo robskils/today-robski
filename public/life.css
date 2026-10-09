@@ -4706,10 +4706,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .today-nav-btn { height:26px; padding:0 10px; font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); }
 .today-nav-arw:hover, .today-nav-btn:hover { border-color:var(--accent); color:var(--accent); }
 .today-cal { display:flex; flex-direction:column; gap:1px; }
-/* "Be ready" - birthdays a week out etc., a quiet anticipatory strip. (Robin.) */
-.home-beready { margin:0 0 12px; }
-.home-beready-h { margin-bottom:4px; }
-.home-beready .ev-bday { border-radius:10px; }
+/* The Today feed's groups: Be ready / the agenda / A gentle nudge. Quiet Fell
+   labels; the rows keep their existing render. (Robin: Today as a life-log.) */
+.feed-grp { margin:0 0 14px; }
+.feed-grp-h { font-family:'IM Fell English SC',Georgia,serif; font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-3); margin-bottom:6px; }
+.feed-grp .ev-row { border-radius:10px; }
+.feed-beready .ev-surfaced, .feed-gentle .ev-surfaced { color:color-mix(in srgb,var(--oxblood,#7a2b25) 55%,var(--ink-3)); }
 /* Time in its own column; title and location stack in the second column so a
    long title or address never collides with the other. */
 .ev-row { display:grid; grid-template-columns:64px minmax(0,1fr); column-gap:12px; row-gap:2px; align-items:baseline; padding:11px 2px; border-bottom:1px solid var(--line); }
