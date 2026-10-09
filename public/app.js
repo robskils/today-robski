@@ -7443,6 +7443,28 @@ function bdayInDays(bday) {
   if (diff < 0) diff = Math.round((Date.UTC(now.getFullYear() + 1, mm - 1, dd) - t0) / 86400000);
   return diff;
 }
+// The ledger's own week-at-a-glance: this ledger's events for today + the next
+// six days. Built for co-parents and anyone sharing a ledger - both sides see
+// the same key activities. Lazy-loaded once per ledger open, then cached on
+// state.area_open.week; invalidated whenever an event is written. (Robin.)
+function loadAreaWeek(areaId) {
+  const st = state.area_open; if (!st || String(st.area.id) !== String(areaId)) return;
+  if (st.week && String(st.week.for) === String(areaId)) return;   // loaded or loading
+  st.week = { for: areaId, loading: true, events: [] };
+  const from = todayISO(), to = addDayISO(todayISO(), 7);   // today .. a week today (inclusive)
+  api(`/api/calendar?from=${from}&to=${to}`).then((r) => {
+    if (!state.area_open || String(state.area_open.area.id) !== String(areaId)) return;
+    const evs = (r.events || []).filter((e) => e && e.date && String(e.area) === String(areaId));
+    state.area_open.week = { for: areaId, loading: false, events: evs };
+    if (state.view.type === 'area') renderArea();
+  }).catch(() => {
+    if (state.area_open && String(state.area_open.area.id) === String(areaId)) {
+      state.area_open.week = { for: areaId, loading: false, events: [], error: true };
+      if (state.view.type === 'area') renderArea();
+    }
+  });
+}
+function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null; }
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -7698,6 +7720,46 @@ function renderArea() {
       ${doNext ? `<div class="feed-grp"><div class="feed-grp-h">Do next here</div><div class="today-cal">${doNext}</div></div>` : ''}
     </section>`;
   })();
+  // Week ahead: this ledger's key activities across today + the next six days,
+  // laid out as a seven-day planner. Clear for co-parents - both see the same
+  // week. Collapsible + hideable like every other ledger section. (Robin.)
+  const areaWeek = (() => {
+    if (secHidden('Week')) return '';
+    const open = areaSecOpen('Week');
+    if (!state.area_open.week || String(state.area_open.week.for) !== String(area.id)) loadAreaWeek(area.id);
+    const wk = state.area_open.week;
+    // Today through a week today (8 cells), so a co-parent sees the matching day
+    // next week - the natural bracket for "who has them next <weekday>". (Robin.)
+    const t0 = todayISO(); const [ty, tm, td] = t0.split('-').map(Number);
+    const days = Array.from({ length: 8 }, (_, i) => { const x = new Date(ty, tm - 1, td + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), dow: DOW3[x.getDay()], today: di === t0 }; });
+    const byDay = {};
+    const loaded = wk && String(wk.for) === String(area.id) && !wk.loading;
+    if (loaded) {
+      for (const e of (wk.events || [])) {
+        if (e.allDay) { const end = e.end_date && e.end_date > e.date ? e.end_date : addDayISO(e.date); for (let d = e.date; d < end; d = addDayISO(d)) (byDay[d] = byDay[d] || []).push(e); }
+        else (byDay[e.date] = byDay[e.date] || []).push(e);
+      }
+      for (const d in byDay) byDay[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
+    }
+    const total = Object.values(byDay).reduce((n, a) => n + a.length, 0);
+    const rows = days.map((d) => {
+      const evs = byDay[d.iso] || [];
+      const chips = evs.length ? evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('')
+        : '<span class="awk-empty">·</span>';
+      return `<div class="awk-day${d.today ? ' awk-today' : ''}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}</div></div>`;
+    }).join('');
+    const bodyInner = !loaded
+      ? '<div class="home-empty">Loading the week…</div>'
+      : `<div class="aweek">${rows}</div>${!total ? '<div class="awk-note">Nothing in this ledger for the week ahead.</div>' : ''}`;
+    const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this ledger">＋</button>` : '';
+    return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
+      <div class="area-sec-h">
+        <button class="ash-toggle" data-area-sec="Week" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">◑</span><span class="ash-l">Week ahead</span>${total ? `<span class="ash-c">${total}</span>` : ''}</button>
+        ${addBtn}
+      </div>
+      ${open ? `<div class="area-sec-body">${bodyInner}</div>` : ''}
+    </section>`;
+  })();
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
@@ -7717,6 +7779,7 @@ function renderArea() {
     </header>
     ${areaDash}
     ${lToday}
+    ${areaWeek}
     ${areaTilesHtml}`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
@@ -7755,8 +7818,8 @@ function areaOverviewHtml(area, c, blocks) {
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
-  const SEC_LABELS = { 'Shared with': 'Who has access', Sentiment: 'Well-being score' };
+  const AREA_SECS = ['Vision', 'Goals', 'Week', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
+  const SEC_LABELS = { 'Shared with': 'Who has access', Sentiment: 'Well-being score', Week: 'Week ahead' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections</span></div>
@@ -8833,6 +8896,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
       }
     }
     state.cal.draftNotes = [];
+    invalidateAreaWeek();   // a ledger's week-at-a-glance must pick up the change
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
@@ -8919,6 +8983,7 @@ async function calDeleteEvent(id) {
   try {
     await api(`/api/events/${id}${scope !== 'single' ? `?scope=${scope}` : ''}`, { method: 'DELETE' });
     toast(scope === 'future' ? 'This and following removed' : scope === 'all' ? 'Whole series removed' : 'Event deleted');
+    invalidateAreaWeek();
     state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; await loadCalendar();
   } catch (e) { toast(e.message); }
 }

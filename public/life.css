@@ -4939,6 +4939,32 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-sec.mdragging .area-sec-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
 .area-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
 .area-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
+/* Week ahead: a ledger's seven-day planner. Co-parent clear - both sides read
+   the same week at a glance. Stacked day rows work the same on phone and
+   desktop; today is marked in the ledger's own hue. */
+.area-weeksec { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.area-weeksec .awk-add { margin-left:auto; flex:none; }
+.aweek { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden; }
+.awk-day { display:grid; grid-template-columns:54px 1fr; align-items:stretch; gap:12px; padding:9px 13px 9px 11px; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); }
+.awk-day:first-child { border-top:0; }
+.awk-today { background:color-mix(in srgb,var(--c) 9%,transparent); box-shadow:inset 3px 0 0 var(--c); }
+.awk-date { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding-top:1px; }
+.awk-dow { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); }
+.awk-today .awk-dow { color:color-mix(in srgb,var(--c) 60%,var(--ink-2)); }
+.awk-num { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-weight:600; line-height:1; color:var(--ink); font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1,'tnum' 1; }
+.awk-today .awk-num { color:color-mix(in srgb,var(--c) 72%,var(--ink)); }
+.awk-evs { display:flex; flex-direction:column; justify-content:center; gap:5px; min-width:0; }
+.awk-ev { display:flex; align-items:baseline; gap:9px; width:100%; text-align:left; padding:6px 10px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:9px; background:color-mix(in srgb,var(--c) 5%,var(--card)); color:var(--ink); cursor:pointer; min-width:0; transition:border-color .12s, transform .08s, background .12s; }
+.awk-ev:hover { transform:translateY(-1px); border-color:color-mix(in srgb,var(--c) 45%,var(--line)); background:color-mix(in srgb,var(--c) 11%,var(--card)); }
+.awk-t2 { flex:none; font-size:12.5px; font-weight:700; color:color-mix(in srgb,var(--c) 60%,var(--ink-2)); font-variant-numeric:tabular-nums; }
+.awk-ttl { flex:1; min-width:0; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.awk-loc { flex:none; max-width:40%; font-size:12px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.awk-loc::before { content:'· '; }
+.awk-allday { border-left-style:solid; background:color-mix(in srgb,var(--c) 10%,var(--card)); }
+.awk-allday .awk-ttl { font-weight:600; }
+.awk-feed { border-left-style:dashed; background:transparent; opacity:.82; }
+.awk-empty { color:var(--ink-3); opacity:.5; font-size:15px; padding-left:2px; }
+.awk-note { margin-top:9px; font-size:13.5px; font-style:italic; color:var(--ink-3); }
 .area-vision-edit { width:100%; box-sizing:border-box; border:1px solid var(--line); background:var(--card); resize:none; overflow:hidden; padding:12px 14px; font:inherit; font-size:15.5px; line-height:1.6; color:var(--ink); min-height:82px; border-radius:12px; box-shadow:var(--shadow); }
 .area-vision-edit:focus { outline:none; border-color:color-mix(in srgb,var(--c) 55%,var(--line)); }
 .area-vision-edit::placeholder { color:var(--ink-3); font-style:italic; }
