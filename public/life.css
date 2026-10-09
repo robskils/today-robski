@@ -7069,24 +7069,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cal-head h1 { font-size:clamp(26px,4vw,38px); }
 .cal-yr { color:var(--ink-3); font-weight:400; }
 .cal-nav { display:flex; gap:8px; flex-wrap:wrap; }
-/* Keep the month + view + Today/‹›/⚙ row in view while the calendar scrolls. It
-   becomes this page's sticky bar, so the (redundant) breadcrumb above just
-   scrolls away. */
-/* On desktop the cal-head becomes the single sticky bar, so the breadcrumb
-   reverts to plain inline. On mobile the shared crumbbar rule keeps it sticky. */
-@media (min-width:821px){
-  body[data-view="calendar"] .crumbbar, body[data-view="calendar"] .note-crumbs {
-    position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0;
-  }
-}
-@media (min-width:821px){
-  .cal-head {
-    position:sticky; top:44px; z-index:21;
-    margin:0 calc(-1 * clamp(20px,4vw,52px)) 18px; padding:11px clamp(20px,4vw,52px) 12px;
-    background:color-mix(in srgb,var(--paper) 92%,transparent); backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--line);
-  }
-}
+/* Calendar follows the universal rule: the breadcrumb is the pinned anchor under
+   the tabs (via the shared .crumbbar rule), never floating free; the cal-head
+   (title + Day/Month) scrolls with the page, like every other page's header.
+   (Robin: the breadcrumb must never move - it's the anchor.) */
 @media (max-width:820px){
   /* The week title + mode/nav buttons scroll away with the page; only the day
      agenda header (the day + "+ Event") pins, just under the breadcrumb, so the
