@@ -7598,6 +7598,7 @@ function renderArea() {
     { ic: '☾', l: 'Dream', n: dreamN, go: 'Reflections', add: 'data-area-add-dream' },
     { ic: '📖', l: 'Book', n: bookN, go: 'Saved links', add: 'data-area-add-book' },
     { ic: '🎬', l: 'Film', n: filmN, go: 'Saved links', add: 'data-area-add-film' },
+    { ic: '✉', l: 'Email', n: emails.length, go: 'Emails', add: 'data-open-mail' },
   ];
   const connCard = (c) => {
     const has = c.n > 0;
