@@ -5680,8 +5680,36 @@ function renderSpirit() {
 function spiritActionsHtml() {
   const c = state.spirit && state.spirit.card;
   if (!c) return '';
-  if (state.spirit.saved) return `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>`;
-  return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
+  const base = state.spirit.saved ? `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>` : `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
+  return base + reflLedgerSelect('spirit');
+}
+// "Save to a Ledger": a reading (I Ching cast, spirit card) can be kept as a
+// reflection filed in a ledger, where it joins that ledger's Reflections and can
+// be revisited in context. A quiet ledger picker; choosing one files it. (Robin.)
+function reflLedgerSelect(kind) {
+  const areas = (state.areas || []).filter((a) => !a.sharedBy);
+  if (!areas.length) return '';
+  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a ledger"><option value="">✦ Save to a Ledger…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+}
+async function saveReadingToLedger(kind, areaId) {
+  if (!areaId) return;
+  const area = areaById(areaId);
+  let title = '', body = '', mode = '';
+  if (kind === 'iching') {
+    const s = state.iching; if (!s || !s.hex) return;
+    mode = 'iching';
+    title = `I Ching · ${(s.hex.cn ? s.hex.cn + ' ' : '')}${s.hex.name || 'Reading'}`.trim();
+    body = `<p><b>${esc((s.hex.cn || '') + ' ' + (s.hex.name || ''))}</b>${s.hex.text ? ` - ${esc(s.hex.text)}` : ''}</p>${s.q ? `<p><i>Question: ${esc(s.q)}</i></p>` : ''}${s.reflection ? `<p>${esc(s.reflection)}</p>` : ''}`;
+  } else if (kind === 'spirit') {
+    const c = state.spirit && state.spirit.card; if (!c) return;
+    mode = 'spirit';
+    title = `Spirit card · ${c[0] || 'Card'}`;
+    body = `<p>${esc((c[1] || '✦') + ' ')}<b>${esc(c[0] || '')}</b></p>${c[2] ? `<p>${esc(c[2])}</p>` : ''}`;
+  } else return;
+  try {
+    await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title, body, props: { date: new Date().toISOString(), mode, area: areaId, areas: [areaId] } }) });
+    toast(`Saved to ${area ? area.title : 'ledger'} ✓`);
+  } catch (e) { toast(e.message); }
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 // Short date for the reflection history stacks (I Ching, spirit cards) - matches
@@ -5905,6 +5933,7 @@ function renderIChing() {
         ${(s.q && aiClientOn()) ? `<button class="ic-btn" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? '✦ Reflecting…' : (s.reflection ? '✦ Reflect again' : '✦ Reflect on my question')}</button>` : ''}
         ${s.saved ? '<span class="ic-saved">✓ Saved to your readings</span>' : '<button class="ic-btn ic-btn-primary" data-iching-save>✓ Save this reading</button>'}
         <button class="ic-btn" data-iching-cast>↻ Cast again</button>
+        ${reflLedgerSelect('iching')}
       </div>
     </div>`;
   }
@@ -19695,6 +19724,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
   if (e.target.matches('[data-task-kanban]')) setTaskKanban(e.target.dataset.taskKanban, e.target.value);
+  if (e.target.matches('[data-refl-save]')) { const v = e.target.value; e.target.value = ''; if (v) saveReadingToLedger(e.target.dataset.reflSave, v); }
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.id === 'taskcard-due' && state.task_open) patchTaskProps(state.task_open.task.id, { due: e.target.value || null });
