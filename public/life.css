@@ -195,7 +195,7 @@ button { cursor:pointer; background:none; border:0; }
 .kcol-c { font-variant-numeric:tabular-nums; }
 .kcol-body { display:flex; flex-direction:column; gap:10px; min-height:40px; flex:1; }
 .kcol-empty { color:var(--ink-3); font-size:13px; text-align:center; padding:16px 6px; border:1px dashed var(--line-2); border-radius:10px; opacity:.6; }
-.ktask { --h:220; display:flex; align-items:flex-start; gap:9px; background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h) var(--lane-s) var(--lane-l)); border-radius:13px; padding:14px 15px; box-shadow:var(--shadow-sm); cursor:grab; }
+.ktask { --h:220; display:flex; align-items:flex-start; gap:9px; background:var(--card); border:1px solid var(--line); border-left:3px solid hsl(var(--h) var(--lane-s) var(--lane-l)); border-radius:13px; padding:19px 15px; box-shadow:var(--shadow-sm); cursor:grab; }
 .ktask.dragging { opacity:.4; }
 .ktask.done { opacity:.62; }
 .ktask.done .kt-t { text-decoration:line-through; }
