@@ -5180,10 +5180,10 @@ function renderHome() {
     ? `<div class="recent-list">${recentShown.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>${recents.length > 10 ? `<button class="p1-all" data-recent-more>${(state.home && state.home.recentAll) ? 'Show fewer' : `See all ${recents.length}`} →</button>` : ''}`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
   $('#pane').innerHTML = `
+    <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
     <div class="home">
       <div class="home-top">
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
-      <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
       <div class="home-head">
         <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
       </div>
@@ -5664,11 +5664,24 @@ function spiritActionsHtml() {
   return `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
+// Short date for the reflection history stacks (I Ching, spirit cards) - matches
+// the Insights list's date format so the cards stack and read identically. (Robin.)
+const reflWhen = (at) => { try { return new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
+// The cards you've taken, as a persistent stack you can come back to and reopen
+// - the same robust, revisitable card list as Insights (not a tucked-away
+// collapsible). Each reopens the card face-up; the × removes it. (Robin.)
 function spiritHistoryHtml() {
   const h = state.spiritHistory || [];
   if (!h.length) return '';
-  const rows = h.slice(0, 40).map((x, i) => `<button class="spirit-hrow spirit-hrow-btn" data-spirit-open-hist="${i}" title="Open this card"><span class="sh-sym">${esc(x.symbol || '✦')}</span><span class="sh-body"><span class="sh-name">${esc(x.name)}</span>${x.message ? `<span class="sh-msg">${esc(x.message)}</span>` : ''}</span><span class="sh-when">${esc(spiritWhen(x.at))}</span></button>`).join('');
-  return `<details class="spirit-hist"><summary>Cards you've taken · ${h.length}</summary><div class="spirit-hlist">${rows}</div></details>`;
+  const curAt = state.spirit && state.spirit.at;
+  const rows = h.slice(0, 80).map((x, i) => `<button class="j-ins-item jrs-item ${curAt && x.at === curAt ? 'on' : ''}" data-spirit-open-hist="${i}" title="Open this card"><span class="j-ins-item-date">${esc(reflWhen(x.at))}</span><span class="j-ins-item-snip"><span class="jrs-sym">${esc(x.symbol || '✦')}</span> <span class="jrs-nm">${esc(x.name)}</span>${x.message ? ` · ${esc(x.message)}` : ''}</span><span class="j-ins-del" data-del-spirit-hist="${i}" title="Remove this card">×</span></button>`).join('');
+  return `<div class="j-ins-list jrs-list"><div class="j-ins-list-h">Cards you've taken · ${h.length}</div>${rows}</div>`;
+}
+function delSpiritHist(i) {
+  const h = state.spiritHistory || []; if (!h[i]) return;
+  h.splice(i, 1); state.spiritHistory = h;
+  api('/api/kv/spirit_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(h) }) }).catch(() => {});
+  renderSpirit();
 }
 function saveDrawnSpirit() {
   const c = state.spirit && state.spirit.card; if (!c) return;
@@ -5727,9 +5740,9 @@ async function openSpiritCards() {
 // Reopen a card from the "Cards you've taken" history - show it face-up again.
 function openSpiritHist(i) {
   const x = (state.spiritHistory || [])[i]; if (!x) return;
-  state.spirit = { card: [x.name, x.symbol, x.message], saved: true };
+  state.spirit = { card: [x.name, x.symbol, x.message], saved: true, at: x.at };
   if (state.view && state.view.type === 'spirit') renderSpirit();
-  else openSpiritCards().then(() => { state.spirit = { card: [x.name, x.symbol, x.message], saved: true }; renderSpirit(); });
+  else openSpiritCards().then(() => { state.spirit = { card: [x.name, x.symbol, x.message], saved: true, at: x.at }; renderSpirit(); });
 }
 function drawSpiritCard() {
   const prev = state.spirit && state.spirit.card;
@@ -5881,22 +5894,35 @@ function renderIChing() {
     ${wbToolTilesHtml({ sel: 'iching' })}
     <div class="ic-sheet ic-page">${body}${icHistoryHtml()}</div>`;
 }
+// Past readings as a persistent, revisitable stack - the same robust card list
+// as Insights, not a collapsed drawer. Readings cast since we began storing the
+// lines reopen in full; older rows (no lines) stay as a record you can still
+// remove. The × removes a reading. (Robin.)
 function icHistoryHtml() {
   const h = state.ichingHistory || [];
   if (!h.length) return '';
-  return `<details class="ic-hist"><summary>Past readings · ${h.length}</summary><div class="ic-hlist">${icHistRows(h)}</div></details>`;
-}
-function icHistRows(h) {
-  // Readings cast since we started storing the lines can be reopened in full;
-  // older rows (no lines saved) stay as a plain record.
-  return h.slice(0, 40).map((x, i) => {
-    const inner = `<span class="ic-hcn">${esc(x.cn || '')}</span><span class="ic-hbody"><span class="ic-hname">${esc(x.name)}${x.toName ? ` → ${esc(x.toName)}` : ''}</span>${x.q ? `<span class="ic-hq">"${esc(x.q)}"</span>` : ''}</span><span class="ic-hwhen">${esc(spiritWhen(x.at))}</span>`;
-    return (x.lines && x.lines.length) ? `<button class="ic-hrow ic-hrow-btn" data-iching-open-hist="${i}" title="Open this reading">${inner}</button>` : `<div class="ic-hrow">${inner}</div>`;
+  const curAt = state.iching && state.iching.at;
+  const rows = h.slice(0, 80).map((x, i) => {
+    const title = `${x.cn ? esc(x.cn) + ' ' : ''}${esc(x.name || 'Reading')}${x.toName ? ` → ${esc(x.toName)}` : ''}`;
+    const snip = `<span class="jrs-nm">${title}</span>${x.q ? ` · "${esc(x.q)}"` : ''}`;
+    const open = x.lines && x.lines.length;
+    const del = `<span class="j-ins-del" data-del-iching-hist="${i}" title="Remove this reading">×</span>`;
+    const body = `<span class="j-ins-item-date">${esc(reflWhen(x.at))}</span><span class="j-ins-item-snip">${snip}</span>${del}`;
+    return open
+      ? `<button class="j-ins-item jrs-item ${curAt && x.at === curAt ? 'on' : ''}" data-iching-open-hist="${i}" title="Open this reading">${body}</button>`
+      : `<div class="j-ins-item jrs-item jrs-static">${body}</div>`;
   }).join('');
+  return `<div class="j-ins-list jrs-list"><div class="j-ins-list-h">Past readings · ${h.length}</div>${rows}</div>`;
+}
+function delIchingHist(i) {
+  const h = state.ichingHistory || []; if (!h[i]) return;
+  h.splice(i, 1); state.ichingHistory = h;
+  api('/api/kv/iching_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(h) }) }).catch(() => {});
+  renderIChing();
 }
 async function openIChing(reading) {
   // Reopen a pinned reading (from the Well-being / Home tile), or a fresh cast.
-  if (reading && reading.lines) { const hex = icHexFor(reading.lines, false); state.iching = { q: reading.q || '', lines: reading.lines, hex, saved: true, reflection: reading.reflection || '' }; }
+  if (reading && reading.lines) { const hex = icHexFor(reading.lines, false); state.iching = { q: reading.q || '', lines: reading.lines, hex, saved: true, reflection: reading.reflection || '', at: reading.at }; }
   else state.iching = state.iching || { q: '' };
   state.view = { type: 'iching' };
   renderNav();
@@ -7465,6 +7491,13 @@ function loadAreaWeek(areaId) {
   });
 }
 function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null; }
+// "Private" means: you see it on the Ledger, nobody you share with does. Make
+// that obvious wherever a block shows - a labelled chip (not a bare padlock) and
+// a distinct card treatment (is-private: dashed edge + faint wash), on anything:
+// note, task, contact, goal, saved link, reflection. (Robin.)
+const isPrivateBlock = (b) => !!(b && b.props && b.props.private);
+const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Ledger">🔒 Private</span>' : '';
+const privCls = (b) => isPrivateBlock(b) ? ' is-private' : '';
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -19117,6 +19150,7 @@ document.addEventListener('click', (e) => {
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
   { const as = t.closest('[data-admin-status]'); if (as) { setUserStatus(as.dataset.adminStatus, as.dataset.status); return; } }
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
+  { const dsh = t.closest('[data-del-spirit-hist]'); if (dsh) { delSpiritHist(Number(dsh.dataset.delSpiritHist)); return; } }
   { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-save]')) { saveDrawnSpirit(); return; }
@@ -19124,6 +19158,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-close]') || (t.classList && t.classList.contains('spirit-bg'))) { closeSpirit(); return; }
   if (t.closest('[data-open-iching]')) { openIChing(); return; }
   if (t.closest('[data-iching-reopen]')) { openIChing(currentIching()); return; }
+  { const dih = t.closest('[data-del-iching-hist]'); if (dih) { delIchingHist(Number(dih.dataset.delIchingHist)); return; } }
   { const ih = t.closest('[data-iching-open-hist]'); if (ih) { const r = (state.ichingHistory || [])[Number(ih.dataset.ichingOpenHist)]; if (r && r.lines) openIChing(r); return; } }
   if (t.closest('[data-iching-dismiss]')) { dismissIching(); return; }
   if (t.closest('[data-iching-cast]')) { castIChing(); return; }
