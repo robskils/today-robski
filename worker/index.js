@@ -1941,11 +1941,16 @@ async function createBlock(request, env) {
     position = row.p;
   }
 
+  // New ledgers are private by default: nothing is shared with members until the
+  // owner unlocks a function in settings (opt-in). Existing ledgers are untouched
+  // (no shareMode = legacy 'open'). (Robin: by default all private unless shared.)
+  let props = b.props || null;
+  if (kind === 'area') { props = props || {}; if (props.shareMode === undefined) props.shareMode = 'optin'; }
   await env.DB.prepare(
     `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
   ).bind(id, kind, parent, position, b.title ?? null, b.body ?? null,
-    b.props ? JSON.stringify(b.props) : null, now, now, env.uid).run();
+    props ? JSON.stringify(props) : null, now, now, env.uid).run();
 
   if (Array.isArray(b.links)) {
     for (const to of b.links) {

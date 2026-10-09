@@ -7906,10 +7906,31 @@ function areaOverviewHtml(area, c, blocks) {
   const AREA_SECS = ['Vision', 'Goals', 'Week', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
   const SEC_LABELS = { 'Shared with': 'Who has access', Sentiment: 'Well-being score', Week: 'Week ahead' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
+  // Robust per-function settings: for each function, switch it on/off AND choose
+  // whether members see it - private by default, shared only when you say. The
+  // private/shared column shows for shareable content once the ledger has members.
+  const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list'];
+  const hasMembers = !!(shares && shares.length);
+  const optin = (area.props || {}).shareMode === 'optin';
+  const scfg = (area.props || {}).shareSections || {};
+  const memChips = (k, st) => `<span class="ovs-mems"><button class="ovs-mem ${st === 'all' ? 'on' : ''}" data-area-sec-mem="${esc(k)}::all">All</button>${(shares || []).map((s) => `<button class="ovs-mem ${Array.isArray(st) && st.map(String).includes(String(s.id)) ? 'on' : ''}" data-area-sec-mem="${esc(k)}::${s.id}" title="${esc(s.name || 'Someone')}">${esc(initial(s.name || '?'))}</button>`).join('')}</span>`;
+  const secRow = (k) => {
+    const on = !hidden.includes(k);
+    let share = '';
+    if (on && SHARE_KEYS.includes(k) && hasMembers) {
+      if (!optin) share = '<span class="ovs-sharenote">shared</span>';
+      else { const st = scfg[k]; const shared = st === 'all' || (Array.isArray(st) && st.length); share = `<button class="ovs-lock ${shared ? 'on' : ''}" data-area-sec-share="${esc(k)}" title="${shared ? 'Shared - tap to keep private' : 'Private - tap to share'}">${shared ? '🔓 Shared' : '🔒 Private'}</button>${shared ? memChips(k, st) : ''}`; }
+    }
+    return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${on ? 'checked' : ''}><span>${esc(SEC_LABELS[k] || k)}</span></label>${share}</div>`;
+  };
+  const shareSwitch = !hasMembers ? '' : (!optin
+    ? `<div class="ovs-switch"><span>This ledger shares everything with members.</span><button class="as-choose" data-area-share-optin>🔒 Make it private by default</button></div>`
+    : `<button class="ghost ovs-shareall" data-area-share-open>Share everything instead</button>`);
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
-      <div class="ov-h"><span>Sections</span></div>
-      <div class="ov-secgrid">${AREA_SECS.map((k) => `<label class="ov-sectog"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hidden.includes(k) ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label>`).join('')}</div>
-      <div class="ov-muted" style="margin-top:8px">Untick to hide a part of this ledger. Empty sections hide themselves.</div>
+      <div class="ov-h"><span>Sections &amp; sharing</span></div>
+      <div class="ov-muted" style="margin-bottom:11px">${hasMembers ? 'Switch a function on or off, and choose whether members see it - everything&rsquo;s private until you share it.' : 'Switch a function on or off. Who-can-see options appear once you invite someone.'}</div>
+      <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
+      ${shareSwitch}
     </div>`;
   // How this area figures in reviews: a "key" star (the wheel average is taken from
   // key areas when you have any), and a switch to keep it out of reviews entirely.
@@ -7949,7 +7970,6 @@ function areaOverviewHtml(area, c, blocks) {
     ${deadlineBlock}
     ${sectionsBlock}
     ${reviewsBlock}
-    <div class="ov-block"><div class="ov-h"><span>Recent activity</span></div><div class="ov-acts">${activity}</div></div>
   </section>`;
 }
 // Members of a page: the people it's shared with, as a horizontal row of
@@ -7997,7 +8017,7 @@ function areaMembersBody(area) {
   const shown = exp ? cards : cards.slice(0, LIMIT);
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
-  return `${(ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`}${areaShareControls(area)}`;
+  return (ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
 }
 // Opt-in sharing controls (owner-only, once a ledger has members): each tool is
 // locked by default and you unlock it to share, with all members or a chosen few.

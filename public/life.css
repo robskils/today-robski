@@ -5169,6 +5169,21 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ov-secgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:6px 14px; }
 .ov-sectog { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:3px 0; }
 .ov-sectog input { width:17px; height:17px; accent-color:var(--accent); flex:none; }
+/* Per-function settings matrix: on/off + private/shared (+ who), one row each. */
+.ov-sections { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.ovs-list { display:flex; flex-direction:column; }
+.ovs-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 0; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); }
+.ovs-row:first-child { border-top:0; }
+.ovs-vis { display:flex; align-items:center; gap:9px; font-size:14.5px; color:var(--ink); cursor:pointer; min-width:150px; flex:1; }
+.ovs-vis input { width:17px; height:17px; accent-color:var(--accent); flex:none; }
+.ovs-lock { flex:none; cursor:pointer; font:inherit; font-size:12.5px; font-weight:600; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); transition:border-color .12s, background .12s, color .12s; }
+.ovs-lock.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 13%,var(--card)); color:var(--ink); }
+.ovs-sharenote { flex:none; font-size:12px; color:var(--ink-3); font-style:italic; }
+.ovs-mems { display:flex; flex-wrap:wrap; gap:5px; }
+.ovs-mem { min-width:27px; height:27px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:12px; font-weight:700; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+.ovs-mem.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 50%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--card)); color:var(--ink); }
+.ovs-switch { display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between; margin-top:13px; padding-top:12px; border-top:1px solid var(--line); font-size:13.5px; color:var(--ink-3); }
+.ovs-shareall { margin-top:12px; font-size:13px; }
 .ov-reviews { margin-top:14px; }
 .ov-revtog { display:flex; align-items:flex-start; gap:10px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:7px 0; line-height:1.45; }
 .ov-revtog input { width:18px; height:18px; accent-color:var(--accent); flex:none; margin-top:1px; }
