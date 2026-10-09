@@ -19493,6 +19493,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
+  if (e.target.matches('[data-task-kanban]')) setTaskKanban(e.target.dataset.taskKanban, e.target.value);
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.id === 'taskcard-due' && state.task_open) patchTaskProps(state.task_open.task.id, { due: e.target.value || null });
@@ -20833,6 +20834,8 @@ function renderTaskCard() {
         ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
       <div class="tf-field"><span class="tf-label">Pages</span>
         ${blockAreasControl('task', t)}</div>
+      <label class="tf-field"><span class="tf-label">Status</span>
+        <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
     </div>
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     <div class="task-boxes">
