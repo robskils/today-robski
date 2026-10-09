@@ -7629,8 +7629,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* A type with content: highlighted in the Page's colour, a count badge, sorted to
    the front; clicking it jumps to that section. (Robin.) */
 .conn-tile { position:relative; }
-.conn-tile.has { border-color:var(--c); background:color-mix(in srgb,var(--c) 10%, var(--card)); }
+/* "In use" reads as clearly ON (Robin thinks of these as on/off toggles): a
+   confident tint, a double keyline in the ledger colour, and a corner tick. */
+.conn-tile.has { border-color:var(--c); background:color-mix(in srgb,var(--c) 15%, var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%, transparent); }
 .conn-tile.has .conn-ic { color:var(--c); }
+.conn-tile.has .conn-l { color:color-mix(in srgb,var(--c) 45%,var(--ink)); font-weight:600; }
+.conn-tile.has::after { content:'✓'; position:absolute; top:7px; left:9px; font-size:10px; font-weight:700; color:var(--c); opacity:.85; }
 .conn-c { position:absolute; top:8px; right:10px; font-size:12.5px; font-weight:700; color:var(--c); line-height:1; }
 .conn-foot { margin-top:14px; display:flex; }
 .conn-hide { margin-left:auto; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; padding:4px 2px; }
