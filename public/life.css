@@ -4935,7 +4935,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ash-toggle { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:none; border:0; padding:0; cursor:pointer; text-align:left; color:inherit; }
 .ash-toggle:hover { color:var(--ink); }
 .ash-ic { flex:none; font-size:15px; line-height:1; color:color-mix(in srgb,var(--c) 72%,var(--ink-3)); }
-.ash-l { font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; color:var(--accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ash-l { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; font-weight:400; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ash-c { flex:none; font-size:12px; font-weight:700; color:var(--ink-2); background:color-mix(in srgb,var(--c) 15%,transparent); padding:1px 8px; border-radius:999px; }
 /* The → opens this section on its own (its focused tile). */
 .ash-open { flex:none; margin-left:auto; background:none; border:0; cursor:pointer; font-size:15px; color:var(--ink-3); padding:2px 4px; border-radius:7px; opacity:0; transition:opacity .14s, color .12s, background .12s; }
@@ -5076,7 +5076,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links, .area-dash-fl > .area-dash-shared { margin-top:0; }
 /* Recently viewed | Do next - two half-width panels sharing a row (stack on a
    narrow screen via the auto-fit grid above). (Robin.) */
-.area-quickrow { margin-top:0; }
+.area-quickrow { margin-top:0; align-items:start; }
 .area-half { margin:0; padding:15px 17px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 .area-half .area-recent-h, .area-half .feed-grp-h { margin-bottom:11px; }
 .area-half .area-rv { gap:8px; }
@@ -7212,8 +7212,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .roll-day-h { display:flex; align-items:baseline; gap:8px; padding:10px 2px; cursor:pointer; }
 .roll-day-date { font-family:'Cormorant Garamond',Georgia,serif; font-size:20px; font-weight:600; color:var(--ink); }
 .roll-day-yr { font-size:13px; color:var(--ink-3); }
-.roll-add { margin-left:auto; align-self:center; color:var(--ink-3); font-size:19px; line-height:1; opacity:0; transition:opacity .12s; }
-.roll-day-h:hover .roll-add { opacity:.7; }
+.roll-add { margin-left:auto; align-self:center; color:var(--ink-3); font-size:19px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
+/* The add-on-this-day + reveals when you hover anywhere on the day card, not just
+   its header line, so every row offers it as you run down the list. (Robin.) */
+.roll-day:hover .roll-add, .roll-day-h:hover .roll-add, .roll-day:focus-within .roll-add { opacity:.75; }
+.roll-day-h:hover .roll-add { opacity:1; color:var(--accent); }
 @media (hover:none){ .roll-add { opacity:.45; } }
 /* Empty days stay slim so the scroll flows day to day without dead space. */
 .roll-empty-day .roll-day-h { padding:6px 2px; }
@@ -7285,6 +7288,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cal-ag-add { flex:none; }
 .cal-ag-eyebrow { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.14em; font-weight:600; color:var(--accent); margin-bottom:1px; }
 .cal-ag-list { display:flex; flex-direction:column; }
+/* The day panel's empty state needs room, not a cramped line jammed under the
+   date. (Robin: padding on the "nothing on this day" message.) */
+.cal-ag-list .home-empty { padding:26px 16px; text-align:center; }
 .cal-ag-row { display:flex; align-items:baseline; gap:16px; width:100%; text-align:left; padding:13px 8px; border-bottom:1px solid var(--line); transition:background .12s; cursor:pointer; }
 .cal-ag-row:hover { background:var(--paper-2); }
 /* A touch of colour in the Day list: the event's life-area as a left stripe, the
@@ -7772,7 +7778,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   border-radius:8px; background:color-mix(in srgb,var(--c) 11%,transparent);
   color:color-mix(in srgb,var(--c) 66%,var(--ink)); font-size:14px;
 }
-.area-sec-h .ash-l { color:color-mix(in srgb,var(--c) 45%,var(--ink-3)); letter-spacing:.1em; }
+.area-sec-h .ash-l { color:var(--ink-3); letter-spacing:.08em; }
 
 /* Tabs become a light segmented control - one unit, not four pills. The track is
    a faint inset that works on either theme; the active pill lifts off it with a

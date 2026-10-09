@@ -7634,7 +7634,7 @@ function renderArea() {
   const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
   // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
   // those two share a row (half each), stacking on a narrow screen.
-  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall" style="--h:${h}"><div class="home-sec-h">Wall</div>${areaWallBody(area)}</section>`;
+  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall" style="--h:${h}">${areaSecH('Wall', 'Wall')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
   // Files & photos and Web links only appear once they hold something - adding is
   // done from the Connections hub below. Each carries an anchor so a populated
   // Connections card can scroll to it.
@@ -7643,7 +7643,7 @@ function renderArea() {
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
   const filesSecRow = filesSec ? `<div class="area-dash-fl">${filesSec}</div>` : '';
-  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}"><div class="home-sec-h">Who has access${memberCount ? ` · ${memberCount + (area.sharedBy ? 0 : 1)}` : ''}</div>${areaMembersBody(area)}</section>`;
+  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Who has access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   // Web links and Who-has-access share a row, half each. (Robin.)
   const linksAccessRow = (linksSec || sharedSec) ? `<div class="area-dash-fl">${linksSec}${sharedSec}</div>` : '';
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
@@ -7769,15 +7769,15 @@ function renderArea() {
     const beReady = dueRow + bdayRows;
     if (!beReady) return '';
     return `<section class="area-today" style="--h:${h}">
-      <div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>
+      <div class="feed-grp feed-beready">${areaSecH('Be ready', 'Be ready')}${areaSecOpen('Be ready') ? beReady : ''}</div>
     </section>`;
   })();
   // "Recently viewed" and "Do next here" sit side by side, half a row each - what
   // you were last in, and what to pick up next. Stacks on a narrow screen. (Robin.)
   const quickRow = (() => {
     const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
-    const rvHalf = rvAreaHtml ? `<section class="area-recent area-half"><div class="area-recent-h">Recently viewed</div><div class="area-rv">${rvAreaHtml}</div></section>` : '';
-    const dnHalf = doNext ? `<section class="feed-grp area-half"><div class="feed-grp-h">Do next here</div><div class="today-cal">${doNext}</div></section>` : '';
+    const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
+    const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Do next here')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
     return (rvHalf || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}${dnHalf}</div>` : '';
   })();
   // Week ahead: this ledger's key activities across today + the next six days,
