@@ -11,7 +11,7 @@
   --shadow:0 1px 2px rgba(27,24,32,.05),0 5px 12px -4px rgba(27,24,32,.09),0 18px 34px -16px rgba(27,24,32,.16);
 }
 :root[data-theme='dark'] {
-  --paper:#131019; --paper-2:#1b1824; --card:#1b1824;
+  --paper:#111327; --paper-2:#1a1c31; --card:#1a1c31;
   --ink:#ece7f2; --ink-2:rgba(236,231,242,.64); --ink-3:rgba(236,231,242,.40);
   --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06);
   --accent:#d4553f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
@@ -33,6 +33,15 @@
   background:
     radial-gradient(140% 120% at 50% -12%, rgba(255,251,240,.55), transparent 56%),
     repeating-linear-gradient(0deg, rgba(120,92,45,.022) 0 2px, transparent 2px 4px),
+    var(--paper);
+}
+/* Dark is a night sky: a soft indigo glow up top + a faint grain, the almanac
+   after dark. Gold accents + Fell labels carry over from the tokens. (Robin.) */
+:root[data-theme='dark'] body {
+  background:
+    radial-gradient(135% 120% at 50% -12%, rgba(132,142,214,.12), transparent 56%),
+    radial-gradient(60% 50% at 82% 8%, rgba(184,148,90,.07), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px),
     var(--paper);
 }
 
@@ -59,8 +68,8 @@ button { cursor:pointer; background:none; border:0; }
   border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20;
   background:color-mix(in srgb,var(--paper) 88%,transparent); backdrop-filter:blur(12px);
 }
-.mark { font-family:'Cormorant Garamond',Georgia,serif; font-size:28px; font-weight:600; white-space:nowrap; }
-.mark em { font-style:italic; color:var(--accent); }
+.mark { font-family:'IM Fell English SC',Georgia,serif; font-size:31px; font-weight:400; letter-spacing:.02em; white-space:nowrap; }
+.mark em { font-style:normal; color:var(--accent); }
 .mark .dot { color:var(--gold); margin:0 4px; }
 .bar-l { flex:none; }
 .search { flex:1; display:flex; justify-content:center; }
@@ -4954,6 +4963,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-stat-btn:hover { border-color:hsl(var(--h,4) 60% 52%); transform:translateY(-1px); }
 .area-stat-btn:active { transform:none; }
 .area-recent-h { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:400; margin-bottom:11px; }
+/* Almanac voice: the main section labels across the app wear the antique Fell
+   small-caps too, so the whole book speaks the same hand. (Robin.) */
+.home-sec-h, .sub-h, .col-h, .ov-h, .goal-group-h, .cts-sec-h, .trk-group-h { font-family:'IM Fell English SC',Georgia,serif; font-weight:400; }
 .area-rv { display:flex; flex-direction:column; gap:9px; }
 .area-rv-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:13px 16px; border:1px solid var(--line); border-radius:13px; background:var(--card); box-shadow:var(--shadow); color:var(--ink); font-size:15.5px; transition:border-color .12s, transform .12s, box-shadow .12s; }
 .area-rv-item:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); box-shadow:0 8px 20px -12px rgba(0,0,0,.34); }
