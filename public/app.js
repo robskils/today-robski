@@ -7701,7 +7701,8 @@ function renderArea() {
   const filesSecRow = filesSec ? `<div class="area-dash-fl">${filesSec}</div>` : '';
   const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Who has access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   // Web links and Who-has-access share a row, half each. (Robin.)
-  const linksAccessRow = (linksSec || sharedSec) ? `<div class="area-dash-fl">${linksSec}${sharedSec}</div>` : '';
+  // Who has access now leads the quick row up top; only Web links remains here.
+  const linksAccessRow = linksSec ? `<div class="area-dash-fl">${linksSec}</div>` : '';
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
   // and sort to the front, and click through to view their section (which surfaces
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
@@ -7834,7 +7835,11 @@ function renderArea() {
     const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
     const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
     const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Do next here')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
-    return (rvHalf || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}${dnHalf}</div>` : '';
+    // Who has access leads the row (where Recently viewed used to sit); Do next
+    // pairs beside it, and Recently viewed drops to the row underneath. (Robin.)
+    const top = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
+    const rvRow = rvHalf ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}</div>` : '';
+    return top + rvRow;
   })();
   // Week ahead: this ledger's key activities across today + the next six days,
   // laid out as a seven-day planner. Clear for co-parents - both see the same
@@ -7887,7 +7892,7 @@ function renderArea() {
         <span class="am-cover-scrim"></span>
         ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change cover</button>` : ''}
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
-      </div>` : `<div class="am-cover am-cover-blank">${canEditArea ? `<button class="am-cover-btn am-cover-btn-blank" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Add a cover</button>` : ''}</div>`}
+      </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
         <div class="am-kicker">Ledger</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
@@ -7959,20 +7964,24 @@ function areaOverviewHtml(area, c, blocks) {
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
   const secRow = (k) => {
     const hiddenK = hidden.includes(k);
-    const shareable = SHARE_KEYS.includes(k) && hasMembers && optin;
+    // Shareable tools get the three-way (active + private/shared) on any opt-in
+    // ledger; who-to-share-with chips appear once there are people. Non-shareable
+    // parts are a plain on/off. (Robin: say if it's active and private or shared.)
+    const shareable = SHARE_KEYS.includes(k) && optin;
     if (!shareable) {
       return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label></div>`;
     }
     const st = scfg[k]; const shared = st === 'all' || (Array.isArray(st) && st.length);
     const state = hiddenK ? 'off' : (shared ? 'shared' : 'me');
-    return `<div class="ovs-row ovs-row-seg"><span class="ovs-name">${esc(SEC_LABELS[k] || k)}</span><div class="ovs-seg">${seg(k, state, 'off', 'Off')}${seg(k, state, 'me', 'Only me')}${seg(k, state, 'shared', 'Shared')}</div>${state === 'shared' ? memChips(k, st) : ''}</div>`;
+    const who = state === 'shared' ? (hasMembers ? memChips(k, st) : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
+    return `<div class="ovs-row ovs-row-seg"><span class="ovs-name">${esc(SEC_LABELS[k] || k)}</span><div class="ovs-seg">${seg(k, state, 'off', 'Off')}${seg(k, state, 'me', 'Only me')}${seg(k, state, 'shared', 'Shared')}</div>${who}</div>`;
   };
-  const shareSwitch = !hasMembers ? '' : (!optin
-    ? `<div class="ovs-switch"><span>This ledger shares everything with members.</span><button class="as-choose" data-area-share-optin>🔒 Make it private by default</button></div>`
-    : `<button class="ghost ovs-shareall" data-area-share-open>Share everything instead</button>`);
+  const shareSwitch = optin
+    ? `<button class="ghost ovs-shareall" data-area-share-open>Share everything instead</button>`
+    : `<div class="ovs-switch"><span>This ledger shares everything with members.</span><button class="as-choose" data-area-share-optin>🔒 Make it private by default</button></div>`;
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
-      <div class="ov-muted" style="margin-bottom:11px">${hasMembers && optin ? 'For each function: <b>Off</b> (neither of you), <b>Only me</b>, or <b>Shared</b> (and with whom). Private until you share it.' : hasMembers ? 'Switch a function on or off. Choose what members see below.' : 'Switch a function on or off. Who-can-see options appear once you invite someone.'}</div>
+      <div class="ov-muted" style="margin-bottom:11px">${optin ? 'For each tool: <b>Off</b>, <b>Only me</b>, or <b>Shared</b> (and with whom). Private until you choose to share it.' : 'Switch a tool on or off. Choose what members see below.'}</div>
       <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
       ${shareSwitch}
     </div>`;
