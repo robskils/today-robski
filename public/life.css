@@ -4994,7 +4994,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* A clean seven-day planner inside the Week-ahead card: a date gutter, then the
    day's events as plain clickable lines (no busy chip-on-row). Rows sit within
    the card's padding - no edge bleed - with a gentle divider between days. */
-.aweek { display:flex; flex-direction:column; margin:0; }
+.aweek { display:flex; flex-direction:column; margin:0; padding:10px 0 12px; }
 .awk-day { display:grid; grid-template-columns:46px 1fr; align-items:center; gap:14px; padding:9px 6px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); min-height:48px; border-radius:10px; }
 .awk-day:first-child { border-top:0; }
 .awk-today { background:color-mix(in srgb,var(--c) 10%,transparent); }
