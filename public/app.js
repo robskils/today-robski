@@ -17692,31 +17692,45 @@ async function disconnectNote(id) {
     toast('Disconnected');
   } catch (e) { toast(e.message); }
 }
-// "Also findable as": extra search terms on a page (props.aliases) so it turns
-// up under names its title doesn't use - another language, an old name, an
-// acronym. The worker's search matches these. Owner-only. (Robin.)
-function noteAliasesControl(n) {
+// "Also findable as": extra search terms on a page, table or task (props.aliases)
+// so it turns up under names its title doesn't use - another language, an old
+// name, an acronym. The worker's search matches these. Owner-only. (Robin.)
+// `kind` ties the control to the block it's shown on, so the same control serves
+// pages, tables and task cards. Its own attributes (data-balias-*) stay distinct
+// from the account email-alias controls (data-alias-*), which share a page.
+function noteAliasesControl(n, kind) {
+  kind = kind || 'note';
   if (n.sharedBy) return '';
   const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases : [];
-  const chips = al.map((a, i) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-alias-del="${i}" title="Remove">×</button></span>`).join('');
-  return `<details class="note-aliases" ${al.length ? 'open' : ''}><summary class="na-sum">🔎 Also findable as${al.length ? ` · ${al.length}` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-alias-add placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
+  const ctx = `${kind}:${n.id}`;
+  const chips = al.map((a, i) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-balias-del="${i}" data-alias-ctx="${ctx}" title="Remove">×</button></span>`).join('');
+  return `<details class="note-aliases" ${al.length ? 'open' : ''}><summary class="na-sum">🔎 Also findable as${al.length ? ` · ${al.length}` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
 }
-async function noteAddAlias(term) {
-  const n = state.note && state.note.current; if (!n || !term) return;
-  n.props = n.props || {};
-  const al = Array.isArray(n.props.aliases) ? n.props.aliases.slice() : [];
+// Resolve an alias control's context ("kind:id") to the live block and the right
+// re-render. Absent/unknown context falls back to the open page, so legacy callers
+// and any stray chip still work.
+function aliasCtx(ctx) {
+  const kind = (ctx || '').split(':')[0];
+  if (kind === 'table') return { b: state.tables_open, render: () => { if (state.view.type === 'table') renderTable(); } };
+  if (kind === 'task') return { b: state.task_open && state.task_open.task, render: () => { if (state.view.type === 'taskcard') renderTaskCard(); } };
+  return { b: state.note && state.note.current, render: () => { if (state.view.type === 'note') renderNote(); } };
+}
+async function noteAddAlias(term, ctx) {
+  const { b, render } = aliasCtx(ctx); if (!b || !term) return;
+  b.props = b.props || {};
+  const al = Array.isArray(b.props.aliases) ? b.props.aliases.slice() : [];
   const t = term.trim(); if (!t || al.some((x) => x.toLowerCase() === t.toLowerCase())) return;
-  al.push(t); n.props.aliases = al;
-  try { await api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
-  renderNote();
+  al.push(t); b.props.aliases = al;
+  try { await api('/api/blocks/' + b.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
+  render();
 }
-async function noteDelAlias(i) {
-  const n = state.note && state.note.current; if (!n) return;
-  const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases.slice() : [];
+async function noteDelAlias(i, ctx) {
+  const { b, render } = aliasCtx(ctx); if (!b) return;
+  const al = Array.isArray(b.props && b.props.aliases) ? b.props.aliases.slice() : [];
   if (i < 0 || i >= al.length) return;
-  al.splice(i, 1); n.props.aliases = al;
-  try { await api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
-  renderNote();
+  al.splice(i, 1); b.props.aliases = al;
+  try { await api('/api/blocks/' + b.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
+  render();
 }
 function renderNote() {
   const n = state.note.current;
@@ -18082,6 +18096,7 @@ function renderTable() {
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       ${t.sharedBy ? '' : '<button class="ghost" data-del-cur>Delete</button>'}</div>
     ${sharedBanner(t)}
+    ${noteAliasesControl(t, 'table')}
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${vw.sorting ? 'on' : ''} ${nSort ? 'active' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort ? ` · ${nSort}` : ''}</button>
@@ -18372,7 +18387,7 @@ document.addEventListener('keydown', (e) => {
   if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
-  if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-alias-add]')) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; if (v) noteAddAlias(v); return; }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-balias-add]')) { e.preventDefault(); const v = e.target.value.trim(); e.target.value = ''; if (v) noteAddAlias(v, e.target.dataset.aliasCtx); return; }
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
   if (e.key === 'Enter' && e.target.id === 'src-loc') { e.preventDefault(); const d = discoverState(); const q = (d.cityInput || e.target.value || '').trim(); if (q) { d.cityInput = q; discoverSuggest({ q }); } return; }
   if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
@@ -19474,7 +19489,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-add-event]')) { const a = state.area_open && state.area_open.area; if (a) areaNewEvent(a.id); return; }
   { const ada = t.closest('[data-area-day-add]'); if (ada) { const [aid, iso] = ada.dataset.areaDayAdd.split('::'); areaNewEventOnDay(aid, iso); return; } }
   if (t.closest('[data-area-add-bucket]')) { const a = state.area_open && state.area_open.area; if (a) api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: a.id, status: 'someday' } }) }).then((b) => { state.bucket = state.bucket || []; state.bucket.push(b); openBucketCard(b.id); }).catch((x) => toast(x.message)); return; }
-  { const ad = t.closest('[data-alias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.aliasDel)); return; } }
+  { const ad = t.closest('[data-balias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.baliasDel), ad.dataset.aliasCtx); return; } }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
@@ -21166,6 +21181,7 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Status</span>
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
     </div>
+    ${noteAliasesControl(t, 'task')}
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     <div class="task-boxes">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
