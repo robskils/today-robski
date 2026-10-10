@@ -7698,11 +7698,11 @@ function renderArea() {
   const linkN = blockLinks(area).length;
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
-  const filesSecRow = filesSec ? `<div class="area-dash-fl">${filesSec}</div>` : '';
-  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Who has access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
-  // Web links and Who-has-access share a row, half each. (Robin.)
-  // Who has access now leads the quick row up top; only Web links remains here.
-  const linksAccessRow = linksSec ? `<div class="area-dash-fl">${linksSec}</div>` : '';
+  const filesSecRow = '';   // Files now shares a half-and-half row with Web links below
+  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Ledger Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  // Files & photos and Web links share one half-and-half row. (Robin: Web links
+  // shouldn't sit alone.) Who-has-access now leads the quick row up top.
+  const linksAccessRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
   // Connections hub: a card per type. Populated ones carry a count, are highlighted
   // and sort to the front, and click through to view their section (which surfaces
   // above as you add). Empty ones are the add affordance for that type. (Robin.)
@@ -7948,7 +7948,7 @@ function areaOverviewHtml(area, c, blocks) {
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
   const AREA_SECS = ['Vision', 'Goals', 'Week', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
-  const SEC_LABELS = { 'Shared with': 'Who has access', Sentiment: 'Well-being score', Week: 'Week ahead' };
+  const SEC_LABELS = { 'Shared with': 'Ledger Access', Sentiment: 'Well-being score', Week: 'Week ahead' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   // Robust per-function settings: for each function, switch it on/off AND choose
   // whether members see it - private by default, shared only when you say. The
@@ -7964,24 +7964,23 @@ function areaOverviewHtml(area, c, blocks) {
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
   const secRow = (k) => {
     const hiddenK = hidden.includes(k);
-    // Shareable tools get the three-way (active + private/shared) on any opt-in
-    // ledger; who-to-share-with chips appear once there are people. Non-shareable
-    // parts are a plain on/off. (Robin: say if it's active and private or shared.)
-    const shareable = SHARE_KEYS.includes(k) && optin;
-    if (!shareable) {
+    // Non-shareable parts (Vision, Week, Wall…) are a plain on/off.
+    if (!SHARE_KEYS.includes(k)) {
       return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label></div>`;
     }
-    const st = scfg[k]; const shared = st === 'all' || (Array.isArray(st) && st.length);
-    const state = hiddenK ? 'off' : (shared ? 'shared' : 'me');
-    const who = state === 'shared' ? (hasMembers ? memChips(k, st) : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
+    // Shareable tools get the three-way on EVERY ledger. A legacy (open) ledger
+    // shares everything, so each tool reads Shared; an opt-in ledger reads from
+    // shareSections (default Only me). So a part can be kept private even on a
+    // shared ledger. (Robin.)
+    const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
+    const state = hiddenK ? 'off' : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
+    const who = state === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
     return `<div class="ovs-row ovs-row-seg"><span class="ovs-name">${esc(SEC_LABELS[k] || k)}</span><div class="ovs-seg">${seg(k, state, 'off', 'Off')}${seg(k, state, 'me', 'Only me')}${seg(k, state, 'shared', 'Shared')}</div>${who}</div>`;
   };
-  const shareSwitch = optin
-    ? `<button class="ghost ovs-shareall" data-area-share-open>Share everything instead</button>`
-    : `<div class="ovs-switch"><span>This ledger shares everything with members.</span><button class="as-choose" data-area-share-optin>🔒 Make it private by default</button></div>`;
+  const shareSwitch = optin ? `<button class="ghost ovs-shareall" data-area-share-open>Reset - share everything</button>` : '';
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
-      <div class="ov-muted" style="margin-bottom:11px">${optin ? 'For each tool: <b>Off</b>, <b>Only me</b>, or <b>Shared</b> (and with whom). Private until you choose to share it.' : 'Switch a tool on or off. Choose what members see below.'}</div>
+      <div class="ov-muted" style="margin-bottom:11px">For each tool: <b>Off</b>, <b>Only me</b> (private - yours even on a shared ledger), or <b>Shared</b> (with whom). Choose per tool.</div>
       <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
       ${shareSwitch}
     </div>`;
@@ -8116,11 +8115,22 @@ function areaSecState(k, stateVal) {
   const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
   a.props = a.props || {};
   let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
-  const cfg = { ...(a.props.shareSections || {}) };
+  let cfg = { ...(a.props.shareSections || {}) };
+  const patch = {};
+  // Choosing Only me / Shared on a legacy 'open' ledger quietly switches it to
+  // opt-in, pre-filling every tool as Shared so nothing a member already sees
+  // disappears - only the tool you just set changes. So a part can go private
+  // even while the rest of the ledger stays shared. (Robin.)
+  if (stateVal !== 'off' && a.props.shareMode !== 'optin') {
+    cfg = {}; SHARE_SECS.forEach(([name]) => { cfg[name] = 'all'; });
+    a.props.shareMode = 'optin'; patch.shareMode = 'optin';
+  }
   if (stateVal === 'off') { if (!hs.includes(k)) hs.push(k); delete cfg[k]; }
-  else { hs = hs.filter((x) => x !== k); if (stateVal === 'shared') { if (!(cfg[k] === 'all' || (Array.isArray(cfg[k]) && cfg[k].length))) cfg[k] = 'all'; } else delete cfg[k]; }
+  else if (stateVal === 'me') { hs = hs.filter((x) => x !== k); delete cfg[k]; }
+  else { hs = hs.filter((x) => x !== k); if (!(cfg[k] === 'all' || (Array.isArray(cfg[k]) && cfg[k].length))) cfg[k] = 'all'; }
   a.props.hiddenSecs = hs; a.props.shareSections = cfg;
-  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs, shareSections: cfg } }) }).catch((e) => toast(e.message));
+  patch.hiddenSecs = hs; patch.shareSections = cfg;
+  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((e) => toast(e.message));
   renderArea();
 }
 function areaSecShareToggle(name) {
