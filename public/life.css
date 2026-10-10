@@ -4985,7 +4985,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Week ahead: a ledger's seven-day planner. Co-parent clear - both sides read
    the same week at a glance. Stacked day rows work the same on phone and
    desktop; today is marked in the ledger's own hue. */
-.area-weeksec { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
+.area-weeksec { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin:26px 0; }
 .area-weeksec .awk-add { margin-left:auto; flex:none; }
 /* The "Week ahead" label wears the same antique small-caps as the ledger's other
    section labels (Recently viewed, Be ready…), rather than the flow sections'
