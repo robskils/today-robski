@@ -5268,8 +5268,10 @@ function renderHome() {
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
             today: (() => {
-              const beReady = off === 0 ? (homeReviewDueBanner() + homeDeadlinesHtml() + bdaySoonRows) : '';
+              const beReady = off === 0 ? (homeReviewDueBanner() + homeDeadlinesHtml()) : '';
               const beReadyGrp = beReady.trim() ? `<div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>` : '';
+              // Birthday reminders sit BELOW the day's important tasks, not up top. (Robin.)
+              const bdayGrp = (off === 0 && bdaySoonRows) ? `<div class="feed-grp feed-bdays"><div class="feed-grp-h">Birthdays coming up</div>${bdaySoonRows}</div>` : '';
               const gentleGrp = (off === 0 && kitTodayRows) ? `<div class="feed-grp feed-gentle"><div class="feed-grp-h">A gentle nudge</div>${kitTodayRows}</div>` : '';
               const agenda = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
                 : (todayRows ? `<div class="today-cal">${todayRows}</div>`

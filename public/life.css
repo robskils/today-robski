@@ -4991,25 +4991,29 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    section labels (Recently viewed, Be ready…), rather than the flow sections'
    bolder accent caps - so it sits in the same voice as its neighbours. (Robin.) */
 .area-weeksec .ash-l { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; font-weight:400; letter-spacing:.08em; color:var(--ink-3); }
-.aweek { display:flex; flex-direction:column; margin:0 -4px; }
-.awk-day { display:grid; grid-template-columns:48px 1fr; align-items:center; gap:12px; padding:5px 14px 5px 11px; border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); min-height:46px; }
+/* A clean seven-day planner inside the Week-ahead card: a date gutter, then the
+   day's events as plain clickable lines (no busy chip-on-row). Rows sit within
+   the card's padding - no edge bleed - with a gentle divider between days. */
+.aweek { display:flex; flex-direction:column; margin:0; }
+.awk-day { display:grid; grid-template-columns:46px 1fr; align-items:center; gap:14px; padding:9px 6px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); min-height:48px; border-radius:10px; }
 .awk-day:first-child { border-top:0; }
-.awk-today { background:color-mix(in srgb,var(--c) 9%,transparent); box-shadow:inset 3px 0 0 var(--c); }
-.awk-date { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding-top:1px; }
+.awk-today { background:color-mix(in srgb,var(--c) 10%,transparent); }
+.awk-date { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; }
 .awk-dow { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); }
-.awk-today .awk-dow { color:color-mix(in srgb,var(--c) 60%,var(--ink-2)); }
-.awk-num { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-weight:600; line-height:1; color:var(--ink); font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1,'tnum' 1; }
-.awk-today .awk-num { color:color-mix(in srgb,var(--c) 72%,var(--ink)); }
-.awk-evs { display:flex; flex-direction:column; justify-content:center; gap:5px; min-width:0; }
-.awk-ev { display:flex; align-items:baseline; gap:9px; width:100%; text-align:left; padding:6px 10px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:9px; background:color-mix(in srgb,var(--c) 5%,var(--card)); color:var(--ink); cursor:pointer; min-width:0; transition:border-color .12s, transform .08s, background .12s; }
-.awk-ev:hover { transform:translateY(-1px); border-color:color-mix(in srgb,var(--c) 45%,var(--line)); background:color-mix(in srgb,var(--c) 11%,var(--card)); }
-.awk-t2 { flex:none; font-size:12.5px; font-weight:700; color:color-mix(in srgb,var(--c) 60%,var(--ink-2)); font-variant-numeric:tabular-nums; }
-.awk-ttl { flex:1; min-width:0; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.awk-loc { flex:none; max-width:40%; font-size:12px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.awk-today .awk-dow { color:color-mix(in srgb,var(--c) 62%,var(--ink-2)); }
+.awk-num { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-weight:600; line-height:1; color:var(--ink-2); font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1,'tnum' 1; }
+.awk-today .awk-num { color:color-mix(in srgb,var(--c) 80%,var(--ink)); }
+.awk-evs { display:flex; flex-direction:column; justify-content:center; gap:2px; min-width:0; }
+.awk-ev { display:flex; align-items:baseline; gap:10px; width:100%; text-align:left; padding:5px 9px; border:0; border-radius:8px; background:none; color:var(--ink); cursor:pointer; min-width:0; transition:background .12s; }
+.awk-ev:hover { background:color-mix(in srgb,var(--c) 12%,transparent); }
+.awk-t2 { flex:none; font-size:13px; font-weight:700; color:color-mix(in srgb,var(--c) 62%,var(--ink-2)); font-variant-numeric:tabular-nums; }
+.awk-ttl { flex:0 1 auto; min-width:0; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.awk-loc { flex:none; min-width:0; font-size:12.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .awk-loc::before { content:'· '; }
-.awk-allday { border-left-style:solid; background:color-mix(in srgb,var(--c) 10%,var(--card)); }
-.awk-allday .awk-ttl { font-weight:600; }
-.awk-feed { border-left-style:dashed; background:transparent; opacity:.82; }
+.awk-allday .awk-ttl { font-weight:600; color:color-mix(in srgb,var(--c) 55%,var(--ink)); }
+.awk-allday::before { content:''; flex:none; width:6px; height:6px; border-radius:50%; background:var(--c); align-self:center; }
+.awk-feed { opacity:.75; }
+.awk-feed .awk-ttl { font-style:italic; }
 .awk-empty { color:var(--ink-3); opacity:.5; font-size:15px; padding-left:2px; }
 .aweek-empty { padding:28px 20px; }
 .awk-note { margin:0; font-size:14px; font-style:italic; color:var(--ink-3); text-align:center; }
