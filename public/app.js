@@ -2512,6 +2512,7 @@ const AI_USES = [
   ['money', 'Money', 'sums up the channels you follow, and turns a pasted or photographed statement into tidy transactions', 'Gemini'],
   ['import', 'Event import', 'reads events off a file, flyer, photo or webpage so you can add them to your calendar', 'Claude'],
   ['journalvoice', 'Voice journaling', 'turns a spoken recording into a written-up journal entry and fills your prompts', 'Gemini'],
+  ['search', 'Smarter search', 'finds what you meant across languages and in other words, when a plain search comes up short', 'Claude'],
 ];
 const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) =>
   `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
@@ -18182,8 +18183,8 @@ async function setCell(rowId, colId, value) {
 // the keyboard and reflows the overlay, so the tap lands on nothing and the result
 // "doesn't open". Preventing the mousedown default keeps focus; the click still
 // fires and opens the result. (Robin: tapped a task in search, it didn't open.)
-document.addEventListener('mousedown', (e) => { if (e.target && e.target.closest && e.target.closest('#pal-list [data-pal-i]')) e.preventDefault(); });
-function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
+document.addEventListener('mousedown', (e) => { if (e.target && e.target.closest && e.target.closest('#pal-list [data-pal-i], #pal-list [data-pal-smart]')) e.preventDefault(); });
+function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0, smart: false, smartTerms: [], smartBusy: false, smartAdded: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 const ACTIONS = [
   { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
@@ -18229,6 +18230,8 @@ const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, row:
 let palT;
 function buildPalette() {
   const q = state.pal.q.trim();
+  // A fresh query drops any earlier "smarter search" expansion.
+  state.pal.smart = false; state.pal.smartTerms = []; state.pal.smartBusy = false; state.pal.smartAdded = 0;
   if (!q) {
     state.pal.items = [...ACTIONS,
       ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
@@ -18268,6 +18271,49 @@ function buildPalette() {
     } catch (e) { toast(e.message); }
   }, 150);
 }
+// "Try other words & languages": one opt-in AI call that expands the query into
+// synonyms and the other of English/European Portuguese, runs each as an ordinary
+// search, and merges in anything new. So a page titled "Sapatos" turns up when
+// you searched "shoes". Deliberately a button, not automatic: it costs an AI call,
+// and Robin favours keeping those on tap rather than firing on every keystroke.
+async function palSmartSearch() {
+  const q = state.pal.q.trim();
+  if (!q || state.pal.smartBusy) return;
+  state.pal.smartBusy = true; renderPalItems();
+  try {
+    const { terms } = await api('/api/search/expand', { method: 'POST', body: JSON.stringify({ q }) });
+    if (state.pal.q.trim() !== q) { state.pal.smartBusy = false; return; }   // query moved on
+    const have = new Set(state.pal.items.filter((it) => it.kind !== 'action' && it.id).map((it) => it.kind + ':' + it.id));
+    const extra = [];
+    for (const term of (terms || [])) {
+      let hits = [];
+      try { hits = await api(`/api/search?q=${encodeURIComponent(term)}`); } catch { continue; }
+      if (state.pal.q.trim() !== q) { state.pal.smartBusy = false; return; }
+      for (const h of hits) {
+        const k = h.kind + ':' + h.id;
+        if (have.has(k)) continue; have.add(k);
+        extra.push({ kind: h.kind, id: h.id, parent: h.parent_id || null, parentTitle: h.parentTitle || '', title: h.title || (h.kind === 'row' ? rowLabel(h) : '(untitled)'), via: term });
+      }
+    }
+    state.pal.items = [...state.pal.items, ...extra];
+    state.pal.smart = true; state.pal.smartTerms = terms || []; state.pal.smartAdded = extra.length;
+  } catch (e) { toast(e.message); }
+  state.pal.smartBusy = false; renderPalItems();
+}
+// The strip under the results: the button before you ask, a quiet "looking…" while
+// it runs, and afterwards a note of which words it also tried. Only shown with a
+// query and with AI available for this account (and this feature left on).
+function palSmartFooter() {
+  const q = state.pal.q.trim();
+  if (!q || !(aiClientOn() && aiFeatureOn('search'))) return '';
+  if (state.pal.smartBusy) return `<div class="pal-smart pal-smart-busy"><span class="pal-smart-ic">🌐</span>Looking in other words & languages…</div>`;
+  if (state.pal.smart) {
+    const terms = state.pal.smartTerms || [];
+    if (!terms.length) return `<div class="pal-smart pal-smart-done">Nothing else to try for that.</div>`;
+    return `<div class="pal-smart pal-smart-done"><span class="pal-smart-ic">🌐</span><span>Also tried ${terms.map((x) => `<b>${esc(x)}</b>`).join(' · ')}${state.pal.smartAdded ? '' : ' - nothing new'}</span></div>`;
+  }
+  return `<button class="pal-smart pal-smart-btn" data-pal-smart><span class="pal-smart-ic">🌐</span>Try other words &amp; languages</button>`;
+}
 // The palette shell (with its <input>) is rendered once. Every keystroke updates
 // only the results list, so the input element - and the caret in it - is never
 // torn down mid-typing.
@@ -18290,9 +18336,10 @@ function palKindLabel(it) {
 function renderPalItems() {
   const el = $('#pal-list'); if (!el) return;
   const items = state.pal.items;
-  el.innerHTML = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
+  const list = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
       <span class="pal-kind ${it.kind === 'action' ? '' : `kmark pal-k-${esc(it.kind)}`}">${esc(palKindLabel(it))}</span>
-      <span class="pal-t">${esc(it.title)}</span>${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : '<div class="pal-empty">No matches.</div>';
+      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : (state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
+  el.innerHTML = list + palSmartFooter();
 }
 function execItem(it) {
   closePalette();
@@ -18791,6 +18838,7 @@ document.addEventListener('click', (e) => {
   { const bp = t.closest('[data-block-private-btn]'); if (bp) { const [k, id] = bp.dataset.blockPrivateBtn.split(':'); const cur = state.note && state.note.current; const on = !(cur && cur.props && cur.props.private); setBlockPrivate(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); }); return; } }
   { const bn = t.closest('[data-block-nosearch-btn]'); if (bn) { const [k, id] = bn.dataset.blockNosearchBtn.split(':'); const cur = k === 'note' ? (state.note && state.note.current) : (state.task_open && state.task_open.task); const on = !(cur && cur.props && cur.props.noSearch); setBlockNoSearch(k, id, on).then(() => { if (k === 'note' && state.view.type === 'note') renderNote(); else if (k === 'task' && state.view.type === 'taskcard') renderTaskCard(); }); return; } }
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
+  if (t.closest('[data-pal-smart]')) { palSmartSearch(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
   if (t.closest('[data-disc-hide]')) { try { localStorage.setItem('life.home.discHidden', '1'); } catch {} renderHome(); return; }
   if (t.closest('[data-disc-toggle]')) { try { localStorage.setItem('life.home.discOpen', (localStorage.getItem('life.home.discOpen') !== '0') ? '0' : '1'); } catch {} renderHome(); return; }
