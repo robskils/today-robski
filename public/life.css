@@ -5121,7 +5121,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-dash-fl > .area-dash-files, .area-dash-fl > .area-dash-links, .area-dash-fl > .area-dash-shared { margin-top:0; }
 /* Recently viewed | Do next - two half-width panels sharing a row (stack on a
    narrow screen via the auto-fit grid above). (Robin.) */
-.area-quickrow { margin-top:0; align-items:start; }
+/* The quick rows (Who has access | Do next, then Recently viewed) are a fixed
+   two-up grid so a lone panel stays HALF width (not stretched full by auto-fit),
+   and every row carries a top gap - padding is always there. (Robin.) */
+.area-quickrow { grid-template-columns:repeat(2, minmax(0,1fr)); margin-top:24px; align-items:start; }
+@media (max-width:640px){ .area-quickrow { grid-template-columns:1fr; } }
 .area-half { margin:0; padding:15px 17px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 .area-half .area-recent-h, .area-half .feed-grp-h { margin-bottom:11px; }
 .area-half .area-rv { gap:8px; }
