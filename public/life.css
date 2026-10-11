@@ -2775,19 +2775,25 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .au-email { flex:1; min-width:0; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .au-plan { color:var(--ink-3); text-transform:capitalize; }
 /* Admin Invites tab: the "Activated accounts" usage table. */
-.adm-acct-table { display:flex; flex-direction:column; margin-top:10px; }
-.adm-acct-row { display:grid; grid-template-columns:minmax(0,1.7fr) auto auto auto; gap:14px; align-items:center; padding:10px 2px; border-top:1px solid var(--line); font-size:14px; }
+.adm-acct-table { display:flex; flex-direction:column; }
+.adm-acct-row { display:grid; grid-template-columns:minmax(0,2.4fr) auto auto auto; gap:16px; align-items:center; padding:11px 4px; border-top:1px solid var(--line); font-size:14px; }
 .adm-acct-row:first-child { border-top:0; }
-.adm-acct-head, .adm-acct-head span { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:700; padding-bottom:2px; }
+.adm-acct-row:not(.adm-acct-head):hover { background:color-mix(in srgb, var(--ink) 4%, transparent); }
+.adm-acct-head { padding-bottom:9px; margin-bottom:1px; border-bottom:1px solid var(--line-2); }
+.adm-acct-head, .adm-acct-head span { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); font-weight:700; }
+.adm-acct-head .aa-who { padding-left:16px; }
 .aa-who { display:flex; align-items:center; gap:8px; min-width:0; }
-.aa-name { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.aa-sub { color:var(--ink-3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .aa-dot { width:8px; height:8px; border-radius:50%; background:var(--line-2); flex:none; }
-.aa-dot.on { background:#3f9e5f; }
+.aa-dot.on { background:#3f9e5f; box-shadow:0 0 0 3px rgba(63,158,95,.15); }
+.aa-id { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.aa-top { display:flex; align-items:center; gap:7px; min-width:0; }
+.aa-name { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.aa-email { display:block; color:var(--ink-3); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.aa-subtag { flex:none; color:var(--ink-3); background:color-mix(in srgb, var(--ink) 8%, transparent); border-radius:20px; padding:1px 8px; font-size:11.5px; white-space:nowrap; }
 .aa-joined, .aa-seen, .aa-plan { color:var(--ink-2); font-size:13px; white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums; }
-.aa-plan { text-transform:capitalize; }
-.aa-seen.on { color:#3f9e5f; }
-@media (max-width:560px){ .adm-acct-row { grid-template-columns:minmax(0,1fr) auto; } .aa-joined, .aa-plan, .adm-acct-head .aa-joined, .adm-acct-head .aa-plan { display:none; } }
+.aa-plan { text-transform:capitalize; color:var(--ink); font-weight:600; }
+.aa-seen.on { color:#3f9e5f; font-weight:600; }
+@media (max-width:560px){ .adm-acct-row { grid-template-columns:minmax(0,1fr) auto; gap:10px; } .aa-joined, .aa-plan, .adm-acct-head .aa-joined, .adm-acct-head .aa-plan { display:none; } .aa-subtag { display:none; } }
 .au-status { font-size:12px; padding:2px 9px; border-radius:999px; background:var(--paper); color:var(--ink-3); }
 .au-active { color:var(--pine,#2f5d57); background:color-mix(in srgb,var(--accent) 8%,transparent); }
 .admin-quotes { display:flex; flex-direction:column; gap:4px; margin-top:12px; max-height:420px; overflow-y:auto; }

@@ -1973,8 +1973,15 @@ function adminAcctRow(u) {
   const online = !!t && (Date.now() - t < 150000);
   const seen = t ? (online ? 'online now' : timeAgo(t)) : 'not yet';
   const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '-';
-  const who = esc(u.name || u.subdomain || u.email || 'Someone');
-  return `<div class="adm-acct-row"><span class="aa-who"><span class="aa-dot ${online ? 'on' : ''}" aria-hidden="true"></span><span class="aa-name">${who}</span>${u.subdomain ? `<span class="aa-sub">${esc(u.subdomain)}</span>` : ''}</span><span class="aa-joined">${esc(joined)}</span><span class="aa-seen ${online ? 'on' : ''}">${esc(seen)}</span><span class="aa-plan">${esc(PLAN_LABEL[normPlan(u.plan)] || u.plan || '-')}</span></div>`;
+  const name = (u.name || '').trim();
+  const sub = (u.subdomain || '').trim();
+  const email = (u.email || '').trim();
+  const primary = esc(name || sub || email || 'Someone');
+  // Name (+ their subdomain) on top; the email they signed up with gets its own
+  // full-width line below, so it stays readable rather than truncating to a stub.
+  const subPill = sub && esc(sub) !== primary ? `<span class="aa-subtag">${esc(sub)}</span>` : '';
+  const emailLine = email && esc(email) !== primary ? `<span class="aa-email">${esc(email)}</span>` : '';
+  return `<div class="adm-acct-row"><span class="aa-who"><span class="aa-dot ${online ? 'on' : ''}" aria-hidden="true"></span><span class="aa-id"><span class="aa-top"><span class="aa-name">${primary}</span>${subPill}</span>${emailLine}</span></span><span class="aa-joined">${esc(joined)}</span><span class="aa-seen ${online ? 'on' : ''}">${esc(seen)}</span><span class="aa-plan">${esc(PLAN_LABEL[normPlan(u.plan)] || u.plan || '-')}</span></div>`;
 }
 function renderAdmin() {
   const a = state.admin = state.admin || {};
