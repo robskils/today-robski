@@ -7762,7 +7762,7 @@ function renderArea() {
     [doneN, 'Done', 'Tasks'],
     [activeGoals.length, 'Goals', 'Goals'],
     [contacts.length, 'Contacts', 'Contacts'],
-    [bookmarks.length, 'Saved links', 'Saved links'],
+    [bookmarks.length, 'Books & Films', 'Saved links'],
     [journals.length, 'Reflections', 'Reflections'],
     [emails.length, 'Emails', 'Emails'],
     [bucket.length, 'Bucket list', 'Bucket list'],
@@ -7839,13 +7839,12 @@ function renderArea() {
     { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
     { id: 'week', ic: '◑', label: 'Week ahead', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
     { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
-    { id: 'access', ic: '👥', label: 'Folio Access', show: !((area.sharedBy && !memberCount) || secHidden('Shared with')), count: memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, body: () => areaMembersBody(area) },
     { id: 'pages', ic: '▤', label: 'Pages & tables', show: toolShow('Pages and tables', !!notesTotal), count: notesTotal || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => (notesTotal ? notesBody : '<div class="home-empty">No pages or tables here yet.</div>') },
     { id: 'tasks', ic: '▦', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}` : '<div class="home-empty">No contacts here yet.</div>') },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: () => (emails.length ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : '<div class="home-empty">No emails filed here.</div>') },
     { id: 'notepad', ic: '📝', label: 'Notepad', show: !secHidden('Wall'), body: () => areaWallBody(area) },
-    { id: 'links', ic: '🔖', label: 'Saved links', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}` : '<div class="home-empty">Nothing saved here yet.</div>') },
+    { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}` : '<div class="home-empty">No books or films here yet.</div>') },
     { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}` : '<div class="home-empty">No reflections here yet.</div>') },
     { id: 'files', ic: '📎', label: 'Files', show: toolShow('Files', !!attList.length), count: attList.length || null, body: () => areaAttachHtml(area) },
     { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
@@ -7856,6 +7855,9 @@ function renderArea() {
   const openSec = SECTIONS.find((s) => s.id === openToolId);
   const toolPanel = openSec ? `<div class="ovt-panel area-tool-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openSec.ic}</span>${esc(openSec.label)}</div>${openSec.acts ? `<div class="ovt-acts">${openSec.acts}</div>` : ''}<div class="area-tool-body">${openSec.body()}</div></div>` : '';
   const areaTools = SECTIONS.length ? `<div class="area-tools" style="--h:${h}"><div class="ovt-grid area-tools-grid">${toolTiles}</div>${toolPanel}</div>` : '';
+  // Folio Access is a permanent half-row card between the stats strip and the tool
+  // cards (its settings tile stays in the ▾ overview). (Robin, 2026-10-11.)
+  const folioAccess = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}"><section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section></div>`;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -7877,6 +7879,7 @@ function renderArea() {
     ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this folio as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
     ${areaVisionGoals}
     ${areaDash}
+    ${folioAccess}
     ${areaTools}
     </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
@@ -7918,7 +7921,7 @@ function areaOverviewHtml(area, c, blocks) {
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables', Wall: 'Notepad' };
+  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
