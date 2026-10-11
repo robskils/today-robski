@@ -5278,9 +5278,13 @@ function renderHome() {
               // Birthday reminders sit BELOW the day's important tasks, not up top. (Robin.)
               const bdayGrp = (off === 0 && bdaySoonRows) ? `<div class="feed-grp feed-bdays"><div class="feed-grp-h">Birthdays coming up</div>${bdaySoonRows}</div>` : '';
               const gentleGrp = (off === 0 && kitTodayRows) ? `<div class="feed-grp feed-gentle"><div class="feed-grp-h">A gentle nudge</div>${kitTodayRows}</div>` : '';
-              const agenda = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
+              const agendaInner = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
                 : (todayRows ? `<div class="today-cal">${todayRows}</div>`
                   : ((beReadyGrp || gentleGrp) ? '' : `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`));
+              // "Today" sits above the day's calendar, in the same group style as
+              // "Be ready" etc. On another day it names that day, not "Today". (Robin.)
+              const agendaLabel = off === 0 ? 'Today' : prettyDate(addDayISO(todayISO(), off));
+              const agenda = agendaInner ? `<div class="feed-grp feed-today"><div class="feed-grp-h">${esc(agendaLabel)}</div>${agendaInner}</div>` : '';
               return `${off === 0 ? homeMailAlertHtml() : ''}${beReadyGrp}${agenda}${gentleGrp}`;
             })(),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
