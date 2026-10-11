@@ -7442,7 +7442,9 @@ function visionHighlights(text) {
   const score = (x) => (/^i\b|^i'/i.test(x) ? 2 : 0) + (x.length >= 20 && x.length <= 120 ? 1 : 0);
   return parts.map((x, i) => ({ x, i, sc: score(x) })).sort((a, b) => (b.sc - a.sc) || (a.i - b.i)).slice(0, 3).map((o) => o.x);
 }
-const areaSecH = (key, label, count) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${esc(label)}${count != null ? ` · ${count}` : ''}</div>`;
+// One folio header style everywhere: chevron, an icon in its tinted badge, the
+// serif label, and a count pill. (Robin: there were two header looks, now one.)
+const areaSecH = (key, label, count, icon) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${icon ? `<span class="ash-ic">${icon}</span>` : ''}<span class="ash-l">${esc(label)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}</div>`;
 function timeAgo(t) {
   const s = Math.floor((Date.now() - t) / 1000);
   if (s < 60) return 'just now';
@@ -7651,10 +7653,7 @@ function renderArea() {
   // tiles use. Sections collapse (tap the header) and reorder (drag the ⠿), like
   // Home; the → opens that section on its own. (Robin, 2026-09.)
   const flowSec = (key, target, count, body) => { const open = areaSecOpen(key); return `<section class="area-sec ${open ? '' : 'area-sec-collapsed'}" data-aflow="${esc(key)}">
-      <div class="area-sec-h">
-        <span class="ash-grip" data-aflow-grip="${esc(key)}" title="Drag to reorder" aria-hidden="true">⠿</span>
-        <button class="ash-toggle" data-area-sec="${esc(key)}" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">${TILE_META[key]}</span><span class="ash-l">${esc(key)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}</button>
-      </div>
+      ${areaSecH(key, key === 'Wall' ? 'Notepad' : key, count, TILE_META[key])}
       ${open ? `<div class="area-sec-body">${body}</div>` : ''}
     </section>`; };
   // Vision: write it straight here, no click-through. A "Highlight" toggle pulls
@@ -7691,16 +7690,19 @@ function renderArea() {
     ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}`],
     ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}`],
     ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}`],
-    ['Tasks', true, openTs.length, tasksBody],
   ];
+  // Tasks sits full-width at the very BOTTOM of the folio, under all the half-width
+  // tools (which pair up 2-per-line above it). Its own single-item flow grid keeps
+  // the card styling + the full-width span. (Robin.)
+  const tasksFull = secHidden('Tasks') ? '' : `<div class="area-flow area-flow-tasks" style="--h:${h}">${flowSec('Tasks', null, openTs.length, tasksBody)}</div>`;
   const flowOrder = areaFlowOrder();
   const flowRank = (k) => (k === 'Tasks' ? 100000 : (flowOrder.indexOf(k) < 0 ? 999 : flowOrder.indexOf(k)));
   const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
   // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
   // those two share a row (half each), stacking on a narrow screen.
   // Emails and the Notepad (was "Wall") share a row, half each. (Robin.)
-  const emailsSec = (emails.length && !secHidden('Emails')) ? `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Emails', 'Emails', emails.length)}${areaSecOpen('Emails') ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : ''}</section>` : '';
-  const wallSec = secHidden('Wall') ? '' : `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Wall', 'Notepad')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
+  const emailsSec = (emails.length && !secHidden('Emails')) ? `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Emails', 'Emails', emails.length, '✉')}${areaSecOpen('Emails') ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : ''}</section>` : '';
+  const wallSec = secHidden('Wall') ? '' : `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Wall', 'Notepad', null, '📝')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
   const emailsWallRow = (emailsSec || wallSec) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${emailsSec}${wallSec}</div>` : '';
   // Files & photos and Web links only appear once they hold something - adding is
   // done from the Connections hub below. Each carries an anchor so a populated
@@ -7710,7 +7712,7 @@ function renderArea() {
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
   const filesSecRow = '';   // Files now shares a half-and-half row with Web links below
-  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   // Files & photos and Web links share one half-and-half row. (Robin: Web links
   // shouldn't sit alone.) Who-has-access now leads the quick row up top.
   const linksAccessRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
@@ -7721,7 +7723,8 @@ function renderArea() {
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${emailsWallRow}
   ${filesSecRow}
-  ${linksAccessRow}`;
+  ${linksAccessRow}
+  ${tasksFull}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals" open><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
@@ -7800,14 +7803,14 @@ function renderArea() {
     const beReady = dueRow + bdayRows;
     if (!beReady) return '';
     return `<section class="area-today" style="--h:${h}">
-      <div class="feed-grp feed-beready">${areaSecH('Be ready', 'Be ready')}${areaSecOpen('Be ready') ? beReady : ''}</div>
+      <div class="feed-grp feed-beready">${areaSecH('Be ready', 'Be ready', null, '⚑')}${areaSecOpen('Be ready') ? beReady : ''}</div>
     </section>`;
   })();
   // "Recently viewed" and "Do next here" sit side by side, half a row each - what
   // you were last in, and what to pick up next. Stacks on a narrow screen. (Robin.)
   const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
-  const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
-  const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
+  const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed', null, '🕘')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
+  const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next', null, '✓')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
   // Who has access leads the top quick row; Up next pairs beside it. Recently viewed
   // and Week ahead share the row beneath, half each. (Robin.)
   const quickTop = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
@@ -7847,10 +7850,7 @@ function renderArea() {
       : `<div class="aweek">${rows}</div>`;
     const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this folio">＋</button>` : '';
     return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
-      <div class="area-sec-h">
-        <button class="ash-toggle" data-area-sec="Week" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">◑</span><span class="ash-l">Week ahead</span>${total ? `<span class="ash-c">${total}</span>` : ''}</button>
-        ${addBtn}
-      </div>
+      ${areaSecH('Week', 'Week ahead', total || null, '◑')}
       ${open ? `<div class="area-sec-body">${bodyInner}</div>` : ''}
     </section>`;
   })();
@@ -8044,7 +8044,7 @@ function areaMembersHtml(area) {
   const more = (!exp && cards.length > LIMIT) ? `<button class="mem-more" data-area-members-more>+${cards.length - LIMIT} more</button>` : '';
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
   const body = cards.length ? `<div class="mem-row">${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
-  return `<section class="home-sec area-members">${areaSecH('Shared with', 'Shared with', cards.length || null)}${areaSecOpen('Shared with') ? body : ''}</section>`;
+  return `<section class="home-sec area-members">${areaSecH('Shared with', 'Shared with', cards.length || null, '👥')}${areaSecOpen('Shared with') ? body : ''}</section>`;
 }
 const areaWallOpen = () => { try { return localStorage.getItem('life.area.wall') !== '0'; } catch { return true; } };
 // A shared free-text wall for the area, saved on the area block so members with
