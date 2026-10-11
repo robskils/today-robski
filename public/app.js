@@ -1325,21 +1325,24 @@ function navSection(key, v) {
       return `<button class="nav-sub${wide}${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"${titleAttr}><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
-    // Notes and tables are one list now; a table note carries the grid icon.
-    title = 'Recent Pages'; add = '<button class="nav-add" data-new-note title="New page">+</button>';
-    // The 20 most recently viewed notes / table-notes, newest first.
-    rows = recentItems().filter((r) => r && (r.kind === 'note' || r.kind === 'table')).slice(0, 20).map((n) => {
-      const isT = n.kind === 'table';
-      const active = isT ? (v.type === 'table' && state.tables_open && state.tables_open.id === n.id)
-        : (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id === n.id);
-      // Same colour principle as Starred/areas: the note's life-area hue as a
-      // left edge + tinted glyph. Older recents predate the stored area, so
-      // recover it from whatever's loaded.
-      const aid = n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })();
+    // "Recent" shows the most recently VIEWED items of any kind - pages, tables,
+    // folios, tasks and reflections - newest first, not just notes. (Robin.)
+    title = 'Recent'; add = '<button class="nav-add" data-new-note title="New page">+</button>';
+    const activeId = (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id)
+      || (v.type === 'table' && state.tables_open && state.tables_open.id)
+      || (v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id)
+      || (v.type === 'taskcard' && state.task_open && state.task_open.task && state.task_open.task.id) || null;
+    rows = recentItems().filter((r) => r && r.id && r.kind).slice(0, 20).map((n) => {
+      const active = n.id === activeId;
+      // The item's life-area hue as a left edge + tinted glyph. A folio is its own
+      // colour; everything else takes the hue of the area it sits in (recovered from
+      // whatever's loaded for older entries that predate the stored area).
+      const aid = n.kind === 'area' ? n.id : (n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })());
       const a = aid ? areaById(aid) : null;
       const hue = a ? hueOf(a) : null;
-      return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} ${isT ? `data-open-table="${n.id}"` : `data-open-note="${n.id}"`}${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${isT ? TBL_ICO : NOTE_ICO}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${isT ? 'table' : 'note'}:${n.id}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
-    }).join('') || '<div class="nav-sub muted">Notes you open appear here</div>';
+      const ic = n.kind in KIND_IC ? KIND_IC[n.kind] : '•';
+      return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
+    }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
   } else if (key === 'people') {
     // Your connected Daybook people, online ones first and offline ones greyed,
     // so you can see who's about at a glance and message them in a tap.
@@ -7683,7 +7686,6 @@ function renderArea() {
     ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}`],
     ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}`],
     ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}`],
-    ['Emails', !!emails.length, emails.length, `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}`],
     ['Tasks', true, openTs.length, tasksBody],
   ];
   const flowOrder = areaFlowOrder();
@@ -7691,7 +7693,10 @@ function renderArea() {
   const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
   // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
   // those two share a row (half each), stacking on a narrow screen.
-  const wallSec = secHidden('Wall') ? '' : `<section class="area-dash-wall" style="--h:${h}">${areaSecH('Wall', 'Wall')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
+  // Emails and the Notepad (was "Wall") share a row, half each. (Robin.)
+  const emailsSec = (emails.length && !secHidden('Emails')) ? `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Emails', 'Emails', emails.length)}${areaSecOpen('Emails') ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : ''}</section>` : '';
+  const wallSec = secHidden('Wall') ? '' : `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Wall', 'Notepad')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
+  const emailsWallRow = (emailsSec || wallSec) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${emailsSec}${wallSec}</div>` : '';
   // Files & photos and Web links only appear once they hold something - adding is
   // done from the Connections hub below. Each carries an anchor so a populated
   // Connections card can scroll to it.
@@ -7709,7 +7714,7 @@ function renderArea() {
   // that expands to show "who sees it" plus connect/add actions. See the tile grid
   // in areaOverviewHtml. (Robin: don't need the section at the end of the page.)
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
-  ${wallSec}
+  ${emailsWallRow}
   ${filesSecRow}
   ${linksAccessRow}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
@@ -7795,16 +7800,12 @@ function renderArea() {
   })();
   // "Recently viewed" and "Do next here" sit side by side, half a row each - what
   // you were last in, and what to pick up next. Stacks on a narrow screen. (Robin.)
-  const quickRow = (() => {
-    const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
-    const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
-    const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
-    // Who has access leads the row (where Recently viewed used to sit); Do next
-    // pairs beside it, and Recently viewed drops to the row underneath. (Robin.)
-    const top = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
-    const rvRow = rvHalf ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}</div>` : '';
-    return top + rvRow;
-  })();
+  const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
+  const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
+  const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
+  // Who has access leads the top quick row; Up next pairs beside it. Recently viewed
+  // and Week ahead share the row beneath, half each. (Robin.)
+  const quickTop = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
   // Week ahead: this folio's key activities across today + the next six days,
   // laid out as a seven-day planner. Clear for co-parents - both see the same
   // week. Collapsible + hideable like every other folio section. (Robin.)
@@ -7848,6 +7849,8 @@ function renderArea() {
       ${open ? `<div class="area-sec-body">${bodyInner}</div>` : ''}
     </section>`;
   })();
+  // Recently viewed and Week ahead share a quick row, half each. (Robin.)
+  const rvWeekRow = (rvHalf || areaWeek) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}${areaWeek}</div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -7870,8 +7873,8 @@ function renderArea() {
     ${areaVisionGoals}
     ${areaDash}
     ${lToday}
-    ${quickRow}
-    ${areaWeek}
+    ${quickTop}
+    ${rvWeekRow}
     ${areaRest}
     </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
@@ -7913,7 +7916,7 @@ function areaOverviewHtml(area, c, blocks) {
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables' };
+  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list'];
   const hasMembers = !!(shares && shares.length);

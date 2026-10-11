@@ -5126,6 +5126,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    two-up grid so a lone panel stays HALF width (not stretched full by auto-fit),
    and every row carries a top gap - padding is always there. (Robin.) */
 .area-quickrow { grid-template-columns:repeat(2, minmax(0,1fr)); margin-top:24px; align-items:start; }
+/* Week ahead rides in a quick row now (half, beside Recently viewed), so drop the
+   standalone vertical margin it carries when it's a full-width section. (Robin.) */
+.area-quickrow > .area-weeksec { margin:0; }
 @media (max-width:640px){ .area-quickrow { grid-template-columns:1fr; } }
 .area-half { margin:0; padding:15px 17px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 .area-half .area-recent-h, .area-half .feed-grp-h { margin-bottom:11px; }
