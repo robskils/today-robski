@@ -7897,8 +7897,11 @@ function renderArea() {
     const ts = e.ts ? new Date(e.ts).getTime() : 0;
     return `<div class="upd-row${clk ? ' upd-click' : ''}"${clk ? ` data-fav-open="${e.kind}:${e.id}" role="button" tabindex="0"` : ''}><span class="upd-ic">${UPD_IC[e.kind] || '•'}</span><span class="upd-b"><span class="upd-t"><b>${who}</b> ${e.verb} ${thing}${e.title ? ` · <span class="upd-ttl">${esc(e.title)}</span>` : ''}</span>${ts ? `<span class="upd-when">${timeAgo(ts)}</span>` : ''}</span></div>`;
   };
+  // Show the 8 most recent, with a "See all" to expand to the rest. (Robin.)
+  const updShown = state.area_open.updAll ? updList : updList.slice(0, 8);
+  const updMore = updList.length > 8 ? `<button class="area-seemore" data-upd-all>${state.area_open.updAll ? '− Show fewer' : `See all ${updList.length} →`}</button>` : '';
   // Owner-facing for now (a member's privacy-filtered view comes later).
-  const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updList.map(updRow).join('')}</div>` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
+  const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -19584,6 +19587,7 @@ document.addEventListener('click', (e) => {
   // Calendar card: page the 7-day window back/forward (or jump to Today). Lives in
   // the open panel, outside any tile, so it's handled before the tile toggle.
   { const wn = t.closest('[data-area-week-nav]'); if (wn && state.area_open) { const d = wn.dataset.areaWeekNav; const cur = state.area_open.weekOffset || 0; state.area_open.weekOffset = d === 'today' ? 0 : d === 'next' ? cur + 1 : cur - 1; state.area_open.week = null; renderArea(); return; } }
+  if (t.closest('[data-upd-all]')) { if (state.area_open) { state.area_open.updAll = !state.area_open.updAll; renderArea(); } return; }
   // A folio tool card: open its content panel (one open at a time). Buttons inside
   // the panel live outside any [data-area-tool], so they fall through to their own
   // handlers below. (Robin, 2026-10-11: tools are square cards that expand.)
