@@ -7834,6 +7834,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-weeksec,
 .area-today,
 .area-connect,
+.area-half,
 .area-dash-wall, .area-dash-shared, .area-dash-files, .area-dash-links {
   --c:hsl(var(--h,220) var(--lane-s) var(--lane-l));
   background:linear-gradient(162deg, color-mix(in srgb,var(--c) 11%,var(--card)), color-mix(in srgb,var(--c) 3%,var(--card)) 72%);

@@ -7835,7 +7835,7 @@ function renderArea() {
   const quickRow = (() => {
     const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
     const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
-    const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Do next here')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
+    const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
     // Who has access leads the row (where Recently viewed used to sit); Do next
     // pairs beside it, and Recently viewed drops to the row underneath. (Robin.)
     const top = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
