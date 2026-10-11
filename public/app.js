@@ -12705,12 +12705,19 @@ function tasksViewToggle(scope) {   // scope: 'tasks' | 'area'
 function taskKanbanHtml(list) {
   const sorted = sortTasks(list.slice());
   const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}${privCls(t)}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${p}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
+  // Count each column first so Done can be held to the size of the busiest OTHER
+  // column (but always at least 5). A long Done pile otherwise makes you scroll
+  // past it to reach the next section; the rest stay as "+N more done". (Robin.)
+  const byCol = {}; KANBAN_COLS.forEach(([k]) => { byCol[k] = sorted.filter((t) => kanbanColOf(t) === k); });
+  const otherMax = Math.max(0, ...KANBAN_COLS.filter(([k]) => k !== 'done').map(([k]) => byCol[k].length));
+  const doneCap = Math.max(5, otherMax);
   const cols = KANBAN_COLS.map(([k, label]) => {
-    const items = sorted.filter((t) => kanbanColOf(t) === k);
-    const shown = k === 'done' ? items.slice(0, 60) : items;   // cap a long Done pile
+    const items = byCol[k];
+    const shown = k === 'done' ? items.slice(0, doneCap) : items;
+    const more = (k === 'done' && items.length > shown.length) ? `<div class="kcol-more">+${items.length - shown.length} more done</div>` : '';
     return `<div class="kcol" data-kcol="${k}">
       <div class="kcol-h"><span class="kcol-l">${esc(label)}</span><span class="kcol-c">${items.length}</span></div>
-      <div class="kcol-body">${shown.map(card).join('') || '<div class="kcol-empty">Drop a task here</div>'}</div>
+      <div class="kcol-body">${shown.map(card).join('') || '<div class="kcol-empty">Drop a task here</div>'}${more}</div>
     </div>`;
   }).join('');
   return `<div class="kanban">${cols}</div>`;

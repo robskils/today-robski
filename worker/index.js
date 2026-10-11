@@ -3872,6 +3872,25 @@ async function handleInviteRequest(request, env, json, err) {
   } catch (e) { console.error('invite-request mail:', e.message); }
   return json({ ok: true }, request);
 }
+// Has this period's review of type rt already been filed? Mirrors the client's
+// reviewsDueToday belt-and-braces: a 'done' review of that type whose doneAt / to /
+// created falls within the current period means it's done - so we must not nudge.
+// Without this, the push/SMS/email still fired on the due day even after you'd
+// submitted the review. (Robin: once I file my weekly review, stop telling me it's
+// due today.)
+async function reviewDoneThisPeriod(env, uid, rt, todayISO) {
+  const periodDays = REVIEW_DAYS[rt] || 7;
+  const rows = await env.DB.prepare("SELECT props, created_at FROM blocks WHERE user_id=? AND kind='review' AND archived=0").bind(uid).all().catch(() => ({ results: [] }));
+  for (const r of (rows.results || [])) {
+    let p; try { p = JSON.parse(r.props || '{}'); } catch { continue; }
+    if (p.rtype !== rt || p.status !== 'done') continue;
+    const when = String(p.doneAt || p.to || r.created_at || '').slice(0, 10);
+    if (!/^\d{4}-\d\d-\d\d$/.test(when)) continue;
+    const days = Math.round((Date.parse(todayISO) - Date.parse(when)) / 86400000);
+    if (days >= -1 && days < periodDays) return true;
+  }
+  return false;
+}
 async function maybeReviewReminders(env) {
   for (const u of await activeUsers(env)) {
     await reviewRemindersForUser(env, u.id).catch((e) => console.error('reviewReminders', u.id, e.message));
@@ -3894,7 +3913,12 @@ async function reviewRemindersForUser(env, uid) {
     const occ = reviewCadNextW(rt, c, today);
     if (!occ) continue;
     const alertDay = shiftISO(occ, -(c.alertBefore || 0));
-    if (today >= alertDay && c.last !== occ) { due.push(rt); c.last = occ; changed = true; }
+    if (today >= alertDay && c.last !== occ) {
+      // Already filed this period's review? Mark the occurrence seen so it never
+      // nudges, but send nothing. (Robin.)
+      if (await reviewDoneThisPeriod(env, uid, rt, today)) { c.last = occ; changed = true; }
+      else { due.push(rt); c.last = occ; changed = true; }
+    }
   }
   if (due.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
