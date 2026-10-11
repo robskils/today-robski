@@ -1965,6 +1965,17 @@ function adminUserRow(u) {
     </div>
   </div>`;
 }
+// A compact, read-only account row for the admin Invites tab: who they are, when
+// they joined, when last here, and their plan. (Robin: activated accounts in a
+// little table showing last accessed / usage.)
+function adminAcctRow(u) {
+  const t = u.last_seen ? new Date(u.last_seen).getTime() : 0;
+  const online = !!t && (Date.now() - t < 150000);
+  const seen = t ? (online ? 'online now' : timeAgo(t)) : 'not yet';
+  const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '-';
+  const who = esc(u.name || u.subdomain || u.email || 'Someone');
+  return `<div class="adm-acct-row"><span class="aa-who"><span class="aa-dot ${online ? 'on' : ''}" aria-hidden="true"></span><span class="aa-name">${who}</span>${u.subdomain ? `<span class="aa-sub">${esc(u.subdomain)}</span>` : ''}</span><span class="aa-joined">${esc(joined)}</span><span class="aa-seen ${online ? 'on' : ''}">${esc(seen)}</span><span class="aa-plan">${esc(PLAN_LABEL[normPlan(u.plan)] || u.plan || '-')}</span></div>`;
+}
 function renderAdmin() {
   const a = state.admin = state.admin || {};
   const ov = a.overview || {};
@@ -1998,10 +2009,17 @@ function renderAdmin() {
 
   const membersPane = `<div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
 
+  const pendingInv = (state.invites || []).filter((i) => !i.used_by);
+  const activated = users.slice().sort((x, y) => new Date(y.last_seen || 0) - new Date(x.last_seen || 0));
   const invitesPane = `<div class="set-card">
       <div class="inv-new"><button class="add-btn wide" data-admin-invite>✦ Invite someone</button></div>
-      <p class="inv-hint">The full set of controls - their email, plan, and any complimentary period. Daybook sends one link, no code for them to type.</p>
-      <div class="inv-list">${(state.invites || []).map(inviteRow).join('') || '<div class="home-empty" style="padding:8px 0 0">Nobody invited yet.</div>'}</div>
+      <div class="home-sec-h" style="margin-top:4px">Awaiting a reply${pendingInv.length ? ` · ${pendingInv.length}` : ''}</div>
+      <p class="inv-hint">Invitations sent but not yet accepted. Daybook sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
+      <div class="inv-list">${pendingInv.map(inviteRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No open invitations - everyone you invited has joined.</div>'}</div>
+    </div>
+    <div class="set-card" style="margin-top:14px">
+      <div class="home-sec-h">Activated accounts${activated.length ? ` · ${activated.length}` : ''}</div>
+      ${activated.length ? `<div class="adm-acct-table"><div class="adm-acct-row adm-acct-head"><span class="aa-who">Person</span><span class="aa-joined">Joined</span><span class="aa-seen">Last seen</span><span class="aa-plan">Plan</span></div>${activated.map(adminAcctRow).join('')}</div>` : '<div class="home-empty" style="padding:4px 0 0">No activated accounts yet.</div>'}
     </div>`;
 
   const setupPane = `<div class="set-card">
