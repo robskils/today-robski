@@ -7648,12 +7648,10 @@ function renderArea() {
   const ntCard = (n) => n.kind === 'table'
     ? `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-table="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`
     : `<button class="tbl-card noteord-card${privCls(n)}" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${privChip(n)}</button>`;
-  // Each tool shows at most SEC_CAP items, then a "See all N →" that expands in
-  // place - so a folio full of pages never becomes an endless scroll. (Robin.)
-  const SEC_CAP = 8;
-  const secAllSet = (state.area_open.secAll instanceof Set) ? state.area_open.secAll : (state.area_open.secAll = new Set());
-  const capArr = (key, arr) => (secAllSet.has(key) ? arr : arr.slice(0, SEC_CAP));
-  const secMore = (key, total) => (total > SEC_CAP ? `<button class="area-seemore" data-area-secall="${esc(key)}">${secAllSet.has(key) ? '− Show fewer' : `See all ${total} →`}</button>` : '');
+  // A tool card shows ALL its content when you open it - no cap, no "show more".
+  // You only render a card's items once you've tapped into it. (Robin, 2026-10-11.)
+  const capArr = (key, arr) => arr;
+  const secMore = () => '';
   const orderedNoteCards = capArr('Pages and tables', noteTblOrdered).map(ntCard).join('');
   // Everything else that can carry this area, each linking to its own tool.
   const emailCards = capArr('Emails', emails).map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
@@ -7846,20 +7844,26 @@ function renderArea() {
   const owner = canEditArea;
   const toolShow = (key, present) => !secHidden(key) && (owner || present);   // owner sees empty tools too (so you can add into them); members only populated ones
   const act = (html) => (owner ? html : '');
-  // Order: Tasks leads, Pages & tables second (Robin), then the rest of the tools,
-  // with the glanceable feeds (Week ahead, Recently viewed, Be ready) trailing.
+  // Filed emails render as full-width cards: subject + the start of the message.
+  const emailSnippet = (n) => (n.body || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"')
+    .replace(/\s+/g, ' ').trim().slice(0, 170);
+  const emailsBody = () => (emails.length ? `<div class="email-list">${emails.map((n) => { const s = emailSnippet(n); return `<button class="email-card" data-open-note="${n.id}"><div class="ec-top"><span class="ec-ic">✉</span><span class="ec-subj">${esc(n.title || '(no subject)')}</span></div>${s ? `<div class="ec-snip">${esc(s)}</div>` : ''}</button>`; }).join('')}</div>` : '<div class="home-empty">No emails filed here.</div>');
+  // Order: Tasks leads, Pages & tables second (Robin); the glanceable feeds sit in
+  // the middle, and Books & Films + Reflections close out the list. (Robin.)
   const SECTIONS = [
     { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'pages', ic: '▤', label: 'Pages & tables', show: toolShow('Pages and tables', !!notesTotal), count: notesTotal || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => (notesTotal ? notesBody : '<div class="home-empty">No pages or tables here yet.</div>') },
-    { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}` : '<div class="home-empty">No contacts here yet.</div>') },
-    { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: () => (emails.length ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : '<div class="home-empty">No emails filed here.</div>') },
-    { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}` : '<div class="home-empty">No books or films here yet.</div>') },
-    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}` : '<div class="home-empty">No reflections here yet.</div>') },
+    { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>` : '<div class="home-empty">No contacts here yet.</div>') },
+    { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: emailsBody },
     { id: 'files', ic: '📎', label: 'Files', show: toolShow('Files', !!attList.length), count: attList.length || null, body: () => areaAttachHtml(area) },
     { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
     { id: 'week', ic: '◑', label: 'Calendar', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
     { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
     { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
+    { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>` : '<div class="home-empty">No books or films here yet.</div>') },
+    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>` : '<div class="home-empty">No reflections here yet.</div>') },
   ].filter((s) => s.show);
   let openToolId = state.area_open.toolTile;
   if (!SECTIONS.some((s) => s.id === openToolId)) openToolId = null;
