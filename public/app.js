@@ -7570,19 +7570,20 @@ function bdayInDays(bday) {
 // six days. Built for co-parents and anyone sharing a folio - both sides see
 // the same key activities. Lazy-loaded once per folio open, then cached on
 // state.area_open.week; invalidated whenever an event is written. (Robin.)
-function loadAreaWeek(areaId) {
+function loadAreaWeek(areaId, offset = 0) {
   const st = state.area_open; if (!st || String(st.area.id) !== String(areaId)) return;
-  if (st.week && String(st.week.for) === String(areaId)) return;   // loaded or loading
-  st.week = { for: areaId, loading: true, events: [] };
-  const from = todayISO(), to = addDayISO(todayISO(), 7);   // today .. a week today (inclusive)
+  if (st.week && String(st.week.for) === String(areaId) && (st.week.offset || 0) === offset) return;   // loaded or loading for this window
+  st.week = { for: areaId, offset, loading: true, events: [] };
+  const base = addDayISO(todayISO(), offset * 7);   // the window steps a week at a time
+  const from = base, to = addDayISO(base, 7);        // base .. a week on (inclusive)
   api(`/api/calendar?from=${from}&to=${to}`).then((r) => {
-    if (!state.area_open || String(state.area_open.area.id) !== String(areaId)) return;
+    if (!state.area_open || String(state.area_open.area.id) !== String(areaId) || (state.area_open.week && (state.area_open.week.offset || 0) !== offset)) return;
     const evs = (r.events || []).filter((e) => e && e.date && String(e.area) === String(areaId));
-    state.area_open.week = { for: areaId, loading: false, events: evs };
+    state.area_open.week = { for: areaId, offset, loading: false, events: evs };
     if (state.view.type === 'area') renderArea();
   }).catch(() => {
     if (state.area_open && String(state.area_open.area.id) === String(areaId)) {
-      state.area_open.week = { for: areaId, loading: false, events: [], error: true };
+      state.area_open.week = { for: areaId, offset, loading: false, events: [], error: true };
       if (state.view.type === 'area') renderArea();
     }
   });
@@ -7804,16 +7805,18 @@ function renderArea() {
   const bdayRows = contacts.map((c) => { if ((c.props || {}).bdayLead === 0) return null; const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
     .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
   const beReadyBody = dueRow + bdayRows;
-  const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
   // Week ahead is built lazily (and kicks off its own load) only when its card is
   // open, so a closed folio doesn't fetch the week on every render.
   const buildWeekBody = () => {
-    if (!state.area_open.week || String(state.area_open.week.for) !== String(area.id)) loadAreaWeek(area.id);
+    const offset = state.area_open.weekOffset || 0;
+    if (!state.area_open.week || String(state.area_open.week.for) !== String(area.id) || (state.area_open.week.offset || 0) !== offset) loadAreaWeek(area.id, offset);
     const wk = state.area_open.week;
-    const t0 = todayISO(); const [ty, tm, td] = t0.split('-').map(Number);
-    const days = Array.from({ length: 8 }, (_, i) => { const x = new Date(ty, tm - 1, td + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), dow: DOW3[x.getDay()], today: di === t0 }; });
+    const t0 = todayISO();
+    const base = addDayISO(t0, offset * 7);           // the 7-day window, paged a week at a time
+    const [by, bm, bd] = base.split('-').map(Number);
+    const days = Array.from({ length: 7 }, (_, i) => { const x = new Date(by, bm - 1, bd + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), dow: DOW3[x.getDay()], today: di === t0 }; });
     const byDay = {};
-    const loaded = wk && String(wk.for) === String(area.id) && !wk.loading;
+    const loaded = wk && String(wk.for) === String(area.id) && (wk.offset || 0) === offset && !wk.loading;
     if (loaded) {
       for (const e of (wk.events || [])) {
         if (e.allDay) { const end = e.end_date && e.end_date > e.date ? e.end_date : addDayISO(e.date); for (let d = e.date; d < end; d = addDayISO(d)) (byDay[d] = byDay[d] || []).push(e); }
@@ -7827,27 +7830,36 @@ function renderArea() {
       const addDay = canEditArea ? `<button class="awk-dayadd" data-area-day-add="${area.id}::${d.iso}" title="Add an activity on this day" aria-label="Add on this day">＋</button>` : (evs.length ? '' : '<span class="awk-empty">·</span>');
       return `<div class="awk-day${d.today ? ' awk-today' : ''}${evs.length ? '' : ' awk-day-empty'}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}${addDay}</div></div>`;
     }).join('');
-    return loaded ? `<div class="aweek">${rows}</div>` : '<div class="home-empty">Loading the week…</div>';
+    // Page the 7-day window with back/forward arrows; a Today chip resets to now.
+    const fmt = (iso) => { const [, m, dd] = iso.split('-').map(Number); return `${dd} ${MON3[m - 1]}`; };
+    const range = `${fmt(days[0].iso)} – ${fmt(days[days.length - 1].iso)}`;
+    const nav = `<div class="aweek-nav">
+      <button class="aweek-nav-btn" data-area-week-nav="prev" aria-label="Previous week">‹</button>
+      <span class="aweek-nav-l">${range}${offset !== 0 ? ` <button class="aweek-today" data-area-week-nav="today">Today</button>` : ''}</span>
+      <button class="aweek-nav-btn" data-area-week-nav="next" aria-label="Next week">›</button>
+    </div>`;
+    const body = loaded ? `<div class="aweek">${rows}</div>` : '<div class="home-empty">Loading…</div>';
+    return `${nav}${body}`;
   };
   const weekLoaded = state.area_open.week && String(state.area_open.week.for) === String(area.id) && !state.area_open.week.loading;
   const weekCount = weekLoaded ? (state.area_open.week.events || []).length : null;
   const owner = canEditArea;
   const toolShow = (key, present) => !secHidden(key) && (owner || present);   // owner sees empty tools too (so you can add into them); members only populated ones
   const act = (html) => (owner ? html : '');
+  // Order: Tasks leads, Pages & tables second (Robin), then the rest of the tools,
+  // with the glanceable feeds (Week ahead, Recently viewed, Be ready) trailing.
   const SECTIONS = [
-    { id: 'upnext', ic: '✓', label: 'Up next', show: !!doNext, count: openTs.length || null, body: () => `<div class="today-cal">${doNext}</div>` },
-    { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
-    { id: 'week', ic: '◑', label: 'Week ahead', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
-    { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
+    { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'pages', ic: '▤', label: 'Pages & tables', show: toolShow('Pages and tables', !!notesTotal), count: notesTotal || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => (notesTotal ? notesBody : '<div class="home-empty">No pages or tables here yet.</div>') },
-    { id: 'tasks', ic: '▦', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}` : '<div class="home-empty">No contacts here yet.</div>') },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: () => (emails.length ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : '<div class="home-empty">No emails filed here.</div>') },
-    { id: 'notepad', ic: '📝', label: 'Notepad', show: !secHidden('Wall'), body: () => areaWallBody(area) },
     { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}` : '<div class="home-empty">No books or films here yet.</div>') },
     { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}` : '<div class="home-empty">No reflections here yet.</div>') },
     { id: 'files', ic: '📎', label: 'Files', show: toolShow('Files', !!attList.length), count: attList.length || null, body: () => areaAttachHtml(area) },
     { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
+    { id: 'week', ic: '◑', label: 'Calendar', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
+    { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
+    { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
   ].filter((s) => s.show);
   let openToolId = state.area_open.toolTile;
   if (!SECTIONS.some((s) => s.id === openToolId)) openToolId = null;
@@ -7857,7 +7869,12 @@ function renderArea() {
   const areaTools = SECTIONS.length ? `<div class="area-tools" style="--h:${h}"><div class="ovt-grid area-tools-grid">${toolTiles}</div>${toolPanel}</div>` : '';
   // Folio Access is a permanent half-row card between the stats strip and the tool
   // cards (its settings tile stays in the ▾ overview). (Robin, 2026-10-11.)
-  const folioAccess = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}"><section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section></div>`;
+  // Folio Access and the always-open Notepad share a half-and-half row between the
+  // stats strip and the tool cards (each takes a column; one alone stays half
+  // width). The Notepad isn't a tile - it's permanently open here. (Robin.)
+  const accessCard = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad"><div class="home-sec-h area-sec-h area-notepad-h"><span class="ash-ic">📝</span><span class="ash-l">Notepad</span></div><div class="area-notepad-body">${areaWallBody(area)}</div></section>`;
+  const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -7921,7 +7938,7 @@ function areaOverviewHtml(area, c, blocks) {
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
+  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Calendar', 'Pages and tables': 'Pages & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
@@ -19538,6 +19555,9 @@ document.addEventListener('click', (e) => {
   { const sa = t.closest('[data-area-secall]'); if (sa) { const k = sa.dataset.areaSecall; const s = (state.area_open && state.area_open.secAll instanceof Set) ? state.area_open.secAll : null; if (s) { if (s.has(k)) s.delete(k); else s.add(k); renderArea(); } return; } }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
+  // Calendar card: page the 7-day window back/forward (or jump to Today). Lives in
+  // the open panel, outside any tile, so it's handled before the tile toggle.
+  { const wn = t.closest('[data-area-week-nav]'); if (wn && state.area_open) { const d = wn.dataset.areaWeekNav; const cur = state.area_open.weekOffset || 0; state.area_open.weekOffset = d === 'today' ? 0 : d === 'next' ? cur + 1 : cur - 1; state.area_open.week = null; renderArea(); return; } }
   // A folio tool card: open its content panel (one open at a time). Buttons inside
   // the panel live outside any [data-area-tool], so they fall through to their own
   // handlers below. (Robin, 2026-10-11: tools are square cards that expand.)
