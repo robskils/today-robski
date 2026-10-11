@@ -17415,7 +17415,7 @@ function connectedEventsHtml(n) {
   const links = noteEventLinks(n);
   if (state.noteEvents === undefined) loadNoteEvents();
   const cards = links.map((ev) => `<div class="ce-card"><button class="ce-open" data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</button><button class="ce-x" data-note-unlink-event="${esc(evBaseId(ev))}" title="Disconnect">×</button></div>`).join('');
-  return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Connected events${links.length ? ` · ${links.length}` : ''}</summary>
+  return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Events${links.length ? ` · ${links.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No events linked yet.</div>'}</div>
     ${noteEventConnectPickerHtml()}</details>`;
 }
@@ -17644,7 +17644,7 @@ function relatedNotesHtml(note) {
   const shown = list.slice(0, 12);
   // A nside-card like the others, so it floats to the top and opens by default
   // when it has related notes (it only renders at all when the list is non-empty).
-  return `<details class="note-related nside-card" data-nside="related" ${noteCardOpen('related', true) ? 'open' : ''}><summary class="sub-h">Related notes · ${list.length}</summary>
+  return `<details class="note-related nside-card" data-nside="related" ${noteCardOpen('related', true) ? 'open' : ''}><summary class="sub-h">Related Pages · ${list.length}</summary>
     <div class="star-grid">${shown.map((f) => `<button class="star-note" data-open-note="${f.id}"><span class="sn-ic">${NOTE_ICO}</span><span class="sp-t">${esc(f.title || 'Untitled')}</span></button>`).join('')}</div>${list.length > 12 && a ? `<button class="rel-more" data-open-area="${a.id}">See all ${list.length} in ${esc(a.title)} →</button>` : ''}</details>`;
 }
 // A Share button for an owned note/task; the count shows when it's already out.
@@ -17845,7 +17845,7 @@ function renderNote() {
           // their add controls) sink below. Stable within each group so the order
           // is predictable. (Robin: a connected card must be top + open, not left
           // stranded at the bottom.)
-          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Connected pages${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New page</span></button></details>`;
+          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Pages${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New page</span></button></details>`;
           const secs = [
             { has: connected.length > 0, html: subHtml },
             { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
