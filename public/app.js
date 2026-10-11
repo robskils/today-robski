@@ -5276,19 +5276,20 @@ function renderHome() {
           // Each Home section becomes an equal tile; the open one expands below.
           const bodies = {
             today: (() => {
-              const beReady = off === 0 ? (homeReviewDueBanner() + homeDeadlinesHtml()) : '';
-              const beReadyGrp = beReady.trim() ? `<div class="feed-grp feed-beready"><div class="feed-grp-h">Be ready</div>${beReady}</div>` : '';
-              // Birthday reminders sit BELOW the day's important tasks, not up top. (Robin.)
+              // No "Be ready" wrapper now: the review nudge is its own banner, and
+              // Deadlines is its own plain-word group like Today / A gentle nudge. (Robin.)
+              const reviewBanner = off === 0 ? homeReviewDueBanner() : '';
+              const deadlinesGrp = off === 0 ? homeDeadlinesHtml() : '';
               const bdayGrp = (off === 0 && bdaySoonRows) ? `<div class="feed-grp feed-bdays"><div class="feed-grp-h">Birthdays coming up</div>${bdaySoonRows}</div>` : '';
               const gentleGrp = (off === 0 && kitTodayRows) ? `<div class="feed-grp feed-gentle"><div class="feed-grp-h">A gentle nudge</div>${kitTodayRows}</div>` : '';
               const agendaInner = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
                 : (todayRows ? `<div class="today-cal">${todayRows}</div>`
-                  : ((beReadyGrp || gentleGrp) ? '' : `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`));
-              // "Today" sits above the day's calendar, in the same group style as
-              // "Be ready" etc. On another day it names that day, not "Today". (Robin.)
+                  : ((deadlinesGrp || gentleGrp || bdayGrp) ? '' : `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`));
+              // "Today" sits above the day's calendar, same group style as the rest.
+              // On another day it names that day, not "Today". (Robin.)
               const agendaLabel = off === 0 ? 'Today' : prettyDate(addDayISO(todayISO(), off));
               const agenda = agendaInner ? `<div class="feed-grp feed-today"><div class="feed-grp-h">${esc(agendaLabel)}</div>${agendaInner}</div>` : '';
-              return `${off === 0 ? homeMailAlertHtml() : ''}${beReadyGrp}${agenda}${gentleGrp}`;
+              return `${off === 0 ? homeMailAlertHtml() : ''}${reviewBanner}${deadlinesGrp}${agenda}${bdayGrp}${gentleGrp}`;
             })(),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
@@ -9529,7 +9530,9 @@ function homeDeadlinesHtml() {
     const attr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : `data-open-area="${x.id}"`;
     return `<button class="home-dl-row ${r.c}" ${attr}${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="home-dl-ic">${x.kind === 'goal' ? '🎯' : '◈'}</span><span class="home-dl-t">${esc(x.title)}</span><span class="home-dl-when">${esc(r.t)}</span></button>`;
   }).join('');
-  return `<div class="home-deadlines"><div class="home-dl-h">⏳ Deadlines</div>${rows}</div>`;
+  // Its own feed group now (no "Be ready" wrapper), with a plain word header in the
+  // same style as Today / A gentle nudge - no icon. (Robin.)
+  return `<div class="feed-grp feed-deadlines home-deadlines"><div class="feed-grp-h">Deadlines</div>${rows}</div>`;
 }
 // A mail account that's stopped connecting should never pass silently - surface
 // it in the Home "today" lead with a one-tap jump to fix it.
