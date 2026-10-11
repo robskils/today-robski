@@ -4642,6 +4642,7 @@ function renderPracticeCard() {
     streak ? `<span class="pc-chip">🔥 ${streak}${a.avoid ? ' clean' : ''}</span>` : '',
   ].filter(Boolean).join('');
   $('#pane').innerHTML = `${crumb}
+    <div class="page-kicker" style="--h:${hue}">Practice</div>
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1>
       <div class="pc-head-act"><button class="ghost" data-prc-edit="${a.id}" title="Edit this practice">✎ Edit</button></div></div>
     ${chips ? `<div class="pc-meta">${chips}</div>` : ''}
@@ -21199,6 +21200,7 @@ function renderTaskCard() {
       </div>
     </div>
     ${sharedBanner(t)}
+    <div class="page-kicker" style="--h:${hueOf(a)}">Task</div>
     <div class="task-focus">
       <button class="tf-check ${t.props.done ? 'done' : ''}" ${t.sharedBy ? `data-shared-check="${t.id}" data-done="${t.props.done ? 1 : 0}"` : `data-check="${t.id}"`} title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
       <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
