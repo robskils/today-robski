@@ -7894,8 +7894,9 @@ function renderArea() {
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
     ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this folio as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
-    ${areaVisionGoals}
+    ${areaDash ? '<div class="area-recent-h area-tabs-kick">Metrics</div>' : ''}
     ${areaDash}
+    ${areaVisionGoals}
     ${folioAccess}
     ${areaTools}
     </div>`;
