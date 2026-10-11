@@ -3437,7 +3437,7 @@ function navGridHtml(v) {
     ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices, NI.discover])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
-    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.meditation, NI.spirit, NI.iching, NI.insights])}
+    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.iching, NI.spirit, NI.meditation, NI.insights])}
     ${grp('Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
