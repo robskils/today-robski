@@ -3971,6 +3971,9 @@ async function openHome() {
   // Instant paint: if we already have Home data from a previous visit, show it
   // right away so tapping the wordmark feels immediate, then refresh behind it.
   if (state.home) renderHome();
+  // Re-pull reviews each time Home opens, so a review filed on another device clears
+  // the "due" nudge here (state.reviews would otherwise stay stale). (Robin.)
+  api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); } }).catch(() => {});
   const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
@@ -9399,6 +9402,10 @@ async function loadToday(day) {
   } catch (e) { toast(e.message); }
   // Review reminders, so a review due today can surface here with a link.
   if (!state.reviewRem) api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; clearStaleReviewNotif(); if (state.view.type === 'today') renderToday(); }).catch(() => {});
+  // Always re-pull reviews on open (not just the first time) so a review filed on
+  // another device clears the "due" banner here too. (Robin: the Today feed kept
+  // nagging to do a review I'd already done.)
+  api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'today') renderToday(); } }).catch(() => {});
   renderToday();
 }
 // Which reviews are scheduled to land today (per the chosen day). Drives the
@@ -18834,7 +18841,14 @@ function flushProse() {
     saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId);
   });
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); flushVisionInline(); } else { try { clearStaleReviewNotif(); } catch {} } });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { flushProse(); flushReviewAnswers(); flushVisionInline(); return; }
+  try { clearStaleReviewNotif(); } catch {}
+  // Coming back to the app (e.g. picking up your phone after filing the review on
+  // the desktop): re-pull reviews so the Today / Home "due" nudge clears. (Robin.)
+  const vt = state.view && state.view.type;
+  if (vt === 'home' || vt === 'today') api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; try { clearStaleReviewNotif(); } catch {} if (state.view.type === 'home') renderHome(); else if (state.view.type === 'today') renderToday(); } }).catch(() => {});
+});
 window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); flushVisionInline(); });
 document.addEventListener('focusout', (e) => { if (e.target && e.target.matches && e.target.matches('[data-area-vision]')) flushVisionInline(); }, true);
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
