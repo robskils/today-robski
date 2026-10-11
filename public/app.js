@@ -7704,49 +7704,14 @@ function renderArea() {
   // Files & photos and Web links share one half-and-half row. (Robin: Web links
   // shouldn't sit alone.) Who-has-access now leads the quick row up top.
   const linksAccessRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
-  // Connections hub: a card per type. Populated ones carry a count, are highlighted
-  // and sort to the front, and click through to view their section (which surfaces
-  // above as you add). Empty ones are the add affordance for that type. (Robin.)
-  const connOpen = areaSecOpen('Connections');
-  const dreamN = journals.filter((j) => (j.props || {}).mode === 'dreams').length;
-  const journalN = journals.length - dreamN;
-  const bookN = bookmarks.filter((b) => (b.props || {}).media === 'book').length;
-  const filmN = bookmarks.filter((b) => (b.props || {}).media === 'film').length;
-  const CONN = [
-    { ic: '▤', l: 'Page', n: notes.length + tables.length, go: 'Pages and tables', conn: 'note', add: 'data-area-add-note' },
-    { ic: '✓', l: 'Task', n: openTs.length, go: 'Tasks', conn: 'task', add: 'data-area-add-task' },
-    ...(secHidden('Goals') ? [] : [{ ic: '🎯', l: 'Goal', n: activeGoals.length, go: 'Goals', conn: 'goal', add: 'data-area-add-goal' }]),
-    { ic: '👤', l: 'Contact', n: contacts.length, go: 'Contacts', conn: 'contact', add: 'data-area-add-contact' },
-    { ic: '👥', l: 'Member', n: memberCount || 0, add: 'data-area-invite' },
-    ...(secHidden('Web links') ? [] : [{ ic: '🔗', l: 'Web link', n: linkN, go: 'Web links', add: `data-xlink-add data-xlink-kind="area" data-xlink-id="${area.id}"` }]),
-    ...(secHidden('Files') ? [] : [{ ic: '📎', l: 'File', n: attList.filter((a) => !isImgType(a.type)).length, go: 'Files', file: '' }, { ic: '🖼', l: 'Photo', n: attList.filter((a) => isImgType(a.type)).length, go: 'Files', file: 'image/*' }]),
-    ...(secHidden('Bucket list') ? [] : [{ ic: '✦', l: 'Bucket-list', n: bucket.length, go: 'Bucket list', add: 'data-area-add-bucket' }]),
-    { ic: '◑', l: 'Event', n: (state.noteEvents || []).filter((e) => e && !e.feed && String(e.area || '') === String(area.id)).length, go: 'Week', conn: 'event' },
-    { ic: '✎', l: 'Journal', n: journalN, go: 'Reflections', add: 'data-area-add-journal' },
-    { ic: '☾', l: 'Dream', n: dreamN, go: 'Reflections', add: 'data-area-add-dream' },
-    { ic: '📖', l: 'Book', n: bookN, go: 'Saved links', add: 'data-area-add-book' },
-    { ic: '🎬', l: 'Film', n: filmN, go: 'Saved links', add: 'data-area-add-film' },
-    { ic: '✉', l: 'Email', n: emails.length, go: 'Emails', add: 'data-open-mail' },
-  ];
-  const connCard = (c) => {
-    const has = c.n > 0;
-    const inner = `${has ? `<span class="conn-c">${c.n}</span>` : ''}<span class="conn-ic">${c.ic}</span><span class="conn-l">${esc(c.l)}</span>`;
-    const cls = `conn-tile${has ? ' has' : ''}`;
-    if (c.conn) return `<button class="${cls}" data-area-connect="${esc(c.conn)}" title="Connect a ${esc(c.l.toLowerCase())}">${inner}</button>`;
-    if (has && c.go) return `<button class="${cls}" data-area-goto="${esc(c.go)}" title="View ${esc(c.l.toLowerCase())}">${inner}</button>`;
-    if (c.file !== undefined) return `<label class="${cls}" title="Add a ${esc(c.l.toLowerCase())}"><input type="file" ${c.file ? `accept="${c.file}"` : ''} multiple hidden data-att-input="${area.id}">${inner}</label>`;
-    return `<button class="${cls}" ${c.add} title="Add a ${esc(c.l.toLowerCase())}">${inner}</button>`;
-  };
-  const connTiles = CONN.slice().sort((a, b) => (b.n > 0) - (a.n > 0)).map(connCard).join('');
-  const connectSec = (area.sharedBy || secHidden('Connections')) ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
-      <div class="area-sec-h"><button class="ash-toggle" data-area-sec="Connections" aria-expanded="${connOpen}" title="${connOpen ? 'Collapse' : 'Expand'}"><span class="acw-chev">${connOpen ? '▾' : '▸'}</span><span class="ash-ic">🔗</span><span class="ash-l">Connections</span></button></div>
-      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Folio - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div><div class="conn-foot"><button class="conn-hide" data-area-hideconn title="Bring it back from the ▾ menu by the title, under Sections">Hide these once you're set up</button></div></div>` : ''}
-    </section>`;
+  // The old Connections hub (icon tiles at the foot of the page) has moved into the
+  // Folio's settings, merged with each piece's on/off + sharing: a tile per piece
+  // that expands to show "who sees it" plus connect/add actions. See the tile grid
+  // in areaOverviewHtml. (Robin: don't need the section at the end of the page.)
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
   ${filesSecRow}
-  ${linksAccessRow}
-  ${connectSec}`;
+  ${linksAccessRow}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals" open><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
@@ -7808,12 +7773,10 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  // Quick jump to the Connections hub (the "inputs for everything") from the top.
-  const areaConnBtn = (area.sharedBy || secHidden('Connections')) ? '' : '<button class="area-conn-link" data-area-goto="Connections" title="Jump to Connections">🔗 Connect</button>';
-  const areaDash = (areaAddBtn || areaConnBtn || dashStats) ? `<div class="area-dash" style="--h:${h}">
+  const areaDash = (areaAddBtn || dashStats) ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
-        <div class="area-dash-acts">${areaConnBtn}${areaAddBtn}</div>
+        <div class="area-dash-acts">${areaAddBtn}</div>
       </div>
     </div>` : '';
   // The folio's own "Today" feed, near the top: what's coming here (a deadline,
@@ -7946,43 +7909,78 @@ function areaOverviewHtml(area, c, blocks) {
   // recent-views list, filtered to this area).
   const rv = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
-  // Owner section control: the owner decides which parts of the page exist.
-  // Untick one and it disappears for everyone; empty sections hide themselves.
-  const AREA_SECS = ['Vision', 'Goals', 'Week', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
-  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead' };
+  // Owner section control, now an icon-tile grid: one tile per piece of the Folio,
+  // each expanding to its settings - on / only you / shared (with whom) - plus the
+  // connect & add actions that used to live in the Connections hub at the foot of
+  // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
+  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
-  // Robust per-function settings: for each function, switch it on/off AND choose
-  // whether members see it - private by default, shared only when you say. The
-  // private/shared column shows for shareable content once the folio has members.
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list'];
   const hasMembers = !!(shares && shares.length);
   const optin = (area.props || {}).shareMode === 'optin';
   const scfg = (area.props || {}).shareSections || {};
   const memChips = (k, st) => `<span class="ovs-mems"><button class="ovs-mem ${st === 'all' ? 'on' : ''}" data-area-sec-mem="${esc(k)}::all">All</button>${(shares || []).map((s) => `<button class="ovs-mem ${Array.isArray(st) && st.map(String).includes(String(s.id)) ? 'on' : ''}" data-area-sec-mem="${esc(k)}::${s.id}" title="${esc(s.name || 'Someone')}">${esc(initial(s.name || '?'))}</button>`).join('')}</span>`;
-  // Each function is one of three states, spelled out: Off (neither of us),
-  // Only me (on for me, off for them) or Shared (on for me, on for them - all or
-  // some). Non-shareable parts, or a folio with no members, are just Off/On.
+  // Each shareable function is one of three states: Off (neither of us), Only me
+  // (on for me, off for them) or Shared (all or some members).
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
-  const secRow = (k) => {
-    const hiddenK = hidden.includes(k);
-    // Non-shareable parts (Vision, Week, Wall…) are a plain on/off.
-    if (!SHARE_KEYS.includes(k)) {
-      return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label></div>`;
-    }
-    // Shareable tools get the three-way on EVERY folio. A legacy (open) folio
-    // shares everything, so each tool reads Shared; an opt-in folio reads from
-    // shareSections (default Only me). So a part can be kept private even on a
-    // shared folio. (Robin.)
-    const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
-    const state = hiddenK ? 'off' : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
-    const who = state === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
-    return `<div class="ovs-row ovs-row-seg"><span class="ovs-name">${esc(SEC_LABELS[k] || k)}</span><div class="ovs-seg">${seg(k, state, 'off', 'Off')}${seg(k, state, 'me', 'Only me')}${seg(k, state, 'shared', 'Shared')}</div>${who}</div>`;
+  // The pieces of the Folio, each a tile. `conn` adds a "Connect existing" button,
+  // `acts` are add buttons, `file`/`members` are their special cases - all reusing
+  // the handlers the old Connections tiles used.
+  const aid = area.id;
+  const PIECES = [
+    { k: 'Pages and tables', ic: '▤', conn: 'note', acts: [['data-area-add-note', '＋ New page']] },
+    { k: 'Tasks', ic: '✓', conn: 'task', acts: [['data-area-add-task', '＋ New task']] },
+    { k: 'Goals', ic: '🎯', conn: 'goal', acts: [['data-area-add-goal', '＋ New goal']] },
+    { k: 'Contacts', ic: '👤', conn: 'contact', acts: [['data-area-add-contact', '＋ New contact']] },
+    { k: 'Reflections', ic: '✎', acts: [['data-area-add-journal', '＋ Journal'], ['data-area-add-dream', '＋ Dream']] },
+    { k: 'Saved links', ic: '🔖', acts: [['data-area-add-book', '＋ Book'], ['data-area-add-film', '＋ Film']] },
+    { k: 'Bucket list', ic: '✦', acts: [['data-area-add-bucket', '＋ Bucket-list item']] },
+    { k: 'Week', ic: '◑', conn: 'event', acts: [['data-area-add-event', '＋ New event']] },
+    { k: 'Emails', ic: '✉', acts: [['data-open-mail', 'Open Mail ↗']] },
+    { k: 'Files', ic: '📎', file: true },
+    { k: 'Web links', ic: '🔗', acts: [[`data-xlink-add data-xlink-kind="area" data-xlink-id="${aid}"`, '＋ Add a link']] },
+    { k: 'Wall', ic: '📝' },
+    { k: 'Vision', ic: '❖' },
+    { k: 'Shared with', ic: '👥', members: true },
+    { k: 'Sentiment', ic: '📊' },
+  ];
+  const kc = {}; (blocks || []).forEach((b) => { kc[b.kind] = (kc[b.kind] || 0) + 1; });
+  const pieceCount = {
+    'Pages and tables': (c.notes || 0) + (c.tables || 0), Tasks: c.tasks || 0, Goals: c.goals || 0,
+    Contacts: kc.contact || 0, Reflections: c.reflections || 0, 'Saved links': c.saved || 0,
+    'Bucket list': kc.bucket || 0, 'Web links': blockLinks(area).length,
+    Files: ((area.props && area.props.attachments) || []).length, 'Shared with': hasMembers ? shares.length : 0,
   };
+  const setTile = (state.area_open && state.area_open.setTile) || null;
+  const pieceTile = (p) => {
+    const n = pieceCount[p.k]; const openT = setTile === p.k; const off = hidden.includes(p.k);
+    return `<button class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ''}" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${esc(SEC_LABELS[p.k] || p.k)} settings"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>`;
+  };
+  const pieceShareCtl = (k) => {
+    const hiddenK = hidden.includes(k);
+    if (!SHARE_KEYS.includes(k)) {
+      return `<label class="ovt-onoff"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${hiddenK ? 'Off - hidden from this Folio' : 'On - showing on this Folio'}</span></label>`;
+    }
+    const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
+    const stt = hiddenK ? 'off' : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
+    const who = stt === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
+    return `<div class="ovt-ctl"><span class="ovt-ctl-l">Who sees it</span><div class="ovs-seg">${seg(k, stt, 'off', 'Off')}${seg(k, stt, 'me', 'Only me')}${seg(k, stt, 'shared', 'Shared')}</div>${who}</div>`;
+  };
+  const pieceActs = (p) => {
+    const bits = [];
+    if (p.conn) bits.push(`<button class="ovt-act" data-area-connect="${esc(p.conn)}">🔗 Connect existing</button>`);
+    (p.acts || []).forEach(([attr, label]) => bits.push(`<button class="ovt-act" ${attr}>${esc(label)}</button>`));
+    if (p.file) bits.push(`<label class="ovt-act ovt-act-file"><input type="file" multiple hidden data-att-input="${aid}">＋ Add files or photos</label>`);
+    return (bits.length ? `<div class="ovt-acts">${bits.join('')}</div>` : '') + (p.members ? `<div class="ovt-members">${areaMembersBody(area)}</div>` : '');
+  };
+  const openP = PIECES.find((p) => p.k === setTile);
+  const panel = openP ? `<div class="ovt-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openP.ic}</span>${esc(SEC_LABELS[openP.k] || openP.k)}</div>${pieceShareCtl(openP.k)}${pieceActs(openP)}</div>` : '';
   const shareSwitch = optin ? `<button class="ghost ovs-shareall" data-area-share-open>Reset - share everything</button>` : '';
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
-      <div class="ov-muted" style="margin-bottom:11px">For each tool: <b>Off</b>, <b>Only me</b> (private - yours even on a shared folio), or <b>Shared</b> (with whom). Choose per tool.</div>
-      <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
+      <div class="ov-muted" style="margin-bottom:12px">Tap a piece to set whether it's <b>off</b>, <b>only you</b>, or <b>shared</b> (and with whom) - and to connect or add to it.</div>
+      <div class="ovt-grid">${PIECES.map(pieceTile).join('')}</div>
+      ${panel}
       ${shareSwitch}
     </div>`;
   // How this area figures in reviews: a "key" star (the wheel average is taken from
@@ -19466,6 +19464,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-share-optin]')) { areaShareStartOptin(); return; }
   if (t.closest('[data-area-share-open]')) { patchAreaShare({ shareMode: 'open', shareSections: {} }); return; }
   { const ss = t.closest('[data-area-sec-share]'); if (ss) { areaSecShareToggle(ss.dataset.areaSecShare); return; } }
+  { const ovt = t.closest('[data-ov-tile]'); if (ovt) { const k = ovt.dataset.ovTile; if (state.area_open) state.area_open.setTile = (state.area_open.setTile === k) ? null : k; renderArea(); return; } }
   { const sst = t.closest('[data-area-sec-state]'); if (sst) { const [nm, stv] = sst.dataset.areaSecState.split('::'); areaSecState(nm, stv); return; } }
   { const sm = t.closest('[data-area-sec-mem]'); if (sm) { const [nm, who] = sm.dataset.areaSecMem.split('::'); areaSecMember(nm, who); return; } }
   if (t.closest('[data-area-wall-toggle]')) { try { localStorage.setItem('life.area.wall', areaWallOpen() ? '0' : '1'); } catch {} renderArea(); return; }

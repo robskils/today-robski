@@ -5231,6 +5231,29 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ovs-mem.on { border-color:color-mix(in srgb,var(--c,var(--accent)) 50%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--card)); color:var(--ink); }
 .ovs-switch { display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between; margin-top:13px; padding-top:12px; border-top:1px solid var(--line); font-size:13.5px; color:var(--ink-3); }
 .ovs-shareall { margin-top:12px; font-size:13px; }
+/* Sections & sharing as an icon-tile grid: a tile per piece of the Folio; tapping
+   one expands a panel with its on/only-you/shared control + connect/add actions.
+   (The old Connections hub folded in here.) */
+.ovt-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
+.ovt-tile { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:15px 8px; border:1px solid var(--line); border-radius:14px; background:var(--paper); color:var(--ink); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; }
+.ovt-tile:hover { border-color:var(--c,var(--accent)); background:var(--card); transform:translateY(-1px); }
+.ovt-tile.on { border-color:var(--c,var(--accent)); background:color-mix(in srgb,var(--c,var(--accent)) 15%,var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,var(--accent)) 42%,transparent); }
+.ovt-tile.on .ovt-ic { color:var(--c,var(--accent)); }
+.ovt-tile.ovt-off { opacity:.5; }
+.ovt-ic { font-size:21px; line-height:1; }
+.ovt-l { font-size:13px; font-weight:600; text-align:center; line-height:1.2; }
+.ovt-c { position:absolute; top:7px; right:9px; font-size:12px; font-weight:700; color:var(--c,var(--accent)); line-height:1; }
+.ovt-panel { margin-top:12px; padding:16px 16px 18px; border:1px solid color-mix(in srgb,var(--c,var(--accent)) 30%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--c,var(--accent)) 5%,var(--card)); display:flex; flex-direction:column; gap:13px; }
+.ovt-panel-h { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:600; color:var(--ink); }
+.ovt-ph-ic { font-size:18px; }
+.ovt-ctl { display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
+.ovt-ctl-l { font-size:13px; font-weight:600; color:var(--ink-3); flex:none; }
+.ovt-onoff { display:flex; align-items:center; gap:9px; font-size:14px; color:var(--ink-2); cursor:pointer; }
+.ovt-onoff input { width:18px; height:18px; accent-color:var(--c,var(--accent)); flex:none; }
+.ovt-acts { display:flex; flex-wrap:wrap; gap:8px; }
+.ovt-act { font:inherit; font-size:13px; font-weight:500; padding:7px 13px; border:1px solid var(--line); border-radius:999px; background:var(--paper); color:var(--ink-2); cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.ovt-act:hover { border-color:var(--c,var(--accent)); color:var(--ink); background:var(--card); }
+.ovt-members { margin-top:2px; }
 .ov-reviews { margin-top:14px; }
 .ov-revtog { display:flex; align-items:flex-start; gap:10px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:7px 0; line-height:1.45; }
 .ov-revtog input { width:18px; height:18px; accent-color:var(--accent); flex:none; margin-top:1px; }
