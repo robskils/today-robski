@@ -9601,10 +9601,11 @@ function t2TrackerHtml(manage) {
       const s = cadenceStatus(prcMarkedDays(a.id), a.cadence);
       const marked = practiceMarked(a.id, today);
       const streak = practiceStreak(a.id);
-      const nameInner = manage
-        ? `<span class="trk-rename" data-prc-rename="${a.id}" contenteditable="true" spellcheck="false" title="Click to rename">${esc(a.title)}</span>`
-        : esc(a.title);
-      return `<div class="trk-prow ${a.avoid ? 't2-avoid' : ''} ${!manage ? 'prc-row-click' : ''}" data-prc-id="${a.id}" ${!manage ? `data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"` : ''}>
+      // Tapping a practice always opens its read-only guide (video, aim, notes,
+      // streak), with an ✎ Edit there to the editable form. Renaming moved off the
+      // row into that editor, so a tap opens rather than edits in place. (Robin.)
+      const nameInner = esc(a.title);
+      return `<div class="trk-prow prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
