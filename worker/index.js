@@ -4636,6 +4636,21 @@ export default {
       // Google round-trip, so you can hook a calendar event to a folio from the
       // Connections picker without reopening the event editor.
       if (path === '/api/event-area' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventAreaFor(env, b.eventId, b.area || null).catch(() => {}); return json({ ok: true }, request); }
+      // Store an uploaded image (folio cover, mail signature) in R2 and hand back the
+      // URL the sig-img GET serves. There was no POST route, so uploads fell through
+      // to handleMail and died with a D1 error. (Robin: the upload didn't work.) The
+      // id stays [\w-] to match the GET regex; namespaced to the user.
+      if (path === '/api/mail/sig-img' && request.method === 'POST') {
+        if (!env.ATTACHMENTS) return err('Image storage is not set up.', request, 503);
+        const type = url.searchParams.get('type') || request.headers.get('content-type') || 'image/png';
+        if (!/^image\//.test(type)) return err('Please upload an image.', request, 400);
+        const buf = await request.arrayBuffer();
+        if (!buf || !buf.byteLength) return err('That upload came through empty.', request, 400);
+        if (buf.byteLength > 6 * 1024 * 1024) return err('That image is too large (max 6MB).', request, 413);
+        const id = `${env.uid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        await env.ATTACHMENTS.put(`sigimg/${id}`, buf, { httpMetadata: { contentType: type } });
+        return json({ url: `/api/mail/sig-img/${id}` }, request);
+      }
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);

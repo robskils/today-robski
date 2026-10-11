@@ -7829,6 +7829,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cv-url-row { display:flex; gap:8px; margin-top:7px; }
 .cv-url { flex:1 1 auto; min-width:0; }
 .cv-remove { color:var(--danger,#b4453a); margin-right:auto; }
+/* The Remove cover / Close row wants room, not to sit cramped against the URL field
+   and the dialog edge. (Robin.) */
+.cover-dialog .ui-dialog-btns { margin-top:18px; gap:12px; }
+.cover-dialog .ui-btn { padding:12px 22px; }
 
 /* Stats as ONE quiet unit: no separate boxes - plain figures on the page, divided
    by hairlines, the number in serif. Reads as a summary line, not four cards. */
@@ -7855,9 +7859,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* The parts of an area as soft, generously-padded panels laid two-up - like a
    considered dashboard, filling the width, never a single-column stack of empty
    full-width boxes. Neutral panels (raised off the paper), hue only as accents. */
-.area-flow { display:flex; flex-direction:column; gap:20px; }
+.area-flow { display:flex; flex-direction:column; gap:20px; margin-top:24px; }
 @media (min-width:980px){
-  .area-flow { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+  .area-flow { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; margin-top:24px; }
   /* Only Tasks takes the full row; every other tool pairs up half-width. (Robin.) */
   .area-flow .area-sec[data-aflow="Tasks"] { grid-column:1 / -1; }
 }

@@ -18811,7 +18811,7 @@ function flushProse() {
     saveProse(pe.dataset.prose, pe.innerHTML, pe.dataset.blockId);
   });
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); flushVisionInline(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { flushProse(); flushReviewAnswers(); flushVisionInline(); } else { try { clearStaleReviewNotif(); } catch {} } });
 window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); flushVisionInline(); });
 document.addEventListener('focusout', (e) => { if (e.target && e.target.matches && e.target.matches('[data-area-vision]')) flushVisionInline(); }, true);
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
