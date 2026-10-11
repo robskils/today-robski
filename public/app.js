@@ -7204,6 +7204,8 @@ async function openArea(id) {
   state.area_open = { area, blocks, shares: null };
   recordRecent('area', id, area.title);
   renderNav(); renderArea();
+  // Private (per-user) Notepad: load this person's own pad for the folio. (Robin.)
+  if (!wallShared(area)) api('/api/folio-note?area=' + encodeURIComponent(id)).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.myWall = (r && r.value) || ''; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
   // People connected: who this area is shared with (async, non-blocking).
   Promise.all([
     api(`/api/blocks/${id}/shares`).then((r) => r.shares || []).catch(() => []),
@@ -7923,7 +7925,7 @@ function areaOverviewHtml(area, c, blocks) {
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
   const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead', 'Pages and tables': 'Pages & tables', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
-  const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list'];
+  const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
   const optin = (area.props || {}).shareMode === 'optin';
   const scfg = (area.props || {}).shareSections || {};
@@ -7970,7 +7972,9 @@ function areaOverviewHtml(area, c, blocks) {
       return `<label class="ovt-onoff"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${hiddenK ? 'Off - hidden from this Folio' : 'On - showing on this Folio'}</span></label>`;
     }
     const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
-    const stt = hiddenK ? 'off' : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
+    // The Notepad defaults to Shared and only goes private on an explicit 'me', so
+    // an existing shared pad never silently disappears (mirrors wallShared).
+    const stt = hiddenK ? 'off' : (k === 'Wall' ? (st === 'me' ? 'me' : 'shared') : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared'));
     const who = stt === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
     return `<div class="ovt-ctl"><span class="ovt-ctl-l">Who sees it</span><div class="ovs-seg">${seg(k, stt, 'off', 'Off')}${seg(k, stt, 'me', 'Only me')}${seg(k, stt, 'shared', 'Shared')}</div>${who}</div>`;
   };
@@ -8133,7 +8137,10 @@ function areaSecState(k, stateVal) {
     a.props.shareMode = 'optin'; patch.shareMode = 'optin';
   }
   if (stateVal === 'off') { if (!hs.includes(k)) hs.push(k); delete cfg[k]; }
-  else if (stateVal === 'me') { hs = hs.filter((x) => x !== k); delete cfg[k]; }
+  // "Only me" stores an explicit 'me' marker (not a delete), so it's distinct from
+  // never-configured. The worker treats any non-'all'/non-array value as private, so
+  // block sections behave exactly as before; the Notepad reads it to go per-user.
+  else if (stateVal === 'me') { hs = hs.filter((x) => x !== k); cfg[k] = 'me'; }
   else { hs = hs.filter((x) => x !== k); if (!(cfg[k] === 'all' || (Array.isArray(cfg[k]) && cfg[k].length))) cfg[k] = 'all'; }
   a.props.hiddenSecs = hs; a.props.shareSections = cfg;
   patch.hiddenSecs = hs; patch.shareSections = cfg;
@@ -8158,9 +8165,21 @@ function areaSecMember(name, who) {
   else cfg[name] = (list.length >= shares.length) ? 'all' : list;
   patchAreaShare({ shareSections: cfg });
 }
+// Is this folio's Notepad shared (one pad everyone edits) or private (each person
+// their own)? A legacy/open folio keeps the shared pad; on an opt-in folio it's
+// shared only when the Wall section is actually shared, else private per-user. (Robin.)
+function wallShared(area) {
+  const p = (area && area.props) || {};
+  if (p.shareMode !== 'optin') return true;   // legacy/open: the shared pad
+  // Shared unless explicitly set to "Only me" - so an existing shared notepad never
+  // vanishes when a folio becomes opt-in; it goes private only when you choose it.
+  return (p.shareSections || {}).Wall !== 'me';
+}
 function areaWallBody(area) {
-  const wall = (area.props && area.props.wall) || '';
-  return `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="A shared space for this area - jot anything, everyone with access can see it.">${esc(wall)}</textarea>`;
+  const shared = wallShared(area);
+  const wall = shared ? ((area.props && area.props.wall) || '') : ((state.area_open && state.area_open.myWall) || '');
+  const ph = shared ? 'A shared space for this folio - everyone with access can see it.' : 'Your private notepad for this folio - only you see this.';
+  return `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="${esc(ph)}">${esc(wall)}</textarea>`;
 }
 // Area file attachments - same store the vision images use, same handlers as a
 // note's attachments (upload/open/delete/thumbnails), minus the note-only Scan.
@@ -18770,7 +18789,7 @@ document.addEventListener('input', (e) => {
   // Mail search hits IMAP, so debounce and re-focus the box after results land
   // (a full re-render recreates the input) rather than re-rendering per keystroke.
   if (e.target.matches('[data-home-notepad]')) { state.home.notepad = e.target.value; const v = e.target.value; clearTimeout(window.__padT); window.__padT = setTimeout(() => { api('/api/kv/home_scratchpad', { method: 'PUT', body: JSON.stringify({ value: v }) }).catch(() => {}); }, 700); }
-  if (e.target.matches('[data-area-wall]')) { const a = state.area_open && state.area_open.area; if (a) { a.props = a.props || {}; a.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__areaWallT); window.__areaWallT = setTimeout(() => { api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
+  if (e.target.matches('[data-area-wall]')) { const a = state.area_open && state.area_open.area; if (a) { const v = e.target.value; const shared = wallShared(a); if (shared) { a.props = a.props || {}; a.props.wall = v; } else if (state.area_open) { state.area_open.myWall = v; } clearTimeout(window.__areaWallT); window.__areaWallT = setTimeout(() => { if (shared) api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); else api('/api/folio-note', { method: 'POST', body: JSON.stringify({ area: a.id, value: v }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-note-wall]')) { const n = state.note && state.note.current; if (n) { n.props = n.props || {}; n.props.wall = e.target.value; const v = e.target.value; clearTimeout(window.__noteWallT); window.__noteWallT = setTimeout(() => { api('/api/blocks/' + n.id, { method: 'PATCH', body: JSON.stringify({ props: { wall: v } }) }).catch(() => {}); }, 700); } }
   if (e.target.matches('[data-timer-label]')) { timerState.label = e.target.value; saveTimer(); }
   if (e.target.matches('[data-med-note]')) { const day = dayKey(new Date()); const v = e.target.value; clearTimeout(window.__medNoteT); window.__medNoteT = setTimeout(() => saveMedNote(day, v), 500); return; }

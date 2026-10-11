@@ -4636,6 +4636,12 @@ export default {
       // Google round-trip, so you can hook a calendar event to a folio from the
       // Connections picker without reopening the event editor.
       if (path === '/api/event-area' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventAreaFor(env, b.eventId, b.area || null).catch(() => {}); return json({ ok: true }, request); }
+      // A folio's PRIVATE, per-user notepad. When the Notepad is set to "Only me"
+      // instead of Shared, each person keeps their own, stored in their own settings
+      // (PK is (user_id, key)), so a shared folio still gives each of you a private
+      // pad. The shared pad stays on area.props.wall. (Robin.)
+      if (path === '/api/folio-note' && request.method === 'GET') { const aid = url.searchParams.get('area') || ''; return json({ value: aid ? ((await getSetting(env, 'folionote:' + aid)) || '') : '' }, request); }
+      if (path === '/api/folio-note' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (b.area) await setSetting(env, 'folionote:' + String(b.area), String(b.value ?? '')); return json({ ok: true }, request); }
       // Store an uploaded image (folio cover, mail signature) in R2 and hand back the
       // URL the sig-img GET serves. There was no POST route, so uploads fell through
       // to handleMail and died with a D1 error. (Robin: the upload didn't work.) The
