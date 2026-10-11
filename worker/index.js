@@ -3928,7 +3928,7 @@ async function reviewRemindersForUser(env, uid) {
     const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
     for (const rt of due) {
       const label = REVIEW_LABELS[rt] || 'review';
-      await pushAll(env, { title: `Your ${label} review is due`, body: 'Open Daybook → Reviews to do it.', type: 'review' }, uid).catch(() => {});
+      await pushAll(env, { title: `Your ${label} review is due`, body: 'Open Daybook → Reviews to do it.', type: 'review', tag: `daybook-review-${rt}` }, uid).catch(() => {});
       if (phone) await sendSms(env, `Your ${label} review is due. Open it: ${home}/reviews`, phone).catch(() => {});
       if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }

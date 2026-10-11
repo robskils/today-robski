@@ -113,8 +113,8 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      tag: data.type === 'mail' ? 'robski-mail' : undefined,   // collapse repeats
-      renotify: data.type === 'mail',
+      tag: data.tag || (data.type === 'mail' ? 'robski-mail' : undefined),   // collapse repeats; a tagged push replaces its predecessor and can be cleared by tag
+      renotify: !!(data.tag || data.type === 'mail'),
       data: { url, target },
     });
   })());

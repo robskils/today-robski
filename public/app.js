@@ -9371,7 +9371,7 @@ async function loadToday(day) {
     T.data = dayData; T.tasks = tasks;
   } catch (e) { toast(e.message); }
   // Review reminders, so a review due today can surface here with a link.
-  if (!state.reviewRem) api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'today') renderToday(); }).catch(() => {});
+  if (!state.reviewRem) api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; clearStaleReviewNotif(); if (state.view.type === 'today') renderToday(); }).catch(() => {});
   renderToday();
 }
 // Which reviews are scheduled to land today (per the chosen day). Drives the
@@ -9423,6 +9423,32 @@ function reviewDismiss(k) {
   try { localStorage.setItem('life.review.dismissed', JSON.stringify({ date: todayISO(), keys: [...s] })); } catch {}
   if (state.view.type === 'home') renderHome(); else if (state.view.type === 'today') renderToday();
 }
+// Clear lingering "review due" push notifications. A delivered Web Push can't be
+// unsent, but each review push now carries a per-type tag (daybook-review-<rtype>),
+// so once the review is filed we close the notification - no more nag for something
+// you've already done. (Robin: remove the notification once the review is complete.)
+function clearReviewNotif(types) {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    const ks = (types && types.length) ? types : ['weekly', 'monthly', 'quarterly', 'yearly'];
+    navigator.serviceWorker.ready.then((reg) => {
+      if (!reg || !reg.getNotifications) return;
+      // New pushes carry a per-type tag - close those directly.
+      ks.forEach((k) => reg.getNotifications({ tag: `daybook-review-${k}` }).then((ns) => ns.forEach((n) => n.close())).catch(() => {}));
+      // Fallback for notifications shown before tags existed (no tag to match on):
+      // close any still-showing "<type> review is due" by its title.
+      reg.getNotifications().then((ns) => ns.forEach((n) => { const ti = (n.title || '').toLowerCase(); if (ks.some((k) => ti.includes(`${k} review is due`))) n.close(); })).catch(() => {});
+    }).catch(() => {});
+  } catch {}
+}
+// With reviews loaded, close notifications for any review type that isn't due now
+// (i.e. already filed) - catches a push that landed while you were away, after you
+// did the review elsewhere.
+function clearStaleReviewNotif() {
+  if (!state.reviewRem || !state.reviews) return;
+  const due = new Set(reviewsDueToday().map((d) => d.k));
+  clearReviewNotif(['weekly', 'monthly', 'quarterly', 'yearly'].filter((k) => !due.has(k)));
+}
 // One review-due banner row: the "Start" button plus an × to dismiss it for today.
 function reviewDueBannerHtml() {
   const due = reviewsDueToday();
@@ -9441,7 +9467,7 @@ function reviewDueBannerHtml() {
 // shared banner (nothing once submitted or dismissed).
 function homeReviewDueBanner() {
   if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
-  if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
+  if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
   return reviewDueBannerHtml();
 }
 // A relative deadline label from an ISO date: "due today / tomorrow / in N days /
@@ -9520,7 +9546,7 @@ function renderToday() {
   // Load reviews once so the banner knows what's already submitted (it then shows
   // nothing for a filed review), then use the shared builder (Start + dismiss ×).
   if (isToday && state.reviews === undefined) {
-    state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; if (state.view.type === 'today') renderToday(); }).catch(() => {});
+    state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'today') renderToday(); }).catch(() => {});
   }
   const dueBanner = isToday ? reviewDueBannerHtml() : '';
   $('#pane').innerHTML = `
@@ -19149,7 +19175,7 @@ document.addEventListener('click', (e) => {
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
   const drv = t.closest('[data-del-review]'); if (drv) { delReview(drv.dataset.delReview); return; }
-  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); maybeAutoReadReview(); reviewScrollTop(); }); toast('Filed ✓ - here is your report'); return; }
+  const rvd = t.closest('[data-review-submit]'); if (rvd) { const id = rvd.dataset.reviewSubmit; const _rr = state.review_open && state.review_open.review; const _rk = _rr && _rr.props && _rr.props.rtype; flushProse(); flushReviewAnswers(); if (state.review_open) state.review_open.mode = 'report'; patchReview(id, { status: 'done', doneAt: todayISO() }, true).then(() => { renderReviewCard(); maybeAutoReadReview(); reviewScrollTop(); clearReviewNotif(_rk ? [_rk] : null); }); toast('Filed ✓ - here is your report'); return; }
   const rvo = t.closest('[data-review-reopen]'); if (rvo) { patchReview(rvo.dataset.reviewReopen, { status: 'inprogress' }, true).then(renderReviewCard); return; }
   { const rt = t.closest('[data-rr-tab]'); if (rt) { if (state.review_open) { state.review_open.reportTab = rt.dataset.rrTab; renderReviewCard(); } return; } }
   { const rvs = t.closest('[data-rvd-sort]'); if (rvs) { if (state.review_open) { state.review_open.doneSort = rvs.dataset.rvdSort; state.review_open.doneOpen = true; renderReviewCard(); } return; } }
