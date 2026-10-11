@@ -3430,11 +3430,11 @@ function navGridHtml(v) {
   // Home and Mail each sit in their own small rounded box (one grid column each,
   // side by side) so the pinned pair reads like the section boxes below it.
   const leadBox = (item) => item ? `<section class="nav-sec-box nav-lead-box">${item}</section>` : '';
-  // The four mains (Mail · Notes · Calendar · Tasks) sit at the top, mirroring the
-  // Home quick buttons; Today drops into the Daily group below.
+  // Tools leads with Home (top-left), then the mains, and ends with Discover
+  // (moved out of the Today group). Today keeps the day-planning trio below. (Robin.)
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved])}
-    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices, NI.discover])}
+    ${grp(t('nav.grp.main'), [NI.home, NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
+    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
     ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.iching, NI.spirit, NI.meditation, NI.insights])}
