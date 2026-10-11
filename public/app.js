@@ -7240,6 +7240,8 @@ async function openArea(id) {
     api(`/api/blocks/${id}/shares`).then((r) => r.shares || []).catch(() => []),
     state.friends ? Promise.resolve() : api('/api/friends').then((f) => { state.friends = f; }).catch(() => {}),
   ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
+  // Latest Updates wall: a cross-member activity feed for this folio (async).
+  api(`/api/area/${id}/updates`).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.updates = r || { updates: [] }; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
 }
 // Contacts associated with a page - the people tied to it (a vet, a landlord,
 // a coach). It's just the ordinary contact→area link (props.areas), so no sharing or
@@ -7879,6 +7881,24 @@ function renderArea() {
   const accessCard = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad"><div class="home-sec-h area-sec-h area-notepad-h"><span class="ash-ic">📝</span><span class="ash-l">Notepad</span></div><div class="area-notepad-body">${areaWallBody(area)}</div></section>`;
   const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
+  // Latest Updates: a Facebook-style wall of what everyone with access has done in
+  // this folio, newest first. Folios are made for sharing, so it names the person
+  // ("Smita added an event"). A cross-member feed from /api/area/:id/updates.
+  const UPD_IC = { note: '▤', table: '▦', task: '✓', event: '◑', contact: '👤', goal: '🎯', bookmark: '🔖', journal: '✎', bucket: '✦', file: '📎' };
+  const UPD_THING = { note: 'a page', table: 'a table', task: 'a task', event: 'an event', contact: 'a contact', goal: 'a goal', bookmark: 'a book or film', journal: 'a reflection', bucket: 'a bucket-list item', file: 'a file' };
+  const UPD_CLICKABLE = new Set(['note', 'table', 'task', 'contact', 'goal', 'bookmark', 'journal']);
+  const updData = state.area_open.updates;
+  const updList = (updData && updData.updates) || [];
+  const meUid = updData && updData.me;
+  const updRow = (e) => {
+    const who = (meUid != null && String(e.uid) === String(meUid)) ? 'You' : esc(e.name || 'Someone');
+    const thing = UPD_THING[e.kind] || 'an item';
+    const clk = UPD_CLICKABLE.has(e.kind);
+    const ts = e.ts ? new Date(e.ts).getTime() : 0;
+    return `<div class="upd-row${clk ? ' upd-click' : ''}"${clk ? ` data-fav-open="${e.kind}:${e.id}" role="button" tabindex="0"` : ''}><span class="upd-ic">${UPD_IC[e.kind] || '•'}</span><span class="upd-b"><span class="upd-t"><b>${who}</b> ${e.verb} ${thing}${e.title ? ` · <span class="upd-ttl">${esc(e.title)}</span>` : ''}</span>${ts ? `<span class="upd-when">${timeAgo(ts)}</span>` : ''}</span></div>`;
+  };
+  // Owner-facing for now (a member's privacy-filtered view comes later).
+  const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updList.map(updRow).join('')}</div>` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -7901,6 +7921,7 @@ function renderArea() {
     ${areaDash ? '<div class="area-recent-h area-tabs-kick">Metrics</div>' : ''}
     ${areaDash}
     ${areaVisionGoals}
+    ${latestUpdates}
     ${folioAccess}
     ${areaTools}
     </div>`;

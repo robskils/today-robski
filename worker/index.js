@@ -1927,6 +1927,43 @@ async function blockAccess(env, id) {
   }
   return null;
 }
+// The folio "Latest Updates" wall: a chronological, cross-member activity feed -
+// what everyone with access has added or changed in this folio. Folios are built
+// for sharing, so this surfaces a member's contributions (events, pages, …) that
+// the owner's single-user area view wouldn't otherwise show. (Robin, 2026-10-11.)
+async function areaUpdates(request, env, areaId) {
+  const acc = await blockAccess(env, areaId);
+  if (!acc) return err('not found', request, 404);
+  const areaRow = await env.DB.prepare('SELECT user_id, props FROM blocks WHERE id = ?').bind(areaId).first().catch(() => null);
+  if (!areaRow) return err('not found', request, 404);
+  const ownerId = areaRow.user_id;
+  const { results: mem } = await env.DB.prepare('SELECT friend_id FROM shares WHERE block_id = ?').bind(areaId).all().catch(() => ({ results: [] }));
+  const uids = [...new Set([ownerId, ...(mem || []).map((m) => m.friend_id)])].filter((x) => x != null);
+  const ph = uids.map(() => '?').join(',');
+  const { results } = await env.DB.prepare(
+    `SELECT id, kind, title, user_id, created_at, updated_at FROM blocks
+      WHERE user_id IN (${ph})
+        AND (json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))
+        AND archived = 0 AND IFNULL(json_extract(props,'$.private'),0) = 0
+      ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 60`,
+  ).bind(...uids, areaId, areaId).all().catch(() => ({ results: [] }));
+  // Names: each person's Daybook-card name first, else their account name/email.
+  const names = {};
+  const { results: cp } = await env.DB.prepare(`SELECT user_id, value FROM settings WHERE key = 'card_profile' AND user_id IN (${ph})`).bind(...uids).all().catch(() => ({ results: [] }));
+  for (const r of (cp || [])) { try { const n = (JSON.parse(r.value || '{}') || {}).name; if (n) names[r.user_id] = n; } catch {} }
+  const { results: us } = await env.DB.prepare(`SELECT id, name, email FROM users WHERE id IN (${ph})`).bind(...uids).all().catch(() => ({ results: [] }));
+  for (const u of (us || [])) { if (!names[u.id]) names[u.id] = u.name || (u.email ? String(u.email).split('@')[0] : null); }
+  const items = (results || []).map((b) => {
+    const c = b.created_at, u = b.updated_at || b.created_at;
+    const edited = c && u && (new Date(u).getTime() - new Date(c).getTime() > 60000);
+    return { id: b.id, kind: b.kind, title: b.title || '', uid: b.user_id, name: names[b.user_id] || 'Someone', verb: edited ? 'updated' : 'added', ts: u || c };
+  });
+  // Files live on the area's own props (owner-managed) and carry uploaded_at.
+  let props = {}; try { props = areaRow.props ? JSON.parse(areaRow.props) : {}; } catch {}
+  for (const a of (props.attachments || [])) { if (a && a.uploaded_at) items.push({ id: a.id, kind: 'file', title: a.name || 'a file', uid: ownerId, name: names[ownerId] || 'Someone', verb: 'added', ts: a.uploaded_at }); }
+  items.sort((x, y) => new Date(y.ts || 0).getTime() - new Date(x.ts || 0).getTime());
+  return json({ updates: items.slice(0, 40), me: env.uid }, request);
+}
 
 async function getBlock(env, id) {
   const acc = await blockAccess(env, id);
@@ -4643,6 +4680,7 @@ export default {
       // instead of Shared, each person keeps their own, stored in their own settings
       // (PK is (user_id, key)), so a shared folio still gives each of you a private
       // pad. The shared pad stays on area.props.wall. (Robin.)
+      { const um = path.match(/^\/api\/area\/([\w-]+)\/updates$/); if (um && request.method === 'GET') return areaUpdates(request, env, um[1]); }
       if (path === '/api/folio-note' && request.method === 'GET') { const aid = url.searchParams.get('area') || ''; return json({ value: aid ? ((await getSetting(env, 'folionote:' + aid)) || '') : '' }, request); }
       if (path === '/api/folio-note' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (b.area) await setSetting(env, 'folionote:' + String(b.area), String(b.value ?? '')); return json({ ok: true }, request); }
       // Store an uploaded image (folio cover, mail signature) in R2 and hand back the
