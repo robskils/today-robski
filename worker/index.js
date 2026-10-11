@@ -2047,13 +2047,14 @@ async function createBlocksBulk(request, env) {
   return json({ created: stmts.length }, request, 201);
 }
 
-// Favourites: any block (task, note or table) with props.fav set, in the order
-// they were pinned/dragged (fav_rank). Cross-kind on purpose - the home pins
-// what matters, whatever it is.
+// Favourites: any block (task, note or table) with props.fav set. A manual
+// drag order (fav_rank) wins; anything you haven't dragged falls back to
+// most-recent-first, so by default the newest starred/updated cards lead.
+// (Robin, 2026-10-11.) Cross-kind on purpose - the home pins what matters.
 async function handleFavorites(request, env) {
   const { results } = await env.DB.prepare(
     `SELECT * FROM blocks WHERE user_id = ? AND archived = 0 AND json_extract(props, '$.fav') = 1
-      ORDER BY json_extract(props, '$.fav_rank'), updated_at`,
+      ORDER BY COALESCE(json_extract(props, '$.fav_rank'), 999999), updated_at DESC`,
   ).bind(env.uid).all();
   return json(results.map(parseBlock), request);
 }
