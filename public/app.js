@@ -44,8 +44,8 @@ const T_EN = {
   'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Folios, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your pages in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
-  'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Starred Pages', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.newnote': '+ Page', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
@@ -66,8 +66,8 @@ const T_PT = {
   'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Folios, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas páginas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
-  'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Páginas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.newnote': '+ Página', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
@@ -669,7 +669,7 @@ const HELP = {
       <ul><li><b>Today</b> - your calendar events and time blocks for the day.</li>
       <li><b>Priority Tasks</b> - your open P1s, each on its own card, in the order you drag them. “See all” opens the full board.</li>
       <li><b>Notepad</b> - a scratchpad that saves as you type, waiting for you next time.</li>
-      <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the notes, tables and areas you keep returning to.</li></ul>
+      <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the pages, tables and areas you keep returning to.</li></ul>
       <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
   tasks: { title: 'Tasks', tip: 'A board of everything to do. Filter it your way, sort by any column, and tick things off.',
     body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional page and an optional due date.</p>
@@ -967,7 +967,7 @@ function labelForView(v) {
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.planner'); case 'tracker': return t('today.tracker');
     case 'discover': return t('nav.discover');
     case 'mailaccounts': return 'Mail accounts';
-    case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
+    case 'note': return (state.note && state.note.current.title) || 'Page'; case 'notes': return t('nav.notes');
     case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
@@ -2542,7 +2542,7 @@ const MOBILE_SECTIONS = [
   ['priority', 'home-sec-p1', 'Priority Tasks'],
   ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
-  ['favs', 'home-sec-favs', 'Starred Pages'],
+  ['favs', 'home-sec-favs', 'Starred'],
   ['favareas', 'home-sec-favareas', 'Pages'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
@@ -3662,7 +3662,7 @@ function renderTabbar(v) {
     + tab(v.type === 'mail' || v.type === 'mailaccounts', 'data-open-mail', '✉︎', 'Mail', !!state.mailUnreadTotal)
     + tab(v.type === 'calendar', 'data-open-calendar', '◑', 'Calendar')
     + tab(v.type === 'tasks' || v.type === 'taskcard', 'data-view-tasks', '✓', 'Tasks')
-    + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Notes');
+    + tab(['note', 'notes', 'table', 'tables'].includes(v.type), 'data-open-notes', '▤', 'Pages');
 }
 function toggleSec(key) { state.nav.collapsed[key] = !state.nav.collapsed[key]; localStorage.setItem('life.nav.collapsed', JSON.stringify(state.nav.collapsed)); renderNav(); }
 function reorderSecs(draggedKey, beforeKey) {
@@ -15392,7 +15392,7 @@ function connectedNotesHtml() {
     ${notes.length ? `<div class="gc-notes-grid">${cards}</div>` : '<p class="gc-notes-empty">Jot your thinking as a note - it lives here and in Notes, ready to grow.</p>'}
     <div class="goal-notelist">
       <div class="gal-box">
-        <input class="sel gal-search" data-goalnote-q placeholder="Connect an existing note…" value="${esc(go.noteQuery || '')}" autocomplete="off">
+        <input class="sel gal-search" data-goalnote-q placeholder="Connect an existing page…" value="${esc(go.noteQuery || '')}" autocomplete="off">
         <div class="gal-drop"><div class="gc-note-list">${connectedNotesPickerInner()}</div></div>
       </div>
       <button class="add-btn wide gc-note-new" data-goal-addnote>＋ New page</button>
@@ -17677,7 +17677,7 @@ function noteWallHtml(n) {
   const wall = (n.props && n.props.wall) || '';
   return `<section class="home-sec note-wall">
     <div class="home-sec-h note-wall-h" data-note-wall-toggle role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span>Wall</div>
-    ${open ? `<textarea class="home-notepad note-wall-ta" data-note-wall placeholder="A shared space for this note - everyone with access can see it." ${ro ? 'readonly' : ''}>${esc(wall)}</textarea>` : ''}
+    ${open ? `<textarea class="home-notepad note-wall-ta" data-note-wall placeholder="A shared space for this page - everyone with access can see it." ${ro ? 'readonly' : ''}>${esc(wall)}</textarea>` : ''}
   </section>`;
 }
 // Connected notes: the panel lets you create a note under this one (parent_id),
@@ -18125,7 +18125,7 @@ function renderTable() {
         ? `<input class="card-title card-title-ed" data-cell="${r.id}:${titleCol.id}" value="${esc(title)}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">`
         : `<h1 class="card-title">${esc(title)}</h1>`;
       const fieldCols = titleEditable ? c.slice(1) : c;
-      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Pages', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
         <div class="card">
         <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
@@ -18147,7 +18147,7 @@ function renderTable() {
   const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">page</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Pages', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
       ${noteTypeToggle(t.id, 'table')}
       ${blockAreasControl('table', t)}
@@ -21229,7 +21229,7 @@ function renderTaskCard() {
       <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
     </div>
     ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
-    ${t.props.note ? `<div class="task-source"><button class="task-source-link" data-open-note="${t.props.note}" title="Open the note this task came from">${NOTE_ICO}<span>From note: ${esc(t.props.noteTitle || 'View note')}</span></button></div>` : ''}
+    ${t.props.note ? `<div class="task-source"><button class="task-source-link" data-open-note="${t.props.note}" title="Open the page this task came from">${NOTE_ICO}<span>From note: ${esc(t.props.noteTitle || 'View note')}</span></button></div>` : ''}
     <div class="tf-meta">
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
@@ -22089,7 +22089,7 @@ function renderLinkPicker() {
   let el = document.getElementById('linkpick-overlay');
   if (!el) { el = document.createElement('div'); el.id = 'linkpick-overlay'; document.body.appendChild(el); }
   el.innerHTML = `<div class="pal-bg" data-linkpick-bg><div class="pal">
-    <input id="linkpick-input" placeholder="Paste a URL, or search notes, tables, cards & areas…" value="${esc(state.linkpick.q)}" autocomplete="off" spellcheck="false">
+    <input id="linkpick-input" placeholder="Paste a URL, or search pages, tables, cards & areas…" value="${esc(state.linkpick.q)}" autocomplete="off" spellcheck="false">
     <div class="pal-hint">Press Enter to link a web URL, or pick a page below to link internally.</div>
     <div class="pal-list" id="linkpick-list"></div></div></div>`;
   renderLinkPickerList();
