@@ -4804,10 +4804,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-link-pair .home-link.plus { border-radius:0 999px 999px 0; padding:9px 13px; font-size:17px; line-height:1; font-weight:600; }
 
 .tbl-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; padding:3px; }
-/* Inside a half-width ledger tool, cards fill the column (one per row) so they
+/* Inside a half-width folio tool, cards fill the column (one per row) so they
    don't pack into a cramped, truncated sliver beside empty space. (Robin.) */
 .area-flow .area-sec .tbl-cards, .area-flow .area-sec .contact-grid { grid-template-columns:1fr; }
-/* "See all N →": caps a tool at a handful of items so a ledger never becomes an
+/* "See all N →": caps a tool at a handful of items so a folio never becomes an
    endless scroll; expands in place. (Robin.) */
 .area-seemore { margin-top:12px; display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13.5px; font-weight:600; color:color-mix(in srgb,var(--c,var(--accent)) 60%,var(--ink-2)); background:none; border:0; padding:4px 2px; cursor:pointer; }
 .area-seemore:hover { color:var(--c,var(--accent)); text-decoration:underline; }
@@ -4950,7 +4950,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .adc-chip { font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--c) 9%,transparent); border:1px solid var(--line); padding:3px 10px; border-radius:999px; white-space:nowrap; }
 /* Open, flowing area overview: each part is a heading + its real content laid
    straight on the page (note/table cards, goal cards, task table), no boxes. */
-/* The ledger's tools sit two-up (half width each); Tasks and the Wall stay full
+/* The folio's tools sit two-up (half width each); Tasks and the Wall stay full
    width, since they want the room. Stacks to one column on a narrow screen. (Robin.) */
 .area-flow { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:30px; align-items:start; }
 .area-flow .area-sec[data-aflow="Tasks"] { grid-column:1 / -1; }
@@ -4982,12 +4982,12 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-sec.mdragging .area-sec-h { border-radius:10px; background:var(--card); box-shadow:0 14px 34px -12px rgba(0,0,0,.45); }
 .area-sec.mdrop-top { box-shadow:0 -3px 0 -1px var(--accent); }
 .area-sec.mdrop-bottom { box-shadow:0 3px 0 -1px var(--accent); }
-/* Week ahead: a ledger's seven-day planner. Co-parent clear - both sides read
+/* Week ahead: a folio's seven-day planner. Co-parent clear - both sides read
    the same week at a glance. Stacked day rows work the same on phone and
-   desktop; today is marked in the ledger's own hue. */
+   desktop; today is marked in the folio's own hue. */
 .area-weeksec { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin:26px 0; }
 .area-weeksec .awk-add { margin-left:auto; flex:none; }
-/* The "Week ahead" label wears the same antique small-caps as the ledger's other
+/* The "Week ahead" label wears the same antique small-caps as the folio's other
    section labels (Recently viewed, Be ready…), rather than the flow sections'
    bolder accent caps - so it sits in the same voice as its neighbours. (Robin.) */
 .area-weeksec .ash-l { font-family:'IM Fell English SC',Georgia,serif; font-size:15px; font-weight:400; letter-spacing:.08em; color:var(--ink-3); }
@@ -5449,7 +5449,7 @@ table.ttable tr:last-child td { border-bottom:0; }
 .pv-toggle.on .pv-lbl { color:var(--ink); }
 .tc-lock { flex:none; margin-left:6px; font-size:12px; opacity:.7; }
 /* "Private" marker: a labelled chip (not a bare padlock) so it's obvious an item
-   is yours alone inside a shared Ledger, plus a card treatment (dashed edge +
+   is yours alone inside a shared Folio, plus a card treatment (dashed edge +
    faint wash) that reads at a glance. --priv is a warm lock-gold, theme-aware. */
 :root { --priv:#8a6d3b; }
 :root[data-theme='dark'] { --priv:#cbb07a; }
@@ -7709,9 +7709,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .area-hero h1 .ac-dot, .area-hero h1 .ac-dot-btn { width:13px; height:13px; box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 12%,transparent); }
 .area-meta { font-size:15px; color:var(--ink-3); margin-top:9px; }
 
-/* ── Ledger masthead: a quiet magazine cover band + "Ledger" kicker above the
+/* ── Folio masthead: a quiet magazine cover band + "Folio" kicker above the
    editorial title. A photo when one's set; otherwise a faint patterned wash of
-   the ledger's own colour - so every ledger reads as designed. (Robin.) */
+   the folio's own colour - so every folio reads as designed. (Robin.) */
 .area-hero.area-mast { position:static; margin:2px 0 22px; padding:0; border-bottom:0; background:none; }
 .am-cover {
   position:relative; width:100%; height:clamp(130px,21vw,210px);
@@ -7844,7 +7844,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   box-shadow:0 1px 2px rgba(0,0,0,.03), 0 20px 42px -30px color-mix(in srgb,var(--c) 50%,rgba(0,0,0,.4));
 }
 .area-flow .area-sec.area-sec-collapsed, .area-connect.area-sec-collapsed { padding:18px 24px; }
-/* ── Sexier ledger: the ledger's colour runs through it, warm not grey ────────
+/* ── Sexier folio: the folio's colour runs through it, warm not grey ────────
    The section cards above now carry a tinted gradient + hue-glow; here the labels
    and inner cards pick up the colour too, so nothing reads as a plain grey box. */
 .area-body { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); }
@@ -7853,7 +7853,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* Content cards sit a touch lighter/cleaner than their tinted section, so they lift. */
 .area-body .tbl-card, .area-body .area-rv-item { background:color-mix(in srgb,var(--c) 3%,var(--card)); border-color:color-mix(in srgb,var(--c) 17%,var(--line)); }
 .area-body .tbl-card:hover, .area-body .area-rv-item:hover { border-color:color-mix(in srgb,var(--c) 42%,var(--line)); }
-/* The at-a-glance strip + tab strip in the ledger's colour. */
+/* The at-a-glance strip + tab strip in the folio's colour. */
 .area-body .area-tabs { background:color-mix(in srgb,var(--c) 7%,var(--card)); border:1px solid color-mix(in srgb,var(--c) 18%,var(--line)); border-radius:15px; padding:5px; }
 .area-body .area-tile.on { background:color-mix(in srgb,var(--c) 16%,var(--card)); box-shadow:0 1px 2px rgba(0,0,0,.05); }
 
@@ -7870,7 +7870,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    the front; clicking it jumps to that section. (Robin.) */
 .conn-tile { position:relative; }
 /* "In use" reads as clearly ON (Robin thinks of these as on/off toggles): a
-   confident tint, a double keyline in the ledger colour, and a corner tick. */
+   confident tint, a double keyline in the folio colour, and a corner tick. */
 .conn-tile.has { border-color:var(--c); background:color-mix(in srgb,var(--c) 15%, var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%, transparent); }
 .conn-tile.has .conn-ic { color:var(--c); }
 .conn-tile.has .conn-l { color:color-mix(in srgb,var(--c) 45%,var(--ink)); font-weight:600; }

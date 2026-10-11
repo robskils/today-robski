@@ -1876,14 +1876,14 @@ function parseBlock(row) {
 function areaIdsFromProps(propsJson) {
   try { const p = JSON.parse(propsJson || '{}'); const ids = Array.isArray(p.areas) ? p.areas.slice() : []; if (p.area) ids.push(p.area); return [...new Set(ids.filter(Boolean))]; } catch { return []; }
 }
-// Opt-in ledger sharing. Each content block belongs to one shareable section;
+// Opt-in folio sharing. Each content block belongs to one shareable section;
 // an area carries props.shareMode ('optin' = choose what to share) and
-// props.shareSections { <Section>: 'all' | [memberId…] }. A ledger with no
+// props.shareSections { <Section>: 'all' | [memberId…] }. A folio with no
 // shareMode is 'open' (legacy): membership shares everything (minus private),
 // exactly as before - so nothing a member already sees ever disappears.
 const BLOCK_SECTION = { note: 'Pages and tables', table: 'Pages and tables', task: 'Tasks', contact: 'Contacts', goal: 'Goals', bookmark: 'Saved links', journal: 'Reflections', bucket: 'Bucket list' };
 // Does this area (by its props) share `section` with member `uid`? 'open'
-// ledgers share everything; 'optin' only what's ticked ('all' or a member list).
+// folios share everything; 'optin' only what's ticked ('all' or a member list).
 function areaSharesSection(areaProps, section, uid) {
   if (!areaProps || areaProps.shareMode !== 'optin') return true;   // open/legacy: all shared
   const cfg = (areaProps.shareSections || {})[section];
@@ -1911,8 +1911,8 @@ async function blockAccess(env, id) {
   }
   // A block tagged to a life area shared with me is viewable (read-only) when the
   // area shares that block's SECTION with me - EXCEPT anything the owner marked
-  // private. An 'open' (legacy) ledger shares every section, so this stays the old
-  // behaviour; an 'optin' ledger shares only ticked sections. An explicit per-block
+  // private. An 'open' (legacy) folio shares every section, so this stays the old
+  // behaviour; an 'optin' folio shares only ticked sections. An explicit per-block
   // share (checked above) overrides, so a single piece can be shared regardless.
   let ownProps = {}; try { ownProps = own.props ? JSON.parse(own.props) : {}; } catch {}
   const areas = areaIdsFromProps(own.props);
@@ -1971,8 +1971,8 @@ async function createBlock(request, env) {
     position = row.p;
   }
 
-  // New ledgers are private by default: nothing is shared with members until the
-  // owner unlocks a function in settings (opt-in). Existing ledgers are untouched
+  // New folios are private by default: nothing is shared with members until the
+  // owner unlocks a function in settings (opt-in). Existing folios are untouched
   // (no shareMode = legacy 'open'). (Robin: by default all private unless shared.)
   let props = b.props || null;
   if (kind === 'area') { props = props || {}; if (props.shareMode === undefined) props.shareMode = 'optin'; }
@@ -2047,8 +2047,8 @@ async function listBlocks(request, env, url) {
       const ar = [acc.ownerId, aid, aid];
       if (kind) { cl.push('kind = ?'); ar.push(kind); }
       if (!wantArchived) cl.push('archived = 0');
-      // Opt-in ledger: narrow to the sections shared with this member, plus any
-      // individual piece explicitly shared with them. An open/legacy ledger keeps
+      // Opt-in folio: narrow to the sections shared with this member, plus any
+      // individual piece explicitly shared with them. An open/legacy folio keeps
       // showing everything (areaSharesSection returns true for every section).
       const ap = await areaPropsCached(env, aid);
       if (ap && ap.shareMode === 'optin') {
@@ -4608,8 +4608,8 @@ export default {
       // Link (or unlink) an existing event to a contact via the side-map only - no
       // Google round-trip, unlike a full event PATCH.
       if (path === '/api/event-contact' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventContactFor(env, b.eventId, b.contact || null).catch(() => {}); return json({ ok: true }, request); }
-      // Connect (or clear) an existing event's ledger via the side-map only - no
-      // Google round-trip, so you can hook a calendar event to a ledger from the
+      // Connect (or clear) an existing event's folio via the side-map only - no
+      // Google round-trip, so you can hook a calendar event to a folio from the
       // Connections picker without reopening the event editor.
       if (path === '/api/event-area' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setEventAreaFor(env, b.eventId, b.area || null).catch(() => {}); return json({ ok: true }, request); }
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
@@ -4678,7 +4678,7 @@ export default {
         await setSetting(env, 'kv_source_events', JSON.stringify(cache), env.uid);
         return json({ ok: true, count }, request);
       }
-      // Cover-image search for a ledger masthead (Unsplash). Key-gated: without
+      // Cover-image search for a folio masthead (Unsplash). Key-gated: without
       // UNSPLASH_ACCESS_KEY the picker falls back to pasting an image URL. The
       // key stays server-side and never reaches the client.
       if (path === '/api/unsplash' && request.method === 'GET') {

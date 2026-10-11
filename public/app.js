@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><pa
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Pages'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Ledgers'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Pages'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Folios'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,48 +35,48 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Pages', 'nav.areas': 'Ledgers', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Pages', 'nav.areas': 'Folios', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Reflection', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Ledgers, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your pages in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Daybook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Daybook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Folios, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your pages in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Ledgers', 'home.sec.favs': 'Starred Pages', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Starred Pages', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Daybook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Daybook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Daybook will live at', 'signup.create': 'Create my Daybook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
-  'btn.newarea': '+ New Ledger', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
-  'field.area': 'Ledger', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'btn.newarea': '+ New Folio', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Folio', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected pages', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Pages wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search pages…', 'notes.newnote': '+ New page', 'filter.allareas': 'All Ledgers', 'notes.type.all': 'All', 'notes.type.note': 'Pages', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Ledger', 'palette.search': 'Search pages, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected pages', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Pages wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Daybook friends', 'ct.self.show': 'Show your Daybook card', 'ct.self.sub': 'Your window on Daybook', 'ct.selfcard.tag': 'Daybook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search pages…', 'notes.newnote': '+ New page', 'filter.allareas': 'All Folios', 'notes.type.all': 'All', 'notes.type.note': 'Pages', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Folio', 'palette.search': 'Search pages, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Páginas', 'nav.areas': 'Ledgers', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Páginas', 'nav.areas': 'Folios', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Reflexão', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Ledgers, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas páginas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Daybook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Daybook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Folios, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas páginas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Ledgers', 'home.sec.favs': 'Páginas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Folios', 'home.sec.favs': 'Páginas destacadas', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Daybook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Daybook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Daybook ficará em', 'signup.create': 'Criar o meu Daybook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
-  'btn.newarea': '+ Novo Ledger', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
-  'field.area': 'Ledger', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
+  'btn.newarea': '+ Novo Folio', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
+  'field.area': 'Folio', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Páginas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de páginas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar páginas…', 'notes.newnote': '+ Nova página', 'filter.allareas': 'Todos os Ledgers', 'notes.type.all': 'Todas', 'notes.type.note': 'Páginas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Ledger', 'palette.search': 'Pesquisar páginas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Páginas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de páginas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Daybook', 'ct.self.show': 'Mostrar o meu cartão Daybook', 'ct.self.sub': 'A tua janela no Daybook', 'ct.selfcard.tag': 'Cartão Daybook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar páginas…', 'notes.newnote': '+ Nova página', 'filter.allareas': 'Todos os Folios', 'notes.type.all': 'Todas', 'notes.type.note': 'Páginas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Folio', 'palette.search': 'Pesquisar páginas, tabelas, tarefas - ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -678,12 +678,12 @@ const HELP = {
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Pages', tip: 'Free writing with headings and links. Connect pages to one another, and tag them to your ledgers.',
+  notes: { title: 'Pages', tip: 'Free writing with headings and links. Connect pages to one another, and tag them to your folios.',
     body: `<p>A page is for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse a long page), lists and links.</p>
       <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
-      <li><b>Related pages</b> appear on their own - any page sharing a ledger with this one is a tap away, so they find each other.</li>
+      <li><b>Related pages</b> appear on their own - any page sharing a folio with this one is a tap away, so they find each other.</li>
       <li><b>Link</b> highlighted text to another page or even a table row, to weave your writing together.</li>
-      <li><b>Ledgers</b> - tag a page to one or several ledgers (the chips up top); it then shows on each of those ledgers, in that ledger's colour.</li>
+      <li><b>Folios</b> - tag a page to one or several folios (the chips up top); it then shows on each of those folios, in that folio's colour.</li>
       <li>A page can become a <b>table</b> and back with the Page/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
@@ -727,14 +727,14 @@ const HELP = {
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your ledgers double as spending categories.',
+  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your folios double as spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts, with a way through to each:</p>
       <ul>
       <li><b>Portfolio</b> - live total value, your gain, and how it’s split across holdings.</li>
       <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
       <li><b>Advice</b> - market trends and your watchlist, read by Claude.</li>
       </ul>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each ledger into goals with deadlines, and review your progress weekly to yearly.',
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each folio into goals with deadlines, and review your progress weekly to yearly.',
     body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
       <ul>
       <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
@@ -744,22 +744,22 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Ledgers', tip: 'The ledgers of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
-    body: `<p>Daybook keeps a <b>ledger for each part of your life</b> - the way a book of accounts keeps a separate ledger for each domain. A ledger can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
-      <p><b>One ledger gathers that whole corner of your life:</b></p>
+  areas: { title: 'Folios', tip: 'The folios of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
+    body: `<p>Daybook keeps a <b>folio for each part of your life</b> - the way a book of accounts keeps a separate folio for each domain. A folio can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
+      <p><b>One folio gathers that whole corner of your life:</b></p>
       <ul>
       <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
       <li>A dashboard across the top with quick jumps and live counts, so one glance tells you where that part of your life stands.</li>
       <li>Room for the bigger picture when you want it - a <b>vision</b>, a <b>Wheel of Life</b> and a <b>bucket list</b>.</li>
-      <li>Give each ledger a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its ledger's colour.</li>
-      <li><b>Share</b> a ledger with the people in it, so a family or a team work off the same one.</li>
+      <li>Give each folio a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its folio's colour.</li>
+      <li><b>Share</b> a folio with the people in it, so a family or a team work off the same one.</li>
       </ul>
       <p>Pages or tables - reach for whichever fits the material:</p>
       <ul>
-      <li>A <b>page</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Pages take headings, lists, links and rich text, and one page can live on more than one ledger.</li>
+      <li>A <b>page</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Pages take headings, lists, links and rich text, and one page can live on more than one folio.</li>
       <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
       </ul>
-      <p>Make a page or table straight from a ledger, or tag an existing one to it. Rename, recolour, share or add ledgers whenever you like - the whole app follows.</p>` },
+      <p>Make a page or table straight from a folio, or tag an existing one to it. Rename, recolour, share or add folios whenever you like - the whole app follows.</p>` },
   reflect: { title: 'Reflection', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
     body: `<p><b>Reflection</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
       <ul>
@@ -1124,7 +1124,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
   const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
   // The back arrow is always present on the bar. With view-history it pops that;
-  // otherwise it steps up one level to the parent crumb (Ledgers, Pages, …), so a
+  // otherwise it steps up one level to the parent crumb (Folios, Pages, …), so a
   // directly-opened page (a restored tab, a deep link) is never a dead end. (Robin.)
   const parentIdx = opts.omitCurrent ? items.length - 1 : items.length - 2;
   const parent = parentIdx >= 0 ? items[parentIdx] : null;
@@ -1150,7 +1150,7 @@ function addNewMenuHtml() {
     modOn('notes') ? item('note', '▤', 'Page') : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
-    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Ledger</button>` : '',
+    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Folio</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
@@ -1355,13 +1355,13 @@ function navSection(key, v) {
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
     }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Daybook</button>');
   } else {
-    title = 'Ledgers'; add = '<button class="nav-add" data-new-area title="New ledger">+</button>';
+    title = 'Folios'; add = '<button class="nav-add" data-new-area title="New folio">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
     // so the sidebar reads at a glance like the rest of the app.
     rows = state.areas.map((a) => {
       const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
       return `<button class="nav-sub has-area${on ? ' on' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span></button>`;
-    }).join('') || '<div class="nav-sub muted">No ledgers yet</div>';
+    }).join('') || '<div class="nav-sub muted">No folios yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -2592,7 +2592,7 @@ function renderSettings() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Ledgers', 'What your Daybook orbits', 'data-open-areas=""'],
+    ['◈', 'Folios', 'What your Daybook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -2809,7 +2809,7 @@ function renderSettings() {
 // family of importers (tasks CSV, calendar .ics, bookmarks next).
 function importState() { if (!state.import) state.import = { kind: 'notes', area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
 function importAreaOpts(imp) {
-  return `<option value="">${imp.area ? 'No ledger' : 'No ledger (filed loose)'}</option>`
+  return `<option value="">${imp.area ? 'No folio' : 'No folio (filed loose)'}</option>`
     + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function importPane() {
@@ -2968,7 +2968,7 @@ function openFlyerImport() {
 }
 function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
 function flyerAreaOpts(f) {
-  return `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  return `<option value="">No folio</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function flyerEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
@@ -3483,7 +3483,7 @@ function renderNav() {
   // The mobile nav drawer closes itself the moment you navigate to a new view.
   if (document.body.classList.contains('nav-drawer-open') && ((v && v.type) || '') !== state.__drawerView) closeNavDrawer();
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
-  if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the ledger
+  if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the folio
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
@@ -3953,7 +3953,7 @@ async function loadWeather() {
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
-const KIND_LABEL = { task: 'Tasks', note: 'Pages', table: 'Tables', area: 'Ledgers' };
+const KIND_LABEL = { task: 'Tasks', note: 'Pages', table: 'Tables', area: 'Folios' };
 
 async function openHome() {
   const gen = bumpNav();
@@ -4274,11 +4274,11 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  const areaOpts = `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
+  const areaOpts = `<option value="">No folio</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
-      <label class="tmr-area-l"><span>Ledger</span><select class="sel" data-timer-area>${areaOpts}</select></label>
+      <label class="tmr-area-l"><span>Folio</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
@@ -4746,7 +4746,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No folio</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -4780,7 +4780,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Ledger</span><select class="sel" id="pe-area"><option value="">No ledger</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Folio</span><select class="sel" id="pe-area"><option value="">No folio</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -5281,7 +5281,7 @@ function renderHome() {
             })(),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No ledgers yet. Create one from Ledgers.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No folios yet. Create one from Folios.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: favListHtml(),
@@ -5290,7 +5290,7 @@ function renderHome() {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Ledgers', count: sortedAreas.length || null },
+            favareas: { ic: '◈', label: 'Folios', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -5303,7 +5303,7 @@ function renderHome() {
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
-            { k: 'favareas', ic: '◈', label: 'Ledgers', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favareas', ic: '◈', label: 'Folios', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
@@ -5487,7 +5487,7 @@ function renderNotesList() {
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this ledger')}` : '';
+  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this folio')}` : '';
   // In "Page" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
@@ -5686,13 +5686,13 @@ function spiritActionsHtml() {
   const base = state.spirit.saved ? `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>` : `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
   return base + reflLedgerSelect('spirit');
 }
-// "Save to a Ledger": a reading (I Ching cast, spirit card) can be kept as a
-// reflection filed in a ledger, where it joins that ledger's Reflections and can
-// be revisited in context. A quiet ledger picker; choosing one files it. (Robin.)
+// "Save to a Folio": a reading (I Ching cast, spirit card) can be kept as a
+// reflection filed in a folio, where it joins that folio's Reflections and can
+// be revisited in context. A quiet folio picker; choosing one files it. (Robin.)
 function reflLedgerSelect(kind) {
   const areas = (state.areas || []).filter((a) => !a.sharedBy);
   if (!areas.length) return '';
-  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a ledger"><option value="">✦ Save to a Ledger…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a folio"><option value="">✦ Save to a Folio…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
 }
 async function saveReadingToLedger(kind, areaId) {
   if (!areaId) return;
@@ -5711,7 +5711,7 @@ async function saveReadingToLedger(kind, areaId) {
   } else return;
   try {
     await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title, body, props: { date: new Date().toISOString(), mode, area: areaId, areas: [areaId] } }) });
-    toast(`Saved to ${area ? area.title : 'ledger'} ✓`);
+    toast(`Saved to ${area ? area.title : 'folio'} ✓`);
   } catch (e) { toast(e.message); }
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
@@ -6905,7 +6905,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Ledger</span><select class="sel" data-rw-area="${b.id}"><option value="">No ledger</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Folio</span><select class="sel" data-rw-area="${b.id}"><option value="">No folio</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -7086,7 +7086,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Ledger</span><select class="sel" data-rw-area="${b.id}"><option value="">No ledger</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Folio</span><select class="sel" data-rw-area="${b.id}"><option value="">No folio</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -7104,7 +7104,7 @@ function areaTag(b) {
 }
 // A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
-  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Ledger</option>${
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Folio</option>${
     state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
   }</select></span>`;
 }
@@ -7183,12 +7183,12 @@ function renderAreasList() {
   </div>`;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
-    <div class="pane-head home-head"><h1>Ledgers</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Ledger is a living chapter in your Daybook - everything about what matters, in one place.</p>
+    <div class="pane-head home-head"><h1>Folios</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
+    <p class="t2-sub" style="font-style:normal">A Folio is a living chapter in your Daybook - everything about what matters, in one place.</p>
     ${controls}
     ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
     <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No ledgers shared yet.' : 'No ledgers yet.'}</div>`}</div></section>`;
+      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No folios shared yet.' : 'No folios yet.'}</div>`}</div></section>`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -7211,7 +7211,7 @@ function areaContactsPanel(area, contacts) {
   const q = ((state.area_open && state.area_open.contactQuery) || '').trim().toLowerCase();
   const inIds = new Set(contacts.map((c) => c.id));
   const results = q ? (state.contacts || []).filter((c) => !inIds.has(c.id) && ((c.title || '').toLowerCase().includes(q) || ((c.props && c.props.email) || '').toLowerCase().includes(q))).slice(0, 8) : [];
-  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this ledger" aria-label="Remove from this ledger">×</button></div>`).join('');
+  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this folio" aria-label="Remove from this folio">×</button></div>`).join('');
   return `<div class="area-contacts">
     ${contacts.length ? `<div class="contact-grid">${cards}</div>` : '<div class="home-empty">No contacts here yet - add the people tied to this area (a vet, a landlord, a coach…).</div>'}
     <div class="area-contact-add">
@@ -7227,7 +7227,7 @@ function addContactToArea(contactId) {
   const cur = blockAreas(c); if (cur.includes(area.id)) return;
   setBlockAreas('contact', contactId, [...cur, area.id]);
   if (state.area_open.blocks && !state.area_open.blocks.some((b) => b.id === contactId)) state.area_open.blocks.push(c);
-  state.area_open.contactQuery = ''; renderArea(); toast('Added to this ledger');
+  state.area_open.contactQuery = ''; renderArea(); toast('Added to this folio');
 }
 function removeContactFromArea(contactId) {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -7513,7 +7513,7 @@ function areaSentimentHtml(area) {
   const x = area.sharedBy ? '' : '<button class="as-x" data-area-sechide="Sentiment" title="Hide this - put it back in ▾ › Sections" aria-label="Hide">×</button>';
   return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span>${x}</div>`;
 }
-// Days until a birthday (MM-DD), 0 = today, for the ledger "Today" section.
+// Days until a birthday (MM-DD), 0 = today, for the folio "Today" section.
 function bdayInDays(bday) {
   const mmdd = String(bday || '').slice(-5); const [mm, dd] = mmdd.split('-').map(Number); if (!mm || !dd) return -1;
   const now = new Date(); const t0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -7521,9 +7521,9 @@ function bdayInDays(bday) {
   if (diff < 0) diff = Math.round((Date.UTC(now.getFullYear() + 1, mm - 1, dd) - t0) / 86400000);
   return diff;
 }
-// The ledger's own week-at-a-glance: this ledger's events for today + the next
-// six days. Built for co-parents and anyone sharing a ledger - both sides see
-// the same key activities. Lazy-loaded once per ledger open, then cached on
+// The folio's own week-at-a-glance: this folio's events for today + the next
+// six days. Built for co-parents and anyone sharing a folio - both sides see
+// the same key activities. Lazy-loaded once per folio open, then cached on
 // state.area_open.week; invalidated whenever an event is written. (Robin.)
 function loadAreaWeek(areaId) {
   const st = state.area_open; if (!st || String(st.area.id) !== String(areaId)) return;
@@ -7543,12 +7543,12 @@ function loadAreaWeek(areaId) {
   });
 }
 function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null; }
-// "Private" means: you see it on the Ledger, nobody you share with does. Make
+// "Private" means: you see it on the Folio, nobody you share with does. Make
 // that obvious wherever a block shows - a labelled chip (not a bare padlock) and
 // a distinct card treatment (is-private: dashed edge + faint wash), on anything:
 // note, task, contact, goal, saved link, reflection. (Robin.)
 const isPrivateBlock = (b) => !!(b && b.props && b.props.private);
-const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Ledger">🔒 Private</span>' : '';
+const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Folio">🔒 Private</span>' : '';
 const privCls = (b) => isPrivateBlock(b) ? ' is-private' : '';
 function renderArea() {
   const { area, blocks } = state.area_open;
@@ -7603,7 +7603,7 @@ function renderArea() {
     ? `<button class="tbl-card noteord-card" draggable="true" data-noteord="${n.id}" data-open-table="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`
     : `<button class="tbl-card noteord-card${privCls(n)}" draggable="true" data-noteord="${n.id}" data-open-note="${n.id}"><span class="tc-grip" title="Drag to reorder">⠿</span>${isFav(n) ? '<span class="tc-lead-star">★</span>' : ''}${(n.props && n.props.fromEmail) ? '<span class="tc-mail" title="Filed from an email">✉</span>' : ''}<span class="tc-t">${esc(n.title || 'Untitled')}</span>${privChip(n)}</button>`;
   // Each tool shows at most SEC_CAP items, then a "See all N →" that expands in
-  // place - so a ledger full of pages never becomes an endless scroll. (Robin.)
+  // place - so a folio full of pages never becomes an endless scroll. (Robin.)
   const SEC_CAP = 8;
   const secAllSet = (state.area_open.secAll instanceof Set) ? state.area_open.secAll : (state.area_open.secAll = new Set());
   const capArr = (key, arr) => (secAllSet.has(key) ? arr : arr.slice(0, SEC_CAP));
@@ -7631,7 +7631,7 @@ function renderArea() {
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
   const canEditArea = !area.sharedBy;
-  // "Preview as member": on a ledger you own AND share, you can flip to see what
+  // "Preview as member": on a folio you own AND share, you can flip to see what
   // the people you share with see - the bits you've kept private are dimmed and
   // stamped "only you". Owner-only, and only worth offering once it's shared. (Robin.)
   const canPreviewMember = canEditArea && memberCount > 0;
@@ -7666,7 +7666,7 @@ function renderArea() {
   // other parts as its own collapsible card - notes & tables, tasks, contacts,
   // wheel, saved links, reflections, emails. (Robin, 2026-09-26: the tabs change
   // only the top bit; the rest of the cards always show.)
-  // P1-P4 quick filter for this ledger's Tasks section, to the right of the
+  // P1-P4 quick filter for this folio's Tasks section, to the right of the
   // List/Board switch. Narrows only what's shown, never the counts. (Robin.)
   const aqp = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set());
   const prioOk = (tk) => !aqp.size || aqp.has(tk.props.priority || '');
@@ -7700,7 +7700,7 @@ function renderArea() {
   const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
   const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
   const filesSecRow = '';   // Files now shares a half-and-half row with Web links below
-  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Ledger Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null)}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   // Files & photos and Web links share one half-and-half row. (Robin: Web links
   // shouldn't sit alone.) Who-has-access now leads the quick row up top.
   const linksAccessRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
@@ -7740,7 +7740,7 @@ function renderArea() {
   const connTiles = CONN.slice().sort((a, b) => (b.n > 0) - (a.n > 0)).map(connCard).join('');
   const connectSec = (area.sharedBy || secHidden('Connections')) ? '' : `<section class="area-sec area-connect ${connOpen ? '' : 'area-sec-collapsed'}" data-aflow="Connections" style="--h:${h}">
       <div class="area-sec-h"><button class="ash-toggle" data-area-sec="Connections" aria-expanded="${connOpen}" title="${connOpen ? 'Collapse' : 'Expand'}"><span class="acw-chev">${connOpen ? '▾' : '▸'}</span><span class="ash-ic">🔗</span><span class="ash-l">Connections</span></button></div>
-      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Ledger - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div><div class="conn-foot"><button class="conn-hide" data-area-hideconn title="Bring it back from the ▾ menu by the title, under Sections">Hide these once you're set up</button></div></div>` : ''}
+      ${connOpen ? `<div class="area-sec-body"><p class="conn-lead">Hook anything up to this Folio - it appears above as its own section as you add.</p><div class="conn-grid">${connTiles}</div><div class="conn-foot"><button class="conn-hide" data-area-hideconn title="Bring it back from the ▾ menu by the title, under Sections">Hide these once you're set up</button></div></div>` : ''}
     </section>`;
   const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
   ${wallSec}
@@ -7765,7 +7765,7 @@ function renderArea() {
   // The open tab's own name as a kicker above its card (Vision on Vision, Goals
   // on Goals, and so on) - mirrors the "Vision" label Robin liked. (Robin.)
   const topKick = (openTile && tops[openTile]) ? `<div class="area-recent-h area-tab-kick">${esc(openTile)}</div>` : '';
-  // Vision & Goals leads the ledger - the tab strip and the open tab's card sit
+  // Vision & Goals leads the folio - the tab strip and the open tab's card sit
   // right under the masthead. Everything else (dashboard, today, week, the flow
   // sections) follows below. (Robin: Vision & Goals at the top.)
   const areaVisionGoals = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
@@ -7816,7 +7816,7 @@ function renderArea() {
         <div class="area-dash-acts">${areaConnBtn}${areaAddBtn}</div>
       </div>
     </div>` : '';
-  // The ledger's own "Today" feed, near the top: what's coming here (a deadline,
+  // The folio's own "Today" feed, near the top: what's coming here (a deadline,
   // birthdays). "Do next" lives beside "Recently viewed" in the quick row. (Robin.)
   const lToday = (() => {
     const due = area.props && area.props.due;
@@ -7842,9 +7842,9 @@ function renderArea() {
     const rvRow = rvHalf ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}</div>` : '';
     return top + rvRow;
   })();
-  // Week ahead: this ledger's key activities across today + the next six days,
+  // Week ahead: this folio's key activities across today + the next six days,
   // laid out as a seven-day planner. Clear for co-parents - both see the same
-  // week. Collapsible + hideable like every other ledger section. (Robin.)
+  // week. Collapsible + hideable like every other folio section. (Robin.)
   const areaWeek = (() => {
     if (secHidden('Week')) return '';
     const open = areaSecOpen('Week');
@@ -7868,7 +7868,7 @@ function renderArea() {
       const evs = byDay[d.iso] || [];
       const chips = evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('');
       // A quiet per-day + (revealed on hover) adds an activity straight onto that
-      // day, pre-filed to this ledger - how a co-parent fills the week in. Empty
+      // day, pre-filed to this folio - how a co-parent fills the week in. Empty
       // read-only days (a member's view) show a faint dot instead. (Robin.)
       const addDay = canEditArea ? `<button class="awk-dayadd" data-area-day-add="${area.id}::${d.iso}" title="Add an activity on this day" aria-label="Add on this day">＋</button>` : (evs.length ? '' : '<span class="awk-empty">·</span>');
       return `<div class="awk-day${d.today ? ' awk-today' : ''}${evs.length ? '' : ' awk-day-empty'}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}${addDay}</div></div>`;
@@ -7876,7 +7876,7 @@ function renderArea() {
     const bodyInner = !loaded
       ? '<div class="home-empty">Loading the week…</div>'
       : `<div class="aweek">${rows}</div>`;
-    const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this ledger">＋</button>` : '';
+    const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this folio">＋</button>` : '';
     return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
       <div class="area-sec-h">
         <button class="ash-toggle" data-area-sec="Week" aria-expanded="${open}" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="ash-ic">◑</span><span class="ash-l">Week ahead</span>${total ? `<span class="ash-c">${total}</span>` : ''}</button>
@@ -7886,7 +7886,7 @@ function renderArea() {
     </section>`;
   })();
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Ledgers', attr: 'data-open-areas' }, { label: area.title }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
       ${cover ? `<div class="am-cover" style="background-image:url('${esc(cover.url)}')">
@@ -7895,15 +7895,15 @@ function renderArea() {
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
-        <div class="am-kicker">Ledger</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this ledger colour" aria-label="Change ledger colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Ledger" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Ledger settings and overview" title="Settings & overview">▾</button></span></h1>
+        <div class="am-kicker">Folio</div>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this folio colour" aria-label="Change folio colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Folio" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Folio settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         ${areaSentimentHtml(area)}
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
-    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this ledger as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
+    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this folio as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
     ${areaVisionGoals}
     ${areaDash}
     ${lToday}
@@ -7949,11 +7949,11 @@ function areaOverviewHtml(area, c, blocks) {
   // Owner section control: the owner decides which parts of the page exist.
   // Untick one and it disappears for everyone; empty sections hide themselves.
   const AREA_SECS = ['Vision', 'Goals', 'Week', 'Pages and tables', 'Contacts', 'Saved links', 'Reflections', 'Emails', 'Files', 'Web links', 'Bucket list', 'Shared with', 'Wall', 'Tasks', 'Connections', 'Sentiment'];
-  const SEC_LABELS = { 'Shared with': 'Ledger Access', Sentiment: 'Well-being score', Week: 'Week ahead' };
+  const SEC_LABELS = { 'Shared with': 'Folio Access', Sentiment: 'Well-being score', Week: 'Week ahead' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   // Robust per-function settings: for each function, switch it on/off AND choose
   // whether members see it - private by default, shared only when you say. The
-  // private/shared column shows for shareable content once the ledger has members.
+  // private/shared column shows for shareable content once the folio has members.
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list'];
   const hasMembers = !!(shares && shares.length);
   const optin = (area.props || {}).shareMode === 'optin';
@@ -7961,7 +7961,7 @@ function areaOverviewHtml(area, c, blocks) {
   const memChips = (k, st) => `<span class="ovs-mems"><button class="ovs-mem ${st === 'all' ? 'on' : ''}" data-area-sec-mem="${esc(k)}::all">All</button>${(shares || []).map((s) => `<button class="ovs-mem ${Array.isArray(st) && st.map(String).includes(String(s.id)) ? 'on' : ''}" data-area-sec-mem="${esc(k)}::${s.id}" title="${esc(s.name || 'Someone')}">${esc(initial(s.name || '?'))}</button>`).join('')}</span>`;
   // Each function is one of three states, spelled out: Off (neither of us),
   // Only me (on for me, off for them) or Shared (on for me, on for them - all or
-  // some). Non-shareable parts, or a ledger with no members, are just Off/On.
+  // some). Non-shareable parts, or a folio with no members, are just Off/On.
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
   const secRow = (k) => {
     const hiddenK = hidden.includes(k);
@@ -7969,10 +7969,10 @@ function areaOverviewHtml(area, c, blocks) {
     if (!SHARE_KEYS.includes(k)) {
       return `<div class="ovs-row"><label class="ovs-vis"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${esc(SEC_LABELS[k] || k)}</span></label></div>`;
     }
-    // Shareable tools get the three-way on EVERY ledger. A legacy (open) ledger
-    // shares everything, so each tool reads Shared; an opt-in ledger reads from
+    // Shareable tools get the three-way on EVERY folio. A legacy (open) folio
+    // shares everything, so each tool reads Shared; an opt-in folio reads from
     // shareSections (default Only me). So a part can be kept private even on a
-    // shared ledger. (Robin.)
+    // shared folio. (Robin.)
     const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
     const state = hiddenK ? 'off' : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
     const who = state === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
@@ -7981,7 +7981,7 @@ function areaOverviewHtml(area, c, blocks) {
   const shareSwitch = optin ? `<button class="ghost ovs-shareall" data-area-share-open>Reset - share everything</button>` : '';
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
-      <div class="ov-muted" style="margin-bottom:11px">For each tool: <b>Off</b>, <b>Only me</b> (private - yours even on a shared ledger), or <b>Shared</b> (with whom). Choose per tool.</div>
+      <div class="ov-muted" style="margin-bottom:11px">For each tool: <b>Off</b>, <b>Only me</b> (private - yours even on a shared folio), or <b>Shared</b> (with whom). Choose per tool.</div>
       <div class="ovs-list">${AREA_SECS.map(secRow).join('')}</div>
       ${shareSwitch}
     </div>`;
@@ -8057,7 +8057,7 @@ function areaMembersBody(area) {
   if (shares == null) return '<div class="mem-empty">Loading…</div>';
   const friends = (state.friends && state.friends.friends) || [];
   const LIMIT = 8;
-  // The owner's own card leads "Who has access" (so a private ledger still reads
+  // The owner's own card leads "Who has access" (so a private folio still reads
   // as "you + invite", not an empty bar). (Robin.)
   const ownerCard = area.sharedBy ? '' : (() => {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
@@ -8072,9 +8072,9 @@ function areaMembersBody(area) {
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
   return (ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
 }
-// Opt-in sharing controls (owner-only, once a ledger has members): each tool is
+// Opt-in sharing controls (owner-only, once a folio has members): each tool is
 // locked by default and you unlock it to share, with all members or a chosen few.
-// An 'open' (legacy) ledger shows a switch to start choosing. (Robin: everything
+// An 'open' (legacy) folio shows a switch to start choosing. (Robin: everything
 // locked by default; unlock to share; our views differ by what each unlocks.)
 const SHARE_SECS = [['Pages and tables', (b) => b.kind === 'note' || b.kind === 'table', '▤'], ['Tasks', (b) => b.kind === 'task', '✓'], ['Contacts', (b) => b.kind === 'contact', '👤'], ['Goals', (b) => b.kind === 'goal', '🎯'], ['Saved links', (b) => b.kind === 'bookmark', '🔖'], ['Reflections', (b) => b.kind === 'journal', '✎'], ['Bucket list', (b) => b.kind === 'bucket', '✦']];
 function areaShareControls(area) {
@@ -8083,7 +8083,7 @@ function areaShareControls(area) {
   if (!shares.length) return '';  // nothing to share until someone has access
   const p = area.props || {};
   if (p.shareMode !== 'optin') {
-    return `<div class="area-share-ctl"><p class="as-note">Everyone you share this ledger with sees everything in it.</p><button class="as-choose" data-area-share-optin>🔒 Choose what to share instead</button></div>`;
+    return `<div class="area-share-ctl"><p class="as-note">Everyone you share this folio with sees everything in it.</p><button class="as-choose" data-area-share-optin>🔒 Choose what to share instead</button></div>`;
   }
   const blocks = (state.area_open && state.area_open.blocks) || [];
   const cfg = p.shareSections || {};
@@ -8101,7 +8101,7 @@ function patchAreaShare(patch) {
   api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((e) => toast(e.message));
   renderArea();
 }
-// Switch an 'open' ledger to opt-in, pre-filling every present section to 'all'
+// Switch an 'open' folio to opt-in, pre-filling every present section to 'all'
 // so nothing a member already sees disappears - then the owner locks from there.
 function areaShareStartOptin() {
   const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
@@ -8118,10 +8118,10 @@ function areaSecState(k, stateVal) {
   let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
   let cfg = { ...(a.props.shareSections || {}) };
   const patch = {};
-  // Choosing Only me / Shared on a legacy 'open' ledger quietly switches it to
+  // Choosing Only me / Shared on a legacy 'open' folio quietly switches it to
   // opt-in, pre-filling every tool as Shared so nothing a member already sees
   // disappears - only the tool you just set changes. So a part can go private
-  // even while the rest of the ledger stays shared. (Robin.)
+  // even while the rest of the folio stays shared. (Robin.)
   if (stateVal !== 'off' && a.props.shareMode !== 'optin') {
     cfg = {}; SHARE_SECS.forEach(([name]) => { cfg[name] = 'all'; });
     a.props.shareMode = 'optin'; patch.shareMode = 'optin';
@@ -8224,7 +8224,7 @@ function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Ledger' : '+ Ledger'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Folio' : '+ Folio'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -8237,8 +8237,8 @@ async function areaNewEvent(id) {
   // Prefill the new event's page with this one (the form reads ce-area).
   setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
 }
-// Add an event on a specific day from the ledger's Week ahead - seeds the date
-// AND pre-files it to this ledger, so a co-parent fills the week in place.
+// Add an event on a specific day from the folio's Week ahead - seeds the date
+// AND pre-files it to this folio, so a co-parent fills the week in place.
 async function areaNewEventOnDay(id, iso) {
   const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
   await openCalendar(iso);
@@ -8256,9 +8256,9 @@ async function areaAddTask() {
   state.taskAdding = true; state.taskFocusArm = Date.now();
   await openTasks(); renderTasks();
 }
-// Add a reflection (journal or dream) filed to this ledger, then open it to
-// write. It then shows in the ledger's Reflections section. (Robin: everything
-// connects to a Ledger.)
+// Add a reflection (journal or dream) filed to this folio, then open it to
+// write. It then shows in the folio's Reflections section. (Robin: everything
+// connects to a Folio.)
 async function areaAddJournal(isDream) {
   const area = state.area_open && state.area_open.area; if (!area) return;
   const date = new Date().toISOString();
@@ -8272,8 +8272,8 @@ async function areaAddJournal(isDream) {
     await openJournalEntry(entry.id);
   } catch (e) { toast(e.message); }
 }
-// Add a Saved item (a book or film, via Read & Watch) filed to this ledger, then
-// open its card to name it. Shows in the ledger's Saved links. (Robin.)
+// Add a Saved item (a book or film, via Read & Watch) filed to this folio, then
+// open its card to name it. Shows in the folio's Saved links. (Robin.)
 async function areaAddSaved(media) {
   const area = state.area_open && state.area_open.area; if (!area) return;
   try {
@@ -8311,7 +8311,7 @@ function openAreaColor() {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box areacol-dialog" style="--h:${start}">
     <div class="recur-h">Area colour</div>
-    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this ledger')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
+    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this folio')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
     <div class="areacol-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === start ? ' on' : ''}" style="--h:${hu}" data-areacol="${hu}" aria-label="Hue ${hu}"></button>`).join('')}</div>
     <label class="areacol-fine">Fine tune<input type="range" min="0" max="359" value="${start}" class="areacol-slider" data-areacol-slider></label>
     <div class="ui-dialog-btns"><button class="ui-btn cancel" data-areacol-cancel>Cancel</button><button class="ui-btn primary" data-areacol-done>Done</button></div>
@@ -8339,12 +8339,12 @@ function openAreaColor() {
   el.querySelector('[data-areacol-done]').addEventListener('click', commit);
 }
 
-// The ledger cover image: search free photos (Unsplash, when a key is set) or
+// The folio cover image: search free photos (Unsplash, when a key is set) or
 // paste any image link. Mirrors openAreaColor's dialog. Writes area.props.cover;
 // Remove clears it. The access key stays server-side - the client only ever sees
 // ready-to-use image URLs.
 // Downscale a chosen image to a cover-sized JPEG/PNG and upload it to R2 via the
-// public image store, returning a permanent URL to persist on the ledger. (Robin:
+// public image store, returning a permanent URL to persist on the folio. (Robin:
 // upload a cover from your computer.)
 async function coverUpload(file) {
   if (!isImgType(file.type)) throw new Error('Please choose an image');
@@ -8423,7 +8423,7 @@ function openAreaCover() {
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
 }
-// Connect an EXISTING thing to a ledger: clicking a connector tile opens this -
+// Connect an EXISTING thing to a folio: clicking a connector tile opens this -
 // search your pages/tasks/contacts/goals first, attach one, or make a new one.
 // (Robin: first option should be search, not add new.)
 function openAreaConnect(kind) {
@@ -8433,7 +8433,7 @@ function openAreaConnect(kind) {
   const refresh = () => { const l = document.getElementById('aconn-list'); if (l) l.innerHTML = rowsHtml(); };
   if (kind === 'contact' && state.contacts === undefined) loadContacts().then(refresh).catch(() => {});
   // Events aren't blocks: pull the shared calendar pool (loadNoteEvents) and poll
-  // once for it to land, then show those not already on this ledger. (Robin: the
+  // once for it to land, then show those not already on this folio. (Robin: the
   // Event connector must let you find an EXISTING event, not only make a new one.)
   if (kind === 'event') {
     loadNoteEvents();
@@ -8463,7 +8463,7 @@ function openAreaConnect(kind) {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog">
     <div class="recur-h">Connect ${kind === 'event' ? 'an event' : `a ${LABEL[kind]}`}</div>
-    <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this ledger')}</b>, or make a new one.</p>
+    <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this folio')}</b>, or make a new one.</p>
     <input class="sel nconn-q" data-aconn-q placeholder="Search your ${LABEL[kind]}s…" autocomplete="off">
     <div class="nconn-list" id="aconn-list" style="margin-top:10px">${rowsHtml()}</div>
     <div class="ui-dialog-btns"><button class="ui-btn aconn-new" data-aconn-new>＋ New ${LABEL[kind]}</button><button class="ui-btn cancel" data-aconn-cancel>Close</button></div>
@@ -9030,7 +9030,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Ledger</span><select id="ce-area" class="sel"><option value="">No ledger</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Folio</span><select id="ce-area" class="sel"><option value="">No folio</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -9163,7 +9163,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
       }
     }
     state.cal.draftNotes = [];
-    invalidateAreaWeek();   // a ledger's week-at-a-glance must pick up the change
+    invalidateAreaWeek();   // a folio's week-at-a-glance must pick up the change
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
@@ -10036,7 +10036,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Ledger</span><select class="sel" id="te-area"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Folio</span><select class="sel" id="te-area"><option value="">No folio</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -10510,7 +10510,7 @@ function mailAreaMenuHtml() {
   const areas = state.areas || [];
   return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
     <div class="mail-move-h">File in a page…</div>
-    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No ledgers yet.</div>'}
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No folios yet.</div>'}
   </div></div>`;
 }
 async function openMailAreaMenu(anchor) {
@@ -12293,13 +12293,13 @@ ${''/* The "older unread sits further down" banner is retired: the background
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No ledger</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No folio</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   // The full task options, matching the Tasks board's add form: area, priority,
   // duration, snooze (hide until), repeat and notes.
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Ledger</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Folio</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
@@ -12383,7 +12383,7 @@ function mailTaskMenuHtml() {
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
-    <label class="mtask-field"><span>Ledger</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Folio</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
     <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
@@ -12429,7 +12429,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Ledger</span><select id="qe-area" class="sel"><option value="">No ledger</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Folio</span><select id="qe-area" class="sel"><option value="">No folio</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -12655,7 +12655,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
-  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Ledger">🔒 Private</span>');
+  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Folio">🔒 Private</span>');
   if (!t.props.done && t.props.kstatus === 'doing') out.push('<span class="tbadge doing" title="In the Doing column on the board">Doing</span>');
   if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
@@ -12670,7 +12670,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Ledger</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Folio</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -12816,7 +12816,7 @@ function renderTasks() {
     </div>` : ''}
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
-  const opts = `<option value="">No ledger</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No folio</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
@@ -13232,7 +13232,7 @@ function contactAreaBarHtml() {
 // of chips. (CSS shows chips on desktop, this select on mobile.)
 function contactAreaSelectHtml(areas) {
   if (!areas || !areas.length) return '';
-  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Ledgers · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Folios · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -13257,7 +13257,7 @@ function contactMenuHtml() {
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
   const areaSection = allAreas.length ? `<div class="ctx-lbl">Pages</div>
     ${currentAreas.map(curRow).join('')}
-    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No ledgers to add.</div>')}
+    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No folios to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
     <div class="ctx-sep"></div>` : '';
   // A few recently-opened contacts up top, most recent first - a quick hop to
@@ -13327,7 +13327,7 @@ function friendsPaneHtml(opts) {
       ${d.incoming.length ? `<div class="ppl-sub">Requests · ${d.incoming.length}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Daybook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Ledger' : 'Page'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Folio' : 'Page'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
 // The Daybook people hub: your card, your friends on Daybook, and the invite +
@@ -13358,7 +13358,7 @@ function renderContacts() {
   const list = sortContacts((state.contacts || []).filter(match));
   const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
-    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this ledger.`
+    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this folio.`
     : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
   // While searching, strip the page back to just the search box and the matching
   // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
@@ -13425,7 +13425,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Ledger</span><select id="ct-area" class="sel"><option value="">No ledger</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Folio</span><select id="ct-area" class="sel"><option value="">No folio</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -13935,7 +13935,7 @@ async function newContactGroup() {
       <div class="recur-h">New group</div>
       <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
       <div class="cgm-or">Or create from a page</div>
-      <div class="cgm-areas">${chips || '<span class="muted">No ledgers yet.</span>'}</div>
+      <div class="cgm-areas">${chips || '<span class="muted">No folios yet.</span>'}</div>
       <div class="ui-dialog-btns">
         <button class="ui-btn cancel" data-cgm-close>Done</button>
         <button class="ui-btn primary" data-cgm-create>Create</button>
@@ -15188,7 +15188,7 @@ async function openGoalCard(id) {
 const gcConnOpen = () => { try { return localStorage.getItem('life.goal.connOpen') !== '0'; } catch { return true; } };
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
-  const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No folio</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
@@ -15351,7 +15351,7 @@ function connectedNotesPickerInner() {
   if (gAreas.length) list = list.filter((n) => blockAreas(n).some((aid) => gAreas.includes(aid)));
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}pages${gAreas.length ? ' in this ledger' : ''} to connect${q ? '' : ' - write one with “+ New page”'}.</div>`;
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}pages${gAreas.length ? ' in this folio' : ''} to connect${q ? '' : ' - write one with “+ New page”'}.</div>`;
   return list.slice(0, 60).map((n) => `<div class="gal-row gal-row-link" data-goal-link-note="${n.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
@@ -15521,7 +15521,7 @@ async function newBucket() {
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
   const b = state.bucket_open.item; const p = b.props || {};
-  const areaOpts = `<option value="">No ledger</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No folio</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
@@ -18342,7 +18342,7 @@ function renderPalette() {
 }
 // The little type chip. A row shows the table it belongs to ("Portugal Place"),
 // not a bare "Row", so you know which card a hit relates to. (Robin.)
-const PAL_KIND_LABEL = { note: 'Page', table: 'Table', area: 'Ledger', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+const PAL_KIND_LABEL = { note: 'Page', table: 'Table', area: 'Folio', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
   if (it.kind === 'row') return it.parentTitle || 'Table';
@@ -22377,7 +22377,7 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No ledgers yet - add a few below.</p>';
+      : '<p class="onb-p onb-muted">No folios yet - add a few below.</p>';
   return `<h2 class="onb-h">Your pages</h2>
     <p class="onb-p">Pages are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Pages.</p>
