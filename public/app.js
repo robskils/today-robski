@@ -7446,8 +7446,12 @@ function areaGoto(key) {
     settle('#pane .area-tabs');
     return;
   }
-  if (!areaSecOpen(key)) areaSecToggle(key);
-  settle(`#pane [data-aflow="${key}"]`);
+  // Every other section is now a tile in the tools grid: open the matching tile
+  // and scroll to it. (Robin: keep the stats buttons - they jump to the cards.)
+  const GOTO_TILE = { 'Pages and tables': 'pages', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
+  const id = GOTO_TILE[key];
+  if (id && state.area_open) { state.area_open.toolTile = id; renderArea(); settle(`#pane [data-area-tool="${id}"]`); return; }
+  settle('#pane .area-tools');
 }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like
 // Home's), so your arrangement is the same on every area page.
@@ -7715,47 +7719,12 @@ function renderArea() {
     ? taskKanbanHtml(areaBoardList)
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>${secMore('Pages and tables', noteTblOrdered.length)}` : '<div class="home-empty">No notes or tables here yet.</div>';
-  // [key, present?, count, body] - shown in your saved drag order; Tasks last.
-  const restDefs = [
-    ['Pages and tables', !!notesTotal, notesTotal, notesBody],
-    ['Contacts', !!contacts.length, contacts.length, `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}`],
-    ['Saved links', !!bookmarks.length, bookmarks.length, `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}`],
-    ['Reflections', !!journals.length, journals.length, `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}`],
-  ];
-  // Tasks sits full-width at the very BOTTOM of the folio, under all the half-width
-  // tools (which pair up 2-per-line above it). Its own single-item flow grid keeps
-  // the card styling + the full-width span. (Robin.)
-  const tasksFull = secHidden('Tasks') ? '' : `<div class="area-flow area-flow-tasks" style="--h:${h}">${flowSec('Tasks', null, openTs.length, tasksBody)}</div>`;
-  const flowOrder = areaFlowOrder();
-  const flowRank = (k) => (k === 'Tasks' ? 100000 : (flowOrder.indexOf(k) < 0 ? 999 : flowOrder.indexOf(k)));
-  const restSecs = restDefs.filter(([key, ok]) => ok && !secHidden(key)).sort((a, b) => flowRank(a[0]) - flowRank(b[0]));
-  // Order (Robin, 2026-09-28): the Wall sits above Files & photos and Links, and
-  // those two share a row (half each), stacking on a narrow screen.
-  // Emails and the Notepad (was "Wall") share a row, half each. (Robin.)
-  const emailsSec = (emails.length && !secHidden('Emails')) ? `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Emails', 'Emails', emails.length, '✉')}${areaSecOpen('Emails') ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : ''}</section>` : '';
-  const wallSec = secHidden('Wall') ? '' : `<section class="feed-grp area-half" style="--h:${h}">${areaSecH('Wall', 'Notepad', null, '📝')}${areaSecOpen('Wall') ? areaWallBody(area) : ''}</section>`;
-  const emailsWallRow = (emailsSec || wallSec) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${emailsSec}${wallSec}</div>` : '';
-  // Files & photos and Web links only appear once they hold something - adding is
-  // done from the Connections hub below. Each carries an anchor so a populated
-  // Connections card can scroll to it.
+  // Everything below Vision & Goals and the stats strip is now one grid of square
+  // cards (the SAME tiles as settings): one card per activated tool/section, and
+  // tapping a card expands its content below. The registry + grid are built lower
+  // down, next to the feeds they fold in. (Robin, 2026-10-11: new folio approach.)
   const attList = (area.props && area.props.attachments) || [];
   const linkN = blockLinks(area).length;
-  const linksSec = (linkN && !secHidden('Web links')) ? `<section class="area-dash-links" data-aflow="Web links" style="--h:${h}">${externalLinksHtml('area', area)}</section>` : '';
-  const filesSec = (attList.length && !secHidden('Files')) ? `<section class="area-dash-files" data-aflow="Files" style="--h:${h}">${areaAttachHtml(area)}</section>` : '';
-  const filesSecRow = '';   // Files now shares a half-and-half row with Web links below
-  const sharedSec = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared" style="--h:${h}">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
-  // Files & photos and Web links share one half-and-half row. (Robin: Web links
-  // shouldn't sit alone.) Who-has-access now leads the quick row up top.
-  const linksAccessRow = (filesSec || linksSec) ? `<div class="area-dash-fl">${filesSec}${linksSec}</div>` : '';
-  // The old Connections hub (icon tiles at the foot of the page) has moved into the
-  // Folio's settings, merged with each piece's on/off + sharing: a tile per piece
-  // that expands to show "who sees it" plus connect/add actions. See the tile grid
-  // in areaOverviewHtml. (Robin: don't need the section at the end of the page.)
-  const restHtml = `<div class="area-flow" style="--h:${h}">${restSecs.map(([key, , count, body]) => flowSec(key, null, count, body)).join('')}</div>
-  ${emailsWallRow}
-  ${filesSecRow}
-  ${linksAccessRow}
-  ${tasksFull}`;
   // The tab-controlled top: Vision / Goals / Bucket list.
   const goalsTop = `<div class="area-vg">${activeGoals.length ? `<div class="goal-grid">${activeGoals.map(goalCardMini).join('')}</div>${canEditArea ? '<button class="add-btn wide area-tab-add area-addgoal-btn" data-area-add-goal>🎯 Add another goal</button>' : ''}` : `<div class="home-empty area-tab-empty">No goals in this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-goal>🎯 Add a goal</button>' : ''}</div>`}${doneGoals.length ? `<details class="area-done-goals" open><summary class="avg-done-h">Completed goals · ${doneGoals.length}</summary><div class="goal-grid area-done-grid">${doneGoals.map(goalCardMini).join('')}</div></details>` : ''}</div>`;
   const bucketTop = bucket.length ? `<div class="bucket-grid">${bucket.map(bucketCard).join('')}</div>` : `<div class="home-empty area-tab-empty">Nothing on your bucket list for this area yet.${canEditArea ? '<button class="add-btn wide area-tab-add" data-area-add-bucket>✦ Add a bucket-list item</button>' : ''}</div>`;
@@ -7778,7 +7747,6 @@ function renderArea() {
   // right under the masthead. Everything else (dashboard, today, week, the flow
   // sections) follows below. (Robin: Vision & Goals at the top.)
   const areaVisionGoals = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
-  const areaRest = `<div class="area-tilepanel area-restpanel" style="--h:${h}">${restHtml}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -7823,38 +7791,25 @@ function renderArea() {
         <div class="area-dash-acts">${areaAddBtn}</div>
       </div>
     </div>` : '';
-  // The folio's own "Today" feed, near the top: what's coming here (a deadline,
-  // birthdays). "Do next" lives beside "Recently viewed" in the quick row. (Robin.)
-  const lToday = (() => {
-    const due = area.props && area.props.due;
-    const dueRel = due ? deadlineRel(due) : null;
-    const dueRow = (due && dueRel) ? `<div class="ev-row ev-click" data-area-tile="Wheel of Life"><span class="ev-time">🎯</span><span class="ev-t">Deadline</span><span class="ev-loc gc-due-${dueRel.c || 'ok'}">${esc(dueRel.t)} · ${esc(dpLabel(due))}</span></div>` : '';
-    const bdayRows = contacts.map((c) => { if ((c.props || {}).bdayLead === 0) return null; const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
-      .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
-    const beReady = dueRow + bdayRows;
-    if (!beReady) return '';
-    return `<section class="area-today" style="--h:${h}">
-      <div class="feed-grp feed-beready">${areaSecH('Be ready', 'Be ready', null, '⚑')}${areaSecOpen('Be ready') ? beReady : ''}</div>
-    </section>`;
-  })();
-  // "Recently viewed" and "Do next here" sit side by side, half a row each - what
-  // you were last in, and what to pick up next. Stacks on a narrow screen. (Robin.)
+  // ── The tools grid ──────────────────────────────────────────────
+  // Everything below Vision & Goals and the stats strip is one grid of square
+  // cards - the SAME tiles as the settings grid. A card per activated section;
+  // tap it and its content (plus its own add/connect actions, so you can add a
+  // file, a link or a page without opening settings) expands below. One open at a
+  // time. The old feeds (Up next, Recently viewed, Week ahead, Be ready, Folio
+  // Access) fold in as cards too. (Robin, 2026-10-11.)
+  const due = area.props && area.props.due;
+  const dueRel = due ? deadlineRel(due) : null;
+  const dueRow = (due && dueRel) ? `<div class="ev-row ev-click" data-area-tile="Wheel of Life"><span class="ev-time">🎯</span><span class="ev-t">Deadline</span><span class="ev-loc gc-due-${dueRel.c || 'ok'}">${esc(dueRel.t)} · ${esc(dpLabel(due))}</span></div>` : '';
+  const bdayRows = contacts.map((c) => { if ((c.props || {}).bdayLead === 0) return null; const d = bdayInDays(c.props && c.props.birthday); const lead = Math.min(Math.max(Number((c.props || {}).bdayLead) || 7, 1), 90); return (d >= 0 && d <= lead) ? { c, d } : null; }).filter(Boolean).sort((a, b) => a.d - b.d)
+    .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
+  const beReadyBody = dueRow + bdayRows;
   const doNext = openTs.slice(0, 5).map((t) => `<div class="ev-row ev-task ev-click" data-open-task="${t.id}" role="button" tabindex="0"><span class="ev-time">✓</span><span class="ev-t">${esc(t.title || 'Untitled')}</span></div>`).join('');
-  const rvHalf = rvAreaHtml ? `<section class="area-recent area-half">${areaSecH('Recently viewed', 'Recently viewed', null, '🕘')}${areaSecOpen('Recently viewed') ? `<div class="area-rv">${rvAreaHtml}</div>` : ''}</section>` : '';
-  const dnHalf = doNext ? `<section class="feed-grp area-half">${areaSecH('Do next', 'Up next', null, '✓')}${areaSecOpen('Do next') ? `<div class="today-cal">${doNext}</div>` : ''}</section>` : '';
-  // Who has access leads the top quick row; Up next pairs beside it. Recently viewed
-  // and Week ahead share the row beneath, half each. (Robin.)
-  const quickTop = (sharedSec || dnHalf) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${sharedSec}${dnHalf}</div>` : '';
-  // Week ahead: this folio's key activities across today + the next six days,
-  // laid out as a seven-day planner. Clear for co-parents - both see the same
-  // week. Collapsible + hideable like every other folio section. (Robin.)
-  const areaWeek = (() => {
-    if (secHidden('Week')) return '';
-    const open = areaSecOpen('Week');
+  // Week ahead is built lazily (and kicks off its own load) only when its card is
+  // open, so a closed folio doesn't fetch the week on every render.
+  const buildWeekBody = () => {
     if (!state.area_open.week || String(state.area_open.week.for) !== String(area.id)) loadAreaWeek(area.id);
     const wk = state.area_open.week;
-    // Today through a week today (8 cells), so a co-parent sees the matching day
-    // next week - the natural bracket for "who has them next <weekday>". (Robin.)
     const t0 = todayISO(); const [ty, tm, td] = t0.split('-').map(Number);
     const days = Array.from({ length: 8 }, (_, i) => { const x = new Date(ty, tm - 1, td + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), dow: DOW3[x.getDay()], today: di === t0 }; });
     const byDay = {};
@@ -7866,27 +7821,41 @@ function renderArea() {
       }
       for (const d in byDay) byDay[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
     }
-    const total = Object.values(byDay).reduce((n, a) => n + a.length, 0);
     const rows = days.map((d) => {
       const evs = byDay[d.iso] || [];
       const chips = evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('');
-      // A quiet per-day + (revealed on hover) adds an activity straight onto that
-      // day, pre-filed to this folio - how a co-parent fills the week in. Empty
-      // read-only days (a member's view) show a faint dot instead. (Robin.)
       const addDay = canEditArea ? `<button class="awk-dayadd" data-area-day-add="${area.id}::${d.iso}" title="Add an activity on this day" aria-label="Add on this day">＋</button>` : (evs.length ? '' : '<span class="awk-empty">·</span>');
       return `<div class="awk-day${d.today ? ' awk-today' : ''}${evs.length ? '' : ' awk-day-empty'}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}${addDay}</div></div>`;
     }).join('');
-    const bodyInner = !loaded
-      ? '<div class="home-empty">Loading the week…</div>'
-      : `<div class="aweek">${rows}</div>`;
-    const addBtn = canEditArea ? `<button class="awk-add add-btn" data-area-add-event title="Add an event to this folio">＋</button>` : '';
-    return `<section class="area-sec area-weeksec ${open ? '' : 'area-sec-collapsed'}" data-aflow="Week" style="--h:${h}">
-      ${areaSecH('Week', 'Week ahead', total || null, '◑')}
-      ${open ? `<div class="area-sec-body">${bodyInner}</div>` : ''}
-    </section>`;
-  })();
-  // Recently viewed and Week ahead share a quick row, half each. (Robin.)
-  const rvWeekRow = (rvHalf || areaWeek) ? `<div class="area-dash-fl area-quickrow" style="--h:${h}">${rvHalf}${areaWeek}</div>` : '';
+    return loaded ? `<div class="aweek">${rows}</div>` : '<div class="home-empty">Loading the week…</div>';
+  };
+  const weekLoaded = state.area_open.week && String(state.area_open.week.for) === String(area.id) && !state.area_open.week.loading;
+  const weekCount = weekLoaded ? (state.area_open.week.events || []).length : null;
+  const owner = canEditArea;
+  const toolShow = (key, present) => !secHidden(key) && (owner || present);   // owner sees empty tools too (so you can add into them); members only populated ones
+  const act = (html) => (owner ? html : '');
+  const SECTIONS = [
+    { id: 'upnext', ic: '✓', label: 'Up next', show: !!doNext, count: openTs.length || null, body: () => `<div class="today-cal">${doNext}</div>` },
+    { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
+    { id: 'week', ic: '◑', label: 'Week ahead', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
+    { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
+    { id: 'access', ic: '👥', label: 'Folio Access', show: !((area.sharedBy && !memberCount) || secHidden('Shared with')), count: memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, body: () => areaMembersBody(area) },
+    { id: 'pages', ic: '▤', label: 'Pages & tables', show: toolShow('Pages and tables', !!notesTotal), count: notesTotal || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => (notesTotal ? notesBody : '<div class="home-empty">No pages or tables here yet.</div>') },
+    { id: 'tasks', ic: '▦', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
+    { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>${secMore('Contacts', contacts.length)}` : '<div class="home-empty">No contacts here yet.</div>') },
+    { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: () => (emails.length ? `<div class="tbl-cards">${emailCards}</div>${secMore('Emails', emails.length)}` : '<div class="home-empty">No emails filed here.</div>') },
+    { id: 'notepad', ic: '📝', label: 'Notepad', show: !secHidden('Wall'), body: () => areaWallBody(area) },
+    { id: 'links', ic: '🔖', label: 'Saved links', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>${secMore('Saved links', bookmarks.length)}` : '<div class="home-empty">Nothing saved here yet.</div>') },
+    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>${secMore('Reflections', journals.length)}` : '<div class="home-empty">No reflections here yet.</div>') },
+    { id: 'files', ic: '📎', label: 'Files', show: toolShow('Files', !!attList.length), count: attList.length || null, body: () => areaAttachHtml(area) },
+    { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
+  ].filter((s) => s.show);
+  let openToolId = state.area_open.toolTile;
+  if (!SECTIONS.some((s) => s.id === openToolId)) openToolId = null;
+  const toolTiles = SECTIONS.map((s) => `<button class="ovt-tile${openToolId === s.id ? ' on' : ''}" data-area-tool="${s.id}" aria-expanded="${openToolId === s.id}"><span class="ovt-ic">${s.ic}</span><span class="ovt-l">${esc(s.label)}</span>${s.count ? `<span class="ovt-c">${s.count}</span>` : ''}</button>`).join('');
+  const openSec = SECTIONS.find((s) => s.id === openToolId);
+  const toolPanel = openSec ? `<div class="ovt-panel area-tool-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openSec.ic}</span>${esc(openSec.label)}</div>${openSec.acts ? `<div class="ovt-acts">${openSec.acts}</div>` : ''}<div class="area-tool-body">${openSec.body()}</div></div>` : '';
+  const areaTools = SECTIONS.length ? `<div class="area-tools" style="--h:${h}"><div class="ovt-grid area-tools-grid">${toolTiles}</div>${toolPanel}</div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
@@ -7908,10 +7877,7 @@ function renderArea() {
     ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this folio as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
     ${areaVisionGoals}
     ${areaDash}
-    ${lToday}
-    ${quickTop}
-    ${rvWeekRow}
-    ${areaRest}
+    ${areaTools}
     </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
@@ -19569,6 +19535,10 @@ document.addEventListener('click', (e) => {
   { const sa = t.closest('[data-area-secall]'); if (sa) { const k = sa.dataset.areaSecall; const s = (state.area_open && state.area_open.secAll instanceof Set) ? state.area_open.secAll : null; if (s) { if (s.has(k)) s.delete(k); else s.add(k); renderArea(); } return; } }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
   { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
+  // A folio tool card: open its content panel (one open at a time). Buttons inside
+  // the panel live outside any [data-area-tool], so they fall through to their own
+  // handlers below. (Robin, 2026-10-11: tools are square cards that expand.)
+  { const atool = t.closest('[data-area-tool]'); if (atool && state.area_open) { const k = atool.dataset.areaTool; state.area_open.toolTile = (state.area_open.toolTile === k) ? null : k; renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
   if (t.closest('[data-area-add-journal]')) { areaAddJournal(false); return; }

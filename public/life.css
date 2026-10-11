@@ -5287,6 +5287,16 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ovt-act { font:inherit; font-size:13px; font-weight:500; padding:7px 13px; border:1px solid var(--line); border-radius:999px; background:var(--paper); color:var(--ink-2); cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .ovt-act:hover { border-color:var(--c,var(--accent)); color:var(--ink); background:var(--card); }
 .ovt-members { margin-top:2px; }
+/* The folio page's tools grid reuses the settings .ovt-* square cards. The
+   wrapper carries the folio hue so the tiles + panel pick up --c. (Robin.) */
+.area-tools { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-top:24px; }
+.area-tools .ovt-grid { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; }
+.area-tools .ovt-tile { padding:18px 10px; gap:9px; }
+.area-tools .ovt-ic { font-size:24px; }
+.area-tool-panel { margin-top:14px; }
+.area-tool-body { display:flex; flex-direction:column; gap:14px; }
+.area-tool-body > .attachments, .area-tool-body > .xlinks { margin:0; }
+@media (max-width:560px){ .area-tools .ovt-grid { grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; } }
 .ov-reviews { margin-top:14px; }
 .ov-revtog { display:flex; align-items:flex-start; gap:10px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:7px 0; line-height:1.45; }
 .ov-revtog input { width:18px; height:18px; accent-color:var(--accent); flex:none; margin-top:1px; }
