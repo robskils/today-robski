@@ -965,7 +965,7 @@ async function journalInsights(request, env, json, err) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens: 900, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content: user }] }),
+      body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens: 2200, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content: user }] }),
     });
     if (!res.ok) { const t = await res.text().catch(() => ''); return err(`Insights error ${res.status}: ${t.slice(0, 200)}`, request, 502); }
     const data = await res.json();
