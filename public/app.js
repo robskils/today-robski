@@ -5818,7 +5818,7 @@ async function openSpiritCards() {
   state.view = { type: 'spirit' };
   renderNav();
   renderSpirit();
-  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  landReflContent();
   if (state.spiritHistory === undefined) {
     try { const r = await api('/api/kv/spirit_history'); state.spiritHistory = (r && r.value) ? JSON.parse(r.value) : []; }
     catch { state.spiritHistory = []; }
@@ -6016,7 +6016,7 @@ async function openIChing(reading) {
   state.view = { type: 'iching' };
   renderNav();
   renderIChing();
-  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  landReflContent();
   if (state.ichingHistory === undefined) {
     try { const r = await api('/api/kv/iching_history'); state.ichingHistory = (r && r.value) ? JSON.parse(r.value) : []; }
     catch { state.ichingHistory = []; }
@@ -6298,7 +6298,7 @@ function closeHoro() { const el = document.getElementById('horo'); if (el) el.re
 // Meditation lives in the Toolbox already (real bells, breathing orb); the
 // Well-being button just opens it there rather than duplicating the tool.
 // Meditation is now its own Well-being page (the timer, free of the Toolbox).
-function openMeditation() { state.view = { type: 'meditation' }; renderNav(); renderMeditation(); try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {} }
+function openMeditation() { state.view = { type: 'meditation' }; renderNav(); renderMeditation(); landReflContent(); }
 function renderMeditation() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.meditation') }])}
@@ -6307,6 +6307,24 @@ function renderMeditation() {
     ${medPanel()}`;
 }
 
+// On mobile, a Reflection tool page lands at the top of its CONTENT - just below
+// the tool-tiles switcher - so you see the journal / meditation / reading straight
+// away, not the row of tiles. Desktop (and the fallback) lands at the very top.
+// (Robin, 2026-10-12: land on the content, not the highlighted tile.)
+function landReflContent() {
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  if (window.matchMedia('(min-width:821px)').matches) return;
+  const go = () => { try {
+    const tiles = document.querySelector('#pane .wb-tiles'); const next = tiles && tiles.nextElementSibling;
+    if (!next) return;
+    const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56;
+    const crumb = document.querySelector('#pane .crumbbar, #pane .note-crumbs');
+    const crumbH = crumb ? Math.round(crumb.getBoundingClientRect().height) : 0;
+    const y = window.scrollY + next.getBoundingClientRect().top - (navh + crumbH + 8);
+    window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+  } catch {} };
+  requestAnimationFrame(() => requestAnimationFrame(go));
+}
 async function openJournal(mode) {
   // mode: null = the general Journal, 'coaching' / 'dreams' = that tool's own page.
   // All three share one list renderer; each shows only its own entries.
@@ -6317,7 +6335,7 @@ async function openJournal(mode) {
     state.journal = Object.assign({}, state.journal, { entries, picking: false });
   } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); toast(e.message); }
   renderJournalList();
-  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}   // always land at the top
+  landReflContent();   // land at the top of the content (below the tool tiles on mobile)
   // Load the history of generated insights (each is a dated 'insight' block) -
   // only the general Journal shows them.
   if (!mode) api('/api/blocks?kind=insight').then((list) => {
@@ -6457,7 +6475,7 @@ async function openInsights() {
     } catch {}
   }
   renderInsights();
-  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  landReflContent();
   api('/api/blocks?kind=insight').then((list) => {
     if (state.journal && state.view.type === 'insights') {
       state.journal.insightsList = (list || []).sort((a, b) => String((b.props && b.props.ts) || b.created_at || '').localeCompare(String((a.props && a.props.ts) || a.created_at || '')));
