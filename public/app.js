@@ -8969,7 +8969,7 @@ function renderCalendar() {
       <div class="cal-nav">
         ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Flow tool">☀ Plan day</button>' : ''}
         ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
-        ${modOn('calendar') ? '<button class="cal-btn ic cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link" aria-label="Add from a file">⤓</button>' : ''}
+        ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
@@ -12100,6 +12100,7 @@ const MAIL_ICO = {
   task: mIco('<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="M8.4 12.3l2.4 2.4 4.8-5.4"/>'),
   area: mIco('<path d="M12 3.6l8.4 8.4-8.4 8.4L3.6 12z"/>'),   // the ◈ life-area diamond, as a line icon
   note: mIco('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>'),   // a lined page
+  calendar: mIco('<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 9.5h16M8.5 3.5v4M15.5 3.5v4"/>'),   // a calendar
   transform: mIco('<path d="M4 8h11l-3-3M20 16H9l3 3"/>'),   // convert / turn into…
   caret: mIco('<path d="M7 10l5 5 5-5"/>'),
   folder: mIco('<path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h3.6l1.6 2h7.3a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/>'),   // file into a bucket
@@ -12412,7 +12413,7 @@ function renderMail(loading) {
     // Forward beneath it. Transform is a dropdown to turn the email into a task or a
     // note. Both are native <details> so they need no extra state.
     const replyDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Reply">${MAIL_ICO.replyAll}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-reply-all>${MAIL_ICO.replyAll}<span>Reply to all</span></button><button class="mail-dd-item" data-mail-reply>${MAIL_ICO.reply}<span>Reply to sender</span></button><button class="mail-dd-item" data-mail-forward>${MAIL_ICO.forward}<span>Forward</span></button></div></details>`;
-    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Make a task</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Make a note</span></button></div></details>`;
+    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Make a task</span></button><button class="mail-dd-item" data-mail-event>${MAIL_ICO.calendar}<span>Make an event</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Make a note</span></button></div></details>`;
     // File into a priority bucket - the old second row, now one dropdown. Shows a
     // tick on the current bucket, and "Back to Inbox" once it's been filed.
     const curQuad = mailQuadOf(o);
@@ -12568,6 +12569,26 @@ function emailSourceHtml(o) {
   if (o && o.html && String(o.html).trim()) return String(o.html);
   const src = ((o && o.text) || '').replace(/\r\n/g, '\n').trim();
   return src ? src.split(/\n{2,}/).map((p) => `<p>${linkifyText(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
+}
+// Turn an email into a calendar event: feed its text to the same AI event
+// reader the "Add from a file" importer uses, then show the found event(s) in
+// that importer's review overlay, pre-ticked - so you confirm (and tweak the
+// date it read) before it lands on your calendar. (Robin, 2026-10-12.)
+async function mailToEvent() {
+  const o = state.mail && state.mail.open; if (!o) return;
+  const name = o.from ? (o.from.name || o.from.address || '') : '';
+  const when = o.date ? new Date(o.date).toLocaleString() : '';
+  const plain = (emailSourceHtml(o) || '')
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"')
+    .replace(/\s+/g, ' ').trim().slice(0, 4000);
+  const text = `Subject: ${o.subject || ''}\nFrom: ${name}\nReceived: ${when}\n\n${plain}`;
+  openFlyerImport();
+  const f = flyerState();
+  f.text = text;
+  renderFlyerImport();   // so the textarea holds the email text before we read it
+  flyerFind();           // extract events and show the tick-to-confirm results
 }
 async function mailToNote() {
   const o = state.mail && state.mail.open; if (!o) return;
@@ -19551,6 +19572,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   { const mt = t.closest('[data-mail-task]'); if (mt) { openMailTaskMenu(mt); return; } }
+  if (t.closest('[data-mail-event]')) { mailToEvent(); return; }
   if (t.closest('[data-mail-note]')) { mailToNote(); return; }
   if (t.closest('[data-mail-task-add]')) { mailTaskCreate(); return; }
   if (t.closest('[data-mail-task-close]') || t.matches('[data-mail-task-bg]')) { state.mail.taskMenu = null; renderMail(); return; }
