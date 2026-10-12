@@ -41,6 +41,10 @@ export async function getFriends(env) {
     for (const e of list) { const em = String(e || '').trim().toLowerCase(); if (em) emails.push([em, c.title]); }
   }
   const suggestions = [];
+  // Suggestions you've dismissed with the X stay hidden (stored per account in the
+  // kv store under sugg_hidden). (Robin.)
+  let hiddenSug = new Set();
+  try { const hr = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='kv_sugg_hidden'").bind(env.uid).first(); if (hr && hr.value) { const a = JSON.parse(hr.value); if (Array.isArray(a)) hiddenSug = new Set(a.map(String)); } } catch {}
   const uniq = [...new Set(emails.map((e) => e[0]))];
   const byEmail = {};
   // D1 caps bound parameters at ~100 per statement, so a big address book (Robin
@@ -56,7 +60,7 @@ export async function getFriends(env) {
     for (const r of al.results || []) byEmail[r.em] = { id: r.id, name: r.name, subdomain: r.subdomain };
   }
   const seen = new Set();
-  for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id)) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
+  for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id) && !hiddenSug.has(String(u.id))) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
   // scanned = how many distinct contact emails we checked against Daybook, so the
   // UI can say "checked N of your contacts" even when nothing matched.
   return { friends, incoming, outgoing, suggestions, scanned: uniq.length, contacts: cts.length };

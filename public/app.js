@@ -1661,6 +1661,20 @@ async function contactSetPhoto(file) {
     await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
   } catch (e) { toast(e.message || 'Could not read that image'); }
 }
+// Dismiss a "your contact is on Daybook" suggestion. Drops it locally and persists
+// the hidden id (kv_sugg_hidden), so getFriends keeps it out from now on. (Robin:
+// let me hide a suggestion as well as connect.)
+async function hideSuggestion(id) {
+  id = String(id);
+  if (state.friends && Array.isArray(state.friends.suggestions)) state.friends.suggestions = state.friends.suggestions.filter((f) => String(f.id) !== id);
+  if (state.view.type === 'contacts') renderContacts(); else if (state.view.type === 'friends' || state.view.type === 'connect') { try { renderNav(); } catch {} rerenderCurrent(); }
+  try {
+    const r = await api('/api/kv/sugg_hidden').catch(() => null);
+    let arr = []; try { arr = r && r.value ? JSON.parse(r.value) : []; } catch {} if (!Array.isArray(arr)) arr = [];
+    if (!arr.map(String).includes(id)) arr.push(id);
+    await api('/api/kv/sugg_hidden', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(arr) }) });
+  } catch {}
+}
 function contactRemovePhoto() {
   const c = state.contact_open && state.contact_open.contact; if (!c || !(c.props && c.props.photo)) return;
   c.props.photo = null;
@@ -13494,7 +13508,7 @@ function contactsDaybookBannerHtml() {
   if (!d) return '<div class="cts-dbbanner cts-dbb-load">Checking which of your contacts are on Daybook…</div>';
   const sug = d.suggestions || [];
   if (sug.length) {
-    const rows = sug.slice(0, 12).map((f) => `<button class="cts-dbb-person" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button>`).join('');
+    const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
     const more = sug.length > 12 ? `<div class="cts-dbb-more">+${sug.length - 12} more in Daybook friends below</div>` : '';
     return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${sug.length} of your contacts ${sug.length === 1 ? 'is' : 'are'} on Daybook</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
   }
@@ -19722,6 +19736,7 @@ document.addEventListener('click', (e) => {
   { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToDaybook(cvi.dataset.ccInvite || undefined); return; } }
   { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToDaybook(email); return; } }
   if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
+  { const sh = t.closest('[data-sugg-hide]'); if (sh) { e.preventDefault(); e.stopPropagation(); hideSuggestion(sh.dataset.suggHide); return; } }
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
   { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
