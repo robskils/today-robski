@@ -5906,10 +5906,19 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-zero-s { font-size:15px; color:var(--ink-3); }
 @keyframes mailZeroPop { 0%{ transform:scale(.6); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
 @media (prefers-reduced-motion:reduce){ .mail-zero-ic { animation:none; } }
-.mail-folders { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
-.mail-folder { padding:6px 14px; border-radius:999px; color:var(--ink-3); font-size:14.5px; border:1px solid transparent; transition:background .12s,color .12s; }
-.mail-folder:hover { background:var(--paper-2); color:var(--ink-2); }
-.mail-folder.on { background:var(--card); color:var(--ink); font-weight:500; box-shadow:var(--shadow); border-color:var(--line); }
+.mail-folders { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+/* Drafts / Sent / Spam / Trash: real little cards now (border + ground + an icon),
+   a touch more obvious than the old flat pills - but kept smaller and quieter than
+   the triage pots above. (Robin, 2026-10-12.) */
+.mail-folder { display:inline-flex; align-items:center; gap:8px; padding:9px 15px; border-radius:13px; color:var(--ink-2); font-size:14.5px; font-weight:500; background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition:background .12s,color .12s,border-color .12s,transform .1s,box-shadow .12s; }
+.mail-folder:hover { color:var(--ink); border-color:var(--line-2); transform:translateY(-1px); box-shadow:0 10px 22px -14px rgba(0,0,0,.34); }
+.mail-folder.on { color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent) inset, var(--shadow); }
+.mail-folder-ic { flex:none; display:inline-flex; width:17px; height:17px; color:var(--ink-3); }
+.mail-folder-ic svg { width:17px; height:17px; }
+.mail-folder:hover .mail-folder-ic, .mail-folder.on .mail-folder-ic { color:var(--accent); }
+.mail-folder-l { line-height:1; }
+.mail-folder-spam.on { border-color:#d9483b; box-shadow:0 0 0 2px color-mix(in srgb,#d9483b 26%,transparent) inset, var(--shadow); }
+.mail-folder-spam.on .mail-folder-ic, .mail-folder-trash.on .mail-folder-ic { color:var(--ink-2); }
 /* Star (\Flagged) on a row and in the reading pane. */
 .mail-star { flex:none; align-self:center; font-size:16px; color:var(--ink-3); opacity:0; padding:2px 5px; border-radius:6px; transition:opacity .12s,color .12s; }
 .mail-row:hover .mail-star, .mail-star.on { opacity:1; }

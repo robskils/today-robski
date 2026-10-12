@@ -12132,6 +12132,8 @@ const MAIL_ICO = {
   spam: mIco('<path d="M12 4l8.5 14.6H3.5z"/><path d="M12 10v3.5"/><path d="M12 16.8h.01"/>'),
   block: mIco('<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1l11.8 11.8"/>'),
   trash: mIco('<path d="M4.5 7h15"/><path d="M9 7V5.3A1.3 1.3 0 0 1 10.3 4h3.4A1.3 1.3 0 0 1 15 5.3V7"/><path d="M6.6 7l.85 11.3A1.6 1.6 0 0 0 9 20h6a1.6 1.6 0 0 0 1.6-1.7L17.4 7"/>'),
+  sent: mIco('<path d="M20.5 3.5L10 14"/><path d="M20.5 3.5L14 20.5l-3.8-6.3L3.9 10.4z"/>'),   // paper plane
+  draft: mIco('<path d="M5 19l1-4L16.5 4.5a1.8 1.8 0 0 1 2.5 0l.5.5a1.8 1.8 0 0 1 0 2.5L9 18z"/><path d="M4.5 20.5h6"/>'),   // a pencil, mid-draft
   sparkle: mIco('<path d="M12 3.6l1.7 4.9 4.9 1.7-4.9 1.7L12 16.7l-1.7-4.8L5.4 10l4.9-1.7z"/>', true),
   task: mIco('<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="M8.4 12.3l2.4 2.4 4.8-5.4"/>'),
   area: mIco('<path d="M12 3.6l8.4 8.4-8.4 8.4L3.6 12z"/>'),   // the ◈ life-area diamond, as a line icon
@@ -12501,7 +12503,8 @@ function renderMail(loading) {
       // Inbox and Archive are pots in the strip above, and Unread is just the Inbox
       // queue by another name - so the folder row holds only Drafts / Sent / Spam /
       // Trash.
-      return MAIL_FOLDERS.filter((f) => !['inbox', 'archive', 'unread'].includes(f.key)).map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}">${esc(f.label)}${dc ? ` <span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
+      const FOLDER_ICO = { drafts: MAIL_ICO.draft, sent: MAIL_ICO.sent, spam: MAIL_ICO.spam, trash: MAIL_ICO.trash };
+      return MAIL_FOLDERS.filter((f) => !['inbox', 'archive', 'unread'].includes(f.key)).map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder mail-folder-${f.key} ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}"><span class="mail-folder-ic">${FOLDER_ICO[f.key] || MAIL_ICO.folder}</span><span class="mail-folder-l">${esc(f.label)}</span>${dc ? `<span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
     })()}</div>
     ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
       <span class="mail-bulk-n">${m.selected.size} selected</span>
