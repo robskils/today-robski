@@ -1155,7 +1155,7 @@ function addNewMenuHtml() {
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
     modOn('reflect') ? item('dream', '☾', 'Dream') : '',
-    modOn('saved') ? item('save', '▷', 'Save a link') : '',
+    modOn('saved') ? item('save', '▷', 'Read or watch') : '',
     modOn('goals') ? item('bucket', '✦', 'Bucket list') : '',
   ].filter(Boolean).join('');
   if (!items) return '';
