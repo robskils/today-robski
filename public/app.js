@@ -1156,6 +1156,7 @@ function addNewMenuHtml() {
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
     modOn('reflect') ? item('dream', '☾', 'Dream') : '',
     modOn('saved') ? item('save', '▷', 'Save a link') : '',
+    modOn('goals') ? item('bucket', '✦', 'Bucket list item') : '',
   ].filter(Boolean).join('');
   if (!items) return '';
   return `<div class="addnew"><button class="addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add something new"><span class="an-plus">＋</span>New<span class="an-ch">▾</span></button><div class="addnew-menu" hidden>${items}</div></div>`;
@@ -3704,6 +3705,7 @@ async function quickAdd(kind) {
     else if (kind === 'save') { await openReadwatch(); setTimeout(() => { const i = $('#rw-url'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'contact') { state.contactsQuery = ''; await openContacts(); state.contactAdding = true; renderContacts(); setTimeout(() => { const i = $('#ct-name'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'goal') { await openGoals('goals'); await newGoal(null); }
+    else if (kind === 'bucket') { await openGoals('bucket'); await newBucket(); }
   } catch (e) { toast(e.message); }
   keepKeyboardUntilFocus(primer);
 }
