@@ -6340,21 +6340,32 @@ function renderMeditation() {
     ${medPanel()}`;
 }
 
-// On mobile, a Reflection tool page lands at the top of its CONTENT - just below
-// the tool-tiles switcher - so you see the journal / meditation / reading straight
-// away, not the row of tiles. Desktop (and the fallback) lands at the very top.
-// (Robin, 2026-10-12: land on the content, not the highlighted tile.)
+// A Reflection tool page lands at the top of its CONTENT - just below the
+// tool-tiles switcher - so you see the journal / meditation / reading straight
+// away: once you've picked a tool you don't need the tiles in view. Works on
+// desktop and mobile, clearing whichever sticky bars sit on top (the desktop tab
+// strip + breadcrumb, or the mobile brand header + breadcrumb). The tiles scroll
+// up out of view; the breadcrumb stays for navigation. (Robin, 2026-10-12.)
 function landReflContent() {
   try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
-  if (window.matchMedia('(min-width:821px)').matches) return;
   const go = () => { try {
     const tiles = document.querySelector('#pane .wb-tiles'); const next = tiles && tiles.nextElementSibling;
     if (!next) return;
+    const desktop = window.matchMedia('(min-width:821px)').matches;
     const navh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navh')) || 56;
     const crumb = document.querySelector('#pane .crumbbar, #pane .note-crumbs');
     const crumbH = crumb ? Math.round(crumb.getBoundingClientRect().height) : 0;
-    const y = window.scrollY + next.getBoundingClientRect().top - (navh + crumbH + 8);
-    window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+    const pad = (desktop ? 44 : navh) + crumbH + 10;
+    // Scroll whichever element actually scrolls (a .main container, or the window).
+    let sc = next.parentElement;
+    while (sc && sc !== document.body && sc !== document.documentElement) { const o = getComputedStyle(sc).overflowY; if ((o === 'auto' || o === 'scroll') && sc.scrollHeight - sc.clientHeight > 4) break; sc = sc.parentElement; }
+    if (sc && sc !== document.body && sc !== document.documentElement) {
+      const top = next.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - pad;
+      sc.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    } else {
+      const top = next.getBoundingClientRect().top + window.scrollY - pad;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    }
   } catch {} };
   requestAnimationFrame(() => requestAnimationFrame(go));
 }
