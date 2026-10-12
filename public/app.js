@@ -7842,7 +7842,9 @@ function renderArea() {
   // Vision & Goals leads the folio - the tab strip and the open tab's card sit
   // right under the masthead. Everything else (dashboard, today, week, the flow
   // sections) follows below. (Robin: Vision & Goals at the top.)
-  const areaVisionGoals = `${tabsKicker}${tabBar}<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
+  // "Add to this area" rides the tab-strip row, right-aligned alongside the
+  // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
+  const areaVisionGoals = `${tabsKicker}<div class="area-tabs-row">${tabBar}${areaAddBtn ? `<div class="area-tabs-add">${areaAddBtn}</div>` : ''}</div><div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -8011,7 +8013,6 @@ function renderArea() {
       <div class="am-plate">
         <div class="am-kicker">Folio</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this folio colour" aria-label="Change folio colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Folio" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Folio settings and overview" title="Settings & overview">▾</button></span></h1>
-        ${areaAddBtn ? `<div class="am-plate-acts">${areaAddBtn}</div>` : ''}
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         ${areaSentimentHtml(area)}
       </div>

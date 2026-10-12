@@ -5129,6 +5129,18 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Area sections as equal icon tiles + one expanding panel (like Home/Toolbox). */
 /* Tiles balance into two tidy rows: columns = half the tile count (min 3). */
 .area-tiles { display:grid; grid-template-columns:repeat(var(--cols, 5), minmax(0, 1fr)); gap:12px; margin:8px 0 18px; }
+/* The Vision & Goals tab strip shares its row with "Add to this area", pinned to
+   the right. The tabs take the space; the pill sits centred beside them. */
+.area-tabs-row { display:flex; align-items:center; gap:14px; }
+.area-tabs-row .area-tabs { flex:1 1 auto; }
+.area-tabs-add { flex:none; }
+/* On a phone the tabs need the whole width, so the pill drops below them,
+   right-aligned - never squeezed onto the tab row. */
+@media (max-width:560px){
+  .area-tabs-row { flex-direction:column; align-items:stretch; gap:10px; }
+  .area-tabs-row .area-tabs { margin-bottom:0; }
+  .area-tabs-add { display:flex; justify-content:flex-end; }
+}
 @media (max-width:560px){ .area-tiles { grid-template-columns:repeat(3, minmax(0,1fr)); } }
 .area-tile { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; flex-direction:column; align-items:center; gap:7px; padding:18px 10px 15px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; position:relative; transition:border-color .12s, transform .08s; }
 .area-tile:hover { border-color:var(--line-2); transform:translateY(-1px); }
@@ -7898,9 +7910,6 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .page-kicker { display:inline-flex; align-items:center; gap:10px; font-family:'IM Fell English SC',Georgia,serif; font-size:13px; font-weight:400; text-transform:uppercase; letter-spacing:.22em; color:color-mix(in srgb, hsl(var(--h,220) var(--lane-s) var(--lane-l)) 55%, var(--ink-3)); margin:2px 0 2px 3px; }
 .page-kicker::before { content:""; width:20px; height:2px; border-radius:2px; background:currentColor; opacity:.55; }
 .area-mast .am-plate h1 { margin-top:0; }
-/* "Add to this area" sits in the hero now, right-aligned under the share/star
-   icons, to the right of the folio name. (Robin, 2026-10-12.) */
-.am-plate-acts { display:flex; justify-content:flex-end; margin-top:9px; }
 .area-tabs-kick { padding-top:16px; }
 .area-tab-kick { margin:0; }
 @media (max-width:560px){
