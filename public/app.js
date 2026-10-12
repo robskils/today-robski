@@ -1649,6 +1649,25 @@ async function cardSetPhoto(file) {
   try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); rerenderCard(); toast('Photo updated'); }
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
+// A contact's photo: crop-to-square 256px JPEG data URI on props.photo - small
+// and light, in keeping with Daybook (no high-res uploads). (Robin.)
+async function contactSetPhoto(file) {
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
+  try {
+    const uri = await avatarDataUri(file);
+    c.props = c.props || {}; c.props.photo = uri;
+    const l = (state.contacts || []).find((x) => x.id === c.id); if (l) { l.props = l.props || {}; l.props.photo = uri; }
+    renderContactCard();
+    await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
+  } catch (e) { toast(e.message || 'Could not read that image'); }
+}
+function contactRemovePhoto() {
+  const c = state.contact_open && state.contact_open.contact; if (!c || !(c.props && c.props.photo)) return;
+  c.props.photo = null;
+  const l = (state.contacts || []).find((x) => x.id === c.id); if (l && l.props) l.props.photo = null;
+  renderContactCard();
+  api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: null } }) }).catch((e) => toast(e.message));
+}
 // Your own card, from account + profile. `full` shows the tagline hint.
 function myCardData() {
   const a = state.account || {}; const c = cardProfile();
@@ -7924,9 +7943,10 @@ function renderArea() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Folios', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
-      ${cover ? `<div class="am-cover" style="background-image:url('${esc(cover.url)}')">
+      ${cover ? `<div class="am-cover">
+        <div class="am-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div>
         <span class="am-cover-scrim"></span>
-        ${canEditArea ? `<button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change cover</button>` : ''}
+        ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button></div>` : ''}
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Daybook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
@@ -8509,6 +8529,50 @@ function openAreaCover() {
   });
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
+}
+// Reposition & zoom an existing cover: a crop frame shows the image; drag to pan
+// (background-position) and a slider to zoom (transform:scale), then Save writes
+// posX/posY/zoom onto area.props.cover. Mirrors how the header renders it, so the
+// preview matches. (Robin: zoom in/out a bit and reposition the header image.)
+function openCoverAdjust() {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  const cover = (area.props && area.props.cover) || null; if (!cover || !cover.url) { openAreaCover(); return; }
+  const st = { posX: Number.isFinite(+cover.posX) ? +cover.posX : 50, posY: Number.isFinite(+cover.posY) ? +cover.posY : 50, zoom: +cover.zoom > 1 ? +cover.zoom : 1 };
+  const el = uiDialogHost();
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-adjust" style="--h:${hueOf(area)}">
+    <div class="recur-h">Position &amp; zoom</div>
+    <p class="recur-p">Drag the photo to reposition it, and use the slider to zoom.</p>
+    <div class="cadj-frame" data-cadj-frame><div class="cadj-img" data-cadj-img style="background-image:url('${esc(cover.url)}')"></div></div>
+    <label class="cadj-zoom-l"><span class="cadj-zoom-t">Zoom</span><input type="range" class="cadj-zoom" data-cadj-zoom min="1" max="3" step="0.01" value="${st.zoom}"></label>
+    <div class="ui-dialog-btns"><button class="ui-btn cancel" data-cadj-cancel>Cancel</button><button class="ui-btn primary" data-cadj-save>Save</button></div>
+  </div></div>`;
+  const imgEl = el.querySelector('[data-cadj-img]');
+  const frameEl = el.querySelector('[data-cadj-frame]');
+  const paint = () => { imgEl.style.backgroundPosition = `${st.posX}% ${st.posY}%`; imgEl.style.transform = `scale(${st.zoom})`; };
+  paint();
+  // Drag to pan: map pointer movement to a background-position % shift (gentler the
+  // more you're zoomed in). Dragging the photo right reveals its left side.
+  let drag = null;
+  const onDown = (e) => { const p = e.touches ? e.touches[0] : e; drag = { x: p.clientX, y: p.clientY, px: st.posX, py: st.posY, w: frameEl.clientWidth || 1, h: frameEl.clientHeight || 1 }; imgEl.classList.add('dragging'); e.preventDefault(); };
+  const onMove = (e) => { if (!drag) return; const p = e.touches ? e.touches[0] : e; const dx = (p.clientX - drag.x) / drag.w * 100 / st.zoom; const dy = (p.clientY - drag.y) / drag.h * 100 / st.zoom; st.posX = Math.max(0, Math.min(100, drag.px - dx * 1.6)); st.posY = Math.max(0, Math.min(100, drag.py - dy * 1.6)); paint(); };
+  const onUp = () => { drag = null; imgEl.classList.remove('dragging'); };
+  imgEl.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+  imgEl.addEventListener('touchstart', onDown, { passive: false }); window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+  el.querySelector('[data-cadj-zoom]').addEventListener('input', (e) => { st.zoom = +e.target.value || 1; paint(); });
+  const cleanup = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); document.removeEventListener('keydown', onKey, true); };
+  const close = () => { cleanup(); el.innerHTML = ''; };
+  const save = () => {
+    const next = { ...cover, posX: Math.round(st.posX), posY: Math.round(st.posY), zoom: Math.round(st.zoom * 100) / 100 };
+    area.props = { ...(area.props || {}), cover: next };
+    const s = state.areas.find((x) => x.id === area.id); if (s) s.props = { ...(s.props || {}), cover: next };
+    api(`/api/blocks/${area.id}`, { method: 'PATCH', body: JSON.stringify({ props: { cover: next } }) }).catch((e) => toast(e.message));
+    close(); renderArea();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === 'Enter') { e.preventDefault(); save(); } };
+  document.addEventListener('keydown', onKey, true);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  el.querySelector('[data-cadj-cancel]').addEventListener('click', close);
+  el.querySelector('[data-cadj-save]').addEventListener('click', save);
 }
 // Connect an EXISTING thing to a folio: clicking a connector tile opens this -
 // search your pages/tasks/contacts/goals first, attach one, or make a new one.
@@ -13327,7 +13391,7 @@ function contactCardHtml(c) {
   return `<button class="contact-card ${sel ? 'selected' : ''} ${starred ? 'starred' : ''}${hue != null ? ' has-area' : ''}${privCls(c)}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-contact="${c.id}" draggable="true" data-contact-drag="${c.id}"${area ? ` title="${esc(area.title)}"` : ''}>
     <span class="cc-check ${sel ? 'on' : ''}" data-contact-sel="${c.id}" role="checkbox" aria-checked="${sel}" title="Select (to merge)">${sel ? '✓' : ''}</span>
     <span class="cc-star ${starred ? 'on' : ''}" data-contact-star="${c.id}" role="button" title="${starred ? 'Starred - tap to unstar' : 'Star this contact'}">${starred ? '★' : '☆'}</span>
-    <span class="contact-av">${esc(initial(c.title || '?'))}</span>
+    <span class="contact-av${p.photo ? ' has-photo' : ''}"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
 // Your own Daybook card, shown as a "You" card at the top of Contacts. It's
@@ -13892,7 +13956,10 @@ function renderContactCard() {
         `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to Daybook"><span class="cc-qic">✦</span>Invite</button>`,
       ].filter(Boolean).join('');
       return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
-      <span class="contact-av big${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>${esc(initial(c.title || '?'))}</span>
+      <span class="cc-av-wrap">
+        <label class="contact-av big cc-av-edit${p.photo ? ' has-photo' : ''}${hue != null ? ' has-area' : ''}"${(hue != null || p.photo) ? ` style="${hue != null ? `--h:${hue};` : ''}${p.photo ? `background-image:url('${esc(p.photo)}')` : ''}"` : ''} title="Upload a photo"><input type="file" accept="image/*" hidden data-contact-photo>${p.photo ? '' : esc(initial(c.title || '?'))}<span class="cc-av-cam" aria-hidden="true">⬆</span></label>
+        ${p.photo ? '<button class="cc-av-x" type="button" data-contact-photo-rm title="Remove photo">×</button>' : ''}
+      </span>
       <div class="cc-headmain">
         <textarea class="note-title cc-name" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
         ${(areaChips || kit) ? `<div class="cc-sub">${areaChips}${kit ? `<span class="cc-kit-chip" title="Keep in touch">🤝 ${esc(kit)}</span>` : ''}</div>` : ''}
@@ -19316,6 +19383,7 @@ document.addEventListener('click', (e) => {
   const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
+  { const cpr = t.closest('[data-contact-photo-rm]'); if (cpr) { e.preventDefault(); e.stopPropagation(); contactRemovePhoto(); return; } }
   if (t.closest('[data-self-hide]')) { try { localStorage.setItem('life.contacts.selfHidden', '1'); } catch {} renderContacts(); return; }
   if (t.closest('[data-self-show]')) { try { localStorage.removeItem('life.contacts.selfHidden'); } catch {} renderContacts(); return; }
   if (t.closest('[data-contacts-merge]')) { mergeSelectedContacts(); return; }
@@ -19583,6 +19651,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-areas-shared]')) { state.areasSharedOnly = !state.areasSharedOnly; renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
+  if (t.closest('[data-area-cover-adjust]')) { openCoverAdjust(); return; }
   if (t.closest('[data-area-cover]')) { openAreaCover(); return; }
   { const ac = t.closest('[data-area-connect]'); if (ac) { openAreaConnect(ac.dataset.areaConnect); return; } }
   if (t.closest('[data-ov-colour-toggle]')) { try { localStorage.setItem('life.ovcolour', localStorage.getItem('life.ovcolour') === '1' ? '0' : '1'); } catch {} renderArea(); return; }
@@ -19883,6 +19952,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-src-city]')) { discoverState().cityInput = e.target.value; return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
+  if (e.target.matches('[data-contact-photo]')) { const f = e.target.files && e.target.files[0]; if (f) contactSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
   if (e.target.matches('[data-card-email]')) {

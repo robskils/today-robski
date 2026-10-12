@@ -307,6 +307,14 @@ button { cursor:pointer; background:none; border:0; }
 .ctx-merge { color:var(--accent); font-weight:700; }
 .contact-av { flex:none; width:44px; height:44px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:var(--accent-ink); background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent)); }
 .contact-av.big { width:60px; height:60px; font-size:24px; }
+/* A contact photo fills the avatar; when there's one, drop the gradient. (Robin.) */
+.contact-av.has-photo { background-size:cover; background-position:center; background-repeat:no-repeat; color:transparent; }
+.cc-av-wrap { position:relative; flex:none; display:inline-flex; }
+.cc-av-edit { position:relative; cursor:pointer; overflow:hidden; }
+.cc-av-cam { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; background:rgba(0,0,0,.34); opacity:0; transition:opacity .12s; }
+.cc-av-edit:hover .cc-av-cam, .cc-av-edit:focus-within .cc-av-cam { opacity:1; }
+.cc-av-x { position:absolute; top:-4px; right:-4px; z-index:3; width:22px; height:22px; border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:14px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); }
+.cc-av-x:hover { color:var(--ink); border-color:var(--line-2); }
 .contact-info { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .contact-name { font-size:17px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .contact-sub { display:flex; flex-direction:column; gap:1px; }
@@ -7817,9 +7825,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .am-cover {
   position:relative; width:100%; height:clamp(130px,21vw,210px);
   border-radius:20px; overflow:hidden; isolation:isolate;
-  background:var(--paper-2) center/cover no-repeat;
+  background:var(--paper-2);
   box-shadow:0 1px 2px rgba(0,0,0,.04), 0 26px 50px -34px rgba(0,0,0,.55);
 }
+/* The image sits on its own layer so it can be panned (background-position) and
+   zoomed (transform:scale) independently of the scrim and buttons. (Robin.) */
+.am-cover-bg { position:absolute; inset:0; background-size:cover; background-repeat:no-repeat; background-position:center; transform-origin:center; }
+.am-cover-tools { position:absolute; right:12px; bottom:12px; z-index:2; display:flex; gap:8px; }
 .area-mast.no-cover .am-cover {
   height:clamp(118px,17vw,180px);
   background-image:
@@ -7833,7 +7845,6 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   background:linear-gradient(183deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,.12) 78%, rgba(0,0,0,.32) 100%);
 }
 .am-cover-btn {
-  position:absolute; right:12px; bottom:12px; z-index:2;
   display:inline-flex; align-items:center; gap:7px; padding:7px 13px;
   border-radius:999px; border:1px solid transparent; cursor:pointer;
   font-size:13px; font-weight:600; line-height:1;
@@ -7843,6 +7854,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   opacity:0; transform:translateY(2px); transition:opacity .15s, transform .12s, border-color .12s;
 }
 .am-cover:hover .am-cover-btn, .am-cover-btn:focus-visible { opacity:1; transform:none; }
+/* Cover adjust (reposition & zoom) dialog. */
+.cover-adjust .cadj-frame { position:relative; width:100%; height:190px; border-radius:14px; overflow:hidden; background:var(--paper-2); box-shadow:inset 0 0 0 1px var(--line); margin:4px 0 2px; }
+.cover-adjust .cadj-img { position:absolute; inset:0; background-size:cover; background-repeat:no-repeat; background-position:center; transform-origin:center; cursor:grab; touch-action:none; }
+.cover-adjust .cadj-img.dragging { cursor:grabbing; }
+.cover-adjust .cadj-zoom-l { display:flex; align-items:center; gap:12px; margin:14px 2px 4px; }
+.cover-adjust .cadj-zoom-t { font-size:13px; font-weight:600; color:var(--ink-2); flex:none; }
+.cover-adjust .cadj-zoom { flex:1; accent-color:var(--c,var(--accent)); }
 .am-cover-btn:hover { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)); }
 .area-mast.no-cover .am-cover-btn {
   opacity:1; transform:none;
