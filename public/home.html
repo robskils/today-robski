@@ -830,9 +830,8 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       invite.parentNode.insertBefore(flow, invite);
       invite.parentNode.insertBefore(tools, invite);
     }
-    var idea = document.getElementById('idea');
-    var connect = document.getElementById('connect');
-    if (idea && connect && connect.parentNode) { connect.parentNode.insertBefore(idea, connect); }
+    // "The bigger idea" now keeps its place from the HTML (second, under the hero,
+    // above the litany) - no runtime reordering. (Robin, 2026-10-12.)
   } catch (e) {}
 })();
 </script>
