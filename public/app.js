@@ -1156,7 +1156,7 @@ function addNewMenuHtml() {
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
     modOn('reflect') ? item('dream', '☾', 'Dream') : '',
     modOn('saved') ? item('save', '▷', 'Save a link') : '',
-    modOn('goals') ? item('bucket', '✦', 'Bucket list item') : '',
+    modOn('goals') ? item('bucket', '✦', 'Bucket list') : '',
   ].filter(Boolean).join('');
   if (!items) return '';
   return `<div class="addnew"><button class="addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add something new"><span class="an-plus">＋</span>New<span class="an-ch">▾</span></button><div class="addnew-menu" hidden>${items}</div></div>`;
@@ -15075,7 +15075,7 @@ async function delTracker(id) {
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
-  if (tab) state.goalsTab = tab;
+  if (tab) { state.goalsTab = tab; if (['areas', 'focus', 'list', 'bucket'].includes(tab)) { state.goalsView = tab; try { localStorage.setItem('life.goals.view', tab); } catch {} } }
   const [areas, goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
@@ -15272,13 +15272,14 @@ function renderGoals() {
     <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By area</button>
     <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">★ Starred${focusN ? ` · ${focusN}` : ''}</button>
     <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
+    <button class="gtab ${view === 'bucket' ? 'on' : ''}" data-goals-view="bucket">✦ Bucket list${(state.bucket || []).length ? ` · ${state.bucket.length}` : ''}</button>
   </div>`;
-  const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : goalsByAreaBody();
+  // Bucket list is its own page now (full width), not a side box on the other
+  // tabs. (Robin, 2026-10-12.)
+  const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : view === 'bucket' ? bucketBody() : goalsByAreaBody();
   $('#pane').innerHTML = `${pageCrumb(t('nav.goals'))}<div class="pane-head"><h1>${t('goals.title')}</h1></div>
     ${tabs}
-    ${view === 'list'
-      ? `<div class="goals-main goals-main-full">${body}</div>`
-      : `<div class="goals-layout"><div class="goals-main">${body}</div><aside class="goals-side">${bucketSideBox()}</aside></div>`}`;
+    <div class="goals-main goals-main-full">${body}</div>`;
   loadVisionThumbs();
 }
 // "This quarter" tab: just the goals you've starred into focus, cross-area.
