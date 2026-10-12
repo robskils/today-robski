@@ -7881,10 +7881,11 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  const areaDash = (areaAddBtn || dashStats) ? `<div class="area-dash" style="--h:${h}">
+  // Metrics get the whole width now - the "Add to this area" button moved up to
+  // the hero, under the share/star icons. (Robin, 2026-10-12.)
+  const areaDash = dashStats ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
-        <div class="area-dash-acts">${areaAddBtn}</div>
       </div>
     </div>` : '';
   // ── The tools grid ──────────────────────────────────────────────
@@ -8010,6 +8011,7 @@ function renderArea() {
       <div class="am-plate">
         <div class="am-kicker">Folio</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this folio colour" aria-label="Change folio colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Folio" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Folio settings and overview" title="Settings & overview">▾</button></span></h1>
+        ${areaAddBtn ? `<div class="am-plate-acts">${areaAddBtn}</div>` : ''}
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         ${areaSentimentHtml(area)}
       </div>
