@@ -728,12 +728,17 @@ const HELP = {
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
   financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your folios double as spending categories.',
-    body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts, with a way through to each:</p>
+    body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
+      <h4>Portfolio</h4>
+      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Daybook keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
+      <h4>Spending</h4>
       <ul>
-      <li><b>Portfolio</b> - live total value, your gain, and how it’s split across holdings.</li>
-      <li><b>Spending</b> - this month’s spend, income and net, with your top categories. Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is about. Import a statement (CSV or PDF) and Daybook sorts the transactions; add extra categories for anything that doesn’t fit an area.</li>
-      <li><b>Advice</b> - market trends and your watchlist, read by Claude.</li>
-      </ul>` },
+      <li><b>Import a statement</b> (CSV or PDF) and Daybook reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
+      <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a folio.</li>
+      <li>The month reads back as <b>spend, income and net</b>, with your <b>top categories</b>, so the shape of the month is clear without a spreadsheet.</li>
+      </ul>
+      <h4>Advice</h4>
+      <p>Market <b>trends</b> and a <b>watchlist</b> of things you are following (as opposed to own), read by Claude for a plain-language take. This part uses AI, so it waits on your key or a Premium Plus plan - and it is general reading, never personal financial advice.</p>` },
   goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each folio into goals with deadlines, and review your progress weekly to yearly.',
     body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
       <ul>
@@ -773,20 +778,46 @@ const HELP = {
       <li><b>Insights</b> - reads back across your journal entries for the themes, what lifts you and what drains you. (Insights belong to the Journal.)</li>
       </ul>
       <p>A tool holding a live reading - I Ching, horoscope, spirit card - shows a dot on its tile; tap to reopen it.</p>` },
-  saved: { title: 'Saved', tip: 'Things to read and watch later. Capture a link in one tap from anywhere.',
-    body: `<p>Saved is your read-and-watch list. Drop in a link and come back to it when you have the time.</p>
-      <p>One-tap capture (a bookmarklet or an iOS Shortcut) saves a page straight to your list from any browser.</p>` },
+  saved: { title: 'Read & Watch', tip: 'One list for everything you mean to read or watch later - articles, videos, books, films and useful sites.',
+    body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
+      <h4>Adding something</h4>
+      <ul>
+      <li><b>Paste a link</b> and Daybook fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
+      <li><b>Type a book or film</b> title (tap <b>Book</b> or <b>Film</b> first if you want to be sure) and it looks up the cover, year and a link for you.</li>
+      <li>Quickest from anywhere: <b>+ New → Read or watch</b>, or the <b>+</b> beside Read &amp; Watch in the sidebar.</li>
+      </ul>
+      <h4>Five kinds, each worded to suit</h4>
+      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Daybook guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
+      <h4>Working the list</h4>
+      <ul>
+      <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
+      <li><b>Filter by kind</b> with the chips, so it reads as "films I want to see" or "articles still to read".</li>
+      <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
+      <li><b>File it to a Folio</b> and it sits with that part of your life, in that folio's colour - your watercolour reading filed under Art, say.</li>
+      </ul>
+      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Daybook.</p>` },
   timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on Daybook', tip: 'Connect with the people in your contacts who are on Daybook too - share notes, assign tasks, and chat.',
-    body: `<p>Some of your contacts are on Daybook too, and you can connect with them. Add someone by <b>name or email</b>, or from the contacts of yours already here.</p>
-      <ul><li><b>Share</b> a note or task with one of them, view-only or to edit.</li>
-      <li><b>Assign</b> a task to one of them.</li>
-      <li>Keep <b>shared meeting notes</b>, chat, and start a call.</li></ul>` },
+  friends: { title: 'Contacts on Daybook', tip: 'Connect with the people you know who are on Daybook - then share folios, pages and tasks, and keep in touch.',
+    body: `<p>Some of the people in your Contacts are on Daybook too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
+      <h4>Connecting</h4>
+      <ul>
+      <li>At the top of <b>Contacts</b>, Daybook quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
+      <li>Or add someone straight off by <b>name or email</b>.</li>
+      <li>A request waits until they accept. <b>Incoming</b> requests are yours to accept or decline, and you can see the ones you have <b>sent</b>.</li>
+      </ul>
+      <h4>What connecting lets you do</h4>
+      <ul>
+      <li><b>Share a Folio</b> with the people in it - a household runs the move off one shared folio, co-parents keep the same calendar and to-dos.</li>
+      <li><b>Share a Page or a task</b>, view-only or to edit together.</li>
+      <li><b>Assign a task</b> to someone you are connected to, so it lands on their plate as well as yours.</li>
+      <li>Keep <b>shared notes</b>, <b>chat</b>, and <b>start a call</b> when it is quicker to talk.</li>
+      </ul>
+      <p>Your data stays yours: a person only ever sees the exact folio, page or task you share with them, and you can stop sharing at any time.</p>` },
   today: { title: 'Flow', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
     body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by page and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
@@ -15277,7 +15308,8 @@ function renderGoals() {
   // Bucket list is its own page now (full width), not a side box on the other
   // tabs. (Robin, 2026-10-12.)
   const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : view === 'bucket' ? bucketBody() : goalsByAreaBody();
-  $('#pane').innerHTML = `${pageCrumb(t('nav.goals'))}<div class="pane-head"><h1>${t('goals.title')}</h1></div>
+  const pageName = view === 'bucket' ? 'Bucket list' : t('goals.title');
+  $('#pane').innerHTML = `${pageCrumb(view === 'bucket' ? 'Bucket list' : t('nav.goals'))}<div class="pane-head"><h1>${pageName}</h1></div>
     ${tabs}
     <div class="goals-main goals-main-full">${body}</div>`;
   loadVisionThumbs();
@@ -15759,7 +15791,8 @@ function bucketCard(b) {
 }
 async function newBucket() {
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bucket', title: '', props: { area: null, status: 'someday' } }) });
-  state.bucket.push(b); openBucketCard(b.id);
+  state.bucket.push(b); await openBucketCard(b.id);
+  const el = $('#bucketcard-title'); if (el) { el.focus(); el.setSelectionRange(0, 0); }
 }
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
