@@ -7844,6 +7844,19 @@ function renderArea() {
   // sections) follows below. (Robin: Vision & Goals at the top.)
   // "Add to this area" rides the tab-strip row, right-aligned alongside the
   // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
+  // Defined here, before areaVisionGoals uses it - a const can't be read above
+  // its declaration (that TDZ error stopped folios opening). (Robin, 2026-10-13.)
+  const areaAddBtn = area.sharedBy ? '' : `<div class="addnew area-addnew">
+        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
+        <div class="addnew-menu" hidden>
+          <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
+          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Page</button>
+          <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
+          ${secHidden('Goals') ? '' : '<button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>'}
+          ${secHidden('Bucket list') ? '' : '<button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>'}
+          <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
+        </div>
+      </div>`;
   const areaVisionGoals = `${tabsKicker}<div class="area-tabs-row">${tabBar}${areaAddBtn ? `<div class="area-tabs-add">${areaAddBtn}</div>` : ''}</div><div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
@@ -7871,20 +7884,8 @@ function renderArea() {
   const rvArea = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const RV_IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const rvAreaHtml = rvArea.map((x) => `<button class="area-rv-item" data-fav-open="${x.kind}:${x.id}"><span class="area-rv-ic">${RV_IC[x.kind] || '•'}</span><span class="area-rv-t">${esc(x.title || 'Untitled')}</span></button>`).join('');
-  // The "Add to this area" dropdown shares the stats row (never a row to itself).
-  const areaAddBtn = area.sharedBy ? '' : `<div class="addnew area-addnew">
-        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
-        <div class="addnew-menu" hidden>
-          <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
-          <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Page</button>
-          <button class="addnew-item" data-area-add-event><span class="addnew-ic">◑</span>Event</button>
-          ${secHidden('Goals') ? '' : '<button class="addnew-item" data-area-add-goal><span class="addnew-ic">🎯</span>Goal</button>'}
-          ${secHidden('Bucket list') ? '' : '<button class="addnew-item" data-area-add-bucket><span class="addnew-ic">🗺</span>Bucket-list item</button>'}
-          <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
-        </div>
-      </div>`;
-  // Metrics get the whole width now - the "Add to this area" button moved up to
-  // the hero, under the share/star icons. (Robin, 2026-10-12.)
+  // Metrics get the whole width now - the "Add to this area" button moved out of
+  // this row and up onto the Vision & Goals tab strip. (Robin, 2026-10-12.)
   const areaDash = dashStats ? `<div class="area-dash" style="--h:${h}">
       <div class="area-dash-top">
         <div class="area-stats">${dashStats}</div>
