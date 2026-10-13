@@ -1447,7 +1447,7 @@ const ACCENT_PRESETS = [
   ['#a8844a', 'Ochre'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
-function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
+function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.52 ? '#12100b' : '#fff'; }
 function applyAccent(hex) {
   const el = document.documentElement.style;
   if (hex && /^#?[0-9a-fA-F]{3,6}$/.test(hex)) { const h = hex[0] === '#' ? hex : '#' + hex; el.setProperty('--accent', h); el.setProperty('--accent-ink', accentInk(h)); }
