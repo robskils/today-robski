@@ -12155,6 +12155,7 @@ const MAIL_ICO = {
   forward: mIco('<path d="M15 8l4.5 4L15 16"/><path d="M19.5 12h-9a5 5 0 0 0-5 5v1"/>'),
   archive: mIco('<rect x="3.5" y="4.5" width="17" height="4" rx="1"/><path d="M5 8.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18V8.5"/><path d="M10 12.5h4"/>'),
   spam: mIco('<path d="M12 4l8.5 14.6H3.5z"/><path d="M12 10v3.5"/><path d="M12 16.8h.01"/>'),
+  notspam: mIco('<path d="M12 3.4l7 2.3v4.9c0 4.2-2.9 7.6-7 8.8-4.1-1.2-7-4.6-7-8.8V5.7z"/><path d="M9 11.8l2.2 2.2 4.1-4.3"/>'),   // shield + check: this is safe
   block: mIco('<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1l11.8 11.8"/>'),
   trash: mIco('<path d="M4.5 7h15"/><path d="M9 7V5.3A1.3 1.3 0 0 1 10.3 4h3.4A1.3 1.3 0 0 1 15 5.3V7"/><path d="M6.6 7l.85 11.3A1.6 1.6 0 0 0 9 20h6a1.6 1.6 0 0 0 1.6-1.7L17.4 7"/>'),
   sent: mIco('<path d="M20.5 3.5L10 14"/><path d="M20.5 3.5L14 20.5l-3.8-6.3L3.9 10.4z"/>'),   // paper plane
@@ -12487,7 +12488,13 @@ function renderMail(loading) {
     const isVip = o.from && isVipAddr(o.from.address);
     const plainItem = o.html ? `<button class="mail-dd-item" data-mail-plain>${MAIL_ICO.note}<span>${state.mail.plain ? 'Formatted view' : 'Plain-text view (easier to read)'}</span></button>` : '';
     const vipItem = MAIL_VIP_ON ? `<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button>` : '';
-    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}${vipItem}<button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button><button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
+    // In the Spam folder (or on a message that lives in Junk), the spam item flips
+    // to "Not spam" - moves it back to the inbox. (Robin, 2026-10-13.)
+    const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
+    const spamItem = inSpam
+      ? `<button class="mail-dd-item" data-mail-notspam="${esc(o._key)}">${MAIL_ICO.notspam}<span>Not spam</span></button>`
+      : `<button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button>`;
+    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}${vipItem}${spamItem}<button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
     const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a page">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
     // The other messages in this conversation, oldest first, so you can jump to
     // any of them (opening swaps the reader, using the prefetched cache).
@@ -19622,6 +19629,7 @@ document.addEventListener('click', (e) => {
   const march = t.closest('[data-mail-archive]'); if (march) { e.preventDefault(); e.stopPropagation(); mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mrowdel = t.closest('[data-mail-rowdel]'); if (mrowdel) { e.preventDefault(); e.stopPropagation(); mailDelete(mrowdel.dataset.mailRowdel); return; }
   const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
+  const mnspam = t.closest('[data-mail-notspam]'); if (mnspam) { mailMoveTo(mnspam.dataset.mailNotspam, 'INBOX', 'Moved to inbox'); return; }
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
