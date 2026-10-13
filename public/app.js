@@ -2175,8 +2175,14 @@ function friendRow(f, action) {
   return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Daybook card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
-// page re-renders the unified Contacts view.
-function renderFriends() { renderContacts(); }
+// page re-renders whichever view the action was taken on - Contacts, the Daybook
+// people hub, or Home (where invitations surface too). (Robin, 2026-10-13.)
+function renderFriends() {
+  const v = state.view && state.view.type;
+  if (v === 'home') renderHome();
+  else if (v === 'daybookpeople') renderDaybookPeople();
+  else renderContacts();
+}
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
 async function friendAddEmail() {
   const el = $('#friend-email'); const v = (el && el.value || '').trim(); if (!v) return;
@@ -4095,6 +4101,9 @@ async function openHome() {
   // If a today event names a person, load contacts once so the "· with <name>"
   // chip can resolve (the one-tap link works without them).
   if ((state.home.events || []).some((e) => e.contact) && state.contacts === undefined) loadContacts().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {});
+  // Friend invitations surface on Home (towards the bottom), so refresh them each
+  // time Home opens - Today is the wall of everything you need to know. (Robin.)
+  api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
@@ -5173,6 +5182,20 @@ function homeMailHtml() {
 // A row that quietly shows off the good stuff people miss - the timers, the Wheel
 // of Life, the vision board, ⌘K. Each card opens the real feature. (Robin asked
 // to "highlight some cool features in a nice way", 2026-09.)
+// Friend invitations ride Home too, towards the bottom - Today is the wall of
+// everything you need to know. Only shows when someone's actually waiting;
+// Accept/Ignore reuse the friends handlers and re-render Home in place.
+// (Robin, 2026-10-13.)
+function homeInvitesHtml() {
+  const inv = (state.friends && state.friends.incoming) || [];
+  if (!inv.length) return '';
+  const rows = inv.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('');
+  return `<section class="home-sec home-sec-card home-invites">
+    <div class="home-sec-h">✦ Invitations<span class="muted">${inv.length}</span></div>
+    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Daybook.' : `${inv.length} people want to connect with you on Daybook.`}</p>
+    ${rows}
+  </section>`;
+}
 function homeDiscoverHtml() {
   const feats = [
     ['⌨', 'Quick jump', 'Reach anything with ⌘K', 'data-palette'],
@@ -5441,6 +5464,7 @@ function renderHome() {
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
+        ${homeInvitesHtml()}
         ${homeDiscoverHtml()}
         <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
         <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>

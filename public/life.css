@@ -4547,6 +4547,11 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-sec-card.home-sec-shut > .home-sec-h { margin-bottom:0; }
 .home-sec-card > .home-sec-h .hs-chev { color:var(--ink-3); font-size:12px; }
 .home-sec-card > .home-sec-h .muted { font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:1px 8px; }
+/* Invitations on Home: a "need to know" card, warmer than the plain sections so
+   a waiting connection catches the eye near the bottom of the wall. (Robin, 2026-10-13.) */
+.home-invites { border-color:color-mix(in srgb,var(--accent) 38%,var(--line)); background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 8%,var(--card)), var(--card) 62%); }
+.home-invites > .home-sec-h { color:color-mix(in srgb,var(--accent) 70%,var(--ink)); }
+.home-invites .fr-intro { margin-top:0; }
 .home-main-add { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:16px; }
 .hma-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--ink-3); font-weight:700; }
 .hma-chip { font-size:13.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:7px 13px; cursor:pointer; transition:border-color .12s, color .12s; }
