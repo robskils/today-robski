@@ -148,8 +148,9 @@ nav {
 .nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
 .brand-mark { width: 26px; height: 26px; color: var(--rust); flex: none; }
-/* Daybook is one word; "book" just leans into italic. No space, same colour. */
-.brand .wm-bk { font-style: italic; }
+/* Daybook is one word; "book" just leans into italic. No space, same colour -
+   and nudged left a touch so the roman "y" meets the italic "b" cleanly. */
+.brand .wm-bk { font-style: italic; margin-left: -0.035em; }
 .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
 .nav-links a { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; transition: color .18s; }
 .nav-links a:hover { color: var(--ink); }
