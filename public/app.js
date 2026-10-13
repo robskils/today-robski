@@ -8760,10 +8760,14 @@ function openDatePicker(id) {
   // would be meaningless.
   const optionalYear = /-bday$/.test(id);
   const cur = inp.value || '';
-  const noYear = optionalYear && /^--\d{2}-\d{2}$/.test(cur);
-  // With no year, lay the grid out on this year - it only decides which weekday
-  // each date falls on, and none of that is stored.
-  const iso = noYear ? `${new Date().getFullYear()}-${cur.slice(2)}`
+  // A birthday starts yearless by default - you usually know the day and month,
+  // and the year is either private or not the point. Pick a year from the Year
+  // dropdown to add one. A birthday that already carries a full date keeps it.
+  // (Robin, 2026-10-13.)
+  const noYear = optionalYear && !/^\d{4}-\d{2}-\d{2}$/.test(cur);
+  // With no year, lay the grid out on this year (or the saved month/day) - it only
+  // decides which weekday each date falls on, and none of that is stored.
+  const iso = (noYear && /^--\d{2}-\d{2}$/.test(cur)) ? `${new Date().getFullYear()}-${cur.slice(2)}`
     : (/^\d{4}-\d{2}-\d{2}$/.test(cur) ? cur : todayISO());
   const [y, m] = iso.split('-').map(Number);
   // An event's end can't fall before its start, so the end picker greys out any
@@ -8797,7 +8801,7 @@ function renderDatePicker() {
     const iso = ymd(d.getFullYear(), d.getMonth(), d.getDate());
     const cls = ['dp-day'];
     if (d.getMonth() !== dp.m) cls.push('dp-other');
-    if (iso === cur) cls.push('dp-sel');
+    if (dp.noYear ? ('--' + iso.slice(5)) === cur : iso === cur) cls.push('dp-sel');
     if (iso === today) cls.push('dp-today');
     const disabled = dp.min && iso < dp.min;
     if (disabled) cls.push('dp-disabled');
@@ -13434,6 +13438,9 @@ function contactAddressFields(p) {
 }
 // Birthday as a friendly line; the year shows only when it's a real one.
 function fmtBirthday(iso) {
+  // A yearless birthday (vCard --MM-DD): just the day and month.
+  const ny = /^--(\d{2})-(\d{2})$/.exec(iso || '');
+  if (ny) return `${Number(ny[2])} ${MONTHS_LONG[Number(ny[1]) - 1]}`;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
   const d = new Date(iso + 'T00:00'); if (isNaN(d)) return iso;
   const y = Number(iso.slice(0, 4));
