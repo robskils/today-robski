@@ -11,13 +11,13 @@
   --ink-3: #8b8073;
   --line: rgba(33, 28, 23, 0.12);
   --line-2: rgba(33, 28, 23, 0.22);
-  --rust: #c4412e;
-  --rust-deep: #a5331f;
-  --rust-soft: rgba(196, 65, 46, 0.11);
+  --rust: #a8844a;
+  --rust-deep: #8c6d39;
+  --rust-soft: rgba(168, 132, 74, 0.11);
   --rust-ink: #fff;
   --pine: #2f5d57;
   --pine-soft: rgba(47, 93, 87, 0.10);
-  --dawn-1: rgba(196, 65, 46, 0.16);
+  --dawn-1: rgba(168, 132, 74, 0.16);
   --dawn-2: rgba(217, 138, 91, 0.14);
   --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
   --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
@@ -32,13 +32,13 @@
     --ink-3: #8b8070;
     --line: rgba(241, 236, 227, 0.12);
     --line-2: rgba(241, 236, 227, 0.22);
-    --rust: #e37257;
-    --rust-deep: #c4412e;
-    --rust-soft: rgba(227, 114, 87, 0.15);
+    --rust: #c2a05f;
+    --rust-deep: #a8844a;
+    --rust-soft: rgba(194, 160, 95, 0.15);
     --rust-ink: #1a0f0a;
     --pine: #7fbdb0;
     --pine-soft: rgba(127, 189, 176, 0.12);
-    --dawn-1: rgba(227, 114, 87, 0.16);
+    --dawn-1: rgba(194, 160, 95, 0.16);
     --dawn-2: rgba(217, 138, 91, 0.12);
     --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
     --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
@@ -68,7 +68,7 @@ img { max-width: 100%; display: block; }
 /* buttons */
 .btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 13px; padding: 14px 24px; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, background .16s, border-color .16s; border: 1px solid transparent; }
 .btn-primary { background: var(--rust); color: var(--rust-ink); box-shadow: var(--shadow-sm); }
-.btn-primary:hover { transform: translateY(-2px); background: var(--rust-deep); box-shadow: 0 16px 34px -16px rgba(196, 65, 46, 0.6); }
+.btn-primary:hover { transform: translateY(-2px); background: var(--rust-deep); box-shadow: 0 16px 34px -16px rgba(168, 132, 74, 0.6); }
 .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
 .btn-ghost:hover { transform: translateY(-2px); border-color: var(--ink); }
 

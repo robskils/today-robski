@@ -5,7 +5,7 @@
   --paper:#ece2cf; --paper-2:#e4d9c0; --card:#f6efdd;
   --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
   --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05);
-  --accent:#a8844a; --accent-ink:#12100b; --gold:#a8844a; --done:#4a7a52;
+  --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
   --shadow:0 1px 2px rgba(27,24,32,.05),0 5px 12px -4px rgba(27,24,32,.09),0 18px 34px -16px rgba(27,24,32,.16);
@@ -2287,7 +2287,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-drawer { display:contents; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
-.nav-brand em { font-style:normal; color:var(--accent); }
+.nav-brand em { font-style:normal; color:var(--ink); }
+/* "Daybook" is one word; only "book" leans italic, tucked close to the roman
+   "Day". The gold mark carries the colour. (Brand, 2026-10-13.) */
+.wm-bk { font-style:italic; margin-left:-.07em; }
 .nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 /* A quiet Daybook mark closing the Home main column, in the chosen accent. */
@@ -2808,6 +2811,28 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .aa-plan { text-transform:capitalize; color:var(--ink); font-weight:600; }
 .aa-seen.on { color:#3f9e5f; font-weight:600; }
 @media (max-width:560px){ .adm-acct-table { grid-template-columns:minmax(0,1fr) auto; column-gap:12px; } .aa-joined, .aa-plan, .adm-acct-head .aa-joined, .adm-acct-head .aa-plan { display:none; } .aa-subtag { display:none; } }
+/* Admin › Brand: the logo lockup, downloadable asset tiles and the palette. */
+.adm-brand-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:22px 20px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow-sm); margin-bottom:8px; }
+.adm-brand-lockup { display:inline-flex; align-items:center; gap:.42em; font-size:38px; color:var(--ink); }
+.adm-brand-lockup .brand-mark { width:1.05em; height:1.05em; color:var(--accent); }
+.adm-brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; letter-spacing:-.01em; white-space:nowrap; }
+.adm-brand-sheet { font-size:14px; }
+.adm-brand-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:11px; }
+.adm-brand-dl { display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid var(--line); border-radius:13px; background:var(--card); color:var(--ink); text-decoration:none; transition:border-color .12s, transform .1s, box-shadow .12s; }
+.adm-brand-dl:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 10px 22px -14px rgba(0,0,0,.34); }
+.adm-brand-prev { flex:none; width:42px; height:42px; border-radius:10px; display:grid; place-items:center; overflow:hidden; background:var(--paper-2); }
+.adm-brand-dl.onblack .adm-brand-prev { background:#0d0d0f; }
+.adm-brand-prev img { width:100%; height:100%; object-fit:contain; }
+.adm-brand-meta { display:flex; flex-direction:column; min-width:0; flex:1; }
+.adm-brand-nm { font-weight:600; font-size:14.5px; }
+.adm-brand-note { font-size:12.5px; color:var(--ink-3); }
+.adm-brand-go { flex:none; color:var(--ink-3); font-size:16px; }
+.adm-brand-dl:hover .adm-brand-go { color:var(--accent); }
+.adm-brand-sw { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+.adm-sw { display:flex; align-items:center; gap:9px; border:1px solid var(--line); border-radius:11px; padding:7px 10px; background:var(--card); }
+.adm-sw-chip { width:26px; height:26px; border-radius:7px; flex:none; border:1px solid var(--line); }
+.adm-sw-nm { font-size:13px; font-weight:600; flex:1; min-width:0; }
+.adm-sw-hx { font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .au-status { font-size:12px; padding:2px 9px; border-radius:999px; background:var(--paper); color:var(--ink-3); }
 .au-active { color:var(--pine,#2f5d57); background:color-mix(in srgb,var(--accent) 8%,transparent); }
 .admin-quotes { display:flex; flex-direction:column; gap:4px; margin-top:12px; max-height:420px; overflow-y:auto; }

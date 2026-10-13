@@ -1447,7 +1447,7 @@ const ACCENT_PRESETS = [
   ['#a8844a', 'Ochre'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
-function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.52 ? '#12100b' : '#fff'; }
+function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
 function applyAccent(hex) {
   const el = document.documentElement.style;
   if (hex && /^#?[0-9a-fA-F]{3,6}$/.test(hex)) { const h = hex[0] === '#' ? hex : '#' + hex; el.setProperty('--accent', h); el.setProperty('--accent-ink', accentInk(h)); }
@@ -1642,7 +1642,7 @@ function cardHtml(d, full) {
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Daybook</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Daybook">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Day<i class="wm-bk">book</i></span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Daybook">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -2063,7 +2063,7 @@ function renderAdmin() {
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
   // thumbing past the whole business to reach the quotes. One tab at a time,
   // exactly as Settings does it.
-  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['setup', 'Setup'], ['quotes', 'Quotes']];
+  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
   if (!TABS.some(([k]) => k === a.tab)) a.tab = 'overview';
   const tab = a.tab;
   const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}</button>`).join('')}</div>`;
@@ -2109,13 +2109,36 @@ function renderAdmin() {
       <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
     </div>`;
 
-  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, setup: setupPane, quotes: quotesPane };
+  const BR_SW = [['#a8844a', 'Daybook Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
+  const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
+  const brandPane = `<div class="set-card">
+      <div class="adm-brand-hero">
+        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Day<i class="wm-bk">book</i></span></span>
+        <a class="ghost adm-brand-sheet" href="/brand/daybook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
+      </div>
+      <div class="home-sec-h" style="margin-top:6px">Logo files</div>
+      <div class="adm-brand-grid">
+        ${brAsset('/brand/daybook-appicon-1024.png', 'App icon', '1024px PNG', true)}
+        ${brAsset('/brand/daybook-appicon.svg', 'App icon', 'SVG · scalable', true)}
+        ${brAsset('/brand/daybook-favicon.svg', 'Favicon', 'SVG · bright gold', true)}
+        ${brAsset('/brand/daybook-mark-ochre.svg', 'Mark', 'SVG · for light')}
+        ${brAsset('/brand/daybook-mark-white.svg', 'Mark', 'SVG · for dark', true)}
+        ${brAsset('/brand/icon-512.png', 'Icon 512', 'PNG', true)}
+        ${brAsset('/brand/icon-192.png', 'Icon 192', 'PNG', true)}
+        ${brAsset('/brand/apple-touch-icon.png', 'Apple touch', '180px PNG', true)}
+      </div>
+      <div class="home-sec-h" style="margin-top:18px">Colours</div>
+      <div class="adm-brand-sw">${BR_SW.map(([hex, nm]) => `<span class="adm-sw"><span class="adm-sw-chip" style="background:${hex}"></span><span class="adm-sw-nm">${nm}</span><span class="adm-sw-hx">${hex}</span></span>`).join('')}</div>
+    </div>`;
+
+  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
     overview: 'Members, usage and what AI is costing',
     members: `${users.length} on Daybook`,
     invites: `${inv.unused || 0} still open`,
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
+    brand: 'The Daybook logo, icons and colours',
   };
 
   $('#pane').innerHTML = `
@@ -3587,13 +3610,13 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Day<i class="wm-bk">book</i></em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
       <span class="nav-topline-sp" aria-hidden="true"></span>
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>${esc(BRAND.app)}</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Day<i class="wm-bk">book</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -22512,7 +22535,7 @@ const onApex = () => location.hostname === 'daybook.fyi' || location.hostname ==
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>${esc(BRAND.app)}</em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Day<i class="wm-bk">book</i></em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -22547,7 +22570,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>${esc(BRAND.app)}</em></div>
+      <div class="gate2-mark"><em>Day<i class="wm-bk">book</i></em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <label class="signup-l">${t('signup.username')}
