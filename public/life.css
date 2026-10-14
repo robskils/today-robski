@@ -5420,6 +5420,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .upd-wall { display:flex; flex-direction:column; margin-top:10px; }
 .upd-row { display:flex; align-items:flex-start; gap:12px; padding:11px 4px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); }
 .upd-row:first-child { border-top:0; }
+/* A folio-feed item that's new since your last visit: a soft gold rail. */
+.upd-new { border-left:2px solid var(--accent); padding-left:10px; margin-left:-12px; border-top-color:transparent; }
+.home-foliofeed .home-sec-h .muted { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border-radius:999px; padding:1px 9px; font-size:12.5px; font-weight:700; }
 .upd-click { cursor:pointer; border-radius:10px; transition:background .12s; }
 .upd-click:hover { background:color-mix(in srgb, var(--ink) 4%, transparent); }
 .upd-ic { flex:none; width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:15px; background:color-mix(in srgb,var(--c) 13%,var(--card)); color:color-mix(in srgb,var(--c) 68%,var(--ink)); }

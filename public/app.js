@@ -4200,6 +4200,11 @@ async function openHome() {
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
   if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  // What others have done in folios you share - surfaced on the feed. Mark seen so
+  // next visit only flags what's new since this one. (Robin, 2026-10-14.)
+  api('/api/feed/folios').then((r) => {
+    if (r && r.updates) { state.home.folioFeed = r; if (state.view && state.view.type === 'home') renderHome(); if (r.updates.length) api('/api/feed/folios/seen', { method: 'POST' }).catch(() => {}); }
+  }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
@@ -5325,6 +5330,25 @@ function homeInvitesHtml() {
     ${rows}
   </section>`;
 }
+// What others have done in folios you share - a feed on Home. Each row taps
+// through to the thing. New-since-last-visit items carry a soft dot. (Robin.)
+function homeFolioFeedHtml() {
+  const ff = state.home && state.home.folioFeed;
+  const feed = (ff && ff.updates) || [];
+  if (!feed.length) return '';
+  const IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
+  const THING = { note: 'a page', task: 'a task', goal: 'a goal', table: 'a table', contact: 'a contact', bucket: 'a bucket-list item', bookmark: 'a saved link', journal: 'a reflection', event: 'an event' };
+  const OPEN = new Set(['note', 'table', 'task', 'goal', 'contact', 'bucket', 'bookmark', 'journal', 'event']);
+  const seen = (ff && ff.seen) || '';
+  const nNew = feed.filter((u) => u.ts && String(u.ts) > seen).length;
+  const rows = feed.slice(0, 8).map((u) => {
+    const clk = OPEN.has(u.kind) && u.id;
+    const isNew = u.ts && String(u.ts) > seen;
+    const where = u.areaTitle ? ` · ${esc(u.areaTitle)}` : '';
+    return `<div class="upd-row${clk ? ' upd-click' : ''}${isNew ? ' upd-new' : ''}"${clk ? ` data-fav-open="${u.kind}:${u.id}" role="button" tabindex="0"` : ''}><span class="upd-ic">${IC[u.kind] || '•'}</span><span class="upd-b"><span class="upd-t"><b>${esc(u.name)}</b> ${esc(u.verb)} ${THING[u.kind] || 'something'}${u.title ? ` · <span class="upd-ttl">${esc(u.title)}</span>` : ''}</span><span class="upd-when">${esc(where)}${u.ts ? ` · ${timeAgo(new Date(u.ts).getTime())}` : ''}</span></span></div>`;
+  }).join('');
+  return `<section class="home-sec home-sec-card home-foliofeed"><div class="home-sec-h">✦ In your shared folios${nNew ? `<span class="muted">${nNew} new</span>` : ''}</div><div class="upd-wall">${rows}</div></section>`;
+}
 function homeDiscoverHtml() {
   const feats = [
     ['⌨', 'Quick jump', 'Reach anything with ⌘K', 'data-palette'],
@@ -5596,6 +5620,7 @@ function renderHome() {
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
         ${homeInvitesHtml()}
+        ${homeFolioFeedHtml()}
         ${homeDiscoverHtml()}
         <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
         <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>

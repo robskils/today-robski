@@ -1965,6 +1965,41 @@ async function areaUpdates(request, env, areaId) {
   return json({ updates: items.slice(0, 40), me: env.uid }, request);
 }
 
+// For the Home feed: what OTHER people have done lately in folios you're part of
+// (ones you own, or that are shared with you). Mirrors areaUpdates, but across
+// every shared folio at once, excluding your own edits. (Robin, 2026-10-14.)
+async function sharedFolioActivity(env) {
+  const me = env.uid;
+  const owned = await env.DB.prepare("SELECT id, title FROM blocks WHERE kind = 'area' AND user_id = ? AND archived = 0").bind(me).all().catch(() => ({ results: [] }));
+  const shared = await env.DB.prepare("SELECT b.id AS id, b.title AS title FROM shares s JOIN blocks b ON b.id = s.block_id WHERE s.friend_id = ? AND b.kind = 'area'").bind(me).all().catch(() => ({ results: [] }));
+  const titles = {}; for (const r of [...(owned.results || []), ...(shared.results || [])]) titles[r.id] = r.title || '';
+  const areaIds = Object.keys(titles);
+  if (!areaIds.length) return { updates: [], seen: (await getSetting(env, 'folio_feed_seen')) || '' };
+  const ph = areaIds.map(() => '?').join(',');
+  const since = new Date(Date.now() - 30 * 86400 * 1000).toISOString();
+  const { results } = await env.DB.prepare(
+    `SELECT id, kind, title, user_id, created_at, updated_at, json_extract(props,'$.area') AS a1 FROM blocks
+      WHERE user_id != ? AND archived = 0 AND IFNULL(json_extract(props,'$.private'),0) = 0
+        AND COALESCE(updated_at, created_at) >= ?
+        AND (json_extract(props,'$.area') IN (${ph}) OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value IN (${ph})))
+      ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 25`,
+  ).bind(me, since, ...areaIds, ...areaIds).all().catch(() => ({ results: [] }));
+  const actorIds = [...new Set((results || []).map((r) => r.user_id))];
+  const names = {};
+  if (actorIds.length) {
+    const aph = actorIds.map(() => '?').join(',');
+    const { results: cp } = await env.DB.prepare(`SELECT user_id, value FROM settings WHERE key = 'card_profile' AND user_id IN (${aph})`).bind(...actorIds).all().catch(() => ({ results: [] }));
+    for (const r of (cp || [])) { try { const n = (JSON.parse(r.value || '{}') || {}).name; if (n) names[r.user_id] = n; } catch {} }
+    const { results: us } = await env.DB.prepare(`SELECT id, name, email FROM users WHERE id IN (${aph})`).bind(...actorIds).all().catch(() => ({ results: [] }));
+    for (const u of (us || [])) { if (!names[u.id]) names[u.id] = u.name || (u.email ? String(u.email).split('@')[0] : null); }
+  }
+  const updates = (results || []).map((b) => {
+    const c = b.created_at, u = b.updated_at || b.created_at;
+    const edited = c && u && (new Date(u).getTime() - new Date(c).getTime() > 60000);
+    return { id: b.id, kind: b.kind, title: b.title || '', area: b.a1 || '', areaTitle: titles[b.a1] || '', name: names[b.user_id] || 'Someone', verb: edited ? 'updated' : 'added', ts: u || c };
+  });
+  return { updates, seen: (await getSetting(env, 'folio_feed_seen')) || '' };
+}
 async function getBlock(env, id) {
   const acc = await blockAccess(env, id);
   if (!acc) return null;
@@ -4695,6 +4730,8 @@ export default {
       // (PK is (user_id, key)), so a shared folio still gives each of you a private
       // pad. The shared pad stays on area.props.wall. (Robin.)
       { const um = path.match(/^\/api\/area\/([\w-]+)\/updates$/); if (um && request.method === 'GET') return areaUpdates(request, env, um[1]); }
+      if (path === '/api/feed/folios' && request.method === 'GET') return json(await sharedFolioActivity(env), request);
+      if (path === '/api/feed/folios/seen' && request.method === 'POST') { await setSetting(env, 'folio_feed_seen', new Date().toISOString()); return json({ ok: true }, request); }
       if (path === '/api/folio-note' && request.method === 'GET') { const aid = url.searchParams.get('area') || ''; return json({ value: aid ? ((await getSetting(env, 'folionote:' + aid)) || '') : '' }, request); }
       if (path === '/api/folio-note' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (b.area) await setSetting(env, 'folionote:' + String(b.area), String(b.value ?? '')); return json({ ok: true }, request); }
       // Store an uploaded image (folio cover, mail signature) in R2 and hand back the
