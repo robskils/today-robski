@@ -4638,6 +4638,13 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-invites { border-color:color-mix(in srgb,var(--accent) 38%,var(--line)); background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 8%,var(--card)), var(--card) 62%); }
 .home-invites > .home-sec-h { color:color-mix(in srgb,var(--accent) 70%,var(--ink)); }
 .home-invites .fr-intro { margin-top:0; }
+/* "Shared with you" - folios/pages someone invited me into, front and centre. */
+.home-shared > .home-sec-h { color:color-mix(in srgb,var(--accent) 70%,var(--ink)); }
+.home-shared-x { margin-left:auto; border:0; background:none; color:var(--ink-3); font-size:20px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:8px; }
+.home-shared-x:hover { color:var(--ink); background:var(--paper-2); }
+.home-shared .shared-row .sh-go { margin-left:auto; color:var(--ink-3); flex:none; }
+.home-shared .shared-row:hover { border-color:var(--accent); }
+.sha-all { display:inline-flex; margin-top:2px; border:0; background:none; color:var(--accent); font-weight:600; font-size:14px; cursor:pointer; padding:6px 2px; }
 /* New-message alert pinned to the very top of Home - a message from a contact is
    usually time-sensitive, so it leads. Taps through to the chat. (Robin, 2026-10-14.) */
 .home-msgalert { display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:14px 18px; margin:0 0 16px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line)); border-radius:16px; background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 13%,var(--card)), var(--card) 66%); box-shadow:var(--shadow); cursor:pointer; transition:transform .1s, box-shadow .12s, border-color .12s; }
@@ -5042,10 +5049,19 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .agc-act-mild { color:var(--ink-2); background:color-mix(in srgb,var(--c) 11%,transparent); }
 .agc-act-quiet { color:var(--ink-3); background:var(--bg-2,color-mix(in srgb,var(--ink) 5%,transparent)); }
 /* Sort + filter controls on the Life areas page. */
-.areas-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px; }
+.areas-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px; justify-content:space-between; }
 .areas-sortwrap { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-3); }
 .areas-sort { max-width:200px; }
-.areas-sharedchip.on { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--card)); }
+/* Mine / Shared-with-me / All scope filter for the Folios board. */
+.areas-scopeseg { display:inline-flex; gap:7px; flex-wrap:wrap; }
+/* A folio shared with me: a quiet dashed frame + a "shared by" tag, so it reads
+   at a glance as someone else's, set apart from my own solid cards. */
+.area-gcard-shared { border-style:dashed; border-color:color-mix(in srgb,var(--c) 40%,var(--line)); }
+.agc-shared-tag { font-size:11px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:999px; white-space:nowrap; color:var(--ink-2); background:color-mix(in srgb,var(--c) 13%,transparent); max-width:160px; overflow:hidden; text-overflow:ellipsis; }
+.agc-chip-shared { color:var(--ink-3); background:color-mix(in srgb,var(--ink) 6%,transparent); }
+/* Sidebar: a folio shared with me carries a small, muted people glyph at the end. */
+.nav-sub-shared .t { flex:1; min-width:0; }
+.nav-sub-shb { padding-left:6px; font-size:11px; opacity:.55; flex:none; }
 /* Home "Discover" row: a nudge toward the features people miss. */
 .home-discover { margin:26px 0 0; }
 .disc-h { display:flex; align-items:center; gap:9px; cursor:pointer; }

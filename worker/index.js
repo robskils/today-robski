@@ -2094,9 +2094,33 @@ async function handleFavorites(request, env) {
   return json(results.map(parseBlock), request);
 }
 
+// Folios shared with me (not owned): returned so they can sit in my own Folios
+// list, each marked with who shared it and whether I can edit. Mirrors a shared
+// Page's `sharedBy`. (Robin, 2026-10-14.)
+async function sharedAreas(env, uid) {
+  const { results } = await env.DB.prepare(
+    `SELECT b.*, s.can_edit AS _can_edit, u.name AS _owner_name, u.subdomain AS _owner_sub
+       FROM shares s JOIN blocks b ON b.id = s.block_id
+       LEFT JOIN users u ON u.id = b.user_id
+      WHERE s.friend_id = ? AND b.kind = 'area' AND b.archived = 0
+      ORDER BY b.title`,
+  ).bind(uid).all().catch(() => ({ results: [] }));
+  return (results || []).map((r) => {
+    const b = parseBlock(r);
+    b.sharedBy = r._owner_name || r._owner_sub || null;
+    b.canEdit = !!r._can_edit;
+    delete b._can_edit; delete b._owner_name; delete b._owner_sub;
+    return b;
+  });
+}
 async function listBlocks(request, env, url) {
   const kind = url.searchParams.get('kind');
   const wantArchived = url.searchParams.get('archived') === '1';
+  // Folios shared WITH me, for my Folios list. A dedicated query so the ordinary
+  // kind=area list (which feeds the area pickers) stays my own folios only.
+  if (kind === 'area' && url.searchParams.get('shared') === '1') {
+    return json(await sharedAreas(env, env.uid), request);
+  }
   // Viewing the children of a block shared with me (a shared table's rows): list
   // the OWNER's children, not my own empty set.
   if (url.searchParams.has('parent_id') && url.searchParams.get('parent_id')) {
@@ -4670,7 +4694,10 @@ export default {
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       if (path === '/api/search/expand' && request.method === 'POST') return searchExpand(request, env, json, err);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
-      if (path === '/api/shared' && request.method === 'GET') return json(await sharedWithMe(env), request);
+      if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; return json(sw, request); }
+      // Mark folio/page shares seen, so Home's "shared with you" alert clears the
+      // new flag once you've acknowledged them (mirrors the folio feed). (Robin.)
+      if (path === '/api/shared/seen' && request.method === 'POST') { await setSetting(env, 'shares_seen', new Date().toISOString()); return json({ ok: true }, request); }
       // Meeting notes: a shared note per friend pair (Friends phase 3c).
       if (path === '/api/meeting' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await openMeeting(env, b.friendId), request); } catch (e) { return err(e.message, request, 400); } }
       // Assigning a task to a friend (Friends phase 3b).

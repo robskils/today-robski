@@ -1392,11 +1392,14 @@ function navSection(key, v) {
   } else {
     title = 'Folios'; add = '<button class="nav-add" data-new-area title="New folio">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
-    // so the sidebar reads at a glance like the rest of the app.
-    rows = state.areas.map((a) => {
+    // so the sidebar reads at a glance like the rest of the app. Folios shared
+    // with me sit below my own, marked with who shared them.
+    if (state.sharedAreas === undefined) loadSharedAreas().then(() => renderNav());
+    const foRow = (a, shared) => {
       const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
-      return `<button class="nav-sub has-area${on ? ' on' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span></button>`;
-    }).join('') || '<div class="nav-sub muted">No folios yet</div>';
+      return `<button class="nav-sub has-area${on ? ' on' : ''}${shared ? ' nav-sub-shared' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"${shared ? ` title="Shared with you by ${esc(a.sharedBy || 'someone')}"` : ''}><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span>${shared ? '<span class="nav-sub-shb" aria-hidden="true">👥</span>' : ''}</button>`;
+    };
+    rows = (state.areas.map((a) => foRow(a, false)).join('') + (state.sharedAreas || []).map((a) => foRow(a, true)).join('')) || '<div class="nav-sub muted">No folios yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -2120,10 +2123,10 @@ function renderAdmin() {
       <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
     </div>
     <div class="set-card" style="margin-top:14px">
-      <div class="set-row-t">Default pages</div>
+      <div class="set-row-t">Default Folios</div>
       <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
-      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no pages.</span>'}</div>
-      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a page…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no folios.</span>'}</div>
+      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a folio…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
     </div>`;
 
   const quotesPane = `<div class="set-card">
@@ -4198,6 +4201,9 @@ async function openHome() {
   // Friend invitations surface on Home (towards the bottom), so refresh them each
   // time Home opens - Today is the wall of everything you need to know. (Robin.)
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  // Folios/pages shared WITH me surface front and centre - a share you shouldn't
+  // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
+  api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
   if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // What others have done in folios you share - surfaced on the feed. Mark seen so
@@ -5330,6 +5336,26 @@ function homeInvitesHtml() {
     ${rows}
   </section>`;
 }
+// Front and centre on Home: someone shared a Folio or page with you. Persists
+// until you open them or clear them with ×, so an invitation is never missed.
+// (Robin: all such invites belong top and centre - the Daybook wall.)
+function homeSharedAlertHtml() {
+  const items = (state.sharedItems || []);
+  const seen = state.sharesSeen || '';
+  const fresh = items.filter((i) => i.shared_at && String(i.shared_at) > seen);
+  if (!fresh.length) return '';
+  const rows = fresh.slice(0, 6).map((s) => {
+    const who = esc(s.owner || 'Someone');
+    const ic = s.kind === 'task' ? '✓' : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤';
+    const what = s.kind === 'area' ? 'a Folio' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
+    return `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+  }).join('');
+  const more = fresh.length > 6 ? `<button class="sha-all" data-open-daybook>See all ${fresh.length} on Daybook →</button>` : '';
+  return `<section class="home-sec home-sec-card home-shared">
+    <div class="home-sec-h">✦ Shared with you<span class="muted">${fresh.length}</span><button class="home-shared-x" data-shared-seen title="Clear - I've seen these">×</button></div>
+    ${rows}${more}
+  </section>`;
+}
 // What others have done in folios you share - a feed on Home. Each row taps
 // through to the thing. New-since-last-visit items carry a soft dot. (Robin.)
 function homeFolioFeedHtml() {
@@ -5500,6 +5526,8 @@ function renderHome() {
       ${alertsHtml()}
       </div>
       <div class="home-scroll">
+      ${homeInvitesHtml()}
+      ${homeSharedAlertHtml()}
       ${homeMsgAlertHtml()}
       ${homeReqAlertHtml()}
       ${homeQuoteHtml()}
@@ -5619,7 +5647,6 @@ function renderHome() {
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>${featBar}`;
         })()}</div>
-        ${homeInvitesHtml()}
         ${homeFolioFeedHtml()}
         ${homeDiscoverHtml()}
         <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
@@ -7447,21 +7474,40 @@ function areaActivity(last) {
   if (d < 31) return { cls: 'mild', label: 'This month' };
   return { cls: 'quiet', label: `Quiet · ${Math.max(1, Math.round(d / 7))}w` };
 }
+// Folios others have shared with me. Loaded once (mirrors the People section's
+// friend load) so they appear in my Folios list - both the sidebar and this page
+// - alongside my own. A dedicated fetch keeps them out of the area pickers.
+function loadSharedAreas() {
+  if (Array.isArray(state.sharedAreas)) return Promise.resolve(state.sharedAreas);
+  if (state._sharedAreasP) return state._sharedAreasP;
+  state._sharedAreasP = api('/api/blocks?kind=area&shared=1')
+    .then((r) => { state.sharedAreas = Array.isArray(r) ? r : []; return state.sharedAreas; })
+    .catch(() => { state.sharedAreas = []; return state.sharedAreas; });
+  return state._sharedAreasP;
+}
 // The Pages page: a colourful, sortable board of area cards - each a monogram
 // in the area's colour, its vision, an "how active" indicator, and live counts
 // (open tasks, goals, notes, people). Clicks through to the area's dashboard.
+// A Mine / Shared-with-me / All filter sits above; folios shared with me carry a
+// "shared by" tag and aren't draggable (they're someone else's order, not mine).
 function renderAreasList() {
   const sum = state.areaSummary || {};
   const S = (id) => sum[id] || {};
   const sortMode = areasSortMode();
-  const sharedOnly = !!state.areasSharedOnly;
-  const canDrag = sortMode === 'rank' && !sharedOnly;
-  let ordered = areasByRank();
-  if (sharedOnly) ordered = ordered.filter((a) => (S(a.id).members || 0) > 0);
-  if (sortMode === 'active') ordered = ordered.slice().sort((a, b) => (S(b.id).last || 0) - (S(a.id).last || 0));
-  else if (sortMode === 'tasks') ordered = ordered.slice().sort((a, b) => (S(b.id).tasks || 0) - (S(a.id).tasks || 0));
-  else if (sortMode === 'name') ordered = ordered.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const favAreas = ordered.filter((a) => a.props && a.props.fav);
+  // Mine / Shared-with-me / All. Folios others shared with me are loaded lazily.
+  const scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
+  if (state.sharedAreas === undefined) loadSharedAreas().then(() => { if (state.view && state.view.type === 'areas') renderAreasList(); });
+  const canDrag = sortMode === 'rank' && scope !== 'shared';
+  const applySort = (list) => {
+    if (sortMode === 'active') return list.slice().sort((a, b) => (S(b.id).last || 0) - (S(a.id).last || 0));
+    if (sortMode === 'tasks') return list.slice().sort((a, b) => (S(b.id).tasks || 0) - (S(a.id).tasks || 0));
+    if (sortMode === 'name') return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    return list;   // 'rank' keeps areasByRank's order
+  };
+  const mine = applySort(areasByRank());
+  const received = (state.sharedAreas || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const favAreas = mine.filter((a) => a.props && a.props.fav);
+  // A folio I own: the full card with live metrics, draggable in "My order".
   const card = (a) => {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
@@ -7489,18 +7535,37 @@ function renderAreasList() {
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
     </div>`;
   };
+  // A folio shared WITH me: someone else's, so no metrics, star or drag - just a
+  // "shared by" tag and whether I can edit. Opens read-only / edit per my access.
+  const sharedCard = (a) => {
+    const hue = hueOf(a);
+    const vision = (a.props && (a.props.vision || '').trim()) || '';
+    return `<div class="area-gcard area-gcard-shared" style="--h:${hue}">
+      <button class="agc-open" data-open-area="${a.id}">
+        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-topright"><span class="agc-shared-tag" title="Shared with you by ${esc(a.sharedBy || 'someone')}">👥 ${esc(a.sharedBy || 'Shared')}</span></span></span>
+        <span class="agc-name">${esc(a.title || 'Untitled')}</span>
+        ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : ''}
+        <span class="agc-metrics"><span class="agc-chip agc-chip-shared">${a.canEdit ? '✎ Can edit' : '🔎 View only'}</span></span>
+      </button>
+    </div>`;
+  };
+  const scopeBtn = (v, l, tip) => `<button class="cg-chip areas-scope ${scope === v ? 'on' : ''}" data-areas-scope="${v}" title="${tip}">${l}${v === 'shared' && received.length ? ` <span class="cg-n">${received.length}</span>` : ''}</button>`;
   const controls = `<div class="areas-controls">
+    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Folios you own and folios shared with you')}${scopeBtn('mine', 'Mine', 'Only folios you own')}${scopeBtn('shared', 'Shared with me', 'Only folios others have shared with you')}</div>
     <label class="areas-sortwrap">Sort <select class="sel areas-sort" data-areas-sort>${AREAS_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-    <button class="cg-chip areas-sharedchip ${sharedOnly ? 'on' : ''}" data-areas-shared title="Only areas you share with someone">👥 Shared</button>
   </div>`;
+  const sections = [];
+  if (scope !== 'shared' && favAreas.length && canDrag) sections.push(`<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>`);
+  if (scope !== 'shared') sections.push(`<section class="home-sec"><div class="home-sec-h">${scope === 'all' ? 'Yours' : 'Your folios'} · ${mine.length}</div>
+      <div class="area-cards area-gcards">${mine.map(card).join('') || '<div class="empty">No folios yet.</div>'}</div></section>`);
+  if (scope === 'shared' || (scope === 'all' && received.length)) sections.push(`<section class="home-sec"><div class="home-sec-h">Shared with you · ${received.length}</div>
+      <div class="area-cards area-gcards">${received.map(sharedCard).join('') || '<div class="empty">Nothing shared with you yet. When someone shares a Folio with you, it turns up here.</div>'}</div></section>`);
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Folios</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
     <p class="t2-sub" style="font-style:normal">A Folio is a living chapter in your Daybook - everything about what matters, in one place.</p>
     ${controls}
-    ${(favAreas.length && canDrag) ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">${sharedOnly ? 'Shared areas' : 'All Pages'} · ${ordered.length}</div>
-      <div class="area-cards area-gcards">${ordered.map(card).join('') || `<div class="empty">${sharedOnly ? 'No folios shared yet.' : 'No folios yet.'}</div>`}</div></section>`;
+    ${sections.join('')}`;
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -19454,6 +19519,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-daybook]')) { openDaybookPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
+  if (t.closest('[data-shared-seen]')) { state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST' }).catch(() => {}); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
@@ -19974,7 +20040,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-areas-shared]')) { state.areasSharedOnly = !state.areasSharedOnly; renderAreasList(); return; }
+  if (t.closest('[data-areas-scope]')) { state.areasScope = t.closest('[data-areas-scope]').getAttribute('data-areas-scope'); try { localStorage.setItem('life.areas.scope', state.areasScope); } catch {} renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-cover-adjust]')) { openCoverAdjust(); return; }
@@ -22934,7 +23000,7 @@ function onbAreas() {
     <p class="onb-p">Pages are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Pages.</p>
     ${chips}
-    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a page…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
+    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a folio…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 async function onbDelArea(id) {
   if (!state.onb) return;

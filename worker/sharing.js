@@ -101,6 +101,7 @@ export async function sharedWithMe(env) {
         id: r.id, kind: r.kind, title: r.title, canEdit: !!r.can_edit,
         owner: r.owner_name || r.owner_sub, ownerSub: r.owner_sub,
         done: !!props.done, priority: props.priority || null, updated_at: r.updated_at,
+        shared_at: r.shared_at || null,
       };
     }),
   };
