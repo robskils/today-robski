@@ -3910,6 +3910,14 @@ async function handleInviteRequest(request, env, json, err) {
   } catch (e) { console.error('invite-request mail:', e.message); }
   return json({ ok: true }, request);
 }
+// Admin: the invite requests people have submitted, newest first, with a count of
+// how many arrived since the admin last looked (so the home alert self-clears).
+async function adminInviteRequests(env) {
+  const { results } = await env.DB.prepare('SELECT name, email, why, created_at FROM invite_requests ORDER BY created_at DESC LIMIT 100').all().catch(() => ({ results: [] }));
+  const seen = (await getSetting(env, 'invite_requests_seen')) || '';
+  const count = (results || []).filter((r) => String(r.created_at || '') > seen).length;
+  return { count, requests: results || [] };
+}
 // Has this period's review of type rt already been filed? Mirrors the client's
 // reviewsDueToday belt-and-braces: a 'done' review of that type whose doneAt / to /
 // created falls within the current period means it's done - so we must not nudge.
@@ -4352,6 +4360,8 @@ export default {
       if (path.startsWith('/api/admin/')) {
         if (env.uid !== 1) return err('not allowed', request, 403);
         try {
+          if (path === '/api/admin/invite-requests' && request.method === 'GET') return json(await adminInviteRequests(env), request);
+          if (path === '/api/admin/invite-requests/seen' && request.method === 'POST') { await setSetting(env, 'invite_requests_seen', new Date().toISOString()); return json({ ok: true }, request); }
           if (path === '/api/admin/overview' && request.method === 'GET') return json(await adminOverview(env), request);
           if (path === '/api/admin/users' && request.method === 'GET') return json({ users: await adminUsers(env) }, request);
           if (path === '/api/admin/ai-usage' && request.method === 'GET') return json({ usage: await adminAiUsage(env) }, request);

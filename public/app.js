@@ -2380,6 +2380,14 @@ function openMessages() {
   }
   openDaybookPeople().catch(() => {});
 }
+// Admin home alert: mark the requests seen (clears the alert) and open Admin on
+// the Invites tab, where they'll live. (Robin, 2026-10-14.)
+function openRequests() {
+  api('/api/admin/invite-requests/seen', { method: 'POST' }).catch(() => {});
+  if (state.inviteReq) state.inviteReq.count = 0;
+  state.admin = state.admin || {}; state.admin.tab = 'invites';
+  openAdmin().catch(() => {});
+}
 // Unread Daybook MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
@@ -4143,6 +4151,8 @@ async function openHome() {
   // Friend invitations surface on Home (towards the bottom), so refresh them each
   // time Home opens - Today is the wall of everything you need to know. (Robin.)
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  // Admins get a home alert for new invite requests (owner only for now).
+  if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
@@ -5076,6 +5086,21 @@ function homeMsgAlertHtml() {
     <span class="hma-go" aria-hidden="true">→</span>
   </button>`;
 }
+// Admin-only: a new invite request wants your attention. Sits at the top of Home
+// alongside the message alert. Owner only for now; other admins later. (Robin.)
+function homeReqAlertHtml() {
+  if (!(state.me && state.me.id === 1)) return '';
+  const r = state.inviteReq; const n = (r && r.count) || 0;
+  if (!n) return '';
+  const first = (r.requests && r.requests[0] && r.requests[0].name) || '';
+  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Daybook` : 'New invite request');
+  const sub = n > 1 ? 'People asking to join · tap to see' : 'Someone wants an invite · tap to see';
+  return `<button class="home-msgalert home-reqalert" data-open-requests>
+    <span class="hma-ic">✦</span>
+    <span class="hma-body"><span class="hma-t">${title}</span><span class="hma-sub">${sub}</span></span>
+    <span class="hma-go" aria-hidden="true">→</span>
+  </button>`;
+}
 function homeQuoteHtml() {
   // The server already gates the quote (off / dismissed today), so if it sent one,
   // show it. Closing it dismisses the day's quote everywhere (see the × handler).
@@ -5405,6 +5430,7 @@ function renderHome() {
       </div>
       <div class="home-scroll">
       ${homeMsgAlertHtml()}
+      ${homeReqAlertHtml()}
       ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
@@ -19354,6 +19380,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openDaybookPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
+  if (t.closest('[data-open-requests]')) { openRequests(); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
