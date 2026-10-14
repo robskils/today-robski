@@ -21,7 +21,7 @@
 <meta name="apple-mobile-web-app-title" content="Daybook">
 <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131019" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="/life.css?v=202610141731">
+<link rel="stylesheet" href="/life.css?v=202610142039">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
@@ -43,6 +43,7 @@
 </head>
 <body>
   <div class="app-shell">
+    <button class="nav-toggle" data-nav-toggle type="button" aria-label="Hide or show the sidebar" title="Hide / show sidebar"><span class="ntg-c">«</span><span class="ntg-o">»</span></button>
     <aside class="nav" id="nav"></aside>
     <main class="main">
       <div class="tabstrip" id="tabstrip"></div>
@@ -51,7 +52,7 @@
   </div>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202610141731"></script>
-  <script src="/app.js?v=202610141731"></script>
+  <script src="/qrcode.min.js?v=202610142039"></script>
+  <script src="/app.js?v=202610142039"></script>
 </body>
 </html>

@@ -2144,7 +2144,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-body textarea { width:100%; min-height:160px; font:inherit; font-size:18.5px; line-height:1.75; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:12px; padding:16px 18px; resize:none; }
 .note-body textarea:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 
-/* Note page: main content left, "Notes inside" in a sticky right column. */
+/* Note page: main content left, "Notes inside" in a sticky right column.
+   The two-column split is driven by the PANE's own width, not the viewport
+   (`.note-cq` is a size container) - so a narrow pane (sidebar open on a small
+   screen, a split view) stacks the connected sections below the writing area
+   instead of crushing both into cramped columns. Robin, emphatically: never
+   squeeze the content - move it to the bottom when space is tight. */
+.note-cq { container:notecq / inline-size; min-width:0; }
 .note-layout { display:grid; grid-template-columns:minmax(0,1fr) 272px; column-gap:36px; row-gap:0; align-items:start; grid-template-areas:"main side" "attach side"; }
 .note-main { grid-area:main; min-width:0; }
 .note-attach { grid-area:attach; min-width:0; }
@@ -2160,7 +2166,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-more > summary.note-more-sum::-webkit-details-marker { display:none; }
 .note-more[open] > summary.note-more-sum, .note-more > summary.note-more-sum:hover { color:var(--accent); background:var(--paper-2); }
 .note-side .subpages { margin-top:0; border-top:0; padding:16px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; }
-@media (max-width:900px){
+@container notecq (max-width:900px){
   /* Single column. `display:contents` on the side rail lets its sections (Notes
      inside, Tasks, Starred) reorder independently of each other: Notes inside
      above the attachments, Tasks below them, Starred hidden. */
@@ -2175,10 +2181,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-links { order:7; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
   .note-starred, .note-related { display:none; }
 }
-/* Desktop: each connected block is its own tasteful white card, and the note
+/* Wide pane: each connected block is its own tasteful white card, and the note
    body and the sidebar scroll independently (the rail sticks and scrolls inside
-   itself while the note scrolls with the page). */
-@media (min-width:901px){
+   itself while the note scrolls with the page). Driven by the pane width. */
+@container notecq (min-width:901px){
   .note-side { max-height:calc(100vh - 32px); overflow-y:auto; overflow-x:hidden; padding-right:4px; }
   .note-side .subpages,
   .note-side .note-tasks,
@@ -2271,6 +2277,26 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nav-resize:hover::after, body.resizing-nav .nav-resize::after { background:var(--accent); }
 body.resizing-nav { cursor:col-resize; user-select:none; }
 @media (max-width:820px){ .nav-resize { display:none; } }
+/* Collapse / reopen the sidebar to reclaim width on smaller screens. One quiet
+   fixed control toggles it: it floats in the sidebar's empty top-left corner when
+   open, and at the main area's top-left when collapsed. Desktop only - the phone
+   already has the ☰ drawer. State persists (life.nav.collapsed). */
+.nav-toggle { display:none; }
+.nav-toggle .ntg-o { display:none; }
+@media (min-width:821px){
+  .nav-toggle { position:fixed; top:9px; left:11px; z-index:50; width:30px; height:30px;
+    display:flex; align-items:center; justify-content:center; border-radius:50%;
+    border:1.5px solid var(--line-2); background:var(--card); color:var(--ink-3);
+    font-size:16px; line-height:1; cursor:pointer; box-shadow:var(--shadow);
+    opacity:.6; transition:color .12s,border-color .12s,background .12s,opacity .12s; }
+  .nav-toggle:hover { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); opacity:1; }
+  body.nav-collapsed .nav-toggle .ntg-c { display:none; }
+  body.nav-collapsed .nav-toggle .ntg-o { display:inline; }
+  body.nav-collapsed .app-shell { grid-template-columns:minmax(0,1fr); }
+  body.nav-collapsed .nav { display:none; }
+  body.nav-collapsed .nav-resize { display:none; }
+  body.nav-collapsed .tabstrip { padding-left:52px; }
+}
 .nav {
   border-right:1px solid var(--line); background:var(--paper-2);
   position:sticky; top:0; height:100vh; overflow-y:auto;

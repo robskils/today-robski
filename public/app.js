@@ -18272,7 +18272,7 @@ function renderNote() {
         </span>
       </div>
     </div>
-    <div class="note-layout">
+    <div class="note-cq"><div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}
         <div class="note-areas-row">${noteAreasControl(n)}</div>
@@ -18302,7 +18302,7 @@ function renderNote() {
         })()}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
-    </div>`;
+    </div></div>`;
   autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
@@ -19385,6 +19385,7 @@ document.addEventListener('click', (e) => {
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
   if (t.closest('[data-util-toggle]')) { toggleNavUtil(); return; }
+  if (t.closest('[data-nav-toggle]')) { toggleSidebar(); return; }
   if (t.closest('[data-nav-drawer]')) { toggleNavDrawer(); return; }
   if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
@@ -20980,7 +20981,18 @@ document.addEventListener('pointercancel', areaSecDragEnd);
   try { const w = parseInt(localStorage.getItem('life.sidebarW') || '', 10); if (w >= 240 && w <= 480) document.documentElement.style.setProperty('--sidebar-w', w + 'px'); } catch {}
   const add = () => { if (document.body && !document.querySelector('.nav-resize')) { const h = document.createElement('div'); h.className = 'nav-resize'; h.setAttribute('data-nav-resize', ''); h.title = 'Drag to resize the sidebar'; document.body.appendChild(h); } };
   if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
+  // Restore the collapsed sidebar (desktop only - the CSS gates it above 820px, so
+  // a remembered collapse never hides the phone's drawer).
+  const col = () => { try { if (localStorage.getItem('life.nav.collapsed') === '1') document.body.classList.add('nav-collapsed'); } catch {} };
+  if (document.body) col(); else document.addEventListener('DOMContentLoaded', col);
 })();
+// Toggle the sidebar open/closed and remember it. Desktop-only control; mobile
+// keeps the ☰ drawer, so this never touches the phone.
+function toggleSidebar() {
+  const on = !document.body.classList.contains('nav-collapsed');
+  document.body.classList.toggle('nav-collapsed', on);
+  try { localStorage.setItem('life.nav.collapsed', on ? '1' : '0'); } catch {}
+}
 // Give every search box a native clear "X": mark search inputs type=search so the
 // browser shows a clear button once you've typed. Clearing fires an input event,
 // so the live search re-runs. A MutationObserver re-marks inputs after any
