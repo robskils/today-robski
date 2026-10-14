@@ -2364,6 +2364,22 @@ function startPresence() { const beat = () => api('/api/presence', { method: 'PO
 // contacts (that just looked like an unread count sitting on the button). Unread
 // chat and the online list still feed Home's "People" section, not this badge.
 const friendPending = () => ((state.friendStatus || {}).incoming || 0) + ((state.friendStatus || {}).unread || 0);
+// The hamburger badge counts connection requests; unread messages get their own
+// message icon in the top bar. (Robin, 2026-10-14.)
+const navReq = () => (state.friendStatus || {}).incoming || 0;
+// Tap the top-bar message icon: if one person messaged, open that chat; if a few
+// did, open the people hub to pick. (Robin, 2026-10-14.)
+function openMessages() {
+  const by = (state.friendStatus && state.friendStatus.unreadBy) || {};
+  const ids = Object.keys(by).filter((k) => by[k] > 0);
+  if (ids.length === 1) {
+    const id = Number(ids[0]);
+    const f = ((state.friends && state.friends.friends) || []).find((x) => x.id === id);
+    openChat(id, (f && f.name) || 'Message');
+    return;
+  }
+  openDaybookPeople().catch(() => {});
+}
 // Unread Daybook MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
@@ -3609,9 +3625,9 @@ function renderNav() {
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
-      <button class="nav-menu-toggle ${unreadMsgs() ? 'has-msg' : ''}" data-nav-drawer aria-label="Menu${friendPending() ? ` — ${friendPending()} new` : ''}" title="Menu">☰${friendPending() ? `<span class="nav-menu-badge">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}</button>
+      <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
       <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Day<i class="wm-bk">book</i></em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
-      <span class="nav-topline-sp" aria-hidden="true"></span>
+      ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
@@ -19281,6 +19297,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openDaybookPeople().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }

@@ -3904,7 +3904,7 @@ async function handleInviteRequest(request, env, json, err) {
     const to = env.BRIEF_EMAIL || 'contact@daybook.fyi';
     const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;font-size:16px;color:#211c17">
       <p><b>${escHtml(name)}</b> &lt;${escHtml(email)}&gt; would like a Daybook invite.</p>
-      ${why ? `<p style="color:#574e44;border-left:3px solid #c4412e;padding-left:12px">${escHtml(why)}</p>` : ''}
+      ${why ? `<p style="color:#574e44;border-left:3px solid #a8844a;padding-left:12px">${escHtml(why)}</p>` : ''}
       <p style="color:#8b7f72;font-size:13px">Reply to them at ${escHtml(email)}.</p></div>`;
     await sendSystemMail(env, { to, subject: `Daybook invite request — ${name}`, html, text: `${name} <${email}>\n\n${why}` });
   } catch (e) { console.error('invite-request mail:', e.message); }

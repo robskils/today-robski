@@ -2396,7 +2396,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-menu-badge { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--danger,#c4412e); color:#fff; font-size:11.5px; font-weight:700; line-height:1; box-shadow:0 0 0 2px var(--paper); }
 .nav-menu-toggle.has-msg .nav-menu-badge { animation:msg-badge-pulse 1.5s ease-in-out infinite; }
 @keyframes msg-badge-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.16); } }
-@media (prefers-reduced-motion:reduce) { .nav-badge.has-msg, .nav-menu-toggle.has-msg .nav-menu-badge { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .nav-badge.has-msg, .nav-menu-toggle.has-msg .nav-menu-badge, .nav-msgbtn-c { animation:none; } }
+/* New-message icon in the top bar: shows only when a message is waiting (the
+   button is only rendered then), with a pulsing count. Mobile top bar only. */
+.nav-msgbtn { display:none; }
+.nav-msgbtn-c { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--danger,#c4412e); color:#fff; font-size:11.5px; font-weight:700; line-height:1; box-shadow:0 0 0 2px var(--paper); animation:msg-badge-pulse 1.5s ease-in-out infinite; }
 .nav-quick { margin-left:auto; flex:none; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:var(--ink-3); font-size:16px; line-height:1; opacity:0; transition:opacity .12s, background .12s, color .12s; }
 .nav-item:hover .nav-quick, .nav-item.on .nav-quick { opacity:1; }
 /* Capture actions (Journal, Dream): the whole row is the verb, so its "＋" stays
@@ -2630,7 +2634,9 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .chat-msg.pending { opacity:.55; }
 .chat-msg.mine { align-self:flex-end; background:var(--accent); color:var(--accent-ink,#fff); border-color:transparent; border-bottom-left-radius:16px; border-bottom-right-radius:5px; }
 .chat-form { display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
-.chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:15px; outline:none; }
+/* 16px (not 15) so iOS WebKit doesn't auto-zoom the page when you focus to type,
+   which was shoving the Send button and text off the right edge. (Robin, mobile.) */
+.chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:16px; outline:none; }
 .chat-input:focus { border-color:var(--accent); }
 .chat-send { flex:none; padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:var(--accent-ink,#fff); font-family:inherit; font-weight:600; cursor:pointer; }
 /* Friends on Daybook. */
@@ -6539,6 +6545,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
   .nav-menu-toggle:active { background:var(--paper-2); }
+  .nav-msgbtn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; margin-left:auto; border-radius:11px; font-size:20px; line-height:1; color:var(--accent); border:1px solid var(--line); background:var(--card); -webkit-tap-highlight-color:transparent; }
+  .nav-msgbtn:active { background:var(--paper-2); }
   .nav-topline { justify-content:flex-start; }
   body.nav-drawer-open { overflow:hidden; }
   /* backdrop-filter on .nav would make the fixed drawer position relative to the

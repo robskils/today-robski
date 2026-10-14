@@ -13,7 +13,7 @@ const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace
 export function inviteEmail({ from, message, link, tagline, accent }) {
   const who = escHtml(from);
   const pre = `${who} has invited you to join Daybook.`;
-  const dbc = /^#[0-9a-f]{3,6}$/i.test(String(accent || '')) ? accent : '#c4412e';
+  const dbc = /^#[0-9a-f]{3,6}$/i.test(String(accent || '')) ? accent : '#a8844a';
   const initial = escHtml((String(from || '?').trim()[0] || '?').toUpperCase());
   // A little of the inviter's Daybook card: a coloured monogram and their
   // tagline. Email-safe (a background-colour circle, no data-URI image).
@@ -35,12 +35,12 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
 
         <tr><td style="padding:34px 38px 0" align="center">
           <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Daybook</p>
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Day<i>book</i></p>
         </td></tr>
 
         <tr><td style="padding:22px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:#c4412e;height:3px;line-height:3px;font-size:0">&nbsp;</td>
+            <td style="background:#a8844a;height:3px;line-height:3px;font-size:0">&nbsp;</td>
           </tr></table>
         </td></tr>
 
@@ -52,7 +52,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
 
         ${message ? `<tr><td style="padding:22px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:#f4f1ea;border-left:3px solid #c4412e;border-radius:0 10px 10px 0;padding:16px 18px">
+            <td style="background:#f4f1ea;border-left:3px solid #a8844a;border-radius:0 10px 10px 0;padding:16px 18px">
               <p style="margin:0;font-size:15.5px;color:#3f382f;line-height:1.6;white-space:pre-wrap">${escHtml(message)}</p>
             </td>
           </tr></table>
@@ -64,14 +64,14 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
 
         <tr><td style="padding:26px 38px 0" align="center">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:#c4412e;border-radius:11px">
+            <td style="background:#a8844a;border-radius:11px">
               <a href="${escHtml(link)}" style="display:inline-block;padding:15px 30px;font-size:16px;font-weight:600;color:#fbf9f4;text-decoration:none">Accept the invitation</a>
             </td>
           </tr></table>
         </td></tr>
 
         <tr><td style="padding:20px 38px 0">
-          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The link signs you in and sets up your Daybook - there is no code to enter. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#c4412e;text-decoration:none">${escHtml(link)}</a></p>
+          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The link signs you in and sets up your Daybook - there is no code to enter. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#a8844a;text-decoration:none">${escHtml(link)}</a></p>
         </td></tr>
 
         <tr><td style="padding:26px 38px 8px" align="center">

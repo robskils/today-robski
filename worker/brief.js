@@ -69,7 +69,6 @@ const INK = '#1c1812';
 const MIST = '#6b6459';
 const RULE = '#e0d9cc';
 const GOLD = '#a8844a';
-const RED = '#c4412e';
 
 // Table layout, inline styles, no <style> block, no flexbox, no SVG: Gmail
 // strips the first and Outlook renders with Word. Same constraints as the
@@ -127,7 +126,7 @@ function taskRow(t, siteUrl = 'https://robski.daybook.fyi') {
   return `
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td width="22" valign="top" style="font-family:${SANS};font-size:17px;color:${RED};padding:11px 0 11px 0;line-height:1.4">&bull;</td>
+              <td width="22" valign="top" style="font-family:${SANS};font-size:17px;color:${GOLD};padding:11px 0 11px 0;line-height:1.4">&bull;</td>
               <td valign="top" style="font-family:${SANS};font-size:17px;line-height:1.45;color:${INK};padding:10px 0;border-top:1px solid ${RULE}">
                 ${title}${lane}
               </td>
