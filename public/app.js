@@ -9055,14 +9055,13 @@ function renderCalendar() {
     <div class="cal-head">
       <div class="cal-head-l"><h1>${title}</h1><span class="cal-now" id="cal-now"></span></div>
       <div class="cal-nav">
-        ${modOn('today') ? '<button class="cal-btn cal-planbtn" data-open-today data-tip="Plan your day in the Flow tool">☀ Plan day</button>' : ''}
-        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
-        ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
+        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
+        ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
       </div>
     </div>
     ${gcalBarHtml()}
