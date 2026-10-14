@@ -9060,8 +9060,8 @@ function renderCalendar() {
         ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
-        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
         ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
+        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
       </div>
     </div>
     ${gcalBarHtml()}
