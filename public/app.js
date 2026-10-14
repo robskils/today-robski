@@ -2076,6 +2076,13 @@ function renderAdmin() {
       ${card('Invitations', admN(inv.total), `${inv.unused || 0} still open`, 'data-adm-tab="invites"')}
     </div>
     ${planChips ? `<div class="adm-plans">${planChips}</div>` : ''}
+    <div class="home-sec-h" style="margin-top:8px">Usage</div>
+    <div class="adm-usage">
+      <span class="adm-usage-stat"><b>${admN(uOv.active1 || 0)}</b> active today</span>
+      <span class="adm-usage-stat"><b>${admN(uOv.active7 || 0)}</b> this week</span>
+      <span class="adm-usage-stat"><b>${admN(uOv.active30 || 0)}</b> this month</span>
+      <span class="adm-usage-stat"><b>${admN(uOv.total || 0)}</b> all members</span>
+    </div>
     ${(a.aiUsage || []).length ? `<div class="home-sec-h" id="adm-ai-usage" style="margin-top:8px">AI usage · this month</div>
       <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>` : ''}`;
 

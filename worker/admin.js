@@ -48,7 +48,9 @@ export async function adminOverview(env) {
   const total = (await one(env, 'SELECT COUNT(*) AS n FROM users')).n || 0;
   const new7 = (await one(env, 'SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', daysAgo(7))).n || 0;
   const new30 = (await one(env, 'SELECT COUNT(*) AS n FROM users WHERE created_at >= ?', daysAgo(30))).n || 0;
+  const active1 = (await one(env, 'SELECT COUNT(*) AS n FROM users WHERE last_seen >= ?', daysAgo(1))).n || 0;
   const active7 = (await one(env, 'SELECT COUNT(*) AS n FROM users WHERE last_seen >= ?', daysAgo(7))).n || 0;
+  const active30 = (await one(env, 'SELECT COUNT(*) AS n FROM users WHERE last_seen >= ?', daysAgo(30))).n || 0;
   const plans = await many(env, 'SELECT plan, COUNT(*) AS n FROM users GROUP BY plan');
   const statuses = await many(env, 'SELECT status, COUNT(*) AS n FROM users GROUP BY status');
   const invTotal = (await one(env, 'SELECT COUNT(*) AS n FROM invites')).n || 0;
@@ -57,7 +59,7 @@ export async function adminOverview(env) {
   const aiRows = await many(env, 'SELECT provider, SUM(in_tokens) AS inT, SUM(out_tokens) AS outT, COUNT(*) AS calls FROM ai_usage WHERE ts >= ? GROUP BY provider', monthStart());
   let aiCost = 0, aiCalls = 0; const ai = aiRows.map((r) => { const cost = estCost(r.provider, r.inT || 0, r.outT || 0); aiCost += cost; aiCalls += r.calls || 0; return { provider: r.provider, inTokens: r.inT || 0, outTokens: r.outT || 0, calls: r.calls || 0, cost }; });
   return {
-    users: { total, new7, new30, active7 },
+    users: { total, new7, new30, active1, active7, active30 },
     plans: plans.reduce((o, r) => { o[r.plan || 'free'] = r.n; return o; }, {}),
     statuses: statuses.reduce((o, r) => { o[r.status || 'active'] = r.n; return o; }, {}),
     invites: { total: invTotal, unused: invUnused },

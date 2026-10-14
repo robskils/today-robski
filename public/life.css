@@ -2766,6 +2766,10 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-card-go { margin-left:auto; color:var(--ink-3); opacity:0; transition:opacity .12s, color .12s; }
 .adm-card-click:hover .adm-card-go { opacity:1; color:var(--accent); }
 .adm-plans { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 20px; }
+/* Admin overview › Usage: active-member snapshot above the AI usage detail. */
+.adm-usage { display:flex; flex-wrap:wrap; gap:10px 28px; margin:12px 0 6px; }
+.adm-usage-stat { font-size:14px; color:var(--ink-2); display:inline-flex; align-items:baseline; gap:7px; }
+.adm-usage-stat b { font-family:'Cormorant Garamond',Georgia,serif; font-size:27px; font-weight:600; color:var(--ink); font-variant-numeric:lining-nums tabular-nums; line-height:1; }
 .adm-plan-chip { font-size:13px; padding:4px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); text-transform:capitalize; }
 .adm-signup .scope { font-size:12.5px; color:var(--ink-3); font-weight:400; }
 /* Default life areas editor on the admin page. */
