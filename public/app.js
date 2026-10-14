@@ -1998,11 +1998,11 @@ async function cancelInviteAction(code) {
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
   try {
-    const [ov, u, ai, s, q] = await Promise.all([
+    const [ov, u, ai, s, q, rq] = await Promise.all([
       api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
-      api('/api/admin/settings'), api('/api/admin/quotes'),
+      api('/api/admin/settings'), api('/api/admin/quotes'), api('/api/admin/invite-requests').catch(() => ({ requests: [] })),
     ]);
-    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [] };
+    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [] };
   } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
@@ -2083,7 +2083,23 @@ function renderAdmin() {
 
   const pendingInv = (state.invites || []).filter((i) => !i.used_by);
   const activated = users.slice().sort((x, y) => new Date(y.last_seen || 0) - new Date(x.last_seen || 0));
-  const invitesPane = `<div class="set-card">
+  // People who asked for an invite from the website - invite them (prefilled) or dismiss.
+  const requests = a.requests || [];
+  const reqRow = (r) => `<div class="adm-req">
+      <div class="adm-req-main">
+        <div class="adm-req-top"><span class="adm-req-nm">${esc(r.name || 'Someone')}</span>${r.created_at ? `<span class="adm-req-when">${timeAgo(new Date(r.created_at).getTime())}</span>` : ''}</div>
+        <a class="adm-req-email" href="mailto:${esc(r.email)}">${esc(r.email)}</a>
+        ${r.why ? `<p class="adm-req-why">${esc(r.why)}</p>` : ''}
+      </div>
+      <div class="adm-req-acts"><button class="add-btn wide" data-req-invite="${r.id}" data-req-email="${esc(r.email)}">✦ Invite</button><button class="ghost adm-req-x" data-req-dismiss="${r.id}" title="Dismiss this request">Dismiss</button></div>
+    </div>`;
+  const requestsCard = `<div class="set-card">
+      <div class="home-sec-h">Requests to join${requests.length ? ` · ${requests.length}` : ''}</div>
+      <p class="inv-hint">People who asked for an invite from the website. Invite them - you still pick the plan and any free period - or dismiss.</p>
+      ${requests.length ? `<div class="adm-req-list">${requests.map(reqRow).join('')}</div>` : '<div class="home-empty" style="padding:4px 0 0">No open requests right now.</div>'}
+    </div>`;
+  const invitesPane = `${requestsCard}
+    <div class="set-card" style="margin-top:14px">
       <div class="inv-new"><button class="add-btn wide" data-admin-invite>✦ Invite someone</button></div>
       <div class="home-sec-h" style="margin-top:4px">Awaiting a reply${pendingInv.length ? ` · ${pendingInv.length}` : ''}</div>
       <p class="inv-hint">Invitations sent but not yet accepted. Daybook sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
@@ -2296,7 +2312,7 @@ function inviteToDaybook(prefill) {
 }
 // The owner's invite: the full range - pick the plan and any free period, not
 // the members' one-tap gift. (Robin: don't treat me like any old punter.)
-function adminInvite(prefill) {
+function adminInvite(prefill, onDone) {
   const el = uiDialogHost();
   const planOpts = PLAN_KEYS.map((p) => `<option value="${p}">${esc(PLAN_LABEL[p])}</option>`).join('');
   const freeOpts = [['0', 'No free period'], ['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months'], ['120', 'Forever (10 years)']];
@@ -2338,6 +2354,7 @@ function adminInvite(prefill) {
     try {
       const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
       close(); await loadInvites();
+      if (onDone) try { onDone(); } catch {}
       if (r.sent) toast(`Invitation sent to ${r.email}`);
       else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
       else copyJoinLink(r.link, 'Invite link copied - share it with anyone');
@@ -2387,6 +2404,12 @@ function openRequests() {
   if (state.inviteReq) state.inviteReq.count = 0;
   state.admin = state.admin || {}; state.admin.tab = 'invites';
   openAdmin().catch(() => {});
+}
+// Remove a join request from the list (after inviting them, or to clear spam).
+async function dismissRequest(id) {
+  try { await api('/api/admin/invite-requests/dismiss', { method: 'POST', body: JSON.stringify({ id: Number(id) }) }); } catch {}
+  if (state.admin) state.admin.requests = (state.admin.requests || []).filter((r) => String(r.id) !== String(id));
+  renderAdmin();
 }
 // Unread Daybook MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
@@ -19523,6 +19546,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-totp-copy]')) { const codes = (state.totp && state.totp.recovery || []).join('\n'); if (codes) { try { navigator.clipboard.writeText(codes); toast('Recovery codes copied'); } catch { toast('Copy failed - select them by hand'); } } return; }
   if (t.closest('[data-create-invite]')) { inviteToDaybook(); return; }
   if (t.closest('[data-admin-invite]')) { adminInvite(); return; }
+  const ri = t.closest('[data-req-invite]'); if (ri) { const id = ri.dataset.reqInvite; adminInvite(ri.dataset.reqEmail || '', () => dismissRequest(id)); return; }
+  const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }

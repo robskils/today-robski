@@ -3913,7 +3913,7 @@ async function handleInviteRequest(request, env, json, err) {
 // Admin: the invite requests people have submitted, newest first, with a count of
 // how many arrived since the admin last looked (so the home alert self-clears).
 async function adminInviteRequests(env) {
-  const { results } = await env.DB.prepare('SELECT name, email, why, created_at FROM invite_requests ORDER BY created_at DESC LIMIT 100').all().catch(() => ({ results: [] }));
+  const { results } = await env.DB.prepare('SELECT rowid AS id, name, email, why, created_at FROM invite_requests ORDER BY created_at DESC LIMIT 100').all().catch(() => ({ results: [] }));
   const seen = (await getSetting(env, 'invite_requests_seen')) || '';
   const count = (results || []).filter((r) => String(r.created_at || '') > seen).length;
   return { count, requests: results || [] };
@@ -4362,6 +4362,7 @@ export default {
         try {
           if (path === '/api/admin/invite-requests' && request.method === 'GET') return json(await adminInviteRequests(env), request);
           if (path === '/api/admin/invite-requests/seen' && request.method === 'POST') { await setSetting(env, 'invite_requests_seen', new Date().toISOString()); return json({ ok: true }, request); }
+          if (path === '/api/admin/invite-requests/dismiss' && request.method === 'POST') { const b = await request.json().catch(() => ({})); if (b.id != null) await env.DB.prepare('DELETE FROM invite_requests WHERE rowid = ?').bind(b.id).run().catch(() => {}); return json({ ok: true }, request); }
           if (path === '/api/admin/overview' && request.method === 'GET') return json(await adminOverview(env), request);
           if (path === '/api/admin/users' && request.method === 'GET') return json({ users: await adminUsers(env) }, request);
           if (path === '/api/admin/ai-usage' && request.method === 'GET') return json({ usage: await adminAiUsage(env) }, request);
