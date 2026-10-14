@@ -13734,16 +13734,15 @@ function openContactMenu(id, x, y) {
 // email against its accounts (worker getFriends), and this tells you, up front,
 // which of your people are already on Daybook - tap to connect.
 function contactsDaybookBannerHtml() {
-  const d = state.friends;
-  if (!d) return '<div class="cts-dbbanner cts-dbb-load">Checking which of your contacts are on Daybook…</div>';
-  const sug = d.suggestions || [];
-  if (sug.length) {
-    const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-    const more = sug.length > 12 ? `<div class="cts-dbb-more">+${sug.length - 12} more in Daybook friends below</div>` : '';
-    return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${sug.length} of your contacts ${sug.length === 1 ? 'is' : 'are'} on Daybook</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
-  }
-  if (d.scanned) return `<div class="cts-dbbanner cts-dbb-none"><span>Checked ${d.scanned} of your contacts - none are on Daybook yet.</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div>`;
-  return '';
+  // Only surface good news: a contact of yours is on Daybook, ready to connect.
+  // No "checking…" or "none yet" noise. (Robin, 2026-10-14.)
+  const sug = (state.friends && state.friends.suggestions) || [];
+  if (!sug.length) return '';
+  const n = sug.length;
+  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Daybook friends below</div>` : '';
+  const head = n === 1 ? 'You have a friend on Daybook — connect?' : `You have ${n} friends on Daybook — connect?`;
+  return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
 }
 // The Daybook-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
