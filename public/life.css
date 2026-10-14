@@ -2410,7 +2410,9 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-lead .nav-lbl { font-weight:600; }
 .nav-lead .nav-ic { color:var(--accent); }
 .nav-secs { display:flex; flex-direction:column; }
-.nav-sec { margin-top:14px; }
+/* Starred / Recent / Folios sit in the same rounded, hairline-bordered box as the
+   groups above, so the whole sidebar reads as one set. (Robin, 2026-10-14.) */
+.nav-sec { margin-top:9px; padding:3px 7px 8px; border:1px solid var(--line); border-radius:13px; background:color-mix(in srgb, var(--card) 45%, transparent); }
 .nav-sec.drop-target { box-shadow:inset 0 2px 0 var(--accent); }
 .nav-sec-h { display:flex; align-items:center; gap:4px; padding:3px 4px 3px 6px; border-radius:8px; cursor:pointer; }
 .nav-sec-h:hover { background:var(--paper); }
