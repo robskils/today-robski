@@ -116,3 +116,22 @@ export async function adminAiUsage(env) {
   }
   return Object.values(byUser).sort((a, b) => b.cost - a.cost);
 }
+// What it costs to run Daybook, by month: the measured AI spend (from ai_usage)
+// plus the fixed infrastructure baseline. FIXED is the known recurring bill -
+// extend it as costs are added (domain, email, SMS…). (Robin, 2026-10-14.)
+const FIXED = [{ label: 'Cloudflare (Workers Paid)', usd: 5 }];
+export async function adminCosts(env, monthsBack = 6) {
+  const rows = await many(env, "SELECT substr(ts,1,7) AS ym, provider, SUM(in_tokens) AS inT, SUM(out_tokens) AS outT, COUNT(*) AS calls FROM ai_usage GROUP BY ym, provider");
+  const byMonth = {};
+  for (const r of rows) { const m = byMonth[r.ym] = byMonth[r.ym] || { ai: 0, calls: 0 }; m.ai += estCost(r.provider, r.inT || 0, r.outT || 0); m.calls += r.calls || 0; }
+  const fixedTotal = FIXED.reduce((s, f) => s + f.usd, 0);
+  const months = [];
+  const now = new Date();
+  for (let i = 0; i < monthsBack; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const m = byMonth[ym] || { ai: 0, calls: 0 };
+    months.push({ ym, ai: m.ai, calls: m.calls, fixed: fixedTotal, total: m.ai + fixedTotal });
+  }
+  return { months, fixed: FIXED, fixedTotal };
+}

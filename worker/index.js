@@ -7,7 +7,7 @@ import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignmen
 import { openMeeting } from './meetings.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey, encryptSecret, decryptSecret } from './ai.js';
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
-import { adminOverview, adminUsers, updateUser, adminAiUsage, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
+import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
 import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable } from './gcal.js';
@@ -4367,6 +4367,7 @@ export default {
           if (path === '/api/admin/overview' && request.method === 'GET') return json(await adminOverview(env), request);
           if (path === '/api/admin/users' && request.method === 'GET') return json({ users: await adminUsers(env) }, request);
           if (path === '/api/admin/ai-usage' && request.method === 'GET') return json({ usage: await adminAiUsage(env) }, request);
+          if (path === '/api/admin/costs' && request.method === 'GET') return json(await adminCosts(env), request);
           if (path === '/api/admin/settings' && request.method === 'GET') return json(await getAdminSettings(env), request);
           if (path === '/api/admin/settings' && request.method === 'POST') return json(await setAdminSettings(env, await request.json().catch(() => ({}))), request);
           const um = path.match(/^\/api\/admin\/user\/(\d+)$/);

@@ -1998,11 +1998,12 @@ async function cancelInviteAction(code) {
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
   try {
-    const [ov, u, ai, s, q, rq] = await Promise.all([
+    const [ov, u, ai, s, q, rq, co] = await Promise.all([
       api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
       api('/api/admin/settings'), api('/api/admin/quotes'), api('/api/admin/invite-requests').catch(() => ({ requests: [] })),
+      api('/api/admin/costs').catch(() => ({ months: [] })),
     ]);
-    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [] };
+    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [], costs: co || { months: [] } };
   } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
@@ -2063,7 +2064,7 @@ function renderAdmin() {
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
   // thumbing past the whole business to reach the quotes. One tab at a time,
   // exactly as Settings does it.
-  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
+  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['costs', 'Costs'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
   if (!TABS.some(([k]) => k === a.tab)) a.tab = 'overview';
   const tab = a.tab;
   const reqN = (a.requests || []).length;   // pending join requests, badged on the Invites tab so it's findable
@@ -2112,10 +2113,7 @@ function renderAdmin() {
       <div class="home-sec-h" style="margin-top:4px">Awaiting a reply${pendingInv.length ? ` · ${pendingInv.length}` : ''}</div>
       <p class="inv-hint">Invitations sent but not yet accepted. Daybook sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
       <div class="inv-list">${pendingInv.map(inviteRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No open invitations - everyone you invited has joined.</div>'}</div>
-    </div>
-    <div class="set-card" style="margin-top:14px">
-      <div class="home-sec-h">Activated accounts${activated.length ? ` · ${activated.length}` : ''}</div>
-      ${activated.length ? `<div class="adm-acct-table"><div class="adm-acct-row adm-acct-head"><span class="aa-who">Person</span><span class="aa-joined">Joined</span><span class="aa-seen">Last seen</span><span class="aa-plan">Plan</span></div>${activated.map(adminAcctRow).join('')}</div>` : '<div class="home-empty" style="padding:4px 0 0">No activated accounts yet.</div>'}
+      <p class="inv-hint" style="margin-top:14px">Looking for everyone who's joined? That's the <button class="linklike" data-adm-tab="members">Members</button> tab.</p>
     </div>`;
 
   const setupPane = `<div class="set-card">
@@ -2155,11 +2153,28 @@ function renderAdmin() {
       <div class="adm-brand-sw">${BR_SW.map(([hex, nm]) => `<span class="adm-sw"><span class="adm-sw-chip" style="background:${hex}"></span><span class="adm-sw-nm">${nm}</span><span class="adm-sw-hx">${hex}</span></span>`).join('')}</div>
     </div>`;
 
-  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
+  // Costs: measured AI spend + fixed infrastructure, by month (this month, last, …).
+  const costMonths = (a.costs && a.costs.months) || [];
+  const costFixed = (a.costs && a.costs.fixed) || [];
+  const monthLabel = (ym, i) => { const d = new Date(ym + '-01T00:00'); const nm = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); return i === 0 ? `${nm} · this month` : i === 1 ? `${nm} · last month` : nm; };
+  const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
+  const costsPane = `<div class="set-card">
+      <div class="home-sec-h">Running costs</div>
+      <p class="inv-hint">What Daybook costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
+      <div class="adm-cost-list">${costMonths.map(costRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No cost data yet.</div>'}</div>
+    </div>
+    <div class="set-card" style="margin-top:14px">
+      <div class="home-sec-h">Fixed monthly</div>
+      <div class="adm-cost-list">${costFixed.map((f) => `<div class="adm-cost-row"><span class="adm-cost-m">${esc(f.label)}</span><span class="adm-cost-t">${admUSD(f.usd)}</span></div>`).join('') || '<div class="home-empty" style="padding:4px 0 0">None set.</div>'}</div>
+      <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
+    </div>`;
+
+  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, costs: costsPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
     overview: 'Members, usage and what AI is costing',
     members: `${users.length} on Daybook`,
     invites: `${inv.unused || 0} still open`,
+    costs: 'What it costs to run Daybook, by month',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
     brand: 'The Daybook logo, icons and colours',
