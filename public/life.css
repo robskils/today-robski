@@ -2699,6 +2699,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .fr-suggest .friend-row { background:var(--card); }
 /* Sub-groups inside "Contacts on Daybook" (Requests, Pending, Suggestions…). */
 .ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
+.ppl-sub-req { color:var(--accent); margin-top:4px; }
 .ppl-sub .fr-rescan { margin-left:2px; padding:2px 7px; font-size:13px; }
 /* The "find someone on Daybook" box: full width, and visible on mobile (it isn't
    a per-page .list-search, so the mobile hide-rule leaves it alone). */
