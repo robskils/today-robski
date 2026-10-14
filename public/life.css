@@ -5219,7 +5219,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .area-conn-link:hover { color:var(--accent); }
 /* Metric cards: one per metric, all the same size, each clicking through to its
    section. A tidy uniform grid, not a content-sized strip. (Robin.) */
-.area-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(max(100px, 13%),1fr)); gap:11px; }
+/* auto-FILL (not auto-fit): keep the empty trailing tracks so each metric stays
+   one column wide - the size it has at a full row - instead of a lone metric
+   ballooning to the whole width. Left-aligned, normal-sized. (Robin, 2026-10-14.) */
+.area-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(max(100px, 13%),1fr)); gap:11px; }
 .area-stat { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:4px; padding:16px 12px; min-height:86px; border:1px solid var(--line); border-radius:15px; background:var(--card); box-shadow:var(--shadow); }
 .area-stat .as-n { font-family:'Cormorant Garamond',Georgia,serif; font-size:28px; font-weight:600; color:var(--ink); line-height:1; font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1,'tnum' 1; }
 .area-stat .as-l { font-size:12.5px; font-weight:600; color:var(--ink-2); letter-spacing:.01em; }
@@ -5517,6 +5520,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .mem-card:hover .mem-msg { opacity:1; }
 .mem-card-me { border-color:color-mix(in srgb,var(--accent) 34%,var(--line)); }
 .mem-you { font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:2px 7px; }
+/* The folio owner's tag on a folio shared with me - gold, to set it apart from "you". */
+.mem-owner { color:var(--accent-ink); background:var(--accent); }
+.mem-card-owner { cursor:default; }
 .mem-more, .mem-invite { flex:none; padding:8px 14px; border-radius:999px; border:1px dashed var(--line-2); background:transparent; color:var(--ink-3); font-size:13.5px; font-weight:600; cursor:pointer; }
 .mem-more:hover, .mem-invite:hover { border-color:var(--accent); color:var(--accent); }
 .mem-empty { color:var(--ink-3); font-size:14.5px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }

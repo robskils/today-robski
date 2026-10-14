@@ -2472,7 +2472,10 @@ async function refreshFriendStatus() {
     // Refresh Home's People section on a real change - but never while the user is
     // typing (e.g. in the notepad), which a full re-render would interrupt.
     const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-    if (changed && state.view && state.view.type === 'home' && !editing) renderHome();
+    if (changed && state.view && !editing) {
+      if (state.view.type === 'home') renderHome();
+      else if (state.view.type === 'daybookpeople') renderDaybookPeople();   // online-first list stays live
+    }
   } catch {}
 }
 function startFriendStatusPoll() {
@@ -3655,7 +3658,7 @@ function peopleBox() {
     const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Daybook people</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Daybook Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
@@ -8086,9 +8089,13 @@ function renderArea() {
   // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
   // ones drop it (toggle tracking from the Wheel of Life page). (Robin, 2026-09-27.)
   const wheelTracked = !(area.props && area.props.reviewOff);
+  // Only surface the Wheel of Life tab once this folio has actually been scored in
+  // a review - no empty "rate it in your weekly review" tab before then. The score
+  // is set in the weekly review, so it appears the moment there's one. (Robin.)
+  const wheelReviewed = Math.min(Number((area.props && area.props.wheelScore) || 0), 5) > 0;
   // Respect the section-visibility setting: a tab you've hidden (Vision / Goals /
   // Bucket list) drops out entirely - no tab button and no panel. (Robin.)
-  const TABS = ['Vision', 'Goals', ...(wheelTracked ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
+  const TABS = ['Vision', 'Goals', ...((wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
   let openTile = state.area_open.tileOpen;
   if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
   const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length};--h:${h}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
@@ -8126,7 +8133,11 @@ function renderArea() {
   // it goes (Tasks, Goals, Pages…) with a chevron, not by a vague descriptor. The
   // two Tasks figures read as "Tasks" (open) and "Done". (Robin.)
   const DASH_STATS = [
-    [notes.length + tables.length, 'Pages & tables', 'Pages and tables'],
+    // Pages and Tables are separate metrics now - each shows only when it has any
+    // (the filter below drops zero counts), so a folio with pages but no tables
+    // shows just Pages. Both open the Pages & tables tile. (Robin, 2026-10-14.)
+    [notes.length, 'Pages', 'Pages and tables'],
+    [tables.length, 'Tables', 'Pages and tables'],
     [openTs.length, 'Tasks', 'Tasks'],
     [doneN, 'Done', 'Tasks'],
     [activeGoals.length, 'Goals', 'Goals'],
@@ -8235,7 +8246,11 @@ function renderArea() {
   // Folio Access and the always-open Notepad share a half-and-half row between the
   // stats strip and the tool cards (each takes a column; one alone stays half
   // width). The Notepad isn't a tile - it's permanently open here. (Robin.)
-  const accessCard = ((area.sharedBy && !memberCount) || secHidden('Shared with')) ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', memberCount ? memberCount + (area.sharedBy ? 0 : 1) : null, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  // Folio Access always shows (unless hidden via Sections). On a folio shared WITH
+  // me it names the owner + me, so you can always see who can see this folio - we
+  // always need it. (Robin, 2026-10-14.)
+  const accessCount = area.sharedBy ? (2 + memberCount) : (memberCount ? memberCount + 1 : null);
+  const accessCard = secHidden('Shared with') ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Folio Access', accessCount, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad"><div class="home-sec-h area-sec-h area-notepad-h"><span class="ash-ic">📝</span><span class="ash-l">Notepad</span></div><div class="area-notepad-body">${areaWallBody(area)}</div></section>`;
   const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
   // Latest Updates: a Facebook-style wall of what everyone with access has done in
@@ -8471,12 +8486,21 @@ function areaMembersBody(area) {
   const LIMIT = 8;
   // The owner's own card leads "Who has access" (so a private folio still reads
   // as "you + invite", not an empty bar). (Robin.)
-  const ownerCard = area.sharedBy ? '' : (() => {
+  const meCard = () => {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
     return `<button class="mem-card mem-card-me" data-open-card title="Your Daybook card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
-  })();
+  };
+  // A folio shared WITH me: name its owner + me (I can't list the owner's full
+  // roster - that's owner-scoped - so show who I can see), plus any co-members the
+  // share list did return. Always rendered, never an empty bar. (Robin.)
+  if (area.sharedBy) {
+    const owner = `<div class="mem-card mem-card-owner" title="Owner of this folio"><span class="fr-av">${esc(initial(area.sharedBy))}</span><span class="mem-name">${esc(area.sharedBy)}</span><span class="mem-you mem-owner">owner</span></div>`;
+    const others = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; }).join('');
+    return `<div class="mem-row">${owner}${meCard()}${others}</div>`;
+  }
+  const ownerCard = meCard();
   const cards = shares.map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; });
   const exp = state.area_open.membersExpanded;
   const shown = exp ? cards : cards.slice(0, LIMIT);
@@ -13902,6 +13926,12 @@ function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
   const fr = (f, action) => friendRow(f, action);
+  // Online contacts first (by the live presence poll), then alphabetical - so
+  // whoever is around right now sits at the top of the list. (Robin, 2026-10-14.)
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const hasStatus = !!(state.friendStatus && Array.isArray(state.friendStatus.online));
+  const friendsSorted = (d.friends || []).map((f) => ({ ...f, online: hasStatus ? onSet.has(f.id) : !!f.online }))
+    .sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0) || (a.name || '').localeCompare(b.name || ''));
   const showSuggest = !opts.skipSuggest && d.suggestions && d.suggestions.length;
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
