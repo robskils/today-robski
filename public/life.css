@@ -416,6 +416,7 @@ button { cursor:pointer; background:none; border:0; }
 .seg { display:inline-flex; flex-wrap:wrap; max-width:100%; gap:3px; background:var(--paper-2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:22px; }
 .seg-b { border:none; background:none; color:var(--ink-2); font-size:15px; font-weight:600; padding:8px 18px; border-radius:9px; cursor:pointer; }
 .seg-b.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); }
+.seg-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--danger,#c4412e); color:#fff; font-size:11px; font-weight:700; line-height:1; vertical-align:middle; }
 .goals-actions { margin-bottom:18px; }
 /* Goals page: main column (per-area vision + goals) beside a bucket-list box. */
 .goals-tabs { display:flex; gap:8px; margin:0 0 18px; }

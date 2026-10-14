@@ -3913,10 +3913,11 @@ async function handleInviteRequest(request, env, json, err) {
 // Admin: the invite requests people have submitted, newest first, with a count of
 // how many arrived since the admin last looked (so the home alert self-clears).
 async function adminInviteRequests(env) {
+  // Every stored request is still pending - inviting or dismissing it deletes the
+  // row - so the count is simply how many are left to deal with. The home alert
+  // persists until they're all handled. (Robin, 2026-10-14.)
   const { results } = await env.DB.prepare('SELECT rowid AS id, name, email, why, created_at FROM invite_requests ORDER BY created_at DESC LIMIT 100').all().catch(() => ({ results: [] }));
-  const seen = (await getSetting(env, 'invite_requests_seen')) || '';
-  const count = (results || []).filter((r) => String(r.created_at || '') > seen).length;
-  return { count, requests: results || [] };
+  return { count: (results || []).length, requests: results || [] };
 }
 // Has this period's review of type rt already been filed? Mirrors the client's
 // reviewsDueToday belt-and-braces: a 'done' review of that type whose doneAt / to /

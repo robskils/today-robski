@@ -2066,7 +2066,8 @@ function renderAdmin() {
   const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
   if (!TABS.some(([k]) => k === a.tab)) a.tab = 'overview';
   const tab = a.tab;
-  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}</button>`).join('')}</div>`;
+  const reqN = (a.requests || []).length;   // pending join requests, badged on the Invites tab so it's findable
+  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}${k === 'invites' && reqN ? ` <span class="seg-badge">${reqN > 99 ? '99+' : reqN}</span>` : ''}</button>`).join('')}</div>`;
 
   const overviewPane = `
     <div class="adm-cards">
@@ -2404,18 +2405,19 @@ function openMessages() {
   }
   openDaybookPeople().catch(() => {});
 }
-// Admin home alert: mark the requests seen (clears the alert) and open Admin on
-// the Invites tab, where they'll live. (Robin, 2026-10-14.)
+// Admin home alert: open Admin on the Invites tab, where the requests live. The
+// alert persists until each request is actually dealt with (invited/dismissed),
+// not merely seen. (Robin, 2026-10-14.)
 function openRequests() {
-  api('/api/admin/invite-requests/seen', { method: 'POST' }).catch(() => {});
-  if (state.inviteReq) state.inviteReq.count = 0;
   state.admin = state.admin || {}; state.admin.tab = 'invites';
   openAdmin().catch(() => {});
 }
 // Remove a join request from the list (after inviting them, or to clear spam).
+// Keeps the home alert count in step so it clears once they're all handled.
 async function dismissRequest(id) {
   try { await api('/api/admin/invite-requests/dismiss', { method: 'POST', body: JSON.stringify({ id: Number(id) }) }); } catch {}
   if (state.admin) state.admin.requests = (state.admin.requests || []).filter((r) => String(r.id) !== String(id));
+  if (state.inviteReq) state.inviteReq.count = (state.admin && state.admin.requests || []).length;
   renderAdmin();
 }
 // Unread Daybook MESSAGES (not friend requests) - the signal we make loud.
