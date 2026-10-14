@@ -4583,6 +4583,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .home-invites { border-color:color-mix(in srgb,var(--accent) 38%,var(--line)); background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 8%,var(--card)), var(--card) 62%); }
 .home-invites > .home-sec-h { color:color-mix(in srgb,var(--accent) 70%,var(--ink)); }
 .home-invites .fr-intro { margin-top:0; }
+/* New-message alert pinned to the very top of Home - a message from a contact is
+   usually time-sensitive, so it leads. Taps through to the chat. (Robin, 2026-10-14.) */
+.home-msgalert { display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:14px 18px; margin:0 0 16px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line)); border-radius:16px; background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 13%,var(--card)), var(--card) 66%); box-shadow:var(--shadow); cursor:pointer; transition:transform .1s, box-shadow .12s, border-color .12s; }
+.home-msgalert:hover { transform:translateY(-1px); border-color:var(--accent); box-shadow:0 13px 28px -16px rgba(0,0,0,.34); }
+.hma-ic { flex:none; width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); }
+.hma-body { display:flex; flex-direction:column; min-width:0; flex:1; }
+.hma-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; line-height:1.1; color:var(--ink); }
+.hma-sub { font-size:13px; color:var(--ink-2); margin-top:2px; }
+.hma-go { flex:none; color:var(--accent); font-size:19px; font-weight:700; }
 .home-main-add { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin-top:16px; }
 .hma-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:var(--ink-3); font-weight:700; }
 .hma-chip { font-size:13.5px; font-weight:600; color:var(--ink-2); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:7px 13px; cursor:pointer; transition:border-color .12s, color .12s; }

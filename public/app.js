@@ -5058,6 +5058,24 @@ function alertsHtml() {
 }
 // The day's teaching, moved here from Today. Dismissible - once you've read it,
 // the × hides it for the rest of the day (per-device).
+// A message from a contact is usually time-sensitive, so it sits right at the top
+// of Home - above the quote and everything else. Shows only when one's waiting;
+// taps through to the chat. (Robin, 2026-10-14.)
+function homeMsgAlertHtml() {
+  const n = unreadMsgs();
+  if (!n) return '';
+  const by = (state.friendStatus && state.friendStatus.unreadBy) || {};
+  const ids = Object.keys(by).filter((k) => by[k] > 0);
+  let who = '';
+  if (ids.length === 1) { const f = ((state.friends && state.friends.friends) || []).find((x) => x.id === Number(ids[0])); who = (f && f.name) || ''; }
+  const title = ids.length > 1 ? `${n} new messages` : (who ? `New message from ${esc(who)}` : 'New message');
+  const sub = ids.length > 1 ? `From ${ids.length} people · tap to read` : 'Tap to reply';
+  return `<button class="home-msgalert" data-open-messages>
+    <span class="hma-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg></span>
+    <span class="hma-body"><span class="hma-t">${title}</span><span class="hma-sub">${sub}</span></span>
+    <span class="hma-go" aria-hidden="true">→</span>
+  </button>`;
+}
 function homeQuoteHtml() {
   // The server already gates the quote (off / dismissed today), so if it sent one,
   // show it. Closing it dismisses the day's quote everywhere (see the × handler).
@@ -5386,6 +5404,7 @@ function renderHome() {
       ${alertsHtml()}
       </div>
       <div class="home-scroll">
+      ${homeMsgAlertHtml()}
       ${homeQuoteHtml()}
       ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
@@ -13310,12 +13329,49 @@ const ADDR_FIELDS = [['street', 'Street'], ['city', 'City'], ['postcode', 'Postc
 // One canonical list of country names, so every contact's country is spelled the
 // same way. Picked from a dropdown rather than typed free-hand.
 const COUNTRIES = ['Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada', 'Cape Verde', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Congo (DRC)', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czechia', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hong Kong', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'];
+// Where you are, as a COUNTRIES name - from the timezone (best signal for where
+// you physically are), falling back to the device locale's region. Cached once.
+// Used to float your own country to the top of the country dropdown. (Robin.)
+const TZ_CC = {
+  'Europe/Lisbon': 'PT', 'Atlantic/Azores': 'PT', 'Atlantic/Madeira': 'PT', 'Europe/Madrid': 'ES', 'Atlantic/Canary': 'ES',
+  'Europe/London': 'GB', 'Europe/Dublin': 'IE', 'Europe/Paris': 'FR', 'Europe/Berlin': 'DE', 'Europe/Rome': 'IT',
+  'Europe/Amsterdam': 'NL', 'Europe/Brussels': 'BE', 'Europe/Zurich': 'CH', 'Europe/Vienna': 'AT', 'Europe/Stockholm': 'SE',
+  'Europe/Oslo': 'NO', 'Europe/Copenhagen': 'DK', 'Europe/Helsinki': 'FI', 'Europe/Warsaw': 'PL', 'Europe/Prague': 'CZ',
+  'Europe/Budapest': 'HU', 'Europe/Athens': 'GR', 'Europe/Bucharest': 'RO', 'Europe/Sofia': 'BG', 'Europe/Zagreb': 'HR',
+  'Europe/Belgrade': 'RS', 'Europe/Bratislava': 'SK', 'Europe/Ljubljana': 'SI', 'Europe/Luxembourg': 'LU', 'Europe/Vilnius': 'LT',
+  'Europe/Riga': 'LV', 'Europe/Tallinn': 'EE', 'Europe/Reykjavik': 'IS', 'Europe/Moscow': 'RU', 'Europe/Kyiv': 'UA', 'Europe/Kiev': 'UA', 'Europe/Istanbul': 'TR',
+  'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US', 'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US', 'Pacific/Honolulu': 'US',
+  'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA', 'America/Mexico_City': 'MX', 'America/Sao_Paulo': 'BR',
+  'America/Argentina/Buenos_Aires': 'AR', 'America/Bogota': 'CO', 'America/Santiago': 'CL', 'America/Lima': 'PE',
+  'Asia/Tokyo': 'JP', 'Asia/Shanghai': 'CN', 'Asia/Hong_Kong': 'HK', 'Asia/Singapore': 'SG', 'Asia/Seoul': 'KR',
+  'Asia/Kolkata': 'IN', 'Asia/Dubai': 'AE', 'Asia/Jerusalem': 'IL', 'Asia/Bangkok': 'TH', 'Asia/Jakarta': 'ID',
+  'Asia/Manila': 'PH', 'Asia/Kuala_Lumpur': 'MY', 'Asia/Taipei': 'TW', 'Asia/Riyadh': 'SA', 'Asia/Karachi': 'PK', 'Asia/Dhaka': 'BD',
+  'Australia/Sydney': 'AU', 'Australia/Melbourne': 'AU', 'Australia/Perth': 'AU', 'Australia/Brisbane': 'AU', 'Pacific/Auckland': 'NZ',
+  'Africa/Johannesburg': 'ZA', 'Africa/Cairo': 'EG', 'Africa/Lagos': 'NG', 'Africa/Nairobi': 'KE', 'Africa/Casablanca': 'MA', 'Africa/Accra': 'GH', 'Africa/Tunis': 'TN', 'Africa/Algiers': 'DZ',
+};
+let _localCountry;
+function localCountry() {
+  if (_localCountry !== undefined) return _localCountry;
+  let cc = '';
+  try { cc = TZ_CC[Intl.DateTimeFormat().resolvedOptions().timeZone || ''] || ''; } catch {}
+  if (!cc) { try { const hit = (navigator.languages || [navigator.language || '']).find((l) => /-[A-Za-z]{2}$/.test(l || '')); if (hit) cc = hit.split('-').pop().toUpperCase(); } catch {} }
+  let name = '';
+  if (cc) { try { name = new Intl.DisplayNames(['en'], { type: 'region' }).of(cc) || ''; } catch {} }
+  const FIX = { "Côte d’Ivoire": 'Ivory Coast', "Côte d'Ivoire": 'Ivory Coast', 'Myanmar (Burma)': 'Myanmar', 'Congo - Kinshasa': 'Congo (DRC)', 'Congo - Brazzaville': 'Congo', 'Czech Republic': 'Czechia' };
+  name = FIX[name] || name;
+  _localCountry = COUNTRIES.includes(name) ? name : '';
+  return _localCountry;
+}
 // A country dropdown. Any existing value not on the list is kept as its own
 // selected option, so a legacy or imported spelling is never silently dropped.
+// Your own country (from the timezone) floats to the top for a quick pick.
 function countrySelect(id, current, cls) {
   const cur = (current || '').trim();
   const extra = cur && !COUNTRIES.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : '';
-  return `<select class="${cls}" id="${id}"><option value="">Country…</option>${extra}${COUNTRIES.map((c) => `<option value="${esc(c)}"${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`;
+  const home = localCountry();
+  const pinned = home ? `<option value="${esc(home)}"${home === cur ? ' selected' : ''}>${esc(home)}</option><option value="" disabled>──────────</option>` : '';
+  const list = home ? COUNTRIES.filter((c) => c !== home) : COUNTRIES;
+  return `<select class="${cls}" id="${id}"><option value=""${cur ? '' : ' selected'}>Country…</option>${extra}${pinned}${list.map((c) => `<option value="${esc(c)}"${c === cur ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select>`;
 }
 function formatAddress(a) { if (!a) return ''; if (typeof a === 'string') return a; return ADDR_FIELDS.map(([k]) => a[k]).filter(Boolean).join(', '); }
 const addrField = (a, k) => (!a ? '' : typeof a === 'string' ? (k === 'street' ? a : '') : (a[k] || ''));
