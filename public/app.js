@@ -220,7 +220,7 @@ const state = {
   tabs: [], activeTab: null,
   nav: {
     order: (() => { const def = ['favs', 'notes', 'areas', 'people']; const o = readLS('life.nav.order', null); const c = Array.isArray(o) ? o.filter((k) => def.includes(k)) : []; for (const k of def) if (!c.includes(k)) c.push(k); return c; })(),
-    collapsed: readLS('life.nav.collapsed', {}),
+    collapsed: (() => { const c = readLS('life.nav.collapsed', {}); return (c && typeof c === 'object' && !Array.isArray(c)) ? c : {}; })(),
   },
   pal: { open: false, q: '', items: [], sel: 0 },
 };
@@ -3638,7 +3638,16 @@ function navMobileListHtml(v) {
 }
 function navGridHtml(v) {
   const NI = navItems(v);
-  const grp = (label, items) => { const on = items.filter(Boolean); return on.length ? `<section class="nav-sec-box">${label ? `<div class="nav-grp">${esc(label)}</div>` : ''}<div class="nav-sec-items">${on.join('')}</div></section>` : ''; };
+  // Each group is collapsible, in the same chevron-header style as the Starred /
+  // Recent / Folios sections, with its open/closed state remembered. (Robin.)
+  const grp = (key, label, items) => {
+    const on = items.filter(Boolean);
+    if (!on.length) return '';
+    const ck = 'grp.' + key;
+    const collapsed = !!state.nav.collapsed[ck];
+    const head = label ? `<div class="nav-grp nav-grp-h" data-sec-toggle="${ck}" title="${collapsed ? 'Expand' : 'Collapse'}"><span class="nav-chev">${collapsed ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(label)}</span></div>` : '';
+    return `<section class="nav-sec-box">${head}${collapsed ? '' : `<div class="nav-sec-items">${on.join('')}</div>`}</section>`;
+  };
   // Home + Mail pinned, then Robin's mind-map branches - Daily / Meaningful /
   // People / General Tools. There's no "Capture" band: the make-a-new verbs live
   // in the "+ New" menu (breadcrumb row) and the Home buttons instead.
@@ -3648,12 +3657,12 @@ function navGridHtml(v) {
   // Tools leads with Home (top-left), then the mains, and ends with Discover
   // (moved out of the Today group). Today keeps the day-planning trio below. (Robin.)
   return `<div class="nav-grid">
-    ${grp(t('nav.grp.main'), [NI.home, NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
-    ${grp(t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
+    ${grp('main', t('nav.grp.main'), [NI.home, NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
+    ${grp('daily', t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
-    ${grp(t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
-    ${grp(t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.iching, NI.spirit, NI.meditation, NI.insights])}
-    ${grp('Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
+    ${grp('money', t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
+    ${grp('wellbeing', t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.iching, NI.spirit, NI.meditation, NI.insights])}
+    ${grp('reviews', 'Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
@@ -3678,7 +3687,8 @@ function peopleBox() {
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
-  return `<section class="nav-sec-box"><div class="nav-grp">${esc(t('nav.grp.people'))}</div><div class="nav-sec-items">${items.join('')}</div>${friendsBlock}</section>`;
+  const gcol = !!state.nav.collapsed['grp.people'];
+  return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
 }
 // The live Daybook-friends list (online first), reused inside the People box.
 function navPeopleRows() {
@@ -21124,8 +21134,11 @@ document.addEventListener('pointercancel', areaSecDragEnd);
   const add = () => { if (document.body && !document.querySelector('.nav-resize')) { const h = document.createElement('div'); h.className = 'nav-resize'; h.setAttribute('data-nav-resize', ''); h.title = 'Drag to resize the sidebar'; document.body.appendChild(h); } };
   if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
   // Restore the collapsed sidebar (desktop only - the CSS gates it above 820px, so
-  // a remembered collapse never hides the phone's drawer).
-  const col = () => { try { if (localStorage.getItem('life.nav.collapsed') === '1') document.body.classList.add('nav-collapsed'); } catch {} };
+  // a remembered collapse never hides the phone's drawer). NB its own key: the
+  // whole-sidebar collapse must NOT share 'life.nav.collapsed', which holds the
+  // per-section collapse MAP - sharing it clobbered that map and broke the
+  // Starred/Recent expand-collapse. (Robin, 2026-10-14.)
+  const col = () => { try { if (localStorage.getItem('life.sidebar.collapsed') === '1') document.body.classList.add('nav-collapsed'); } catch {} };
   if (document.body) col(); else document.addEventListener('DOMContentLoaded', col);
 })();
 // Toggle the sidebar open/closed and remember it. Desktop-only control; mobile
@@ -21133,7 +21146,7 @@ document.addEventListener('pointercancel', areaSecDragEnd);
 function toggleSidebar() {
   const on = !document.body.classList.contains('nav-collapsed');
   document.body.classList.toggle('nav-collapsed', on);
-  try { localStorage.setItem('life.nav.collapsed', on ? '1' : '0'); } catch {}
+  try { localStorage.setItem('life.sidebar.collapsed', on ? '1' : '0'); } catch {}
 }
 // Give every search box a native clear "X": mark search inputs type=search so the
 // browser shows a clear button once you've typed. Clearing fires an input event,

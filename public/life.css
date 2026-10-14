@@ -2383,6 +2383,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-sec-items .nav-full { grid-column:1 / -1; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
   font-weight:700; padding:8px 5px 6px; }
+/* A collapsible group header - same chevron style as the Starred/Recent/Folios
+   section headers, so the whole sidebar reads as one family. (Robin, 2026-10-14.) */
+.nav-grp-h { display:flex; align-items:center; gap:5px; cursor:pointer; padding:6px 6px 5px; border-radius:8px; }
+.nav-grp-h:hover { background:var(--paper); }
+.nav-grp-t { flex:1; min-width:0; }
 .nav-div { grid-column:1 / -1; height:1px; background:var(--line); margin:12px 8px 8px; }
 .nav-item {
   display:flex; align-items:center; gap:8px; width:100%; text-align:left;
