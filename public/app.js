@@ -136,16 +136,32 @@ function toast(m, undoFn) {
 // runs at most once, so the button and the shortcut can't double-fire.
 let undoStack = [];
 function pushUndo(label, undoFn) {
-  let done = false;
-  const run = async () => { if (done) return; done = true; try { await undoFn(); toast('Undone'); } catch (e) { toast('Could not undo'); } };
-  undoStack.push({ label, run });
+  const entry = { label, done: false };
+  // Runs at most once (done guard), whether fired by ⌘Z, the toast or the button.
+  entry.run = async () => { if (entry.done) return; entry.done = true; try { await undoFn(); toast('Undone'); } catch (e) { toast('Could not undo'); } finally { refreshUndoBtn(); } };
+  undoStack.push(entry);
   if (undoStack.length > 30) undoStack.shift();
-  toast(label, run);
+  toast(label, entry.run);
+  refreshUndoBtn();
 }
-async function doUndo() {
+// Is there anything still undoable (an entry that hasn't already been run)?
+function hasUndo() { return undoStack.some((e) => !e.done); }
+function doUndo() {
+  while (undoStack.length && undoStack[undoStack.length - 1].done) undoStack.pop();   // drop spent entries
   const e = undoStack.pop();
-  if (!e) { toast('Nothing to undo'); return; }
-  await e.run();
+  refreshUndoBtn();
+  if (!e) { toast('Nothing to undo'); return Promise.resolve(); }
+  return e.run();
+}
+// The floating Undo button: shown whenever something is undoable, with the latest
+// action in its tooltip. The keyboard ⌘Z path works with or without it. (Robin.)
+function refreshUndoBtn() {
+  try {
+    const any = hasUndo();
+    document.body.classList.toggle('has-undo', any);
+    const b = document.getElementById('undo-fab');
+    if (b && any) { const last = [...undoStack].reverse().find((e) => !e.done); b.title = last ? `Undo: ${last.label}` : 'Undo'; }
+  } catch {}
 }
 document.addEventListener('keydown', (ev) => {
   if (!(ev.metaKey || ev.ctrlKey) || ev.shiftKey || ev.altKey) return;
@@ -8032,7 +8048,9 @@ function renderArea() {
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
-  const canEditArea = !area.sharedBy;
+  // You can add to a folio you own, OR one shared with you WITH edit access -
+  // edit access is good enough; you don't have to own it. (Robin, 2026-10-14.)
+  const canEditArea = !area.sharedBy || !!area.canEdit;
   // "Preview as member": on a folio you own AND share, you can flip to see what
   // the people you share with see - the bits you've kept private are dimmed and
   // stamped "only you". Owner-only, and only worth offering once it's shared. (Robin.)
@@ -19494,6 +19512,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-tab-new]')) { newTab(); return; }
   if (t.closest('[data-util-toggle]')) { toggleNavUtil(); return; }
   if (t.closest('[data-nav-toggle]')) { toggleSidebar(); return; }
+  if (t.closest('[data-undo]')) { doUndo(); return; }
   if (t.closest('[data-nav-drawer]')) { toggleNavDrawer(); return; }
   if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }

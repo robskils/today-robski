@@ -2113,6 +2113,24 @@ async function sharedAreas(env, uid) {
     return b;
   });
 }
+// Blocks that MEMBERS of a shared folio have added to it (area-tagged, not
+// private): a folio you were given edit access to is genuinely collaborative, so
+// everyone with access sees each other's contributions - add a file, a page, a
+// task and it stays and shows for all. Members = the area's share recipients.
+// Callers must already have confirmed the requester owns or can access the area.
+// (Robin, 2026-10-14.)
+async function areaMemberBlocks(env, areaId, kind, wantArchived) {
+  const cl = [
+    'user_id IN (SELECT friend_id FROM shares WHERE block_id = ?)',
+    "(json_extract(props,'$.area') = ? OR EXISTS (SELECT 1 FROM json_each(json_extract(props,'$.areas')) WHERE value = ?))",
+    "IFNULL(json_extract(props,'$.private'),0) = 0",
+  ];
+  const ar = [areaId, areaId, areaId];
+  if (kind) { cl.push('kind = ?'); ar.push(kind); }
+  if (!wantArchived) cl.push('archived = 0');
+  const { results } = await env.DB.prepare(`SELECT * FROM blocks WHERE ${cl.join(' AND ')} ORDER BY position, created_at`).bind(...ar).all().catch(() => ({ results: [] }));
+  return (results || []).map(parseBlock);
+}
 async function listBlocks(request, env, url) {
   const kind = url.searchParams.get('kind');
   const wantArchived = url.searchParams.get('archived') === '1';
@@ -2156,7 +2174,10 @@ async function listBlocks(request, env, url) {
         ar.push(env.uid);
       }
       const { results } = await env.DB.prepare(`SELECT * FROM blocks WHERE ${cl.join(' AND ')} ORDER BY position, created_at`).bind(...ar).all();
-      return json(results.map(parseBlock), request);
+      // Plus everyone's contributions to this folio (mine and other members'), so
+      // what I add here shows up - access was confirmed above (acc && !acc.mine).
+      const mem = await areaMemberBlocks(env, aid, kind, wantArchived);
+      return json(results.map(parseBlock).concat(mem), request);
     }
   }
   const clauses = ['user_id = ?'];
@@ -2181,7 +2202,15 @@ async function listBlocks(request, env, url) {
   const { results } = await env.DB.prepare(
     `SELECT * FROM blocks ${where} ORDER BY position, created_at`,
   ).bind(...args).all();
-  return json(results.map(parseBlock), request);
+  let out = results.map(parseBlock);
+  // Owner viewing their own folio: fold in what members have contributed to it.
+  // Gated on ownership so an area id alone never exposes members' blocks.
+  if (url.searchParams.has('area')) {
+    const aid = url.searchParams.get('area');
+    const own = await env.DB.prepare('SELECT user_id FROM blocks WHERE id = ?').bind(aid).first().catch(() => null);
+    if (own && own.user_id === env.uid) out = out.concat(await areaMemberBlocks(env, aid, kind, wantArchived));
+  }
+  return json(out, request);
 }
 
 async function updateBlock(request, env, id) {

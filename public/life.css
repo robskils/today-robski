@@ -6946,6 +6946,23 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .toast:has(.toast-undo) { display:inline-flex; align-items:center; gap:14px; padding:10px 12px 10px 20px; }
 .toast-undo { flex:none; border:0; background:color-mix(in srgb,var(--paper) 22%,transparent); color:var(--paper); font:inherit; font-weight:600; padding:6px 14px; border-radius:999px; cursor:pointer; }
 .toast-undo:hover { background:color-mix(in srgb,var(--paper) 34%,transparent); }
+/* The floating Undo button - an always-available counterpart to ⌘Z and the toast's
+   Undo, so you can reverse your last change on touch too, after the toast has gone.
+   Shows only when there's something to undo; bottom-right, clear of the centre
+   toast, and lifted above the phone's tab bar. (Robin, 2026-10-14.) */
+.undo-fab { display:none; }
+body.has-undo .undo-fab {
+  display:inline-flex; align-items:center; gap:8px;
+  position:fixed; right:18px; bottom:20px; z-index:46;
+  border:1px solid var(--line-2); background:var(--card); color:var(--ink-2);
+  font:inherit; font-weight:600; font-size:14px; padding:10px 16px 10px 14px;
+  border-radius:999px; box-shadow:0 10px 30px -10px rgba(0,0,0,.4); cursor:pointer;
+  opacity:.92; transition:color .12s,border-color .12s,background .12s,opacity .12s,transform .1s;
+}
+body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); opacity:1; transform:translateY(-1px); }
+.undo-fab:active { transform:none; }
+.undo-fab .uf-ic { font-size:18px; line-height:1; }
+@media (max-width:820px){ body.has-undo .undo-fab { right:12px; bottom:calc(66px + env(safe-area-inset-bottom)); } }
 
 @media (max-width:760px){
   .grid { grid-template-columns:1fr; gap:24px; }
