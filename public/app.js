@@ -7822,7 +7822,7 @@ function areaGoto(key) {
   }
   // Every other section is now a tile in the tools grid: open the matching tile
   // and scroll to it. (Robin: keep the stats buttons - they jump to the cards.)
-  const GOTO_TILE = { 'Pages and tables': 'pages', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
+  const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
   const id = GOTO_TILE[key];
   if (id && state.area_open) { state.area_open.toolTile = id; renderArea(); settle(`#pane [data-area-tool="${id}"]`); return; }
   settle('#pane .area-tools');
@@ -8027,6 +8027,10 @@ function renderArea() {
   const capArr = (key, arr) => arr;
   const secMore = () => '';
   const orderedNoteCards = capArr('Pages and tables', noteTblOrdered).map(ntCard).join('');
+  // Pages and Tables render as their own tiles now, so split the ordered list. The
+  // saved order (noteOrder) is shared; each tile just shows its own kind. (Robin.)
+  const pageCards = noteTblOrdered.filter((n) => n.kind !== 'table').map(ntCard).join('');
+  const tableCards = noteTblOrdered.filter((n) => n.kind === 'table').map(ntCard).join('');
   // Everything else that can carry this area, each linking to its own tool.
   const emailCards = capArr('Emails', emails).map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const contactCards = capArr('Contacts', contacts).map((c) => contactCardHtml(c)).join('');
@@ -8040,6 +8044,7 @@ function renderArea() {
   // The area's sections are equal icon tiles; the chosen one expands below (the
   // pattern Robin liked on the Toolbox + Home). Order fixed and sensible.
   const notesTotal = starredNotes.length + otherNotes.length + tables.length;
+  const pagesCount = starredNotes.length + otherNotes.length;
   const memberCount = (state.area_open.shares && state.area_open.shares.length) || 0;
   const wheelNow = Math.min((area.props && area.props.wheelScore) || 0, 5) || null;
   const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Pages and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
@@ -8094,6 +8099,8 @@ function renderArea() {
     ? taskKanbanHtml(areaBoardList)
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>${secMore('Pages and tables', noteTblOrdered.length)}` : '<div class="home-empty">No notes or tables here yet.</div>';
+  const pagesBody = pagesCount ? `<div class="tbl-cards noteord-cards">${pageCards}</div>` : '<div class="home-empty">No pages here yet.</div>';
+  const tablesBody = tables.length ? `<div class="tbl-cards noteord-cards">${tableCards}</div>` : '<div class="home-empty">No tables here yet.</div>';
   // Everything below Vision & Goals and the stats strip is now one grid of square
   // cards (the SAME tiles as settings): one card per activated tool/section, and
   // tapping a card expands its content below. The registry + grid are built lower
@@ -8154,8 +8161,8 @@ function renderArea() {
     // Pages and Tables are separate metrics now - each shows only when it has any
     // (the filter below drops zero counts), so a folio with pages but no tables
     // shows just Pages. Both open the Pages & tables tile. (Robin, 2026-10-14.)
-    [notes.length, 'Pages', 'Pages and tables'],
-    [tables.length, 'Tables', 'Pages and tables'],
+    [notes.length, 'Pages', 'Pages'],
+    [tables.length, 'Tables', 'Tables'],
     [openTs.length, 'Tasks', 'Tasks'],
     [doneN, 'Done', 'Tasks'],
     [activeGoals.length, 'Goals', 'Goals'],
@@ -8242,9 +8249,10 @@ function renderArea() {
   // the middle, and Books & Films + Reflections close out the list. (Robin.)
   const SECTIONS = [
     { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
-    { id: 'pages', ic: '▤', label: 'Pages & tables', show: toolShow('Pages and tables', !!notesTotal), count: notesTotal || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => (notesTotal ? notesBody : '<div class="home-empty">No pages or tables here yet.</div>') },
+    { id: 'pages', ic: '▤', label: 'Pages', show: toolShow('Pages and tables', !!pagesCount), count: pagesCount || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New page</button>'), body: () => pagesBody },
+    { id: 'tables', ic: '▦', label: 'Tables', show: !secHidden('Pages and tables') && !!tables.length, count: tables.length || null, body: () => tablesBody },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: emailsBody },
-    { id: 'files', ic: '📎', label: 'Files', show: toolShow('Files', !!attList.length), count: attList.length || null, body: () => areaAttachHtml(area) },
+    { id: 'files', ic: '📎', label: 'Files', show: !secHidden('Files'), count: attList.length || null, body: () => areaAttachHtml(area) },
     { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
     { id: 'week', ic: '◑', label: 'Calendar', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
     { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>` : '<div class="home-empty">No contacts here yet.</div>') },
@@ -20723,9 +20731,15 @@ function noteordDropTarget(container, x, y, draggedId) {
 function reorderAreaNotes(draggedId, target) {
   if (!target) return;
   const area = state.area_open && state.area_open.area; if (!area) return;
-  const ordered = [...document.querySelectorAll('.noteord-cards [data-noteord]')].map((el) => el.dataset.noteord).filter((id) => id !== draggedId);
-  let i = ordered.indexOf(target.beforeId); if (i < 0) i = ordered.length; if (target.after) i += 1;
-  ordered.splice(i, 0, draggedId);
+  const visible = [...document.querySelectorAll('.noteord-cards [data-noteord]')].map((el) => el.dataset.noteord).filter((id) => id !== draggedId);
+  let i = visible.indexOf(target.beforeId); if (i < 0) i = visible.length; if (target.after) i += 1;
+  visible.splice(i, 0, draggedId);
+  // Pages and Tables are separate tiles, so only one kind is on screen at a time.
+  // Keep the saved order of whatever isn't shown (e.g. tables while Pages is open)
+  // so reordering one kind never drops the other's manual order. (Robin, 2026-10-14.)
+  const prev = (area.props && Array.isArray(area.props.noteOrder)) ? area.props.noteOrder : [];
+  const seen = new Set(visible);
+  const ordered = [...visible, ...prev.filter((id) => !seen.has(id))];
   area.props = area.props || {}; area.props.noteOrder = ordered;
   renderArea();
   api('/api/blocks/' + area.id, { method: 'PATCH', body: JSON.stringify({ props: { noteOrder: ordered } }) }).catch(() => {});
