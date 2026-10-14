@@ -3544,7 +3544,7 @@ function navItems(v) {
     iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
     insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
-    contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
@@ -3625,7 +3625,7 @@ function navGridHtml(v) {
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${friendPending() ? `<span class="nav-badge ${unreadMsgs() ? 'has-msg' : ''}">${friendPending() > 99 ? '99+' : friendPending()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}<span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Daybook</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
@@ -13766,15 +13766,23 @@ function openContactMenu(id, x, y) {
 // email against its accounts (worker getFriends), and this tells you, up front,
 // which of your people are already on Daybook - tap to connect.
 function contactsDaybookBannerHtml() {
-  // Only surface good news: a contact of yours is on Daybook, ready to connect.
-  // No "checking…" or "none yet" noise. (Robin, 2026-10-14.)
-  const sug = (state.friends && state.friends.suggestions) || [];
-  if (!sug.length) return '';
+  // Surface what the Contacts badge is actually about: connection requests to
+  // accept (what the sidebar count means), then your contacts who are on Daybook
+  // and ready to connect. No "checking…"/"none yet" noise. (Robin, 2026-10-14.)
+  const d = state.friends || {};
+  const incoming = d.incoming || [];
+  const sug = d.suggestions || [];
+  if (!incoming.length && !sug.length) return '';
+  const reqHead = incoming.length === 1 ? 'Someone wants to connect with you' : `${incoming.length} people want to connect with you`;
+  const reqBlock = incoming.length ? `<div class="cts-dbb-h"><span>✦ ${reqHead} on Daybook</span></div>
+      <div class="cts-dbb-list">${incoming.map((f) => `<span class="cts-dbb-person cts-dbb-reqp"><span class="cts-dbb-who"><span class="fr-av">${esc(initial(f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.name || 'Someone')}</span></span><button class="cts-dbb-accept" data-friend-accept="${f.id}">Accept</button><button class="cts-dbb-x" data-friend-remove="${f.id}" title="Ignore" aria-label="Ignore">×</button></span>`).join('')}</div>` : '';
   const n = sug.length;
-  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Daybook friends below</div>` : '';
-  const head = n === 1 ? 'You have a friend on Daybook — connect?' : `You have ${n} friends on Daybook — connect?`;
-  return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
+  const sugRows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Daybook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Daybook Contacts below</div>` : '';
+  const sugHead = n === 1 ? 'A friend of yours is on Daybook — connect?' : `${n} friends of yours are on Daybook — connect?`;
+  const sugBlock = n ? `<div class="cts-dbb-h"${incoming.length ? ' style="margin-top:16px"' : ''}><span>✦ ${sugHead}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div>
+      <div class="cts-dbb-list">${sugRows}</div>${more}` : '';
+  return `<div class="cts-dbbanner">${reqBlock}${sugBlock}</div>`;
 }
 // The Daybook-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
