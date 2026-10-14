@@ -13811,7 +13811,7 @@ function renderContacts() {
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${contactAreaBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Daybook - connect and share">❖ Daybook Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
       ${contactsDaybookBannerHtml()}
       ${contactSelBarHtml()}
