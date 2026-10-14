@@ -2278,18 +2278,20 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 body.resizing-nav { cursor:col-resize; user-select:none; }
 @media (max-width:820px){ .nav-resize { display:none; } }
 /* Collapse / reopen the sidebar to reclaim width on smaller screens. One quiet
-   fixed control toggles it: it floats in the sidebar's empty top-left corner when
-   open, and at the main area's top-left when collapsed. Desktop only - the phone
-   already has the ☰ drawer. State persists (life.nav.collapsed). */
+   fixed control toggles it: when open it sits by the sidebar's right edge (the
+   divider - where a collapse control conventionally lives), and when collapsed it
+   drops to the main area's top-left to reopen. Desktop only - the phone already
+   has the ☰ drawer. State persists (life.nav.collapsed). */
 .nav-toggle { display:none; }
 .nav-toggle .ntg-o { display:none; }
 @media (min-width:821px){
-  .nav-toggle { position:fixed; top:9px; left:11px; z-index:50; width:30px; height:30px;
+  .nav-toggle { position:fixed; top:9px; left:calc(var(--sidebar-w,326px) - 42px); z-index:50; width:30px; height:30px;
     display:flex; align-items:center; justify-content:center; border-radius:50%;
     border:1.5px solid var(--line-2); background:var(--card); color:var(--ink-3);
     font-size:16px; line-height:1; cursor:pointer; box-shadow:var(--shadow);
-    opacity:.6; transition:color .12s,border-color .12s,background .12s,opacity .12s; }
+    opacity:.6; transition:color .12s,border-color .12s,background .12s,opacity .12s,left .18s ease; }
   .nav-toggle:hover { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); opacity:1; }
+  body.nav-collapsed .nav-toggle { left:11px; }
   body.nav-collapsed .nav-toggle .ntg-c { display:none; }
   body.nav-collapsed .nav-toggle .ntg-o { display:inline; }
   body.nav-collapsed .app-shell { grid-template-columns:minmax(0,1fr); }

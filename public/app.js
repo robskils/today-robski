@@ -7460,6 +7460,10 @@ async function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
   renderAreasList();   // paint immediately with whatever summary we have
+  // Re-pull folios shared with me every time the page opens, so a folio someone
+  // just shared shows up without a full app reload (the cache can be stale). It
+  // also refreshes the sidebar list. (Robin, 2026-10-14.)
+  api('/api/blocks?kind=area&shared=1').then((r) => { state.sharedAreas = Array.isArray(r) ? r : []; if (state.view && state.view.type === 'areas') { renderNav(); renderAreasList(); } }).catch(() => {});
   try { const r = await api('/api/areas/summary'); state.areaSummary = r.summary || {}; if (state.view && state.view.type === 'areas') renderAreasList(); }
   catch { state.areaSummary = state.areaSummary || {}; }
 }
@@ -7498,15 +7502,20 @@ function renderAreasList() {
   const scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
   if (state.sharedAreas === undefined) loadSharedAreas().then(() => { if (state.view && state.view.type === 'areas') renderAreasList(); });
   const canDrag = sortMode === 'rank' && scope !== 'shared';
+  // A folio's recency for the "recently active" sort. My own come from the summary;
+  // folios shared with me aren't in my summary, so fall back to the block's own
+  // last-updated - a just-shared or just-edited shared folio still sorts to the top.
+  const activityTs = (a) => { const l = S(a.id).last; if (l) return l; const u = a.updated_at || a.created_at; return u ? new Date(u).getTime() : 0; };
   const applySort = (list) => {
-    if (sortMode === 'active') return list.slice().sort((a, b) => (S(b.id).last || 0) - (S(a.id).last || 0));
+    if (sortMode === 'active') return list.slice().sort((a, b) => activityTs(b) - activityTs(a));
     if (sortMode === 'tasks') return list.slice().sort((a, b) => (S(b.id).tasks || 0) - (S(a.id).tasks || 0));
     if (sortMode === 'name') return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    return list;   // 'rank' keeps areasByRank's order
+    return list;   // 'rank' keeps the given order (my ranked folios, shared ones appended)
   };
-  const mine = applySort(areasByRank());
-  const received = (state.sharedAreas || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const favAreas = mine.filter((a) => a.props && a.props.fav);
+  const mineRanked = areasByRank();
+  const received = (state.sharedAreas || []).slice();
+  const favAreas = mineRanked.filter((a) => a.props && a.props.fav);
+  const renderCard = (a) => (a.sharedBy ? sharedCard(a) : card(a));
   // A folio I own: the full card with live metrics, draggable in "My order".
   const card = (a) => {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
@@ -7556,10 +7565,14 @@ function renderAreasList() {
   </div>`;
   const sections = [];
   if (scope !== 'shared' && favAreas.length && canDrag) sections.push(`<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>`);
-  if (scope !== 'shared') sections.push(`<section class="home-sec"><div class="home-sec-h">${scope === 'all' ? 'Yours' : 'Your folios'} · ${mine.length}</div>
-      <div class="area-cards area-gcards">${mine.map(card).join('') || '<div class="empty">No folios yet.</div>'}</div></section>`);
-  if (scope === 'shared' || (scope === 'all' && received.length)) sections.push(`<section class="home-sec"><div class="home-sec-h">Shared with you · ${received.length}</div>
-      <div class="area-cards area-gcards">${received.map(sharedCard).join('') || '<div class="empty">Nothing shared with you yet. When someone shares a Folio with you, it turns up here.</div>'}</div></section>`);
+  // One unified, sorted grid for the chosen scope. In All, my own folios and the
+  // folios shared with me sit together and sort together - so a recently-active
+  // shared folio shows up top, not quarantined at the bottom - each still visually
+  // marked as mine or shared. (Robin, 2026-10-14.)
+  const listForScope = scope === 'mine' ? applySort(mineRanked) : scope === 'shared' ? applySort(received) : applySort(mineRanked.concat(received));
+  const header = scope === 'mine' ? `Your folios · ${listForScope.length}` : scope === 'shared' ? `Shared with you · ${listForScope.length}` : `All folios · ${listForScope.length}`;
+  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Folio with you, it turns up here.' : 'No folios yet.'}</div>`;
+  sections.push(`<section class="home-sec"><div class="home-sec-h">${header}</div><div class="area-cards area-gcards">${grid}</div></section>`);
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Folios</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
