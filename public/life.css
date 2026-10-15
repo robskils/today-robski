@@ -2357,10 +2357,12 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-topsec-t.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
 @media (hover:hover){ .nav-topsec-t:hover { border-color:var(--accent); } }
 .nav-topsec-body { margin-top:8px; display:flex; flex-direction:column; gap:3px; max-height:46vh; overflow-y:auto; overflow-x:hidden; padding:1px; }
-/* Starred rows read exactly like Recent rows: same text size, same icon-adjacent
-   layout (the label fills the row next to its icon). (Robin, 2026-10-15.) */
-.nav-topsec-body .nav-sub .t { font-size:15.5px; flex:1; }
-.nav-topsec-body .nav-sub .i { font-size:12px; }
+/* Starred and Recent rows read identically: one explicit text size for both (16px,
+   easier on the eye), same icon size, label filling the row next to its icon. The
+   .nav-topsecs scope + both-class selector makes this win over any other nav rule,
+   so Starred can't render smaller than Recent. (Robin, 2026-10-15.) */
+.nav-topsecs .nav-topsec-body .nav-sub .t { font-size:16px; flex:1; }
+.nav-topsecs .nav-topsec-body .nav-sub .i { font-size:13px; }
 .home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
