@@ -23340,9 +23340,11 @@ async function onbConnectGmail() {
   } catch {}
   if (!token()) {
     showGate(invited ? "You've been invited to Lifebook. Sign in with your email to accept." : null);
-    // They already typed it and pressed Continue; asking again would be a second
-    // click for the same intent.
-    if (preEmail) { const el = $('#gate-email'); if (el) { el.value = preEmail; gateSend('email'); } }
+    // They typed their email on the marketing sign-in box; prefill it and let them
+    // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
+    // code" link, so signing in by text from the marketing/mobile entry was
+    // impossible - the one case (mailbox lives inside Lifebook) it exists for.
+    if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; const b = $('#gate-btn'); if (b) b.focus(); }
     return;
   }
   // Multi-tenant only: a signed-in email with no account yet must claim one
