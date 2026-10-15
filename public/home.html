@@ -478,6 +478,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 .signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
 .signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
 .signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
+.signin-smslink { display: block; width: 100%; margin-top: 12px; padding: 4px; background: none; border: 0; text-align: center; font-size: 14.5px; color: var(--ink-3); cursor: pointer; font-family: inherit; }
+.signin-smslink b { color: var(--rust); font-weight: 600; }
+.signin-smslink:hover b { text-decoration: underline; }
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -852,6 +855,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continue →</button>
+      <button type="button" class="signin-smslink" id="signin-sms">Prefer a text? <b>Send my sign-in code by SMS</b></button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
     <p class="signin-foot">Don't have a Lifebook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
@@ -892,6 +896,15 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     const err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email address.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
+  });
+  // "Send my code by SMS": same hand-off, but tell the gate to text the code
+  // straight away (for signing in from a phone, or when the mailbox is inside
+  // Lifebook). The gate reads &c=sms and fires the text on arrival.
+  document.getElementById('signin-sms').addEventListener('click', function () {
+    const email = document.getElementById('signin-email').value.trim();
+    const err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email first, so we know where to text.'; err.hidden = false; return; }
+    location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
   });
   // Request-an-invite form: posts to the worker, which stores it and emails us.
   const invForm = document.getElementById('invite-form');

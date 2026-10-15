@@ -23317,15 +23317,15 @@ async function onbConnectGmail() {
   applyBgPattern(savedBgPattern());
   // Session hand-off from the apex (see goToMyLifebook): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
-  let preEmail = '';
+  let preEmail = '', preChannel = '';
   try {
     const h = location.hash.match(/^#t=([A-Za-z0-9._~%-]+)$/);
     if (h) { localStorage.setItem(KEY, decodeURIComponent(h[1])); history.replaceState(null, '', location.pathname + location.search); }
     // Arriving from the marketing page's sign-in box, which asks for an email and
     // nothing else. Consumed once and wiped from the URL, so a reload lands on a
     // plain gate rather than re-sending a code into the resend cooldown.
-    const e = location.hash.match(/^#e=(.+)$/);
-    if (e) { preEmail = decodeURIComponent(e[1]).trim(); history.replaceState(null, '', location.pathname + location.search); }
+    const e = location.hash.match(/^#e=([^&]+)(?:&c=(sms))?$/);
+    if (e) { preEmail = decodeURIComponent(e[1]).trim(); preChannel = e[2] || ''; history.replaceState(null, '', location.pathname + location.search); }
   } catch {}
   // Invite link: /join/CODE (or ?invite=CODE) stashes the code so the signup
   // never has to ask for it, then tidies the URL.
@@ -23344,7 +23344,7 @@ async function onbConnectGmail() {
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was
     // impossible - the one case (mailbox lives inside Lifebook) it exists for.
-    if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; const b = $('#gate-btn'); if (b) b.focus(); }
+    if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; if (preChannel === 'sms') gateSend('sms'); else { const b = $('#gate-btn'); if (b) b.focus(); } }
     return;
   }
   // Multi-tenant only: a signed-in email with no account yet must claim one
