@@ -4194,7 +4194,7 @@ export default {
       const isLife = APP_DOMAINS.some((d) => host.endsWith('.' + d)) && !isApex;
       // Public marketing pages in English, and their localised counterparts
       // (PT/FR/ES) which carry their own slugs. Clean URL -> asset file.
-      const EN_PAGES = ['/', '/how', '/blog', '/blog/the-ordinary-day', '/blog/tables-or-notes', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/blog/inviting-friends', '/blog/connect-your-accounts', '/blog/install-as-app', '/privacy', '/terms', '/support'];
+      const EN_PAGES = ['/', '/how', '/blog', '/blog/the-ordinary-day', '/blog/tables-or-notes', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/blog/inviting-friends', '/blog/connect-your-accounts', '/blog/install-as-app', '/blog/two-factor-authentication', '/privacy', '/terms', '/support'];
       const LOCALE_PAGES = {
         '/pt': '/pt/index.html', '/pt/jornal': '/pt/jornal.html',
         '/pt/jornal/o-dia-comum': '/pt/jornal/o-dia-comum.html', '/pt/jornal/tabela-ou-nota': '/pt/jornal/tabela-ou-nota.html',
