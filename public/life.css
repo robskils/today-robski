@@ -6874,8 +6874,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* ── sign-in gate ────────────────────────────────── */
 .gate2 { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:24px;
   background:radial-gradient(120% 90% at 50% -10%, var(--paper-2), var(--paper) 60%); }
-.gate2-card { width:100%; max-width:380px; display:flex; flex-direction:column; gap:16px; text-align:center;
-  background:var(--card); border:1px solid var(--line); border-radius:22px; padding:44px 36px 38px;
+.gate2-card { width:100%; max-width:400px; display:flex; flex-direction:column; gap:20px; text-align:center;
+  background:var(--card); border:1px solid var(--line); border-radius:22px; padding:48px 40px 42px;
   box-shadow:var(--shadow); }
 .gate2-mark { font-family:'Cormorant Garamond',serif; font-size:40px; font-weight:600; letter-spacing:-.01em; }
 .gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 5px; }
@@ -6898,11 +6898,11 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
    two 6-digit prompts are never confused. */
 .gate2-codehead { display:flex; flex-direction:column; gap:5px; text-align:left; margin:2px 0 -4px; }
 .gch-title { font-size:16px; font-weight:600; color:var(--ink); line-height:1.35; }
-.gch-hint { font-size:13.5px; color:var(--ink-3); line-height:1.5; }
+.gch-hint { font-size:14.5px; color:var(--ink-3); line-height:1.55; }
 .gch-hint b { color:var(--ink-2); }
-.gate2-codehead.is-totp { padding:13px 15px; border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); border-radius:14px; background:color-mix(in srgb, var(--accent) 7%, var(--card)); gap:7px; }
-.gate2-codehead.is-totp .gch-badge { align-self:flex-start; font-size:12px; font-weight:700; color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 14%,transparent); padding:3px 10px; border-radius:999px; }
-.gate2-codehead.is-totp .gch-title { font-size:17px; }
+.gate2-codehead.is-totp { padding:20px 20px 22px; border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); border-radius:16px; background:color-mix(in srgb, var(--accent) 7%, var(--card)); gap:12px; margin:6px 0 4px; }
+.gate2-codehead.is-totp .gch-badge { align-self:flex-start; font-size:12px; font-weight:700; color:#6f9f4a; background:color-mix(in srgb,#6f9f4a 14%,transparent); padding:5px 13px; border-radius:999px; margin-bottom:2px; }
+.gate2-codehead.is-totp .gch-title { font-size:18px; line-height:1.3; }
 /* The button's depth comes from the shared .btn-accent treatment below; the
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
