@@ -4589,6 +4589,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
   -webkit-mask:linear-gradient(to left,#000 0 60%, transparent);
           mask:linear-gradient(to left,#000 0 60%, transparent); opacity:.5; }
 :root[data-theme='dark'] .main::after { background-image:url(/brand/moroccan-dark.svg); opacity:.4; }
+/* Sidebar collapsed: no sidebar width, so the pane sits at the far left - re-anchor
+   the pattern to the pane's right edge so it fills the now-wider gap, not a band
+   of empty paper the sidebar's width across. */
+body.nav-collapsed .main::after { left:1100px; }
 
 /* ── home ────────────────────────────────────────── */
 .home-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
