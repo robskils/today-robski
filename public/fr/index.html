@@ -472,9 +472,8 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 .signin-field:focus-within { border-color: var(--rust); }
 .signin-input { flex: 1; min-width: 0; border: 0; background: none; padding: 13px 14px; font-family: inherit; font-size: 17px; color: var(--ink); outline: none; }
 .signin-go { width: 100%; justify-content: center; margin-top: 16px; }
-.signin-smslink { display: block; width: 100%; margin-top: 12px; padding: 4px; background: none; border: 0; text-align: center; font-size: 14.5px; color: var(--ink-3); cursor: pointer; font-family: inherit; }
-.signin-smslink b { color: var(--rust); font-weight: 600; }
-.signin-smslink:hover b { text-decoration: underline; }
+.signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1.5px solid var(--rust); border-radius: 999px; text-align: center; font-size: 15px; font-weight: 600; color: var(--rust); cursor: pointer; font-family: inherit; transition: background .18s, color .18s; }
+.signin-smslink:hover { background: var(--rust); color: var(--rust-ink); }
 .signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
 .signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
 .signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
@@ -853,7 +852,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="vous@exemple.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continuer →</button>
-      <button type="button" class="signin-smslink" id="signin-sms">Vous préférez un SMS ? <b>Envoyez-moi le code par SMS</b></button>
+      <button type="button" class="signin-smslink" id="signin-sms">Envoyez-moi le code par SMS</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
     <p class="signin-foot">Vous n'avez pas encore de Lifebook ? <a href="#invite" data-signin-close>Demander une invitation</a></p>

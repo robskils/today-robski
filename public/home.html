@@ -479,9 +479,8 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 .signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
 .signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
 .signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
-.signin-smslink { display: block; width: 100%; margin-top: 12px; padding: 4px; background: none; border: 0; text-align: center; font-size: 14.5px; color: var(--ink-3); cursor: pointer; font-family: inherit; }
-.signin-smslink b { color: var(--rust); font-weight: 600; }
-.signin-smslink:hover b { text-decoration: underline; }
+.signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1.5px solid var(--rust); border-radius: 999px; text-align: center; font-size: 15px; font-weight: 600; color: var(--rust); cursor: pointer; font-family: inherit; transition: background .18s, color .18s; }
+.signin-smslink:hover { background: var(--rust); color: var(--rust-ink); }
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -856,7 +855,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continue →</button>
-      <button type="button" class="signin-smslink" id="signin-sms">Prefer a text? <b>Send my sign-in code by SMS</b></button>
+      <button type="button" class="signin-smslink" id="signin-sms">Send my sign-in code by SMS</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
     <p class="signin-foot">Don't have a Lifebook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
