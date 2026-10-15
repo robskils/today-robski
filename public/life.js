@@ -1,4 +1,4 @@
-// Daybook — tasks + areas on the block core, sharing Today's login.
+// Lifebook — tasks + areas on the block core, sharing Today's login.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';

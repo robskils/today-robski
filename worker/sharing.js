@@ -1,4 +1,4 @@
-// Cross-account sharing of individual notes & tasks with friends (Daybook
+// Cross-account sharing of individual notes & tasks with friends (Lifebook
 // Friends, phase 3a). One `shares` row grants one friend access to one block.
 // can_edit = 1 means collaborative (the default Robin chose); 0 is view-only.
 //

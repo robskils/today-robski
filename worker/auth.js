@@ -144,7 +144,7 @@ export async function requestCode(request, env, json, err) {
   const email = String(body.email || '').trim().toLowerCase();
   if (!validEmail(email)) return err('That does not look like an email address', 400);
   // 'sms' texts the code to ALERT_PHONE instead of emailing it. This is the
-  // fix for the Catch-22 once Daybook *is* the mailbox: if email breaks or
+  // fix for the Catch-22 once Lifebook *is* the mailbox: if email breaks or
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
@@ -173,7 +173,7 @@ export async function requestCode(request, env, json, err) {
   if (channel === 'sms') {
     // Text the code to THIS user's own saved phone - never the owner's hardcoded
     // ALERT_PHONE. This is the escape hatch for someone whose email now lives
-    // inside Daybook: the emailed code would be locked behind this very sign-in,
+    // inside Lifebook: the emailed code would be locked behind this very sign-in,
     // but a text to their phone still gets them in. Needs an existing account
     // with a phone on file (Settings › Account); a brand-new signup has neither,
     // so it simply falls through to email.
@@ -184,7 +184,7 @@ export async function requestCode(request, env, json, err) {
       toPhone = (phRow && phRow.value) || (acct.id === 1 ? env.ALERT_PHONE : '');
     }
     if (toPhone) {
-      const sms = await sendSms(env, `${code} is your Daybook sign-in code. It expires in 10 minutes.`, toPhone);
+      const sms = await sendSms(env, `${code} is your Lifebook sign-in code. It expires in 10 minutes.`, toPhone);
       // Only report SMS if it actually left: a not-configured or rejected send
       // silently falls through to email, so the user is never stranded without a
       // code just because SMS credit ran out.
@@ -308,19 +308,19 @@ export async function verifyTotp(request, env, json, err) {
 // non-ASCII subject needs RFC 2047 encoding.
 export async function sendCodeMail(env, email, code, kind) {
   const alias = kind === 'alias';
-  const subject = alias ? `${code} - confirm your email for Daybook` : `${code} - your Daybook sign-in code`;
+  const subject = alias ? `${code} - confirm your email for Lifebook` : `${code} - your Lifebook sign-in code`;
   const html = codeEmail(code, kind);
   const text = alias
-    ? `Enter ${code} in Daybook to add this address to your account. It expires in 10 minutes.`
-    : `Your Daybook sign-in code is ${code}. It expires in 10 minutes.`;
+    ? `Enter ${code} in Lifebook to add this address to your account. It expires in 10 minutes.`
+    : `Your Lifebook sign-in code is ${code}. It expires in 10 minutes.`;
 
   // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
   // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
-  // carries the Daybook address. Same transport and secret as the invite and the
+  // carries the Lifebook address. Same transport and secret as the invite and the
   // morning brief. Falls back to Resend only if no SMTP secret is set.
   if (env.BRIEF_SMTP_PASS) {
     const acct = {
-      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Daybook',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Lifebook',
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
@@ -348,7 +348,7 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-// Daybook branding: warm paper and rust, matching the app and the homepage.
+// Lifebook branding: warm paper and rust, matching the app and the homepage.
 //
 // Table layout and inline styles throughout: Gmail strips <style> blocks, and
 // Outlook's renderer is Word. No flexbox, no CSS variables, no SVG.
@@ -356,9 +356,9 @@ export function codeEmail(code, kind) {
   const alias = kind === 'alias';
   const eyebrow = alias ? 'Confirm email' : 'Sign in';
   const line = alias
-    ? `Enter this code in Daybook to add this address to your account. It expires in <strong style="color:#211c17">10 minutes</strong>.`
+    ? `Enter this code in Lifebook to add this address to your account. It expires in <strong style="color:#211c17">10 minutes</strong>.`
     : `Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.`;
-  const pre = alias ? `${code} confirms this email for your Daybook account.` : `${code} is your Daybook sign-in code. It expires in 10 minutes.`;
+  const pre = alias ? `${code} confirms this email for your Lifebook account.` : `${code} is your Lifebook sign-in code. It expires in 10 minutes.`;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
@@ -374,11 +374,11 @@ export function codeEmail(code, kind) {
         <!-- Wordmark: the real mark (sun over two page-lines) as a PNG - the
              favicon is an SVG and every major client strips those - over the
              name and the tagline. alt is empty on purpose: with images off the
-             serif wordmark below already says Daybook, so a blocked image
-             should leave nothing behind rather than a second "Daybook". -->
+             serif wordmark below already says Lifebook, so a blocked image
+             should leave nothing behind rather than a second "Lifebook". -->
         <tr><td style="padding:34px 38px 0" align="center">
           <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Day<i>book</i></p>
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>book</i></p>
         </td></tr>
 
         <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->

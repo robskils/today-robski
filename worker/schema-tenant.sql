@@ -1,4 +1,4 @@
--- Daybook multi-tenant migration (Track B: owner on every row).
+-- Lifebook multi-tenant migration (Track B: owner on every row).
 --
 -- RUN ONCE, AFTER worker/schema.sql, on a database that is currently
 -- single-tenant. It:

@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS activities (
   -- (+ a follow-along video), repeats on chosen weekdays at a time, and is flagged
   -- timed (goes on the day canvas) and/or tracked (feeds a habit streak).
   area     TEXT,                              -- a kind='area' block id (nullable)
-  note     TEXT,                              -- rich HTML, like a Daybook note
+  note     TEXT,                              -- rich HTML, like a Lifebook note
   video    TEXT,                              -- a follow-along video URL (nullable)
   timed    INTEGER NOT NULL DEFAULT 1,        -- 1 = takes time, shows on the day
   tracked  INTEGER NOT NULL DEFAULT 1,        -- 1 = feeds a habit streak
@@ -261,7 +261,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('day_start',    '360'),   -- 06:00
   ('day_end',      '1380');  -- 23:00
 
--- ── Daybook: the block core ───────────────────────────────────────
+-- ── Lifebook: the block core ───────────────────────────────────────
 -- The one model the whole Life app sits on. A task, a note, a table, a table
 -- row - all the same thing: a block. This is what lets a note hold a task and
 -- a task link to a table row without three separate silos.

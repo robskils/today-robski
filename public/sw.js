@@ -1,4 +1,4 @@
-// Daybook service worker: push notifications + offline / instant-open caching.
+// Lifebook service worker: push notifications + offline / instant-open caching.
 //
 // Caching rules, chosen to be safe:
 //   - /api/* and /auth/* are NEVER cached - always straight to the network, so
@@ -109,7 +109,7 @@ self.addEventListener('push', (event) => {
     // legacy default. (Connect requests send target:'contacts'.)
     const target = data.target || (data.type === 'mail' ? 'mail' : 'home');
     const url = data.url || (data.type === 'mail' ? '/mail' : '/');
-    await self.registration.showNotification(data.title || 'Daybook', {
+    await self.registration.showNotification(data.title || 'Lifebook', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

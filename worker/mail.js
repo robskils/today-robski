@@ -804,7 +804,7 @@ async function syncOneInbox(env, acct) {
     stmts.push(env.DB.prepare('INSERT INTO mail_cache_meta (account,mailbox,unseen,synced_at) VALUES (?,?,?,?) ON CONFLICT(account,mailbox) DO UPDATE SET unseen=excluded.unseen, synced_at=excluded.synced_at').bind(acct.id, 'INBOX', effUnseen, nowIso));
     await env.DB.batch(stmts);
     // Who the newest genuinely-new email is from, so the push can say "New email
-    // from <sender>" rather than something that reads like it came from Daybook.
+    // from <sender>" rather than something that reads like it came from Lifebook.
     let newFrom = '', newSubject = '';
     if (newUnread) {
       const fresh = msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId))

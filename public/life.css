@@ -1,4 +1,4 @@
-/* Daybook — shares the Zen palette with Today, tuned for a working app.
+/* Lifebook — shares the Zen palette with Today, tuned for a working app.
    Large type throughout; light and dark defined once each. */
 
 :root[data-theme='light'] {
@@ -20,7 +20,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 16px -5px rgba(0,0,0,.5),0 22px 44px -18px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.045);
 }
 
-/* Daybook Pages read brighter: a near-white canvas and crisp pure-white panels
+/* Lifebook Pages read brighter: a near-white canvas and crisp pure-white panels
    instead of the warm-grey paper, which felt heavy on a whole-page dashboard. The
    warm paper stays everywhere else (it's the brand); this is light theme + the
    Page view only. (Robin: too much grey gets you down; white's better here.) */
@@ -329,7 +329,7 @@ button { cursor:pointer; background:none; border:0; }
 .cg-bar { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px; align-items:center; }
 .cts-area-sel { display:none; }   /* desktop: use the chip bar */
 /* Contacts header: the search box and the group chips sit together, actions right. */
-/* Auto "who's on Daybook" banner at the top of Contacts */
+/* Auto "who's on Lifebook" banner at the top of Contacts */
 .cts-dbbanner { margin:0 0 18px; padding:14px 16px; border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 7%,var(--card)); }
 .cts-dbbanner.cts-dbb-load, .cts-dbbanner.cts-dbb-none { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink-3); font-size:14px; }
 .cts-dbb-h { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:600; color:var(--ink); margin-bottom:12px; }
@@ -352,7 +352,7 @@ button { cursor:pointer; background:none; border:0; }
 .cts-head .cg-bar { flex:1 1 auto; margin:0; min-width:0; }
 .cts-head .cts-acts { display:flex; gap:8px; flex:none; margin-left:auto; }
 .contacts-mine { margin-bottom:6px; }
-/* Daybook friends: its own section, set apart from your contacts above. */
+/* Lifebook friends: its own section, set apart from your contacts above. */
 .ppl-sec { border-top:1px solid var(--line); padding-top:8px; margin-top:24px; }
 @media (max-width:640px){ .cts-head .cts-search { flex:1 1 100%; } .cts-head .cts-acts { margin-left:0; }
   /* The life-area filter becomes a single dropdown on mobile, not a row of chips. */
@@ -2321,12 +2321,12 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:normal; color:var(--ink); }
-/* "Daybook" is one word; only "book" leans italic, tucked close to the roman
+/* "Lifebook" is one word; only "book" leans italic, tucked close to the roman
    "Day". The gold mark carries the colour. (Brand, 2026-10-13.) */
 .wm-bk { font-style:italic; margin-left:-.07em; }
 .nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
-/* A quiet Daybook mark closing the Home main column, in the chosen accent. */
+/* A quiet Lifebook mark closing the Home main column, in the chosen accent. */
 .home-mark { display:flex; justify-content:center; margin:36px auto 6px; padding:8px; background:none; border:0; border-radius:50%; cursor:pointer; transition:transform .16s cubic-bezier(.2,.8,.2,1), background .16s; }
 .home-mark .brand-mark { width:46px; height:46px; margin:0; color:var(--accent); opacity:.9; }
 .home-mark:hover { transform:translateY(-2px); background:color-mix(in srgb,var(--accent) 10%,transparent); }
@@ -2371,7 +2371,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-lead-box, .nav-lead-box:first-of-type { margin-top:6px; }
 .nav-lead-box .nav-item { width:100%; }
 .nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 3px; }
-/* The live Daybook-people list sits in the same People box, under a collapsible
+/* The live Lifebook-people list sits in the same People box, under a collapsible
    header (a hairline divides it from the buttons). */
 .nav-people-wrap { margin-top:6px; padding-top:5px; border-top:1px solid var(--line); }
 .nav-people-h { display:flex; align-items:center; gap:6px; width:100%; text-align:left; background:none; border:0; cursor:pointer;
@@ -2430,7 +2430,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 /* Home quick-action "you've got some" dot (tasks) - shown on mobile too, unlike the
    numeric count. */
 .home-qa-open .hqa-dot { flex:none; margin-left:3px; width:8px; height:8px; border-radius:50%; background:var(--accent); }
-/* Unread Daybook messages: a red, gently pulsing badge so it's impossible to
+/* Unread Lifebook messages: a red, gently pulsing badge so it's impossible to
    miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
 .nav-badge.has-msg { background:var(--danger,#c4412e); color:#fff; animation:msg-badge-pulse 1.5s ease-in-out infinite; }
 .nav-menu-badge { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:var(--danger,#c4412e); color:#fff; font-size:11.5px; font-weight:700; line-height:1; box-shadow:0 0 0 2px var(--paper); }
@@ -2480,7 +2480,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-cards .nav-sub.on { border-color:hsl(var(--h,220) 60% 52%); box-shadow:0 0 0 1px hsl(var(--h,220) 60% 52% / .35), var(--shadow); }
 .nav-cards .nav-sub.muted { background:none; border:0; box-shadow:none; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
-/* Sidebar People section: connected Daybook folk, online first, offline greyed. */
+/* Sidebar People section: connected Lifebook folk, online first, offline greyed. */
 .nav-people { gap:1px; }
 .nav-person { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:6px 12px; border-radius:8px; color:var(--ink-2); font-size:15px; overflow:hidden; cursor:pointer; background:none; border:0; }
 .nav-person:hover { background:color-mix(in srgb,var(--ink) 5%,transparent); color:var(--ink); }
@@ -2679,7 +2679,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:16px; outline:none; }
 .chat-input:focus { border-color:var(--accent); }
 .chat-send { flex:none; padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:var(--accent-ink,#fff); font-family:inherit; font-weight:600; cursor:pointer; }
-/* Friends on Daybook. */
+/* Friends on Lifebook. */
 .friend-row { display:flex; align-items:center; gap:13px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
 .fr-av { flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:16px; position:relative; }
 .fr-av.online::after { content:''; position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:50%; background:#3fae5a; border:2px solid var(--card); }
@@ -2721,22 +2721,22 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 .fr-results:not(:empty) { margin:-8px 0 20px; }
 /* Invite button lives in the section header now, pushed to the right. */
-/* The connect row: a wide "find someone on Daybook" box, then Connect + Invite. */
+/* The connect row: a wide "find someone on Lifebook" box, then Connect + Invite. */
 .fr-connect-row { flex-wrap:wrap; }
 /* The find box just flexes to fill its own row now. */
 .list-head.fr-connect-row .fr-connect { flex:1 1 240px; width:auto; min-width:200px; max-width:none; }
 .fr-connect-row .add-btn.wide { flex:none; }
-/* Auto-surfaced: your contacts already on Daybook, given a soft-tinted card so
+/* Auto-surfaced: your contacts already on Lifebook, given a soft-tinted card so
    they stand out as the easy first connections. */
 .fr-suggest { margin:2px 0 18px; padding:4px 14px 12px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:14px; background:color-mix(in srgb,var(--accent) 5%,transparent); }
 .fr-suggest .ppl-sub { margin-top:12px; color:var(--accent); }
 .fr-intro { margin:2px 0 14px; font-size:14.5px; line-height:1.55; color:var(--ink-2); max-width:640px; }
 .fr-suggest .friend-row { background:var(--card); }
-/* Sub-groups inside "Contacts on Daybook" (Requests, Pending, Suggestions…). */
+/* Sub-groups inside "Contacts on Lifebook" (Requests, Pending, Suggestions…). */
 .ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
 .ppl-sub-req { color:var(--accent); margin-top:4px; }
 .ppl-sub .fr-rescan { margin-left:2px; padding:2px 7px; font-size:13px; }
-/* The "find someone on Daybook" box: full width, and visible on mobile (it isn't
+/* The "find someone on Lifebook" box: full width, and visible on mobile (it isn't
    a per-page .list-search, so the mobile hide-rule leaves it alone). */
 .list-head .fr-connect { flex:1; width:auto; min-width:0; margin:0; }
 /* Webinars (Friends). */
@@ -3052,7 +3052,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .ho-loading { font-size:15px; color:var(--ink-3); text-align:center; padding:14px 0; }
 .ho-meta { font-size:12.5px; color:var(--ink-3); }
 
-/* ── Your Daybook card ────────────────────────────────────────────────── */
+/* ── Your Lifebook card ────────────────────────────────────────────────── */
 .set-cardlink { display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; padding:16px 18px; margin-bottom:16px; }
 .set-cardlink:hover { border-color:var(--accent); }
 .set-cardlink-ic { font-size:26px; flex:none; }
@@ -3244,7 +3244,7 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .imp-flyer-art { font-size:40px; letter-spacing:4px; }
 .imp-flyer-teaser .imp-lead { max-width:46ch; }
 .imp-flyer-teaser .add-btn.wide { max-width:320px; }
-/* Account tab order: your details first, then the Daybook card + Security side by
+/* Account tab order: your details first, then the Lifebook card + Security side by
    side, then Your data. */
 .set-account, .set-acct-cols { margin-bottom:16px; }
 .set-acct-cols { display:flex; gap:16px; align-items:stretch; }
@@ -4201,7 +4201,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tabstrip .tab-util { flex:none; width:27px; height:27px; margin-left:5px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:14px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
-/* The top-right cluster (i, settings, sign out) reads in Daybook's accent so it's
+/* The top-right cluster (i, settings, sign out) reads in Lifebook's accent so it's
    clearly part of the app, filling on hover / when active. */
 .tabstrip .help-btn, .tabstrip .tab-util { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 46%, var(--line-2)); }
 .tabstrip .help-btn:hover, .tabstrip .tab-util:hover, .tabstrip .tab-util.on { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
@@ -4226,7 +4226,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .help-back-link:hover { text-decoration:underline; }
 /* Guide home page: the welcome-checklist card, then a grid of tool guides. */
 /* The ethos band - the tagline earns a proper moment here, where we're explaining
-   what Daybook is FOR. Prominent in the Guide only; a quiet whisper elsewhere. */
+   what Lifebook is FOR. Prominent in the Guide only; a quiet whisper elsewhere. */
 .guide-ethos { text-align:center; margin:8px 0 24px; padding:34px 26px 36px; border-radius:20px; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); background:linear-gradient(170deg, color-mix(in srgb,var(--accent) 9%,var(--card)), var(--card) 72%); }
 .guide-ethos-mark { line-height:0; margin-bottom:12px; }
 .guide-ethos-mark .brand-mark { width:52px; height:52px; color:var(--accent); margin:0; }
@@ -4240,7 +4240,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .guide-ethos .guide-ethos-people::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:54px; height:2px; border-radius:2px; background:color-mix(in srgb,var(--accent) 55%,transparent); }
 /* The discreet footer whisper on individual guides and the index bottom. */
 .guide-tagline { text-align:center; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:17px; color:var(--ink-3); margin:26px 0 2px; letter-spacing:.01em; }
-/* The sign-off: the tagline with the Daybook mark beneath it, the mark a quiet
+/* The sign-off: the tagline with the Lifebook mark beneath it, the mark a quiet
    button home to the top. */
 .guide-signoff { display:flex; flex-direction:column; align-items:center; gap:12px; margin:30px 0 8px; }
 .guide-signoff .guide-tagline { margin:0; font-size:19px; }
@@ -4277,7 +4277,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* A sub-section title inside a set-card (e.g. Security on the Account page). */
 .set-sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
 .set-account-sec { gap:0; }
-/* The back link that replaces the tab bar on a settings sub-page (Daybook card). */
+/* The back link that replaces the tab bar on a settings sub-page (Lifebook card). */
 .set-subback { display:inline-flex; align-items:center; gap:7px; width:auto; height:auto; padding:8px 15px; border-radius:999px; font-size:14px; font-weight:600; color:var(--ink-2); border:1px solid var(--line); background:var(--card); cursor:pointer; }
 .set-subback:hover { border-color:var(--accent); color:var(--accent); }
 .set-block { border-top:1px solid var(--line); padding-top:18px; }
@@ -6641,7 +6641,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
      Chromium clamps to the whole grid and hides the bug. Plain block flow makes
      both sticky bars clamp to the tall shell, so they pin correctly everywhere. */
   .app-shell { display:block; grid-template-columns:1fr; }
-  /* The sidebar collapses to a fixed top header: the Robski Daybook wordmark plus
+  /* The sidebar collapses to a fixed top header: the Robski Lifebook wordmark plus
      a ⋯ toggle. It stays pinned to the top of the screen; primary navigation is
      the bottom tab bar, and the breadcrumb pins just below this header. */
   .nav {
@@ -6650,11 +6650,11 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
     border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(12px);
   }
-  /* ☰ menu · ← back · "Daybook <Tool>" - all left-aligned on one row. */
+  /* ☰ menu · ← back · "Lifebook <Tool>" - all left-aligned on one row. */
   .nav-topline { flex:1 1 100%; display:flex; align-items:center; justify-content:flex-start; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
   .nav-brand { flex:0 1 auto; width:auto; min-width:0; padding:8px 6px; margin:0; font-size:23px; text-align:left; display:flex; align-items:center; gap:.28em; overflow:hidden; }
   .nav-brand em { flex:none; }
-  /* The current tool's name, sitting after the wordmark: lighter, so "Daybook"
+  /* The current tool's name, sitting after the wordmark: lighter, so "Lifebook"
      still reads as the brand and the tool as where you are. */
   .nav-brand .nav-tool { display:inline; font-style:normal; font-weight:600; color:var(--ink-2); font-size:1em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
   /* Left-aligned now, so the centering spacer is gone. */
@@ -6815,8 +6815,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   .list-search:not(.mail-search) { display:none; }
   body[data-view="mail"] .nav-k { display:none; }
   /* Contacts on mobile: searching your own contacts is the box that matters, so
-     keep it; the "find someone else on Daybook" box + Connect are dropped
-     (the surfaced "already on Daybook" suggestions cover connecting). Invite
+     keep it; the "find someone else on Lifebook" box + Connect are dropped
+     (the surfaced "already on Lifebook" suggestions cover connecting). Invite
      stays, full width. */
   body[data-view="contacts"] .list-head { flex-wrap:wrap; }
   body[data-view="contacts"] .list-search[data-contacts-q] { display:block; flex:1 1 100%; }
@@ -6929,7 +6929,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   box-shadow:var(--shadow); }
 .gate2-mark { font-family:'Cormorant Garamond',serif; font-size:40px; font-weight:600; letter-spacing:-.01em; }
 .gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 5px; }
-/* Keep the sunrise mark on the same line as "Daybook" when the wordmark wraps. */
+/* Keep the sunrise mark on the same line as "Lifebook" when the wordmark wraps. */
 .mark-lockup { white-space:nowrap; }
 /* The tagline lives inside .gate2-mark rather than beside it: the card is a
    flex column with a 16px gap, which would push it away from the wordmark. */
@@ -6957,9 +6957,9 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
 /* The text route is a quiet, self-selecting link under the primary button - not a
-   co-equal second button. Its own wording ("Use Daybook for your email?") means a
+   co-equal second button. Its own wording ("Use Lifebook for your email?") means a
    newcomer signing up with an outside address glides past it, while a returning
-   user whose mailbox now lives inside Daybook - and so can't open the emailed code
+   user whose mailbox now lives inside Lifebook - and so can't open the emailed code
    - spots their way in. It texts the code to THEIR own saved phone. */
 .gate2-smslink { display:block; width:100%; background:none; border:1px solid transparent; margin:6px 0 0;
   padding:11px 14px; border-radius:12px; font-size:14px; line-height:1.45; color:var(--ink-3); cursor:pointer; text-wrap:balance;
@@ -7075,7 +7075,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose :is(h1,h2,h3) + :is(h1,h2,h3) { margin-top:2px; }
 .prose h4, .prose h5, .prose h6 { font-size:18.5px; font-weight:600; margin:16px 0 4px; color:var(--ink-2); }
 .prose a { color:var(--accent); }
-/* Internal links (to another Daybook page) read as a subtle dotted underline. */
+/* Internal links (to another Lifebook page) read as a subtle dotted underline. */
 .prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
 

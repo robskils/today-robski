@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Daybook - email, calendar, pages and tasks in one place</title>
-<meta name="description" content="Daybook keeps email, calendar, tasks, notes, reflections and money in one private place. Put it down, and trust it to come back. You own all your data; it's yours.">
+<title>Lifebook - email, calendar, pages and tasks in one place</title>
+<meta name="description" content="Lifebook keeps email, calendar, tasks, notes, reflections and money in one private place. Put it down, and trust it to come back. You own all your data; it's yours.">
 <link rel="canonical" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="en" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt">
@@ -17,18 +17,18 @@
 <meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Daybook">
-<meta property="og:title" content="Daybook - for a life well lived">
+<meta property="og:site_name" content="Lifebook">
+<meta property="og:title" content="Lifebook - for a life well lived">
 <meta property="og:description" content="Email, calendar, tasks, notes, reflections and money in one private place. Put it down, and trust it to come back. You own all your data.">
 <meta property="og:url" content="https://daybook.fyi/">
 <meta property="og:image" content="https://daybook.fyi/og-image.v3.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Daybook - for a life well lived">
+<meta property="og:image:alt" content="Lifebook - for a life well lived">
 <meta property="og:locale" content="en_GB">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Daybook - for a life well lived">
+<meta name="twitter:title" content="Lifebook - for a life well lived">
 <meta name="twitter:description" content="Put it down, trust it to come back. A private home for everything you carry, resurfaced when you need it.">
 <meta name="twitter:image" content="https://daybook.fyi/og-image.v3.png">
 <!-- Structured data -->
@@ -40,19 +40,19 @@
       "@type": "WebSite",
       "@id": "https://daybook.fyi/#website",
       "url": "https://daybook.fyi/",
-      "name": "Daybook",
+      "name": "Lifebook",
       "slogan": "For a life well lived",
       "description": "A private home for your life - tasks, notes, reflections and money in one place.",
       "inLanguage": "en-GB"
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Daybook",
+      "name": "Lifebook",
       "slogan": "For a life well lived",
       "url": "https://daybook.fyi/",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "Daybook is a private home for everything you carry - tasks, notes, reflections and money - captured in two taps and resurfaced when you need it. Your data is private to you, and AI is opt-in with your own key.",
+      "description": "Lifebook is a private home for everything you carry - tasks, notes, reflections and money - captured in two taps and resurfaced when you need it. Your data is private to you, and AI is opt-in with your own key.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -148,7 +148,7 @@ nav {
 .nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
 .brand-mark { width: 26px; height: 26px; color: var(--rust); flex: none; }
-/* Daybook is one word; "book" just leans into italic. No space, same colour -
+/* Lifebook is one word; "book" just leans into italic. No space, same colour -
    and nudged left a touch so the roman "y" meets the italic "b" cleanly. */
 .brand .wm-bk { font-style: italic; margin-left: -0.07em; }
 .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
@@ -158,7 +158,7 @@ nav {
 .nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
 @media (max-width: 1024px) { .nav-links { display: none; } }
 /* Phone header: the wordmark plus both CTAs crammed onto one row looked tight, so
-   give it two calm rows - the Daybook wordmark centred on top, the actions on
+   give it two calm rows - the Lifebook wordmark centred on top, the actions on
    their own row beneath, each with room to breathe. (Robin.) */
 @media (max-width: 560px) {
   .wrap { padding: 0 20px; }
@@ -506,7 +506,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Daybook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Daybook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Lifebook uses analytics cookies to understand how the site is used - nothing personal, and never any of your Lifebook content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -522,9 +522,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><span class="wm-word">Day<i class="wm-bk">book</i></span></a>
+    <a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><span class="wm-word">Life<i class="wm-bk">book</i></span></a>
     <ul class="nav-links">
-      <li><a href="#idea">Your Daybook</a></li>
+      <li><a href="#idea">Your Lifebook</a></li>
       <li><a href="#tools">Tools</a></li>
       <li><a href="#private">Private by design</a></li>
       <li><a href="/blog">Journal</a></li>
@@ -544,7 +544,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
       <p class="hero-tag reveal">day&middot;book, n. - the book you bring your day to</p>
       <h1 class="reveal">For a life<br><em>well lived</em></h1>
-      <p class="hero-sub reveal">Daybook brings the two sides of your life - reflection and action - together in one joined-up suite of tools that talk to each other. A daybook helps you to manage, manifest and find meaning in your daily life.</p>
+      <p class="hero-sub reveal">Lifebook brings the two sides of your life - reflection and action - together in one joined-up suite of tools that talk to each other. A daybook helps you to manage, manifest and find meaning in your daily life.</p>
       <div class="hero-actions reveal">
         <a class="btn btn-primary" href="#invite">Request an invite →</a>
         <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
@@ -592,7 +592,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     </div>
     <div class="concept-body reveal">
       <p>We carry too much at once. Tasks half-remembered, ideas we meant to keep, money we meant to watch, feelings we never sat with. So it leaks - onto sticky notes, into ten different apps, or just quietly lost.</p>
-      <p>Daybook is one place to put all of it. You capture quickly and let go, and Daybook brings the right piece back at the right moment - the task when the day needs it, the page when you're planning, the reflection when you pause.</p>
+      <p>Lifebook is one place to put all of it. You capture quickly and let go, and Lifebook brings the right piece back at the right moment - the task when the day needs it, the page when you're planning, the reflection when you pause.</p>
       <p>Offload with confidence. Resurface with trust. That's the whole idea.</p>
     </div>
   </div>
@@ -636,7 +636,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <script>
     (function(){
       var T={
-        areas:{ic:'◈',name:'Folios',tag:'The heart of Daybook',desc:`Your mail, calendar, tasks, notes, goals, people and spending gather around the real parts of your life - each showing where it stands at a glance.`,feats:["Mail, calendar, tasks, notes, goals, people and spending gather by area","Set a date and it becomes a project, counting down","Share an area with the people who live it"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Frigiliana trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Health <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Home move <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        areas:{ic:'◈',name:'Folios',tag:'The heart of Lifebook',desc:`Your mail, calendar, tasks, notes, goals, people and spending gather around the real parts of your life - each showing where it stands at a glance.`,feats:["Mail, calendar, tasks, notes, goals, people and spending gather by area","Set a date and it becomes a project, counting down","Share an area with the people who live it"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Frigiliana trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Health <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Home move <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
         mail:{ic:'✉',name:'Mail',tag:'Every inbox, one room',desc:`Bring every account into one stream - Gmail, Outlook, any IMAP inbox - and work them all as one.`,feats:["All your accounts merged into one inbox","Triage fast: Urgent, Important, Chilled","File a mail into a Page, and share it there"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgent</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Important</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">Chilled</span></div></div><div class="pv-quad"><span class="lbl">Sort</span><span class="pv-chip q-urgent">Urgent</span><span class="pv-chip q-important">Important</span><span class="pv-chip q-chilled">Chilled</span><span class="pv-chip q-others">Others</span></div>`},
         calendar:{ic:'◑',name:'Calendar',tag:'Month, week, agenda',desc:`One view onto your days - in sync with the calendar you already use.`,feats:["Month, week and agenda in one view","Two-way sync with your Google calendar","An event can count toward a practice"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Proposal review</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Lunch with Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga by the river</span></div></div>`},
         tasks:{ic:'✓',name:'Tasks',tag:'Your day, flowing',desc:`A day of streams, not a nagging list - work with the flow when you're in it.`,feats:["Flowing streams, never a red overdue nag","Resurfaces exactly when it's due","Each task carries its Page"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Morning sit</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Draft the Sintra proposal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Walk before the light goes</span></div></div>`},
@@ -668,10 +668,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="band-head center reveal">
       <div class="eyebrow">How it flows</div>
       <h2>Everything talks to everything</h2>
-      <p>An email becomes an event; an event becomes a page; a page becomes a task - information flows to where it's needed. It all gathers in your Folios, with Daybook at the centre, and you at the very heart of it.</p>
+      <p>An email becomes an event; an event becomes a page; a page becomes a task - information flows to where it's needed. It all gathers in your Folios, with Lifebook at the centre, and you at the very heart of it.</p>
     </div>
     <div class="flow-dia reveal">
-      <svg viewBox="0 0 560 470" role="img" aria-label="Information flowing between Daybook's tools, gathered in your Folios, with you at the heart">
+      <svg viewBox="0 0 560 470" role="img" aria-label="Information flowing between Lifebook's tools, gathered in your Folios, with you at the heart">
         <defs>
           <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
         </defs>
@@ -692,7 +692,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <circle cx="280" cy="230" r="86" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.5"/>
         <text x="280" y="169" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="10" font-weight="700" letter-spacing="1.3" fill="var(--rust)">PAGES</text>
         <circle cx="280" cy="230" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
-        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">Daybook</text>
+        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">Lifebook</text>
         <circle cx="280" cy="232" r="27" fill="var(--rust)"/>
         <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">You</text>
         <g font-family="'Hanken Grotesk',sans-serif">
@@ -744,7 +744,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <section class="ethos">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">The Daybook ethos</div>
+    <div class="eyebrow" style="text-align:center">The Lifebook ethos</div>
     <p class="ethos-line">The right thing, surfaced in the right place, at the <em>right time.</em></p>
     <p class="ethos-sub">In tune with the rhythms of your life - nothing shouts for attention, and nothing worth remembering slips away.</p>
   </div>
@@ -755,11 +755,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="reveal">
       <div class="eyebrow">Private by design</div>
       <h2>Yours. Securely.</h2>
-      <p class="privacy-lead">Daybook holds the most personal parts of your life - your reflections, your relationships, your passwords. So it's locked down properly: <b>two-factor sign-in</b>, encrypted where it counts. This is safe.</p>
+      <p class="privacy-lead">Lifebook holds the most personal parts of your life - your reflections, your relationships, your passwords. So it's locked down properly: <b>two-factor sign-in</b>, encrypted where it counts. This is safe.</p>
       <p class="privacy-lead">And your data? We don't want it. We're not into that. We're building a business on <b>trust and values</b>, not on selling you - so nothing of yours is mined, sold, or fed to anyone's model. It's yours. <b>End of.</b> Export the lot in one tap, keep it on your own storage if you'd rather, bring your own AI - the choice is always yours.</p>
     </div>
     <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Two-factor sign-in - your Daybook, properly locked.</div></li>
+      <li><span class="tick">✓</span><div>Two-factor sign-in - your Lifebook, properly locked.</div></li>
       <li><span class="tick">✓</span><div>Never mined, never sold, never used to train anything. It's yours. End of.</div></li>
       <li><span class="tick">✓</span><div>Export everything, any time, in a tap - or keep it on your own storage.</div></li>
       <li><span class="tick">✓</span><div>Close your account whenever you like, and take it all with you. No hoops, no guilt.</div></li>
@@ -773,7 +773,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="reveal">
       <div class="eyebrow">Made to be quick</div>
       <h2>Two taps and it's safe</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Capture is meant to be effortless, especially on your phone. Get it out of your head in seconds, sort it later - or let Daybook sort it for you.</p></div>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Capture is meant to be effortless, especially on your phone. Get it out of your head in seconds, sort it later - or let Lifebook sort it for you.</p></div>
     </div>
     <div class="steps reveal">
       <div class="step"><span class="step-n">1</span><div class="step-t"><b>Open and jot</b><span>A task, a page, a number, a feeling - whatever you're holding.</span></div></div>
@@ -787,14 +787,14 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">Early access</div>
     <h2>Make some space in your head.</h2>
-    <p>Daybook is invite-only while it's young, growing gently by word of mouth so it stays calm and well cared for. Tell us a little about you and we'll set you up.</p>
+    <p>Lifebook is invite-only while it's young, growing gently by word of mouth so it stays calm and well cared for. Tell us a little about you and we'll set you up.</p>
     <form class="invite-form reveal" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="if-grid">
         <input id="if-name" placeholder="Your name" autocomplete="name" required>
         <input id="if-email" type="email" placeholder="Your email" autocomplete="email" required>
       </div>
-      <textarea id="if-why" placeholder="What would you use Daybook for? A line is plenty." rows="2"></textarea>
+      <textarea id="if-why" placeholder="What would you use Lifebook for? A line is plenty." rows="2"></textarea>
       <div class="if-actions">
         <button class="btn btn-primary" type="submit" id="if-submit">Request an invite →</button>
         <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
@@ -806,9 +806,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <footer id="signin">
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><span class="wm-word">Day<i class="wm-bk">book</i></span></a><span class="foot-tag">For a life well lived</span></div>
+    <div class="foot-brand"><a class="brand" href="/"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M9.5 19.5a6.5 6.5 0 0 1 13 0z" fill="currentColor"/><path d="M4.5 19.5h23" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M7.8 24.6h16.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></svg><span class="wm-word">Life<i class="wm-bk">book</i></span></a><span class="foot-tag">For a life well lived</span></div>
     <ul class="foot-links">
-      <li><a href="#idea">Your Daybook</a></li>
+      <li><a href="#idea">Your Lifebook</a></li>
       <li><a href="#tools">Tools</a></li>
       <li><a href="#private">Private by design</a></li>
       <li><a href="/blog">Journal</a></li>
@@ -819,7 +819,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Daybook</div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Lifebook</div>
   </div>
 </footer>
 
@@ -841,11 +841,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 </script>
 
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Sign in to your Daybook">
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Sign in to your Lifebook">
     <button class="signin-close" data-signin-close aria-label="Close">&times;</button>
     <div class="eyebrow">Welcome back</div>
-    <h3 class="signin-h">Sign in to your Daybook</h3>
-    <p class="signin-p">Enter your email and we'll send you a code. We'll take you to your own Daybook from there.</p>
+    <h3 class="signin-h">Sign in to your Lifebook</h3>
+    <p class="signin-p">Enter your email and we'll send you a code. We'll take you to your own Lifebook from there.</p>
     <form id="signin-form">
       <label class="signin-label" for="signin-email">Your email</label>
       <div class="signin-field">
@@ -854,7 +854,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <button class="btn btn-primary signin-go" type="submit">Continue →</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
-    <p class="signin-foot">Don't have a Daybook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
+    <p class="signin-foot">Don't have a Lifebook yet? <a href="#invite" data-signin-close>Request an invite</a></p>
   </div>
 </div>
 
@@ -867,10 +867,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   // hostname - so asking for it only gave people something to misremember, and
   // typing it wrong silently dropped you on a stranger's address with no error.
   // /signin serves the app shell, which owns the code flow and then hands you to
-  // your own Daybook. The email rides in the fragment: never sent to a server,
+  // your own Lifebook. The email rides in the fragment: never sent to a server,
   // never logged, and consumed once so a reload doesn't re-send a code.
   const sm = document.getElementById('signin-modal');
-  // If this browser is already signed in on a Daybook subdomain (a shared crumb
+  // If this browser is already signed in on a Lifebook subdomain (a shared crumb
   // the app leaves on .daybook.fyi), skip the email step and go straight there -
   // the subdomain shows your dashboard if the session's still good, or its own
   // sign-in if it has expired.
@@ -909,7 +909,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     note.hidden = true; btn.disabled = true; btn.textContent = 'Sending…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you 🌱</h3><p>We\'ll be in touch soon. Daybook grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you 🌱</h3><p>We\'ll be in touch soon. Lifebook grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
       .catch(() => fail('Something went wrong - email contact@daybook.fyi and we\'ll sort you out.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.

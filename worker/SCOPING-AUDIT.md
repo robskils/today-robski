@@ -1,4 +1,4 @@
-# Multi-tenant scoping audit (Daybook / branch `multi-tenant`)
+# Multi-tenant scoping audit (Lifebook / branch `multi-tenant`)
 
 Track B = owner (`user_id`) on every row. This tracks which query sites are
 tenant-scoped. The **data-query sweep is COMPLETE and verified on staging**: a

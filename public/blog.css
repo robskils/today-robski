@@ -1,4 +1,4 @@
-/* Daybook blog - shares the marketing site's visual language (home.html).
+/* Lifebook blog - shares the marketing site's visual language (home.html).
    Loaded by /blog and every /blog/<slug> article, so paths are absolute. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
