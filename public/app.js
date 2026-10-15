@@ -4307,10 +4307,8 @@ function homeTodayItems() {
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
   const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
-  // Birthdays (from Contacts) whose day is today lead the list, all-day style.
-  if (off === 0) ((state.home.alerts && state.home.alerts.birthdays) || [])
-    .filter((b) => !alertDismissed('bday:' + b.id) && (b.inDays || 0) === 0)
-    .forEach((b) => items.push({ kind: 'birthday', id: b.id, sort: -2, title: b.name }));
+  // Birthdays now live in the My Lifebook feed, not the Today calendar, so they're
+  // no longer injected here (avoids listing them twice). (Robin, 2026-10-15.)
   for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
     const tasks = (s.tasks || []).filter((t) => t && t.title);
@@ -5464,6 +5462,87 @@ function folioFeedData() {
   }).join('');
   return { has: true, count: nNew, wall: `<div class="upd-wall">${rows}</div>` };
 }
+// Soft-dismissed feed rows ("had enough of this"): a map {key: whenMs}, pruned so
+// it can't grow without bound. Powers the × on the informational My Lifebook rows.
+function lbDismissedMap() {
+  let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.feedDismiss') || '{}') || {}; } catch {}
+  const cut = Date.now() - 90 * 86400000; let changed = false;
+  for (const k in o) { if (o[k] < cut) { delete o[k]; changed = true; } }
+  if (changed) { try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {} }
+  return o;
+}
+function lbDismiss(key) { const o = lbDismissedMap(); o[key] = Date.now(); try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {} renderHome(); }
+// The "My Lifebook" feed - one reverse-chronological stream of everything going on
+// around you: tasks back from snooze, gentle keep-in-touch nudges, upcoming
+// birthdays, things people shared with you, and what they've done in your shared
+// Life Spaces. Newest at the top; most rows carry an × to clear them once you've
+// had enough. (Robin, 2026-10-15: Today = the calendar, My Lifebook = all the rest.)
+function lifebookFeedInner() {
+  const alerts = state.home.alerts || {};
+  const dismissed = lbDismissedMap();
+  const gone = (k) => Object.prototype.hasOwnProperty.call(dismissed, k);
+  const items = [];   // { ts, html }
+  // Tasks back from snooze - tick to complete, × to clear.
+  (alerts.surfaced || []).forEach((tk) => {
+    items.push({ ts: Date.now() + 5000, html:
+      `<div class="lb-item lb-click" data-open-task="${tk.id}" role="button" tabindex="0" title="Open this task">
+        <span class="lb-ic"><button class="lb-check" data-home-task-tick="${tk.id}" title="Mark done" aria-label="Mark done">✓</button></span>
+        <span class="lb-b"><span class="lb-t">${esc(tk.title || 'A task')} is back</span><span class="lb-m">back from snooze</span></span>
+        <button class="lb-x" data-home-task-dismiss="${tk.id}" title="Clear (keeps the task)" aria-label="Clear">×</button></div>` });
+  });
+  // Gentle keep-in-touch nudges.
+  (alerts.keepInTouch || []).forEach((k) => {
+    const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
+    items.push({ ts: Date.now() + 4000, html:
+      `<div class="lb-item lb-click" data-open-contact="${k.id}" role="button" tabindex="0" title="Open ${esc(k.name || '')}">
+        <span class="lb-ic"><button class="lb-check" data-kit-done="${esc(k.taskId)}" title="I've been in touch" aria-label="Been in touch">✓</button></span>
+        <span class="lb-b"><span class="lb-t">💬 Reach out to ${esc(k.name || 'someone')}</span><span class="lb-m">${esc(since)}</span></span>
+        <button class="lb-x" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me in a week" aria-label="Snooze a week">×</button></div>` });
+  });
+  // Upcoming birthdays (today + within each contact's lead window).
+  (alerts.birthdays || []).forEach((b) => {
+    const key = 'bday:' + b.id; if (gone(key)) return;
+    const n = b.inDays || 0;
+    const when = n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
+    items.push({ ts: Date.now() + 3000 - n * 1000, html:
+      `<div class="lb-item lb-click" data-open-contact="${b.id}" role="button" tabindex="0" title="Open ${esc(b.name || '')}">
+        <span class="lb-ic">🎂</span>
+        <span class="lb-b"><span class="lb-t">${esc(b.name || 'Someone')}'s birthday</span><span class="lb-m">${when}</span></span>
+        <button class="lb-x" data-lb-x="${esc(key)}" title="Clear" aria-label="Clear">×</button></div>` });
+  });
+  // Someone shared a Life Space / page / task with you.
+  (state.sharedItems || []).forEach((s) => {
+    const key = 'shin:' + s.id; if (gone(key)) return;
+    const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
+    const ts = s.shared_at ? new Date(s.shared_at).getTime() : Date.now();
+    items.push({ ts, html:
+      `<div class="lb-item lb-click" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}" role="button" tabindex="0">
+        <span class="lb-ic">🤝</span>
+        <span class="lb-b"><span class="lb-t"><b>${esc(s.owner || 'Someone')}</b> shared ${what} with you</span><span class="lb-m">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}${s.shared_at ? ' · ' + timeAgo(ts) : ''}</span></span>
+        <button class="lb-x" data-lb-x="${esc(key)}" title="Clear" aria-label="Clear">×</button></div>` });
+  });
+  // What other people have done in Life Spaces you share.
+  const ff = (state.home && state.home.folioFeed && state.home.folioFeed.updates) || [];
+  const IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
+  const THING = { note: 'a page', task: 'a task', goal: 'a goal', table: 'a table', contact: 'a contact', bucket: 'a bucket-list item', bookmark: 'a saved link', journal: 'a reflection', event: 'an event' };
+  const OPEN = new Set(['note', 'table', 'task', 'goal', 'contact', 'bucket', 'bookmark', 'journal', 'event']);
+  ff.forEach((u) => {
+    const key = 'upd:' + u.kind + ':' + u.id + ':' + (u.ts || ''); if (gone(key)) return;
+    const ts = u.ts ? new Date(u.ts).getTime() : 0;
+    const clk = OPEN.has(u.kind) && u.id;
+    const meta = [u.areaTitle ? esc(u.areaTitle) : '', u.ts ? timeAgo(ts) : ''].filter(Boolean).join(' · ');
+    items.push({ ts, html:
+      `<div class="lb-item${clk ? ' lb-click' : ''}"${clk ? ` data-fav-open="${u.kind}:${u.id}" role="button" tabindex="0"` : ''}>
+        <span class="lb-ic">${IC[u.kind] || '•'}</span>
+        <span class="lb-b"><span class="lb-t"><b>${esc(u.name)}</b> ${esc(u.verb)} ${THING[u.kind] || 'something'}${u.title ? ` · ${esc(u.title)}` : ''}</span><span class="lb-m">${meta}</span></span>
+        <button class="lb-x" data-lb-x="${esc(key)}" title="Clear" aria-label="Clear">×</button></div>` });
+  });
+  items.sort((a, b) => b.ts - a.ts);
+  // Pinned alerts that want attention sit above the stream (not dismissible here).
+  const pinned = `${homeMailAlertHtml()}${homeReviewDueBanner()}${homeDeadlinesHtml()}`;
+  if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Life Spaces will show up here.</div>';
+  return `${pinned}${items.length ? `<div class="lb-feed">${items.map((i) => i.html).join('')}</div>` : ''}`;
+}
 function homeDiscoverHtml() {
   const feats = [
     ['⌨', 'Quick jump', 'Reach anything with ⌘K', 'data-palette'],
@@ -5486,10 +5565,10 @@ function homeDiscoverHtml() {
 // change (kept in localStorage). Defaults to Today + Do next + Practices.
 function homeMainEnabled() {
   let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
-  if (!Array.isArray(o)) return ['today', 'priority', 'tracker', 'foliofeed'];
-  // One-time: fold the new "Shared lifespaces" section into an existing setup so it
-  // keeps showing by default; if you then remove it, that sticks. (Robin, 2026-10-15.)
-  try { if (localStorage.getItem('life.home.ffSeen') !== '1') { localStorage.setItem('life.home.ffSeen', '1'); if (!o.includes('foliofeed')) { o = [...o, 'foliofeed']; localStorage.setItem('life.home.mainSecs', JSON.stringify(o)); } } } catch {}
+  if (!Array.isArray(o)) return ['today', 'priority', 'tracker'];
+  // Shared-lifespace activity is now folded into the fixed "My Lifebook" feed, so
+  // drop the old standalone section if a saved layout still carries it. (Robin.)
+  if (o.includes('foliofeed')) o = o.filter((k) => k !== 'foliofeed');
   return o;
 }
 function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
@@ -5497,7 +5576,7 @@ function homeMainOpen(k) {
   // Explicit choice wins; otherwise on mobile every card except Today starts
   // collapsed, so Home opens as a uniform stack of one-row cards (mirrors secOpen).
   try { const o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); if (k in o) return o[k] !== false; } catch {}
-  return !isMobileHome() || k === 'today';
+  return !isMobileHome() || k === 'today' || k === 'lifebook';
 }
 function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); } catch {} o[k] = !homeMainOpen(k); try { localStorage.setItem('life.home.mainOpen', JSON.stringify(o)); } catch {} renderHome(); }
 function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
@@ -5505,7 +5584,7 @@ function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHo
 function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
 // The order of ALL Home sections (enabled or not) - what the show/hide chips can
 // be dragged into. The enabled ones render on Home in this order.
-const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail', 'foliofeed'];
+const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
 function homeMainOrder() {
   let o = [];
   try { o = JSON.parse(localStorage.getItem('life.home.mainOrder') || 'null'); } catch {}
@@ -5625,7 +5704,6 @@ function renderHome() {
       <div class="home-scroll">
       ${homeSetupCardHtml()}
       ${homeInvitesHtml()}
-      ${homeSharedAlertHtml()}
       ${homeMsgAlertHtml()}
       ${homeReqAlertHtml()}
       ${homeQuoteHtml()}
@@ -5649,7 +5727,7 @@ function renderHome() {
           const alerts = state.home.alerts || {};
           const off = state.home.dayOffset || 0;
           const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-          const todayRows = evRows + (off === 0 ? surfacedRows : '');
+          const todayRows = evRows;   // Today is the calendar only now; snooze-returns live in the My Lifebook feed
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
           // A due catch-up also surfaces as a Today notification, with a ✓ (been in
@@ -5669,25 +5747,13 @@ function renderHome() {
           const bdaySoon = bdays.filter((b) => (b.inDays || 0) >= 1);
           const bdaySoonRows = bdaySoon.map((b) => `<div class="ev-row ev-bday ev-click" data-open-contact="${b.id}" role="button" tabindex="0" title="Open ${esc(b.name || '')}"><span class="ev-time">🎂</span><span class="ev-t">${esc(b.name || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`}</span><button class="ev-bday-x" data-alert-x="bday:${b.id}" title="Hide" aria-label="Hide">×</button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
-          const ffd = folioFeedData();
           const bodies = {
-            foliofeed: ffd.has ? ffd.wall : '<div class="home-empty">Nothing in your shared lifespaces yet.</div>',
-            today: (() => {
-              // No "Be ready" wrapper now: the review nudge is its own banner, and
-              // Deadlines is its own plain-word group like Today / A gentle nudge. (Robin.)
-              const reviewBanner = off === 0 ? homeReviewDueBanner() : '';
-              const deadlinesGrp = off === 0 ? homeDeadlinesHtml() : '';
-              const bdayGrp = (off === 0 && bdaySoonRows) ? `<div class="feed-grp feed-bdays"><div class="feed-grp-h">Birthdays coming up</div>${bdaySoonRows}</div>` : '';
-              const gentleGrp = (off === 0 && kitTodayRows) ? `<div class="feed-grp feed-gentle"><div class="feed-grp-h">A gentle nudge</div>${kitTodayRows}</div>` : '';
-              const agendaInner = state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
-                : (todayRows ? `<div class="today-cal">${todayRows}</div>`
-                  : ((deadlinesGrp || gentleGrp || bdayGrp) ? '' : `<div class="home-empty">${off === 0 ? 'Nothing planned today. Open Today to add practices and tasks.' : 'Nothing on this day.'}</div>`));
-              // "Today" sits above the day's calendar, same group style as the rest.
-              // On another day it names that day, not "Today". (Robin.)
-              const agendaLabel = off === 0 ? 'Today' : prettyDate(addDayISO(todayISO(), off));
-              const agenda = agendaInner ? `<div class="feed-grp feed-today"><div class="feed-grp-h">${esc(agendaLabel)}</div>${agendaInner}</div>` : '';
-              return `${off === 0 ? homeMailAlertHtml() : ''}${reviewBanner}${deadlinesGrp}${agenda}${bdayGrp}${gentleGrp}`;
-            })(),
+            // Today is purely the day's calendar + practices now. Everything else
+            // (birthdays, nudges, snooze-returns, deadlines, shared activity) lives in
+            // the My Lifebook feed just below. (Robin, 2026-10-15.)
+            today: state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
+              : (todayRows ? `<div class="today-cal">${todayRows}</div>`
+                : `<div class="home-empty">${off === 0 ? 'Nothing in your calendar today.' : 'Nothing on this day.'}</div>`),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No lifespaces yet. Create one from Life Spaces.</div>',
@@ -5715,7 +5781,6 @@ function renderHome() {
             { k: 'favareas', ic: '◈', label: 'Life Spaces', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
-            { k: 'foliofeed', ic: '✦', label: 'Shared lifespaces', count: ffd.count, on: ffd.has },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
           const availKeys = avail.map((s) => s.k);
@@ -5730,17 +5795,32 @@ function renderHome() {
               ${op ? bodies[s.k] : ''}
             </section>` };
           });
-          // Recently viewed is a fixed strip in the main column, right after Today -
-          // one tap back to what you were in. Not a removable/configurable tile; it
-          // folds like the others. (Moved here from the right rail.)
+          // Today always leads the main column - the calendar first, whatever order
+          // the other sections are in. (Robin, 2026-10-15.)
+          { const ti0 = blockEls.findIndex((b) => b.k === 'today'); if (ti0 > 0) { const [td] = blockEls.splice(ti0, 1); blockEls.unshift(td); } }
+          // "My Lifebook" - the feed of everything else - sits right under Today, on
+          // today itself only (other days just show that day's calendar). A fixed,
+          // foldable strip; not removable.
+          if (off === 0) {
+            const lop = homeMainOpen('lifebook');
+            const lifebookBlock = `<section class="lead-block lead-lifebook${lop ? '' : ' lead-collapsed'}" data-lead-key="lifebook">
+              <div class="lead-h" data-home-main-toggle="lifebook" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${lop ? '▾' : '▸'}</span><span class="lead-ic">✦</span><span class="lead-name">My Lifebook</span></div>
+              ${lop ? (() => { try { return lifebookFeedInner(); } catch (e) { return '<div class="home-empty">Your feed will appear here.</div>'; } })() : ''}
+            </section>`;
+            const ti = blockEls.findIndex((b) => b.k === 'today');
+            blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'lifebook', html: lifebookBlock });
+          }
+          // Recently viewed is a fixed strip too, right after the feed (or Today).
+          // Not removable; folds like the others. (Moved here from the right rail.)
           if (recents.length) {
             const rop = homeMainOpen('recent');
             const recentBlock = `<section class="lead-block lead-recent${rop ? '' : ' lead-collapsed'}" data-lead-key="recent">
               <div class="lead-h" data-home-main-toggle="recent" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${rop ? '▾' : '▸'}</span><span class="lead-ic">↺</span><span class="lead-name">${esc(t('home.sec.recent'))}</span><span class="lead-c">${recents.length}</span></div>
               ${rop ? recentHtml : ''}
             </section>`;
+            const li = blockEls.findIndex((b) => b.k === 'lifebook');
             const ti = blockEls.findIndex((b) => b.k === 'today');
-            blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'recent', html: recentBlock });
+            blockEls.splice(li >= 0 ? li + 1 : (ti >= 0 ? ti + 1 : 0), 0, { k: 'recent', html: recentBlock });
           }
           const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
@@ -19757,6 +19837,7 @@ document.addEventListener('click', (e) => {
   { const cr = t.closest('[data-feed-country-rm]'); if (cr) { removeCountry(cr.dataset.feedCountryRm); return; } }
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
+  { const lx = t.closest('[data-lb-x]'); if (lx) { e.preventDefault(); e.stopPropagation(); lbDismiss(lx.dataset.lbX); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
     if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).sort((a, b) => (PRIO_ORDER[(a.props && a.props.priority) || ''] || 5) - (PRIO_ORDER[(b.props && b.props.priority) || ''] || 5)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }

@@ -5580,6 +5580,28 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
    what, newest first. (Robin, 2026-10-11.) */
 .area-updates { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-top:24px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:18px 20px; }
 .upd-wall { display:flex; flex-direction:column; margin-top:10px; }
+/* "My Lifebook" feed: one reverse-chronological stream of birthdays, nudges,
+   snooze-returns and shared-Life-Space activity, newest first, each row clearable
+   with an ×. (Robin, 2026-10-15.) */
+.lead-lifebook .lb-feed { display:flex; flex-direction:column; }
+.lb-item { position:relative; display:flex; align-items:flex-start; gap:12px; padding:12px 10px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); border-radius:10px; }
+.lb-item:first-child { border-top:0; }
+.lb-click { cursor:pointer; transition:background .12s; }
+.lb-click:hover { background:var(--paper-2); }
+.lb-click:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.lb-ic { flex:none; width:34px; height:34px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:16px; background:var(--paper-2); color:var(--ink-2); font-variant-emoji:text; }
+.lb-ic:has(> .lb-check) { background:none; }
+.lb-b { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; padding-right:26px; }
+.lb-t { font-size:16px; color:var(--ink); line-height:1.4; overflow-wrap:anywhere; }
+.lb-t b { font-weight:600; }
+.lb-m { font-size:13px; color:var(--ink-3); }
+.lb-check { width:34px; height:34px; flex:none; border-radius:50%; border:1.5px solid var(--line-2); background:var(--card); color:transparent; font-size:15px; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
+.lb-check:hover { border-color:var(--accent); color:var(--accent); }
+.lb-check:active { background:var(--paper-2); }
+.lb-x { position:absolute; top:9px; right:4px; width:26px; height:26px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; font-size:18px; line-height:1; color:var(--ink-3); background:transparent; cursor:pointer; opacity:0; transition:opacity .12s,color .12s,background .12s; }
+.lb-item:hover .lb-x, .lb-item:focus-within .lb-x { opacity:.65; }
+.lb-x:hover { opacity:1; color:var(--danger,#c0392b); background:var(--paper-2); }
+@media (hover:none){ .lb-x { opacity:.5; } }
 .upd-row { display:flex; align-items:flex-start; gap:12px; padding:11px 4px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); }
 .upd-row:first-child { border-top:0; }
 /* A folio-feed item that's new since your last visit: a soft gold rail. */
