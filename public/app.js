@@ -5387,10 +5387,13 @@ function homeSharedAlertHtml() {
 }
 // What others have done in folios you share - a feed on Home. Each row taps
 // through to the thing. New-since-last-visit items carry a soft dot. (Robin.)
-function homeFolioFeedHtml() {
+// The "Shared folios" feed is a managed Home section now (a chip in the sections
+// list, reorderable, collapsible). This builds its data: whether there's anything,
+// the new-since-seen count, and the rows wall. (Robin, 2026-10-15.)
+function folioFeedData() {
   const ff = state.home && state.home.folioFeed;
   const feed = (ff && ff.updates) || [];
-  if (!feed.length) return '';
+  if (!feed.length) return { has: false, count: 0, wall: '' };
   const IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const THING = { note: 'a page', task: 'a task', goal: 'a goal', table: 'a table', contact: 'a contact', bucket: 'a bucket-list item', bookmark: 'a saved link', journal: 'a reflection', event: 'an event' };
   const OPEN = new Set(['note', 'table', 'task', 'goal', 'contact', 'bucket', 'bookmark', 'journal', 'event']);
@@ -5402,7 +5405,7 @@ function homeFolioFeedHtml() {
     const where = u.areaTitle ? ` · ${esc(u.areaTitle)}` : '';
     return `<div class="upd-row${clk ? ' upd-click' : ''}${isNew ? ' upd-new' : ''}"${clk ? ` data-fav-open="${u.kind}:${u.id}" role="button" tabindex="0"` : ''}><span class="upd-ic">${IC[u.kind] || '•'}</span><span class="upd-b"><span class="upd-t"><b>${esc(u.name)}</b> ${esc(u.verb)} ${THING[u.kind] || 'something'}${u.title ? ` · <span class="upd-ttl">${esc(u.title)}</span>` : ''}</span><span class="upd-when">${esc(where)}${u.ts ? ` · ${timeAgo(new Date(u.ts).getTime())}` : ''}</span></span></div>`;
   }).join('');
-  return `<section class="home-sec home-sec-card home-foliofeed"><div class="home-sec-h">✦ In your shared folios${nNew ? `<span class="muted">${nNew} new</span>` : ''}</div><div class="upd-wall">${rows}</div></section>`;
+  return { has: true, count: nNew, wall: `<div class="upd-wall">${rows}</div>` };
 }
 function homeDiscoverHtml() {
   const feats = [
@@ -5424,7 +5427,14 @@ function homeDiscoverHtml() {
 }
 // Which sections show in the Home MAIN area, and their fold state - both yours to
 // change (kept in localStorage). Defaults to Today + Do next + Practices.
-function homeMainEnabled() { try { const o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); if (Array.isArray(o)) return o; } catch {} return ['today', 'priority', 'tracker']; }
+function homeMainEnabled() {
+  let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
+  if (!Array.isArray(o)) return ['today', 'priority', 'tracker', 'foliofeed'];
+  // One-time: fold the new "Shared folios" section into an existing setup so it
+  // keeps showing by default; if you then remove it, that sticks. (Robin, 2026-10-15.)
+  try { if (localStorage.getItem('life.home.ffSeen') !== '1') { localStorage.setItem('life.home.ffSeen', '1'); if (!o.includes('foliofeed')) { o = [...o, 'foliofeed']; localStorage.setItem('life.home.mainSecs', JSON.stringify(o)); } } } catch {}
+  return o;
+}
 function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
 function homeMainOpen(k) {
   // Explicit choice wins; otherwise on mobile every card except Today starts
@@ -5438,7 +5448,7 @@ function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHo
 function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
 // The order of ALL Home sections (enabled or not) - what the show/hide chips can
 // be dragged into. The enabled ones render on Home in this order.
-const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
+const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail', 'foliofeed'];
 function homeMainOrder() {
   let o = [];
   try { o = JSON.parse(localStorage.getItem('life.home.mainOrder') || 'null'); } catch {}
@@ -5529,6 +5539,7 @@ function renderHome() {
   const recentHtml = recents.length
     ? `<div class="recent-list">${recentShown.map((r) => { const hue = recentHue(r); return `<button class="recent-item${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${r.kind}:${r.id}" title="${esc(r.title || 'Untitled')}"><span class="recent-ic">${favIc(r.kind)}</span><span class="recent-t">${esc(r.title || 'Untitled')}</span></button>`; }).join('')}</div>${recents.length > 10 ? `<button class="p1-all" data-recent-more>${(state.home && state.home.recentAll) ? 'Show fewer' : `See all ${recents.length}`} →</button>` : ''}`
     : '<div class="home-empty">Open a note, table, task or area and it lands here.</div>';
+  let homeFeatBar = '';   // the "Homepage sections" control; built in the lead IIFE, rendered at the bottom
   $('#pane').innerHTML = `
     <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
     <div class="home">
@@ -5600,7 +5611,9 @@ function renderHome() {
           const bdaySoon = bdays.filter((b) => (b.inDays || 0) >= 1);
           const bdaySoonRows = bdaySoon.map((b) => `<div class="ev-row ev-bday ev-click" data-open-contact="${b.id}" role="button" tabindex="0" title="Open ${esc(b.name || '')}"><span class="ev-time">🎂</span><span class="ev-t">${esc(b.name || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`}</span><button class="ev-bday-x" data-alert-x="bday:${b.id}" title="Hide" aria-label="Hide">×</button></div>`).join('');
           // Each Home section becomes an equal tile; the open one expands below.
+          const ffd = folioFeedData();
           const bodies = {
+            foliofeed: ffd.has ? ffd.wall : '<div class="home-empty">Nothing in your shared folios yet.</div>',
             today: (() => {
               // No "Be ready" wrapper now: the review nudge is its own banner, and
               // Deadlines is its own plain-word group like Today / A gentle nudge. (Robin.)
@@ -5644,6 +5657,7 @@ function renderHome() {
             { k: 'favareas', ic: '◈', label: 'Folios', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
+            { k: 'foliofeed', ic: '✦', label: 'Shared folios', count: ffd.count, on: ffd.has },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
           const availKeys = avail.map((s) => s.k);
@@ -5674,10 +5688,11 @@ function renderHome() {
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
           const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
-          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>${featBar}`;
+          homeFeatBar = featBar;   // render it at the very bottom of Home, not here
+          return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>`;
         })()}</div>
-        ${homeFolioFeedHtml()}
         ${homeDiscoverHtml()}
+        ${homeFeatBar}
         <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
         <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>
       </div>
