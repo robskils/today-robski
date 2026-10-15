@@ -11451,7 +11451,11 @@ function startMailUnreadPoll() {
   // reading or composing so it never yanks you off what you're doing.
   if (!window.__mailVisBound) {
     window.__mailVisBound = true;
-    const onReturn = () => { if (document.hidden) return; if (state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) { refreshMailUnread(); loadMessages(true); } };
+    // Refresh on return, but honour the warm server cache (updated every minute by
+    // the cron and shared across devices) instead of forcing a slow live IMAP fan-out
+    // on every single focus - that was a big part of "loading is painfully slow". A
+    // genuinely stale cache (past the freshness window) still goes live. (Robin.)
+    const onReturn = () => { if (document.hidden) return; if (state.view && state.view.type === 'mail' && state.mail && !state.mail.open && !state.mail.composing) { refreshMailUnread(); loadMessages(); } };
     document.addEventListener('visibilitychange', onReturn);
     window.addEventListener('focus', onReturn);
   }
@@ -20111,7 +20115,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
@@ -21142,6 +21146,13 @@ document.addEventListener('pointercancel', leadDragEnd);
 // Drag an inbox row up onto a quadrant card to file it fast. Touch: long-press
 // then drag (so a tap still opens and a swipe still scrolls). Mouse: drag on move.
 let mailDrag = null; let mailDragPress = null; let mailDragSuppressClick = 0;
+// Opening an inbox row is bound to pointerdown -> pointerup, NOT click. The list is
+// rebuilt with `innerHTML =` on every load/refresh, and the open-time refresh storm
+// often swaps the pressed row out between finger-down and finger-up, so the browser
+// never fires `click` on it - the "first email won't open" bug. We capture the row
+// key on pointerdown and open from THAT key on pointerup, regardless of whether the
+// node still exists. A real drag or scroll cancels it. (Robin, 2026-10-15.)
+let mailTapKey = null, mailTapX = 0, mailTapY = 0, mailTapOpenedAt = 0;
 document.addEventListener('pointerdown', (e) => {
   if (e.button != null && e.button !== 0) return;
   const row = e.target.closest && e.target.closest('.mail-row[data-mail-open]');
@@ -21152,6 +21163,7 @@ document.addEventListener('pointerdown', (e) => {
   const begin = () => {
     if (mailDragPress && mailDragPress.timer) clearTimeout(mailDragPress.timer);
     mailDragPress = null;
+    mailTapKey = null;   // a drag has armed - this is no longer a tap-to-open
     mailDrag = { key, row, pid, over: null, ghost: null };
     row.classList.add('mail-dragging');
     const g = document.createElement('div'); g.className = 'mail-drag-ghost';
@@ -21197,6 +21209,26 @@ function mailDragEnd(e) {
 }
 document.addEventListener('pointerup', mailDragEnd);
 document.addEventListener('pointercancel', mailDragEnd);
+// Tap-to-open, resilient to the row node being replaced mid-tap (see mailTapKey).
+document.addEventListener('pointerdown', (e) => {
+  if (e.button != null && e.button !== 0) { mailTapKey = null; return; }
+  const row = e.target.closest && e.target.closest('.mail-row[data-mail-open]');
+  if (!row) { mailTapKey = null; return; }
+  // Leave the row's own controls (archive, star, checkbox, quadrant, links) alone.
+  if (e.target.closest('.mail-check, .mail-star, .mail-quadbtn, .mail-rowarch, a, button:not(.mail-row)')) { mailTapKey = null; return; }
+  mailTapKey = row.dataset.mailOpen; mailTapX = e.clientX; mailTapY = e.clientY;
+});
+document.addEventListener('pointermove', (e) => {
+  if (mailTapKey && (Math.abs(e.clientX - mailTapX) > 6 || Math.abs(e.clientY - mailTapY) > 6)) mailTapKey = null;   // a scroll/drag, not a tap
+});
+document.addEventListener('pointerup', (e) => {
+  const key = mailTapKey; mailTapKey = null;
+  if (!key) return;
+  if (Date.now() - mailDragSuppressClick < 400) return;   // a quadrant drop just happened
+  mailTapOpenedAt = Date.now();
+  if (state.mail.selected && state.mail.selected.size) mailToggleSelect(key);
+  else openMessage(key);
+});
 // After editing the Home notepad on mobile, bring the card's TOP back into view -
 // the keyboard closing otherwise leaves you looking at the bottom of a long note,
 // unable to see what's on it.
