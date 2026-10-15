@@ -1426,6 +1426,43 @@ function navSection(key, v) {
     ${collapsed ? '' : `<div class="nav-sec-body${key === 'favs' ? ' nav-2col' : ''}${(key === 'areas' || key === 'notes') ? ' nav-cards' : ''}${key === 'people' ? ' nav-people' : ''}"${key === 'favs' ? ' id="favs"' : ''}>${rows}</div>`}
   </div>`;
 }
+// Starred + Recent live as a two-button expander at the TOP of the sidebar (below
+// search, above Tools): one button each, side by side; clicking one opens its
+// list below and closes the other. Rows reuse the existing data-fav-open /
+// data-recent-x handlers. (Robin, 2026-10-15.)
+function favRows() {
+  return (state.favs || []).map((f) => {
+    const area = f.kind === 'area' ? f : areaById(blockAreas(f)[0]);
+    const hue = area ? hueOf(area) : null;
+    const titleAttr = (f.kind !== 'area' && area) ? ` title="${esc(area.title)}"` : '';
+    return `<button class="nav-sub nav-sub-wide${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${f.kind}:${f.id}" draggable="true" data-fav-id="${f.id}"${titleAttr}><span class="i">${f.kind in KIND_IC ? KIND_IC[f.kind] : '•'}</span><span class="t">${esc(f.title || 'Untitled')}</span></button>`;
+  }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
+}
+function recentRows(v) {
+  const activeId = (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id)
+    || (v.type === 'table' && state.tables_open && state.tables_open.id)
+    || (v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id)
+    || (v.type === 'taskcard' && state.task_open && state.task_open.task && state.task_open.task.id) || null;
+  return recentItems().filter((r) => r && r.id && r.kind).slice(0, 20).map((n) => {
+    const active = n.id === activeId;
+    const aid = n.kind === 'area' ? n.id : (n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })());
+    const a = aid ? areaById(aid) : null;
+    const hue = a ? hueOf(a) : null;
+    const ic = n.kind in KIND_IC ? KIND_IC[n.kind] : '•';
+    return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
+  }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
+}
+function navTopOpen() { try { const x = localStorage.getItem('life.nav.topsec'); return x === null ? 'recent' : x; } catch { return 'recent'; } }
+function setNavTop(which) { const cur = navTopOpen(); const next = cur === which ? '' : which; try { localStorage.setItem('life.nav.topsec', next); } catch {} renderNav(); }
+function navTopSecs(v) {
+  const open = navTopOpen();
+  const favN = (state.favs || []).length;
+  const recN = recentItems().filter((r) => r && r.id && r.kind).length;
+  const tab = (key, ic, label, n) => `<button type="button" class="nav-topsec-t${open === key ? ' on' : ''}" data-navtop="${key}" aria-expanded="${open === key ? 'true' : 'false'}"><span class="nts-ic">${ic}</span><span class="nts-l">${label}</span>${n ? `<span class="nts-c">${n}</span>` : ''}</button>`;
+  const body = open === 'favs' ? `<div class="nav-topsec-body">${favRows()}</div>`
+    : open === 'recent' ? `<div class="nav-topsec-body">${recentRows(v)}</div>` : '';
+  return `<div class="nav-topsecs"><div class="nav-topsec-tabs">${tab('favs', '★', 'Starred', favN)}${tab('recent', '🕘', 'Recent', recN)}</div>${body}</div>`;
+}
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
 // Mode lives in life.theme.mode ('auto'|'light'|'dark'); the resolved light/dark
 // is mirrored to today.theme so the first-paint inline script and the embedded
@@ -3658,7 +3695,7 @@ function navGridHtml(v) {
   // Tools leads with Home (top-left), then the mains, and ends with Discover
   // (moved out of the Today group). Today keeps the day-planning trio below. (Robin.)
   return `<div class="nav-grid">
-    ${grp('main', t('nav.grp.main'), [NI.home, NI.mail, NI.tasks, NI.calendar, NI.notes, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
+    ${grp('main', t('nav.grp.main'), [NI.home, NI.mail, NI.notes, NI.calendar, NI.tasks, NI.areas, NI.goals, NI.reviews, NI.saved, NI.discover])}
     ${grp('daily', t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp('money', t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
@@ -3726,8 +3763,9 @@ function renderNav() {
       </div>
       <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
       ${navMobileListHtml(v)}
+      ${navTopSecs(v)}
       ${navGridHtml(v)}
-      <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => (k === 'people' || (k === 'areas' && !modOn('areas')) || (k === 'notes' && !modOn('notes'))) ? '' : navSection(k, v)).join('')}</div>
+      <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ['people', 'favs', 'notes', 'areas'].includes(k) ? '' : navSection(k, v)).join('')}</div>
       <div class="nav-bottom">
         <div class="nav-bottom-row">
           <button class="nav-theme nav-guide ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide title="${t('nav.guide')}"><span class="ns-ic">ⓘ</span><span class="ns-lbl"> ${t('nav.guide')}</span></button>
@@ -19572,6 +19610,7 @@ document.addEventListener('click', (e) => {
   // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
   // drawer as it navigates - the destination's renderNav() then paints it shut.
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
+  { const nt = t.closest('[data-navtop]'); if (nt) { setNavTop(nt.dataset.navtop); return; } }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
 
   { const rx = t.closest('[data-recent-x]'); if (rx) { e.preventDefault(); e.stopPropagation(); const [k, id] = rx.dataset.recentX.split(':'); removeRecent(k, id); return; } }

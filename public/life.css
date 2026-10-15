@@ -2334,7 +2334,21 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark:hover .brand-mark { opacity:1; }
 .home-mark:active { transform:translateY(0); }
 .nav-brand .brand-mark { width:1.4em; height:1.4em; margin:0 .14em 0 .18em; vertical-align:-.32em; color:var(--gold); }
+/* Firm the sidebar monogram a touch - the fine Cormorant strokes read a little
+   light at this size, so give the letters + dot a hairline of their own colour
+   (the ring, a separate circle, is untouched). (Robin, 2026-10-15.) */
+.nav-brand .brand-mark g path, .nav-brand .brand-mark g circle { stroke:currentColor; stroke-width:20; stroke-linejoin:round; }
 .nav-msearch, .nav-msearch-row { display:none; }   /* mobile-only sticky search (see media query) */
+/* Starred / Recent expander at the top of the sidebar: two buttons side by side,
+   click one to open its list below (and close the other). (Robin, 2026-10-15.) */
+.nav-topsecs { margin:2px 2px 6px; }
+.nav-topsec-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.nav-topsec-t { display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 8px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink-2); font-size:14.5px; font-weight:600; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+.nav-topsec-t .nts-ic { font-size:13px; color:var(--gold); }
+.nav-topsec-t .nts-c { font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; background:var(--paper-2); border-radius:999px; padding:1px 6px; }
+.nav-topsec-t.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
+@media (hover:hover){ .nav-topsec-t:hover { border-color:var(--accent); } }
+.nav-topsec-body { margin-top:8px; display:flex; flex-direction:column; gap:3px; max-height:46vh; overflow-y:auto; overflow-x:hidden; padding:1px; }
 .home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
