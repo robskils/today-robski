@@ -2321,9 +2321,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:normal; color:var(--ink); }
-/* "Lifebook" is one word; only "book" leans italic, tucked close to the roman
-   "Day". The gold mark carries the colour. (Brand, 2026-10-13.) */
-.wm-bk { font-style:italic; margin-left:-.07em; }
+/* "Lifebook" is one word; only "book" leans italic, at natural spacing after the
+   roman "Life" (the old -.07em tuck closed Day's loose y-b gap; Life's e-b sits
+   right on its own). The gold mark carries the colour. (Brand, 2026-10-15.) */
+.wm-bk { font-style:italic; margin-left:0; }
 .nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 /* A quiet Lifebook mark closing the Home main column, in the chosen accent. */
