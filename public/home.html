@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
+<script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lifebook - email, calendar, pages and tasks in one place</title>
@@ -874,15 +875,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   // your own Lifebook. The email rides in the fragment: never sent to a server,
   // never logged, and consumed once so a reload doesn't re-send a code.
   const sm = document.getElementById('signin-modal');
-  // If this browser is already signed in on a Lifebook subdomain (a shared crumb
-  // the app leaves on .daybook.fyi), skip the email step and go straight there -
-  // the subdomain shows your dashboard if the session's still good, or its own
-  // sign-in if it has expired.
-  const readCookie = (n) => { const m = document.cookie.match('(?:^|; )' + n + '=([^;]*)'); return m ? decodeURIComponent(m[1]) : ''; };
+  // Everyone lives at lifebook.fyi now (no per-user subdomains). A browser that's
+  // already signed in is forwarded straight to /app by the token check in <head>,
+  // so this just opens the email sign-in box. (Robin, 2026-10-15.)
   const openSignin = (e) => {
     if (e) e.preventDefault();
-    const sub = readCookie('db_sub');
-    if (sub && /^[a-z0-9-]{1,63}$/.test(sub)) { location.href = 'https://' + sub + '.daybook.fyi/'; return; }
     sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
   };
   const closeSignin = () => { sm.hidden = true; };

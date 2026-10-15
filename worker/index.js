@@ -4231,7 +4231,10 @@ export default {
       // its own, so it lends its sign-in gate and then hands you to your own
       // subdomain (see goToMyLifebook). That is why nobody need remember a
       // username to sign in - the token says who you are, the hostname never did.
-      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) || path === '/signin') {
+      // /app is the app's home at the apex now that everyone lives at lifebook.fyi
+      // (no more per-user subdomains): the marketing page forwards signed-in visitors
+      // here, and the installed app's start_url points at it. (Robin, 2026-10-15.)
+      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) || path === '/signin' || path === '/app') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
       // A Lifebook-card connect link: /u/<handle> (from someone's QR code). Serve
@@ -4312,15 +4315,15 @@ export default {
       // planner is a native SPA view (openToday on the /today boot route), not
       // the retired standalone index.html/today.js. Serve the app shell so the
       // "Plan your day" email link deep-links straight into it.
-      if (isLife && /^\/today(\/|$)/.test(path)) {
+      if (/^\/today(\/|$)/.test(path)) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
-      // The Life app is a single page; its in-app routes must serve the app shell
-      // so a link or a pinned icon can deep-link straight into one (e.g. a surface
-      // alert emails ${sub}.daybook.fyi/task/<id> to open that task).
-      if (path === '/' || (isLife && /^\/(calendar|mail|task|tasks|goals|journal|dreams|saved|read|reviews|areas|contacts|financial|toolbox|settings|share)(\/|$)/.test(path))) {
-        const file = isLife ? '/app.html' : '/index.html';
-        return withHsts(await env.ASSETS.fetch(new Request(new URL(file, url.origin), request)));
+      // The Life app is a single page; its in-app routes serve the app shell on ANY
+      // host so a link or a pinned icon deep-links straight in. The app now runs at
+      // the apex too (lifebook.fyi/calendar etc.), not only on a subdomain; the apex
+      // "/" stays the marketing page (handled above). (Robin, 2026-10-15.)
+      if ((isLife && path === '/') || /^\/(calendar|mail|task|tasks|goals|journal|dreams|saved|read|reviews|areas|contacts|financial|toolbox|settings|share)(\/|$)/.test(path)) {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
       // Versioned assets (app.js?v=…, life.css?v=…) are immutable: the ?v= stamp
       // changes on every deploy, so a given URL never changes content. The assets

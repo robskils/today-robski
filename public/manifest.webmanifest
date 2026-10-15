@@ -2,7 +2,7 @@
   "name": "Lifebook",
   "short_name": "Lifebook",
   "description": "For a life well lived. Your calendar, tasks, notes, reflections and money in one calm, private place.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4f1ea",

@@ -23193,7 +23193,7 @@ async function signupSubmit(e) {
       subdomain: $('#su-sub').value.trim(),
       invite: inv ? inv.value.trim() : storedInvite(),
     }) });
-    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} goToMyLifebook(d.user.subdomain); return; }
+    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} location.replace('/app'); return; }
     throw new Error(t('signup.createfail'));
   } catch (e2) { err.textContent = e2.message || t('signup.createfail'); err.hidden = false; btn.disabled = false; }
 }
@@ -23519,6 +23519,17 @@ async function onbConnectGmail() {
 (async function boot() {
   initTheme();
   applyBgPattern(savedBgPattern());
+  // Per-user subdomains are retired - everyone lives at lifebook.fyi now. If this is
+  // an old <sub>.daybook.fyi address, hand the session straight over to the apex app,
+  // carrying the token in the fragment (consumed just below) so existing bookmarks
+  // and home-screen installs migrate without a re-login. (Robin, 2026-10-15.)
+  try {
+    if (location.hostname.endsWith('.daybook.fyi') && location.hostname !== 'www.daybook.fyi') {
+      const tk = token();
+      location.replace('https://lifebook.fyi/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
+      return;
+    }
+  } catch {}
   // Session hand-off from the apex (see goToMyLifebook): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
   let preEmail = '', preChannel = '';
@@ -23556,11 +23567,8 @@ async function onbConnectGmail() {
   try {
     const me = await api('/api/me');
     if (me && me.needsSignup) { showSignup(me.email, me.inviteRequired, invited || me.invited); return; }
-    // daybook.fyi is the marketing site, not anybody's Lifebook. Someone who
-    // arrived on a join link and already has an account belongs on their own
-    // subdomain, signed in - not staring at "Request an invite".
-    if (me && me.user && me.user.subdomain) rememberSubdomain(me.user.subdomain);   // so the apex "Sign in" can skip straight here
-    if (me && me.user && onApex() && me.user.subdomain) { goToMyLifebook(me.user.subdomain); return; }
+    // Everyone lives at lifebook.fyi now - no more bouncing a signed-in apex visitor
+    // off to a <sub>.daybook.fyi address. The app just runs here. (Robin, 2026-10-15.)
     if (me && me.user) state.me = me.user;
   } catch {}
   try {
