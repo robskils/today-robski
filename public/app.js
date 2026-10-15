@@ -26,7 +26,7 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Lifespaces'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life Spaces'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -35,48 +35,48 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Lifespaces', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Reflection', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Lifebook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Lifebook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Lifespaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Lifebook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Lifebook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Lifespaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Lifebook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Lifebook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Lifebook will live at', 'signup.create': 'Create my Lifebook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
-  'btn.newarea': '+ New Lifespace', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
-  'field.area': 'Lifespace', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'btn.newarea': '+ New Life Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Life Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Lifebook friends', 'ct.self.show': 'Show your Lifebook card', 'ct.self.sub': 'Your window on Lifebook', 'ct.selfcard.tag': 'Lifebook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Lifespaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Lifespace', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Lifebook friends', 'ct.self.show': 'Show your Lifebook card', 'ct.self.sub': 'Your window on Lifebook', 'ct.selfcard.tag': 'Lifebook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Life Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Lifespaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Reflexão', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Lifebook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Lifebook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Lifespaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Lifebook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Lifebook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Life Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Lifespaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Lifebook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Lifebook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Lifebook ficará em', 'signup.create': 'Criar o meu Lifebook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
-  'btn.newarea': '+ Novo Lifespace', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
-  'field.area': 'Lifespace', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
+  'btn.newarea': '+ Novo Life Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
+  'field.area': 'Life Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Lifebook', 'ct.self.show': 'Mostrar o meu cartão Lifebook', 'ct.self.sub': 'A tua janela no Lifebook', 'ct.selfcard.tag': 'Cartão Lifebook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Lifespaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Lifespace', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Lifebook', 'ct.self.show': 'Mostrar o meu cartão Lifebook', 'ct.self.sub': 'A tua janela no Lifebook', 'ct.selfcard.tag': 'Cartão Lifebook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Life Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -699,7 +699,7 @@ const HELP = {
       <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
       <li><b>Related pages</b> appear on their own - any page sharing a lifespace with this one is a tap away, so they find each other.</li>
       <li><b>Link</b> highlighted text to another page or even a table row, to weave your writing together.</li>
-      <li><b>Lifespaces</b> - tag a page to one or several lifespaces (the chips up top); it then shows on each of those lifespaces, in that lifespace's colour.</li>
+      <li><b>Life Spaces</b> - tag a page to one or several lifespaces (the chips up top); it then shows on each of those lifespaces, in that lifespace's colour.</li>
       <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
@@ -718,7 +718,7 @@ const HELP = {
       <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent</b> · <b>Important</b> · <b>Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the Inbox queue. When the Inbox count hits zero, you're done.</p>
       <p><b>Filing an email.</b> Open it and use <b>File into ▾</b> to drop it in a bucket, tap the colour dot on any row, or drag a row onto a pot. The moment you file it, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it, on any account (Gmail or IMAP alike). Change your mind? <b>File into ▾ → Back to Inbox</b> puts it back in the queue.</p>
       <p><b>Working a bucket.</b> Open a pot like Urgent, deal with each email, then <b>Archive</b> it (the archive button in the open email, or on the row) - it's already out of the inbox, so that just clears it from the bucket; it stays safe in your Archive folder. Trashing or moving an email clears its bucket too, so nothing lingers once you've actioned it.</p>
-      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Lifespace</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
+      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life Space</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
       <h4>Which email accounts can I add?</h4>
       <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
       <h4>How to add one</h4>
@@ -765,7 +765,7 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Lifespaces', tip: 'The lifespaces of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
+  areas: { title: 'Life Spaces', tip: 'The lifespaces of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
     body: `<p>Lifebook keeps a <b>lifespace for each part of your life</b> - the way a book of accounts keeps a separate lifespace for each domain. A lifespace can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
       <p><b>One lifespace gathers that whole corner of your life:</b></p>
       <ul>
@@ -809,7 +809,7 @@ const HELP = {
       <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
       <li><b>Filter by kind</b> with the chips, so it reads as "films I want to see" or "articles still to read".</li>
       <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
-      <li><b>File it to a Lifespace</b> and it sits with that part of your life, in that lifespace's colour - your watercolour reading filed under Art, say.</li>
+      <li><b>File it to a Life Space</b> and it sits with that part of your life, in that lifespace's colour - your watercolour reading filed under Art, say.</li>
       </ul>
       <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Lifebook.</p>` },
   timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
@@ -828,7 +828,7 @@ const HELP = {
       </ul>
       <h4>What connecting lets you do</h4>
       <ul>
-      <li><b>Share a Lifespace</b> with the people in it - a household runs the move off one shared lifespace, co-parents keep the same calendar and to-dos.</li>
+      <li><b>Share a Life Space</b> with the people in it - a household runs the move off one shared lifespace, co-parents keep the same calendar and to-dos.</li>
       <li><b>Share a Note or a task</b>, view-only or to edit together.</li>
       <li><b>Assign a task</b> to someone you are connected to, so it lands on their plate as well as yours.</li>
       <li>Keep <b>shared notes</b>, <b>chat</b>, and <b>start a call</b> when it is quicker to talk.</li>
@@ -871,8 +871,8 @@ const HELP = {
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
   'settings-invites': { title: 'Invites', tip: 'Bring people onto Lifebook.',
     body: `<p>Put in someone's email and a note, and Lifebook emails them the invitation. They click one link, sign in and their own Lifebook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
-  'settings-manage': { title: 'Manage', tip: 'Lifespaces, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Lifespaces</b> (what Lifebook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+  'settings-manage': { title: 'Manage', tip: 'Life Spaces, mail accounts, spending categories and reminders.',
+    body: `<p>Each tile opens a small subpage: <b>Life Spaces</b> (what Lifebook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
     body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
@@ -1171,7 +1171,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
   const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
   // The back arrow is always present on the bar. With view-history it pops that;
-  // otherwise it steps up one level to the parent crumb (Lifespaces, Pages, …), so a
+  // otherwise it steps up one level to the parent crumb (Life Spaces, Pages, …), so a
   // directly-opened page (a restored tab, a deep link) is never a dead end. (Robin.)
   const parentIdx = opts.omitCurrent ? items.length - 1 : items.length - 2;
   const parent = parentIdx >= 0 ? items[parentIdx] : null;
@@ -1197,7 +1197,7 @@ function addNewMenuHtml() {
     modOn('notes') ? item('note', '▤', 'Note') : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
-    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Lifespace</button>` : '',
+    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Life Space</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('reflect') ? item('journal', '✎', 'Journal') : '',
@@ -1406,9 +1406,9 @@ function navSection(key, v) {
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
     }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Lifebook</button>');
   } else {
-    title = 'Lifespaces'; add = '<button class="nav-add" data-new-area title="New lifespace">+</button>';
+    title = 'Life Spaces'; add = '<button class="nav-add" data-new-area title="New lifespace">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
-    // so the sidebar reads at a glance like the rest of the app. Lifespaces shared
+    // so the sidebar reads at a glance like the rest of the app. Life Spaces shared
     // with me sit below my own, marked with who shared them.
     if (state.sharedAreas === undefined) loadSharedAreas().then(() => renderNav());
     const foRow = (a, shared) => {
@@ -2139,7 +2139,7 @@ function renderAdmin() {
       <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
     </div>
     <div class="set-card" style="margin-top:14px">
-      <div class="set-row-t">Default Lifespaces</div>
+      <div class="set-row-t">Default Life Spaces</div>
       <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
       <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no lifespaces.</span>'}</div>
       <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a lifespace…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
@@ -2756,7 +2756,7 @@ const MOBILE_SECTIONS = [
   ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
   ['favs', 'home-sec-favs', 'Starred'],
-  ['favareas', 'home-sec-favareas', 'Lifespaces'],
+  ['favareas', 'home-sec-favareas', 'Life Spaces'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
   ['toolbox', 'home-toolbox', 'Toolbox'],
@@ -2808,7 +2808,7 @@ function renderSettings() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Lifespaces', 'What your Lifebook orbits', 'data-open-areas=""'],
+    ['◈', 'Life Spaces', 'What your Lifebook orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -3640,7 +3640,7 @@ function navMobileListHtml(v) {
 function navGridHtml(v) {
   const NI = navItems(v);
   // Each group is collapsible, in the same chevron-header style as the Starred /
-  // Recent / Lifespaces sections, with its open/closed state remembered. (Robin.)
+  // Recent / Life Spaces sections, with its open/closed state remembered. (Robin.)
   const grp = (key, label, items) => {
     const on = items.filter(Boolean);
     if (!on.length) return '';
@@ -4180,7 +4180,7 @@ async function loadWeather() {
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
-const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Lifespaces' };
+const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life Spaces' };
 
 async function openHome() {
   const gen = bumpNav();
@@ -4231,7 +4231,7 @@ async function openHome() {
   // Friend invitations surface on Home (towards the bottom), so refresh them each
   // time Home opens - Today is the wall of everything you need to know. (Robin.)
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
-  // Lifespaces/pages shared WITH me surface front and centre - a share you shouldn't
+  // Life Spaces/pages shared WITH me surface front and centre - a share you shouldn't
   // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
   api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
@@ -4414,7 +4414,7 @@ function pomoHtml() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Lifespaces</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life Spaces</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -4441,7 +4441,7 @@ function pomoPanel() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Lifespaces</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life Spaces</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -4521,7 +4521,7 @@ function timerPanel() {
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
-      <label class="tmr-area-l"><span>Lifespace</span><select class="sel" data-timer-area>${areaOpts}</select></label>
+      <label class="tmr-area-l"><span>Life Space</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
@@ -5024,7 +5024,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Lifespace</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -5198,7 +5198,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="home-setup-main" data-onb-open-hub>
       <span class="hsu-ic">${MARK}</span>
-      <span class="hsu-body"><span class="hsu-t">Finish setting up Lifebook</span><span class="hsu-s">Make it yours, add your Lifespaces, connect your email - at your own pace.</span></span>
+      <span class="hsu-body"><span class="hsu-t">Finish setting up Lifebook</span><span class="hsu-s">Make it yours, add your Life Spaces, connect your email - at your own pace.</span></span>
       <span class="hsu-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
@@ -5381,7 +5381,7 @@ function homeInvitesHtml() {
     ${rows}
   </section>`;
 }
-// Front and centre on Home: someone shared a Lifespace or page with you. Persists
+// Front and centre on Home: someone shared a Life Space or page with you. Persists
 // until you open them or clear them with ×, so an invitation is never missed.
 // (Robin: all such invites belong top and centre - the Lifebook wall.)
 function homeSharedAlertHtml() {
@@ -5392,7 +5392,7 @@ function homeSharedAlertHtml() {
   const rows = fresh.slice(0, 6).map((s) => {
     const who = esc(s.owner || 'Someone');
     const ic = s.kind === 'task' ? '✓' : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤';
-    const what = s.kind === 'area' ? 'a Lifespace' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
+    const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
     return `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
   }).join('');
   const more = fresh.length > 6 ? `<button class="sha-all" data-open-daybook>See all ${fresh.length} on Lifebook →</button>` : '';
@@ -5649,7 +5649,7 @@ function renderHome() {
             })(),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No lifespaces yet. Create one from Lifespaces.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No lifespaces yet. Create one from Life Spaces.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: favListHtml(),
@@ -5658,7 +5658,7 @@ function renderHome() {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Lifespaces', count: sortedAreas.length || null },
+            favareas: { ic: '◈', label: 'Life Spaces', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -5671,7 +5671,7 @@ function renderHome() {
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
-            { k: 'favareas', ic: '◈', label: 'Lifespaces', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favareas', ic: '◈', label: 'Life Spaces', count: sortedAreas.length, on: modOn('areas') },
             { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
             { k: 'foliofeed', ic: '✦', label: 'Shared lifespaces', count: ffd.count, on: ffd.has },
@@ -5867,7 +5867,7 @@ function renderNotesList() {
     // under "No page".
     for (const n of all) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }); }
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Lifespace') : 'No lifespace'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
+    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life Space') : 'No lifespace'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
     listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
@@ -6060,13 +6060,13 @@ function spiritActionsHtml() {
   const base = state.spirit.saved ? `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>` : `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
   return base + reflLedgerSelect('spirit');
 }
-// "Save to a Lifespace": a reading (I Ching cast, spirit card) can be kept as a
+// "Save to a Life Space": a reading (I Ching cast, spirit card) can be kept as a
 // reflection filed in a lifespace, where it joins that lifespace's Reflections and can
 // be revisited in context. A quiet lifespace picker; choosing one files it. (Robin.)
 function reflLedgerSelect(kind) {
   const areas = (state.areas || []).filter((a) => !a.sharedBy);
   if (!areas.length) return '';
-  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a lifespace"><option value="">✦ Save to a Lifespace…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a lifespace"><option value="">✦ Save to a Life Space…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
 }
 async function saveReadingToLedger(kind, areaId) {
   if (!areaId) return;
@@ -7308,7 +7308,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Lifespace</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -7489,7 +7489,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Lifespace</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -7507,7 +7507,7 @@ function areaTag(b) {
 }
 // A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
-  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Lifespace</option>${
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life Space</option>${
     state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
   }</select></span>`;
 }
@@ -7542,8 +7542,8 @@ function areaActivity(last) {
   if (d < 31) return { cls: 'mild', label: 'This month' };
   return { cls: 'quiet', label: `Quiet · ${Math.max(1, Math.round(d / 7))}w` };
 }
-// Lifespaces others have shared with me. Loaded once (mirrors the People section's
-// friend load) so they appear in my Lifespaces list - both the sidebar and this page
+// Life Spaces others have shared with me. Loaded once (mirrors the People section's
+// friend load) so they appear in my Life Spaces list - both the sidebar and this page
 // - alongside my own. A dedicated fetch keeps them out of the area pickers.
 function loadSharedAreas() {
   if (Array.isArray(state.sharedAreas)) return Promise.resolve(state.sharedAreas);
@@ -7562,7 +7562,7 @@ function renderAreasList() {
   const sum = state.areaSummary || {};
   const S = (id) => sum[id] || {};
   const sortMode = areasSortMode();
-  // Mine / Shared-with-me / All. Lifespaces others shared with me are loaded lazily.
+  // Mine / Shared-with-me / All. Life Spaces others shared with me are loaded lazily.
   const scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
   if (state.sharedAreas === undefined) loadSharedAreas().then(() => { if (state.view && state.view.type === 'areas') renderAreasList(); });
   const canDrag = sortMode === 'rank' && scope !== 'shared';
@@ -7624,7 +7624,7 @@ function renderAreasList() {
   };
   const scopeBtn = (v, l, tip) => `<button class="cg-chip areas-scope ${scope === v ? 'on' : ''}" data-areas-scope="${v}" title="${tip}">${l}${v === 'shared' && received.length ? ` <span class="cg-n">${received.length}</span>` : ''}</button>`;
   const controls = `<div class="areas-controls">
-    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Lifespaces you own and lifespaces shared with you')}${scopeBtn('mine', 'Mine', 'Only lifespaces you own')}${scopeBtn('shared', 'Shared with me', 'Only lifespaces others have shared with you')}</div>
+    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Life Spaces you own and lifespaces shared with you')}${scopeBtn('mine', 'Mine', 'Only lifespaces you own')}${scopeBtn('shared', 'Shared with me', 'Only lifespaces others have shared with you')}</div>
     <label class="areas-sortwrap">Sort <select class="sel areas-sort" data-areas-sort>${AREAS_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
   </div>`;
   const sections = [];
@@ -7635,12 +7635,12 @@ function renderAreasList() {
   // marked as mine or shared. (Robin, 2026-10-14.)
   const listForScope = scope === 'mine' ? applySort(mineRanked) : scope === 'shared' ? applySort(received) : applySort(mineRanked.concat(received));
   const header = scope === 'mine' ? `Your lifespaces · ${listForScope.length}` : scope === 'shared' ? `Shared with you · ${listForScope.length}` : `All lifespaces · ${listForScope.length}`;
-  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Lifespace with you, it turns up here.' : 'No lifespaces yet.'}</div>`;
+  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Life Space with you, it turns up here.' : 'No lifespaces yet.'}</div>`;
   sections.push(`<section class="home-sec"><div class="home-sec-h">${header}</div><div class="area-cards area-gcards">${grid}</div></section>`);
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
-    <div class="pane-head home-head"><h1>Lifespaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Lifespace is a living chapter in your Lifebook - everything about what matters, in one place.</p>
+    <div class="pane-head home-head"><h1>Life Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
+    <p class="t2-sub" style="font-style:normal">A Life Space is a living chapter in your Lifebook - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
 }
@@ -8008,12 +8008,12 @@ function loadAreaWeek(areaId, offset = 0) {
   });
 }
 function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null; }
-// "Private" means: you see it on the Lifespace, nobody you share with does. Make
+// "Private" means: you see it on the Life Space, nobody you share with does. Make
 // that obvious wherever a block shows - a labelled chip (not a bare padlock) and
 // a distinct card treatment (is-private: dashed edge + faint wash), on anything:
 // note, task, contact, goal, saved link, reflection. (Robin.)
 const isPrivateBlock = (b) => !!(b && b.props && b.props.private);
-const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Lifespace">🔒 Private</span>' : '';
+const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Life Space">🔒 Private</span>' : '';
 const privCls = (b) => isPrivateBlock(b) ? ' is-private' : '';
 function renderArea() {
   const { area, blocks } = state.area_open;
@@ -8235,7 +8235,7 @@ function renderArea() {
   // cards - the SAME tiles as the settings grid. A card per activated section;
   // tap it and its content (plus its own add/connect actions, so you can add a
   // file, a link or a page without opening settings) expands below. One open at a
-  // time. The old feeds (Up next, Recently viewed, Week ahead, Be ready, Lifespace
+  // time. The old feeds (Up next, Recently viewed, Week ahead, Be ready, Life Space
   // Access) fold in as cards too. (Robin, 2026-10-11.)
   const due = area.props && area.props.due;
   const dueRel = due ? deadlineRel(due) : null;
@@ -8312,20 +8312,20 @@ function renderArea() {
   const openSec = SECTIONS.find((s) => s.id === openToolId);
   const toolPanel = openSec ? `<div class="ovt-panel area-tool-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openSec.ic}</span>${esc(openSec.label)}</div>${openSec.acts ? `<div class="ovt-acts">${openSec.acts}</div>` : ''}<div class="area-tool-body">${openSec.body()}</div></div>` : '';
   const areaTools = SECTIONS.length ? `<div class="area-tools" style="--h:${h}"><div class="ovt-grid area-tools-grid">${toolTiles}</div>${toolPanel}</div>` : '';
-  // Lifespace Access is a permanent half-row card between the stats strip and the tool
+  // Life Space Access is a permanent half-row card between the stats strip and the tool
   // cards (its settings tile stays in the ▾ overview). (Robin, 2026-10-11.)
-  // Lifespace Access and the always-open Notepad share a half-and-half row between the
+  // Life Space Access and the always-open Notepad share a half-and-half row between the
   // stats strip and the tool cards (each takes a column; one alone stays half
   // width). The Notepad isn't a tile - it's permanently open here. (Robin.)
-  // Lifespace Access always shows (unless hidden via Sections). On a lifespace shared WITH
+  // Life Space Access always shows (unless hidden via Sections). On a lifespace shared WITH
   // me it names the owner + me, so you can always see who can see this lifespace - we
   // always need it. (Robin, 2026-10-14.)
   const accessCount = area.sharedBy ? (2 + memberCount) : (memberCount ? memberCount + 1 : null);
-  const accessCard = secHidden('Shared with') ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Lifespace Access', accessCount, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
+  const accessCard = secHidden('Shared with') ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Life Space Access', accessCount, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
   const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad"><div class="home-sec-h area-sec-h area-notepad-h"><span class="ash-ic">📝</span><span class="ash-l">Notepad</span></div><div class="area-notepad-body">${areaWallBody(area)}</div></section>`;
   const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
   // Latest Updates: a Facebook-style wall of what everyone with access has done in
-  // this lifespace, newest first. Lifespaces are made for sharing, so it names the person
+  // this lifespace, newest first. Life Spaces are made for sharing, so it names the person
   // ("Smita added an event"). A cross-member feed from /api/area/:id/updates.
   const UPD_IC = { note: '▤', table: '▦', task: '✓', event: '◑', contact: '👤', goal: '🎯', bookmark: '🔖', journal: '✎', bucket: '✦', file: '📎' };
   const UPD_THING = { note: 'a page', table: 'a table', task: 'a task', event: 'an event', contact: 'a contact', goal: 'a goal', bookmark: 'a book or film', journal: 'a reflection', bucket: 'a bucket-list item', file: 'a file' };
@@ -8346,7 +8346,7 @@ function renderArea() {
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Lifespaces', attr: 'data-open-areas' }, { label: area.title }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life Spaces', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
     <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
       ${cover ? `<div class="am-cover">
@@ -8356,8 +8356,8 @@ function renderArea() {
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Lifebook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
-        <div class="am-kicker">Lifespace</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Lifespace" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Lifespace settings and overview" title="Settings & overview">▾</button></span></h1>
+        <div class="am-kicker">Life Space</div>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         ${areaSentimentHtml(area)}
       </div>
@@ -8407,11 +8407,11 @@ function areaOverviewHtml(area, c, blocks) {
   // recent-views list, filtered to this area).
   const rv = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
-  // Owner section control, now an icon-tile grid: one tile per piece of the Lifespace,
+  // Owner section control, now an icon-tile grid: one tile per piece of the Life Space,
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Lifespace Access', Sentiment: 'Well-being score', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
+  const SEC_LABELS = { 'Shared with': 'Life Space Access', Sentiment: 'Well-being score', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
@@ -8421,7 +8421,7 @@ function areaOverviewHtml(area, c, blocks) {
   // Each shareable function is one of three states: Off (neither of us), Only me
   // (on for me, off for them) or Shared (all or some members).
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
-  // The pieces of the Lifespace, each a tile. `conn` adds a "Connect existing" button,
+  // The pieces of the Life Space, each a tile. `conn` adds a "Connect existing" button,
   // `acts` are add buttons, `file`/`members` are their special cases - all reusing
   // the handlers the old Connections tiles used.
   const aid = area.id;
@@ -8457,7 +8457,7 @@ function areaOverviewHtml(area, c, blocks) {
   const pieceShareCtl = (k) => {
     const hiddenK = hidden.includes(k);
     if (!SHARE_KEYS.includes(k)) {
-      return `<label class="ovt-onoff"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${hiddenK ? 'Off - hidden from this Lifespace' : 'On - showing on this Lifespace'}</span></label>`;
+      return `<label class="ovt-onoff"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${hiddenK ? 'Off - hidden from this Life Space' : 'On - showing on this Life Space'}</span></label>`;
     }
     const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
     // The Notepad defaults to Shared and only goes private on an explicit 'me', so
@@ -8698,7 +8698,7 @@ async function setBlockArea(kind, id, areaId) {
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     if (kind === 'contact') { bump(state.contact_open && state.contact_open.contact); bump((state.contacts || []).find((x) => x.id === id)); }
-    toast(areaId ? 'Lifespace set' : 'Lifespace cleared');
+    toast(areaId ? 'Life Space set' : 'Life Space cleared');
   } catch (e) { toast(e.message); }
 }
 // Set a note's full list of pages. props.area mirrors the first so any
@@ -8746,7 +8746,7 @@ function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Lifespace' : '+ Lifespace'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Life Space' : '+ Life Space'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -8780,7 +8780,7 @@ async function areaAddTask() {
 }
 // Add a reflection (journal or dream) filed to this lifespace, then open it to
 // write. It then shows in the lifespace's Reflections section. (Robin: everything
-// connects to a Lifespace.)
+// connects to a Life Space.)
 async function areaAddJournal(isDream) {
   const area = state.area_open && state.area_open.area; if (!area) return;
   const date = new Date().toISOString();
@@ -9523,7 +9523,7 @@ function ceQuickBar(ev) {
   const area = hasArea ? areaById(ev.area) : null;
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
-  out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Lifespace') : 'Lifespace', hasArea, (hasArea && area) ? hueOf(area) : null));
+  out.push(chip('#ce-area', '◈', hasArea ? ((area && area.title) || 'Life Space') : 'Life Space', hasArea, (hasArea && area) ? hueOf(area) : null));
   out.push(chip('.ce-rem-field', '🔔', hasAlarm ? alist.map(alarmChipLabel).join(' + ') : 'Reminder', hasAlarm));
   out.push(chip((ev && ev.recurringId) ? '.ce-repeat-info' : '#ce-repeat', '↻', hasRepeat ? (ev.recurringId ? 'Repeats' : (CE_REPEAT_SHORT[ev.repeat] || 'Repeat')) : 'Repeat', hasRepeat));
   out.push(chip('#ce-url', '🔗', hasUrl ? 'Website' : 'Add website', hasUrl));
@@ -9599,7 +9599,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Lifespace</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life Space</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -10061,7 +10061,7 @@ function homeDeadlinesHtml() {
   const horizon = localISO(new Date(Date.now() + 7 * 86400000));
   const items = [];
   (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => { const due = goalDueISO(g); if (due && due <= horizon) items.push({ kind: 'goal', id: g.id, title: g.title || 'Goal', due, area: gp(g).area }); });
-  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Lifespace', due, area: a.id }); });
+  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Life Space', due, area: a.id }); });
   if (!items.length) return '';
   items.sort((x, y) => x.due.localeCompare(y.due));
   const rows = items.slice(0, 5).map((x) => {
@@ -10638,7 +10638,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Lifespace</span><select class="sel" id="te-area"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Life Space</span><select class="sel" id="te-area"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -12912,7 +12912,7 @@ function showQuickTask() {
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Lifespace</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Life Space</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
@@ -13016,7 +13016,7 @@ function mailTaskMenuHtml() {
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
-    <label class="mtask-field"><span>Lifespace</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Life Space</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
     <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
@@ -13062,7 +13062,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Lifespace</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -13288,7 +13288,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
-  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Lifespace">🔒 Private</span>');
+  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Life Space">🔒 Private</span>');
   if (!t.props.done && t.props.kstatus === 'doing') out.push('<span class="tbadge doing" title="In the Doing column on the board">Doing</span>');
   if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
@@ -13303,7 +13303,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Lifespace</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Life Space</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -13360,7 +13360,7 @@ function taskKanbanHtml(list) {
 // data-driven so a new filterable field is one entry here, not new UI code.
 const TASK_FIELDS = {
   priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'P1'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4'], ['', 'None']], get: (t) => t.props.priority || '' },
-  area: { label: 'Lifespace', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
+  area: { label: 'Life Space', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
   duration: { label: 'Duration', ops: ['gte', 'lte', 'isset', 'notset'], kind: 'minutes', get: (t) => (t.props.duration != null && t.props.duration !== '' ? Number(t.props.duration) : null) },
   repeat: { label: 'Repeat', ops: ['isset', 'notset'], get: (t) => t.props.repeat || '' },
   snoozed: { label: 'Snoozed', ops: ['yes', 'no'], get: (t) => isSnoozed(t) },
@@ -13912,7 +13912,7 @@ function contactAreaBarHtml() {
 // of chips. (CSS shows chips on desktop, this select on mobile.)
 function contactAreaSelectHtml(areas) {
   if (!areas || !areas.length) return '';
-  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Lifespaces · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Life Spaces · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -13935,7 +13935,7 @@ function contactMenuHtml() {
   const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-cb ctx-cb-on"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button>`;
   const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">⊘</button></div>`;
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
-  const areaSection = allAreas.length ? `<div class="ctx-lbl">Lifespaces</div>
+  const areaSection = allAreas.length ? `<div class="ctx-lbl">Life Spaces</div>
     ${currentAreas.map(curRow).join('')}
     ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No lifespaces to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
@@ -14007,13 +14007,13 @@ function friendsPaneHtml(opts) {
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${d.incoming.length ? `<div class="ppl-sub ppl-sub-req">${d.incoming.length === 1 ? 'Wants to connect with you' : `${d.incoming.length} people want to connect with you`}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      <p class="fr-intro">Invite your friends to Lifebook so you can share with them - a whole Lifespace, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      <p class="fr-intro">Invite your friends to Lifebook so you can share with them - a whole Life Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
       ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Lifebook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Lifebook</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Lifebook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Lifebook by email">✦ Invite to Lifebook</button></div>
       <div id="friend-results" class="fr-results"></div>
       ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Lifebook.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Lifespace' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
 // The Lifebook people hub: your card, your friends on Lifebook, and the invite +
@@ -14111,7 +14111,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Lifespace</span><select id="ct-area" class="sel"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${areas.length ? `<label class="atf atf-full"><span>Life Space</span><select id="ct-area" class="sel"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -14479,13 +14479,13 @@ function renderContactCard() {
     <div class="cc-sec">
       <div class="cc-sec-h">Organise</div>
       <div class="tf-meta">
-        <div class="tf-field"><span class="tf-label">Lifespaces</span>${blockAreasControl('contact', c)}</div>
+        <div class="tf-field"><span class="tf-label">Life Spaces</span>${blockAreasControl('contact', c)}</div>
       </div>
     </div>
     ${keepInTouchSection(c)}
     <div class="cc-group-h">Connect</div>
     ${contactBoxesHtml(c)}
-    <div class="cc-group-h">Lifespaces</div>
+    <div class="cc-group-h">Life Spaces</div>
     ${notesSection(c.body, 'contact', c.id, false, 'Notes to self')}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -14887,11 +14887,11 @@ async function saveSpendExtras(extras) {
 async function spendCatAdd() {
   const name = String(await uiPrompt('New spending category:', { placeholder: 'e.g. Savings' }) || '').trim();
   if (!name) return;
-  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Lifespaces are categories too)'); return; }
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Life Spaces are categories too)'); return; }
   saveSpendExtras([...spendExtras(), name]);
 }
 async function spendCatRename(oldName) {
-  if (spendIsArea(oldName)) { toast('This is a Lifespace - rename it in the Lifespaces section.'); return; }
+  if (spendIsArea(oldName)) { toast('This is a Life Space - rename it in the Life Spaces section.'); return; }
   const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
   if (!name || name === oldName) return;
   if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
@@ -15193,7 +15193,7 @@ async function advicePoll() {
   await loadAdvice();
 }
 // ── Spending ─────────────────────────────────────────────────────────────
-// Spending categories ARE the Lifespaces by default: add a Lifespace and it
+// Spending categories ARE the Life Spaces by default: add a Life Space and it
 // becomes a spending category automatically. A few money-only buckets (income,
 // the catch-all) sit alongside, and the user can add extra one-off categories
 // that don't map to an area (stored in settings.kv_spend_categories).
@@ -15249,7 +15249,7 @@ function spendingBody() {
     return `<span class="trk-cat-chip ${area ? 'sp-cat-area' : ''}">${esc(c)}${tag}${cross}${edit}</span>`;
   };
   const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Categories</span><button class="ghost" data-sp-cat-add>+ Extra category</button></div>
-    <p class="sp-cat-note">Your <b>Lifespaces</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
+    <p class="sp-cat-note">Your <b>Life Spaces</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
     <div class="sp-cat-cols">
       <div class="sp-cat-col sp-cat-col-exp"><div class="sp-cat-col-h">Expense categories</div><div class="trk-cats">${expenseCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
       <div class="sp-cat-col sp-cat-col-inc"><div class="sp-cat-col-h">Income categories</div><div class="trk-cats">${incomeCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
@@ -15759,7 +15759,7 @@ function goalsListBody() {
   const controls = `<div class="glist-controls">
     <select class="sel" data-glist-status><option value="all" ${fStatus === 'all' ? 'selected' : ''}>All statuses</option>${GSTATUS.map(([v, l]) => `<option value="${v}" ${fStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <select class="sel" data-glist-area>${areaOpts}</select>
-    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Lifespace'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
+    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Life Space'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
   </div>`;
   if (!goals.length) return `${controls}<div class="empty" style="padding:28px">No goals match these filters.</div>`;
   const rows = goals.map((g) => {
@@ -16223,7 +16223,7 @@ function renderBucketCard() {
       <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
     </div>
     <div class="tf-meta">
-      <div class="tf-field"><span class="tf-label">Lifespaces</span>${blockAreasControl('bucket', b)}</div>
+      <div class="tf-field"><span class="tf-label">Life Spaces</span>${blockAreasControl('bucket', b)}</div>
       <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
     </div>
@@ -17454,7 +17454,7 @@ function reviewDeadlinesHtml(p) {
     .map((t) => ({ id: t.id, kind: 'task', title: t.title || 'Task', due: t.props.due, area: t.props.area }));
   const areaItems = (state.areas || [])
     .filter((a) => a.props && a.props.due)
-    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Lifespace', due: a.props.due, area: a.id }));
+    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Life Space', due: a.props.due, area: a.id }));
   const items = [...goalItems, ...taskItems, ...areaItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
@@ -17571,7 +17571,7 @@ function renderReviewCard() {
       <div class="rv-input-panel">${inputTab === 'wheel'
         ? `${reviewWheelPreview(p)}
            <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out of this review, or set which areas you track everywhere on the <button class="linkish" data-open-wheel>Wheel of Life page</button>.</p>
-           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Lifespaces to reflect on them here.'}</div>`}</div>
+           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Spaces to reflect on them here.'}</div>`}</div>
            ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
         : `<p class="rv-reflect-intro">A few prompts to get you going - answer what speaks to you, skip what doesn't.</p>
            <div class="rv-qa">${cfg.prompts.map((q, i) => { const has = String((p.answers || {})[i] || '').trim(); return `<div class="rv-q ${has ? 'answered' : ''}">
@@ -17694,7 +17694,7 @@ function rvgSetCurrent(id, val) {
 function goalReviewSection(r) {
   const p = r.props || {};
   const goals = p.snapshot || [];
-  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Lifespaces and they'll appear here next time.</div></section>`;
+  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Life Spaces and they'll appear here next time.</div></section>`;
   const gr = p.goalReview || {};
   // Map the tasks that fed each goal: done ones from the period's record, plus the
   // ones still open now - so a goal shows what actually moved it and what's left.
@@ -17870,7 +17870,7 @@ function reviewDoneCards(m) {
       return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
     }).join('');
   }
-  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Lifespace</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
+  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Life Space</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
   return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${nA}</b> area${nA === 1 ? '' : 's'} · tap any to open it</div>${toggle}${groups}</div>`;
 }
 // The compact record the summary is written from - the same mirror the card
@@ -17932,7 +17932,7 @@ function visionBody() {
       ${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}
     </button>`;
   }).join('');
-  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Lifespaces to build your vision.</div>'}</div>`;
+  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Spaces to build your vision.</div>'}</div>`;
 }
 async function loadVisionThumbs() {
   for (const a of state.areas) for (const im of ((a.props && a.props.attachments) || [])) {
@@ -18551,7 +18551,7 @@ async function moveNoteToArea(areaId) {
 function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Lifespace'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life Space'], ['attach', 'Attachments']];
 // The currency symbols a Currency column can carry (blank = a plain number with
 // two decimals). Stored on the column as `col.currency`.
 const CURRENCIES = [['€', '€ Euro'], ['$', '$ Dollar'], ['£', '£ Pound'], ['', 'No symbol']];
@@ -18926,7 +18926,7 @@ const ACTIONS = [
   { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
   { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
   { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
-  { kind: 'action', title: 'Go to Lifespaces', run: () => openAreasList() },
+  { kind: 'action', title: 'Go to Life Spaces', run: () => openAreasList() },
   { kind: 'action', title: 'Go to Saved', run: () => openReadwatch() },
   { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
 ];
@@ -19034,7 +19034,7 @@ function renderPalette() {
 }
 // The little type chip. A row shows the table it belongs to ("Portugal Place"),
 // not a bare "Row", so you know which card a hit relates to. (Robin.)
-const PAL_KIND_LABEL = { note: 'Note', table: 'Table', area: 'Lifespace', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+const PAL_KIND_LABEL = { note: 'Note', table: 'Table', area: 'Life Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
   if (it.kind === 'row') return it.parentTitle || 'Table';
@@ -21921,7 +21921,7 @@ function renderTaskCard() {
         <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Due by</span>
         ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
-      <div class="tf-field"><span class="tf-label">Lifespaces</span>
+      <div class="tf-field"><span class="tf-label">Life Spaces</span>
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Status</span>
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
@@ -23090,7 +23090,7 @@ function registerMailHandler() {
 // A gentle, skippable guide shown once when a new account first opens: orient
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
-const ONB_STEPS = ['Welcome', 'Lifespaces', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
+const ONB_STEPS = ['Welcome', 'Life Spaces', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
 // No forced wizard any more: a new account lands straight on Home with the least
 // friction. Setup lives in an at-your-own-pace hub (showOnboarding) you open from
 // the Home "Getting started" card, whenever you like. maybeOnboard just learns
@@ -23126,9 +23126,9 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No Lifespaces yet - add the ones that matter to you below.</p>';
-  return `<h2 class="onb-h">Your Lifespaces</h2>
-    <p class="onb-p">Lifespaces are the few parts of your life Lifebook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Lifespace, so each one gathers everything about that part of your life in one place.</p>
+      : '<p class="onb-p onb-muted">No Life Spaces yet - add the ones that matter to you below.</p>';
+  return `<h2 class="onb-h">Your Life Spaces</h2>
+    <p class="onb-p">Life Spaces are the few parts of your life Lifebook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
     <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a lifespace…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
@@ -23221,7 +23221,7 @@ function onbDone() {
     <ul class="onb-tips">
       <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
       <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
-      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Lifespace, a note, a table, or a few tasks. Completely up to you.</li>
+      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Life Space, a note, a table, or a few tasks. Completely up to you.</li>
       <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
@@ -23233,7 +23233,7 @@ function onbCardPanel() { return `<p class="onb-p">Your Lifebook card is how you
 function onbToolsPanel() { return `<p class="onb-p">Lifebook has lots of tools - tasks, calendar, notes, money, reflection and more. Switch on just what you want and add the rest whenever you like.</p><button class="add-btn wide" data-onb-nav="tools">Choose your tools →</button>`; }
 function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Recommended for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
 function onbImportPanel() { return `<p class="onb-p">Bring your address book in with a <b>vCard (.vcf)</b> - export one from Google Contacts, Outlook, iCloud, your phone or any address book, then import it on your Contacts page.</p><button class="add-btn wide" data-onb-nav="contacts">Go to Contacts to import →</button>`; }
-function onbInvitePanel() { return `<p class="onb-p">Lifebook is better shared. Invite someone and you can share a whole Lifespace, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
+function onbInvitePanel() { return `<p class="onb-p">Lifebook is better shared. Invite someone and you can share a whole Life Space, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
 // The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
 // in any order, whenever you like. Done bits carry a tick; a progress bar sums
 // them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
@@ -23247,7 +23247,7 @@ function renderOnboarding() {
   const name = (state.me && state.me.name) ? state.me.name.split(' ')[0] : '';
   const TILES = [
     { id: 'card', ic: '◗', label: 'Make it yours', hint: 'Name, photo & a line about you', done: !!(card.photo || (card.tagline || '').trim()), body: onbCardPanel },
-    { id: 'folios', ic: '◈', label: 'Your Lifespaces', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
+    { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
     { id: 'tools', ic: '🧰', label: 'Choose your tools', hint: 'Turn parts on or off', opt: true, body: onbToolsPanel },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside Lifebook', opt: true, done: mailConnected, body: onbEmail },
     { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional helpers, your own key', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
