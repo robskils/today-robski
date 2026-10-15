@@ -36,6 +36,22 @@ zone_name = "daybook.fyi"
 pattern = "*.daybook.fyi/*"
 zone_name = "daybook.fyi"
 
+# ── lifebook.fyi (the rebrand) - same worker, served in parallel during the
+# transition. INERT until the lifebook.fyi zone has PROXIED (orange-cloud) DNS
+# records: apex (@), www and a wildcard (*). Add those in the Cloudflare
+# dashboard, then these routes start firing; daybook.fyi keeps working. (2026-10-15.)
+[[routes]]
+pattern = "lifebook.fyi/*"
+zone_name = "lifebook.fyi"
+
+[[routes]]
+pattern = "www.lifebook.fyi/*"
+zone_name = "lifebook.fyi"
+
+[[routes]]
+pattern = "*.lifebook.fyi/*"
+zone_name = "lifebook.fyi"
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
@@ -58,7 +74,7 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "Daybook <today@incremento.co>"
+FROM_EMAIL = "Lifebook <today@incremento.co>"
 
 # Daybook sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
 # from contact@daybook.fyi through Purelymail SMTP: a real mailbox on a fully
@@ -120,7 +136,7 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only Robin to start; invite-only test users get added here (or, once the users
 # table drives access, this list stops being the gate).
 ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
-FROM_EMAIL = "Daybook <today@incremento.co>"
+FROM_EMAIL = "Lifebook <today@incremento.co>"
 BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the

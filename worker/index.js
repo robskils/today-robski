@@ -4176,10 +4176,13 @@ export default {
     // is the app. Everything non-API/auth falls through to the assets binding.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
       const host = url.hostname;
-      // daybook.fyi apex (+ www) is the public marketing site; a per-user
-      // subdomain like tara.daybook.fyi is the app itself.
-      const isApex = host === 'daybook.fyi' || host === 'www.daybook.fyi';
-      const isLife = host.endsWith('.daybook.fyi') && !isApex;
+      // Both daybook.fyi (original) and lifebook.fyi (the rebrand) are app domains
+      // during the transition: each apex (+ www) is the public marketing site and
+      // each per-user subdomain is the app. Auth is the JWT, not the host, so the
+      // app itself is host-agnostic - this is the only place the apex is named.
+      const APP_DOMAINS = ['daybook.fyi', 'lifebook.fyi'];
+      const isApex = APP_DOMAINS.includes(host) || APP_DOMAINS.some((d) => host === 'www.' + d);
+      const isLife = APP_DOMAINS.some((d) => host.endsWith('.' + d)) && !isApex;
       // Public marketing pages in English, and their localised counterparts
       // (PT/FR/ES) which carry their own slugs. Clean URL -> asset file.
       const EN_PAGES = ['/', '/how', '/blog', '/blog/the-ordinary-day', '/blog/tables-or-pages', '/blog/welcome', '/blog/rhythms', '/blog/awareness', '/blog/inviting-friends', '/blog/connect-your-accounts', '/blog/install-as-app', '/privacy', '/terms', '/support'];
