@@ -4593,6 +4593,14 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
    the pattern to the pane's right edge so it fills the now-wider gap, not a band
    of empty paper the sidebar's width across. */
 body.nav-collapsed .main::after { left:1100px; }
+/* Notes & tables with the sidebar collapsed: hand the freed width to the content
+   so the middle grows (the fixed right column - related notes, tasks - stays put)
+   instead of leaving a gap. Best on lower-res screens. The pattern re-anchors to
+   the widened pane's edge so it still fills any leftover on very wide screens. */
+body.nav-collapsed[data-view="note"] .pane,
+body.nav-collapsed[data-view="table"] .pane { max-width:calc(1100px + var(--sidebar-w, 326px)); }
+body.nav-collapsed[data-view="note"] .main::after,
+body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--sidebar-w, 326px)); }
 
 /* ── home ────────────────────────────────────────── */
 .home-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
