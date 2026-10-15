@@ -38,7 +38,7 @@ export function normSubdomain(s) {
 export async function getUserByEmail(env, email) {
   const e = String(email || '').toLowerCase();
   return env.DB.prepare(
-    `SELECT id, email, name, subdomain, plan, status FROM users
+    `SELECT id, email, name, subdomain, plan, status, created_at, totp_enabled FROM users
       WHERE email = ? OR id = (SELECT user_id FROM user_emails WHERE email = ? AND verified = 1)`,
   ).bind(e, e).first().catch(() => null);
 }

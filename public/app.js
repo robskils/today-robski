@@ -23495,6 +23495,55 @@ async function onbConnectGmail() {
   document.addEventListener('focusout', () => { setTimeout(() => { if (!isText(document.activeElement)) document.body.classList.remove('kb-open'); }, 60); });
 })();
 
+// A firm, full-screen "turn on two-factor" step for accounts past the three-month
+// mark without it. It reuses the proven /api/totp/setup + /api/totp/enable flow,
+// and always offers sign-out, so it asks firmly but can never lock anyone out.
+// (Robin, 2026-10-15.)
+function showRequired2fa() {
+  const st = state.req2fa || (state.req2fa = {});
+  let wrap = document.getElementById('req2fa');
+  if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
+  const card = document.getElementById('req2fa-card');
+  const mark = '<div class="gate2-mark"><em>Life<i class="wm-bk">book</i></em></div>';
+  const head = (txt) => `<div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
+  const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
+  const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); }; };
+  if (st.recovery) {
+    card.innerHTML = `${mark}${head('Two-factor is on ✓')}
+      <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:ui-monospace,SFMono-Regular,monospace;font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
+      <button class="gate2-btn" id="r2-done">Done - open Lifebook</button>`;
+    document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
+    return;
+  }
+  if (st.setup) {
+    const onPhone = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || '');
+    card.innerHTML = `${mark}${head('Add your authenticator')}
+      <p class="gate2-sub"><b>1.</b> In your authenticator app (Google Authenticator, Authy, 1Password…) add an account and enter this key${onPhone ? ` - or <a href="${esc(st.setup.uri)}">tap to open your app</a>` : ''}.</p>
+      <div style="margin:10px 0;padding:12px;background:var(--paper-2);border-radius:10px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:17px;letter-spacing:2px;word-break:break-all;text-align:center">${esc(st.setup.secret || '')}</div>
+      <p class="gate2-sub"><b>2.</b> Enter the 6-digit code it shows.</p>
+      <input class="gate2-input" id="r2-code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="6">
+      ${st.err ? `<p class="gate2-err">${esc(st.err)}</p>` : ''}
+      <button class="gate2-btn" id="r2-enable">Turn on</button>${signout}`;
+    document.getElementById('r2-enable').onclick = async () => {
+      const code = ((document.getElementById('r2-code') || {}).value || '').trim();
+      try { const d = await api('/api/totp/enable', { method: 'POST', body: JSON.stringify({ code }) }); state.req2fa = { recovery: d.recovery || [] }; showRequired2fa(); }
+      catch (e) { state.req2fa.err = e.message; showRequired2fa(); }
+    };
+    bindSignout();
+    const c = document.getElementById('r2-code'); if (c) c.focus();
+    return;
+  }
+  card.innerHTML = `${mark}${head('Two-factor is now required')}
+    <p class="gate2-sub">To keep your Lifebook secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
+    <button class="gate2-btn" id="r2-start">Set it up now</button>
+    <p class="gate2-alt"><a href="/blog/two-factor-authentication" target="_blank" rel="noopener">Why?</a> · <button type="button" class="su-signout" id="r2-signout">sign out</button></p>`;
+  document.getElementById('r2-start').onclick = async () => {
+    try { const d = await api('/api/totp/setup', { method: 'POST' }); state.req2fa = { setup: d }; showRequired2fa(); }
+    catch (e) { toast(e.message); }
+  };
+  bindSignout();
+}
 (async function boot() {
   initTheme();
   applyBgPattern(savedBgPattern());
@@ -23548,7 +23597,13 @@ async function onbConnectGmail() {
     if (me && me.needsSignup) { showSignup(me.email, me.inviteRequired, invited || me.invited); return; }
     // Everyone lives at lifebook.fyi now - no more bouncing a signed-in apex visitor
     // off to a <sub>.daybook.fyi address. The app just runs here. (Robin, 2026-10-15.)
-    if (me && me.user) state.me = me.user;
+    if (me && me.user) {
+      state.me = me.user;
+      // Two-factor becomes required three months after an account opens. Past that,
+      // a member without it set up must turn it on before using Lifebook. Sign-out
+      // is always offered, so this asks firmly but can never lock anyone out.
+      if (!me.user.totp_enabled && me.user.created_at && (Date.now() - Date.parse(me.user.created_at)) > 90 * 86400000) { showRequired2fa(); return; }
+    }
   } catch {}
   try {
     let modKv;
