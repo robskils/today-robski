@@ -4176,6 +4176,15 @@ export default {
     // is the app. Everything non-API/auth falls through to the assets binding.
     if (env.ASSETS && !path.startsWith('/api/') && !path.startsWith('/auth/')) {
       const host = url.hostname;
+      // daybook.fyi has been renamed to lifebook.fyi: 301 the apex + www to the new
+      // home, path preserved. /api and /auth are excluded by the guard above, so
+      // the OAuth callback, sign-in and email-linked API calls still resolve on
+      // daybook.fyi during the move. Per-user subdomains (<sub>.daybook.fyi) keep
+      // serving for now - the sign-in token is per-origin, so redirecting them would
+      // sign everyone out; that's a later, deliberate cutover. (2026-10-15.)
+      if (host === 'daybook.fyi' || host === 'www.daybook.fyi') {
+        return Response.redirect('https://lifebook.fyi' + url.pathname + url.search, 301);
+      }
       // Both daybook.fyi (original) and lifebook.fyi (the rebrand) are app domains
       // during the transition: each apex (+ www) is the public marketing site and
       // each per-user subdomain is the app. Auth is the JWT, not the host, so the
