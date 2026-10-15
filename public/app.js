@@ -5831,7 +5831,6 @@ function renderHome() {
           homeFeatBar = featBar;   // render it at the very bottom of Home, not here
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>`;
         })()}</div>
-        ${homeDiscoverHtml()}
         ${homeFeatBar}
         <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
         <button class="home-mark" data-guide-home aria-label="Back to the top" title="Back to the top">${MARK}</button>
