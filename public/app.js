@@ -3712,9 +3712,11 @@ function navGridHtml(v) {
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : ''].filter(Boolean);
+  // People box order: Contacts, Lifebook, Connect - each a full-width row so they
+  // stack cleanly in that order. (Robin, 2026-10-15.)
+  const items = [modOn('contacts') ? `<button class="nav-item nav-full ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live Lifebook people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
@@ -23112,7 +23114,7 @@ let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
 // in to Robin's Lifebook, so the wordmark drops the owner's name and reads just
 // "Lifebook". On a tenant subdomain it stays whose it is.
-const onApex = () => location.hostname === 'daybook.fyi' || location.hostname === 'www.daybook.fyi';
+const onApex = () => /^(www\.)?(daybook|lifebook)\.fyi$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
