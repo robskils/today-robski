@@ -49,7 +49,7 @@ function renderAreas() {
       <span class="swatch"></span>
       <span class="n">${esc(a.title)}</span>
       <span class="count">${openCount(a.id) || ''}</span>
-      <span class="x" data-del-area="${a.id}" title="Delete area">×</span>
+      <span class="x" data-del-area="${a.id}" title="Delete Lifespace">×</span>
     </button>`).join('');
   $('#areas').innerHTML = `
     <button class="area ${state.filter === null ? 'on' : ''}" style="--h:220" data-area="">
@@ -59,7 +59,7 @@ function renderAreas() {
 }
 
 function renderAreaSelect() {
-  $('#task-area').innerHTML = `<option value="">No area</option>` +
+  $('#task-area').innerHTML = `<option value="">No Lifespace</option>` +
     state.areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
   if (state.filter) $('#task-area').value = state.filter;
 }
