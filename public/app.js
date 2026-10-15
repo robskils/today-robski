@@ -5480,6 +5480,20 @@ function lifebookFeedInner() {
   const dismissed = lbDismissedMap();
   const gone = (k) => Object.prototype.hasOwnProperty.call(dismissed, k);
   const items = [];   // { ts, html }
+  // Two-factor reminder: as the three-month deadline nears, warn in the feed so it
+  // never comes as a surprise when it becomes required. Sits at the top, not
+  // dismissible (it's a security deadline); it disappears the moment 2FA is on, and
+  // past 90 days the full-screen step takes over. (Robin, 2026-10-15.)
+  if (state.me && !state.me.totp_enabled && state.me.created_at) {
+    const daysLeft = Math.ceil(90 - (Date.now() - Date.parse(state.me.created_at)) / 86400000);
+    if (daysLeft > 0 && daysLeft <= 30) {
+      const when = daysLeft <= 1 ? 'required by tomorrow' : `required in ${daysLeft} days`;
+      items.push({ ts: Date.now() + 10000, html:
+        `<div class="lb-item lb-click" data-lb-2fa role="button" tabindex="0" title="Set up two-factor authentication">
+          <span class="lb-ic">🔐</span>
+          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Lifebook - ${when}. It takes about a minute.</span></span></div>` });
+    }
+  }
   // Tasks back from snooze - tick to complete, × to clear.
   (alerts.surfaced || []).forEach((tk) => {
     items.push({ ts: Date.now() + 5000, html:
@@ -7998,7 +8012,7 @@ function areaGoto(key) {
   }
   // Every other section is now a tile in the tools grid: open the matching tile
   // and scroll to it. (Robin: keep the stats buttons - they jump to the cards.)
-  const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
+  const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Notes: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
   const id = GOTO_TILE[key];
   if (id && state.area_open) { state.area_open.toolTile = id; renderArea(); settle(`#pane [data-area-tool="${id}"]`); return; }
   settle('#pane .area-tools');
@@ -19826,6 +19840,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
   { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
   { const lx = t.closest('[data-lb-x]'); if (lx) { e.preventDefault(); e.stopPropagation(); lbDismiss(lx.dataset.lbX); return; } }
+  { const l2 = t.closest('[data-lb-2fa]'); if (l2) { openSettings('account'); return; } }
   if (t.closest('[data-pomo-collapse]')) { const o = localStorage.getItem('life.home.pomoOpen') === '1'; localStorage.setItem('life.home.pomoOpen', o ? '0' : '1'); renderHome(); return; }
   { const pcat = t.closest('[data-pomo-cat]'); if (pcat) { state.pomoPickType = pcat.dataset.pomoCat; renderHome();
     if (state.pomoPickType === 'task' && !state.pomoTasks) { api('/api/blocks?kind=task').then((ts) => { state.pomoTasks = (ts || []).filter((x) => !(x.props && x.props.done)).sort((a, b) => (PRIO_ORDER[(a.props && a.props.priority) || ''] || 5) - (PRIO_ORDER[(b.props && b.props.priority) || ''] || 5)).slice(0, 80).map((x) => ({ id: x.id, title: x.title })); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.pomoTasks = []; }); }
