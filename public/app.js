@@ -1777,7 +1777,7 @@ function contactRemovePhoto() {
 function myCardData() {
   const a = state.account || {}; const c = cardProfile();
   return {
-    name: a.name || firstName() || 'You', handle: a.subdomain ? `${a.subdomain}.daybook.fyi` : '', subdomain: a.subdomain || '',
+    name: a.name || firstName() || 'You', handle: a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : '', subdomain: a.subdomain || '',
     photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
     tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
     emails: cardChosenEmails(c), phone: c.showPhone ? (a.phone || '') : '',
@@ -1839,9 +1839,9 @@ function cardEditorHtml() {
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
         ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Lifebook</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://daybook.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">daybook.fyi/u/${esc(a.subdomain)}</span></div>
+          <div class="dbc-qrwrap">${qrSvg('https://lifebook.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
-        <p class="dbc-note">Your handle <b>${a.subdomain ? esc(a.subdomain) + '.daybook.fyi' : 'is set in Settings'}</b>${a.subdomain ? ' - change it in Settings › Account.' : '.'}</p>
+        <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
     </div>`;
 }
@@ -1876,7 +1876,7 @@ async function openPublicCard(id, seed) {
 function renderPublicCard() {
   let el = document.getElementById('viewcard'); if (!el) { el = document.createElement('div'); el.id = 'viewcard'; document.body.appendChild(el); }
   const v = state.viewCard || {}; const d = v.data;
-  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `${d.subdomain}.daybook.fyi` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
+  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `lifebook.fyi/u/${d.subdomain}` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
   const isMe = d && state.me && d.id === state.me.id;
   const friends = (state.friends && state.friends.friends) || [];
   const connected = d && d.id && friends.some((f) => f.id === d.id);
@@ -2294,7 +2294,7 @@ async function openFriends() { return openContacts(); }
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
-  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Lifebook card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></button>${action}</div>`;
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Lifebook card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
 // page re-renders whichever view the action was taken on - Contacts, the Lifebook
@@ -2659,7 +2659,7 @@ function renderShare() {
   const rows = s.loading ? '<div class="chat-empty">Loading…</div>'
     : (friends.length ? friends.map((f) => {
       const mode = shareModeFor(f.id);
-      return `<div class="share-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${mode
+      return `<div class="share-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><span class="fr-body"><span class="fr-name">${esc(f.name)}</span></span>${mode
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
@@ -2694,7 +2694,7 @@ function renderAssign() {
   const rows = s.loading ? '<div class="chat-empty">Loading…</div>'
     : (friends.length ? friends.map((f) => {
       const st = assignStatusFor(f.id);
-      return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span><span class="fr-sub">${esc(f.subdomain)}.daybook.fyi</span></span>${st
+      return `<div class="share-row"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(f.name || '?'))}</span><span class="fr-body"><span class="fr-name">${esc(f.name)}</span></span>${st
         ? `<span class="share-acts"><span class="assign-status ${st}">${st === 'accepted' ? '✓ Accepted' : 'Pending'}</span><button class="ghost share-off" data-assign-off="${f.id}" title="Unassign">×</button></span>`
         : `<button class="add-btn wide" data-assign-on="${f.id}">Assign</button>`}</div>`;
     }).join('') : '<div class="home-empty">Add a friend first, then you can assign tasks to them.</div>');
@@ -2901,10 +2901,6 @@ function renderSettings() {
   const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
       <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
-        <label class="set-field"><span>Username</span>
-          <div class="su-username-row"><input class="sel su-username-in" data-account-username value="${esc(state.account.subdomain || '')}" placeholder="username" autocomplete="off" spellcheck="false"><span class="su-username-suffix">.daybook.fyi</span></div>
-          <div class="su-username-note">Your Lifebook lives at <b><span class="js-username-preview">${esc(state.account.subdomain || 'username')}</span>.daybook.fyi</b></div>
-        </label>
         <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
         <div class="set-field"><span>Also sign in with these addresses</span>
           <div class="alias-list">${(state.account.aliases || []).map((a) => {
@@ -3054,7 +3050,7 @@ function renderSettings() {
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
       ${panes[tab] || ''}
     </section>
-    ${(state.me && state.me.subdomain) ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || '')}</b> · ${esc(state.me.subdomain)}.daybook.fyi · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
+    ${state.me ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || state.me.email || '')}</b> · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
 }
 
 // ── Import ────────────────────────────────────────────────────────────────
@@ -8526,7 +8522,7 @@ function areaOverviewHtml(area, c, blocks) {
     const a = state.account || {};
     const name = a.name || (state.me && state.me.name) || 'You';
     const subd = a.subdomain || (state.me && state.me.subdomain) || '';
-    const sub = subd ? `${esc(subd)}.daybook.fyi` : 'owner';
+    const sub = subd ? `lifebook.fyi/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
     return `<button class="ov-person ov-person-me" data-open-card title="Edit your Lifebook card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
@@ -14061,7 +14057,7 @@ function contactCardHtml(c) {
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
   const a = state.account || {}; const name = a.name || firstName() || 'You';
-  const sub = a.subdomain ? `${a.subdomain}.daybook.fyi` : t('ct.self.sub');
+  const sub = a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
   return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Lifebook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
@@ -19567,15 +19563,6 @@ document.addEventListener('input', (e) => {
     if (e.target.dataset.cardLinkUrl != null) state.card.links[i].url = e.target.value; else state.card.links[i].label = e.target.value;
     cardLivePreview(); clearTimeout(window.__cardLk); window.__cardLk = setTimeout(saveCard, 500); return;
   }
-  if (e.target.matches('[data-account-username]')) {
-    const pos = e.target.selectionStart; const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    if (e.target.value !== v) { e.target.value = v; try { e.target.setSelectionRange(pos - 1, pos - 1); } catch {} }
-    const prev = document.querySelector('.js-username-preview'); if (prev) prev.textContent = v || 'username';
-    clearTimeout(window.__acctUN); window.__acctUN = setTimeout(async () => {
-      if (!v || v === state.account.subdomain) return;
-      try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ subdomain: v }) }); if (state.me) state.me.subdomain = v; rememberSubdomain(v); toast(`Username updated - you're now at ${v}.daybook.fyi`); }
-      catch (x) { toast(x.message); }
-    }, 800); }
   if (e.target.matches('.acct-phone-cc, .acct-phone-num')) { clearTimeout(window.__acctPT); const cc = (document.querySelector('.acct-phone-cc') || {}).value; const number = (document.querySelector('.acct-phone-num') || {}).value; window.__acctPT = setTimeout(() => saveAccount({ phone: joinPhone({ cc, number }) }), 700); }
   if (e.target.matches('[data-account-sms]')) { api('/api/lanes', { method: 'PUT', body: JSON.stringify({ smsAlerts: e.target.checked }) }).catch(() => {}); }
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
@@ -23155,10 +23142,7 @@ function showSignup(email, inviteRequired, invited) {
       <div class="gate2-mark"><em>Life<i class="wm-bk">book</i></em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
-      <label class="signup-l">${t('signup.username')}
-        <span class="su-sub"><input class="gate2-input su-sub-in" id="su-sub" placeholder="tara" value="${esc(presub)}" autocomplete="off" spellcheck="false" required><span class="su-sub-suffix">.daybook.fyi</span></span>
-        <span class="su-username-note">${t('signup.livesat')} <b><span id="su-preview">${esc(presub || 'username')}</span>.daybook.fyi</b></span>
-      </label>
+      <input type="hidden" id="su-sub" value="${esc(presub)}">
       ${needCode ? `<label class="signup-l">${t('signup.invitecode')}<input class="gate2-input" id="su-invite" placeholder="${t('signup.invitecode.ph')}" autocomplete="off" spellcheck="false" required>
         <span class="su-username-note">${t('signup.invitecode.note')}</span></label>` : ''}
       <button class="gate2-btn" id="su-btn" type="submit">${t('signup.create')}</button>
@@ -23167,10 +23151,6 @@ function showSignup(email, inviteRequired, invited) {
     </form></div>`);
   $('#signup-form').addEventListener('submit', signupSubmit);
   $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
-  $('#su-sub').addEventListener('input', (e) => {
-    e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    const pv = $('#su-preview'); if (pv) pv.textContent = e.target.value || 'username';
-  });
   $('#su-name').focus();
 }
 // Their Lifebook lives on its own subdomain - a different origin, with its own
@@ -23365,7 +23345,6 @@ function onbWelcome() {
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
     <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Lifebook helps you <b>join the dots across your life</b> without the overwhelm.</p>
-    <p class="onb-p">It lives at <b>${sub}.daybook.fyi</b>. Change your username anytime in <b>Settings → Account</b>.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {

@@ -96,9 +96,16 @@ export async function handleSignup(request, env, email, json, err) {
   if (!inv && !publicSignup) return err('Lifebook is invite-only for now - you need an invitation from a member.', request, 403);
 
   const name = String(b.name || '').trim().slice(0, 40) || email.split('@')[0];
-  const sub = normSubdomain(b.subdomain);
-  if (!sub) return err('Pick a username: 2-30 letters, numbers or hyphens, e.g. tara', request, 400);
-  if (await subdomainTaken(env, sub)) return err(`"${sub}" is taken - try another`, request, 409);
+  // Usernames are derived automatically now - people no longer pick one at signup.
+  // Keep it unique (append a number if the base is taken) and fall back to the
+  // email's local part, then a generic stem. It still powers the public /u/<handle>
+  // card link. (Robin, 2026-10-15.)
+  const subBase = normSubdomain(b.subdomain) || normSubdomain(email.split('@')[0] || '') || 'member';
+  let sub = subBase;
+  for (let i = 2; await subdomainTaken(env, sub); i++) {
+    if (i > 9999) { sub = (subBase.slice(0, 18) + Date.now().toString(36)).slice(0, 30); break; }
+    sub = (subBase + i).slice(0, 30);
+  }
 
   // A code can carry a different plan and the BYO-key "free" flag.
   const code = inv ? inv.code : null;
