@@ -34,7 +34,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
         <tr><td style="padding:34px 38px 0" align="center">
-          <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="Lifebook" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>book</i></p>
         </td></tr>
 

@@ -116,7 +116,7 @@ test('briefEmail does not offer more when there is no more', () => {
 // mark rather than a circle only Robin would recognise.
 test('briefEmail carries the mark and no Japanese', () => {
   const html = briefEmail({ day: '2026-08-04' });
-  assert.ok(html.includes('daybook.fyi/email-mark.png'));
+  assert.ok(html.includes('lifebook.fyi/email-mark.png'));
   assert.ok(!/[\u3000-\u9fff]/.test(html));
   assert.ok(!html.includes('&#9711;'));
   assert.ok(!html.includes('&#20170;'));

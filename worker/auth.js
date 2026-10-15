@@ -377,7 +377,7 @@ export function codeEmail(code, kind) {
              serif wordmark below already says Lifebook, so a blocked image
              should leave nothing behind rather than a second "Lifebook". -->
         <tr><td style="padding:34px 38px 0" align="center">
-          <img src="https://daybook.fyi/email-mark.png" width="66" height="35" alt="" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="Lifebook" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>book</i></p>
         </td></tr>
 
