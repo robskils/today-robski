@@ -3221,7 +3221,7 @@ function openFlyerImport() {
 }
 function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
 function flyerAreaOpts(f) {
-  return `<option value="">No lifespace</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  return `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
 }
 function flyerEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
@@ -4555,7 +4555,7 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  const areaOpts = `<option value="">No lifespace</option>` + (state.areas || []).map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('');
+  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('');
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
@@ -5028,7 +5028,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -5062,7 +5062,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${areas.map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+            <label class="pe-f pe-inline"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
             <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
           </div>
         </section>
@@ -7346,7 +7346,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -7527,7 +7527,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${(state.areas || []).map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -7546,7 +7546,7 @@ function areaTag(b) {
 // A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
   return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life Space</option>${
-    state.areas.map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}</option>`).join('')
+    editableAreas().map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('')
   }</select></span>`;
 }
 // A note can sit in several pages. Each shows as a removable chip that also
@@ -7591,6 +7591,19 @@ function loadSharedAreas() {
     .catch(() => { state.sharedAreas = []; return state.sharedAreas; });
   return state._sharedAreasP;
 }
+// Life Spaces I can file things INTO: my own, plus any shared *with* me where I was
+// granted edit. Once someone adds me to their Life Space, I can assign a note, an
+// email, a task, a goal - anything - to it, and it becomes a joined space. View-only
+// shares are deliberately excluded: I can read them but can't file into them.
+// (Kicks off the shared-areas load if it hasn't happened; boot preloads it so the
+// pickers are populated by the time anything is opened.)
+function editableAreas() {
+  if (state.sharedAreas === undefined) loadSharedAreas();
+  return state.areas.concat((state.sharedAreas || []).filter((a) => a && a.canEdit));
+}
+// " · shared" tag for a picker option/chip, so a joined space reads as distinct
+// from my own Life Spaces.
+const sharedTag = (a) => (a && a.sharedBy ? ' · shared' : '');
 // The Pages page: a colourful, sortable board of area cards - each a monogram
 // in the area's colour, its vision, an "how active" indicator, and live counts
 // (open tasks, goals, notes, people). Clicks through to the area's dashboard.
@@ -8219,7 +8232,7 @@ function renderArea() {
   // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
   // Defined here, before areaVisionGoals uses it - a const can't be read above
   // its declaration (that TDZ error stopped lifespaces opening). (Robin, 2026-10-13.)
-  const areaAddBtn = area.sharedBy ? '' : `<div class="addnew area-addnew">
+  const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew">
         <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
         <div class="addnew-menu" hidden>
           <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
@@ -8782,9 +8795,9 @@ function removeBlockArea(kind, id, areaId) { setBlockAreas(kind, id, blockAreas(
 // With none chosen it reads as the familiar "+ Page".
 function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
-  const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
-  const remaining = state.areas.filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Life Space' : '+ Life Space'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></span>` : '';
+  const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}${sharedTag(a)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
+  const remaining = editableAreas().filter((a) => !ids.includes(a.id));
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Life Space' : '+ Life Space'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -9637,7 +9650,7 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life Space</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life Space</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -10676,7 +10689,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Life Space</span><select class="sel" id="te-area"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Life Space</span><select class="sel" id="te-area"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -11147,10 +11160,10 @@ function openMoveMenu(keys, anchor) {
 // one files the email in that area (see mailToArea).
 function mailAreaMenuHtml() {
   const am = state.mail.areaMenu; if (!am) return '';
-  const areas = state.areas || [];
+  const areas = editableAreas();
   return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
-    <div class="mail-move-h">File in a page…</div>
-    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}</button>`).join('') : '<div class="mail-move-empty">No lifespaces yet.</div>'}
+    <div class="mail-move-h">File in a Life Space…</div>
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}${sharedTag(a)}</button>`).join('') : '<div class="mail-move-empty">No Life Spaces yet.</div>'}
   </div></div>`;
 }
 async function openMailAreaMenu(anchor) {
@@ -12944,7 +12957,7 @@ ${''/* The "older unread sits further down" banner is retired: the background
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No lifespace</option>` + (state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('');
   // The full task options, matching the Tasks board's add form: area, priority,
   // duration, snooze (hide until), repeat and notes.
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
@@ -13100,7 +13113,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${(state.areas || []).map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -13229,7 +13242,7 @@ function openFav(ref) {
 
 // ── view: tasks ──────────────────────────────────────
 const hueOf = (a) => (a && a.props && Number.isFinite(a.props.hue) ? a.props.hue : 220);
-const areaById = (id) => state.areas.find((a) => a.id === id);
+const areaById = (id) => state.areas.find((a) => a.id === id) || (state.sharedAreas || []).find((a) => a.id === id);
 // A note can belong to several pages: props.areas is the list. props.area
 // is kept as the first, for anything still reading a single area and for notes
 // written before multi-area. blockAreas gives the list from whichever is set.
@@ -13494,7 +13507,7 @@ function renderTasks() {
     </div>` : ''}
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
-  const opts = `<option value="">No lifespace</option>` + state.areas.map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
+  const opts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
@@ -14149,7 +14162,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${areas.length ? `<label class="atf atf-full"><span>Life Space</span><select id="ct-area" class="sel"><option value="">No lifespace</option>${areas.map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select></label>` : ''}
+    ${editableAreas().length ? `<label class="atf atf-full"><span>Life Space</span><select id="ct-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -15917,7 +15930,7 @@ async function openGoalCard(id) {
 const gcConnOpen = () => { try { return localStorage.getItem('life.goal.connOpen') !== '0'; } catch { return true; } };
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
-  const areaOpts = `<option value="">No lifespace</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
@@ -16251,7 +16264,7 @@ async function newBucket() {
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
   const b = state.bucket_open.item; const p = b.props || {};
-  const areaOpts = `<option value="">No lifespace</option>` + state.areas.map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}</option>`).join('');
+  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
@@ -18500,6 +18513,7 @@ function renderNote() {
         ${noteWallHtml(n)}
       </div>
       <aside class="note-side">
+        <div class="note-side-h">Linked</div>
         ${(() => {
           // Every sidebar card floats by whether it holds anything: a card with
           // something connected rises to the top and opens; empty cards (keeping
@@ -18612,7 +18626,7 @@ function cellInput(r, col, forCard) {
   if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
   // Page: a select whose options are the live Pages. Stores the area
   // id, shows its name; new areas appear automatically on the next render.
-  if (col.type === 'area') return `<select class="cell cell-area" data-cell="${k}"><option value=""></option>${state.areas.map((a) => `<option value="${esc(a.id)}" ${a.id === v ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+  if (col.type === 'area') return `<select class="cell cell-area" data-cell="${k}"><option value=""></option>${editableAreas().map((a) => `<option value="${esc(a.id)}" ${a.id === v ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select>`;
   if (col.type === 'url') {
     const raw = String(v ?? '').trim();
     const href = raw ? (/^[a-z][\w+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`) : null;
@@ -21836,7 +21850,7 @@ function editPrio(span) {
 }
 function editArea(span) {
   const id = span.dataset.editArea; const t = taskCopies(id)[0]; if (!t) return;
-  editInlineSelect(span, t.props.area, [{ value: '', label: 'No page' }, ...state.areas.map((a) => ({ value: a.id, label: a.title }))], (v) => patchTaskProps(id, { area: v }));
+  editInlineSelect(span, t.props.area, [{ value: '', label: 'No lifespace' }, ...editableAreas().map((a) => ({ value: a.id, label: a.title + sharedTag(a) }))], (v) => patchTaskProps(id, { area: v }));
 }
 
 // ── view: task focus (open card) ─────────────────────
@@ -23414,6 +23428,9 @@ async function onbConnectGmail() {
     try { state.modules = JSON.parse((modKv && modKv.value) || '{}') || {}; } catch { state.modules = {}; }
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    // Preload Life Spaces shared with me, so the moment I open a note/email/task the
+    // "file into a Life Space" pickers already offer the joined spaces I can edit.
+    loadSharedAreas();
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     // Restore the tabs you had open, focused on the one you were using - so

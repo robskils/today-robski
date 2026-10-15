@@ -2155,6 +2155,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-main { grid-area:main; min-width:0; }
 .note-attach { grid-area:attach; min-width:0; }
 .note-side { grid-area:side; position:sticky; top:16px; min-width:0; }
+/* A quiet header over the note's right rail, in the same small-caps gold style as
+   the sidebar section titles (.nav-grp), so the whole connected column reads as
+   one labelled group. (Robin, 2026-10-15.) */
+.note-side-h { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent); font-weight:700; padding:0 2px 4px; margin:0; }
+/* Legacy: there is no 'Starred' card in the rail any more, but make sure any old
+   one never shows on desktop. (Robin: remove starred from the right column.) */
+.note-side .note-starred { display:none; }
 /* A quiet 'turn into a table' at the very bottom of the note sidebar - out of the
    way, not in the toolbar. */
 .note-totable { display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:6px 10px; background:none; border:0; color:var(--ink-3); font-size:13px; cursor:pointer; border-radius:8px; }
@@ -2180,6 +2187,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-contacts { order:6; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
   .note-links { order:7; margin-top:34px; border-top:1px solid var(--line); padding-top:20px; }
   .note-starred, .note-related { display:none; }
+  .note-side-h { display:none; }
 }
 /* Wide pane: each connected block is its own tasteful white card, and the note
    body and the sidebar scroll independently (the rail sticks and scrolls inside
@@ -2349,6 +2357,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-topsec-t.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
 @media (hover:hover){ .nav-topsec-t:hover { border-color:var(--accent); } }
 .nav-topsec-body { margin-top:8px; display:flex; flex-direction:column; gap:3px; max-height:46vh; overflow-y:auto; overflow-x:hidden; padding:1px; }
+/* Starred rows read exactly like Recent rows: same text size, same icon-adjacent
+   layout (the label fills the row next to its icon). (Robin, 2026-10-15.) */
+.nav-topsec-body .nav-sub .t { font-size:15.5px; flex:1; }
+.nav-topsec-body .nav-sub .i { font-size:12px; }
 .home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
