@@ -471,6 +471,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 .signin-field:focus-within { border-color: var(--rust); }
 .signin-input { flex: 1; min-width: 0; border: 0; background: none; padding: 13px 14px; font-family: inherit; font-size: 17px; color: var(--ink); outline: none; }
 .signin-go { width: 100%; justify-content: center; margin-top: 16px; }
+.signin-smslink { display: block; width: 100%; margin-top: 12px; padding: 4px; background: none; border: 0; text-align: center; font-size: 14.5px; color: var(--ink-3); cursor: pointer; font-family: inherit; }
+.signin-smslink b { color: var(--rust); font-weight: 600; }
+.signin-smslink:hover b { text-decoration: underline; }
 .signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
 .signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
 .signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
@@ -849,6 +852,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="tu@ejemplo.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continuar →</button>
+      <button type="button" class="signin-smslink" id="signin-sms">¿Prefiere un SMS? <b>Envíeme el código por SMS</b></button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
     <p class="signin-foot">¿Aún no tienes un Lifebook? <a href="#invite" data-signin-close>Solicitar una invitación</a></p>
@@ -889,6 +893,12 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     const err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Introduce tu dirección de correo electrónico.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
+  });
+  document.getElementById('signin-sms').addEventListener('click', function () {
+    const email = document.getElementById('signin-email').value.trim();
+    const err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Introduzca primero su email, para saber a dónde enviar el SMS.'; err.hidden = false; return; }
+    location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
   });
   // Request-an-invite form: posts to the worker, which stores it and emails us.
   const invForm = document.getElementById('invite-form');

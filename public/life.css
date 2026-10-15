@@ -4856,6 +4856,13 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
    tint instead, so a note reads in its life-area colour like everything else. */
 .recent-ic .ico-note, .recent-ic .ico-tbl { color:inherit; }
 .recent-t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Starred and Recently viewed now live in the sidebar's top expander, so Home no
+   longer repeats them on desktop (Starred in the right rail, Recently viewed in the
+   central column); mobile keeps both, where the sidebar isn't in reach. (Robin.) */
+@media (min-width:821px){
+  .home-side .home-sec-favs { display:none; }
+  .home-main .lead-recent { display:none; }
+}
 @media (max-width:820px){
   /* One column on mobile, but interleave both desktop columns into a chosen
      order: Today, then the scratchpad, then Recently viewed, then the quarter's
