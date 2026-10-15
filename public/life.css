@@ -6535,6 +6535,13 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .hma-go { flex:none; font-size:13px; font-weight:600; color:var(--danger,#c4412e); }
 .mail-acct .x { color:var(--ink-3); font-size:18px; } .mail-acct .x:hover { color:var(--accent); }
 .mail-acct-card { max-width:560px; }
+/* Blocked senders live in one collapsible section at the very bottom of the
+   Accounts page, collapsed by default (the chevron on the header opens it). */
+.blocked-sec { margin-top:18px; }
+.blocked-sec > summary.blocked-sum { cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; }
+.blocked-sec > summary.blocked-sum::-webkit-details-marker { display:none; }
+.blocked-sec > summary.blocked-sum::before { content:'▸'; color:var(--ink-3); font-size:12px; transition:transform .15s; }
+.blocked-sec[open] > summary.blocked-sum::before { transform:rotate(90deg); }
 .mail-blocked { padding:12px 4px 4px; }
 .mail-blocked-h { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); font-weight:600; margin-bottom:8px; }
 .mail-blocked-chips { display:flex; flex-wrap:wrap; gap:7px; }

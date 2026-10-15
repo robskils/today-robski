@@ -1228,6 +1228,9 @@ function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('li
     if (document.hidden) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
     if (!standalone() || !reopenedAfterAWhile()) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
     const act = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
+    // Don't yank someone to Home mid-task: a half-finished "add mailbox" keeps you
+    // on Accounts so the restored form is right where you left it. (Robin.)
+    if (mailAddDraft() && act && act.view && act.view.type === 'mailaccounts') { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
     if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
     try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {}
     if (state.view && state.view.type === 'home') { renderHome(); window.scrollTo(0, 0); }
@@ -11945,7 +11948,7 @@ async function openMailAccounts() {
   }, 4000);
 }
 async function addMailAccount(fields) {
-  try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); toast(a.warning || 'Mailbox added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
+  try { const a = await mailApi('/accounts', { method: 'POST', body: JSON.stringify(fields) }); clearMailAddDraft(); toast(a.warning || 'Mailbox added'); state.mail.accounts = state.mail.accounts || []; state.mail.accounts.push(a); state.mail.account = a.id; await openMail(); }
   catch (e) { toast(e.message); }
 }
 // Edit a mailbox's connection settings. The password box is blank and only sent
@@ -12279,8 +12282,16 @@ function renderMailAccounts(note) {
     <div class="mail-sig" data-sig-panel="${a.id}" hidden>
       <div class="sig-build" id="sig-build-${a.id}">${sigBuilderInner(a)}</div>
     </div>
-    ${(a.blocked && a.blocked.length) ? `<div class="mail-blocked"><span class="mail-blocked-h">Blocked senders · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>` : ''}
     </div>`).join('');
+  // Blocked senders used to sit inside every account card, pushing the useful
+  // controls down. Collect them into a single section at the very bottom of the
+  // page, collapsed by default. (Robin, 2026-10-15.)
+  const blockedAccts = (state.mail.accounts || []).filter((a) => a.blocked && a.blocked.length);
+  const blockedTotal = blockedAccts.reduce((n, a) => n + a.blocked.length, 0);
+  const blockedSec = blockedTotal ? `<details class="push-sec blocked-sec"><summary class="home-sec-h blocked-sum">Blocked senders · ${blockedTotal}</summary>
+      <p class="scope" style="margin:8px 0 12px">Mail from these addresses skips your inbox. Tap × to unblock.</p>
+      ${blockedAccts.map((a) => `<div class="mail-blocked"><span class="mail-blocked-h">${esc(a.email)} · ${a.blocked.length}</span><div class="mail-blocked-chips">${a.blocked.map((addr) => `<span class="mail-blocked-chip">${esc(addr)}<button data-mail-unblock="${esc(addr)}" data-mail-unblock-acct="${a.id}" title="Unblock">×</button></span>`).join('')}</div></div>`).join('')}
+    </details>` : '';
   $('#pane').innerHTML = `${acctCrumbHtml(false)}
     <div class="pane-head home-head"><h1>${t('title.mailaccounts')}</h1><button class="add-btn wide" data-mail-add-acct>${t('btn.addmailbox')}</button></div>
     <p class="scope">${note ? esc(note) + ' ' : ''}Connect as many mailboxes as you like - adding one never removes another.</p>
@@ -12297,7 +12308,10 @@ function renderMailAccounts(note) {
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 10px">Make Lifebook open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
       <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Lifebook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
-      <button class="add-btn wide" data-mail-handler>Set Lifebook as my email app</button></section>`;
+      <button class="add-btn wide" data-mail-handler>Set Lifebook as my email app</button></section>
+    ${blockedSec}`;
+  // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
+  if (mailAddDraft()) showMailAccountForm();
 }
 async function saveSignature(id) {
   const a0 = (state.mail.accounts || []).find((x) => x.id === id); if (!a0) return;
@@ -12318,18 +12332,40 @@ const MAIL_PRESETS = {
   icloud: { label: 'iCloud', imap: 'imap.mail.me.com', imapPort: 993, smtp: 'smtp.mail.me.com', smtpPort: 587, note: 'iCloud needs an app-specific password from appleid.apple.com.' },
   outlook: { label: 'Outlook / 365', imap: 'outlook.office365.com', imapPort: 993, smtp: 'smtp.office365.com', smtpPort: 587 },
 };
+// Adding a mailbox is a two-app job: you type the address here, then switch to
+// your password manager for the app-password and come back to paste it. The
+// installed app redraws (or reloads) on resume, which used to wipe the half-filled
+// form. So we remember the in-progress draft (everything EXCEPT the password - that
+// never touches storage) and reopen the form exactly as left. (Robin, 2026-10-15.)
+const MAIL_ADD_KEY = 'life.mail.addDraft';
+function mailAddDraft() { try { return JSON.parse(localStorage.getItem(MAIL_ADD_KEY) || 'null'); } catch { return null; } }
+function clearMailAddDraft() { try { localStorage.removeItem(MAIL_ADD_KEY); } catch {} }
+function saveMailAddDraft() {
+  const f = document.getElementById('mail-acct-form-el'); if (!f) return;
+  const g = (id) => { const el = f.querySelector(id); return el ? el.value : ''; };
+  try { localStorage.setItem(MAIL_ADD_KEY, JSON.stringify({ email: g('#ma-email'), imapHost: g('#ma-imaphost'), imapPort: g('#ma-imapport'), smtpHost: g('#ma-smtphost'), smtpPort: g('#ma-smtpport'), username: g('#ma-user') })); } catch {}
+}
 function showMailAccountForm() {
   const chips = Object.entries(MAIL_PRESETS).map(([k, p]) => `<button type="button" class="mail-preset" data-mail-preset="${k}">${esc(p.label)}</button>`).join('');
+  const d = mailAddDraft() || {};
+  const val = (x, fb) => esc((x != null && x !== '') ? x : fb);
   $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
     <div class="mail-presets"><span class="mail-presets-l">Provider:</span>${chips}</div>
     <div id="ma-note" class="mail-sig-note" hidden></div>
-    <input id="ma-email" type="email" placeholder="Email address" required>
-    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host" value="imap.purelymail.com" required style="flex:1"><input id="ma-imapport" value="993" style="width:80px"></div>
-    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host" value="smtp.purelymail.com" required style="flex:1"><input id="ma-smtpport" value="465" style="width:80px"></div>
-    <input id="ma-user" placeholder="Username (usually your email)">
+    <input id="ma-email" type="email" placeholder="Email address" required value="${val(d.email, '')}">
+    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host" value="${val(d.imapHost, 'imap.purelymail.com')}" required style="flex:1"><input id="ma-imapport" value="${val(d.imapPort, '993')}" style="width:80px"></div>
+    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host" value="${val(d.smtpHost, 'smtp.purelymail.com')}" required style="flex:1"><input id="ma-smtpport" value="${val(d.smtpPort, '465')}" style="width:80px"></div>
+    <input id="ma-user" placeholder="Username (usually your email)" value="${val(d.username, '')}">
     <input id="ma-pass" type="password" placeholder="Password / app password" required>
-    <button class="add-btn wide" type="submit">Add account</button></form>`;
-  $('#ma-email').focus();
+    <div class="ae-act" style="margin-top:4px"><button class="add-btn" type="submit">Add account</button><button type="button" class="ghost" data-mail-add-cancel>Cancel</button></div></form>`;
+  const f = document.getElementById('mail-acct-form-el');
+  if (f) f.addEventListener('input', saveMailAddDraft);
+  saveMailAddDraft();   // mark the form in-progress so a resume/redraw reopens it
+  // Coming back with the password copied? Land on the password box ready to paste.
+  // A fresh, empty form starts at the email box.
+  const restoring = !!(d.email || d.username || d.imapHost);
+  const focusEl = restoring ? $('#ma-pass') : $('#ma-email');
+  if (focusEl) focusEl.focus();
 }
 function applyMailPreset(key) {
   const p = MAIL_PRESETS[key]; if (!p) return;
@@ -20143,6 +20179,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-dp-jump-today]')) { datePick(todayISO()); return; }
   if (t.closest('[data-dp-close]') && !t.closest('.dp-cal')) { closeDatePicker(); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
+  if (t.closest('[data-mail-add-cancel]')) { clearMailAddDraft(); const h = $('#mail-acct-form'); if (h) h.innerHTML = ''; return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
   if (t.closest('[data-sig-close-all]')) { document.querySelectorAll('[data-sig-panel]').forEach((p) => { p.hidden = true; }); refreshAcctCrumb(); return; }
