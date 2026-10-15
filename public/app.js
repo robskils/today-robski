@@ -5188,6 +5188,21 @@ function homeReqAlertHtml() {
     <span class="hma-go" aria-hidden="true">→</span>
   </button>`;
 }
+// The "Getting started" card on Home: the single, low-friction doorway into the
+// setup hub, shown until you finish or hide it. New accounts land on Home (no
+// forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
+function homeSetupCardHtml() {
+  if (state.onbSeen === undefined) { api('/api/kv/onboarded').then((r) => { state.onbSeen = !!(r && r.value); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.onbSeen = true; }); return ''; }
+  if (state.onbSeen) return '';
+  return `<section class="home-setup">
+    <button class="home-setup-main" data-onb-open-hub>
+      <span class="hsu-ic">${MARK}</span>
+      <span class="hsu-body"><span class="hsu-t">Finish setting up Daybook</span><span class="hsu-s">Make it yours, add your Folios, connect your email - at your own pace.</span></span>
+      <span class="hsu-go" aria-hidden="true">→</span>
+    </button>
+    <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
+  </section>`;
+}
 function homeQuoteHtml() {
   // The server already gates the quote (off / dismissed today), so if it sent one,
   // show it. Closing it dismisses the day's quote everywhere (see the × handler).
@@ -5566,6 +5581,7 @@ function renderHome() {
       ${alertsHtml()}
       </div>
       <div class="home-scroll">
+      ${homeSetupCardHtml()}
       ${homeInvitesHtml()}
       ${homeSharedAlertHtml()}
       ${homeMsgAlertHtml()}
@@ -19739,15 +19755,18 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
-  // First-run onboarding guide.
-  if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }
-  if (t.closest('[data-onb-back]')) { onbGo((state.onb ? state.onb.step : 0) - 1); return; }
-  if (t.closest('[data-onb-next]')) { if (state.onb && state.onb.step >= ONB_STEPS.length - 1) finishOnboarding(); else onbGo((state.onb ? state.onb.step : 0) + 1); return; }
+  // The setup hub (icon-tile + expand). Open from the Home "Getting started" card.
+  if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
+  if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
+  if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
+  { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
+  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('account'); else if (d === 'contacts') openContacts(); else if (d === 'invite') inviteToDaybook(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
-  if (t.closest('[data-onb-replay]')) { showOnboarding(0); return; }
+  if (t.closest('[data-onb-replay]')) { showOnboarding(); return; }
+  if (t.closest('[data-onb-open-hub]')) { showOnboarding(); return; }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
@@ -23071,29 +23090,33 @@ function registerMailHandler() {
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
 const ONB_STEPS = ['Welcome', 'Pages', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
+// No forced wizard any more: a new account lands straight on Home with the least
+// friction. Setup lives in an at-your-own-pace hub (showOnboarding) you open from
+// the Home "Getting started" card, whenever you like. maybeOnboard just learns
+// whether you've dismissed that card. (Robin, 2026-10-15.)
 async function maybeOnboard() {
   if (!state.me || !state.me.subdomain) return;   // multi-tenant own account only
-  let seen = true;
-  try { const r = await api('/api/kv/onboarded'); seen = !!(r && r.value); } catch { return; }
-  if (!seen) showOnboarding(0);
+  try { const r = await api('/api/kv/onboarded'); state.onbSeen = !!(r && r.value); } catch { state.onbSeen = true; }
+  if (state.view && state.view.type === 'home') renderHome();   // show/hide the setup card
 }
+// Close the hub but keep the Home card (come back later). finishOnboarding also
+// marks it done so the card stops showing.
+function closeOnbHub() { const el = document.getElementById('onb'); if (el) el.remove(); state.onb = null; }
 async function finishOnboarding() {
   try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
-  const el = document.getElementById('onb'); if (el) el.remove();
-  state.onb = null;
+  state.onbSeen = true;
+  closeOnbHub();
+  if (state.view && state.view.type === 'home') renderHome();
 }
-function showOnboarding(step) {
-  state.onb = { step: step || 0, account: state.account || null, mailDone: false, areas: null };
+function showOnboarding() {
+  state.onb = { open: null, account: state.account || null, mailDone: false, areas: (state.areas && state.areas.length) ? state.areas : null, mailAccounts: null };
   if (!document.getElementById('onb')) { const d = document.createElement('div'); d.id = 'onb'; document.body.appendChild(d); }
-  // Pull current key state so the AI step can show what's already added.
-  if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; renderOnboarding(); } }).catch(() => {});
-  // Load the starter pages so the Pages step can list them.
-  api('/api/blocks?kind=area').then((areas) => {
-    if (!state.onb) return;
-    const sorted = (areas || []).sort((x, y) => (x.title || '').localeCompare(y.title || ''));
-    state.onb.areas = sorted; state.areas = sorted;
-    if (state.onb.step === 1) renderOnboarding();
-  }).catch(() => { if (state.onb) state.onb.areas = []; });
+  const rr = () => { if (state.onb) renderOnboarding(); };
+  if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; state.account = a; rr(); } }).catch(() => {});
+  if (state.card === undefined) api('/api/kv/card_profile').then((r) => { try { state.card = (r && r.value) ? JSON.parse(r.value) : {}; } catch { state.card = {}; } rr(); }).catch(() => { state.card = state.card || {}; });
+  api('/api/blocks?kind=area').then((areas) => { const s = (areas || []).sort((x, y) => (x.title || '').localeCompare(y.title || '')); state.areas = s; if (state.onb) { state.onb.areas = s; rr(); } }).catch(() => { if (state.onb) state.onb.areas = state.onb.areas || []; });
+  if (state.contacts === undefined) loadContacts().then(rr).catch(() => {});
+  try { mailApi('/accounts').then((r) => { if (state.onb) { state.onb.mailAccounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); } }).catch(() => {}); } catch {}
   renderOnboarding();
 }
 function onbAreas() {
@@ -23102,10 +23125,10 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No folios yet - add a few below.</p>';
-  return `<h2 class="onb-h">Your pages</h2>
-    <p class="onb-p">Pages are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to an area, so each area gathers everything about that part of your life in one place.</p>
-    <p class="onb-p onb-muted">Here's a starter set. Remove any that don't fit you, and add your own - you can always change these later in Pages.</p>
+      : '<p class="onb-p onb-muted">No Folios yet - add the ones that matter to you below.</p>';
+  return `<h2 class="onb-h">Your Folios</h2>
+    <p class="onb-p">Folios are the few parts of your life Daybook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Folio, so each one gathers everything about that part of your life in one place.</p>
+    <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
     <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a folio…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
@@ -23202,18 +23225,59 @@ function onbDone() {
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
 }
+// Panels for the tiles that open a richer surface - a short, warm line then a
+// button through to the full tool. (The folios/AI/email/phone tiles do it inline
+// via onbAreas/onbAi/onbEmail/onbPhone above.)
+function onbCardPanel() { return `<p class="onb-p">Your Daybook card is how you show up to the people you share with - a name, a photo, a short line about you, your colour.</p><button class="add-btn wide" data-onb-nav="card">Open your card →</button>`; }
+function onbToolsPanel() { return `<p class="onb-p">Daybook has lots of tools - tasks, calendar, notes, money, reflection and more. Switch on just what you want and add the rest whenever you like.</p><button class="add-btn wide" data-onb-nav="tools">Choose your tools →</button>`; }
+function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Recommended for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
+function onbImportPanel() { return `<p class="onb-p">Bring your address book in with a <b>vCard (.vcf)</b> - export one from Google Contacts, Outlook, iCloud, your phone or any address book, then import it on your Contacts page.</p><button class="add-btn wide" data-onb-nav="contacts">Go to Contacts to import →</button>`; }
+function onbInvitePanel() { return `<p class="onb-p">Daybook is better shared. Invite someone and you can share a whole Folio, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
+// The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
+// in any order, whenever you like. Done bits carry a tick; a progress bar sums
+// them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
 function renderOnboarding() {
   const s = state.onb; if (!s) return;
-  const last = ONB_STEPS.length - 1;
-  const dots = ONB_STEPS.map((_, i) => `<span class="onb-dot ${i === s.step ? 'on' : ''} ${i < s.step ? 'done' : ''}"></span>`).join('');
-  const content = s.step === 0 ? onbWelcome() : s.step === 1 ? onbAreas() : s.step === 2 ? onbAi() : s.step === 3 ? onbEmail() : s.step === 4 ? onbPhone() : onbDone();
-  document.getElementById('onb').innerHTML = `<div class="onb-bg"><div class="onb-card" role="dialog" aria-modal="true" aria-label="Welcome to Daybook">
-    <button class="onb-skip" data-onb-finish>${s.step === last ? '' : 'Skip setup'}</button>
-    <div class="onb-dots">${dots}</div>
-    <div class="onb-body">${content}</div>
-    <div class="onb-foot">${s.step > 0 ? '<button class="ghost" data-onb-back>← Back</button>' : '<span></span>'}<button class="add-btn wide" data-onb-next>${s.step === last ? 'Open Daybook' : 'Next →'}</button></div>
+  const a = s.account || state.account || {};
+  const card = state.card || {};
+  const areas = (s.areas || state.areas || []);
+  const contacts = state.contacts || [];
+  const mailConnected = !!s.mailDone || (Array.isArray(s.mailAccounts) && s.mailAccounts.length > 0);
+  const name = (state.me && state.me.name) ? state.me.name.split(' ')[0] : '';
+  const TILES = [
+    { id: 'card', ic: '◗', label: 'Make it yours', hint: 'Name, photo & a line about you', done: !!(card.photo || (card.tagline || '').trim()), body: onbCardPanel },
+    { id: 'folios', ic: '◈', label: 'Your Folios', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
+    { id: 'tools', ic: '🧰', label: 'Choose your tools', hint: 'Turn parts on or off', opt: true, body: onbToolsPanel },
+    { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside Daybook', opt: true, done: mailConnected, body: onbEmail },
+    { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional helpers, your own key', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
+    { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
+    { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
+    { id: 'contacts', ic: '👥', label: 'Import contacts', hint: 'Google, Outlook, your phone…', opt: true, done: contacts.length > 0, body: onbImportPanel },
+    { id: 'invite', ic: '💌', label: 'Invite people', hint: 'Share with friends & family', opt: true, body: onbInvitePanel },
+  ];
+  const countable = TILES.filter((x) => 'done' in x);
+  const doneN = countable.filter((x) => x.done).length;
+  const allDone = doneN >= countable.length;
+  const tilesHtml = TILES.map((x) => `<button class="onb-tile${x.done ? ' done' : ''}${s.open === x.id ? ' on' : ''}" data-onb-tile="${x.id}" aria-expanded="${s.open === x.id}">
+      <span class="onb-tile-top"><span class="onb-tile-ic">${x.ic}</span><span class="onb-tile-pip" aria-hidden="true">${x.done ? '✓' : (x.opt ? '' : '•')}</span></span>
+      <span class="onb-tile-l">${esc(x.label)}</span>
+      <span class="onb-tile-h">${esc(x.hint)}</span>
+    </button>`).join('');
+  const openTile = TILES.find((x) => x.id === s.open);
+  const panel = openTile ? `<div class="onb-panel"><div class="onb-panel-h"><span class="onb-panel-ic">${openTile.ic}</span>${esc(openTile.label)}</div><div class="onb-panel-in">${openTile.body()}</div></div>` : '';
+  const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
+  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Daybook">
+    <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
+    <div class="onb-head">
+      <span class="onb-mark">${MARK}</span>
+      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Daybook${name ? `, ${esc(name)}` : ''}`}</h2>
+      <p class="onb-lede">${allDone ? 'Everything below is done - change any of it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required.'}</p>
+      <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
+    </div>
+    <div class="onb-grid">${tilesHtml}</div>
+    ${panel}
+    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Daybook' : 'Done for now'}</button>
   </div></div>`;
-  const f = document.getElementById('onb-mail-email'); if (f) f.focus();
 }
 async function onbSaveAi(provider) {
   const el = document.querySelector(`[data-onb-ai="${provider}"]`); const value = (el && el.value || '').trim();

@@ -4439,6 +4439,51 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* ── First-run onboarding overlay ─────────────────────────────────────── */
 #onb .onb-bg { position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:20px;
   background:color-mix(in srgb,var(--ink) 40%,transparent); backdrop-filter:blur(6px); }
+/* ── The setup hub: icon tiles + expand panel, done at your own pace ───────── */
+.onb-sheet { position:relative; width:100%; max-width:600px; max-height:92vh; overflow-y:auto;
+  background:var(--card); border:1px solid var(--line-2); border-radius:24px; padding:34px 30px 26px;
+  box-shadow:0 40px 110px -40px rgba(0,0,0,.6); display:flex; flex-direction:column; gap:22px; }
+.onb-x { position:absolute; top:15px; right:16px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; background:none; border:0; color:var(--ink-3); font-size:17px; cursor:pointer; border-radius:50%; z-index:2; }
+.onb-x:hover { color:var(--ink); background:var(--paper-2); }
+.onb-head { text-align:center; display:flex; flex-direction:column; align-items:center; gap:7px; }
+.onb-mark { color:var(--accent); line-height:0; } .onb-mark .brand-mark { width:46px; height:46px; margin:0; }
+.onb-title { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:600; margin:4px 0 0; color:var(--ink); text-wrap:balance; }
+.onb-lede { font-size:15.5px; line-height:1.55; color:var(--ink-2); max-width:44ch; margin:0; text-wrap:balance; }
+.onb-prog { display:flex; align-items:center; gap:10px; width:min(320px,82%); margin-top:6px; }
+.onb-prog-bar { flex:1; height:7px; border-radius:999px; background:var(--paper-2); overflow:hidden; }
+.onb-prog-bar span { display:block; height:100%; border-radius:999px; background:var(--accent); transition:width .45s cubic-bezier(.2,.8,.2,1); }
+.onb-prog-n { font-size:12.5px; font-weight:600; color:var(--ink-3); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.onb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(152px,1fr)); gap:12px; }
+.onb-tile { display:flex; flex-direction:column; align-items:flex-start; gap:4px; text-align:left; padding:15px 15px 16px; border:1px solid var(--line); border-radius:16px; background:var(--paper); cursor:pointer; transition:border-color .12s, background .12s, transform .08s, box-shadow .12s; }
+.onb-tile:hover { border-color:var(--accent); background:var(--card); transform:translateY(-1px); box-shadow:0 12px 26px -16px rgba(0,0,0,.35); }
+.onb-tile.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent); }
+.onb-tile-top { display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:3px; }
+.onb-tile-ic { font-size:23px; line-height:1; color:var(--accent); }
+.onb-tile-pip { width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:12px; font-weight:800; color:var(--line-2); }
+.onb-tile.done .onb-tile-pip { background:#6f9f4a; color:#fff; }
+.onb-tile-l { font-size:15px; font-weight:600; color:var(--ink); }
+.onb-tile-h { font-size:12.5px; color:var(--ink-3); line-height:1.4; }
+.onb-tile.done .onb-tile-l { color:var(--ink-2); }
+.onb-panel { border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 5%,var(--card)); padding:0 18px 18px; animation:onb-pop .2s ease; }
+@keyframes onb-pop { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+.onb-panel-h { display:flex; align-items:center; gap:9px; font-family:'Cormorant Garamond',serif; font-size:21px; font-weight:600; color:var(--ink); padding:16px 0 8px; }
+.onb-panel-ic { color:var(--accent); font-size:19px; }
+.onb-panel-in { display:flex; flex-direction:column; }
+.onb-panel-in .onb-h { display:none; }   /* the panel header replaces the step's own heading */
+.onb-done { align-self:center; margin-top:2px; min-width:180px; min-height:48px; padding:0 24px; border-radius:999px; font-size:15.5px; font-weight:600; cursor:pointer; border:1px solid var(--line-2); background:var(--paper); color:var(--ink-2); transition:border-color .12s,color .12s,background .12s; }
+.onb-done:hover { border-color:var(--accent); color:var(--ink); background:var(--card); }
+@media (max-width:560px){ .onb-sheet { padding:26px 15px 18px; border-radius:18px; gap:18px; } .onb-title { font-size:27px; } .onb-grid { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:10px; } }
+/* The Home "Getting started" doorway into the hub. */
+.home-setup { display:flex; align-items:stretch; gap:8px; margin-bottom:16px; }
+.home-setup-main { flex:1; display:flex; align-items:center; gap:14px; text-align:left; padding:15px 18px; border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 7%,var(--card)); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; min-width:0; }
+.home-setup-main:hover { border-color:var(--accent); transform:translateY(-1px); }
+.hsu-ic { color:var(--accent); flex:none; line-height:0; } .hsu-ic .brand-mark { width:30px; height:30px; margin:0; }
+.hsu-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.hsu-t { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); }
+.hsu-s { font-size:13.5px; color:var(--ink-2); line-height:1.4; }
+.hsu-go { margin-left:auto; color:var(--accent); font-size:20px; flex:none; }
+.home-setup-x { flex:none; width:34px; align-self:center; background:none; border:0; color:var(--ink-3); font-size:16px; cursor:pointer; border-radius:8px; }
+.home-setup-x:hover { color:var(--ink); background:var(--paper-2); }
 .onb-card { position:relative; width:100%; max-width:520px; max-height:90vh; overflow-y:auto;
   background:var(--card); border:1px solid var(--line-2); border-radius:20px; padding:26px 26px 20px;
   box-shadow:0 30px 80px -30px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:14px; }
