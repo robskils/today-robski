@@ -21949,7 +21949,7 @@ function renderConnect() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.connect'))}
     <div class="pane-head home-head"><h1>${t('nav.connect')}</h1></div>
-    <p class="cn-intro">Who have you let drift? Tend the people who matter — a tap on <b>✓ Spoke</b> resets the clock from today.</p>
+    <p class="cn-intro">Tend the people who matter - a tap on <b>✓ Spoke</b> resets the clock from today.</p>
     ${addBox}
     <div class="cn-list">${body}</div>`;
 }
