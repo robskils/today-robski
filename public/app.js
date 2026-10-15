@@ -6024,9 +6024,12 @@ function renderSpirit() {
     <div class="pane-head home-head"><h1>${t('wb.spirit')}</h1></div>
     ${wbToolTilesHtml({ sel: 'spirit' })}
     <div class="spirit-page">
-      <div class="spirit-card ${c ? 'drawn' : ''}" data-spirit-draw>
-        <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
-        <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
+      <div class="spirit-card-wrap">
+        <div class="spirit-card ${c ? 'drawn' : ''}">
+          <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
+          <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
+        </div>
+        <button class="spirit-card-hit" type="button" data-spirit-draw aria-label="${c ? 'Draw another spirit card' : 'Tap to draw a spirit card'}"></button>
       </div>
       <div class="spirit-actions" id="spirit-actions">${spiritActionsHtml()}</div>
       ${spiritHistoryHtml()}
@@ -14025,7 +14028,7 @@ function renderContacts() {
   const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
     : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this folio.`
-    : 'No contacts yet. Add one, or import your Apple Contacts .vcf.';
+    : 'No contacts yet. Add one, or import a vCard (.vcf) from Google, Outlook, your phone or any address book.';
   // While searching, strip the page back to just the search box and the matching
   // contacts - no Add/Import, no "Contacts on Daybook", no group bar. Just results.
   const searching = !!q;
@@ -14043,7 +14046,7 @@ function renderContacts() {
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${contactAreaBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) exported from Apple Contacts">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Daybook - connect and share">❖ Daybook Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Daybook - connect and share">❖ Daybook Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
       ${contactsDaybookBannerHtml()}
       ${contactSelBarHtml()}
