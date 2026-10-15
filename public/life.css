@@ -2363,6 +2363,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    so Starred can't render smaller than Recent. (Robin, 2026-10-15.) */
 .nav-topsecs .nav-topsec-body .nav-sub .t { font-size:16px; flex:1; }
 .nav-topsecs .nav-topsec-body .nav-sub .i { font-size:13px; }
+/* THE actual Starred-vs-Recent difference: the body is a flex column with a
+   max-height, so a long list (e.g. 52 starred) let its rows SHRINK to fit and
+   squashed them tighter than a short Recent list. Pin the rows so they keep full
+   height and the body scrolls instead - both lists now match. (Robin, 2026-10-15.) */
+.nav-topsecs .nav-topsec-body .nav-sub { flex-shrink:0; }
 .home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
   display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
