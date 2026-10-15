@@ -2320,7 +2320,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-drawer { display:contents; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
-.nav-brand em { font-style:normal; color:var(--ink); }
+.nav-brand em { font-style:normal; color:var(--gold); }
 /* "Lifebook" is one word; only "book" leans italic, at natural spacing after the
    roman "Life" (the old -.07em tuck closed Day's loose y-b gap; Life's e-b sits
    right on its own). The gold mark carries the colour. (Brand, 2026-10-15.) */
@@ -2333,7 +2333,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark:hover { transform:translateY(-2px); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .home-mark:hover .brand-mark { opacity:1; }
 .home-mark:active { transform:translateY(0); }
-.nav-brand .brand-mark { margin:0 .16em 0 .2em; }
+.nav-brand .brand-mark { width:1.4em; height:1.4em; margin:0 .14em 0 .18em; vertical-align:-.32em; color:var(--gold); }
 .nav-msearch, .nav-msearch-row { display:none; }   /* mobile-only sticky search (see media query) */
 .home-crumbbar { display:flex; }   /* carries the +New add menu, like every other page's breadcrumb */
 .nav-k {
