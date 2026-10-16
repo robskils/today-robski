@@ -65,7 +65,9 @@ export async function aiKey(env, provider, feature) {
   if (env.uid === 1 || isManaged(env.user && env.user.plan)) return provider === 'gemini' ? env.GEMINI_API_KEY : env.ANTHROPIC_API_KEY;
   return null;
 }
-export const aiNeedsKey = (provider) => `AI is switched off, or no ${provider === 'gemini' ? 'Google Gemini' : 'Anthropic'} key is set. Check Settings → Plan.`;
+// Warm, not scolding: this is what a member sees when they open an AI feature with
+// AI off. It should invite, not block - AI is an optional extra. (Robin, 2026-10-16.)
+export const aiNeedsKey = (provider) => 'This one uses AI, which is switched off right now - an optional extra, so the rest of Lifebook works just as well without it. Turn it on anytime in Settings → Plan.';
 
 // One ledger row per call. Best-effort: logging must never break the feature.
 export async function logAiUsage(env, provider, feature, model, inTok, outTok) {

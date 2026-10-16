@@ -7510,6 +7510,15 @@ async function journalEmpathise() {
 async function journalCoach() {
   const n = state.journal && state.journal.current; if (!n) return;
   const ed = document.querySelector('.prose[data-prose="journal"]');
+  // Coaching is an optional AI helper. With AI off, invite rather than error: a
+  // gentle note in a fresh session, a soft toast otherwise - never a dead-end.
+  if (!aiClientOn()) {
+    const msg = 'Coaching is one of the optional AI helpers, and AI is off right now. Turn it on in Settings → Plan to work through whatever is on your mind together - your journal works just the same without it.';
+    const empty = ed && !(ed.innerText || '').trim();
+    if (ed && empty) { ed.insertAdjacentHTML('beforeend', `<blockquote class="j-coach">🧭 ${esc(msg)}</blockquote><p><br></p>`); saveProse('journal', ed.innerHTML, ed.dataset.blockId); }
+    else toast(msg);
+    return;
+  }
   const text = ed ? (ed.innerText || '').trim() : '';
   const btn = document.querySelector('[data-journal-coach]');
   const label = btn ? btn.textContent : '🧭 Coach';
