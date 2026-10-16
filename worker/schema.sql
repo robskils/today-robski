@@ -328,6 +328,17 @@ CREATE TABLE IF NOT EXISTS mail_cache_meta (
   account TEXT NOT NULL, mailbox TEXT NOT NULL, unseen INTEGER DEFAULT 0, synced_at TEXT,
   PRIMARY KEY (account, mailbox)
 );
+-- Parsed message bodies, keyed by their immutable Message-ID. A body never
+-- changes, so once fetched from IMAP it can be re-served from here with no
+-- connection at all - instant re-opens, across reloads and devices, in any
+-- folder. Only messages WITHOUT downloadable attachments are cached (attachment
+-- URLs are signed and time-bound, so those re-fetch live). Pruned by age.
+CREATE TABLE IF NOT EXISTS mail_body_cache (
+  user_id INTEGER NOT NULL, account INTEGER NOT NULL, message_id TEXT NOT NULL,
+  payload TEXT NOT NULL, bytes INTEGER NOT NULL DEFAULT 0, cached_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, account, message_id)
+);
+CREATE INDEX IF NOT EXISTS mail_body_cache_age ON mail_body_cache(cached_at);
 
 -- Web Push subscriptions (one per installed browser/device). The worker sends
 -- an encrypted push when new mail arrives, and the service worker badges the

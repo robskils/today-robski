@@ -355,7 +355,10 @@ async function findByMsgId(im, mid, hint) {
   const skip = (b) => /\\Junk|\\Trash/i.test(b.flags || '') || /(^|[/.\\])(spam|junk|trash|bin|deleted)$/i.test(b.path || '');
   const rank = (b) => { const f = b.flags || ''; const p = (b.path || '').toUpperCase(); if (/\\All/i.test(f)) return 0; if (/\\Archive/i.test(f)) return 1; if (p === 'INBOX') return 2; return 3; };
   const ordered = boxes.filter((b) => !/\\Noselect/i.test(b.flags || '') && !skip(b)).sort((a, c) => rank(a) - rank(c));
-  const deadline = Date.now() + 30000;
+  // 12s, not 30s: a message is almost always in the first ranked folder (All Mail
+  // / Archive), so a long sweep means it is not coming - fail fast rather than hang
+  // the open for half a minute. (Robin, 2026-10-16.)
+  const deadline = Date.now() + 12000;
   for (const b of ordered) { if (Date.now() > deadline) break; if (hint && b.path === hint) continue; const r = await tryBox(b.path); if (r) return r; }
   return null;
 }
@@ -724,6 +727,9 @@ export async function syncMailCache(env, { force = false } = {}) {
     if (row && now - Number(row.value || 0) < 55000) return { newUnread: 0 };   // at most once a minute
   }
   await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
+  // Prune body-cache rows older than 45 days so it stays bounded. Cheap (indexed
+  // on cached_at), once a minute at most, and never blocks the warm itself.
+  try { await env.DB.prepare('DELETE FROM mail_body_cache WHERE cached_at < ?').bind(now - 45 * 86400000).run(); } catch {}
   const allAccts = await listAccounts(env);
   // Warm ACTIVE accounts (Mail opened in the last few days) every tick; back dormant
   // ones off to a slow refresh - so cost scales with active users, not signups. A
@@ -1132,6 +1138,15 @@ export async function handleMail(request, env, url, json, err) {
     if (sub === 'message') {
       let mailbox = url.searchParams.get('mailbox') || 'INBOX', uid = Number(url.searchParams.get('uid'));
       const mid = (url.searchParams.get('messageId') || '').trim();
+      // Body cache: a parsed body is immutable, so if we've stored this Message-ID
+      // before, serve it instantly with no IMAP connection at all. Best-effort -
+      // any miss or error just falls through to the live fetch below. (Robin, 2026-10-16.)
+      if (mid) {
+        try {
+          const hit = await env.DB.prepare('SELECT payload FROM mail_body_cache WHERE user_id=? AND account=? AND message_id=?').bind(env.uid, acct.id, mid).first();
+          if (hit && hit.payload) return json(JSON.parse(hit.payload), request);
+        } catch {}
+      }
       const im = await imapOpen(env, acct);
       try {
         await im.login();
@@ -1184,13 +1199,23 @@ export async function handleMail(request, env, url, json, err) {
           idx: i, filename: a.filename, size: (a.content && a.content.byteLength) || 0, type: a.mimeType,
           url: await signedAttUrl(env, url, acct.id, mailbox, uid, { idx: i }),
         })))).filter(Boolean);
-        return json({
+        const out = {
           uid, subject: p.subject || '(no subject)', from: p.from || null,
           to: (p.to || []).map((a) => ({ name: a.name, address: a.address })),
           cc: (p.cc || []).map((a) => ({ name: a.name, address: a.address })),
           date: (p.date ? new Date(p.date).toISOString() : ''),
           messageId: p.messageId || null, html: html || null, text: p.text || '', invite, attachments,
-        }, request);
+        };
+        // Store the body for instant re-opens. Only attachment-free messages (their
+        // URLs are signed and time-bound), keyed by the Message-ID the client asked
+        // with, capped in size. Best-effort - a failure never affects the reply.
+        if (mid && attachments.length === 0) {
+          try {
+            const payload = JSON.stringify(out);
+            if (payload.length < 300000) await env.DB.prepare('INSERT OR REPLACE INTO mail_body_cache (user_id,account,message_id,payload,bytes,cached_at) VALUES (?,?,?,?,?,?)').bind(env.uid, acct.id, mid, payload, payload.length, Date.now()).run();
+          } catch {}
+        }
+        return json(out, request);
       } finally { await im.logout(); }
     }
 
