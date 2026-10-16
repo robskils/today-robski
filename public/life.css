@@ -4749,6 +4749,9 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .lead-x { flex:none; width:22px; height:22px; border-radius:6px; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; opacity:0; transition:opacity .12s, color .12s, background .12s; }
 .lead-block:hover .lead-x { opacity:.55; }
 .lead-x:hover { opacity:1 !important; color:var(--danger,#c0392b); background:var(--paper-2); }
+/* A little + on the Today header: jump straight to the add-event form. (Robin, 2026-10-16.) */
+.lead-add { flex:none; width:24px; height:24px; border-radius:7px; border:0; background:var(--paper-2); color:var(--ink-2); font-size:17px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:color .12s, background .12s; }
+.lead-add:hover { color:#fff; background:var(--accent); }
 .lead-collapsed .lead-h { margin-bottom:0; }
 /* Collapsed cards are a uniform single row: consistent header height, title on
    one line, so Today/Do-next/Practices (and the rail cards) all match. */

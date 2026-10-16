@@ -5848,7 +5848,7 @@ function renderHome() {
           // (no longer a configurable chip). Foldable like the rest. (Robin, 2026-10-16.)
           { const top = homeMainOpen('today');
             blockEls.unshift({ k: 'today', html: `<section class="lead-block lead-today lead-day${top ? '' : ' lead-collapsed'}" data-lead-key="today">
-              <div class="lead-h" data-home-main-toggle="today" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${top ? '▾' : '▸'}</span><span class="lead-ic">☀</span><span class="lead-name">${esc(homeDayLabel(off))}</span><span class="lead-h-r">${top ? `<span class="lead-nav">${dayNav}</span>` : ''}</span></div>
+              <div class="lead-h" data-home-main-toggle="today" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${top ? '▾' : '▸'}</span><span class="lead-ic">☀</span><span class="lead-name">${esc(homeDayLabel(off))}</span><span class="lead-h-r">${top ? `<span class="lead-nav">${dayNav}</span>` : ''}<button class="lead-add" data-quick-add="event" title="Add an event" aria-label="Add an event">+</button></span></div>
               ${top ? bodies.today : ''}
             </section>` }); }
           // "My Lifebook" - the feed of everything else - sits right under Today, on
