@@ -2589,16 +2589,52 @@ async function loadChat() {
     if (sig(r.messages) !== sig(state.chat.messages)) { state.chat.messages = r.messages; renderChatMessages(); }
   } catch {}
 }
+// A small, curated emoji set for the chat composer - enough for everyday warmth
+// without a full keyboard. Handy on desktop, where there's no emoji key, and the
+// characters are plain Unicode so they store and show just like any text.
+// (Robin, 2026-10-16.)
+const CHAT_EMOJI = [
+  ['Smileys', ['😀', '😄', '😁', '😊', '🙂', '😉', '😍', '🥰', '😘', '😎', '🤩', '😇', '🤔', '🙃', '😅', '😂', '🤣', '😭', '🥺', '😴', '😌', '😏', '😳', '🤗']],
+  ['Gestures', ['👍', '👎', '👌', '🤌', '✌️', '🤞', '🤙', '🙏', '👏', '🙌', '💪', '👋', '🤝', '🫶', '🫡', '🤷']],
+  ['Hearts', ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '💕', '💖', '💘']],
+  ['Fun', ['🎉', '🎊', '✨', '🔥', '💯', '⭐', '🌟', '🥳', '🎁', '🥂', '🍾', '☕', '🍀', '🌈', '👀', '✅']],
+];
+function chatEmojiPanelHtml() {
+  return CHAT_EMOJI.map(([h, list]) => `<div class="emo-grp"><div class="emo-grp-h">${h}</div><div class="emo-row">${list.map((ch) => `<button type="button" class="emo" data-emoji="${ch}" tabindex="-1" aria-label="${ch}">${ch}</button>`).join('')}</div></div>`).join('');
+}
+function chatEmojiToggle(force) {
+  const p = document.getElementById('chat-emojis'); const b = document.querySelector('#chat .chat-emoji'); if (!p) return;
+  const show = force != null ? force : p.hasAttribute('hidden');
+  if (show) { p.removeAttribute('hidden'); if (b) b.classList.add('on'); }
+  else { p.setAttribute('hidden', ''); if (b) b.classList.remove('on'); }
+}
+function chatInsertEmoji(ch) {
+  const inp = document.getElementById('chat-input'); if (!inp) return;
+  const s = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+  const e = inp.selectionEnd != null ? inp.selectionEnd : inp.value.length;
+  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
+  const pos = s + ch.length;
+  try { inp.setSelectionRange(pos, pos); } catch {}
+  inp.focus();
+}
 function renderChat() {
   let el = document.getElementById('chat'); if (!el) { el = document.createElement('div'); el.id = 'chat'; document.body.appendChild(el); }
   const c = state.chat;
   el.innerHTML = `<div class="chat-bg" data-chat-close></div><div class="chat-panel">
     <div class="chat-head"><span class="chat-title">${esc(c.name)}</span><button class="chat-x" data-chat-close title="Close">×</button></div>
     <div class="chat-msgs" id="chat-msgs"></div>
-    <form class="chat-form" id="chat-form"><input class="chat-input" id="chat-input" placeholder="Message ${esc(c.name)}…" autocomplete="off"><button class="chat-send" type="submit">Send</button></form>
+    <form class="chat-form" id="chat-form"><div class="chat-emojis" id="chat-emojis" hidden>${chatEmojiPanelHtml()}</div><button class="chat-emoji" type="button" data-chat-emoji aria-label="Insert emoji" title="Emoji">🙂</button><input class="chat-input" id="chat-input" placeholder="Message ${esc(c.name)}…" autocomplete="off"><button class="chat-send" type="submit">Send</button></form>
   </div>`;
   renderChatMessages();
   const f = document.getElementById('chat-form'); if (f) f.addEventListener('submit', sendChat);
+  // Emoji picker: toggle button, insert-on-tap (panel stays open for more), and
+  // close it the moment you tap back into the conversation.
+  const emoBtn = el.querySelector('[data-chat-emoji]');
+  if (emoBtn) emoBtn.addEventListener('click', (ev) => { ev.preventDefault(); chatEmojiToggle(); });
+  const emoPanel = document.getElementById('chat-emojis');
+  if (emoPanel) emoPanel.addEventListener('click', (ev) => { const b = ev.target.closest('[data-emoji]'); if (!b) return; ev.preventDefault(); chatInsertEmoji(b.dataset.emoji); });
+  const msgsBox = document.getElementById('chat-msgs');
+  if (msgsBox) msgsBox.addEventListener('pointerdown', () => chatEmojiToggle(false));
   // Focus the box on a desktop, but never on a phone: focusing raises the keyboard
   // over the conversation before you've had a chance to read a word of it.
   const inp = document.getElementById('chat-input');
@@ -2618,6 +2654,7 @@ async function sendChat(e) {
   const inp = document.getElementById('chat-input'); const body = (inp && inp.value || '').trim(); if (!body || !state.chat) return;
   const to = state.chat.with;
   inp.value = '';
+  chatEmojiToggle(false);   // tuck the picker away once a message is on its way
   // Show it immediately. A phone on a weak signal takes seconds to round-trip,
   // and a message that vanishes on send reads as a broken app - people retype it
   // and send twice. The pending copy is replaced by the server's list on success.
@@ -3708,11 +3745,11 @@ function navGridHtml(v) {
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  // People box order: Contacts, Lifebook, Connect - each a full-width row so they
-  // stack cleanly in that order. (Robin, 2026-10-15.)
-  const items = [modOn('contacts') ? `<button class="nav-item nav-full ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
-    modOn('contacts') ? `<button class="nav-item nav-full ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
+  // People box order: Contacts, Lifebook, Connect - half-width tiles in the same
+  // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
+  const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live Lifebook people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.

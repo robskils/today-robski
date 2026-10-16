@@ -2707,12 +2707,26 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 /* Sent, not yet acknowledged by the server. */
 .chat-msg.pending { opacity:.55; }
 .chat-msg.mine { align-self:flex-end; background:var(--accent); color:var(--accent-ink,#fff); border-color:transparent; border-bottom-left-radius:16px; border-bottom-right-radius:5px; }
-.chat-form { display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
+.chat-form { position:relative; display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
 /* 16px (not 15) so iOS WebKit doesn't auto-zoom the page when you focus to type,
    which was shoving the Send button and text off the right edge. (Robin, mobile.) */
 .chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:16px; outline:none; }
 .chat-input:focus { border-color:var(--accent); }
 .chat-send { flex:none; padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:var(--accent-ink,#fff); font-family:inherit; font-weight:600; cursor:pointer; }
+/* Emoji picker: a quiet button in the composer, and a picker that floats just
+   above it (handy on desktop, where there's no emoji key). (Robin, 2026-10-16.) */
+.chat-emoji { flex:none; width:44px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); font-size:20px; line-height:1; cursor:pointer; color:var(--ink); transition:border-color .12s, background .12s; }
+.chat-emoji:hover { border-color:var(--accent); }
+.chat-emoji.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
+.chat-emojis { position:absolute; left:12px; right:12px; bottom:calc(100% + 6px); z-index:5; padding:12px 14px; max-height:min(300px,52vh); overflow-y:auto; background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:0 22px 50px -24px rgba(0,0,0,.5); -webkit-overflow-scrolling:touch; }
+.chat-emojis[hidden] { display:none; }
+.emo-grp { margin-bottom:12px; }
+.emo-grp:last-child { margin-bottom:0; }
+.emo-grp-h { font-size:11px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin:0 2px 7px; }
+.emo-row { display:grid; grid-template-columns:repeat(8,1fr); gap:2px; }
+.emo { border:0; background:transparent; font-size:23px; line-height:1; padding:7px 0; border-radius:11px; cursor:pointer; transition:background .1s; }
+.emo:hover { background:color-mix(in srgb,var(--accent) 14%,var(--card)); }
+.emo:active { transform:scale(.9); }
 /* Friends on Lifebook. */
 .friend-row { display:flex; align-items:center; gap:13px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; }
 .fr-av { flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:16px; position:relative; }
