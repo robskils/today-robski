@@ -7009,7 +7009,7 @@ function renderCompass() {
   if (!s.text) {
     const areas = (state.areas || []).filter((a) => a && a.title);
     const sel = (cur, val) => (cur === val ? ' selected' : '');
-    const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Life area <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
+    const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Life Space <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
     body = `<div class="ic-intro cmp-form">
       <div class="ic-coin-row"><span class="ic-coin">⚖︎</span></div>
       <h2 class="ic-h">Find your bearing</h2>
