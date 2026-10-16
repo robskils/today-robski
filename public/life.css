@@ -4917,14 +4917,14 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
      override the sections below via inline `order`, and hide any with .mob-hide. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
   .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
-  /* Slot the Notepad between Today and Do-next: dissolve the .home-lead wrapper so
-     its blocks (Today, Do-next, Tracker…) become orderable flex children, then
-     order them with the notepad at position 1. !important beats the inline order
-     the mobile-arrangement writes onto each section. */
+  /* On mobile the .home-lead wrapper dissolves so its blocks (Today, My Lifebook,
+     Do-next, Tracker…) become orderable flex children. Today and My Lifebook are
+     pinned first and second; everything else orders after them. The notepad's
+     !important beats the inline order the mobile-arrangement writes. */
   .home-lead { display:contents; }
   .home .lead-block { order:5; }
-  .home .lead-day { order:0; }
-  .home .lead-recent { order:1; }   /* Recently viewed sits right under Today, above Do next (Robin) */
+  .home .lead-day { order:0; }        /* Today - pinned first */
+  .home .lead-lifebook { order:1; }   /* My Lifebook - pinned second, right under Today (Robin, 2026-10-16) */
   .home .home-sec-notepad { order:2 !important; }
   .home .lead-priority { order:3; }
   .home .lead-tracker { order:4; }
