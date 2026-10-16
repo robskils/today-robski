@@ -5577,10 +5577,11 @@ function homeDiscoverHtml() {
 // change (kept in localStorage). Defaults to Today + Do next + Practices.
 function homeMainEnabled() {
   let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
-  if (!Array.isArray(o)) return ['today', 'priority', 'tracker'];
-  // Shared-lifespace activity is now folded into the fixed "My Lifebook" feed, so
-  // drop the old standalone section if a saved layout still carries it. (Robin.)
-  if (o.includes('foliofeed')) o = o.filter((k) => k !== 'foliofeed');
+  if (!Array.isArray(o)) return ['priority', 'tracker'];
+  // Today and My Lifebook are now fixed (pinned first and second, not configurable),
+  // and shared-lifespace activity folded into My Lifebook - drop any of these from a
+  // saved layout that still carries them. (Robin, 2026-10-16.)
+  o = o.filter((k) => k !== 'foliofeed' && k !== 'today' && k !== 'lifebook');
   return o;
 }
 function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
@@ -5596,7 +5597,7 @@ function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHo
 function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
 // The order of ALL Home sections (enabled or not) - what the show/hide chips can
 // be dragged into. The enabled ones render on Home in this order.
-const MAIN_KEYS = ['today', 'priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
+const MAIN_KEYS = ['priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
 function homeMainOrder() {
   let o = [];
   try { o = JSON.parse(localStorage.getItem('life.home.mainOrder') || 'null'); } catch {}
@@ -5786,7 +5787,6 @@ function renderHome() {
           // to fold it, × to remove it, and re-add any from the bar below. Defaults
           // to Today + Do next + Practices. (Sidebar / right rail are separate.)
           const MAIN_DEF = [
-            { k: 'today', ic: '☀', label: homeDayLabel(off), extra: `<span class="lead-nav">${dayNav}</span>`, on: true },
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
@@ -5807,9 +5807,13 @@ function renderHome() {
               ${op ? bodies[s.k] : ''}
             </section>` };
           });
-          // Today always leads the main column - the calendar first, whatever order
-          // the other sections are in. (Robin, 2026-10-15.)
-          { const ti0 = blockEls.findIndex((b) => b.k === 'today'); if (ti0 > 0) { const [td] = blockEls.splice(ti0, 1); blockEls.unshift(td); } }
+          // Today is pinned first - a fixed block, never removable or re-orderable
+          // (no longer a configurable chip). Foldable like the rest. (Robin, 2026-10-16.)
+          { const top = homeMainOpen('today');
+            blockEls.unshift({ k: 'today', html: `<section class="lead-block lead-today lead-day${top ? '' : ' lead-collapsed'}" data-lead-key="today">
+              <div class="lead-h" data-home-main-toggle="today" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${top ? '▾' : '▸'}</span><span class="lead-ic">☀</span><span class="lead-name">${esc(homeDayLabel(off))}</span><span class="lead-h-r">${top ? `<span class="lead-nav">${dayNav}</span>` : ''}</span></div>
+              ${top ? bodies.today : ''}
+            </section>` }); }
           // "My Lifebook" - the feed of everything else - sits right under Today, on
           // today itself only (other days just show that day's calendar). A fixed,
           // foldable strip; not removable.
@@ -5822,18 +5826,9 @@ function renderHome() {
             const ti = blockEls.findIndex((b) => b.k === 'today');
             blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'lifebook', html: lifebookBlock });
           }
-          // Recently viewed is a fixed strip too, right after the feed (or Today).
-          // Not removable; folds like the others. (Moved here from the right rail.)
-          if (recents.length) {
-            const rop = homeMainOpen('recent');
-            const recentBlock = `<section class="lead-block lead-recent${rop ? '' : ' lead-collapsed'}" data-lead-key="recent">
-              <div class="lead-h" data-home-main-toggle="recent" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${rop ? '▾' : '▸'}</span><span class="lead-ic">↺</span><span class="lead-name">${esc(t('home.sec.recent'))}</span><span class="lead-c">${recents.length}</span></div>
-              ${rop ? recentHtml : ''}
-            </section>`;
-            const li = blockEls.findIndex((b) => b.k === 'lifebook');
-            const ti = blockEls.findIndex((b) => b.k === 'today');
-            blockEls.splice(li >= 0 ? li + 1 : (ti >= 0 ? ti + 1 : 0), 0, { k: 'recent', html: recentBlock });
-          }
+          // Recently viewed now lives in the sidebar's top expander, so it's no longer
+          // a Home section: Home is Today, then My Lifebook, then the sections you
+          // choose. (Robin, 2026-10-16.)
           const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
