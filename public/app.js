@@ -23557,8 +23557,9 @@ function onbAiProv(provider, name, why, host, url, ph, isSet) {
 }
 function onbAi() {
   const a = state.onb.account || {};
-  return `<h2 class="onb-h">Add AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Lifebook has a few AI helpers. Bring your own key and you stay in control of the cost - or skip and add one later in Settings.</p>
+  return `<h2 class="onb-h">Turn on AI <span class="onb-opt">optional</span></h2>
+    <p class="onb-p"><b>Lifebook works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p">AI just adds a few optional helpers on top. Turn them on if you'd like them, leave them off if you wouldn't - you can change your mind anytime in Settings.</p>
     ${aiUsesHtml()}
     <div class="onb-provs">
       ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
@@ -23634,13 +23635,16 @@ function renderOnboarding() {
     { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
     { id: 'tools', ic: '🧰', label: 'Choose your tools', hint: 'Turn parts on or off', opt: true, body: onbToolsPanel },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside Lifebook', opt: true, done: mailConnected, body: onbEmail },
-    { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional helpers, your own key', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
+    { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
     { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
     { id: 'contacts', ic: '👥', label: 'Import contacts', hint: 'Google, Outlook, your phone…', opt: true, done: contacts.length > 0, body: onbImportPanel },
     { id: 'invite', ic: '💌', label: 'Invite people', hint: 'Share with friends & family', opt: true, body: onbInvitePanel },
   ];
-  const countable = TILES.filter((x) => 'done' in x);
+  // Only the essentials (your card + your Life Spaces) count toward "all set".
+  // The optional extras - AI, email, phone, 2FA, contacts - must never make a new
+  // member look unfinished or imply they're required. AI especially. (Robin, 2026-10-16.)
+  const countable = TILES.filter((x) => ('done' in x) && !x.opt);
   const doneN = countable.filter((x) => x.done).length;
   const allDone = doneN >= countable.length;
   const tilesHtml = TILES.map((x) => `<button class="onb-tile${x.done ? ' done' : ''}${s.open === x.id ? ' on' : ''}" data-onb-tile="${x.id}" aria-expanded="${s.open === x.id}">
@@ -23656,7 +23660,7 @@ function renderOnboarding() {
     <div class="onb-head">
       <span class="onb-mark">${MARK}</span>
       <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Lifebook${name ? `, ${esc(name)}` : ''}`}</h2>
-      <p class="onb-lede">${allDone ? 'Everything below is done - change any of it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required.'}</p>
+      <p class="onb-lede">${allDone ? 'The essentials are in place. Everything else here is optional - add it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required, AI included.'}</p>
       <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
     </div>
     <div class="onb-grid">${tilesHtml}</div>
