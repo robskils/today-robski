@@ -46,7 +46,7 @@ const T_EN = {
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
-  'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
+  'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Lifebook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Lifebook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Lifebook will live at', 'signup.create': 'Create my Lifebook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
@@ -68,7 +68,7 @@ const T_PT = {
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
-  'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
+  'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Lifebook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Lifebook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Lifebook ficará em', 'signup.create': 'Criar o meu Lifebook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
@@ -1015,7 +1015,7 @@ function labelForView(v) {
     case 'discover': return t('nav.discover');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit');
+    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit'); case 'compass': return t('wb.compass');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
@@ -1061,7 +1061,7 @@ function openView(v) {
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'wellbeing': return openWellbeing(); case 'insights': return openInsights(); case 'meditation': return openMeditation();
-    case 'iching': return openIChing(); case 'spirit': return openSpiritCards();
+    case 'iching': return openIChing(); case 'spirit': return openSpiritCards(); case 'compass': return openCompass();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
@@ -2798,7 +2798,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
 const AI_USES = [
-  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, and dream reflections', 'Claude'],
+  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, dream reflections, and weighing a decision with Compass', 'Claude'],
   ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'Claude'],
   ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'Claude'],
   ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
@@ -3653,6 +3653,7 @@ function navItems(v) {
     meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
     spirit: modOn('reflect') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
     iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
+    compass: modOn('reflect') ? `<button class="nav-item ${v.type === 'compass' ? 'on' : ''}" data-open-compass><span class="nav-ic">⚖</span><span class="nav-lbl">${t('wb.compass')}</span></button>` : '',
     insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
@@ -3735,7 +3736,7 @@ function navGridHtml(v) {
     ${grp('daily', t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp('money', t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
-    ${grp('wellbeing', t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.iching, NI.spirit, NI.meditation, NI.insights])}
+    ${grp('wellbeing', t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.compass, NI.iching, NI.spirit, NI.meditation, NI.insights])}
     ${grp('reviews', 'Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
@@ -6950,12 +6951,128 @@ function wbToolTilesHtml(opts) {
       ${tile('data-open-journal', '📓', 'wb.journal', 'Write freely, or from a prompt', { on: sel === 'journal' })}
       ${tile('data-open-coaching', '🧭', 'wb.coaching', 'A running coaching conversation', { on: sel === 'coaching' })}
       ${tile('data-open-dreams', '💭', 'wb.dreams', 'Write a dream and get a gentle interpretation', { on: sel === 'dreams' })}
+      ${tile('data-open-compass', '⚖️', 'wb.compass', 'Weigh a decision and find your bearing', { on: sel === 'compass' })}
       ${tile('data-open-medi', '🧘', 'wb.meditation', 'A calm sit, with real bells', { on: sel === 'meditation' })}
       ${tile('data-spirit-open', '🃏', 'wb.spirit', liveSpirit ? 'Reopen your spirit card' : 'Draw a card for a moment of reflection', { live: liveSpirit, on: sel === 'spirit' })}
       ${tile(liveIch ? 'data-iching-reopen' : 'data-open-iching', '☯', 'wb.iching', liveIch ? 'Reopen your live reading' : 'Cast an I Ching reading', { live: liveIch, on: sel === 'iching' })}
       ${tile('data-open-horo', '✶', 'wb.horoscope', liveHoro ? 'Reopen today’s horoscope' : 'Your daily horoscope', { live: liveHoro, on: sel === 'horo' })}
       ${tile('data-open-insights', '✶', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' })}
     </div>`;
+}
+// ── Compass: a decision companion ──────────────────────────────────────
+// You name a choice and make the honest case for each side; Compass weighs it
+// through a few decision-making lenses and reflects a bearing back - the call
+// stays yours. A reflection tool, like the I Ching and the horoscope: held
+// per-device for instant paint and mirrored to the account. (Robin, 2026-10-16.)
+function compassWorksheetHtml() {
+  const qs = [
+    ['The honest weigh-up', 'Of your reasons on each side, which truly matter most - not how many, but how much? Name the heaviest on each.'],
+    ['10-10-10', 'How will each choice feel in 10 minutes? In 10 months? In 10 years?'],
+    ['Regret at eighty', 'Picture yourself near the end of a long life, looking back. Which choice do you regret less?'],
+    ['One-way or two-way door', 'Can you undo it? If yes, decide lightly and learn. If no, give it real weight.'],
+    ['The pre-mortem', "It is a year on and the choice went badly. What most likely went wrong - and does that fear belong to A or B?"],
+    ['True north', 'Which path best honours what you most value and the life you are trying to build?'],
+  ];
+  return `<div class="cmp-ws"><div class="cmp-ws-h">No AI needed - sit with these, one at a time</div>${qs.map(([h, q]) => `<div class="cmp-ws-item"><span class="cmp-ws-q">${h}</span><span class="cmp-ws-a">${q}</span></div>`).join('')}<p class="cmp-ws-foot">Turn on the Reflection companion in Settings and Compass will weigh it with you.</p></div>`;
+}
+function currentCompass() {
+  if (state.compassCard === undefined) { try { state.compassCard = JSON.parse(localStorage.getItem('life.compass')); } catch { state.compassCard = null; } }
+  return state.compassCard || null;
+}
+function saveCompassCard(c) {
+  state.compassCard = c || null;
+  try { if (c) localStorage.setItem('life.compass', JSON.stringify(c)); else localStorage.removeItem('life.compass'); } catch {}
+  api('/api/kv/compass_current', { method: 'PUT', body: JSON.stringify({ value: c ? JSON.stringify(c) : '' }) }).catch(() => {});
+}
+function pushCompassHist(c) {
+  if (!c || !c.text) return;
+  const h = state.compassHistory || [];
+  h.unshift({ decision: c.decision || '', aLabel: c.aLabel || '', bLabel: c.bLabel || '', aWhy: c.aWhy || '', bWhy: c.bWhy || '', reversible: c.reversible || '', area: c.area || '', horizon: c.horizon || '', text: c.text, at: c.at || Date.now() });
+  state.compassHistory = h.slice(0, 60);
+  api('/api/kv/compass_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.compassHistory) }) }).catch(() => {});
+}
+function compassHistoryHtml() {
+  const h = state.compassHistory || []; if (!h.length) return '';
+  const rows = h.slice(0, 60).map((x, i) => `<button class="j-ins-item jrs-item" data-compass-open-hist="${i}" title="Reopen this decision"><span class="j-ins-item-date">${esc(reflWhen(x.at))}</span><span class="j-ins-item-snip"><span class="jrs-nm">${esc(x.decision || 'A decision')}</span></span><span class="j-ins-del" data-del-compass-hist="${i}" title="Remove">×</span></button>`).join('');
+  return `<div class="j-ins-list jrs-list"><div class="j-ins-list-h">Past decisions · ${h.length}</div>${rows}</div>`;
+}
+function openCompassHist(i) { const r = (state.compassHistory || [])[i]; if (!r) return; state.compass = { ...r, loading: false }; saveCompassCard(state.compass); renderCompass(); }
+function delCompassHist(i) { const h = state.compassHistory || []; if (!h[i]) return; h.splice(i, 1); state.compassHistory = h; api('/api/kv/compass_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(h) }) }).catch(() => {}); renderCompass(); }
+function compassFields() {
+  const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  return { decision: v('cmp-decision'), aLabel: v('cmp-alabel'), bLabel: v('cmp-blabel'), aWhy: v('cmp-awhy'), bWhy: v('cmp-bwhy'), reversible: v('cmp-rev'), area: v('cmp-area'), horizon: v('cmp-horizon') };
+}
+function renderCompass() {
+  const s = state.compass || {};
+  const ai = aiClientOn();
+  let body;
+  if (!s.text) {
+    const areas = (state.areas || []).filter((a) => a && a.title);
+    const sel = (cur, val) => (cur === val ? ' selected' : '');
+    const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Life area <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
+    body = `<div class="ic-intro cmp-form">
+      <div class="ic-coin-row"><span class="ic-coin">⚖︎</span></div>
+      <h2 class="ic-h">Find your bearing</h2>
+      <p class="ic-lede">Name the choice, then make the honest case for each side. Compass weighs it through a few lenses from the world of decision-making and reflects back where the weight falls. The call stays yours.</p>
+      <label class="cmp-l"><span class="cmp-l-t">The decision</span><input class="sel" id="cmp-decision" placeholder="What are you deciding?" maxlength="300" value="${esc(s.decision || '')}"></label>
+      <div class="cmp-ab">
+        <div class="cmp-col cmp-col-a"><input class="sel cmp-lbl" id="cmp-alabel" placeholder="Option A" maxlength="60" value="${esc(s.aLabel || '')}"><textarea class="sel cmp-why" id="cmp-awhy" placeholder="Why A? The real case for it…" maxlength="1500">${esc(s.aWhy || '')}</textarea></div>
+        <div class="cmp-col cmp-col-b"><input class="sel cmp-lbl" id="cmp-blabel" placeholder="Option B" maxlength="60" value="${esc(s.bLabel || '')}"><textarea class="sel cmp-why" id="cmp-bwhy" placeholder="Why B? The real case for it…" maxlength="1500">${esc(s.bWhy || '')}</textarea></div>
+      </div>
+      <div class="cmp-sigs">
+        <label class="cmp-sig"><span class="cmp-sig-l">Can you undo it?</span><select class="sel" id="cmp-rev"><option value=""${sel(s.reversible, '')}>—</option><option value="two"${sel(s.reversible, 'two')}>Two-way door (reversible)</option><option value="one"${sel(s.reversible, 'one')}>One-way door (hard to undo)</option><option value="unsure"${sel(s.reversible, 'unsure')}>Not sure</option></select></label>
+        ${areaSel}
+        <label class="cmp-sig"><span class="cmp-sig-l">Time frame <span class="ho-opt">optional</span></span><input class="sel" id="cmp-horizon" placeholder="e.g. this year" maxlength="60" value="${esc(s.horizon || '')}"></label>
+      </div>
+      ${ai ? `<button class="ic-cast" data-compass-go ${s.loading ? 'disabled' : ''}>${s.loading ? '⚖ Weighing it with you…' : '⚖ Find my bearing'}</button>` : compassWorksheetHtml()}
+    </div>`;
+  } else {
+    const prose = esc(s.text).replace(/\n+/g, '</p><p>').replace(/^/, '<p>').replace(/$/, '</p>');
+    const recap = (lbl, why, cls) => (why || lbl) ? `<div class="cmp-recap ${cls}"><span class="cmp-recap-h">${esc(lbl)}</span>${why ? `<p>${esc(why)}</p>` : ''}</div>` : '';
+    body = `<div class="ic-result cmp-result">
+      ${s.decision ? `<div class="ic-yourq">${esc(s.decision)}</div>` : ''}
+      <div class="cmp-ab-recap">${recap(s.aLabel || 'Option A', s.aWhy, 'cmp-recap-a')}${recap(s.bLabel || 'Option B', s.bWhy, 'cmp-recap-b')}</div>
+      <div class="cmp-bearing"><div class="cmp-bearing-h">⚖ Your bearing</div><div class="cmp-bearing-body">${prose}</div></div>
+      <p class="cmp-note">A reflection to think with, not a verdict. The decision is yours.</p>
+      <div class="ic-actions">
+        ${ai ? `<button class="ic-btn" data-compass-go ${s.loading ? 'disabled' : ''}>${s.loading ? '⚖ Weighing…' : '↻ Weigh again'}</button>` : ''}
+        <button class="ic-btn ic-btn-primary" data-compass-new>✎ New decision</button>
+      </div>
+    </div>`;
+  }
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.compass') }])}
+    <div class="pane-head home-head"><h1>${t('wb.compass')}</h1></div>
+    ${wbToolTilesHtml({ sel: 'compass' })}
+    <div class="ic-sheet ic-page">${body}${compassHistoryHtml()}</div>`;
+}
+async function openCompass() {
+  if (!state.compass) { const c = currentCompass(); state.compass = c ? { ...c, loading: false } : {}; }
+  state.view = { type: 'compass' };
+  renderNav();
+  renderCompass();
+  if (state.compassHistory === undefined) {
+    try { const r = await api('/api/kv/compass_history'); state.compassHistory = (r && r.value) ? JSON.parse(r.value) : []; }
+    catch { state.compassHistory = []; }
+    if (state.view && state.view.type === 'compass') renderCompass();
+  }
+}
+function newCompass() { state.compass = {}; saveCompassCard(null); renderCompass(); }
+async function runCompass() {
+  const f = document.getElementById('cmp-decision') ? compassFields() : (state.compass || {});
+  if (!f.decision && !f.aWhy && !f.bWhy) { toast('Name the decision and the case for each side first.'); return; }
+  state.compass = { ...(state.compass || {}), ...f, loading: true, text: '' };
+  renderCompass();
+  try {
+    const r = await api('/api/wellbeing/compass', { method: 'POST', body: JSON.stringify({ decision: f.decision, aLabel: f.aLabel, bLabel: f.bLabel, aWhy: f.aWhy, bWhy: f.bWhy, reversible: f.reversible, area: f.area, horizon: f.horizon }) });
+    state.compass = { ...state.compass, loading: false, text: (r && r.text) || '', at: Date.now() };
+    saveCompassCard(state.compass);
+    pushCompassHist(state.compass);
+    renderCompass();
+  } catch (e) {
+    state.compass.loading = false; renderCompass();
+    toast(e.message || 'Could not reach Claude.');
+  }
 }
 function renderWellbeing() {
   const entries = (state.journal && state.journal.entries) || [];
@@ -20514,6 +20631,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-iching-reopen]')) { openIChing(currentIching()); return; }
   { const dih = t.closest('[data-del-iching-hist]'); if (dih) { delIchingHist(Number(dih.dataset.delIchingHist)); return; } }
   { const ih = t.closest('[data-iching-open-hist]'); if (ih) { const r = (state.ichingHistory || [])[Number(ih.dataset.ichingOpenHist)]; if (r && r.lines) openIChing(r); return; } }
+  if (t.closest('[data-open-compass]')) { openCompass(); return; }
+  if (t.closest('[data-compass-go]')) { runCompass(); return; }
+  if (t.closest('[data-compass-new]')) { newCompass(); return; }
+  { const cdh = t.closest('[data-del-compass-hist]'); if (cdh) { delCompassHist(Number(cdh.dataset.delCompassHist)); return; } }
+  { const coh = t.closest('[data-compass-open-hist]'); if (coh) { openCompassHist(Number(coh.dataset.compassOpenHist)); return; } }
   if (t.closest('[data-iching-dismiss]')) { dismissIching(); return; }
   if (t.closest('[data-iching-cast]')) { castIChing(); return; }
   if (t.closest('[data-iching-save]')) { saveIChing(); return; }
@@ -23765,6 +23887,7 @@ function showRequired2fa() {
     // Well-being and Home on any device.
     api('/api/kv/iching_current').then((r) => { if (r && r.value) { try { const s = JSON.parse(r.value); if (s && s.lines) { state.ichingCard = s; try { localStorage.setItem('life.ichingCard', r.value); } catch {} refreshReflectPins(); } } catch {} } }).catch(() => {});
     api('/api/kv/horo_current').then((r) => { if (r && r.value) { try { const s = JSON.parse(r.value); if (s && s.text) { state.horoCard = s; try { localStorage.setItem('life.horoCard', r.value); } catch {} refreshReflectPins(); } } catch {} } }).catch(() => {});
+    api('/api/kv/compass_current').then((r) => { if (r && r.value) { try { const s = JSON.parse(r.value); if (s && (s.text || s.decision)) { state.compassCard = s; try { localStorage.setItem('life.compass', r.value); } catch {} } } catch {} } }).catch(() => {});
     // Week-start preference, mirrored for pages (Reviews) that render before Settings.
     api('/api/account').then((a) => { if (a) { state.account = a; try { localStorage.setItem('life.weekStart', String(a.weekStart)); } catch {} if (state.view && state.view.type === 'reviews') renderReviews(); } }).catch(() => {});
     maybeOnboard();          // first-run welcome guide, once per new account
