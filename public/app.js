@@ -4274,7 +4274,7 @@ async function openHome() {
   // Re-pull reviews each time Home opens, so a review filed on another device clears
   // the "due" nudge here (state.reviews would otherwise stay stale). (Robin.)
   api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); } }).catch(() => {});
-  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -4285,6 +4285,7 @@ async function openHome() {
     api('/api/kv/home_order').catch(() => null),
     api('/api/kv/home_mobile').catch(() => null),
     api('/api/kv/home_side_order').catch(() => null),
+    api('/api/kv/home_feeddismiss').catch(() => null),
   ]);
   // The mobile Home arrangement follows the account too, so a change made on the
   // desktop settings shows up on the phone.
@@ -4296,6 +4297,7 @@ async function openHome() {
   // from the server so a rearrangement made on one desktop shows on the next.
   if (order && order.value) { try { if (Array.isArray(JSON.parse(order.value))) localStorage.setItem('life.home.mainOrder', order.value); } catch {} }
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
+  if (fd) mergeFeedDismiss(fd.value);   // fold in the account's dismissed-feed rows so they stay cleared after a re-login and across devices
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
   if (gen !== navGen) return;   // navigated away while Home was loading - don't clobber the new page
@@ -5506,7 +5508,38 @@ function lbDismissedMap() {
   if (changed) { try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {} }
   return o;
 }
-function lbDismiss(key) { const o = lbDismissedMap(); o[key] = Date.now(); try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {} renderHome(); }
+// Dismissals follow the account: fold the server's map into this device's (a row
+// cleared on ANY device stays cleared everywhere), cache locally for instant
+// render, and push the union back when we hold entries the server doesn't yet.
+// Mirrors mergeRecent. (Robin, 2026-10-16: a dismissal must survive the next
+// login and reach every device, so the source of truth is the account, not this
+// browser's localStorage.)
+function mergeFeedDismiss(serverJson) {
+  let server = {}; try { const s = JSON.parse(serverJson || '{}'); if (s && typeof s === 'object') server = s; } catch {}
+  const cut = Date.now() - 90 * 86400000;
+  const merged = {};
+  for (const src of [server, lbDismissedMap()]) {
+    for (const k in src) { const ts = Number(src[k]) || 0; if (ts >= cut && (!(k in merged) || ts > merged[k])) merged[k] = ts; }
+  }
+  const mergedJson = JSON.stringify(merged);
+  try { localStorage.setItem('life.home.feedDismiss', mergedJson); } catch {}
+  // Push the union back only when this device added something, so an older device's
+  // leftovers resurface everywhere (and a first dismissal made before sync existed
+  // migrates up to the account).
+  if (mergedJson !== JSON.stringify(server)) api('/api/kv/home_feeddismiss', { method: 'PUT', body: JSON.stringify({ value: mergedJson }) }).catch(() => {});
+}
+// Debounced so a flurry of ×-taps coalesces into one PUT carrying the full map -
+// avoids an out-of-order race dropping a dismissal.
+function syncFeedDismiss() {
+  clearTimeout(window.__feedDismissSyncT);
+  window.__feedDismissSyncT = setTimeout(() => { api('/api/kv/home_feeddismiss', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(lbDismissedMap()) }) }).catch(() => {}); }, 400);
+}
+function lbDismiss(key) {
+  const o = lbDismissedMap(); o[key] = Date.now();
+  try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {}
+  syncFeedDismiss();   // persist to the account: survives the next login and reaches other devices
+  renderHome();
+}
 // The "My Lifebook" feed - one reverse-chronological stream of everything going on
 // around you: tasks back from snooze, gentle keep-in-touch nudges, upcoming
 // birthdays, things people shared with you, and what they've done in your shared
