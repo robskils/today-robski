@@ -93,10 +93,14 @@ export async function updateUser(env, id, body) {
   // it. This lets the owner adjust "free 3 months" to "free 12 months" long after
   // signup - the invite is spent, but the user's free_until is still ours to move.
   if (body.freeMonths !== undefined) {
-    const m = Number(body.freeMonths);
-    if (!Number.isFinite(m) || m < 0 || m > 120) throw new Error('Free period must be 0-120 months.');
     let fu = null;
-    if (m > 0) { const d = new Date(); d.setMonth(d.getMonth() + m); fu = d.toISOString(); }
+    if (body.freeMonths === 'forever') {
+      fu = '9999-12-31T00:00:00.000Z';   // sentinel: a free period that never ends
+    } else {
+      const m = Number(body.freeMonths);
+      if (!Number.isFinite(m) || m < 0 || m > 120) throw new Error('Free period must be 0-120 months.');
+      if (m > 0) { const d = new Date(); d.setMonth(d.getMonth() + m); fu = d.toISOString(); }
+    }
     sets.push('free_until = ?'); binds.push(fu);
   }
   if (!sets.length) throw new Error('Nothing to change.');

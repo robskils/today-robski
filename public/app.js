@@ -2078,11 +2078,12 @@ function adminUserRow(u) {
   // placeholder; the current state reads in the meta line.
   const fu = u.free_until ? new Date(u.free_until) : null;
   const freeActive = fu && fu.getTime() > Date.now();
+  const freeForever = freeActive && fu.getFullYear() >= 9999;   // the "forever" sentinel (free_until far in the future)
   const freeOpts = [['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months']];
-  const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
+  const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
   return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
     <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
-    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDateY(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">free until ${esc(fmtDateY(u.free_until))}</span>` : ''}</div>
+    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDateY(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">${freeForever ? 'free forever' : `free until ${esc(fmtDateY(u.free_until))}`}</span>` : ''}</div>
     <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(planLabel(u.plan))} · owner</span>`
       : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select>
         ${freeCtl}
@@ -2285,7 +2286,7 @@ async function setUserStatus(id, status) {
   catch (e) { toast(e.message); }
 }
 async function setUserFree(id, months) {
-  try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
+  try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months === 'forever' ? 'Free forever' : months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
   catch (e) { toast(e.message); renderAdmin(); }
 }
 // ── Friends on Lifebook ────────────────────────────────────────────────
@@ -9814,7 +9815,7 @@ function eventAlarmList(ev) {
   return [];
 }
 // The reminder-lead chips shown in the event editor (minutes-before + label).
-const REM_PRESETS = [[0, 'At the time'], [5, '5 min'], [30, '30 min'], [120, '2 hours'], [1440, '1 day'], [10080, '1 week'], [43200, '1 month']];
+const REM_PRESETS = [[0, 'At the time'], [5, '5 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours'], [1440, '1 day'], [10080, '1 week'], [43200, '1 month']];
 function remChipsHtml(sel) {
   const set = new Set((sel || []).map(Number));
   const chip = (m, l) => `<button type="button" class="ce-rem-chip ${set.has(m) ? 'on' : ''}" data-alarm-toggle="${m}" aria-pressed="${set.has(m)}">${l}</button>`;
@@ -20887,7 +20888,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
   if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
-  { const af = e.target.closest('[data-admin-free]'); if (af) { if (e.target.value !== '') setUserFree(af.dataset.adminFree, Number(e.target.value)); return; } }
+  { const af = e.target.closest('[data-admin-free]'); if (af) { const v = e.target.value; if (v !== '') setUserFree(af.dataset.adminFree, v === 'forever' ? 'forever' : Number(v)); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.matches('[data-contact-area-sel]')) { state.contactsArea = e.target.value || null; renderContacts(); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
