@@ -7730,7 +7730,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   .cal-nav { width:100%; }
   /* Mobile calendar keeps just the essentials: hide the settings gear, Discover and
      the "show earlier days" button to reduce clutter. (Robin, 2026-10-15.) */
-  .cal-nav [data-open-feeds], .cal-nav .cal-discbtn, .cal-loadmore-up { display:none; }
+  .cal-nav [data-open-feeds], .cal-nav .cal-discbtn, .cal-loadmore.cal-loadmore-up { display:none; }
   .cal-agenda-top { margin-top:2px; }
   /* On mobile this header scrolls with the day - no need to pin it (sticky is a
      desktop nicety). (Robin.) */
