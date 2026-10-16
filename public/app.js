@@ -7031,8 +7031,7 @@ function renderCompass() {
     const recap = (lbl, why, cls) => (why || lbl) ? `<div class="cmp-recap ${cls}"><span class="cmp-recap-h">${esc(lbl)}</span>${why ? `<p>${esc(why)}</p>` : ''}</div>` : '';
     body = `<div class="ic-result cmp-result">
       ${s.decision ? `<div class="ic-yourq">${esc(s.decision)}</div>` : ''}
-      <div class="cmp-ab-recap">${recap(s.aLabel || 'Option A', s.aWhy, 'cmp-recap-a')}${recap(s.bLabel || 'Option B', s.bWhy, 'cmp-recap-b')}</div>
-      <div class="cmp-bearing"><div class="cmp-bearing-h">⚖ Your bearing</div><div class="cmp-bearing-body">${prose}</div></div>
+      <div class="cmp-outcome"><div class="cmp-ab-recap">${recap(s.aLabel || 'Option A', s.aWhy, 'cmp-recap-a')}${recap(s.bLabel || 'Option B', s.bWhy, 'cmp-recap-b')}</div><div class="cmp-bearing"><div class="cmp-bearing-h">⚖ Your bearing</div><div class="cmp-bearing-body">${prose}</div></div></div>
       <p class="cmp-note">A reflection to think with, not a verdict. The decision is yours.</p>
       <div class="ic-actions">
         ${ai ? `<button class="ic-btn" data-compass-go ${s.loading ? 'disabled' : ''}>${s.loading ? '⚖ Weighing…' : '↻ Weigh again'}</button>` : ''}
@@ -7044,7 +7043,7 @@ function renderCompass() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.compass') }])}
     <div class="pane-head home-head"><h1>${t('wb.compass')}</h1></div>
     ${wbToolTilesHtml({ sel: 'compass' })}
-    <div class="ic-sheet ic-page">${body}${compassHistoryHtml()}</div>`;
+    <div class="ic-sheet ic-page cmp-page">${body}${compassHistoryHtml()}</div>`;
 }
 async function openCompass() {
   if (!state.compass) { const c = currentCompass(); state.compass = c ? { ...c, loading: false } : {}; }
