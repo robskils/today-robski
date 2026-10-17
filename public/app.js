@@ -3126,15 +3126,16 @@ function importNotesPaneHtml(imp) {
       </div>
     </div>` : '';
   return `
-      <p class="imp-lead">Moving in from Obsidian, Bear, Apple Notes, Notion or anywhere else? Export your notes as <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>) and bring them straight in. Each file becomes its own page, headings and formatting kept.</p>
+      <p class="imp-lead">Moving in from <b>Evernote</b>, Notion, Obsidian, Bear, Apple Notes or anywhere else? Bring your notes straight in - each becomes its own page, formatting kept.</p>
+      <p class="imp-hint">From <b>Evernote</b>, export a notebook as <code>.enex</code> (one file holds all its notes - images come across too). From <b>Notion, Obsidian or Bear</b>, export as <b>Markdown</b> (<code>.md</code>). <b>Apple Notes</b> has no built-in export, so use a free exporter like <b>Exporter</b> for Markdown, or save a note as <code>.html</code>. Markdown, plain text and HTML all work.</p>
       <div class="imp-field">
         <label class="imp-label" for="imp-area">File them into a page</label>
         <select class="sel imp-area" id="imp-area" data-import-area>${importAreaOpts(imp)}</select>
       </div>
       <div class="imp-field">
         <label class="imp-label">Choose your files</label>
-        <label class="add-btn wide imp-pick">📄 Choose Markdown or text files<input type="file" id="imp-files" accept=".md,.markdown,.mdown,.txt,.text,text/markdown,text/plain" multiple hidden></label>
-        <p class="imp-hint">You can pick many at once. Nothing is imported until you confirm below.</p>
+        <label class="add-btn wide imp-pick">📄 Choose files to import<input type="file" id="imp-files" accept=".md,.markdown,.mdown,.txt,.text,.enex,.html,.htm,text/markdown,text/plain,text/html,application/xml" multiple hidden></label>
+        <p class="imp-hint">Markdown, text, HTML or Evernote <code>.enex</code>. Pick many at once - nothing is imported until you confirm below.</p>
       </div>
       ${imp.err ? `<p class="imp-err">${esc(imp.err)}</p>` : ''}
       ${preview}`;
@@ -3154,8 +3155,79 @@ function importEventsPaneHtml() {
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
 }
-// Turn selected files into previewable notes: first H1 (or filename) → title,
-// the rest → mdToHtml body. Kept synchronous-friendly via async file.text().
+// Light sanitiser for imported HTML (Evernote / .html notes): keep the structure
+// and formatting, strip anything active, using the browser's own parser. An
+// imported note is then indistinguishable from one typed here.
+function sanitizeImportedHtml(html) {
+  let d; try { d = new DOMParser().parseFromString(`<body>${html || ''}</body>`, 'text/html'); } catch { return ''; }
+  const body = d.body; if (!body) return '';
+  body.querySelectorAll('script,style,link,meta,base,iframe,object,embed,form,noscript,title').forEach((el) => el.remove());
+  body.querySelectorAll('*').forEach((el) => {
+    for (const a of [...el.attributes]) {
+      const n = a.name.toLowerCase();
+      if (n.startsWith('on') || n === 'srcdoc') el.removeAttribute(a.name);
+      else if ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*(javascript|vbscript|data:text\/html):/i.test(a.value)) el.removeAttribute(a.name);
+    }
+  });
+  return body.innerHTML.trim();
+}
+function htmlToSnippet(html) {
+  try { const d = new DOMParser().parseFromString(html || '', 'text/html'); return (d.body.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 110) || '(empty)'; } catch { return '(empty)'; }
+}
+// Evernote's content (ENML) is XHTML inside <en-note>, with <en-media> tags that
+// point at <resource> attachments by position. Inline the image resources in order
+// (small ones, to keep the note light), drop non-image attachments and anything
+// active.
+function enmlToHtml(contentRaw, resImgs) {
+  let d; try { d = new DOMParser().parseFromString(contentRaw || '', 'text/html'); } catch { d = null; }
+  const en = d && (d.querySelector('en-note') || d.body);
+  if (!en) return sanitizeImportedHtml(contentRaw);
+  let i = 0;
+  en.querySelectorAll('en-media').forEach((m) => {
+    const type = (m.getAttribute('type') || '');
+    if (/^image\//i.test(type) && i < resImgs.length) {
+      const r = resImgs[i++];
+      if (r.data.length <= 400000) { const img = d.createElement('img'); img.setAttribute('src', `data:${r.mime};base64,${r.data}`); img.setAttribute('style', 'max-width:100%;height:auto'); m.replaceWith(img); }
+      else m.remove();   // too big to inline - drop it rather than bloat the note
+    } else { m.remove(); }
+  });
+  return sanitizeImportedHtml(en.innerHTML);
+}
+// One .enex file -> many notes. Each <note> has <title>, <content> (ENML) and
+// optional <resource> attachments.
+function enexToNotes(text) {
+  const out = [];
+  let doc; try { doc = new DOMParser().parseFromString(text, 'application/xml'); } catch { doc = null; }
+  if (!doc || doc.querySelector('parsererror')) { try { doc = new DOMParser().parseFromString(text, 'text/html'); } catch { return out; } }
+  doc.querySelectorAll('note').forEach((ne) => {
+    const te = ne.querySelector('title'); const ce = ne.querySelector('content');
+    const title = ((te && te.textContent) || '').trim() || 'Untitled page';
+    const contentRaw = (ce && ce.textContent) || '';
+    const resImgs = [];
+    ne.querySelectorAll('resource').forEach((r) => {
+      const me = r.querySelector('mime'); const da = r.querySelector('data');
+      const mime = ((me && me.textContent) || '').trim();
+      const data = ((da && da.textContent) || '').replace(/\s+/g, '');
+      if (/^image\//i.test(mime) && data) resImgs.push({ mime, data });
+    });
+    const body = enmlToHtml(contentRaw, resImgs);
+    out.push({ title, body, snippet: htmlToSnippet(body) });
+  });
+  return out;
+}
+// One .html / .htm file -> one note: <title> or first <h1> (else the filename)
+// becomes the title, the body is sanitised and kept.
+function htmlFileToNote(text, filename) {
+  let d; try { d = new DOMParser().parseFromString(text, 'text/html'); } catch { d = null; }
+  let title = '';
+  if (d) { const tt = d.querySelector('title'); const h1 = d.querySelector('h1'); title = ((tt && tt.textContent) || '').trim() || ((h1 && h1.textContent) || '').trim(); }
+  if (!title) title = (filename || '').replace(/\.(html?|htm)$/i, '').replace(/[._-]+/g, ' ').trim();
+  const bodyHtml = (d && d.body) ? d.body.innerHTML : text;
+  const body = sanitizeImportedHtml(bodyHtml);
+  return { title: title || 'Untitled page', body, snippet: htmlToSnippet(body) };
+}
+// Turn selected files into previewable notes: Markdown/text (first H1 or filename
+// → title, body via mdToHtml), Evernote .enex (one file, many notes) and .html.
 async function importReadFiles(fileList) {
   const imp = importState();
   const files = Array.from(fileList || []);
@@ -3165,9 +3237,15 @@ async function importReadFiles(fileList) {
   const out = [];
   let skipped = 0;
   for (const f of files) {
-    if (f.size > MAX) { skipped++; continue; }
+    const name = (f.name || '').toLowerCase();
+    const isEnex = name.endsWith('.enex');
+    const isHtmlFile = name.endsWith('.html') || name.endsWith('.htm');
+    const cap = isEnex ? 25 * 1024 * 1024 : isHtmlFile ? 5 * 1024 * 1024 : MAX;   // one .enex holds many notes
+    if (f.size > cap) { skipped++; continue; }
     let text = '';
     try { text = await f.text(); } catch { skipped++; continue; }
+    if (isEnex) { const ns = enexToNotes(text); if (ns.length) out.push(...ns); else skipped++; continue; }
+    if (isHtmlFile) { out.push(htmlFileToNote(text, f.name)); continue; }
     const lines = text.replace(/\r\n?/g, '\n').split('\n');
     const firstNonEmpty = lines.findIndex((l) => l.trim());
     const h1 = lines.findIndex((l) => /^\s*#\s+\S/.test(l));
@@ -3184,7 +3262,7 @@ async function importReadFiles(fileList) {
     out.push({ title: title || 'Untitled page', body: bodyMd ? mdToHtml(bodyMd) : '', snippet: snippet || '(empty)' });
   }
   imp.parsed = out;
-  if (!out.length && skipped) imp.err = 'Those files were too large or could not be read. Markdown and text files under 2MB each, please.';
+  if (!out.length && skipped) imp.err = 'Those files were too large or could not be read. Markdown/text/HTML up to a few MB, Evernote .enex up to 25MB.';
   else if (skipped) imp.err = `${skipped} file${skipped === 1 ? '' : 's'} skipped (too large or unreadable).`;
   if (state.view && state.view.type === 'settings') renderSettings();
 }
