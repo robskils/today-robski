@@ -2083,7 +2083,7 @@ function adminUserRow(u) {
   const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
   return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
     <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
-    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · seen ${esc(fmtDateY(u.last_seen))}` : ''}${freeActive ? ` · <span class="au-free-badge">${freeForever ? 'free forever' : `free until ${esc(fmtDateY(u.free_until))}`}</span>` : ''}</div>
+    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · <span title="last used ${esc(fmtDateY(u.last_seen))}">active ${daysAgoLabel(Date.parse(u.last_seen))}</span>` : ' · never active'}${freeActive ? ` · <span class="au-free-badge">${freeForever ? 'free forever' : `free until ${esc(fmtDateY(u.free_until))}`}</span>` : ''}</div>
     <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(planLabel(u.plan))} · owner</span>`
       : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select>
         ${freeCtl}
@@ -2148,7 +2148,17 @@ function renderAdmin() {
     ${(a.aiUsage || []).length ? `<div class="home-sec-h" id="adm-ai-usage" style="margin-top:8px">AI usage · this month</div>
       <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>` : ''}`;
 
-  const membersPane = `<div class="adm-users">${users.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
+  // Sortable members list: recently active (by last_seen), longest idle (the
+  // inverse - who's drifting), or recently joined (by created_at). (Robin, 2026-10-18.)
+  const MEMBER_SORTS = [['active', 'Recently active'], ['idle', 'Longest idle'], ['joined', 'Recently joined']];
+  const msort = a.memberSort || 'active';
+  const tms = (s) => Date.parse(s) || 0;
+  const sortedUsers = users.slice().sort((x, y) =>
+    msort === 'joined' ? tms(y.created_at) - tms(x.created_at)
+      : msort === 'idle' ? tms(x.last_seen) - tms(y.last_seen)
+        : tms(y.last_seen) - tms(x.last_seen));
+  const memberSortBar = `<div class="adm-sortbar"><label class="adm-sort-l">Sort <select class="sel" data-admin-usersort>${MEMBER_SORTS.map(([v, l]) => `<option value="${v}"${msort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>`;
+  const membersPane = `${memberSortBar}<div class="adm-users">${sortedUsers.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
 
   const pendingInv = (state.invites || []).filter((i) => !i.used_by);
   const activated = users.slice().sort((x, y) => new Date(y.last_seen || 0) - new Date(x.last_seen || 0));
@@ -8322,6 +8332,14 @@ function timeAgo(t) {
   const w = Math.floor(d / 7); if (w < 5) return w + 'w ago';
   const mo = Math.floor(d / 30); if (mo < 12) return mo + 'mo ago';
   return Math.floor(d / 365) + 'y ago';
+}
+// Plain "N days ago" for the admin members list: Robin wants the day count, not a
+// date, so how long since someone used Lifebook reads at a glance (and big numbers
+// flag churn). (Robin, 2026-10-18.)
+function daysAgoLabel(ts) {
+  if (!ts) return 'never';
+  const d = Math.floor((Date.now() - ts) / 86400000);
+  return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
 }
 // A "keep private" toggle for a block filed in a page. When the area is
 // shared, private items stay yours - members never see them, though they're still
@@ -20967,6 +20985,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   { const af = e.target.closest('[data-admin-free]'); if (af) { const v = e.target.value; if (v !== '') setUserFree(af.dataset.adminFree, v === 'forever' ? 'forever' : Number(v)); return; } }
+  { const us = e.target.closest('[data-admin-usersort]'); if (us) { state.admin = state.admin || {}; state.admin.memberSort = us.value; renderAdmin(); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.matches('[data-contact-area-sel]')) { state.contactsArea = e.target.value || null; renderContacts(); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }

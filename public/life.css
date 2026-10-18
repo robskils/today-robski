@@ -2879,6 +2879,9 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-area-x:hover { color:var(--danger,#c0392b); }
 .adm-area-add { display:flex; gap:8px; max-width:420px; }
 .adm-area-add .sel { flex:1; }
+.adm-sortbar { display:flex; justify-content:flex-end; margin-bottom:10px; }
+.adm-sort-l { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); }
+.adm-sort-l .sel { width:auto; max-width:none; padding:6px 26px 6px 10px; font-size:13.5px; }
 .adm-users { display:flex; flex-direction:column; gap:8px; }
 .adm-user { display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; padding:12px 15px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
 .adm-user.susp { opacity:.6; }
