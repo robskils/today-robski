@@ -1,4 +1,4 @@
-// Meeting notes (Lifebook Friends): one shared note per pair of friends, taken
+// Meeting notes (LifeFold Friends): one shared note per pair of friends, taken
 // together during a call. Reuses the sharing machinery - the note is a normal
 // kind='note' block owned by whoever opened it first, shared with the other side
 // (can_edit=1), so both edit the one block and the client's live-sync poll keeps

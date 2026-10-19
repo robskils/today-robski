@@ -1,4 +1,4 @@
-// Lifebook — Notes. Nested pages (parent_id), prose Markdown bodies, no bullets.
+// LifeFold — Notes. Nested pages (parent_id), prose Markdown bodies, no bullets.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';

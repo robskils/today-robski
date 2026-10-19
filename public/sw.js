@@ -1,4 +1,4 @@
-// Lifebook service worker: push notifications + offline / instant-open caching.
+// LifeFold service worker: push notifications + offline / instant-open caching.
 //
 // Caching rules, chosen to be safe:
 //   - /api/* and /auth/* are NEVER cached - always straight to the network, so
@@ -13,7 +13,7 @@
 //
 // Bump CACHE when this file's logic changes, to purge older caches on activate.
 
-const CACHE = 'lifebook-cache-v5';
+const CACHE = 'lifefold-cache-v1';
 const SHELL = ['/app.html', '/qrcode.min.js', '/icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -109,7 +109,7 @@ self.addEventListener('push', (event) => {
     // legacy default. (Connect requests send target:'contacts'.)
     const target = data.target || (data.type === 'mail' ? 'mail' : 'home');
     const url = data.url || (data.type === 'mail' ? '/mail' : '/');
-    await self.registration.showNotification(data.title || 'Lifebook', {
+    await self.registration.showNotification(data.title || 'LifeFold', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

@@ -54,7 +54,7 @@ export async function totpVerify(secretB32, code, window = 1) {
   return false;
 }
 
-export function otpauthURI(secretB32, label, issuer = 'Lifebook') {
+export function otpauthURI(secretB32, label, issuer = 'LifeFold') {
   return `otpauth://totp/${encodeURIComponent(issuer + ':' + label)}?secret=${secretB32}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
 }
 

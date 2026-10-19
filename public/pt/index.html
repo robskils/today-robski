@@ -4,8 +4,8 @@
 <script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Lifebook - email, calendário, notas e tarefas num só lugar</title>
-<meta name="description" content="O Lifebook reúne email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus; pertencem-lhe.">
+<title>LifeFold - email, calendário, notas e tarefas num só lugar</title>
+<meta name="description" content="O LifeFold reúne email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus; pertencem-lhe.">
 <link rel="canonical" href="https://daybook.fyi/pt">
 <link rel="alternate" hreflang="en" href="https://daybook.fyi/">
 <link rel="alternate" hreflang="pt-PT" href="https://daybook.fyi/pt">
@@ -18,18 +18,18 @@
 <meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Lifebook">
-<meta property="og:title" content="Lifebook - para uma vida bem vivida">
+<meta property="og:site_name" content="LifeFold">
+<meta property="og:title" content="LifeFold - para uma vida bem vivida">
 <meta property="og:description" content="Email, calendário, tarefas, notas, reflexões e finanças num só lugar, calmo e privado. Pouse, e confie que volta. Todos os dados são seus.">
 <meta property="og:url" content="https://daybook.fyi/pt">
 <meta property="og:image" content="https://daybook.fyi/og-image.v3.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Lifebook - para uma vida bem vivida">
+<meta property="og:image:alt" content="LifeFold - para uma vida bem vivida">
 <meta property="og:locale" content="pt_PT">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Lifebook - para uma vida bem vivida">
+<meta name="twitter:title" content="LifeFold - para uma vida bem vivida">
 <meta name="twitter:description" content="Pouse, e confie que volta. Um lar calmo e privado para tudo o que carrega, trazido de volta quando precisa.">
 <meta name="twitter:image" content="https://daybook.fyi/og-image.v3.png">
 <!-- Structured data -->
@@ -41,19 +41,19 @@
       "@type": "WebSite",
       "@id": "https://daybook.fyi/#website",
       "url": "https://daybook.fyi/pt",
-      "name": "Lifebook",
+      "name": "LifeFold",
       "slogan": "Para uma vida bem vivida",
       "description": "Um lar calmo e privado para a sua vida - tarefas, notas, reflexões e finanças num só lugar.",
       "inLanguage": "pt-PT"
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Lifebook",
+      "name": "LifeFold",
       "slogan": "Para uma vida bem vivida",
       "url": "https://daybook.fyi/pt",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "O Lifebook é um lar calmo e privado para tudo o que carrega - tarefas, notas, reflexões e finanças - capturado em dois toques e trazido de volta quando precisa. Os seus dados são privados, só seus, e a IA é opcional, com a sua própria chave.",
+      "description": "O LifeFold é um lar calmo e privado para tudo o que carrega - tarefas, notas, reflexões e finanças - capturado em dois toques e trazido de volta quando precisa. Os seus dados são privados, só seus, e a IA é opcional, com a sua própria chave.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -155,7 +155,7 @@ nav {
 .nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
 @media (max-width: 1024px) { .nav-links { display: none; } }
 /* Phone header: the wordmark plus both CTAs crammed onto one row looked tight, so
-   give it two calm rows - the Lifebook wordmark centred on top, the actions on
+   give it two calm rows - the LifeFold wordmark centred on top, the actions on
    their own row beneath, each with room to breathe. (Robin.) */
 @media (max-width: 560px) {
   .wrap { padding: 0 20px; }
@@ -505,7 +505,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Escolhas de cookies');
-    b.innerHTML = '<p>O Lifebook usa cookies de análise para perceber como o site é utilizado - nada pessoal, e nunca qualquer conteúdo do seu Lifebook. Permite? <a href="/pt/privacidade">Privacidade</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Recusar</button><button class="dbk-accept" type="button">Aceitar</button></div>';
+    b.innerHTML = '<p>O LifeFold usa cookies de análise para perceber como o site é utilizado - nada pessoal, e nunca qualquer conteúdo do seu LifeFold. Permite? <a href="/pt/privacidade">Privacidade</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Recusar</button><button class="dbk-accept" type="button">Aceitar</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -521,9 +521,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="3"/><g transform="translate(50 51.5) scale(0.05233) translate(-539.5 356)" fill="currentColor"><path d="M203-85Q203-59 208-46.5Q213-34 226-30Q239-26 268-26L268-26L328-26Q399-26 448-65.5Q497-105 513-172L513-172Q513-174 517-174L517-174Q519-174 521.5-172.5Q524-171 524-170L524-170Q515-78 515-15L515-15Q515-7 512-3.5Q509 0 500 0L500 0L32 0Q30 0 30-6Q30-12 32-12L32-12Q66-12 81.5-17Q97-22 102.5-36.5Q108-51 108-81L108-81L108-544Q108-574 102.5-588Q97-602 81-607.5Q65-613 32-613L32-613Q30-613 30-619Q30-625 32-625L32-625L83-624Q127-622 155-622L155-622Q185-622 229-624L229-624L279-625Q282-625 282-619Q282-613 279-613L279-613Q246-613 230-607.5Q214-602 208.5-587.5Q203-573 203-543L203-543L203-85Z"/><path d="M152 13Q102 13 73-8Q44-29 44-66L44-66Q44-72 46-84L46-84L142-599Q145-616 145-627L145-627Q145-642 140-649Q135-656 124-656L124-656Q110-656 80-642L80-642L78-642Q74-642 73-647Q72-652 76-653L76-653L222-725L224-725Q228-725 231-722Q234-719 233-717L233-717L122-96Q121-91 121-81L121-81Q121-51 140-32.5Q159-14 190-14L190-14Q221-14 251-38.5Q281-63 304.5-110Q328-157 338-220L338-220Q344-247 344-270L344-270Q344-302 332-320.5Q320-339 295-339L295-339Q237-339 189.5-272Q142-205 122-96L122-96L113-116Q125-192 160.5-257Q196-322 245.5-360.5Q295-399 346-399L346-399Q385-399 407-370Q429-341 429-293L429-293Q429-271 425-251L425-251Q410-170 364-110Q318-50 259.5-18.5Q201 13 152 13L152 13Z" transform="translate(470 0)"/><circle cx="991" cy="-58" r="58"/></g></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">book</i></span></a>
+    <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="3"/><text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Fraunces,Georgia,serif" font-weight="600" font-size="40" fill="currentColor">LF</text></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a>
     <ul class="nav-links">
-      <li><a href="#idea">O seu Lifebook</a></li>
+      <li><a href="#idea">O seu LifeFold</a></li>
       <li><a href="#tools">Ferramentas</a></li>
       <li><a href="#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
@@ -543,7 +543,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <div class="hero-badge reveal"><span class="pulse"></span>Apenas por convite, em acesso antecipado</div>
       <p class="hero-tag reveal">life&middot;book, s. - a sua vida inteira, num só lugar</p>
       <h1 class="reveal">Para uma vida<br><em>bem vivida</em></h1>
-      <p class="hero-sub reveal">O Lifebook reúne os dois lados da sua vida - reflexão e ação - num conjunto de ferramentas ligadas que falam entre si. Ajuda-o a gerir, concretizar e encontrar sentido no seu dia a dia.</p>
+      <p class="hero-sub reveal">O LifeFold reúne os dois lados da sua vida - reflexão e ação - num conjunto de ferramentas ligadas que falam entre si. Ajuda-o a gerir, concretizar e encontrar sentido no seu dia a dia.</p>
       <div class="hero-actions reveal">
         <a class="btn btn-primary" href="#invite">Pedir um convite →</a>
         <a class="btn btn-ghost" href="#" data-signin>Entrar</a>
@@ -615,7 +615,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <script>
     (function(){
       var T={
-        areas:{ic:'◈',name:'Life Spaces',tag:'O coração do Lifebook',desc:`O seu correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se em torno das partes reais da sua vida - cada uma mostrando num relance como está.`,feats:["Correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se por área","Defina uma data e torna-se um projeto, em contagem decrescente","Partilhe uma área com as pessoas que a vivem"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Viagem a Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Saúde <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Mudança de casa <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        areas:{ic:'◈',name:'Life Spaces',tag:'O coração do LifeFold',desc:`O seu correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se em torno das partes reais da sua vida - cada uma mostrando num relance como está.`,feats:["Correio, calendário, tarefas, notas, objetivos, pessoas e despesas reúnem-se por área","Defina uma data e torna-se um projeto, em contagem decrescente","Partilhe uma área com as pessoas que a vivem"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Viagem a Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Saúde <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Mudança de casa <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
         mail:{ic:'✉',name:'Correio',tag:'Todas as caixas, uma sala',desc:`Junte todas as contas num só fluxo - Gmail, Outlook, qualquer caixa IMAP - e trate-as como uma só.`,feats:["Todas as suas contas reunidas numa só caixa de entrada","Triagem rápida: Urgente, Importante, Tranquilo","Arquive um email numa Life Space e partilhe-o aí"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgente</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Importante</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">Tranquilo</span></div></div><div class="pv-quad"><span class="lbl">Ordenar</span><span class="pv-chip q-urgent">Urgente</span><span class="pv-chip q-important">Importante</span><span class="pv-chip q-chilled">Tranquilo</span><span class="pv-chip q-others">Outros</span></div>`},
         calendar:{ic:'◑',name:'Calendário',tag:'Mês, semana, agenda',desc:`Uma só vista sobre os seus dias - em sincronia com o calendário que já usa.`,feats:["Mês, semana e agenda numa só vista","Sincronização nos dois sentidos com o seu calendário Google","Um evento pode contar como prática"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revisão da proposta</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Almoço com a Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga à beira-rio</span></div></div>`},
         tasks:{ic:'✓',name:'Tarefas',tag:'O seu dia, a fluir',desc:`Um dia de fluxos, não uma lista a importunar - siga a corrente quando estiver nela.`,feats:["Fluxos que correm, nunca um alerta vermelho de atraso","Ressurge exatamente quando é devido","Cada tarefa leva a sua Life Space"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Sentar matinal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Rascunhar a proposta de Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Caminhar antes de a luz partir</span></div></div>`},
@@ -647,10 +647,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="band-head center reveal">
       <div class="eyebrow">Como flui</div>
       <h2>Tudo fala com tudo</h2>
-      <p>Um email torna-se um evento; um evento torna-se uma nota; uma nota torna-se uma tarefa - a informação flui até onde é precisa. Tudo se reúne nas suas Life Spaces, com o Lifebook no centro, e você mesmo no coração de tudo.</p>
+      <p>Um email torna-se um evento; um evento torna-se uma nota; uma nota torna-se uma tarefa - a informação flui até onde é precisa. Tudo se reúne nas suas Life Spaces, com o LifeFold no centro, e você mesmo no coração de tudo.</p>
     </div>
     <div class="flow-dia reveal">
-      <svg viewBox="0 0 560 470" role="img" aria-label="Informação a fluir entre as ferramentas do Lifebook, reunida nas suas Life Spaces, consigo no centro.">
+      <svg viewBox="0 0 560 470" role="img" aria-label="Informação a fluir entre as ferramentas do LifeFold, reunida nas suas Life Spaces, consigo no centro.">
         <defs>
           <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
         </defs>
@@ -671,7 +671,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
         <circle cx="280" cy="230" r="86" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.5"/>
         <text x="280" y="169" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="10" font-weight="700" letter-spacing="1.3" fill="var(--rust)">PÁGINAS</text>
         <circle cx="280" cy="230" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
-        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">Lifebook</text>
+        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">LifeFold</text>
         <circle cx="280" cy="232" r="27" fill="var(--rust)"/>
         <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">Você</text>
         <g font-family="'Hanken Grotesk',sans-serif">
@@ -717,7 +717,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap band-head center reveal">
     <div class="eyebrow">Para a vida interior</div>
     <h2>As suas esperanças e sonhos, também aqui</h2>
-    <p>O Lifebook sempre foi mais do que um diário de tarefas. A par da parte prática corre uma história mais suave - revisões e reflexão, o diário, os sonhos, acompanhamento suave, e ferramentas de reflexão pensadas para despertar um pensamento - um horóscopo que lê o seu mapa astral completo, o I Ching, as cartas do espírito. A vida exterior e a vida interior num só lugar, cada uma dando mais sentido à outra. Presentes quando precisa, discretas quando não.</p>
+    <p>O LifeFold sempre foi mais do que um diário de tarefas. A par da parte prática corre uma história mais suave - revisões e reflexão, o diário, os sonhos, acompanhamento suave, e ferramentas de reflexão pensadas para despertar um pensamento - um horóscopo que lê o seu mapa astral completo, o I Ching, as cartas do espírito. A vida exterior e a vida interior num só lugar, cada uma dando mais sentido à outra. Presentes quando precisa, discretas quando não.</p>
   </div>
 </section>
 
@@ -725,7 +725,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap concept-grid">
     <div class="reveal">
       <div class="eyebrow">A ideia maior</div>
-      <p class="concept-lead">O Lifebook guarda a sua vida inteira - o exterior e o interior, o fazer e o sonhar - e ajuda-a discretamente a <em>trabalhar a seu favor.</em></p>
+      <p class="concept-lead">O LifeFold guarda a sua vida inteira - o exterior e o interior, o fazer e o sonhar - e ajuda-a discretamente a <em>trabalhar a seu favor.</em></p>
       <ul class="holds">
         <li><b>O seu dia</b><span>Agenda, tarefas e compromissos</span></li>
         <li><b>Os seus hábitos</b><span>As rotinas que vai mantendo</span></li>
@@ -735,7 +735,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     </div>
     <div class="concept-body reveal">
       <p>Carregamos demasiado de uma só vez. Tarefas meio lembradas, ideias que quisemos guardar, dinheiro que quisemos vigiar, sentimentos com que nunca nos sentámos. Por isso escapa - para post-its, para dez aplicações diferentes, ou simplesmente perde-se em silêncio.</p>
-      <p>O Lifebook é um único lugar para pousar tudo isso. Captura depressa e larga, e o Lifebook traz de volta a peça certa no momento certo - a tarefa quando o dia dela precisa, a nota quando está a planear, a reflexão quando faz uma pausa.</p>
+      <p>O LifeFold é um único lugar para pousar tudo isso. Captura depressa e larga, e o LifeFold traz de volta a peça certa no momento certo - a tarefa quando o dia dela precisa, a nota quando está a planear, a reflexão quando faz uma pausa.</p>
       <p>Pouse com confiança. Reencontre com tranquilidade. É essa a ideia toda.</p>
     </div>
   </div>
@@ -743,7 +743,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <section class="ethos">
   <div class="wrap reveal">
-    <div class="eyebrow" style="text-align:center">O espírito do Lifebook</div>
+    <div class="eyebrow" style="text-align:center">O espírito do LifeFold</div>
     <p class="ethos-line">Aquilo de que precisa, trazido ao lugar certo, no <em>momento certo.</em></p>
     <p class="ethos-sub">Em sintonia com os ritmos da sua vida - nada grita por atenção, e nada que valha a pena recordar se perde.</p>
   </div>
@@ -754,11 +754,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="reveal">
       <div class="eyebrow">Privado por princípio</div>
       <h2>Seu. Em segurança.</h2>
-      <p class="privacy-lead">O Lifebook guarda as partes mais pessoais da sua vida - as suas reflexões, as suas relações, as suas palavras-passe. Por isso está devidamente protegido: <b>autenticação em dois passos</b>, encriptado onde importa. Isto é seguro.</p>
+      <p class="privacy-lead">O LifeFold guarda as partes mais pessoais da sua vida - as suas reflexões, as suas relações, as suas palavras-passe. Por isso está devidamente protegido: <b>autenticação em dois passos</b>, encriptado onde importa. Isto é seguro.</p>
       <p class="privacy-lead">E os seus dados? Não os queremos. Não é o nosso género. Estamos a construir um negócio assente em <b>confiança e valores</b>, não em vendê-lo a si - por isso nada do que é seu é explorado, vendido ou entregue ao modelo de alguém. É seu. <b>Ponto final.</b> Exporte tudo num toque, guarde no seu próprio armazenamento se preferir, traga a sua própria IA - a escolha é sempre sua.</p>
     </div>
     <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Autenticação em dois passos - o seu Lifebook, bem trancado.</div></li>
+      <li><span class="tick">✓</span><div>Autenticação em dois passos - o seu LifeFold, bem trancado.</div></li>
       <li><span class="tick">✓</span><div>Nunca explorado, nunca vendido, nunca usado para treinar seja o que for. É seu. Ponto final.</div></li>
       <li><span class="tick">✓</span><div>Exporte tudo, a qualquer momento, num toque - ou guarde no seu próprio armazenamento.</div></li>
       <li><span class="tick">✓</span><div>Feche a conta quando quiser, e leve tudo consigo. Sem obstáculos, sem culpa.</div></li>
@@ -772,7 +772,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     <div class="reveal">
       <div class="eyebrow">Feito para ser rápido</div>
       <h2>Dois toques e está guardado</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">A captura foi pensada para não exigir esforço, sobretudo no telemóvel. Tire-o da cabeça em segundos, organize depois - ou deixe o Lifebook organizar por si.</p></div>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">A captura foi pensada para não exigir esforço, sobretudo no telemóvel. Tire-o da cabeça em segundos, organize depois - ou deixe o LifeFold organizar por si.</p></div>
     </div>
     <div class="steps reveal">
       <div class="step"><span class="step-n">1</span><div class="step-t"><b>Abra e aponte</b><span>Uma tarefa, uma nota, um número, um sentimento - o que quer que esteja a carregar.</span></div></div>
@@ -786,14 +786,14 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">Acesso antecipado</div>
     <h2>Abra algum espaço na sua cabeça.</h2>
-    <p>O Lifebook é apenas por convite enquanto é jovem, crescendo devagar e de boca em boca para se manter calmo e bem cuidado. Conte-nos um pouco sobre si e tratamos de tudo.</p>
+    <p>O LifeFold é apenas por convite enquanto é jovem, crescendo devagar e de boca em boca para se manter calmo e bem cuidado. Conte-nos um pouco sobre si e tratamos de tudo.</p>
     <form class="invite-form reveal" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="if-grid">
         <input id="if-name" placeholder="O seu nome" autocomplete="name" required>
         <input id="if-email" type="email" placeholder="O seu email" autocomplete="email" required>
       </div>
-      <textarea id="if-why" placeholder="Para que usaria o Lifebook? Uma linha chega." rows="2"></textarea>
+      <textarea id="if-why" placeholder="Para que usaria o LifeFold? Uma linha chega." rows="2"></textarea>
       <div class="if-actions">
         <button class="btn btn-primary" type="submit" id="if-submit">Pedir um convite →</button>
         <a class="btn btn-ghost" href="#" data-signin>Já tenho conta</a>
@@ -805,9 +805,9 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <footer id="signin">
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="3"/><g transform="translate(50 51.5) scale(0.05233) translate(-539.5 356)" fill="currentColor"><path d="M203-85Q203-59 208-46.5Q213-34 226-30Q239-26 268-26L268-26L328-26Q399-26 448-65.5Q497-105 513-172L513-172Q513-174 517-174L517-174Q519-174 521.5-172.5Q524-171 524-170L524-170Q515-78 515-15L515-15Q515-7 512-3.5Q509 0 500 0L500 0L32 0Q30 0 30-6Q30-12 32-12L32-12Q66-12 81.5-17Q97-22 102.5-36.5Q108-51 108-81L108-81L108-544Q108-574 102.5-588Q97-602 81-607.5Q65-613 32-613L32-613Q30-613 30-619Q30-625 32-625L32-625L83-624Q127-622 155-622L155-622Q185-622 229-624L229-624L279-625Q282-625 282-619Q282-613 279-613L279-613Q246-613 230-607.5Q214-602 208.5-587.5Q203-573 203-543L203-543L203-85Z"/><path d="M152 13Q102 13 73-8Q44-29 44-66L44-66Q44-72 46-84L46-84L142-599Q145-616 145-627L145-627Q145-642 140-649Q135-656 124-656L124-656Q110-656 80-642L80-642L78-642Q74-642 73-647Q72-652 76-653L76-653L222-725L224-725Q228-725 231-722Q234-719 233-717L233-717L122-96Q121-91 121-81L121-81Q121-51 140-32.5Q159-14 190-14L190-14Q221-14 251-38.5Q281-63 304.5-110Q328-157 338-220L338-220Q344-247 344-270L344-270Q344-302 332-320.5Q320-339 295-339L295-339Q237-339 189.5-272Q142-205 122-96L122-96L113-116Q125-192 160.5-257Q196-322 245.5-360.5Q295-399 346-399L346-399Q385-399 407-370Q429-341 429-293L429-293Q429-271 425-251L425-251Q410-170 364-110Q318-50 259.5-18.5Q201 13 152 13L152 13Z" transform="translate(470 0)"/><circle cx="991" cy="-58" r="58"/></g></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">book</i></span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
+    <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="3"/><text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Fraunces,Georgia,serif" font-weight="600" font-size="40" fill="currentColor">LF</text></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="#idea">O seu Lifebook</a></li>
+      <li><a href="#idea">O seu LifeFold</a></li>
       <li><a href="#tools">Ferramentas</a></li>
       <li><a href="#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
@@ -818,7 +818,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <li><a href="mailto:contact@daybook.fyi">Contacto</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Lifebook</div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
   </div>
 </footer>
 
@@ -841,11 +841,11 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 </script>
 
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Entre no seu Lifebook">
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Entre no seu LifeFold">
     <button class="signin-close" data-signin-close aria-label="Fechar">&times;</button>
     <div class="eyebrow">Bem-vindo de volta</div>
-    <h3 class="signin-h">Entre no seu Lifebook</h3>
-    <p class="signin-p">Introduza o seu email e enviamos-lhe um código. A partir daí, levamo-lo ao seu próprio Lifebook.</p>
+    <h3 class="signin-h">Entre no seu LifeFold</h3>
+    <p class="signin-p">Introduza o seu email e enviamos-lhe um código. A partir daí, levamo-lo ao seu próprio LifeFold.</p>
     <form id="signin-form">
       <label class="signin-label" for="signin-email">O seu email</label>
       <div class="signin-field">
@@ -855,7 +855,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <button type="button" class="signin-smslink" id="signin-sms">Envie-me o código por SMS</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
-    <p class="signin-foot">Ainda não tem um Lifebook? <a href="#invite" data-signin-close>Pedir um convite</a></p>
+    <p class="signin-foot">Ainda não tem um LifeFold? <a href="#invite" data-signin-close>Pedir um convite</a></p>
   </div>
 </div>
 
@@ -868,10 +868,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   // hostname - so asking for it only gave people something to misremember, and
   // typing it wrong silently dropped you on a stranger's address with no error.
   // /signin serves the app shell, which owns the code flow and then hands you to
-  // your own Lifebook. The email rides in the fragment: never sent to a server,
+  // your own LifeFold. The email rides in the fragment: never sent to a server,
   // never logged, and consumed once so a reload doesn't re-send a code.
   const sm = document.getElementById('signin-modal');
-  // If this browser is already signed in on a Lifebook subdomain (a shared crumb
+  // If this browser is already signed in on a LifeFold subdomain (a shared crumb
   // the app leaves on .daybook.fyi), skip the email step and go straight there -
   // the subdomain shows your dashboard if the session's still good, or its own
   // sign-in if it has expired.
@@ -913,7 +913,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     note.hidden = true; btn.disabled = true; btn.textContent = 'A enviar…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
       .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Obrigado 🌱</h3><p>Entraremos em contacto em breve. O Lifebook cresce de boca em boca - se conhece alguém que o adorasse, mande-o ter connosco.</p></div>'; })
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Obrigado 🌱</h3><p>Entraremos em contacto em breve. O LifeFold cresce de boca em boca - se conhece alguém que o adorasse, mande-o ter connosco.</p></div>'; })
       .catch(() => fail('Algo correu mal - escreva para contact@daybook.fyi e tratamos disso.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.

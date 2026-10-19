@@ -1,4 +1,4 @@
-// Assigning a task to a friend (Lifebook Friends, phase 3b). Robin's chosen flow:
+// Assigning a task to a friend (LifeFold Friends, phase 3b). Robin's chosen flow:
 // send -> they accept -> it becomes a shared live task whose status syncs both
 // ways.
 //

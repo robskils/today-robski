@@ -30,8 +30,8 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=202610182302">
-<link rel="icon" href="/favicon.svg?v=202610182302">
+<link rel="stylesheet" href="/today.css?v=202610190947">
+<link rel="icon" href="/favicon.svg?v=202610190947">
 </head>
 <body>
 
@@ -39,7 +39,7 @@
 <div id="gate" class="gate" hidden>
   <!-- The door is Robski. The room, once you're in, is not. -->
   <div class="gate-card">
-    <div class="gate-mark gate-wordmark">Lifebook</div>
+    <div class="gate-mark gate-wordmark">LifeFold</div>
     <div class="gate-stripe" aria-hidden="true"></div>
 
     <div class="gate-body">
@@ -70,7 +70,7 @@
   <header class="bar">
     <div class="bar-left">
       <!-- On-brand wordmark. -->
-      <a class="wordmark" href="/" title="Lifebook"><em>Day</em>book</a>
+      <a class="wordmark" href="/" title="LifeFold"><em>Day</em>book</a>
       <div class="bar-date">
         <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
         <div class="bar-title">
@@ -209,11 +209,11 @@
   </form>
 </div>
 
-<!-- New task. Creates a native task block in Lifebook. -->
+<!-- New task. Creates a native task block in LifeFold. -->
 <div class="sheet-bg" id="new-bg" hidden>
   <form class="sheet" id="new-form">
     <h3>New task</h3>
-    <p class="sheet-sub">Added to your Lifebook tasks.</p>
+    <p class="sheet-sub">Added to your LifeFold tasks.</p>
 
     <label class="field">
       <span>Task</span>
@@ -302,6 +302,15 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=202610182302"></script>
+<script type="module" src="/today.js?v=202610190947"></script>
+<script async defer src="https://app.visitortracking.com/assets/js/tracer.js"></script>
+<script>
+function init_tracer() {
+   var tracer = new Tracer({
+   websiteId : "b4a0a73f-caf4-44ef-a318-8b9933bd3350",
+   async : true,
+   debug : false });
+ }
+</script>
 </body>
 </html>

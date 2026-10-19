@@ -118,7 +118,7 @@ function taskRow(t, siteUrl = 'https://robski.daybook.fyi') {
   const lane = t.area_label
     ? `<div style="font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:${MIST};margin:4px 0 0">${esc(t.area_label)}</div>`
     : '';
-  // Link the title straight to the task on Lifebook (/task/<id> opens that card).
+  // Link the title straight to the task on LifeFold (/task/<id> opens that card).
   // Fall back to plain text if an id is somehow missing, so a row never breaks.
   const title = t.id
     ? `<a href="${siteUrl}/task/${encodeURIComponent(t.id)}" style="color:${INK};text-decoration:none">${esc(t.title)}</a>`
@@ -149,7 +149,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
   // A calendar fetch that errored must not read as "your day is free" - say so.
   const calendar = timed.length
     ? timed.map(eventRow).join('')
-    : (calError ? empty('Your calendar could not be reached this morning - open Lifebook to see your day.') : empty('Nothing scheduled. The day is yours.'));
+    : (calError ? empty('Your calendar could not be reached this morning - open LifeFold to see your day.') : empty('Nothing scheduled. The day is yours.'));
 
   const p1 = shown.length
     ? shown.map((t) => taskRow(t, siteUrl)).join('') + (moreCount > 0
@@ -191,10 +191,10 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
            forcing a 560px card that overflows the screen. -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
 
-        <!-- The Lifebook mark as a PNG: the favicon is an SVG and every major
+        <!-- The LifeFold mark as a PNG: the favicon is an SVG and every major
              client strips those. Same file the sign-in and invitation emails use. -->
         <tr><td align="center" style="padding:40px 34px 0">
-          <a href="${siteUrl}" style="text-decoration:none"><img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="Lifebook" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          <a href="${siteUrl}" style="text-decoration:none"><img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           <p style="margin:22px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${esc(longDate(day))}</p>
           <p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">Good morning</p>
         </td></tr>

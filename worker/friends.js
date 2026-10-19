@@ -1,5 +1,5 @@
-// Friends on Lifebook: connections, presence, and matching your contacts to
-// people who are also on Lifebook. Phase 1 - no cross-account data sharing yet;
+// Friends on LifeFold: connections, presence, and matching your contacts to
+// people who are also on LifeFold. Phase 1 - no cross-account data sharing yet;
 // that lands in later phases behind explicit shares.
 //
 // The friends table holds one directed row per side: (me, them, status). A
@@ -25,7 +25,7 @@ export async function getFriends(env) {
   const incoming = rows.filter((r) => r.status === 'in').map(map);
   const outgoing = rows.filter((r) => r.status === 'out').map(map);
 
-  // Suggestions: my contacts whose email belongs to a Lifebook account I'm not
+  // Suggestions: my contacts whose email belongs to a LifeFold account I'm not
   // already connected to.
   const connected = new Set(rows.map((r) => r.id)); connected.add(env.uid);
   const cts = (await env.DB.prepare("SELECT title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?").bind(env.uid).all()).results || [];
@@ -33,7 +33,7 @@ export async function getFriends(env) {
   // EVERY address on a contact, not just the first. props.emails is the canonical
   // list (the card lets you add as many as you like); props.email is the legacy
   // single field, still written as a mirror of the first. Reading only that one
-  // meant a contact whose Lifebook account uses their second or third address was
+  // meant a contact whose LifeFold account uses their second or third address was
   // never matched, and they simply didn't appear as someone you could connect to.
   for (const c of cts) {
     let p = {}; try { p = JSON.parse(c.props || '{}'); } catch {}
@@ -61,7 +61,7 @@ export async function getFriends(env) {
   }
   const seen = new Set();
   for (const [em, title] of emails) { const u = byEmail[em]; if (u && !connected.has(u.id) && !seen.has(u.id) && !hiddenSug.has(String(u.id))) { seen.add(u.id); suggestions.push({ id: u.id, name: u.name || u.subdomain, subdomain: u.subdomain, contactName: title }); } }
-  // scanned = how many distinct contact emails we checked against Lifebook, so the
+  // scanned = how many distinct contact emails we checked against LifeFold, so the
   // UI can say "checked N of your contacts" even when nothing matched.
   return { friends, incoming, outgoing, suggestions, scanned: uniq.length, contacts: cts.length };
 }
@@ -139,7 +139,7 @@ export async function removeFriend(env, id) {
   return getFriends(env);
 }
 
-// Find Lifebook members by name (or handle) for the add-a-friend box, so you can
+// Find LifeFold members by name (or handle) for the add-a-friend box, so you can
 // connect with someone whose email you don't have. Excludes yourself and anyone
 // you're already connected to or have a pending request with. LIKE wildcards in
 // the query are escaped so a stray % can't match everyone.

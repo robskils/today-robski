@@ -1,12 +1,12 @@
-// Lifebook — one surface. Sidebar + a single pane that renders any block,
+// LifeFold — one surface. Sidebar + a single pane that renders any block,
 // and a ⌘K palette to jump anywhere. No page reloads.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
-// The wordmark: <first name> Lifebook. The name comes from the signed-in account
+// The wordmark: <first name> LifeFold. The name comes from the signed-in account
 // (see firstName), never from a constant - a hard-coded owner is how every member
-// ended up looking at somebody else's name on their own Lifebook.
-const BRAND = { app: 'Lifebook' };
+// ended up looking at somebody else's name on their own LifeFold.
+const BRAND = { app: 'LifeFold' };
 // The tiers. Stored keys describe the arrangement, labels are the marketing name -
 // which has changed three times while the arrangement hasn't. Mirrors
 // worker/plans.js; change both together.
@@ -17,10 +17,10 @@ const PLAN_PRICE = { free: '', byok: '€6/mo', managed: '€13/mo' };
 const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
 const planLabel = (p) => PLAN_LABEL[normPlan(p)];
 const isManagedPlan = (p) => normPlan(p) === 'managed';
-// The Lifebook mark: a sun rising over two page-lines (a book of days). Uses
+// The LifeFold mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
-// name and "Lifebook" in the wordmark.
-const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="2.5"/><g transform="translate(50 51.5) scale(0.05233) translate(-539.5 356)" fill="currentColor"><path d="M203-85Q203-59 208-46.5Q213-34 226-30Q239-26 268-26L268-26L328-26Q399-26 448-65.5Q497-105 513-172L513-172Q513-174 517-174L517-174Q519-174 521.5-172.5Q524-171 524-170L524-170Q515-78 515-15L515-15Q515-7 512-3.5Q509 0 500 0L500 0L32 0Q30 0 30-6Q30-12 32-12L32-12Q66-12 81.5-17Q97-22 102.5-36.5Q108-51 108-81L108-81L108-544Q108-574 102.5-588Q97-602 81-607.5Q65-613 32-613L32-613Q30-613 30-619Q30-625 32-625L32-625L83-624Q127-622 155-622L155-622Q185-622 229-624L229-624L279-625Q282-625 282-619Q282-613 279-613L279-613Q246-613 230-607.5Q214-602 208.5-587.5Q203-573 203-543L203-543L203-85Z"/><path d="M152 13Q102 13 73-8Q44-29 44-66L44-66Q44-72 46-84L46-84L142-599Q145-616 145-627L145-627Q145-642 140-649Q135-656 124-656L124-656Q110-656 80-642L80-642L78-642Q74-642 73-647Q72-652 76-653L76-653L222-725L224-725Q228-725 231-722Q234-719 233-717L233-717L122-96Q121-91 121-81L121-81Q121-51 140-32.5Q159-14 190-14L190-14Q221-14 251-38.5Q281-63 304.5-110Q328-157 338-220L338-220Q344-247 344-270L344-270Q344-302 332-320.5Q320-339 295-339L295-339Q237-339 189.5-272Q142-205 122-96L122-96L113-116Q125-192 160.5-257Q196-322 245.5-360.5Q295-399 346-399L346-399Q385-399 407-370Q429-341 429-293L429-293Q429-271 425-251L425-251Q410-170 364-110Q318-50 259.5-18.5Q201 13 152 13L152 13Z" transform="translate(470 0)"/><circle cx="991" cy="-58" r="58"/></g></svg>';
+// name and "LifeFold" in the wordmark.
+const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="2.5"/><text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Fraunces,Georgia,serif" font-weight="600" font-size="40" fill="currentColor">LF</text></svg>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -41,20 +41,20 @@ const T_EN = {
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Lifebook card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Lifebook reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your LifeFold card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when LifeFold reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'Portuguese is being rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
-  'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use Lifebook for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Lifebook.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Lifebook will live at', 'signup.create': 'Create my Lifebook', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Use LifeFold for your email? <b>Text me the code instead</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 10 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 10 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
+  'signup.welcome': "Welcome - let's set up your LifeFold.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your LifeFold will live at', 'signup.create': 'Create my LifeFold', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Life Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Life Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Lifebook friends', 'ct.self.show': 'Show your Lifebook card', 'ct.self.sub': 'Your window on Lifebook', 'ct.selfcard.tag': 'Lifebook card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Life Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'LifeFold friends', 'ct.self.show': 'Show your LifeFold card', 'ct.self.sub': 'Your window on LifeFold', 'ct.selfcard.tag': 'LifeFold card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Life Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
@@ -63,20 +63,20 @@ const T_PT = {
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Lifebook - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Lifebook te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Life Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão LifeFold - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o LifeFold te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Life Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
-  'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o Lifebook para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Lifebook.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Lifebook ficará em', 'signup.create': 'Criar o meu Lifebook', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Usas o LifeFold para o teu email? <b>Envia-me o código por SMS</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu LifeFold.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu LifeFold ficará em', 'signup.create': 'Criar o meu LifeFold', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Life Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Life Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Lifebook', 'ct.self.show': 'Mostrar o meu cartão Lifebook', 'ct.self.sub': 'A tua janela no Lifebook', 'ct.selfcard.tag': 'Cartão Lifebook ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Life Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no LifeFold', 'ct.self.show': 'Mostrar o meu cartão LifeFold', 'ct.self.sub': 'A tua janela no LifeFold', 'ct.selfcard.tag': 'Cartão LifeFold ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Life Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 function locale() {
   try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en') return s; } catch {}
@@ -113,7 +113,7 @@ async function api(path, opts = {}) {
     // us, not the member) - show something calm and human instead.
     if (/D1_ERROR|row write limit|SQLITE|no such (table|column)/i.test(msg)) {
       msg = /write limit/i.test(msg)
-        ? "Couldn't save just now - Lifebook is briefly at capacity. Please try again in a little while."
+        ? "Couldn't save just now - LifeFold is briefly at capacity. Please try again in a little while."
         : "Couldn't save that just now. Please try again.";
     }
     throw new Error(msg);
@@ -650,7 +650,7 @@ function sanitizeProse(html) {
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
-      // Internal links to other Lifebook pages FIRST: an internal link the
+      // Internal links to other LifeFold pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
@@ -730,7 +730,7 @@ const HELP = {
       </ol>
       <h4>Passwords by provider</h4>
       <ul>
-        <li><b>Gmail / Google Workspace</b> - needs a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Lifebook", press Create), and paste the 16-character code. On <b>Workspace</b>, your admin must also have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your account password or toggle 2-Step Verification - then just make a new one.</li>
+        <li><b>Gmail / Google Workspace</b> - needs a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "LifeFold", press Create), and paste the 16-character code. On <b>Workspace</b>, your admin must also have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your account password or toggle 2-Step Verification - then just make a new one.</li>
         <li><b>iCloud</b> - needs an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
         <li><b>Outlook / Office 365</b> - your normal password usually works; if the account has MFA, generate an app password in your Microsoft security settings.</li>
         <li><b>Purelymail &amp; most others</b> - your normal mailbox password (or an app password if the provider uses two-factor).</li>
@@ -738,7 +738,7 @@ const HELP = {
       <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
   contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from pages - and a nudge when it has been too long.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
-      <p>Contacts with an email are checked against Lifebook, so you can see which of your people are here and connect with them.</p>
+      <p>Contacts with an email are checked against LifeFold, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
@@ -746,10 +746,10 @@ const HELP = {
   financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your lifespaces double as spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
       <h4>Portfolio</h4>
-      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Lifebook keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
+      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and LifeFold keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
       <h4>Spending</h4>
       <ul>
-      <li><b>Import a statement</b> (CSV or PDF) and Lifebook reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
+      <li><b>Import a statement</b> (CSV or PDF) and LifeFold reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
       <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a lifespace.</li>
       <li>The month reads back as <b>spend, income and net</b>, with your <b>top categories</b>, so the shape of the month is clear without a spreadsheet.</li>
       </ul>
@@ -766,7 +766,7 @@ const HELP = {
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
   areas: { title: 'Life Spaces', tip: 'The lifespaces of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
-    body: `<p>Lifebook keeps a <b>lifespace for each part of your life</b> - the way a book of accounts keeps a separate lifespace for each domain. A lifespace can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
+    body: `<p>LifeFold keeps a <b>lifespace for each part of your life</b> - the way a book of accounts keeps a separate lifespace for each domain. A lifespace can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
       <p><b>One lifespace gathers that whole corner of your life:</b></p>
       <ul>
       <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
@@ -798,12 +798,12 @@ const HELP = {
     body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
       <h4>Adding something</h4>
       <ul>
-      <li><b>Paste a link</b> and Lifebook fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
+      <li><b>Paste a link</b> and LifeFold fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
       <li><b>Type a book or film</b> title (tap <b>Book</b> or <b>Film</b> first if you want to be sure) and it looks up the cover, year and a link for you.</li>
       <li>Quickest from anywhere: <b>+ New → Read or watch</b>, or the <b>+</b> beside Read &amp; Watch in the sidebar.</li>
       </ul>
       <h4>Five kinds, each worded to suit</h4>
-      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Lifebook guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
+      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). LifeFold guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
       <h4>Working the list</h4>
       <ul>
       <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
@@ -811,18 +811,18 @@ const HELP = {
       <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
       <li><b>File it to a Life Space</b> and it sits with that part of your life, in that lifespace's colour - your watercolour reading filed under Art, say.</li>
       </ul>
-      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Lifebook.</p>` },
+      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening LifeFold.</p>` },
   timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on Lifebook', tip: 'Connect with the people you know who are on Lifebook - then share lifespaces, pages and tasks, and keep in touch.',
-    body: `<p>Some of the people in your Contacts are on Lifebook too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
+  friends: { title: 'Contacts on LifeFold', tip: 'Connect with the people you know who are on LifeFold - then share lifespaces, pages and tasks, and keep in touch.',
+    body: `<p>Some of the people in your Contacts are on LifeFold too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
       <h4>Connecting</h4>
       <ul>
-      <li>At the top of <b>Contacts</b>, Lifebook quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
+      <li>At the top of <b>Contacts</b>, LifeFold quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
       <li>Or add someone straight off by <b>name or email</b>.</li>
       <li>A request waits until they accept. <b>Incoming</b> requests are yours to accept or decline, and you can see the ones you have <b>sent</b>.</li>
       </ul>
@@ -844,35 +844,35 @@ const HELP = {
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
       <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
-    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Lifebook - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
+    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in LifeFold - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
       <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
-      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Lifebook opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
+      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and LifeFold opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
       <li><b>Unpin</b> by tapping the <b>📌</b> again; it becomes an ordinary working tab.</li>
       <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
-      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Lifebook.</li></ul>
+      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open LifeFold.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Lifebook card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
-  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Lifebook card, and two-factor security - all in one place.',
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>LifeFold card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
+  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your LifeFold card, and two-factor security - all in one place.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
-      <ul><li><b>Your Lifebook card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
+      <ul><li><b>Your LifeFold card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
       <li><b>Two-factor authentication</b> lives here too, under Security: add a second step at sign-in from your authenticator app.</li>
       <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across Lifebook.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
-  'settings-notifications': { title: 'Notifications', tip: 'How and when Lifebook reaches you - the brief, text alerts, and a couple of Home touches.',
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across LifeFold.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
+  'settings-notifications': { title: 'Notifications', tip: 'How and when LifeFold reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
       <p><b>Around the app:</b> the <b>daily inspirational quote</b> on Home, Today and the brief, and whether you <b>see online contacts</b> in the Home sidebar.</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
-  'settings-invites': { title: 'Invites', tip: 'Bring people onto Lifebook.',
-    body: `<p>Put in someone's email and a note, and Lifebook emails them the invitation. They click one link, sign in and their own Lifebook is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
+  'settings-invites': { title: 'Invites', tip: 'Bring people onto LifeFold.',
+    body: `<p>Put in someone's email and a note, and LifeFold emails them the invitation. They click one link, sign in and their own LifeFold is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
   'settings-manage': { title: 'Manage', tip: 'Life Spaces, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Life Spaces</b> (what Lifebook orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+    body: `<p>Each tile opens a small subpage: <b>Life Spaces</b> (what LifeFold orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
     body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
@@ -939,21 +939,21 @@ function renderGuideIndex() {
     const h = HELP[k];
     return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
   }).join('');
-  $('#pane').innerHTML = `${pageCrumb('Lifebook Guide')}
-    <div class="pane-head home-head"><h1>Lifebook Guide</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('LifeFold Guide')}
+    <div class="pane-head home-head"><h1>LifeFold Guide</h1></div>
     <div class="help-doc">
       <div class="guide-ethos">
         <div class="guide-ethos-mark">${MARK}</div>
         <div class="guide-ethos-tag">For a life well lived</div>
-        <p class="guide-ethos-p">Lifebook holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
-        <p class="guide-ethos-p guide-ethos-people">And the people in it matter most of all. Friendships and family, the relationships that give a life its meaning, need tending too: a birthday remembered, a message returned, a catch-up before too long slips by. Lifebook keeps the people you care about close - who they are, what matters to them, when you last spoke - and gives you a gentle nudge when it's time to reach out. Meaningful bonds rarely fade on purpose; they slip when life gets busy. Lifebook helps you keep them alive, because a life well lived is, above all, a life shared.</p>
+        <p class="guide-ethos-p">LifeFold holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
+        <p class="guide-ethos-p guide-ethos-people">And the people in it matter most of all. Friendships and family, the relationships that give a life its meaning, need tending too: a birthday remembered, a message returned, a catch-up before too long slips by. LifeFold keeps the people you care about close - who they are, what matters to them, when you last spoke - and gives you a gentle nudge when it's time to reach out. Meaningful bonds rarely fade on purpose; they slip when life gets busy. LifeFold helps you keep them alive, because a life well lived is, above all, a life shared.</p>
       </div>
       <p class="help-lede">Here's how it all works. Start with the welcome guide, or pick a tool.</p>
       <div class="guide-start">
         <div class="guide-start-h">✦ New here? The welcome guide</div>
         <p class="guide-start-p">A quick set-up, any time you want to run through it:</p>
         <ol class="guide-checklist">
-          <li><b>Choose your username</b> - your Lifebook's own web address.</li>
+          <li><b>Choose your username</b> - your LifeFold's own web address.</li>
           <li><b>Add AI</b> - bring your own key, or go Premium Plus and we handle it for you.</li>
           <li><b>Connect your email</b> - Gmail (with a one-tap app-password guide) and the rest.</li>
         </ol>
@@ -962,13 +962,13 @@ function renderGuideIndex() {
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>Your data belongs to you.</b> Lifebook is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Lifebook is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
+      <p class="guide-start-p"><b>Your data belongs to you.</b> LifeFold is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your LifeFold is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} Lifebook · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} LifeFold · daybook.fyi</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -1020,14 +1020,14 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
-    case 'card': return 'Lifebook card';
+    case 'card': return 'LifeFold card';
     case 'admin': return 'Admin';
-    case 'friends': return 'Contacts on Lifebook';
+    case 'friends': return 'Contacts on LifeFold';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Lifebook';
+    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'LifeFold';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
@@ -1038,10 +1038,10 @@ function labelForView(v) {
   }
 }
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
-// single note reads "Lifebook Notes", a contact "Lifebook Contacts", etc.
+// single note reads "LifeFold Notes", a contact "LifeFold Contacts", etc.
 const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
 // The current tool's name for the mobile top bar (blank on Home): shown after the
-// "Lifebook" wordmark so the bar reads "Lifebook Mail", "Lifebook Calendar", ...
+// "LifeFold" wordmark so the bar reads "LifeFold Mail", "LifeFold Calendar", ...
 function mobileToolName() {
   const v = state.view || { type: 'home' };
   if (!v.type || v.type === 'home') return '';
@@ -1075,7 +1075,7 @@ function openView(v) {
     case 'practicecard': return openPracticeCard(v.id);
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
-    case 'connect': return openConnect(); case 'daybookpeople': return openLifebookPeople();
+    case 'connect': return openConnect(); case 'daybookpeople': return openLifeFoldPeople();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     case 'reviews': return openReviews(v.rtype); case 'reviewcard': return openReviewCard(v.id);
     case 'wheel': return openWheel();
@@ -1395,7 +1395,7 @@ function navSection(key, v) {
       return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
     }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
   } else if (key === 'people') {
-    // Your connected Lifebook people, online ones first and offline ones greyed,
+    // Your connected LifeFold people, online ones first and offline ones greyed,
     // so you can see who's about at a glance and message them in a tap.
     title = 'People'; add = '<button class="nav-add" data-open-contacts title="Contacts">👤</button>';
     // Need the friends list (names) once; the 90s status poll keeps who's online.
@@ -1407,7 +1407,7 @@ function navSection(key, v) {
     rows = sorted.map((f) => {
       const on = isOnline(f); const un = unreadFrom(f.id);
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Lifebook</button>');
+    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on LifeFold</button>');
   } else {
     title = 'Life Spaces'; add = '<button class="nav-add" data-new-area title="New lifespace">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
@@ -1642,8 +1642,8 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 
-// ── Your Lifebook card ─────────────────────────────────────────────────────
-// A little profile: how people find you on Lifebook, and your window to the
+// ── Your LifeFold card ─────────────────────────────────────────────────────
+// A little profile: how people find you on LifeFold, and your window to the
 // world - photo, tagline, a colour, and the contact details you choose to show.
 // Kept in kv_card_profile (photo is a small square data URI); name/handle come
 // from the account. Others seeing it comes next; for now it's yours to make.
@@ -1701,7 +1701,7 @@ function cardHtml(d, full) {
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Life<i class="wm-bk">book</i></span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Lifebook">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Life<i class="wm-bk">Fold</i></span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on LifeFold">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -1741,7 +1741,7 @@ async function cardSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 // A contact's photo: crop-to-square 256px JPEG data URI on props.photo - small
-// and light, in keeping with Lifebook (no high-res uploads). (Robin.)
+// and light, in keeping with LifeFold (no high-res uploads). (Robin.)
 async function contactSetPhoto(file) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
   try {
@@ -1752,7 +1752,7 @@ async function contactSetPhoto(file) {
     await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
   } catch (e) { toast(e.message || 'Could not read that image'); }
 }
-// Dismiss a "your contact is on Lifebook" suggestion. Drops it locally and persists
+// Dismiss a "your contact is on LifeFold" suggestion. Drops it locally and persists
 // the hidden id (kv_sugg_hidden), so getFriends keeps it out from now on. (Robin:
 // let me hide a suggestion as well as connect.)
 async function hideSuggestion(id) {
@@ -1797,20 +1797,20 @@ function cardChosenEmails(c) {
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
-  $('#pane').innerHTML = `${pageCrumb('Lifebook card')}
-    <div class="pane-head home-head"><h1>Your Lifebook card</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('LifeFold card')}
+    <div class="pane-head home-head"><h1>Your LifeFold card</h1></div>
     ${cardEditorHtml()}`;
 }
 // Repaint the card editor on whichever surface it's on: the Settings > Card tab,
-// or the standalone Lifebook card view.
+// or the standalone LifeFold card view.
 function rerenderCard() { if (state.view && state.view.type === 'settings') renderSettings(); else renderCard(); }
-// The card editor body (preview + fields), reused by the standalone Lifebook card
+// The card editor body (preview + fields), reused by the standalone LifeFold card
 // view and the Settings > Card tab.
 function cardEditorHtml() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
   const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
-  return `<p class="dbc-lede">How people find you on Lifebook, and your small window to the world. Make it yours.</p>
+  return `<p class="dbc-lede">How people find you on LifeFold, and your small window to the world. Make it yours.</p>
     <div class="dbc-wrap">
       <div class="dbc-preview">${cardPreviewHtml(true)}</div>
       <div class="dbc-edit">
@@ -1838,7 +1838,7 @@ function cardEditorHtml() {
         <div class="dbc-field"><span class="dbc-l">Show my phone</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
-        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Lifebook</small></span>
+        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on LifeFold</small></span>
           <div class="dbc-qrwrap">${qrSvg('https://lifebook.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
@@ -1864,7 +1864,7 @@ function personAvatar(id, name, extra) {
   if (c && c.photo) return `<span class="fr-av fr-av-photo ${extra || ''}" style="background-image:url('${c.photo}')"></span>`;
   return `<span class="fr-av ${extra || ''}">${esc(initial((c && c.name) || name || '?'))}</span>`;
 }
-// Read-only view of someone else's Lifebook card, in a light overlay.
+// Read-only view of someone else's LifeFold card, in a light overlay.
 async function openPublicCard(id, seed) {
   id = Number(id); if (!id) return;
   state.viewCard = { id, data: seed || (state.cardCache && state.cardCache[id]) || null, loading: true };
@@ -1885,7 +1885,7 @@ function renderPublicCard() {
   if (d && d.id && !isMe) {
     if (connected) act = `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>`;
     else if (outgoing) act = '<span class="dbc-view-pending">Request sent ✓</span>';
-    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Lifebook</button>`;
+    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on LifeFold</button>`;
   }
   el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${act ? `<div class="dbc-view-acts">${act}</div>` : ''}</div></div>`;
 }
@@ -1895,7 +1895,7 @@ async function openConnectBySub(sub) {
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
   try {
     const d = await api('/api/card/by/' + encodeURIComponent(sub));
-    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Lifebook card was not found'); }
+    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That LifeFold card was not found'); }
   } catch (e) { openHome(); toast(e.message || 'Could not open that card'); }
 }
 function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
@@ -1967,7 +1967,7 @@ async function saveAiKey(provider) {
 }
 async function closeMyAccount() {
   if (state.me && state.me.id === 1) { toast('The owner account cannot be closed here.'); return; }
-  if (!(await uiConfirm('Close your account? This permanently deletes your Lifebook and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
+  if (!(await uiConfirm('Close your account? This permanently deletes your LifeFold and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
   const typed = await uiPrompt('Type DELETE to confirm you want to permanently erase your account.', { title: 'Are you sure?', okLabel: 'Close my account', placeholder: 'DELETE' });
   if ((typed || '').trim().toUpperCase() !== 'DELETE') { toast('Account not closed.'); return; }
   try {
@@ -2021,13 +2021,13 @@ async function downloadExport() {
 // sweep rather than quietly surviving it.
 // A crumb shared across *.daybook.fyi (the token can't be - it's per-origin in
 // localStorage): which subdomain this browser is signed in on. The apex marketing
-// page reads it so "Sign in" jumps you straight to your Lifebook instead of asking
+// page reads it so "Sign in" jumps you straight to your LifeFold instead of asking
 // for your email again. Cleared on sign-out.
 function rememberSubdomain(sub) { if (!sub || !/^[a-z0-9-]{1,63}$/i.test(sub)) return; try { document.cookie = `db_sub=${encodeURIComponent(sub)}; domain=.daybook.fyi; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax; secure`; } catch {} }
 function forgetSubdomain() { try { document.cookie = 'db_sub=; domain=.daybook.fyi; path=/; max-age=0; samesite=lax; secure'; } catch {} }
 const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
 async function signOut() {
-  if (!(await uiConfirm('Sign out of Lifebook on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
+  if (!(await uiConfirm('Sign out of LifeFold on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
   // Push goes first, while the token that authorises it still exists: a device
   // left subscribed would carry on buzzing with this account's mail afterwards.
   try {
@@ -2181,7 +2181,7 @@ function renderAdmin() {
     <div class="set-card" style="margin-top:14px">
       <div class="inv-new"><button class="add-btn wide" data-admin-invite>✦ Invite someone</button></div>
       <div class="home-sec-h" style="margin-top:4px">Awaiting a reply${pendingInv.length ? ` · ${pendingInv.length}` : ''}</div>
-      <p class="inv-hint">Invitations sent but not yet accepted. Lifebook sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
+      <p class="inv-hint">Invitations sent but not yet accepted. LifeFold sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
       <div class="inv-list">${pendingInv.map(inviteRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No open invitations - everyone you invited has joined.</div>'}</div>
       <p class="inv-hint" style="margin-top:14px">Looking for everyone who's joined? That's the <button class="linklike" data-adm-tab="members">Members</button> tab.</p>
     </div>`;
@@ -2201,11 +2201,11 @@ function renderAdmin() {
       <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
     </div>`;
 
-  const BR_SW = [['#a8844a', 'Lifebook Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
+  const BR_SW = [['#a8844a', 'LifeFold Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Life<i class="wm-bk">book</i></span></span>
+        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Life<i class="wm-bk">Fold</i></span></span>
         <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
       </div>
       <div class="home-sec-h" style="margin-top:6px">Logo files</div>
@@ -2231,7 +2231,7 @@ function renderAdmin() {
   const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
   const costsPane = `<div class="set-card">
       <div class="home-sec-h">Running costs</div>
-      <p class="inv-hint">What Lifebook costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
+      <p class="inv-hint">What LifeFold costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
       <div class="adm-cost-list">${costMonths.map(costRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No cost data yet.</div>'}</div>
     </div>
     <div class="set-card" style="margin-top:14px">
@@ -2243,12 +2243,12 @@ function renderAdmin() {
   const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, costs: costsPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
     overview: 'Members, usage and what AI is costing',
-    members: `${users.length} on Lifebook`,
+    members: `${users.length} on LifeFold`,
     invites: `${inv.unused || 0} still open`,
-    costs: 'What it costs to run Lifebook, by month',
+    costs: 'What it costs to run LifeFold, by month',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
-    brand: 'The Lifebook logo, icons and colours',
+    brand: 'The LifeFold logo, icons and colours',
   };
 
   $('#pane').innerHTML = `
@@ -2299,21 +2299,21 @@ async function setUserFree(id, months) {
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months === 'forever' ? 'Free forever' : months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
   catch (e) { toast(e.message); renderAdmin(); }
 }
-// ── Friends on Lifebook ────────────────────────────────────────────────
+// ── Friends on LifeFold ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
-  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Lifebook card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} LifeFold card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
-// page re-renders whichever view the action was taken on - Contacts, the Lifebook
+// page re-renders whichever view the action was taken on - Contacts, the LifeFold
 // people hub, or Home (where invitations surface too). (Robin, 2026-10-13.)
 function renderFriends() {
   const v = state.view && state.view.type;
   if (v === 'home') renderHome();
-  else if (v === 'daybookpeople') renderLifebookPeople();
+  else if (v === 'daybookpeople') renderLifeFoldPeople();
   else renderContacts();
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
@@ -2336,17 +2336,17 @@ async function peopleSearch() {
   // query still matches what's typed.
   if (($('#friend-email') || {}).value?.trim() !== q) return;
   box.innerHTML = people.length
-    ? `<div class="fr-scan-note">People on Lifebook matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
-    : `<div class="home-empty" style="padding:8px 2px">No one on Lifebook matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
+    ? `<div class="fr-scan-note">People on LifeFold matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+    : `<div class="home-empty" style="padding:8px 2px">No one on LifeFold matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Connected'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
-// Invite someone to Lifebook: their email, a note in your own words, Send. The
+// Invite someone to LifeFold: their email, a note in your own words, Send. The
 // worker emails the invitation with a one-click link - the invitee never copies a
 // code anywhere. Leave the email blank and it just mints a code to share by hand.
 // One dialog behind every entry point (Contacts, Settings, Admin) so there is a
 // single way to do this.
-function inviteToLifebook(prefill) {
+function inviteToLifeFold(prefill) {
   // The one generous move, offered to everyone: 6 months of Premium, free, for up
   // to ten friends. No plan to pick - a plain invite lands them on Free and they
   // upgrade themselves if they ever want to. `giftsLeft` is undefined until the
@@ -2359,7 +2359,7 @@ function inviteToLifebook(prefill) {
     : `<p class="inv-d-hint">You've given out all 10 of your free ${gMonths}-month gifts - a plain invite still lands them on Free.</p>`;
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
-    <div class="recur-h">Invite someone to Lifebook</div>
+    <div class="recur-h">Invite someone to LifeFold</div>
     <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
       <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
@@ -2489,7 +2489,7 @@ function openMessages() {
     openChat(id, (f && f.name) || 'Message');
     return;
   }
-  openLifebookPeople().catch(() => {});
+  openLifeFoldPeople().catch(() => {});
 }
 // Admin home alert: open Admin on the Invites tab, where the requests live. The
 // alert persists until each request is actually dealt with (invited/dismissed),
@@ -2506,11 +2506,11 @@ async function dismissRequest(id) {
   if (state.inviteReq) state.inviteReq.count = (state.admin && state.admin.requests || []).length;
   renderAdmin();
 }
-// Unread Lifebook MESSAGES (not friend requests) - the signal we make loud.
+// Unread LifeFold MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
-// Name of a Lifebook contact by id, from whatever's loaded (friends list, then
+// Name of a LifeFold contact by id, from whatever's loaded (friends list, then
 // the online roster). Falls back to a generic label.
 function friendName(id) {
   const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id));
@@ -2527,12 +2527,12 @@ async function refreshFriendStatus() {
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
     // Ping when a contact's unread rises (a new message) - unless you're already
-    // in that chat. A toast alerts you wherever you are in Lifebook.
+    // in that chat. A toast alerts you wherever you are in LifeFold.
     if (hadBaseline) {
       const openWith = state.chat && state.chat.with;
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
-          toast(`💬 ${friendName(id) || 'A Lifebook contact'} messaged you`);
+          toast(`💬 ${friendName(id) || 'A LifeFold contact'} messaged you`);
         }
       });
     }
@@ -2542,7 +2542,7 @@ async function refreshFriendStatus() {
     const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
     if (changed && state.view && !editing) {
       if (state.view.type === 'home') renderHome();
-      else if (state.view.type === 'daybookpeople') renderLifebookPeople();   // online-first list stays live
+      else if (state.view.type === 'daybookpeople') renderLifeFoldPeople();   // online-first list stays live
     }
   } catch {}
 }
@@ -2711,7 +2711,7 @@ function renderShare() {
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
-        <p>You're not connected with anyone on Lifebook yet.</p>
+        <p>You're not connected with anyone on LifeFold yet.</p>
         <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
@@ -2804,7 +2804,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
-// Where AI actually gets used across Lifebook, and which model powers each - so
+// Where AI actually gets used across LifeFold, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
@@ -2832,7 +2832,7 @@ const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.
 const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your normal password:
   <ol class="gpw-steps">
     <li>Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a> (required before app passwords appear).</li>
-    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Lifebook</b>, and press Create.</li>
+    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>LifeFold</b>, and press Create.</li>
     <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
   </ol>`;
 // ── Mobile Home layout ────────────────────────────────────────────────
@@ -2896,7 +2896,7 @@ function renderSettings() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Life Spaces', 'What your Lifebook orbits', 'data-open-areas=""'],
+    ['◈', 'Life Spaces', 'What your LifeFold orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -2906,7 +2906,7 @@ function renderSettings() {
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in. Your
-  // Lifebook card and your security (two-factor) are not separate tabs - they
+  // LifeFold card and your security (two-factor) are not separate tabs - they
   // live inside Account: the card as a sub-page (Edit card), two-factor inline.
   const TABS = [
     ['account', t('set.tab.account')],
@@ -2921,7 +2921,7 @@ function renderSettings() {
     ['manage', t('set.tab.manage')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
-  // Lifebook card editor opens from Account and returns there.
+  // LifeFold card editor opens from Account and returns there.
   const SUBTABS = ['card'];
   const SUB_TITLE = { card: t('set.tab.card') };
   // Calendar feed subscriptions (holidays, fixtures) - load once.
@@ -2963,7 +2963,7 @@ function renderSettings() {
       </div>
       <div class="set-acct-cols">
         <div class="set-card set-cardpreview">
-          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Lifebook card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
+          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your LifeFold card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
           <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
         </div>
         <div class="set-card set-account-sec">
@@ -2973,9 +2973,9 @@ function renderSettings() {
       </div>
       <div class="set-card set-yourdata">
         <div class="set-sec-title">Your data</div>
-        <div class="set-row-s">Your Lifebook is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
+        <div class="set-row-s">Your LifeFold is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
         <div class="yd-hosts">
-          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Lifebook</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
+          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by LifeFold</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
@@ -3009,9 +3009,9 @@ function renderSettings() {
     const managed = a.isOwner || isManagedPlan(plan);
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     return `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Lifebook.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
-        <div class="set-row-t" style="margin-top:16px">Where Lifebook uses AI</div>
-        <p class="set-row-s" style="margin:0 0 10px">Every place Lifebook calls on Claude or Gemini. Switch off any you'd rather it didn't - the rest keep working.</p>
+        <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across LifeFold.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+        <div class="set-row-t" style="margin-top:16px">Where LifeFold uses AI</div>
+        <p class="set-row-s" style="margin:0 0 10px">Every place LifeFold calls on Claude or Gemini. Switch off any you'd rather it didn't - the rest keep working.</p>
         ${aiUsesTogglesHtml()}
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">Two ways to run it</div>
@@ -3031,7 +3031,7 @@ function renderSettings() {
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
           ${managed
             ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
-            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=Lifebook%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
+            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=LifeFold%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
         </div>
       </div>`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -3160,7 +3160,7 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Lifebook reads the dates straight out - you tick which ones land on your calendar.</p>
+        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and LifeFold reads the dates straight out - you tick which ones land on your calendar.</p>
         <button class="add-btn wide" data-open-flyer>Add from a file</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
@@ -3386,7 +3386,7 @@ function renderFlyerImport() {
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Lifebook reads the dates out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - LifeFold reads the dates out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -3762,7 +3762,7 @@ function navItems(v) {
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
-    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
   };
 }
 // A flat, importance-ordered single column of clear tool buttons - the mobile
@@ -3830,18 +3830,18 @@ function navGridHtml(v) {
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
-// contacts are switched on - the live Lifebook people below, in the same box, so
+// contacts are switched on - the live LifeFold people below, in the same box, so
 // there's a single place for everyone rather than a group plus a separate list.
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  // People box order: Contacts, Lifebook, Connect - half-width tiles in the same
+  // People box order: Contacts, LifeFold, Connect - half-width tiles in the same
   // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Lifebook</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
-  // The live Lifebook people, names and all, under a collapsible header so it can
+  // The live LifeFold people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
   let friendsBlock = '';
   if (modOn('contacts') && peopleOn()) {
@@ -3849,14 +3849,14 @@ function peopleBox() {
     const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Lifebook Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
   const gcol = !!state.nav.collapsed['grp.people'];
   return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
 }
-// The live Lifebook-friends list (online first), reused inside the People box.
+// The live LifeFold-friends list (online first), reused inside the People box.
 function navPeopleRows() {
   if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
   const friends = (state.friends && state.friends.friends) || [];
@@ -3866,7 +3866,7 @@ function navPeopleRows() {
   return sorted.map((f) => {
     const on = isOnline(f); const un = unreadFrom(f.id);
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Lifebook</button>');
+  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on LifeFold</button>');
 }
 function renderNav() {
   const v = state.view;
@@ -3879,13 +3879,13 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Life<i class="wm-bk">book</i></em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Life<i class="wm-bk">book</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -3901,8 +3901,8 @@ function renderNav() {
           <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
-        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Lifebook on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Lifebook</span></div>
+        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of LifeFold on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
+        <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} LifeFold</span></div>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
@@ -4434,7 +4434,7 @@ function homeTodayItems() {
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
   const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
-  // Birthdays now live in the My Lifebook feed, not the Today calendar, so they're
+  // Birthdays now live in the My LifeFold feed, not the Today calendar, so they're
   // no longer injected here (avoids listing them twice). (Robin, 2026-10-15.)
   for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
@@ -5226,7 +5226,7 @@ function practiceEditorHtml() {
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
-// the rest of Lifebook has, held in the editor's state and saved with it.
+// the rest of LifeFold has, held in the editor's state and saved with it.
 function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
@@ -5347,7 +5347,7 @@ function homeReqAlertHtml() {
   const r = state.inviteReq; const n = (r && r.count) || 0;
   if (!n) return '';
   const first = (r.requests && r.requests[0] && r.requests[0].name) || '';
-  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Lifebook` : 'New invite request');
+  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join LifeFold` : 'New invite request');
   const sub = n > 1 ? 'People asking to join · tap to see' : 'Someone wants an invite · tap to see';
   return `<button class="home-msgalert home-reqalert" data-open-requests>
     <span class="hma-ic">✦</span>
@@ -5364,7 +5364,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="home-setup-main" data-onb-open-hub>
       <span class="hsu-ic">${MARK}</span>
-      <span class="hsu-body"><span class="hsu-t">Finish setting up Lifebook</span><span class="hsu-s">Make it yours, add your Life Spaces, connect your email - at your own pace.</span></span>
+      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, add your Life Spaces, connect your email - at your own pace.</span></span>
       <span class="hsu-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
@@ -5439,7 +5439,7 @@ function openP1Tasks() {
 }
 // The Home section: who you're overdue with, longest first. The nudge is a
 // person, not a chore, so the row opens their card - and the ✓ is there for the
-// common case where you rang them before Lifebook got round to asking.
+// common case where you rang them before LifeFold got round to asking.
 function kitHomeHtml() {
   const due = (state.home.alerts && state.home.alerts.keepInTouch) || [];
   if (!due.length) return '';
@@ -5543,13 +5543,13 @@ function homeInvitesHtml() {
   const rows = inv.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('');
   return `<section class="home-sec home-sec-card home-invites">
     <div class="home-sec-h">✦ Invitations<span class="muted">${inv.length}</span></div>
-    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Lifebook.' : `${inv.length} people want to connect with you on Lifebook.`}</p>
+    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on LifeFold.' : `${inv.length} people want to connect with you on LifeFold.`}</p>
     ${rows}
   </section>`;
 }
 // Front and centre on Home: someone shared a Life Space or page with you. Persists
 // until you open them or clear them with ×, so an invitation is never missed.
-// (Robin: all such invites belong top and centre - the Lifebook wall.)
+// (Robin: all such invites belong top and centre - the LifeFold wall.)
 function homeSharedAlertHtml() {
   const items = (state.sharedItems || []);
   const seen = state.sharesSeen || '';
@@ -5561,7 +5561,7 @@ function homeSharedAlertHtml() {
     const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
     return `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
   }).join('');
-  const more = fresh.length > 6 ? `<button class="sha-all" data-open-daybook>See all ${fresh.length} on Lifebook →</button>` : '';
+  const more = fresh.length > 6 ? `<button class="sha-all" data-open-daybook>See all ${fresh.length} on LifeFold →</button>` : '';
   return `<section class="home-sec home-sec-card home-shared">
     <div class="home-sec-h">✦ Shared with you<span class="muted">${fresh.length}</span><button class="home-shared-x" data-shared-seen title="Clear - I've seen these">×</button></div>
     ${rows}${more}
@@ -5590,7 +5590,7 @@ function folioFeedData() {
   return { has: true, count: nNew, wall: `<div class="upd-wall">${rows}</div>` };
 }
 // Soft-dismissed feed rows ("had enough of this"): a map {key: whenMs}, pruned so
-// it can't grow without bound. Powers the × on the informational My Lifebook rows.
+// it can't grow without bound. Powers the × on the informational My LifeFold rows.
 function lbDismissedMap() {
   let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.feedDismiss') || '{}') || {}; } catch {}
   const cut = Date.now() - 90 * 86400000; let changed = false;
@@ -5630,11 +5630,11 @@ function lbDismiss(key) {
   syncFeedDismiss();   // persist to the account: survives the next login and reaches other devices
   renderHome();
 }
-// The "My Lifebook" feed - one reverse-chronological stream of everything going on
+// The "My LifeFold" feed - one reverse-chronological stream of everything going on
 // around you: tasks back from snooze, gentle keep-in-touch nudges, upcoming
 // birthdays, things people shared with you, and what they've done in your shared
 // Life Spaces. Newest at the top; most rows carry an × to clear them once you've
-// had enough. (Robin, 2026-10-15: Today = the calendar, My Lifebook = all the rest.)
+// had enough. (Robin, 2026-10-15: Today = the calendar, My LifeFold = all the rest.)
 function lifebookFeedInner() {
   const alerts = state.home.alerts || {};
   const dismissed = lbDismissedMap();
@@ -5651,7 +5651,7 @@ function lifebookFeedInner() {
       items.push({ ts: Date.now() + 10000, html:
         `<div class="lb-item lb-click" data-lb-2fa role="button" tabindex="0" title="Set up two-factor authentication">
           <span class="lb-ic">🔐</span>
-          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Lifebook - ${when}. It takes about a minute.</span></span></div>` });
+          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your LifeFold - ${when}. It takes about a minute.</span></span></div>` });
     }
   }
   // Tasks back from snooze - tick to complete, × to clear.
@@ -5729,7 +5729,7 @@ function homeDiscoverHtml() {
   try { hidden = localStorage.getItem('life.home.discHidden') === '1'; open = localStorage.getItem('life.home.discOpen') !== '0'; } catch {}
   if (hidden) return '';
   return `<section class="home-discover">
-    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover Lifebook<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
+    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover LifeFold<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
     ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
   </section>`;
 }
@@ -5738,8 +5738,8 @@ function homeDiscoverHtml() {
 function homeMainEnabled() {
   let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
   if (!Array.isArray(o)) return ['priority', 'tracker'];
-  // Today and My Lifebook are now fixed (pinned first and second, not configurable),
-  // and shared-lifespace activity folded into My Lifebook - drop any of these from a
+  // Today and My LifeFold are now fixed (pinned first and second, not configurable),
+  // and shared-lifespace activity folded into My LifeFold - drop any of these from a
   // saved layout that still carries them. (Robin, 2026-10-16.)
   o = o.filter((k) => k !== 'foliofeed' && k !== 'today' && k !== 'lifebook');
   return o;
@@ -5900,7 +5900,7 @@ function renderHome() {
           const alerts = state.home.alerts || {};
           const off = state.home.dayOffset || 0;
           const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-          const todayRows = evRows;   // Today is the calendar only now; snooze-returns live in the My Lifebook feed
+          const todayRows = evRows;   // Today is the calendar only now; snooze-returns live in the My LifeFold feed
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
           // A due catch-up also surfaces as a Today notification, with a ✓ (been in
@@ -5923,7 +5923,7 @@ function renderHome() {
           const bodies = {
             // Today is purely the day's calendar + practices now. Everything else
             // (birthdays, nudges, snooze-returns, deadlines, shared activity) lives in
-            // the My Lifebook feed just below. (Robin, 2026-10-15.)
+            // the My LifeFold feed just below. (Robin, 2026-10-15.)
             today: state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
               : (todayRows ? `<div class="today-cal">${todayRows}</div>`
                 : `<div class="home-empty">${off === 0 ? 'Nothing in your calendar today.' : 'Nothing on this day.'}</div>`),
@@ -5974,20 +5974,20 @@ function renderHome() {
               <div class="lead-h" data-home-main-toggle="today" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${top ? '▾' : '▸'}</span><span class="lead-ic">☀</span><span class="lead-name">${esc(homeDayLabel(off))}</span><span class="lead-h-r">${top ? `<span class="lead-nav">${dayNav}</span>` : ''}<button class="lead-add" data-quick-add="event" title="Add an event" aria-label="Add an event">+</button></span></div>
               ${top ? bodies.today : ''}
             </section>` }); }
-          // "My Lifebook" - the feed of everything else - sits right under Today, on
+          // "My LifeFold" - the feed of everything else - sits right under Today, on
           // today itself only (other days just show that day's calendar). A fixed,
           // foldable strip; not removable.
           if (off === 0) {
             const lop = homeMainOpen('lifebook');
             const lifebookBlock = `<section class="lead-block lead-lifebook${lop ? '' : ' lead-collapsed'}" data-lead-key="lifebook">
-              <div class="lead-h" data-home-main-toggle="lifebook" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${lop ? '▾' : '▸'}</span><span class="lead-ic">✦</span><span class="lead-name">My Lifebook</span></div>
+              <div class="lead-h" data-home-main-toggle="lifebook" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${lop ? '▾' : '▸'}</span><span class="lead-ic">✦</span><span class="lead-name">My LifeFold</span></div>
               ${lop ? (() => { try { return lifebookFeedInner(); } catch (e) { return '<div class="home-empty">Your feed will appear here.</div>'; } })() : ''}
             </section>`;
             const ti = blockEls.findIndex((b) => b.k === 'today');
             blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'lifebook', html: lifebookBlock });
           }
           // Recently viewed now lives in the sidebar's top expander, so it's no longer
-          // a Home section: Home is Today, then My Lifebook, then the sections you
+          // a Home section: Home is Today, then My LifeFold, then the sections you
           // choose. (Robin, 2026-10-16.)
           const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
@@ -7735,7 +7735,7 @@ function renderReadwatch() {
     ${pageCrumb(t('saved.title'))}
     <div class="pane-head home-head"><h1>${t('saved.title')}</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
-    <div class="rw-type" title="Lifebook works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
+    <div class="rw-type" title="LifeFold works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     ${items.length ? `${(() => {
       const tc = {}; items.forEach((b) => { const k = rwMediaKey(b.props || {}); tc[k] = (tc[k] || 0) + 1; });
@@ -7760,10 +7760,10 @@ function rwSetupHtml() {
   return `<div class="rw-setup-panel">
     <div class="rw-setup-h">One-tap saving</div>
     <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
-      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Lifebook</a></div></div>
-    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Lifebook”:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to LifeFold</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to LifeFold”:
       <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
-      Then anywhere: <b>Share → Save to Lifebook</b>.</div>
+      Then anywhere: <b>Share → Save to LifeFold</b>.</div>
     <div class="rw-setup-note">This save link is private to you.</div>
   </div>`;
 }
@@ -8064,7 +8064,7 @@ function renderAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Life Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Life Space is a living chapter in your Lifebook - everything about what matters, in one place.</p>
+    <p class="t2-sub" style="font-style:normal">A Life Space is a living chapter in your LifeFold - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
 }
@@ -8334,7 +8334,7 @@ function timeAgo(t) {
   return Math.floor(d / 365) + 'y ago';
 }
 // Plain "N days ago" for the admin members list: Robin wants the day count, not a
-// date, so how long since someone used Lifebook reads at a glance (and big numbers
+// date, so how long since someone used LifeFold reads at a glance (and big numbers
 // flag churn). (Robin, 2026-10-18.)
 function daysAgoLabel(ts) {
   if (!ts) return 'never';
@@ -8785,7 +8785,7 @@ function renderArea() {
         <div class="am-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div>
         <span class="am-cover-scrim"></span>
         ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button></div>` : ''}
-        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Lifebook&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
+        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=LifeFold&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
@@ -8816,7 +8816,7 @@ function areaOverviewHtml(area, c, blocks) {
   const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
   const shares = state.area_open && state.area_open.shares;
   const friends = (state.friends && state.friends.friends) || [];
-  // Your own Lifebook card always shows here (unless this area was shared TO you
+  // Your own LifeFold card always shows here (unless this area was shared TO you
   // by someone else): you are the first person who has access.
   const meCard = (() => {
     if (area.sharedBy) return '';
@@ -8826,10 +8826,10 @@ function areaOverviewHtml(area, c, blocks) {
     const sub = subd ? `lifebook.fyi/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
-    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Lifebook card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
+    return `<button class="ov-person ov-person-me" data-open-card title="Edit your LifeFold card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
   if (shares && shares.length) loadCards(shares.map((s) => s.id));
-  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Lifebook card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s LifeFold card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
     : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
@@ -8993,7 +8993,7 @@ function areaMembersBody(area) {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
-    return `<button class="mem-card mem-card-me" data-open-card title="Your Lifebook card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
+    return `<button class="mem-card mem-card-me" data-open-card title="Your LifeFold card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
   };
   // A lifespace shared WITH me: name its owner + me (I can't list the owner's full
   // roster - that's owner-scoped - so show who I can see), plus any co-members the
@@ -9118,7 +9118,7 @@ function areaAttachHtml(area) {
     ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
   return `<section class="attachments area-files" data-att-zone="${area.id}">
-    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Lifebook keeps things light, not a photo vault</span></div>
+    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - LifeFold keeps things light, not a photo vault</span></div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file or photo</span></label>
     </div></section>`;
@@ -9697,14 +9697,14 @@ function gcalBarHtml() {
   const knownMember = acct && acct.isOwner === false && !(state.me && state.me.id === 1);
   if (!knownMember) return '';
   if (s.connected) return `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`;
-  return `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Lifebook ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+  return `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your LifeFold ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
 }
 async function gcalConnect() {
   try { const r = await api('/api/gcal/connect'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
   catch (e) { toast(e.message); }
 }
 async function gcalDisconnect() {
-  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Lifebook.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in LifeFold.', { okLabel: 'Disconnect', danger: true }))) return;
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
 }
@@ -10174,7 +10174,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
   } catch (e) { toast(e.message); }
 }
 // ── Event reminders (in-app alarms) ─────────────────────────────────────
-// A reminder set on an event fires while Lifebook is open: a toast, a chime and,
+// A reminder set on an event fires while LifeFold is open: a toast, a chime and,
 // if you allow it, a browser notification. Checked on a short loop so it works
 // across a reload and background-tab throttling. It fires client-side, so it
 // needs the app open somewhere - which for a day tool it usually is.
@@ -11135,7 +11135,7 @@ const MAIL_QUADS = [
 const normQuad = (q) => (q === 'others' ? 'chilled' : q);
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
-// after it leaves the loaded inbox (Lifebook remembers it). Old data stored a bare
+// after it leaves the loaded inbox (LifeFold remembers it). Old data stored a bare
 // quad string; both shapes are read here. Works the same for Gmail and IMAP - the
 // snapshot carries the account it came from.
 const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[key]; return v == null ? null : (typeof v === 'string' ? { q: v, m: null } : v); };
@@ -11739,8 +11739,8 @@ const isStandalone = () => { try { return window.matchMedia('(display-mode: stan
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
 function installRowHtml() {
   if (isStandalone()) return '';   // already installed as an app
-  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Lifebook</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
-  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Lifebook</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Lifebook opens full-screen and works offline.</div></div></div>`;
+  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install LifeFold</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
+  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install LifeFold</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - LifeFold opens full-screen and works offline.</div></div></div>`;
   return '';
 }
 async function promptInstall() {
@@ -11748,7 +11748,7 @@ async function promptInstall() {
   try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch {}
   deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings();
 }
-// PWA share target: another app shared a link/text to Lifebook (via /share). A URL
+// PWA share target: another app shared a link/text to LifeFold (via /share). A URL
 // becomes a Read & Watch bookmark; plain text becomes a note. Then land on it.
 async function handleShareTarget() {
   const q = new URLSearchParams(location.search);
@@ -11791,7 +11791,7 @@ async function subscribePush(reg) {
 }
 // User tapped "Enable notifications": prompt, subscribe, register with server.
 async function enablePush() {
-  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Lifebook to your Home Screen from Safari first.'); return; }
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add LifeFold to your Home Screen from Safari first.'); return; }
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
@@ -11809,12 +11809,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Lifebook to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a badge on the app icon when mail arrives, add LifeFold to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Lifebook app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Show a number on the LifeFold app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
@@ -11972,7 +11972,7 @@ function mailMarkReadLocal(key) {
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
-  // Once you've read an email in Lifebook it stays read - full stop. We DON'T prune
+  // Once you've read an email in LifeFold it stays read - full stop. We DON'T prune
   // the key when the server happens to report it seen: Gmail's seen flag flip-flops
   // (eventual consistency + the sticky-read cache), and pruning meant the next
   // fetch that said "unseen" had nothing to correct it, so a mail you'd already
@@ -12596,7 +12596,7 @@ function sigBuilderInner(a) {
         </div>
       </div>
       ${f('name', 'Name', 'Robin Lumley-Savile')}
-      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Lifebook')}</div>
+      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'LifeFold')}</div>
       <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
       ${f('website', 'Website', 'daybook.fyi', 'url')}
       ${f('address', 'Address / location', 'Lisbon, Portugal')}
@@ -12688,9 +12688,9 @@ function renderMailAccounts(note) {
       <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 10px">Make Lifebook open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open Lifebook in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
-      <button class="add-btn wide" data-mail-handler>Set Lifebook as my email app</button></section>
+      <p class="scope" style="margin:0 0 10px">Make LifeFold open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open LifeFold in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
+      <button class="add-btn wide" data-mail-handler>Set LifeFold as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
   if (mailAddDraft()) showMailAccountForm();
@@ -13271,7 +13271,7 @@ function renderMail(loading) {
   } else if (m.open) {
     const o = m.open;
     // Order by how often it's reached for: respond, triage, flag, then the two
-    // "capture into Lifebook" actions (file in a page, make a task), the AI
+    // "capture into LifeFold" actions (file in a page, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
     // Reply is a dropdown that defaults to Reply all, with "Reply to sender" and
@@ -13392,7 +13392,7 @@ function showQuickTask() {
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
   $('#qt-title').focus();
 }
-// Turn the open email into a Lifebook task: subject becomes the title, and
+// Turn the open email into a LifeFold task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
 // Turning an email into a task opens a little popover first, so the title, life
@@ -13614,7 +13614,7 @@ function rerenderCurrent() {
   else if (v === 'today') renderToday();
   else if (v === 'tracker') renderTracker();
   else if (v === 'contacts' || v === 'friends') renderContacts();
-  else if (v === 'connect') renderConnect(); else if (v === 'daybookpeople') renderLifebookPeople();
+  else if (v === 'connect') renderConnect(); else if (v === 'daybookpeople') renderLifeFoldPeople();
   else if (v === 'home') renderHome();
   // No `else openHome()`: falling back to Home for an unhandled view was THE
   // "Contacts sends me to the homepage" bug - a background re-render (a friend
@@ -14352,8 +14352,8 @@ function contactCardHtml(c) {
     <span class="contact-av${p.photo ? ' has-photo' : ''}"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
-// Your own Lifebook card, shown as a "You" card at the top of Contacts. It's
-// always there (can't be deleted, only hidden) and ties to your Lifebook card -
+// Your own LifeFold card, shown as a "You" card at the top of Contacts. It's
+// always there (can't be deleted, only hidden) and ties to your LifeFold card -
 // it's how you appear to others. Tapping it opens the card editor.
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
@@ -14361,7 +14361,7 @@ function selfContactHtml() {
   const sub = a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
-  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Lifebook card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your LifeFold card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
 // Contacts are organised by Page, not a separate "groups" concept. The bar
@@ -14417,7 +14417,7 @@ function contactMenuHtml() {
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${areaSection}
-    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Lifebook</button><div class="ctx-sep"></div>` : ''}
+    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to LifeFold</button><div class="ctx-sep"></div>` : ''}
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
 }
@@ -14444,24 +14444,24 @@ function openContactMenu(id, x, y) {
   state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
-// Automatically surfaced at the top of Contacts: Lifebook scans every contact's
+// Automatically surfaced at the top of Contacts: LifeFold scans every contact's
 // email against its accounts (worker getFriends), and this tells you, up front,
-// which of your people are already on Lifebook - tap to connect.
-function contactsLifebookBannerHtml() {
-  // Your address-book contacts who are on Lifebook, ready to connect. Lifebook
-  // connection *requests* live on the Lifebook Contacts hub, not here. No
+// which of your people are already on LifeFold - tap to connect.
+function contactsLifeFoldBannerHtml() {
+  // Your address-book contacts who are on LifeFold, ready to connect. LifeFold
+  // connection *requests* live on the LifeFold Contacts hub, not here. No
   // "checking…"/"none yet" noise. (Robin, 2026-10-14.)
   const sug = (state.friends && state.friends.suggestions) || [];
   if (!sug.length) return '';
   const n = sug.length;
-  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Lifebook"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Lifebook Contacts below</div>` : '';
-  const head = n === 1 ? 'A friend of yours is on Lifebook — connect?' : `${n} friends of yours are on Lifebook — connect?`;
+  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on LifeFold"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in LifeFold Contacts below</div>` : '';
+  const head = n === 1 ? 'A friend of yours is on LifeFold — connect?' : `${n} friends of yours are on LifeFold — connect?`;
   return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
 }
-// The Lifebook-friends pane: suggestions, connect-by-email + Invite, incoming
+// The LifeFold-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
-// page and the dedicated Lifebook people page.
+// page and the dedicated LifeFold people page.
 function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
@@ -14476,29 +14476,29 @@ function friendsPaneHtml(opts) {
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${d.incoming.length ? `<div class="ppl-sub ppl-sub-req">${d.incoming.length === 1 ? 'Wants to connect with you' : `${d.incoming.length} people want to connect with you`}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      <p class="fr-intro">Invite your friends to Lifebook so you can share with them - a whole Life Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
-      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Lifebook<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Lifebook</button>`)).join('')}</div>` : ''}
-      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Lifebook - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Lifebook by email">✦ Invite to Lifebook</button></div>
+      <p class="fr-intro">Invite your friends to LifeFold so you can share with them - a whole Life Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on LifeFold<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on LifeFold</button>`)).join('')}</div>` : ''}
+      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on LifeFold - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to LifeFold by email">✦ Invite to LifeFold</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Lifebook.</div>')}
+      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared meeting notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to LifeFold.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
-// The Lifebook people hub: your card, your friends on Lifebook, and the invite +
+// The LifeFold people hub: your card, your friends on LifeFold, and the invite +
 // connect tools - all on one page. Its own view, reached from the People box.
-async function openLifebookPeople() {
+async function openLifeFoldPeople() {
   state.view = { type: 'daybookpeople' };
   renderNav();
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
-  renderLifebookPeople();
+  renderLifeFoldPeople();
 }
-function renderLifebookPeople() {
+function renderLifeFoldPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Lifebook Contacts')}
-    <div class="pane-head"><h1>Lifebook Contacts</h1></div>
-    <p class="t2-sub">Your people on Lifebook - share a page, a note or a few tasks with them.</p>
-    <section class="home-sec"><div class="home-sec-h">Your Lifebook card</div>${selfContactHtml()}</section>
+    ${pageCrumb('LifeFold Contacts')}
+    <div class="pane-head"><h1>LifeFold Contacts</h1></div>
+    <p class="t2-sub">Your people on LifeFold - share a page, a note or a few tasks with them.</p>
+    <section class="home-sec"><div class="home-sec-h">Your LifeFold card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
 function renderContacts() {
@@ -14516,7 +14516,7 @@ function renderContacts() {
     : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this lifespace.`
     : 'No contacts yet. Add one, or import a vCard (.vcf) from Google, Outlook, your phone or any address book.';
   // While searching, strip the page back to just the search box and the matching
-  // contacts - no Add/Import, no "Contacts on Lifebook", no group bar. Just results.
+  // contacts - no Add/Import, no "Contacts on LifeFold", no group bar. Just results.
   const searching = !!q;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.contacts'))}
@@ -14532,9 +14532,9 @@ function renderContacts() {
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${contactAreaBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Lifebook - connect and share">❖ Lifebook Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on LifeFold - connect and share">❖ LifeFold Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
-      ${contactsLifebookBannerHtml()}
+      ${contactsLifeFoldBannerHtml()}
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       ${(() => {
@@ -14562,7 +14562,7 @@ function renderContacts() {
 // buttons, so the find box grows to fill and the row reserves right-padding equal
 // to the gap, landing Invite exactly under the search box's edge. Desktop only;
 // re-runs on resize.
-// The Lifebook-friends connect row now lives in its own section, so it just
+// The LifeFold-friends connect row now lives in its own section, so it just
 // flexes to fill via CSS - no cross-section width alignment needed any more.
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
@@ -14917,7 +14917,7 @@ function renderContactCard() {
         p.signal ? `<a class="cc-qbtn cc-qbtn-sig" href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"><span class="cc-qic">🔵</span>Signal</a>` : '',
         addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"><span class="cc-qic">📍</span>Map</a>` : '',
         addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"><span class="cc-qic">🧭</span>Directions</a>` : '',
-        `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to Lifebook"><span class="cc-qic">✦</span>Invite</button>`,
+        `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to LifeFold"><span class="cc-qic">✦</span>Invite</button>`,
       ].filter(Boolean).join('');
       return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
       <span class="cc-av-wrap">
@@ -15405,7 +15405,7 @@ async function loadPortfolio(force) {
 }
 // The default currency the money tools show in. It's a display choice (symbol +
 // number grouping), not a conversion - you enter amounts in your own currency
-// and Lifebook shows them with your symbol. Chosen in Settings › Appearance,
+// and LifeFold shows them with your symbol. Chosen in Settings › Appearance,
 // stored on the account (account.currency, default EUR). [code, symbol, locale, name]
 const CURRENCIES_APP = [
   ['EUR', '€', 'en-IE', 'Euro'],
@@ -18755,7 +18755,7 @@ function sharedBanner(block) {
   if (!block.sharedBy) return '';
   return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
 }
-// People a note is shared with: their Lifebook contact cards, tap to message.
+// People a note is shared with: their LifeFold contact cards, tap to message.
 // Owner only - a borrowed note shows the "shared with you" banner instead.
 function noteMembersHtml(n) {
   if (n.sharedBy) return '';
@@ -19851,7 +19851,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
-  // Lifebook card: live-update the preview as you type, save shortly after.
+  // LifeFold card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
@@ -19962,7 +19962,7 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  // Internal links jump within Lifebook instead of opening a browser tab.
+  // Internal links jump within LifeFold instead of opening a browser tab.
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
@@ -20093,7 +20093,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
-  if (t.closest('[data-open-daybook]')) { openLifebookPeople().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-daybook]')) { openLifeFoldPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
   if (t.closest('[data-shared-seen]')) { state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST' }).catch(() => {}); return; }
@@ -20225,7 +20225,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
-  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('account'); else if (d === 'contacts') openContacts(); else if (d === 'invite') inviteToLifebook(); return; } }
+  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('account'); else if (d === 'contacts') openContacts(); else if (d === 'invite') inviteToLifeFold(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
@@ -20243,7 +20243,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-totp-disable]')) { totpDisable(); return; }
   if (t.closest('[data-totp-cancel]') || t.closest('[data-totp-done]')) { state.totp = null; renderSettings(); return; }
   if (t.closest('[data-totp-copy]')) { const codes = (state.totp && state.totp.recovery || []).join('\n'); if (codes) { try { navigator.clipboard.writeText(codes); toast('Recovery codes copied'); } catch { toast('Copy failed - select them by hand'); } } return; }
-  if (t.closest('[data-create-invite]')) { inviteToLifebook(); return; }
+  if (t.closest('[data-create-invite]')) { inviteToLifeFold(); return; }
   if (t.closest('[data-admin-invite]')) { adminInvite(); return; }
   const ri = t.closest('[data-req-invite]'); if (ri) { const id = ri.dataset.reqInvite; adminInvite(ri.dataset.reqEmail || '', () => dismissRequest(id)); return; }
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
@@ -20693,9 +20693,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-adm-area-add]')) { adminAreaAdd(); return; }
   { const ax = t.closest('[data-adm-area-del]'); if (ax) { adminAreaDel(ax.dataset.admAreaDel); return; } }
   if (t.closest('[data-open-friends]')) { openFriends(); return; }
-  if (t.closest('[data-invite-daybook]')) { inviteToLifebook(); return; }
-  { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToLifebook(cvi.dataset.ccInvite || undefined); return; } }
-  { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToLifebook(email); return; } }
+  if (t.closest('[data-invite-daybook]')) { inviteToLifeFold(); return; }
+  { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToLifeFold(cvi.dataset.ccInvite || undefined); return; } }
+  { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToLifeFold(email); return; } }
   if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
   { const sh = t.closest('[data-sugg-hide]'); if (sh) { e.preventDefault(); e.stopPropagation(); hideSuggestion(sh.dataset.suggHide); return; } }
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
@@ -20705,12 +20705,12 @@ document.addEventListener('click', (e) => {
   { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
-  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Lifebook` : 'No contacts on Lifebook yet'); }); return; }
+  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on LifeFold` : 'No contacts on LifeFold yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
-  if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToLifebook()).catch(() => {}); return; }
+  if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToLifeFold()).catch(() => {}); return; }
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
   { const ao = t.closest('[data-assign-open]'); if (ao) { openAssign(ao.dataset.assignOpen, ao.dataset.assignTitle || ''); return; } }
@@ -20886,7 +20886,7 @@ document.addEventListener('contextmenu', (e) => {
   const nrc = e.target.closest('.nt-card[data-open-note], .nt-card[data-open-table]');
   if (nrc && state.view.type === 'notes') { e.preventDefault(); openNoteMenu(nrc.dataset.openNote || nrc.dataset.openTable, e.clientX, e.clientY); return; }
   // Right-click a link inside note/task prose: offer to open it in a new tab.
-  // Internal Lifebook links (#rl-…) open in a fresh in-app tab; web links open in
+  // Internal LifeFold links (#rl-…) open in a fresh in-app tab; web links open in
   // a new browser tab.
   const alink = e.target.closest('a[href]');
   if (alink && alink.closest('.prose, .note-body')) {
@@ -20902,7 +20902,7 @@ function linkMenuKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeLin
 function openLinkMenu(x, y, href, view) {
   closeLinkMenu();
   const items = view
-    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Lifebook tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
+    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new LifeFold tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
     : ['<button class="ctx-item" data-lm="browser">↗ Open in new browser tab</button>', '<button class="ctx-item" data-lm="copy">Copy link</button>'];
   const mx = Math.min(x, window.innerWidth - 232), my = Math.min(y, window.innerHeight - 110);
   const el = document.createElement('div'); el.id = 'linkmenu'; el.className = 'ctx-bg';
@@ -22401,7 +22401,7 @@ function renderTaskCard() {
       <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
       <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
-          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Lifebook contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
+          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a LifeFold contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
           ${t.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-task-cur data-tip="Delete this task" aria-label="Delete this task">${MAIL_ICO.trash}</button>`}</span>
       </div>
     </div>
@@ -23406,19 +23406,19 @@ document.addEventListener('keydown', (e) => {
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
-// in to Robin's Lifebook, so the wordmark drops the owner's name and reads just
-// "Lifebook". On a tenant subdomain it stays whose it is.
+// in to Robin's LifeFold, so the wordmark drops the owner's name and reads just
+// "LifeFold". On a tenant subdomain it stays whose it is.
 const onApex = () => /^(www\.)?(daybook|lifebook)\.fyi$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Life<i class="wm-bk">book</i></em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Life<i class="wm-bk">Fold</i></em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
       <input class="gate2-input gate2-code" id="gate-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('gate.code.ph')}" hidden>
       <button class="gate2-btn" id="gate-btn" type="submit">${t('gate.emailme')}</button>
-      <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside Lifebook and you can't open it to read the code">${t('gate.smslink')}</button>
+      <button class="gate2-smslink" id="gate-sms" type="button" title="For when your email lives inside LifeFold and you can't open it to read the code">${t('gate.smslink')}</button>
       <p class="gate2-err" id="gate-err" hidden></p>
     </form></div>`);
   $('#gate-email').focus();
@@ -23447,7 +23447,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Life<i class="wm-bk">book</i></em></div>
+      <div class="gate2-mark"><em>Life<i class="wm-bk">Fold</i></em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -23461,12 +23461,12 @@ function showSignup(email, inviteRequired, invited) {
   $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
   $('#su-name').focus();
 }
-// Their Lifebook lives on its own subdomain - a different origin, with its own
+// Their LifeFold lives on its own subdomain - a different origin, with its own
 // empty localStorage. Carry the session over in the fragment (never sent to a
 // server, never logged) so the new origin is signed in on arrival. Reloading the
 // apex instead used to land the newcomer back on the marketing page, which is
 // what made a completed signup look like a failed one.
-function goToMyLifebook(sub) {
+function goToMyLifeFold(sub) {
   const host = sub ? `${sub}.daybook.fyi` : '';
   if (!host || location.hostname === host) { location.reload(); return; }
   location.replace(`https://${host}/#t=${encodeURIComponent(token())}`);
@@ -23570,7 +23570,7 @@ async function openMailCompose(c) {
   renderMail();
   setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
 }
-// Offer Lifebook as the browser's mailto handler (Chromium/Firefox). The
+// Offer LifeFold as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() {
   if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
@@ -23620,7 +23620,7 @@ function onbAreas() {
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
       : '<p class="onb-p onb-muted">No Life Spaces yet - add the ones that matter to you below.</p>';
   return `<h2 class="onb-h">Your Life Spaces</h2>
-    <p class="onb-p">Life Spaces are the few parts of your life Lifebook is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
+    <p class="onb-p">Life Spaces are the few parts of your life LifeFold is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
     <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a lifespace…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
@@ -23649,10 +23649,10 @@ function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.mi
 function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
-  return `<h2 class="onb-h">Welcome to Lifebook${name ? `, ${name}` : ''}</h2>
+  return `<h2 class="onb-h">Welcome to LifeFold${name ? `, ${name}` : ''}</h2>
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
-    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Lifebook helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so LifeFold helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {
@@ -23665,7 +23665,7 @@ function onbAiProv(provider, name, why, host, url, ph, isSet) {
 function onbAi() {
   const a = state.onb.account || {};
   return `<h2 class="onb-h">Turn on AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p"><b>Lifebook works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p"><b>LifeFold works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
     <p class="onb-p">AI just adds a few optional helpers on top. Turn them on if you'd like them, leave them off if you wouldn't - you can change your mind anytime in Settings.</p>
     ${aiUsesHtml()}
     <div class="onb-provs">
@@ -23678,7 +23678,7 @@ function onbEmail() {
   if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
     <div class="onb-ok">✓ Mailbox connected. Add more anytime in <b>Settings → Mail accounts</b>.</div>`;
   return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Read and send your email inside Lifebook. Most people use Gmail.</p>
+    <p class="onb-p">Read and send your email inside LifeFold. Most people use Gmail.</p>
     <div class="onb-gpw">${GMAIL_APP_PW}</div>
     <div class="onb-mailform">
       <input id="onb-mail-email" class="sel" type="email" placeholder="you@gmail.com" autocomplete="off" spellcheck="false">
@@ -23691,7 +23691,7 @@ function onbPhone() {
   const a = state.onb.account || {};
   const saved = (a.phone || '').trim();
   return `<h2 class="onb-h">A backup way in <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Lifebook signs you in with a code sent to your email. But once Lifebook <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
+    <p class="onb-p">LifeFold signs you in with a code sent to your email. But once LifeFold <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
     <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
     ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
     <div class="onb-mailform">
@@ -23721,11 +23721,11 @@ function onbDone() {
 // Panels for the tiles that open a richer surface - a short, warm line then a
 // button through to the full tool. (The lifespaces/AI/email/phone tiles do it inline
 // via onbAreas/onbAi/onbEmail/onbPhone above.)
-function onbCardPanel() { return `<p class="onb-p">Your Lifebook card is how you show up to the people you share with - a name, a photo, a short line about you, your colour.</p><button class="add-btn wide" data-onb-nav="card">Open your card →</button>`; }
-function onbToolsPanel() { return `<p class="onb-p">Lifebook has lots of tools - tasks, calendar, notes, money, reflection and more. Switch on just what you want and add the rest whenever you like.</p><button class="add-btn wide" data-onb-nav="tools">Choose your tools →</button>`; }
+function onbCardPanel() { return `<p class="onb-p">Your LifeFold card is how you show up to the people you share with - a name, a photo, a short line about you, your colour.</p><button class="add-btn wide" data-onb-nav="card">Open your card →</button>`; }
+function onbToolsPanel() { return `<p class="onb-p">LifeFold has lots of tools - tasks, calendar, notes, money, reflection and more. Switch on just what you want and add the rest whenever you like.</p><button class="add-btn wide" data-onb-nav="tools">Choose your tools →</button>`; }
 function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Recommended for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
 function onbImportPanel() { return `<p class="onb-p">Bring your address book in with a <b>vCard (.vcf)</b> - export one from Google Contacts, Outlook, iCloud, your phone or any address book, then import it on your Contacts page.</p><button class="add-btn wide" data-onb-nav="contacts">Go to Contacts to import →</button>`; }
-function onbInvitePanel() { return `<p class="onb-p">Lifebook is better shared. Invite someone and you can share a whole Life Space, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
+function onbInvitePanel() { return `<p class="onb-p">LifeFold is better shared. Invite someone and you can share a whole Life Space, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
 // The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
 // in any order, whenever you like. Done bits carry a tick; a progress bar sums
 // them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
@@ -23741,7 +23741,7 @@ function renderOnboarding() {
     { id: 'card', ic: '◗', label: 'Make it yours', hint: 'Name, photo & a line about you', done: !!(card.photo || (card.tagline || '').trim()), body: onbCardPanel },
     { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
     { id: 'tools', ic: '🧰', label: 'Choose your tools', hint: 'Turn parts on or off', opt: true, body: onbToolsPanel },
-    { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside Lifebook', opt: true, done: mailConnected, body: onbEmail },
+    { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside LifeFold', opt: true, done: mailConnected, body: onbEmail },
     { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
     { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
@@ -23762,17 +23762,17 @@ function renderOnboarding() {
   const openTile = TILES.find((x) => x.id === s.open);
   const panel = openTile ? `<div class="onb-panel"><div class="onb-panel-h"><span class="onb-panel-ic">${openTile.ic}</span>${esc(openTile.label)}</div><div class="onb-panel-in">${openTile.body()}</div></div>` : '';
   const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
-  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Lifebook">
+  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up LifeFold">
     <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
     <div class="onb-head">
       <span class="onb-mark">${MARK}</span>
-      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Lifebook${name ? `, ${esc(name)}` : ''}`}</h2>
+      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to LifeFold${name ? `, ${esc(name)}` : ''}`}</h2>
       <p class="onb-lede">${allDone ? 'The essentials are in place. Everything else here is optional - add it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required, AI included.'}</p>
       <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
     </div>
     <div class="onb-grid">${tilesHtml}</div>
     ${panel}
-    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Lifebook' : 'Done for now'}</button>
+    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open LifeFold' : 'Done for now'}</button>
   </div></div>`;
 }
 async function onbSaveAi(provider) {
@@ -23816,7 +23816,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Life<i class="wm-bk">book</i></em></div>';
+  const mark = '<div class="gate2-mark"><em>Life<i class="wm-bk">Fold</i></em></div>';
   const head = (txt) => `<div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); }; };
@@ -23824,7 +23824,7 @@ function showRequired2fa() {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:ui-monospace,SFMono-Regular,monospace;font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
-      <button class="gate2-btn" id="r2-done">Done - open Lifebook</button>`;
+      <button class="gate2-btn" id="r2-done">Done - open LifeFold</button>`;
     document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
     return;
   }
@@ -23847,7 +23847,7 @@ function showRequired2fa() {
     return;
   }
   card.innerHTML = `${mark}${head('Two-factor is now required')}
-    <p class="gate2-sub">To keep your Lifebook secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
+    <p class="gate2-sub">To keep your LifeFold secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
     <button class="gate2-btn" id="r2-start">Set it up now</button>
     <p class="gate2-alt"><a href="/blog/two-factor-authentication" target="_blank" rel="noopener">Why?</a> · <button type="button" class="su-signout" id="r2-signout">sign out</button></p>`;
   document.getElementById('r2-start').onclick = async () => {
@@ -23870,7 +23870,7 @@ function showRequired2fa() {
       return;
     }
   } catch {}
-  // Session hand-off from the apex (see goToMyLifebook): #t=<jwt> signs this
+  // Session hand-off from the apex (see goToMyLifeFold): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
   let preEmail = '', preChannel = '';
   try {
@@ -23894,11 +23894,11 @@ function showRequired2fa() {
     invited = !!storedInvite();
   } catch {}
   if (!token()) {
-    showGate(invited ? "You've been invited to Lifebook. Sign in with your email to accept." : null);
+    showGate(invited ? "You've been invited to LifeFold. Sign in with your email to accept." : null);
     // They typed their email on the marketing sign-in box; prefill it and let them
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was
-    // impossible - the one case (mailbox lives inside Lifebook) it exists for.
+    // impossible - the one case (mailbox lives inside LifeFold) it exists for.
     if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; if (preChannel === 'sms') gateSend('sms'); else { const b = $('#gate-btn'); if (b) b.focus(); } }
     return;
   }
@@ -23912,7 +23912,7 @@ function showRequired2fa() {
     if (me && me.user) {
       state.me = me.user;
       // Two-factor becomes required three months after an account opens. Past that,
-      // a member without it set up must turn it on before using Lifebook. Sign-out
+      // a member without it set up must turn it on before using LifeFold. Sign-out
       // is always offered, so this asks firmly but can never lock anyone out.
       if (!me.user.totp_enabled && me.user.created_at && (Date.now() - Date.parse(me.user.created_at)) > 90 * 86400000) { showRequired2fa(); return; }
     }
@@ -23939,7 +23939,7 @@ function showRequired2fa() {
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     // Restore the tabs you had open, focused on the one you were using - so
-    // reopening Lifebook on desktop puts you back exactly where you left off. The
+    // reopening LifeFold on desktop puts you back exactly where you left off. The
     // installed PHONE app is the exception: after an hour away it still drops you
     // on Home (a fresh glance beats last night's page), though a quick reopen keeps
     // your place. A deep-link route below still wins over all of this. (Robin:
@@ -23991,7 +23991,7 @@ function showRequired2fa() {
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
     syncBgPatternFromServer();  // and the background pattern, likewise
 
-    loadAccount();           // name, handle & contact details for the Lifebook card
+    loadAccount();           // name, handle & contact details for the LifeFold card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Pinned I Ching / horoscope readings follow the account, so they surface on
     // Well-being and Home on any device.

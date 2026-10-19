@@ -1,6 +1,6 @@
 import { PLAN_KEYS } from './plans.js';
 // The business admin dashboard (owner = user 1 only). Everything you need to run
-// Lifebook as a product: who's signed up, what they're on, how active they are,
+// LifeFold as a product: who's signed up, what they're on, how active they are,
 // what the AI is costing, the invite/referral picture, and the switches that
 // control the business (signup mode). Read-only queries + a few guarded writes.
 
@@ -120,7 +120,7 @@ export async function adminAiUsage(env) {
   }
   return Object.values(byUser).sort((a, b) => b.cost - a.cost);
 }
-// What it costs to run Lifebook, by month: the measured AI spend (from ai_usage)
+// What it costs to run LifeFold, by month: the measured AI spend (from ai_usage)
 // plus the fixed infrastructure baseline. FIXED is the known recurring bill -
 // extend it as costs are added (domain, email, SMS…). (Robin, 2026-10-14.)
 const FIXED = [{ label: 'Cloudflare (Workers Paid)', usd: 5 }];

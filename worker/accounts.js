@@ -1,6 +1,6 @@
 import { normPlan } from './plans.js';
 /**
- * Onboarding for Lifebook (multi-tenant). A signed-in email with no `users` row
+ * Onboarding for LifeFold (multi-tenant). A signed-in email with no `users` row
  * yet is "unprovisioned" - it can reach only /api/me and /api/signup until it
  * claims an account (invite-gated, with a subdomain). Everything else needs a
  * provisioned user (see resolveUser in auth.js).
@@ -93,7 +93,7 @@ export async function handleSignup(request, env, email, json, err) {
   const inv = await resolveInvite(env, b.invite, email);
   if (inv === 'unknown') return err('That invite code is not valid.', request, 400);
   if (inv === 'used') return err('That invitation has already been used. Ask whoever invited you to send a fresh one.', request, 400);
-  if (!inv && !publicSignup) return err('Lifebook is invite-only for now - you need an invitation from a member.', request, 403);
+  if (!inv && !publicSignup) return err('LifeFold is invite-only for now - you need an invitation from a member.', request, 403);
 
   const name = String(b.name || '').trim().slice(0, 40) || email.split('@')[0];
   // Usernames are derived automatically now - people no longer pick one at signup.
@@ -167,7 +167,7 @@ async function seedNewUser(env, uid) {
   const now = new Date().toISOString();
   const lanes = DEFAULT_LANES.map((l) => ({ key: l.key, label: l.label, hue: l.hue, ...(l.practice ? { practice: true } : {}), ...(l.optional ? { optional: true } : {}) }));
 
-  // A blank Life Areas page doesn't tell a newcomer that Lifebook orbits their
+  // A blank Life Areas page doesn't tell a newcomer that LifeFold orbits their
   // life areas. Seed the common ones (a Wheel-of-Life spread) so tasks, notes,
   // goals and spending categories all have somewhere to land. Ordinary blocks:
   // rename, recolour or delete any. Hues walk the wheel from a blue base so each
@@ -241,7 +241,7 @@ export async function createInvite(env, input) {
   // free (see GIFT_LIMIT). That's it.
   const email = (String(input.email || '').trim().toLowerCase()) || null;
   if (email && !EMAIL_RE.test(email)) throw new Error('That does not look like an email address.');
-  if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on Lifebook.`);
+  if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on LifeFold.`);
 
   // Inviting the same person twice re-sends their standing invitation rather than
   // leaving two live codes with one name on them. That also means a re-send never
@@ -316,26 +316,26 @@ export async function cancelInvite(env, code) {
 }
 
 // ── The invitation email ──────────────────────────────────────────────
-// From Lifebook, but *about* the person who sent it: "Robin has invited you to
-// join Lifebook". Replies go to the inviter, so a "what is this?" reaches a human.
+// From LifeFold, but *about* the person who sent it: "Robin has invited you to
+// join LifeFold". Replies go to the inviter, so a "what is this?" reaches a human.
 async function sendInviteMail(env, { to, code, message }) {
   // The name goes into a Subject header, so strip anything that could start a
   // header line of its own.
   const from = String((env.user && env.user.name) || 'Someone').replace(/[\r\n]+/g, ' ').trim().slice(0, 40) || 'Someone';
-  const subject = `${from} has invited you to join Lifebook`;
+  const subject = `${from} has invited you to join LifeFold`;
   const link = joinLink(code);
-  // A touch of the inviter's Lifebook card in the email (tagline + colour).
+  // A touch of the inviter's LifeFold card in the email (tagline + colour).
   let tagline = '', accent = '';
   try { const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'card_profile'").bind(env.uid).first(); if (row && row.value) { const c = JSON.parse(row.value) || {}; tagline = String(c.tagline || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 140); accent = c.accent || ''; } } catch {}
   const html = inviteEmail({ from, message, link, tagline, accent });
-  const text = `${from} has invited you to join Lifebook.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nLifebook is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
+  const text = `${from} has invited you to join LifeFold.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nLifeFold is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
   const replyTo = (env.user && env.user.email) || null;
 
   if (env.BRIEF_SMTP_PASS) {
     // Same sender as the morning brief: a real Purelymail mailbox, so SPF/DKIM
     // pass natively with no Resend domain to verify (see CLAUDE.md).
     const acct = {
-      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Lifebook',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'LifeFold',
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
