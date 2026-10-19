@@ -228,7 +228,7 @@ export async function giftsUsed(env) {
   return c ? (c.n || 0) : 0;
 }
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-export const joinLink = (code) => `https://daybook.fyi/join/${code}`;
+export const joinLink = (code) => `https://lifefold.co/join/${code}`;
 
 // Create an invite and, when it names an address, *send it*. The inviter types
 // their friend's email and a note and the invitation lands in their inbox with a

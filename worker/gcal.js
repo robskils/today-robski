@@ -12,7 +12,7 @@
 import { encryptSecret, decryptSecret } from './ai.js';
 import { signJWT, verifyJWT } from './auth.js';
 
-const REDIRECT_URI = 'https://daybook.fyi/api/gcal/callback';
+const REDIRECT_URI = 'https://lifefold.co/api/gcal/callback';
 const SCOPES = 'openid https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
 
 export const gcalAvailable = (env) => !!(env.GCAL_MEMBER_CLIENT_ID && env.GCAL_MEMBER_CLIENT_SECRET);

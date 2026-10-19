@@ -377,7 +377,7 @@ export function codeEmail(code, kind) {
              serif wordmark below already says LifeFold, so a blocked image
              should leave nothing behind rather than a second "LifeFold". -->
         <tr><td style="padding:34px 38px 0" align="center">
-          <img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <img src="https://lifefold.co/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>book</i></p>
         </td></tr>
 
@@ -411,7 +411,7 @@ export function codeEmail(code, kind) {
         <tr><td style="padding:16px 38px;border-top:1px solid #e4ddcf">
           <p style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#8b7f72;text-align:center">For a life well lived</p>
           <p style="margin:0;font-size:11px;color:#8b7f72;text-align:center">
-            <a href="https://daybook.fyi" style="color:#a8844a;text-decoration:none">daybook.fyi</a>
+            <a href="https://lifefold.co" style="color:#a8844a;text-decoration:none">daybook.fyi</a>
           </p>
         </td></tr>
 

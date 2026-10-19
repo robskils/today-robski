@@ -964,8 +964,8 @@ function renderGuideIndex() {
       <div class="guide-sec-h">Privacy &amp; terms</div>
       <p class="guide-start-p"><b>Your data belongs to you.</b> LifeFold is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your LifeFold is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
-        <a class="guide-legal-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
-        <a class="guide-legal-link" href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
+        <a class="guide-legal-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
+        <a class="guide-legal-link" href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
       </div>
       <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} LifeFold · daybook.fyi</p>
@@ -1695,7 +1695,7 @@ function cardHtml(d, full) {
   const accent = d.accent || '#c4412e';
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
-  const qr = d.subdomain ? qrSvg('https://daybook.fyi/u/' + d.subdomain, 74) : '';
+  const qr = d.subdomain ? qrSvg('https://lifefold.co/u/' + d.subdomain, 74) : '';
   return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
     <div class="dbc-band"></div>
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
@@ -1839,7 +1839,7 @@ function cardEditorHtml() {
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
         ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on LifeFold</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://lifebook.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
+          <div class="dbc-qrwrap">${qrSvg('https://lifefold.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
@@ -1974,7 +1974,7 @@ async function closeMyAccount() {
     await api('/api/account/close', { method: 'POST' });
     try { localStorage.clear(); } catch {}
     toast('Your account has been closed.');
-    setTimeout(() => { location.href = 'https://daybook.fyi'; }, 900);
+    setTimeout(() => { location.href = 'https://lifefold.co'; }, 900);
   } catch (e) { toast(e.message); }
 }
 async function clearAiKey(provider) {
@@ -2978,7 +2978,7 @@ function renderSettings() {
           <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by LifeFold</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
-        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://daybook.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
+        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
         <div class="set-sec-title" style="margin-top:8px">Your AI</div>
         <div class="set-row-s">Bring your own keys, or let us run it for you - set up in <button class="linkish" data-set-tab="ai">Plan</button>.</div>
         <div class="yd-ai-links">
@@ -3902,7 +3902,7 @@ function renderNav() {
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
         ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of LifeFold on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://daybook.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://daybook.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} LifeFold</span></div>
+        <div class="nav-legal"><a href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} LifeFold</span></div>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
@@ -10206,7 +10206,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://daybook.fyi/email-mark.png' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
@@ -20251,7 +20251,7 @@ document.addEventListener('click', (e) => {
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
-  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://daybook.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://lifefold.co/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   { const cv = t.closest('[data-copy-val]'); if (cv) { const v = cv.dataset.copyVal || ''; try { navigator.clipboard.writeText(v); toast('Copied'); } catch { toast(v); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -23408,7 +23408,7 @@ let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
 // in to Robin's LifeFold, so the wordmark drops the owner's name and reads just
 // "LifeFold". On a tenant subdomain it stays whose it is.
-const onApex = () => /^(www\.)?(daybook|lifebook)\.fyi$/.test(location.hostname);
+const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
@@ -23864,9 +23864,10 @@ function showRequired2fa() {
   // carrying the token in the fragment (consumed just below) so existing bookmarks
   // and home-screen installs migrate without a re-login. (Robin, 2026-10-15.)
   try {
-    if (location.hostname.endsWith('.daybook.fyi') && location.hostname !== 'www.daybook.fyi') {
+    const _h = location.hostname;
+    if (_h !== 'lifefold.co' && _h !== 'www.lifefold.co' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
       const tk = token();
-      location.replace('https://lifebook.fyi/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
+      location.replace('https://lifefold.co/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
       return;
     }
   } catch {}

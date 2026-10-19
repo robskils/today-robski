@@ -645,7 +645,7 @@ function isPublicHttpUrl(u) {
 async function fetchEventPage(url) {
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 9000);
   try {
-    const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; LifeFoldBot/1.0; +https://daybook.fyi)', accept: 'text/html,application/xhtml+xml' } });
+    const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; LifeFoldBot/1.0; +https://lifefold.co)', accept: 'text/html,application/xhtml+xml' } });
     if (!res.ok) throw new Error(`fetch ${res.status}`);
     const ct = res.headers.get('content-type') || '';
     if (!/html|xml|json|text/.test(ct)) throw new Error('not a page');
@@ -2571,7 +2571,7 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
     <tr><td align="center" style="padding:0 12px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
         <tr><td align="center" style="padding:40px 34px 0">
-          <a href="${home}" style="text-decoration:none"><img src="https://lifebook.fyi/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          <a href="${home}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           ${eyebrow ? `<p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">${escHtml(eyebrow)}</p>` : ''}
           <p style="margin:14px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${escHtml(headline)}</p>
         </td></tr>
@@ -4227,14 +4227,11 @@ export default {
       // daybook.fyi during the move. Per-user subdomains (<sub>.daybook.fyi) keep
       // serving for now - the sign-in token is per-origin, so redirecting them would
       // sign everyone out; that's a later, deliberate cutover. (2026-10-15.)
-      if (host === 'daybook.fyi' || host === 'www.daybook.fyi') {
-        return Response.redirect('https://lifebook.fyi' + url.pathname + url.search, 301);
-      }
       // Both daybook.fyi (original) and lifebook.fyi (the rebrand) are app domains
       // during the transition: each apex (+ www) is the public marketing site and
       // each per-user subdomain is the app. Auth is the JWT, not the host, so the
       // app itself is host-agnostic - this is the only place the apex is named.
-      const APP_DOMAINS = ['daybook.fyi', 'lifebook.fyi'];
+      const APP_DOMAINS = ['daybook.fyi', 'lifebook.fyi', 'lifefold.co'];
       const isApex = APP_DOMAINS.includes(host) || APP_DOMAINS.some((d) => host === 'www.' + d);
       const isLife = APP_DOMAINS.some((d) => host.endsWith('.' + d)) && !isApex;
       // Public marketing pages in English, and their localised counterparts
@@ -4287,11 +4284,20 @@ export default {
       if (/^\/u\/[A-Za-z0-9-]{1,30}$/.test(path)) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }
+      // The rebrand's home is lifefold.co. App routes above already served (the
+      // client then hands the session over to lifefold.co, token in the fragment), so
+      // here we 301 everything else on the old apex/www hosts - marketing, robots,
+      // sitemap - to lifefold.co, path preserved. /api + /auth are excluded above, and
+      // the legacy per-user subdomains keep serving the app for their own client
+      // hand-off. lifefold.co itself is never matched. (Robin, 2026-10-19.)
+      if (['daybook.fyi', 'lifebook.fyi'].some((d) => host === d || host === 'www.' + d)) {
+        return Response.redirect('https://lifefold.co' + url.pathname + url.search, 301);
+      }
       // Only the marketing apex may be indexed; the private apps and per-user
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
         const body = isApex
-          ? '# Search-engine indexing of our public pages is welcome. Automated scraping,\n# crawling or bulk extraction of LifeFold, its data, content or code is prohibited,\n# as is any automated access beyond normal indexing. See https://daybook.fyi/terms\nUser-agent: *\nDisallow: /api/\nAllow: /\nSitemap: https://daybook.fyi/sitemap.xml\n'
+          ? '# Search-engine indexing of our public pages is welcome. Automated scraping,\n# crawling or bulk extraction of LifeFold, its data, content or code is prohibited,\n# as is any automated access beyond normal indexing. See https://lifefold.co/terms\nUser-agent: *\nDisallow: /api/\nAllow: /\nSitemap: https://lifefold.co/sitemap.xml\n'
           : 'User-agent: *\nDisallow: /\n';
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
@@ -4300,7 +4306,7 @@ export default {
         const lastmod = new Date().toISOString().slice(0, 10);
         const pri = (p) => (p === '/' ? '1.0' : /^\/(pt|fr|es)$/.test(p) ? '0.9' : /\/(blog|jornal|journal|diario)$/.test(p) ? '0.7' : '0.6');
         const freq = (p) => (/\/(blog|jornal|journal|diario)$/.test(p) || p === '/' ? 'weekly' : 'monthly');
-        const urls = all.map((p) => `<url><loc>https://daybook.fyi${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq(p)}</changefreq><priority>${pri(p)}</priority></url>`).join('\n');
+        const urls = all.map((p) => `<url><loc>https://lifefold.co${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq(p)}</changefreq><priority>${pri(p)}</priority></url>`).join('\n');
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }

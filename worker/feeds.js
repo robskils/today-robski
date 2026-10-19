@@ -390,7 +390,7 @@ async function fetchAgendaLx(u) {
   for (let page = 1; page <= 5; page++) {
     base.searchParams.set('page', String(page));
     try {
-      const r = await fetch(base.toString(), { headers: { 'User-Agent': 'LifeFold/1.0 (+https://daybook.fyi)', accept: 'application/json' }, cf: { cacheTtl: 600 } });
+      const r = await fetch(base.toString(), { headers: { 'User-Agent': 'LifeFold/1.0 (+https://lifefold.co)', accept: 'application/json' }, cf: { cacheTtl: 600 } });
       if (!r.ok) break;
       const j = await r.json().catch(() => null);
       const arr = Array.isArray(j) ? j : ((j && j.events) || []);
@@ -412,7 +412,7 @@ export async function fetchSourceEvents(url) {
   let host = ''; try { host = new URL(u).hostname.replace(/^www\./, ''); } catch {}
   if (host === 'agendalx.pt') return fetchAgendaLx(u);
   try {
-    const r = await fetch(u, { headers: { 'User-Agent': 'LifeFold/1.0 (+https://daybook.fyi)', accept: 'text/calendar, text/html, application/xhtml+xml, */*' }, redirect: 'follow', cf: { cacheTtl: 300 } });
+    const r = await fetch(u, { headers: { 'User-Agent': 'LifeFold/1.0 (+https://lifefold.co)', accept: 'text/calendar, text/html, application/xhtml+xml, */*' }, redirect: 'follow', cf: { cacheTtl: 300 } });
     if (!r.ok) return { ok: false, error: `The link returned ${r.status}.` };
     let body = await r.text(); if (body.length > 3000000) body = body.slice(0, 3000000);
     const head = body.slice(0, 800).toUpperCase();
@@ -442,7 +442,7 @@ export async function lookupPlace({ q, lat, lng }) {
       u = new URL('https://nominatim.openstreetmap.org/reverse');
       u.searchParams.set('lat', String(+lat)); u.searchParams.set('lon', String(+lng)); u.searchParams.set('format', 'json'); u.searchParams.set('addressdetails', '1'); u.searchParams.set('zoom', '10');
     } else return null;
-    const r = await fetch(u.toString(), { headers: { 'User-Agent': 'LifeFold/1.0 (+https://daybook.fyi)' } });
+    const r = await fetch(u.toString(), { headers: { 'User-Agent': 'LifeFold/1.0 (+https://lifefold.co)' } });
     if (!r.ok) return null;
     const j = await r.json().catch(() => null);
     const row = Array.isArray(j) ? j[0] : j;

@@ -52,6 +52,16 @@ zone_name = "lifebook.fyi"
 pattern = "*.lifebook.fyi/*"
 zone_name = "lifebook.fyi"
 
+# lifefold.co: new primary brand domain. custom_domain (not a zone route) because
+# the zone is fresh - wrangler provisions the proxied DNS record + cert on deploy.
+[[routes]]
+pattern = "lifefold.co"
+custom_domain = true
+
+[[routes]]
+pattern = "www.lifefold.co"
+custom_domain = true
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
