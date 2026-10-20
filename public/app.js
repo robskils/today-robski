@@ -20,7 +20,7 @@ const isManagedPlan = (p) => normPlan(p) === 'managed';
 // The LifeFold mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
 // name and "LifeFold" in the wordmark.
-const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="2.5"/><text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="Fraunces,Georgia,serif" font-weight="600" font-size="40" fill="currentColor">LF</text></svg>';
+const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -3770,12 +3770,25 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'contacts', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
   try { saved = JSON.parse(localStorage.getItem('life.nav.morder') || '[]'); } catch {}
   saved = Array.isArray(saved) ? saved.filter((k) => MNAV_DEFAULT.includes(k)) : [];
+  // One-time (2026-10-20): lift Contacts to directly under Tasks for anyone who
+  // already had a saved drawer order, so it matches the new default above. Guarded
+  // by a flag so it runs once and never fights a later manual reorder. (Robin.)
+  try {
+    if (!localStorage.getItem('life.nav.contactsUnderTasks')) {
+      if (saved.length && saved.includes('contacts') && saved.includes('tasks')) {
+        saved = saved.filter((k) => k !== 'contacts');
+        saved.splice(saved.indexOf('tasks') + 1, 0, 'contacts');
+        localStorage.setItem('life.nav.morder', JSON.stringify(saved));
+      }
+      localStorage.setItem('life.nav.contactsUnderTasks', '1');
+    }
+  } catch {}
   // Slot any default item missing from a saved order into its NATURAL place (just
   // after the previous default item that's present), rather than dumping newer
   // tools at the very bottom - so e.g. Contacts sits right under Pages.
@@ -3868,6 +3881,20 @@ function navPeopleRows() {
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
   }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on LifeFold</button>');
 }
+// The same LifeFold Contacts list, for the MOBILE drawer. On a wide screen it
+// lives in the grid's People box, but that box is hidden on mobile, so without
+// this the live contacts never showed on a phone. Mobile-only via .nav-mpeople;
+// shares the collapsed state and rows with the desktop box. (Robin, 2026-10-20.)
+function navPeopleMobileHtml() {
+  if (!(modOn('contacts') && peopleOn())) return '';
+  if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
+  const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
+  const open = navPeopleOpen();
+  return `<div class="nav-mpeople">
+    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+    ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
+  </div>`;
+}
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
@@ -3890,8 +3917,9 @@ function renderNav() {
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
       <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
-      ${navMobileListHtml(v)}
       ${navTopSecs(v)}
+      ${navMobileListHtml(v)}
+      ${navPeopleMobileHtml(v)}
       ${navGridHtml(v)}
       <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ['people', 'favs', 'notes', 'areas'].includes(k) ? '' : navSection(k, v)).join('')}</div>
       <div class="nav-bottom">
@@ -8084,6 +8112,15 @@ async function openArea(id) {
   // Latest Updates wall: a cross-member activity feed for this lifespace (async).
   api(`/api/area/${id}/updates`).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.updates = r || { updates: [] }; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
 }
+// Re-render the Life Space after a search keystroke, keeping the cursor in the
+// search box (renderArea rebuilds the whole pane, which would otherwise blur it).
+function renderAreaKeepQ() {
+  const a = document.activeElement;
+  const wasQ = !!(a && a.matches && a.matches('[data-area-q]'));
+  const pos = wasQ ? a.selectionStart : 0;
+  renderArea();
+  if (wasQ) { const el = document.querySelector('[data-area-q]'); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch {} } }
+}
 // Contacts associated with a page - the people tied to it (a vet, a landlord,
 // a coach). It's just the ordinary contact→area link (props.areas), so no sharing or
 // access is implied; adding here files the contact under this area, and it shows on
@@ -8219,7 +8256,7 @@ const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') ===
 // remembered per section label across areas).
 // Sections that start collapsed on a life-area overview (Vision is a quiet
 // backdrop, not the first thing you want to scroll past every visit).
-const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision']);
+const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Notepad', 'Latest updates', 'Who has access']);
 // Stored explicitly (1 = collapsed, 0 = open) once you've toggled it; before
 // that, the per-key default decides. Old entries (presence = collapsed) still read.
 const areaSecOpen = (k) => {
@@ -8576,7 +8613,34 @@ function renderArea() {
     ? taskKanbanHtml(areaBoardList)
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>${secMore('Pages and tables', noteTblOrdered.length)}` : '<div class="home-empty">No notes or tables here yet.</div>';
-  const pagesBody = pagesCount ? `<div class="tbl-cards noteord-cards">${pageCards}</div>` : '<div class="home-empty">No pages here yet.</div>';
+  // Notes list: sortable (default most-recently used), an optional starred-only
+  // filter, a comfortable cap with "Show all", and live search from the Life Space
+  // box, so a long list stays scannable. (Robin, 2026-10-19/20.)
+  const PG_CAP = 12;
+  const pgQuery = ((state.area_open && state.area_open.q) || '').trim().toLowerCase();
+  const pgAll = !!(state.area_open && state.area_open.pagesAll);
+  const pgSort = (state.area_open && state.area_open.noteSort) || 'recent';
+  const pgStarOnly = !!(state.area_open && state.area_open.noteStarOnly);
+  const pgUpd = (n) => n.updated_at || n.created_at || '';
+  const pgAllItems = noteTblOrdered.filter((n) => n.kind !== 'table');
+  const pgItems = (pgStarOnly ? pgAllItems.filter(isFav) : pgAllItems.slice());
+  pgItems.sort(
+    pgSort === 'alpha' ? (a, b) => (a.title || '').localeCompare(b.title || '')
+      : pgSort === 'starred' ? (a, b) => ((isFav(b) ? 1 : 0) - (isFav(a) ? 1 : 0)) || String(pgUpd(b)).localeCompare(String(pgUpd(a)))
+        : (a, b) => String(pgUpd(b)).localeCompare(String(pgUpd(a))));
+  const pgMatches = pgQuery ? pgItems.filter((n) => (n.title || '').toLowerCase().includes(pgQuery)) : pgItems;
+  const pgShown = (pgQuery || pgAll) ? pgMatches : pgMatches.slice(0, PG_CAP);
+  const pgMore = (!pgQuery && pgMatches.length > PG_CAP)
+    ? `<button class="area-seemore" data-area-pages-all>${pgAll ? '− Show fewer' : `Show all ${pgMatches.length} notes →`}</button>`
+    : '';
+  const pgControls = pgAllItems.length > 1
+    ? `<div class="pg-controls"><select class="sel pg-sort" data-note-sort><option value="recent" ${pgSort === 'recent' ? 'selected' : ''}>Most recent</option><option value="starred" ${pgSort === 'starred' ? 'selected' : ''}>Starred first</option><option value="alpha" ${pgSort === 'alpha' ? 'selected' : ''}>A–Z</option></select><button class="pg-starfilter ${pgStarOnly ? 'on' : ''}" data-note-staronly>★ Starred only</button></div>`
+    : '';
+  const pagesBody = pgAllItems.length
+    ? (pgMatches.length
+        ? `${pgControls}<div class="tbl-cards noteord-cards">${pgShown.map(ntCard).join('')}</div>${pgMore}`
+        : `${pgControls}<div class="home-empty">${pgStarOnly ? 'No starred notes here yet.' : `No notes here match “${esc(((state.area_open && state.area_open.q) || '').trim())}”.`}</div>`)
+    : '<div class="home-empty">No pages here yet.</div>';
   const tablesBody = tables.length ? `<div class="tbl-cards noteord-cards">${tableCards}</div>` : '<div class="home-empty">No tables here yet.</div>';
   // Everything below Vision & Goals and the stats strip is now one grid of square
   // cards (the SAME tiles as settings): one card per activated tool/section, and
@@ -8599,7 +8663,10 @@ function renderArea() {
   // Bucket list) drops out entirely - no tab button and no panel. (Robin.)
   const TABS = ['Vision', 'Goals', ...((wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
   let openTile = state.area_open.tileOpen;
-  if (!openTile || !TABS.includes(openTile)) openTile = TABS[0] || null;
+  // Default: all tabs closed - nothing is forced open. A stale value not in TABS
+  // also resolves to closed. Click a tab to open it; click the open one to close
+  // it, so Vision/Goals/Wheel/Bucket can all be shut at once. (Robin, 2026-10-19.)
+  if (openTile && !TABS.includes(openTile)) openTile = null;
   const tabBar = TABS.length ? `<div class="area-tiles area-tabs" style="--cols:${TABS.length};--h:${h}">${TABS.map((k) => `<button class="area-tile ${openTile === k ? 'on' : ''}" data-area-tile="${esc(k)}"><span class="at-ic">${TILE_META[k]}</span><span class="at-l">${esc(k)}</span>${counts[k] != null ? `<span class="at-c">${counts[k]}</span>` : ''}</button>`).join('')}</div>` : '';
   const topCard = (openTile && tops[openTile]) ? `<div class="area-card area-top-card">${tops[openTile]}</div>` : '';
   const tabsKicker = TABS.length ? `<div class="area-recent-h area-tabs-kick">Vision &amp; Goals</div>` : '';
@@ -8624,7 +8691,7 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  const areaVisionGoals = `${tabsKicker}<div class="area-tabs-row">${tabBar}${areaAddBtn ? `<div class="area-tabs-add">${areaAddBtn}</div>` : ''}</div><div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>`;
+  const areaVisionGoals = `${tabsKicker}<div class="area-tabs-row">${tabBar}${areaAddBtn ? `<div class="area-tabs-add">${areaAddBtn}</div>` : ''}</div>${(topKick || topCard) ? `<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>` : ''}`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -8754,7 +8821,7 @@ function renderArea() {
   // always need it. (Robin, 2026-10-14.)
   const accessCount = area.sharedBy ? (2 + memberCount) : (memberCount ? memberCount + 1 : null);
   const accessCard = secHidden('Shared with') ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Life Space Access', accessCount, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
-  const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad"><div class="home-sec-h area-sec-h area-notepad-h"><span class="ash-ic">📝</span><span class="ash-l">Notepad</span></div><div class="area-notepad-body">${areaWallBody(area)}</div></section>`;
+  const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad">${areaSecH('Notepad', 'Notepad', null, '📝')}${areaSecOpen('Notepad') ? `<div class="area-notepad-body">${areaWallBody(area)}</div>` : ''}</section>`;
   const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
   // Latest Updates: a Facebook-style wall of what everyone with access has done in
   // this lifespace, newest first. Life Spaces are made for sharing, so it names the person
@@ -8773,8 +8840,8 @@ function renderArea() {
     return `<div class="upd-row${clk ? ' upd-click' : ''}"${clk ? ` data-fav-open="${e.kind}:${e.id}" role="button" tabindex="0"` : ''}><span class="upd-ic">${UPD_IC[e.kind] || '•'}</span><span class="upd-b"><span class="upd-t"><b>${who}</b> ${e.verb} ${thing}${e.title ? ` · <span class="upd-ttl">${esc(e.title)}</span>` : ''}</span>${ts ? `<span class="upd-when">${timeAgo(ts)}</span>` : ''}</span></div>`;
   };
   // Show the 8 most recent, with a "See all" to expand to the rest. (Robin.)
-  const updShown = state.area_open.updAll ? updList : updList.slice(0, 8);
-  const updMore = updList.length > 8 ? `<button class="area-seemore" data-upd-all>${state.area_open.updAll ? '− Show fewer' : `See all ${updList.length} →`}</button>` : '';
+  const updShown = state.area_open.updAll ? updList : updList.slice(0, 6);
+  const updMore = updList.length > 6 ? `<button class="area-seemore" data-upd-all>${state.area_open.updAll ? '− Show fewer' : `See all ${updList.length} →`}</button>` : '';
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   $('#pane').innerHTML = `
@@ -8791,7 +8858,7 @@ function renderArea() {
         <div class="am-kicker">Life Space</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        ${areaSentimentHtml(area)}
+        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaSentimentHtml(area)}</div>
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -13278,7 +13345,7 @@ function renderMail(loading) {
     // Forward beneath it. Transform is a dropdown to turn the email into a task or a
     // note. Both are native <details> so they need no extra state.
     const replyDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Reply">${MAIL_ICO.replyAll}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-reply-all>${MAIL_ICO.replyAll}<span>Reply to all</span></button><button class="mail-dd-item" data-mail-reply>${MAIL_ICO.reply}<span>Reply to sender</span></button><button class="mail-dd-item" data-mail-forward>${MAIL_ICO.forward}<span>Forward</span></button></div></details>`;
-    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Make a task</span></button><button class="mail-dd-item" data-mail-event>${MAIL_ICO.calendar}<span>Make an event</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Make a note</span></button></div></details>`;
+    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-event>${MAIL_ICO.calendar}<span>Add as event</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Add as note</span></button><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Add as task</span></button></div></details>`;
     // File into a priority bucket - the old second row, now one dropdown. Shows a
     // tick on the current bucket, and "Back to Inbox" once it's been filed.
     const curQuad = mailQuadOf(o);
@@ -13973,6 +14040,7 @@ function renderTasks() {
       </div>
       <label class="atf-hide"><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until it surfaces<small>Set a "Surface on" date above, and it stays out of the way until then.</small></span></label>
       <label class="atf atf-full"><span>${t('field.notes')}</span><textarea id="task-notes" class="sel" rows="3" placeholder="${t('task.notesph')}" autocomplete="off"></textarea></label>
+      ${connectAddSectionHtml()}
       <div class="atf-actions">
         <button class="add-btn wide" type="submit">${t('task.addtask')}</button>
         <button type="button" class="ghost" data-task-add-close>${t('task.done')}</button>
@@ -16447,6 +16515,7 @@ function renderGoalCard() {
       ${connectedNotesHtml()}
       ${connectedContactsHtml()}
       ${externalLinksHtml('goal', g)}
+      ${connectionsSection('goal', g)}
     </div>` : ''}
     </section>
     ${notesSection(g.body, 'goal', g.id, false, t('goal.noteswall'))}`;
@@ -18507,7 +18576,7 @@ function connectedEventsHtml(n) {
   const links = noteEventLinks(n);
   if (state.noteEvents === undefined) loadNoteEvents();
   const cards = links.map((ev) => `<div class="ce-card"><button class="ce-open" data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(ev.title || 'Event')}</span>${ev.date ? `<span class="ce-d">${esc(evShortDate(ev.date))}</span>` : ''}</button><button class="ce-x" data-note-unlink-event="${esc(evBaseId(ev))}" title="Disconnect">×</button></div>`).join('');
-  return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Events${links.length ? ` · ${links.length}` : ''}</summary>
+  return `<details class="note-events nside-card" data-nside="events" ${noteCardOpen('events', links.length > 0) ? 'open' : ''}><summary class="sub-h">Linked Events${links.length ? ` · ${links.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No events linked yet.</div>'}</div>
     ${noteEventConnectPickerHtml()}</details>`;
 }
@@ -18637,7 +18706,7 @@ function eventUnlinkNote(noteId) {
 function noteTasksHtml(noteId) {
   const all = state.allTasks || [];
   const linked = all.filter((t) => t.props && t.props.note === noteId && !t.props.done);
-  return `<details class="note-tasks nside-card" data-nside="tasks" ${noteCardOpen('tasks', linked.length > 0) ? 'open' : ''}><summary class="sub-h">Tasks${linked.length ? ` · ${linked.length}` : ''}</summary>
+  return `<details class="note-tasks nside-card" data-nside="tasks" ${noteCardOpen('tasks', linked.length > 0) ? 'open' : ''}><summary class="sub-h">Linked Tasks${linked.length ? ` · ${linked.length}` : ''}</summary>
     <div class="nt-linked">${linked.map((t) => `<div class="nt-row"><span class="nt-dot"></span><span class="ga-t" data-open-task="${t.id}">${esc(t.title || 'Untitled')}</span><button class="ghost nt-unlink" data-note-task-unlink="${t.id}" title="Unlink">×</button></div>`).join('') || '<div class="home-empty" style="padding:6px 0 2px">No tasks linked yet.</div>'}</div>
     ${noteTaskConnectPickerHtml()}
     <button class="ghost nt-new" data-note-new-task>+ New task for this note</button></details>`;
@@ -18686,7 +18755,7 @@ function noteContactsHtml(n) {
   const ids = blockContactIds(n);
   const linked = ids.map((id) => findContact(id)).filter(Boolean);
   const cards = linked.map((c) => `<div class="ce-card"><button class="ce-open" data-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button class="ce-x" data-note-unlink-contact="${c.id}" title="Disconnect">×</button></div>`).join('');
-  return `<details class="note-contacts nside-card" data-nside="contacts" ${noteCardOpen('contacts', ids.length > 0) ? 'open' : ''}><summary class="sub-h">Contacts${ids.length ? ` · ${ids.length}` : ''}</summary>
+  return `<details class="note-contacts nside-card" data-nside="contacts" ${noteCardOpen('contacts', ids.length > 0) ? 'open' : ''}><summary class="sub-h">Linked Contacts${ids.length ? ` · ${ids.length}` : ''}</summary>
     <div class="ce-linked">${cards || '<div class="home-empty" style="padding:6px 0 2px">No contacts linked yet.</div>'}</div>
     ${noteContactConnectPickerHtml()}</details>`;
 }
@@ -18923,9 +18992,8 @@ function renderNote() {
     <div class="note-cq"><div class="note-layout">
       <div class="note-main">
         ${sharedBanner(n)}
-        <div class="note-areas-row">${noteAreasControl(n)}</div>
+        <div class="note-areas-row note-areas-row-split">${noteAreasControl(n)}<div class="note-areas-aliases">${noteAliasesControl(n)}</div></div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
-        ${noteAliasesControl(n)}
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
@@ -18938,7 +19006,7 @@ function renderNote() {
           // their add controls) sink below. Stable within each group so the order
           // is predictable. (Robin: a connected card must be top + open, not left
           // stranded at the bottom.)
-          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Notes${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>`;
+          const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Linked Notes${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>`;
           const secs = [
             { has: connected.length > 0, html: subHtml },
             { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
@@ -19751,6 +19819,8 @@ document.addEventListener('input', (e) => {
   if (ed) applyProseIndent(ed);
 });
 document.addEventListener('input', (e) => {
+  if (e.target && e.target.matches && e.target.matches('[data-area-q]')) { if (state.area_open) { state.area_open.q = e.target.value; if ((e.target.value || '').trim()) state.area_open.toolTile = 'pages'; renderAreaKeepQ(); } return; }
+  if (e.target && e.target.matches && e.target.matches('[data-conn-q]')) { connSearch(e.target.value); return; }
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
   if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
   // Goal progress slider: paint the fill + % live as you drag, save when you settle.
@@ -20615,8 +20685,8 @@ document.addEventListener('click', (e) => {
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
   { const tv = t.closest('[data-tasks-view]'); if (tv) { setTasksBoard(tv.dataset.tasksView === 'board'); renderTasks(); return; } }
   { const av = t.closest('[data-area-view]'); if (av) { setAreaBoard(av.dataset.areaView === 'board'); renderArea(); return; } }
-  if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
-  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; renderTasks(); return; }
+  if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAddConns = []; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
+  if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; state.taskAddConns = []; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
@@ -20645,11 +20715,16 @@ document.addEventListener('click', (e) => {
   { const ag = t.closest('[data-area-goto]'); if (ag) { areaGoto(ag.dataset.areaGoto); return; } }
   { const sa = t.closest('[data-area-secall]'); if (sa) { const k = sa.dataset.areaSecall; const s = (state.area_open && state.area_open.secAll instanceof Set) ? state.area_open.secAll : null; if (s) { if (s.has(k)) s.delete(k); else s.add(k); renderArea(); } return; } }
   { const asec = t.closest('[data-area-sec]'); if (asec) { areaSecToggle(asec.dataset.areaSec); return; } }
-  { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { state.area_open.tileOpen = at.dataset.areaTile; try { localStorage.setItem('life.area.tileOpen', at.dataset.areaTile); } catch {} renderArea(); return; } }
+  { const at = t.closest('[data-area-tile]'); if (at && state.area_open) { const k = at.dataset.areaTile; const nx = (state.area_open.tileOpen === k) ? null : k; state.area_open.tileOpen = nx; try { localStorage.setItem('life.area.tileOpen', nx || ''); } catch {} renderArea(); return; } }
   // Calendar card: page the 7-day window back/forward (or jump to Today). Lives in
   // the open panel, outside any tile, so it's handled before the tile toggle.
   { const wn = t.closest('[data-area-week-nav]'); if (wn && state.area_open) { const d = wn.dataset.areaWeekNav; const cur = state.area_open.weekOffset || 0; state.area_open.weekOffset = d === 'today' ? 0 : d === 'next' ? cur + 1 : cur - 1; state.area_open.week = null; renderArea(); return; } }
   if (t.closest('[data-upd-all]')) { if (state.area_open) { state.area_open.updAll = !state.area_open.updAll; renderArea(); } return; }
+  if (t.closest('[data-area-pages-all]')) { if (state.area_open) { state.area_open.pagesAll = !state.area_open.pagesAll; renderArea(); } return; }
+  if (t.closest('[data-note-staronly]')) { if (state.area_open) { state.area_open.noteStarOnly = !state.area_open.noteStarOnly; renderArea(); } return; }
+  { const cp = t.closest('[data-conn-pick]'); if (cp) { connPickChoose(cp.dataset.connPick, cp.dataset.connKind, cp.dataset.connTitle); return; } }
+  { const cu = t.closest('[data-conn-unlink]'); if (cu) { connUnlinkOne(cu.dataset.connUnlink); return; } }
+  { const co = t.closest('[data-conn-open]'); if (co) { connOpen(co.dataset.connOpen, co.dataset.connKind); return; } }
   // A lifespace tool card: open its content panel (one open at a time). Buttons inside
   // the panel live outside any [data-area-tool], so they fall through to their own
   // handlers below. (Robin, 2026-10-11: tools are square cards that expand.)
@@ -21034,6 +21109,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-task-kanban]')) setTaskKanban(e.target.dataset.taskKanban, e.target.value);
   if (e.target.matches('[data-refl-save]')) { const v = e.target.value; e.target.value = ''; if (v) saveReadingToLedger(e.target.dataset.reflSave, v); }
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
+  if (e.target.matches('[data-note-sort]')) { if (state.area_open) { state.area_open.noteSort = e.target.value; renderArea(); } return; }
   if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
   if (e.target.id === 'taskcard-due' && state.task_open) patchTaskProps(state.task_open.task.id, { due: e.target.value || null });
   if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
@@ -21189,7 +21265,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '' }); state.taskDraft = null; } }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() }); state.taskDraft = null; } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
@@ -22049,21 +22125,34 @@ async function addTask(o) {
   if (o.snooze && o.hideUntil) props.hideUntil = true;   // hide from lists until it surfaces
   if (o.repeat) props.repeat = o.repeat;
   if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
+  // Connections picked on the add form (denormalised {id,kind,title}). If no Life
+  // Space was chosen, adopt the one of the first connected item that has an area -
+  // a quiet "file it where it belongs" touch. (Robin, 2026-10-19.)
+  const conns = Array.isArray(o.connections) ? o.connections : [];
+  if (conns.length) props.connections = conns.map((c) => ({ id: c.id, kind: c.kind, title: c.title }));
+  if (!props.area && conns.length) {
+    for (const c of conns) {
+      let src = findBlock(c.id);
+      if (!src) { try { src = await api(`/api/blocks/${c.id}`); } catch {} }
+      const ar = src ? blockAreas(src)[0] : null;
+      if (ar) { props.area = ar; break; }
+    }
+  }
+  if (props.area) props.areas = [props.area];
   // Free-form notes typed on the add form become the task's prose body, so they
   // show straight away in the card's Notes section.
   const body = textToProse(o.notes);
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: o.title, props, ...(body ? { body } : {}) }) });
   state.tasks.push(b);
-  // On a phone, adding one task closes the form and drops you back on the Tasks
-  // list (as if you'd tapped Done) - you rarely batch-add on mobile and the open
-  // form plus keyboard just gets in the way. Desktop keeps the form open so you
-  // can add several in a row. (Robin.)
-  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) {
-    state.taskAdding = false; state.taskAddArea = null;
-    try { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); } catch {}
-  }
+  // Two-way: give each connected item this new task back, so it shows on both.
+  for (const c of conns) { await connAddReverse(c.id, { id: b.id, kind: 'task', title: b.title || o.title || 'Untitled' }); }
+  state.taskAddConns = [];
+  // Adding one task closes the add-task form and drops you back on the list, as if
+  // you'd tapped Done - on desktop as well as phone. Desktop used to keep the form
+  // open for batch entry, but Robin preferred it disappear after each add. (2026-10-19.)
+  state.taskAdding = false; state.taskAddArea = null;
+  try { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); } catch {}
   renderTasks();
-  if (state.taskAdding) { const i = $('#task-title'); if (i) i.focus(); }
 }
 // A task can be held in more than one place at once - the Tasks list, an open
 // area page, the task focus view, the favourites - each a separate object.
@@ -22432,6 +22521,7 @@ function renderTaskCard() {
       ${taskGoalsHtml(t)}
       ${connectedContactsSection('task', t)}
       ${externalLinksHtml('task', t)}
+      ${connectionsSection('task', t)}
     </div>
     ${taskEmailHtml(t)}
     ${attachSection(t)}`;
@@ -22454,6 +22544,142 @@ function notesSection(body, key, id, readOnly, title) {
   return `<section class="focus-notes ${open ? '' : 'folded'}"><button type="button" class="fn-h tfs-fold" data-tf-fold="notes"><span>${esc(title || 'Notes')}</span><span class="tfs-chev">${open ? '▾' : '▸'}</span></button>${open ? `${proseEditor(body, key, id, readOnly)}` : ''}</section>`;
 }
 
+// ── connections: link any item to any other (note/table/contact/event/goal/link) ──
+// A reusable, kind-generic "Connected" section. Each item carries props.connections:
+// an array of { id, kind, title } denormalised so a chip renders without a lookup.
+// Links are two-way (the other item gets this one back), so a connection shows on
+// both. One /api/search-backed picker serves the add-task form and the task/goal
+// cards alike. (Robin, 2026-10-19.)
+const CONN_ICO = { note: '▤', table: '▦', contact: '👤', event: '◑', goal: '🎯', bookmark: '🔖', task: '✓' };
+const CONN_KINDS = ['note', 'table', 'contact', 'event', 'goal', 'bookmark'];
+const CONN_KIND_LABEL = { note: 'Note', table: 'Table', contact: 'Contact', event: 'Event', goal: 'Goal', bookmark: 'Link', task: 'Task' };
+// Where the picker's picks go: the open add-task form (held in a draft list), or a
+// live task/goal card (written straight through, both sides).
+function connCtx() {
+  const v = state.view || {};
+  if (v.type === 'tasks' && state.taskAdding) return { mode: 'draft' };
+  if (v.type === 'taskcard' && state.task_open) return { mode: 'live', kind: 'task', block: state.task_open.task };
+  if (v.type === 'goalcard' && state.goal_open) return { mode: 'live', kind: 'goal', block: state.goal_open.goal };
+  return null;
+}
+function connOf(block) { return Array.isArray(block && block.props && block.props.connections) ? block.props.connections : []; }
+function connCurrentIds(ctx) {
+  if (!ctx) return [];
+  return (ctx.mode === 'draft' ? (state.taskAddConns || []) : connOf(ctx.block)).map((c) => c.id);
+}
+// A connected-item chip: opens on click (reusing the existing open handlers where
+// they exist; events open the calendar, links open Read & Watch) + an unlink ×.
+function connOpenAttr(c) {
+  const a = { note: 'data-open-note', table: 'data-open-table', contact: 'data-open-contact', goal: 'data-open-goal', task: 'data-open-task' }[c.kind];
+  return a ? `${a}="${esc(c.id)}"` : `data-conn-open="${esc(c.id)}" data-conn-kind="${esc(c.kind)}"`;
+}
+function connChip(c) {
+  return `<div class="ce-card conn-chip"><button class="ce-open" ${connOpenAttr(c)} title="${esc(CONN_KIND_LABEL[c.kind] || '')}"><span class="ce-ic">${CONN_ICO[c.kind] || '•'}</span><span class="ce-t">${esc(c.title || 'Untitled')}</span></button><button class="ce-x" data-conn-unlink="${esc(c.id)}" title="Disconnect">×</button></div>`;
+}
+function connChipsHtml(conns) { return conns.length ? `<div class="conn-chips">${conns.map(connChip).join('')}</div>` : ''; }
+function connPickRows() {
+  const cp = state.connPick || { q: '', results: [] };
+  const q = (cp.q || '').trim();
+  if (!q) return '<div class="ov-muted" style="padding:6px 2px">Type to find anything to connect.</div>';
+  if (cp.loading && !(cp.results || []).length) return '<div class="ov-muted" style="padding:6px 2px">Searching…</div>';
+  const ctx = connCtx();
+  const have = new Set(connCurrentIds(ctx).map(String));
+  const selfId = ctx && ctx.block ? String(ctx.block.id) : null;
+  const rows = (cp.results || []).filter((r) => CONN_KINDS.includes(r.kind) && String(r.id) !== selfId && !have.has(String(r.id))).slice(0, 12);
+  if (!rows.length) return '<div class="ov-muted" style="padding:6px 2px">No matches.</div>';
+  return rows.map((r) => `<button class="nconn-item" data-conn-pick="${esc(r.id)}" data-conn-kind="${esc(r.kind)}" data-conn-title="${esc(r.title || 'Untitled')}"><span class="sp-ico">${CONN_ICO[r.kind] || '•'}</span><span class="sp-t">${esc(r.title || 'Untitled')}</span><span class="nconn-area">${CONN_KIND_LABEL[r.kind] || ''}</span></button>`).join('');
+}
+function connPickInner() {
+  const q = (state.connPick && state.connPick.q) || '';
+  return `<input class="sel nconn-q" data-conn-q placeholder="Search notes, events, goals, people, pages, links…" value="${esc(q)}" autocomplete="off"><div class="nconn-list" id="conn-list">${connPickRows()}</div>`;
+}
+// Shown on a task/goal card: chips always visible, the picker tucked behind a pill.
+function connectionsSection(kind, b) {
+  if (!b) return '';
+  const conns = connOf(b);
+  return `<section class="focus-notes conn-sec">
+    <div class="fn-h">Connected${conns.length ? ` · ${conns.length}` : ''}</div>
+    ${conns.length ? connChipsHtml(conns) : '<p class="gc-notes-empty">Link anything related - a note, event, goal, contact, page or link.</p>'}
+    <details class="nconn conn-pick"><summary>🔗 Connect something</summary>${connPickInner()}</details>
+  </section>`;
+}
+// The collapsible "Connect" block at the foot of the add-task form.
+function connectAddSectionHtml() {
+  const conns = state.taskAddConns || [];
+  return `<details class="nconn conn-add"${conns.length ? ' open' : ''}><summary>🔗 Connect${conns.length ? ` · ${conns.length}` : ''}<small> a note, event, goal, contact, page or link</small></summary>
+    ${connChipsHtml(conns)}
+    ${connPickInner()}</details>`;
+}
+// Debounced search against /api/search (spans every kind). Repaints only the list,
+// so the search box keeps focus.
+function connSearch(q) {
+  state.connPick = state.connPick || { q: '', results: [], token: 0 };
+  state.connPick.q = q;
+  clearTimeout(state.connPick.timer);
+  const paint = () => { const l = document.getElementById('conn-list'); if (l) l.innerHTML = connPickRows(); };
+  if (!q.trim()) { state.connPick.results = []; state.connPick.loading = false; paint(); return; }
+  state.connPick.loading = true; paint();
+  const myToken = ++state.connPick.token;
+  state.connPick.timer = setTimeout(async () => {
+    let hits = [];
+    try { hits = await api(`/api/search?q=${encodeURIComponent(q)}`); } catch { hits = []; }
+    if (state.connPick.token !== myToken) return;
+    state.connPick.results = Array.isArray(hits) ? hits : [];
+    state.connPick.loading = false; paint();
+  }, 180);
+}
+function connResetPick() { if (state.connPick) { state.connPick.q = ''; state.connPick.results = []; state.connPick.loading = false; } }
+// Add this entry to a block's connections. The reverse side is fetched so its
+// current list is complete before the merge. Mirrors connectExistingNote.
+async function connAddReverse(targetId, entry) {
+  try {
+    const target = await api(`/api/blocks/${targetId}`);
+    const tgt = connOf(target).slice();
+    if (!tgt.some((c) => String(c.id) === String(entry.id))) tgt.push(entry);
+    await api(`/api/blocks/${targetId}`, { method: 'PATCH', body: JSON.stringify({ props: { connections: tgt } }) });
+  } catch {}
+}
+async function connRemoveReverse(targetId, hostId) {
+  try {
+    const target = await api(`/api/blocks/${targetId}`).catch(() => null);
+    if (!target) return;
+    const tgt = connOf(target).filter((c) => String(c.id) !== String(hostId));
+    await api(`/api/blocks/${targetId}`, { method: 'PATCH', body: JSON.stringify({ props: { connections: tgt } }) });
+  } catch {}
+}
+// A picker hit was chosen - add it to the draft (add form) or write it live (card).
+async function connPickChoose(id, kind, title) {
+  const ctx = connCtx(); if (!ctx) return;
+  const entry = { id, kind, title: title || 'Untitled' };
+  if (ctx.mode === 'draft') {
+    state.taskAddConns = state.taskAddConns || [];
+    if (!state.taskAddConns.some((c) => String(c.id) === String(id))) state.taskAddConns.push(entry);
+    connResetPick(); renderTasks(); return;
+  }
+  const host = ctx.block; host.props = host.props || {};
+  const cur = connOf(host).slice();
+  if (!cur.some((c) => String(c.id) === String(id))) cur.push(entry);
+  host.props.connections = cur;
+  connResetPick(); linkableRerender(ctx.kind);
+  try { await api(`/api/blocks/${host.id}`, { method: 'PATCH', body: JSON.stringify({ props: { connections: cur } }) }); } catch (e) { toast(e.message); }
+  await connAddReverse(id, { id: host.id, kind: ctx.kind, title: host.title || 'Untitled' });
+  toast('Connected');
+}
+async function connUnlinkOne(id) {
+  const ctx = connCtx(); if (!ctx) return;
+  if (ctx.mode === 'draft') { state.taskAddConns = (state.taskAddConns || []).filter((c) => String(c.id) !== String(id)); renderTasks(); return; }
+  const host = ctx.block; host.props = host.props || {};
+  const cur = connOf(host).filter((c) => String(c.id) !== String(id));
+  host.props.connections = cur; linkableRerender(ctx.kind);
+  try { await api(`/api/blocks/${host.id}`, { method: 'PATCH', body: JSON.stringify({ props: { connections: cur } }) }); } catch (e) { toast(e.message); }
+  await connRemoveReverse(id, host.id);
+}
+function connOpen(id, kind) {
+  try {
+    if (kind === 'bookmark') return openReadwatch();
+    if (kind === 'event') return openCalendar();
+  } catch (e) {}
+}
 // ── external links on a block ────────────────────────
 // Notes, tasks, contacts, pages and goals can each carry a little list of
 // external links (a website, an online account, a doc). Stored as props.links:

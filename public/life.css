@@ -2058,6 +2058,34 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-aliases .na-sum::-webkit-details-marker { display:none; }
 .note-aliases[open] .na-sum { margin-bottom:9px; }
 .na-body { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+/* Note editor: "Also findable as" sits on the right of the Life Space row. (Robin, 2026-10-19.) */
+.note-areas-row-split { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.note-areas-row-split .note-areas-aliases { margin-left:auto; }
+.note-areas-row-split .note-aliases { margin:0; }
+@media (max-width:560px){ .note-areas-row-split .note-areas-aliases { margin-left:0; } }
+/* Life Space masthead search: a slim, quiet pill under the title. (Robin, 2026-10-19.) */
+.am-search { display:flex; align-items:center; gap:8px; margin-top:12px; max-width:380px; padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:color-mix(in srgb, var(--card) 80%, transparent); }
+.am-search:focus-within { border-color:var(--accent); }
+.am-search-ic { font-size:14px; opacity:.6; }
+.am-search-in { flex:1; min-width:0; border:none; background:transparent; color:var(--ink); font:inherit; font-size:15px; }
+.am-search-in:focus { outline:none; }
+.am-search-in::placeholder { color:var(--ink-3); }
+/* Connections: the reusable "Connect" picker + chips (add-task form, task/goal cards). (Robin, 2026-10-19.) */
+.conn-chips { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; }
+.conn-sec { margin-top:4px; }
+.conn-add { margin:8px 0 2px; }
+.conn-add > summary small, .conn-pick > summary small { color:var(--ink-3); font-weight:400; }
+/* Notes sort + starred filter on a Life Space. (Robin, 2026-10-20.) */
+.pg-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; }
+.pg-sort { width:auto; max-width:200px; }
+.pg-starfilter { border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink-2); font:inherit; font-size:14px; padding:7px 14px; cursor:pointer; white-space:nowrap; }
+.pg-starfilter:hover { border-color:var(--accent); }
+.pg-starfilter.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb, var(--accent) 12%, var(--card)); }
+/* Life Space masthead: search and the Wheel-of-Life score share one row, wheel on the right. (Robin, 2026-10-20.) */
+.am-searchrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:12px; }
+.am-searchrow:empty { display:none; }
+.am-searchrow .am-search { margin-top:0; max-width:none; flex:1 1 300px; min-width:0; }
+.am-searchrow .area-sentiment { margin-left:auto; }
 .alias-chips { display:flex; flex-wrap:wrap; gap:7px; }
 .alias-chips:empty { display:none; }
 .alias-chip { display:inline-flex; align-items:center; gap:5px; font-size:13px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 9%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:999px; padding:3px 5px 3px 11px; }
@@ -2326,7 +2354,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    sidebar exactly as before; the ☰ button, drawer chrome and backdrop are all
    mobile-only. */
 .nav-drawer { display:contents; }
-.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-topline-sp { display:none; }
+.nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-mpeople, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
 .nav-brand em { font-style:normal; color:var(--gold); }
 /* "Lifebook" is one word; only "book" leans italic, at natural spacing after the
@@ -5142,6 +5170,12 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 /* Inside a half-width folio tool, cards fill the column (one per row) so they
    don't pack into a cramped, truncated sliver beside empty space. (Robin.) */
 .area-flow .area-sec .tbl-cards, .area-flow .area-sec .contact-grid { grid-template-columns:1fr; }
+/* On a Life Space, the focused Notes/Pages tile (and the other card tiles) lay
+   their cards out two-per-row so the titles are readable, not four cramped
+   columns. The overview sections above are already one-per-row, and the global
+   Notes view (.tbl-grid) is left as it is. (Robin, 2026-10-19.) */
+.area-tool-body .tbl-cards { grid-template-columns:repeat(2, minmax(0,1fr)); }
+@media (max-width:560px){ .area-tool-body .tbl-cards { grid-template-columns:1fr; } }
 /* "See all N →": caps a tool at a handful of items so a folio never becomes an
    endless scroll; expands in place. (Robin.) */
 .area-seemore { margin-top:12px; display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:13.5px; font-weight:600; color:color-mix(in srgb,var(--c,var(--accent)) 60%,var(--ink-2)); background:none; border:0; padding:4px 2px; cursor:pointer; }
@@ -6898,6 +6932,14 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   .nav-mlist .nav-item .nav-lbl { flex:1 1 auto; min-width:0; font-weight:500; }
   .nav-mlist .nav-item .nav-quick { display:none; }   /* keep the drawer clean - add via the tool itself */
   .nav-mlist .nav-item .nav-badge { margin-left:auto; }
+  /* LifeFold Contacts list in the mobile drawer (the desktop grid People box is
+     hidden on a phone). Bigger rows than desktop, for easy tapping + reading. */
+  .nav-mpeople { display:block; margin:14px 0 2px; padding-top:13px; border-top:1px solid var(--line); }
+  .nav-mpeople .nav-people-h { padding:6px 4px; font-size:12px; }
+  .nav-mpeople .nav-box-people { gap:2px; margin-top:6px; }
+  .nav-mpeople .nav-person { padding:11px 12px; font-size:16px; border-radius:11px; }
+  .nav-mpeople .nav-person .np-av { width:30px; height:30px; font-size:13px; }
+  .nav-mpeople .nav-sub.muted { padding:10px 6px; font-size:15px; }
   .nav-drawer .nav-k { display:none; }
   .nav-drawer .nav-bottom { display:flex; flex-direction:column; gap:8px; order:0; flex-basis:auto; margin:14px 0 0; padding:12px 0 0; border-top:1px solid var(--line); }
   /* The utility trio - info · theme · Settings - each full-width, stacked, flush
