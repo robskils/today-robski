@@ -5234,7 +5234,7 @@ function practiceEditorHtml() {
           <div class="pe-sec-h">Timing &amp; tracking</div>
           <div class="pe-mini">
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
-            <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" value="${a.duration || 30}"> min</span></div>
+            <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" step="5" value="${a.duration || 30}"> min</span></div>
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" data-pe-tracked ${tracked ? 'checked' : ''}></label>
             <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
               const cur = a.cadence || '';
@@ -10103,9 +10103,9 @@ function showCalForm(ev) {
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
-      <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" class="sel ce-timefield" value="${startTime}"></span>
+      <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" step="300" class="sel ce-timefield" value="${startTime}"></span>
       <span class="ce-warrow">→</span>
-      <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span>
+      <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" step="300" class="sel ce-timefield" value="${endTime}"></span>
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
     <div class="ce-grid">
@@ -11135,7 +11135,7 @@ function openTaskPopover(taskId, slotId) {
         <label class="pe-f"><span>Name</span><input class="sel" id="te-title" value="${esc(t.title || '')}" placeholder="What needs doing?" autocomplete="off"></label>
         <div class="pe-two">
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
-          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" value="${t.duration || 30}"> min</span></label>
+          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" step="5" value="${t.duration || 30}"> min</span></label>
         </div>
         <label class="pe-f"><span>Life Space</span><select class="sel" id="te-area"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
@@ -13594,8 +13594,8 @@ function showQuickEvent() {
   $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" data-evgap="60" style="margin-bottom:22px">
     <input id="qe-title" class="ce-title" placeholder="Event title…" autocomplete="off" required>
     <div class="ce-when">
-      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}<input id="qe-time" type="time" class="sel ce-timefield" value="${start}"></span></div>
-      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" class="sel ce-timefield" value="${endTime}"></span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}<input id="qe-time" type="time" step="300" class="sel ce-timefield" value="${start}"></span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" step="300" class="sel ce-timefield" value="${endTime}"></span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
     <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
