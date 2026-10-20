@@ -190,6 +190,24 @@ database_id = "0360e843-4b3c-4d98-beb6-4d185fb12cbc"
 binding = "ATTACHMENTS"
 bucket_name = "life-attachments"
 
+# ── Queues ────────────────────────────────────────────────────────────
+# Mail sync fans out here: the every-minute cron enqueues one job per due
+# mailbox, and this same Worker consumes them with bounded concurrency - so the
+# sync no longer has to finish inside a single invocation's time limit, however
+# many accounts exist. Created with: npx wrangler queues create today-mail-sync.
+# The producer is guarded in code (env.MAIL_QUEUE), so a deploy without the queue
+# bound (e.g. staging) falls back to the inline cron sync.
+[[queues.producers]]
+binding = "MAIL_QUEUE"
+queue = "today-mail-sync"
+
+[[queues.consumers]]
+queue = "today-mail-sync"
+max_batch_size = 5
+max_batch_timeout = 10
+max_concurrency = 8
+max_retries = 2
+
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
 #                         everyone out, which is the panic button.

@@ -11728,28 +11728,23 @@ async function mailMoveTargets(keys, target) {
   }
   if (!groups.size) return;
   const label = target === 'INBOX' ? 'Inbox' : target;
-  // Keep the rows on screen but mark them pending, so it's clearly working and a
-  // background refresh can't make them flicker back. They're removed only once
-  // the server confirms the move - no more "looks like it didn't work".
-  list.forEach((k) => { state.mail.pending.add(k); state.mail.selected.delete(k); });
-  state.mail.selected = new Set(); renderMail();
-  const done = []; let failed = 0; let lastErr = '';
-  for (const g of groups.values()) {
-    try {
-      await mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) });
-      done.push(...g.keys);
-    } catch (e) { failed += g.keys.length; lastErr = e.message; }
-  }
-  done.forEach((k) => { state.mail.pending.delete(k); state.mail.gone.add(k); });
-  if (done.length) mailSyncSoon();   // propagate to your other devices quickly
-  // Failures stay in the list (un-pending) so they can be retried, with the real error.
-  groups.forEach((g) => g.keys.forEach((k) => { if (!done.includes(k)) state.mail.pending.delete(k); }));
+  const allKeys = [...groups.values()].flatMap((g) => g.keys);
+  // Optimistic: clear the rows and confirm NOW, run the IMAP moves in the background
+  // (one live session per group is still seconds). A group that fails puts just its
+  // rows back. No more dimmed rows hanging while the move runs. (Robin, 2026-10-20.)
+  state.mail.selected = new Set();
+  allKeys.forEach((k) => { state.mail.pending.delete(k); state.mail.gone.add(k); });
   state.mail.messages = (state.mail.messages || []).filter((m) => !state.mail.gone.has(m._key));
-  if (state.mail.open && done.includes(state.mail.open._key)) state.mail.open = null;
-  if (!failed) toast(done.length === 1 ? `Moved to ${label}` : `Moved ${done.length} to ${label}`);
-  else if (done.length) toast(`Moved ${done.length}; ${failed} could not be moved${lastErr ? ` (${lastErr})` : ''}`);
-  else toast(lastErr || `Could not move to ${label}`);
+  if (state.mail.open && allKeys.includes(state.mail.open._key)) state.mail.open = null;
+  toast(allKeys.length === 1 ? `Moved to ${label}` : `Moved ${allKeys.length} to ${label}`);
   renderMail();
+  let anyFail = false, lastErr = '';
+  await Promise.all([...groups.values()].map((g) =>
+    mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) })
+      .catch((e) => { anyFail = true; lastErr = (e && e.message) || String(e); g.keys.forEach((k) => state.mail.gone.delete(k)); })));
+  if (!anyFail) { mailSyncSoon(); return; }   // propagate to your other devices quickly
+  toast(`Some couldn't move${lastErr ? ` (${lastErr})` : ''} - put back`);
+  await loadMessages();
 }
 async function mailBulk(action) {
   if (action === 'clear') { state.mail.selected = new Set(); renderMail(); return; }

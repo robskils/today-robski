@@ -84,7 +84,7 @@ async function getMailHealth(env, uid) {
   const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='mail_health'").bind(uid).first().catch(() => null);
   try { return (row && row.value) ? JSON.parse(row.value) : {}; } catch { return {}; }
 }
-async function recordMailHealth(env, entries) {
+export async function recordMailHealth(env, entries) {
   const byUser = {};
   for (const e of entries) { if (e.uid == null) continue; (byUser[e.uid] = byUser[e.uid] || {})[e.id] = { ok: !!e.ok, msg: e.ok ? '' : String(e.msg || 'Could not connect').slice(0, 160), at: e.at }; }
   for (const uid of Object.keys(byUser)) {
@@ -721,6 +721,45 @@ async function syncUserInboxes(env, uid) {
     for (const p of part) if (p.status === 'fulfilled' && p.value) newUnread += p.value.newUnread || 0;
   }
   return { newUnread };
+}
+// ── mail sync via Cloudflare Queues (scales past one cron invocation) ──
+// The cron enqueues one job per DUE mailbox; this same Worker consumes them with
+// bounded concurrency (see wrangler.toml), so the total sync no longer has to fit
+// in one invocation's time budget however many accounts exist. enqueueMailSync is
+// what the cron calls; queueSyncAccount is the per-account work the consumer runs.
+// Falls back to the inline syncMailCache when MAIL_QUEUE isn't bound (e.g. staging).
+// (Robin, 2026-10-20: mail at scale.)
+export async function enqueueMailSync(env) {
+  const now = Date.now();
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=1 AND key='mail_sync_at'").first();
+  if (row && now - Number(row.value || 0) < 55000) return { enqueued: 0 };   // at most once a minute
+  await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_at',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(now)).run();
+  try { await env.DB.prepare('DELETE FROM mail_body_cache WHERE cached_at < ?').bind(now - 45 * 86400000).run(); } catch {}
+  const allAccts = await listAccounts(env);
+  const active = await mailLastActive(env).catch(() => ({}));
+  const lastSync = await mailLastSynced(env).catch(() => ({}));
+  const due = allAccts.filter((a) => {
+    if ((now - (active[a.id] || 0)) < MAIL_ACTIVE_MS) return true;   // active: every tick
+    return (now - (lastSync[a.id] || 0)) > MAIL_DORMANT_EVERY;       // dormant: only when stale
+  });
+  if (!due.length) return { enqueued: 0 };
+  for (let i = 0; i < due.length; i += 100) {   // sendBatch caps at 100 messages
+    await env.MAIL_QUEUE.sendBatch(due.slice(i, i + 100).map((a) => ({ body: { accountId: a.id, uid: a.user_id } })));
+  }
+  return { enqueued: due.length };
+}
+// One account's sync, as the queue consumer runs it. Skips an account synced in the
+// last 20s (a duplicate enqueue, or an on-open warm just ran). Throws on a real
+// connection failure so the consumer can record it and let the queue retry.
+export async function queueSyncAccount(env, accountId, uid, { skipFreshMs = 20000 } = {}) {
+  if (skipFreshMs) {
+    const m = await env.DB.prepare("SELECT synced_at FROM mail_cache_meta WHERE account=? AND mailbox='INBOX'").bind(accountId).first().catch(() => null);
+    if (m && m.synced_at && (Date.now() - (Date.parse(m.synced_at) || 0)) < skipFreshMs) return { id: accountId, uid, fresh: true, newUnread: 0 };
+  }
+  const acct = await getAcct(env, accountId, uid);
+  if (!acct) return { id: accountId, uid, missing: true, newUnread: 0 };
+  const r = await syncOneInbox(env, acct);
+  return { id: accountId, uid, newUnread: (r && r.newUnread) || 0, newFrom: (r && r.newFrom) || '', newSubject: (r && r.newSubject) || '' };
 }
 // ── background inbox cache (D1) ────────────────────────────────────────
 // The cron syncs the latest inbox headers into D1, so opening Mail reads from

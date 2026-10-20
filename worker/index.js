@@ -9,7 +9,7 @@ import { aiKey, aiNeedsKey, logAiUsage, setAiKey, encryptSecret, decryptSecret }
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
-import { handleMail, smtpSend, buildMessage, syncMailCache } from './mail.js';
+import { handleMail, smtpSend, buildMessage, syncMailCache, enqueueMailSync, queueSyncAccount, recordMailHealth } from './mail.js';
 import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable } from './gcal.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
@@ -4199,7 +4199,7 @@ export default {
     ctx.waitUntil(runSurfaceAlertsAll(env).catch((e) => console.error('surfaceAlerts:', e.message)));
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
-    ctx.waitUntil(syncMailCache(env).then((res) => maybePushMail(env, res)).catch((e) => console.error('syncMailCache/push:', e.message)));
+    ctx.waitUntil((env.MAIL_QUEUE ? enqueueMailSync(env) : syncMailCache(env).then((res) => maybePushMail(env, res))).catch((e) => console.error('mailSync:', e.message)));
     // Portfolio value snapshot, self-gated to ~6h so the 24h/7d/30d figures stay real.
     ctx.waitUntil(maybeSnapshotPortfolio(env).catch((e) => console.error('portfolioSnapshot:', e.message)));
     // Financial advice: sweep tracked YouTube channels for new videos, self-gated to ~3h.
@@ -4211,6 +4211,33 @@ export default {
     // Keep the Fulham fixtures cache fresh (self-gated to ~12h).
     ctx.waitUntil(maybeRefreshFixtures(env).catch((e) => console.error('fixtures:', e.message)));
     ctx.waitUntil(maybeRefreshSources(env).catch((e) => console.error('sources:', e.message)));
+  },
+
+  // Mail sync consumer: the cron enqueues one job per due mailbox; here we sync them
+  // in small concurrent waves (the per-invocation socket cap), record each account's
+  // health, and push each owner about their own new mail. Scales across many queue
+  // invocations instead of one cron tick. (Robin, 2026-10-20: mail at scale.)
+  async queue(batch, env, ctx) {
+    const metas = []; const byUser = {}; const fromByUser = {}; const subjByUser = {};
+    const CHUNK = 4;
+    const msgs = batch.messages || [];
+    for (let i = 0; i < msgs.length; i += CHUNK) {
+      await Promise.all(msgs.slice(i, i + CHUNK).map(async (m) => {
+        const b = m.body || {}; const accountId = b.accountId; const uid = b.uid;
+        if (!accountId || uid == null) { m.ack(); return; }
+        try {
+          const r = await queueSyncAccount(env, accountId, uid);
+          metas.push({ uid, id: accountId, ok: true, msg: '', at: new Date().toISOString() });
+          if (r && r.newUnread) { byUser[uid] = (byUser[uid] || 0) + r.newUnread; if (r.newFrom) { fromByUser[uid] = r.newFrom; subjByUser[uid] = r.newSubject || ''; } }
+          m.ack();
+        } catch (e) {
+          metas.push({ uid, id: accountId, ok: false, msg: (e && e.message) || 'Could not connect', at: new Date().toISOString() });
+          m.retry();
+        }
+      }));
+    }
+    ctx.waitUntil(recordMailHealth(env, metas).catch(() => {}));
+    ctx.waitUntil(maybePushMail(env, { byUser, fromByUser, subjByUser }).catch(() => {}));
   },
 
   async fetch(request, env, ctx) {
