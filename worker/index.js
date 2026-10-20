@@ -1289,8 +1289,21 @@ async function getEventAlarms(env) { const v = await getSetting(env, 'event_alar
 // { m, ch } (legacy single + channel), or { ms:[minutes…], ch } (one or more leads,
 // e.g. a week + a day + 5 min before, all on one channel). `ch` chooses how to
 // remind - in-app push (default), or by text / email / both.
-const ALARM_CHANNELS = ['app', 'sms', 'email', 'both'];
+const ALARM_CHANNELS = ['app', 'sms', 'email'];
 const ALARM_MAX = 525600;   // a year in minutes - generous ceiling for a lead time
+// A reminder can go to any combination of channels now (in-app + email + text, in
+// any mix). Normalise whatever shape is stored or posted - an array, a legacy
+// single string, or the old 'both' (= text + email) - to a de-duped array of valid
+// channels, always with at least in-app so a reminder is never silent.
+function normAlarmChannels(ch) {
+  let arr;
+  if (Array.isArray(ch)) arr = ch;
+  else if (ch === 'both') arr = ['sms', 'email'];
+  else if (typeof ch === 'string' && ch) arr = [ch];
+  else arr = [];
+  arr = [...new Set(arr.filter((c) => ALARM_CHANNELS.includes(c)))];
+  return arr.length ? arr : ['app'];
+}
 // Normalise any stored shape to a sorted, de-duped array of minutes-before.
 function alarmMsList(v) {
   let arr;
@@ -1306,7 +1319,7 @@ async function setEventAlarmFor(env, id, alarm, ch) {
   const map = await getEventAlarms(env);
   const ms = alarmMsList(alarm);
   if (!ms.length) { delete map[key]; }
-  else { const channel = ALARM_CHANNELS.includes(ch) ? ch : 'app'; map[key] = { ms, ch: channel }; }
+  else { map[key] = { ms, ch: normAlarmChannels(ch) }; }
   await setSetting(env, 'event_alarms', JSON.stringify(map));
 }
 function applyEventAlarms(events, map) {
@@ -1314,7 +1327,7 @@ function applyEventAlarms(events, map) {
   for (const e of (events || [])) {
     const k = String(e.id || '').split('::')[0]; const v = map[k]; if (v == null) continue;
     const ms = alarmMsList(v); if (!ms.length) continue;
-    e.alarms = ms; e.alarmCh = (typeof v === 'object' && !Array.isArray(v) && v.ch) ? v.ch : 'app';
+    e.alarms = ms; e.alarmCh = normAlarmChannels((typeof v === 'object' && !Array.isArray(v)) ? v.ch : null);
   }
   return events;
 }
@@ -2659,7 +2672,7 @@ async function runEventRemindersForUser(env, user) {
   // Look far enough ahead to actually SEE an event whose (start - lead) is now:
   // a 1-month-before reminder sits ~30 days out. Size the window to the longest
   // lead the user has set, +1 day for the midnight crossing.
-  const alarmMins = alarmVals.map((v) => (v && typeof v === 'object') ? Number(v.m) : Number(v)).filter((n) => Number.isFinite(n) && n >= 0);
+  const alarmMins = alarmVals.flatMap((v) => alarmMsList(v));
   const leadDays = Math.ceil((alarmMins.length ? Math.max(...alarmMins) : 0) / 1440);
   const to = addDaysStr(now.date, Math.max(2, leadDays + 1));
   const native = await nativeRangeEvents(uenv, now.date, to).catch(() => []);
@@ -2679,7 +2692,7 @@ async function runEventRemindersForUser(env, user) {
   const fired = [];
   for (const e of events) {
     if (e.allDay || e.start_min == null || !Array.isArray(e.alarms) || !e.alarms.length) continue;   // timed events with ≥1 reminder
-    const ch = e.alarmCh || 'app'; if (!(ch === 'app' || ch === 'sms' || ch === 'email' || ch === 'both')) continue;
+    const chs = normAlarmChannels(e.alarmCh); if (!chs.length) continue;
     const minsUntil = dayOffsetMin(e.date) + e.start_min - now.min;
     const baseId = String(e.id || '').split(NATIVE_SEP)[0];
     // Each lead fires independently (a week before, a day before, 5 min before…),
@@ -2688,7 +2701,7 @@ async function runEventRemindersForUser(env, user) {
       if (!(minsUntil <= lead && minsUntil >= lead - EV_CATCHUP_MIN)) continue;
       const key = `${baseId}:${e.date}:${lead}`;
       if (sentMap[key]) continue;
-      fired.push({ e, ch, minsUntil, key });
+      fired.push({ e, chs, minsUntil, key });
     }
   }
   if (!fired.length) { if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {}); return 0; }
@@ -2703,23 +2716,24 @@ async function runEventRemindersForUser(env, user) {
     const hh = `${String((e.start_min / 60) | 0).padStart(2, '0')}:${String(e.start_min % 60).padStart(2, '0')}`;
     const inMin = Math.max(0, f.minsUntil);
     const whenPhrase = inMin <= 0 ? 'now' : inMin < 60 ? `in ${inMin} min` : inMin < 1440 ? `in ${Math.round(inMin / 60)} h` : `in ${Math.round(inMin / 1440)} day${Math.round(inMin / 1440) === 1 ? '' : 's'}`;
+    const chs = f.chs;
     let ok = false;
     // 'In the app' = a Web Push to the user's installed LifeFold(s). Fires with the
     // app closed, unlike the client-side toast (which only runs while open).
-    if (f.ch === 'app') {
+    if (chs.includes('app')) {
       const r = await pushAll(env, { type: 'event', title: `⏰ ${e.title || 'Event'}`, body: `${hh}${e.location ? ` · ${e.location}` : ''} - ${whenPhrase}`, url: '/calendar' }, uid).catch(() => null);
       ok = !!(r && r.sent);
       if (r && r.total === 0) ok = true;   // no devices subscribed → nothing to retry, don't re-attempt every tick
     }
-    if ((f.ch === 'sms' || f.ch === 'both') && phone) {
+    if (chs.includes('sms') && phone) {
       const body = `⏰ ${e.title || 'Event'} at ${hh}${e.location ? `, ${e.location}` : ''} - ${whenPhrase}. ${home}/calendar`;
       const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));
       ok = ok || !!(r && r.ok);
     }
-    // Email is sent for 'email'/'both' and ALSO as a backup for 'sms': a text can be
-    // silently dropped at the carrier (we only ever learn the gateway accepted it),
-    // so a text-only reminder still lands as an email if the SMS never arrives.
-    if ((f.ch === 'email' || f.ch === 'both' || f.ch === 'sms') && email) {
+    // Email is sent for 'email' and ALSO as a backup whenever a text was asked for:
+    // a text can be silently dropped at the carrier (we only ever learn the gateway
+    // accepted it), so a text reminder still lands as an email if the SMS never does.
+    if ((chs.includes('email') || chs.includes('sms')) && email) {
       await sendEventReminderMail(env, { to: email, title: e.title || 'Event', when: hh, whenPhrase, location: e.location, home }).catch(() => {});
       ok = true;
     }

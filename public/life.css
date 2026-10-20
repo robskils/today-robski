@@ -2650,8 +2650,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .ce-alarm-custom { display:flex; gap:8px; margin-top:7px; }
 .ce-alarm-custom #ce-alarm-n { flex:none; width:84px; max-width:84px; }
 .ce-alarm-custom #ce-alarm-u { flex:1; min-width:0; }
-.ce-alarm-ch { margin-top:9px; display:flex; align-items:center; gap:9px; }
-.ce-alarm-ch #ce-alarm-ch { flex:1; width:auto; max-width:none; }
+.ce-alarm-ch { margin-top:9px; display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; }
+.ce-rem-chans { display:flex; flex-wrap:wrap; gap:9px 16px; }
+.ce-chan { display:inline-flex; align-items:center; gap:7px; font-size:15px; color:var(--ink-2,var(--ink)); cursor:pointer; -webkit-user-select:none; user-select:none; }
+.ce-chan input { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex:none; margin:0; }
 .ce-rem-chlbl { font-size:13px; color:var(--ink-3); white-space:nowrap; }
 /* Reminders: pick as many leads as you like (a week + a day + 5 min before…) as
    toggle chips, then one channel for them all. */

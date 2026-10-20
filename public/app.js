@@ -9920,7 +9920,7 @@ function snapshotCalForm() {
   const f = document.getElementById('cal-ev-form'); if (!f) return null;
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
   return { ev: f.dataset.ev || '', evgap: f.dataset.evgap, title: v('ce-title'), date: v('ce-date'), time: v('ce-time'), enddate: v('ce-enddate'), endtime: v('ce-endtime'),
-    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarms: v('ce-alarms'), alarmCh: v('ce-alarm-ch'),
+    allday: !!(document.getElementById('ce-allday') || {}).checked, loc: v('ce-loc'), url: v('ce-url'), alarms: v('ce-alarms'), alarmChans: [...f.querySelectorAll('.ce-chan-cb')].filter((c) => c.checked).map((c) => c.value),
     repeat: v('ce-repeat'), area: v('ce-area'), contact: v('ce-contact'), contactSearch: v('ce-contact-search'), notes: v('ce-notes') };
 }
 function restoreCalForm(s) {
@@ -9928,7 +9928,8 @@ function restoreCalForm(s) {
   if ((f.dataset.ev || '') !== s.ev) return;   // a different event opened - don't paste a stale draft onto it
   const set = (id, val) => { if (val === undefined) return; const el = document.getElementById(id); if (el) el.value = val; };
   if (s.evgap) f.dataset.evgap = s.evgap;
-  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes', 'ce-alarm-ch:alarmCh'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  if (Array.isArray(s.alarmChans)) { const cset = new Set(s.alarmChans); f.querySelectorAll('.ce-chan-cb').forEach((c) => { c.checked = cset.has(c.value); }); }
   if (s.date !== undefined) setDateField('ce-date', s.date);
   if (s.enddate !== undefined) setDateField('ce-enddate', s.enddate);
   if (s.alarms !== undefined) { try { remSetSelected(f, JSON.parse(s.alarms || '[]')); } catch {} }
@@ -9976,6 +9977,18 @@ function eventAlarmList(ev) {
   if (Array.isArray(ev.alarms)) return ev.alarms.map(Number).filter((n) => Number.isFinite(n) && n >= 0).sort((a, b) => b - a);
   if (ev.alarm != null && ev.alarm !== '') { const n = Number(ev.alarm); return Number.isFinite(n) ? [n] : []; }
   return [];
+}
+// The reminder channels chosen for an event, as a Set. Accepts the new array, a
+// legacy single string, or the old 'both' (text + email); defaults to in-app, so
+// a reminder always has somewhere to go.
+function eventAlarmChSet(ev) {
+  const ch = ev && ev.alarmCh; let arr;
+  if (Array.isArray(ch)) arr = ch;
+  else if (ch === 'both') arr = ['sms', 'email'];
+  else if (typeof ch === 'string' && ch) arr = [ch];
+  else arr = [];
+  arr = arr.filter((c) => c === 'app' || c === 'sms' || c === 'email');
+  return new Set(arr.length ? arr : ['app']);
 }
 // The reminder-lead chips shown in the event editor (minutes-before + label).
 const REM_PRESETS = [[0, 'At the time'], [5, '5 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours'], [1440, '1 day'], [10080, '1 week'], [43200, '1 month']];
@@ -10110,11 +10123,11 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">🧭 Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
-      ${(() => { const sel = eventAlarmList(ev); const ch = (ev && ev.alarmCh) || 'app'; const cOpt = (v, l) => `<option value="${v}" ${ch === v ? 'selected' : ''}>${l}</option>`; return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
+      ${(() => { const sel = eventAlarmList(ev); const chs = eventAlarmChSet(ev); const cCb = (v, l) => `<label class="ce-chan"><input type="checkbox" class="ce-chan-cb" value="${v}" ${chs.has(v) ? 'checked' : ''}><span>${l}</span></label>`; return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
         <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
         <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
-        <div class="ce-alarm-ch" ${sel.length ? '' : 'hidden'}><span class="ce-rem-chlbl">Notify me</span><select id="ce-alarm-ch" class="sel">${cOpt('app', 'In the app')}${cOpt('email', 'By email')}${cOpt('sms', 'By text')}${cOpt('both', 'Text &amp; email')}</select></div>
+        <div class="ce-alarm-ch" ${sel.length ? '' : 'hidden'}><span class="ce-rem-chlbl">Notify me</span><div class="ce-rem-chans">${cCb('app', 'In the app')}${cCb('email', 'By email')}${cCb('sms', 'By text')}</div></div>
       </div>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
@@ -21289,7 +21302,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'cal-ev-form') { const v = $('#ce-title').value.trim(); const rp = $('#ce-repeat'); const dt = $('#ce-date'); const ed = $('#ce-enddate'); const nt = $('#ce-notes'); const ar = $('#ce-area'); const ur = $('#ce-url'); const co = $('#ce-contact');
     // One or more reminder leads, chosen as chips (stored as a JSON array).
     const alarmsVal = remSelected(e.target);
-    const alarmChVal = alarmsVal.length ? (($('#ce-alarm-ch') || {}).value || 'app') : 'app';
+    const alarmChVal = (() => { if (!alarmsVal.length) return ['app']; const cs = [...e.target.querySelectorAll('.ce-chan-cb')].filter((c) => c.checked).map((c) => c.value); return cs.length ? cs : ['app']; })();
     if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmsVal, alarmChVal); }
   if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
