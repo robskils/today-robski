@@ -2103,13 +2103,16 @@ function adminMemberRow(u) {
   const freeOpts = [['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months']];
   const planCtl = owner ? '<span class="am-ownertag">Owner account</span>'
     : `<label class="am-ctl"><span>Plan</span><select class="sel" data-admin-plan="${u.id}">${PLAN_KEYS.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select></label>`;
-  const freeCtl = owner ? '' : `<label class="am-ctl"><span>Free period</span><select class="sel" data-admin-free="${u.id}"><option value="">Set…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select></label>`;
+  const freeCur = freeForever ? 'Free forever' : (freeActive ? `Free until ${esc(fmtDateY(u.free_until))}` : 'No free period');
+  const freeEditing = (a.freeEdit === u.id);
+  const freeCtl = owner ? '' : `<div class="am-ctl am-free"><span>Free period</span>${freeEditing
+    ? `<select class="sel" data-admin-free="${u.id}"><option value="">Choose…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`
+    : `<div class="am-free-cur"><span class="am-free-val${freeActive ? ' on' : ''}">${freeCur}</span><button type="button" class="ghost am-free-edit" data-admin-freeedit="${u.id}">Edit</button></div>`}</div>`;
   const suspendBtn = owner ? '' : `<button class="ghost am-suspend ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`;
   const facts = [
     `<a class="am-email" href="mailto:${esc(u.email)}">${esc(u.email)}</a>`,
     t ? `last used ${esc(fmtDateY(u.last_seen))}` : 'never signed in',
     ai ? `${admN(ai.calls)} AI calls this month · ${admUSD(ai.cost)}` : 'no AI use this month',
-    freeActive ? (freeForever ? '✦ free forever' : `✦ free until ${esc(fmtDateY(u.free_until))}`) : null,
     u.status === 'suspended' ? '⏸ suspended' : null,
   ].filter(Boolean);
   return `<div class="am-row open${u.status === 'suspended' ? ' susp' : ''}">${head}
@@ -20352,7 +20355,8 @@ document.addEventListener('click', (e) => {
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
-  { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; renderAdmin(); return; } }
+  { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; state.admin.freeEdit = null; renderAdmin(); return; } }
+  { const fe = t.closest('[data-admin-freeedit]'); if (fe) { state.admin = state.admin || {}; state.admin.freeEdit = Number(fe.dataset.adminFreeedit); renderAdmin(); return; } }
   { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
@@ -21094,7 +21098,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
   if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
-  { const af = e.target.closest('[data-admin-free]'); if (af) { const v = e.target.value; if (v !== '') setUserFree(af.dataset.adminFree, v === 'forever' ? 'forever' : Number(v)); return; } }
+  { const af = e.target.closest('[data-admin-free]'); if (af) { const v = e.target.value; state.admin = state.admin || {}; state.admin.freeEdit = null; if (v !== '') setUserFree(af.dataset.adminFree, v === 'forever' ? 'forever' : Number(v)); else renderAdmin(); return; } }
   { const us = e.target.closest('[data-admin-usersort]'); if (us) { state.admin = state.admin || {}; state.admin.memberSort = us.value; renderAdmin(); return; } }
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.matches('[data-contact-area-sel]')) { state.contactsArea = e.target.value || null; renderContacts(); return; }

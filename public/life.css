@@ -2970,6 +2970,10 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .am-ctl .sel { margin:0; width:auto; max-width:none; padding:7px 26px 7px 11px; font-size:13.5px; text-transform:none; letter-spacing:0; }
 .am-ctls .ghost { padding:7px 13px; font-size:13px; align-self:center; }
 .am-ownertag { font-size:13px; color:var(--ink-3); font-style:italic; align-self:center; }
+.am-free-cur { display:flex; align-items:center; gap:10px; min-height:34px; }
+.am-free-val { font-size:13.5px; color:var(--ink-2); font-weight:500; text-transform:none; letter-spacing:0; }
+.am-free-val.on { color:var(--accent); font-weight:600; }
+.am-ctls .am-free-edit { padding:6px 12px; font-size:12.5px; align-self:center; }
 @media (max-width:560px){
   .am-head { flex-wrap:wrap; }
   .am-joined { display:none; }
