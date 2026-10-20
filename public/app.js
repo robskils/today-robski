@@ -11528,10 +11528,14 @@ async function mailMoveTo(key, target, label) {
       if (!groups.has(gid)) groups.set(gid, { account: row._acct, mailbox: row._mailbox, uids: [] });
       groups.get(gid).uids.push(row.uid);
     }
-    for (const g of groups.values()) {
-      await mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) });
-    }
-    mailSyncSoon();   // re-warm the shared cache so other devices drop it quickly too
+    // Fire the IMAP move in the BACKGROUND so the row clears now, instead of after
+    // a multi-second connect+login+select+move round-trip to the provider from the
+    // edge. If it later fails, un-tombstone the keys and reload so the message comes
+    // back rather than vanishing into a move that never happened. (Robin, 2026-10-20:
+    // "just tell me it's archived, and if it takes longer in the background, so be it".)
+    Promise.all([...groups.values()].map((g) => mailApi('/move-bulk', { method: 'POST', body: JSON.stringify({ account: g.account, mailbox: g.mailbox, uids: g.uids, target }) })))
+      .then(() => mailSyncSoon())   // re-warm the shared cache so other devices drop it quickly too
+      .catch(() => { keys.forEach((k) => state.mail.gone.delete(k)); toast('That didn\'t go through - put it back'); loadMessages(); });
     // Archiving/trashing unread messages clears their badge count right away.
     for (const row of rows) { if (!row.seen && /^inbox$/i.test(row._mailbox || '')) bumpUnread(row._acct, -1); }
     const gone = new Set(keys);
