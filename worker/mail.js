@@ -693,6 +693,7 @@ async function lightFetchMessage(im, uid) {
 // system settings row (user_id=1), keyed `mailact:<accountId>` = epoch ms. (Robin.)
 const MAIL_ACTIVE_MS = 3 * 24 * 60 * 60 * 1000;   // opened Mail in the last 3 days = active
 const MAIL_DORMANT_EVERY = 15 * 60 * 1000;        // dormant accounts refresh every ~15 min
+const MAIL_SYNC_BUDGET = 24;   // most mailboxes one cron tick will sync; the rest rotate in over later ticks via a cursor, so an invocation never overruns its time however many accounts exist. (Robin, 2026-10-20: mail at scale.)
 async function mailLastActive(env) {
   const { results } = await env.DB.prepare("SELECT key, value FROM settings WHERE user_id=1 AND key LIKE 'mailact:%'").all();
   const m = {}; for (const r of (results || [])) m[r.key.slice(8)] = Number(r.value) || 0; return m;
@@ -747,10 +748,27 @@ export async function syncMailCache(env, { force = false } = {}) {
   // forced warm still does everyone. A brand-new account (no sync yet) counts as due.
   const active = await mailLastActive(env).catch(() => ({}));
   const lastSync = await mailLastSynced(env).catch(() => ({}));
-  const accts = force ? allAccts : allAccts.filter((a) => {
+  let accts = force ? allAccts : allAccts.filter((a) => {
     if ((now - (active[a.id] || 0)) < MAIL_ACTIVE_MS) return true;   // active: every tick
     return (now - (lastSync[a.id] || 0)) > MAIL_DORMANT_EVERY;       // dormant: only when stale
   });
+  // Cap the per-tick work and rotate through the rest with a cursor, so one cron
+  // invocation can never overrun its time however many mailboxes exist. The due set
+  // is stable-ordered by id; we start just after last tick's cursor, wrap round, and
+  // remember where we stopped. Active accounts are always "due" so they still come
+  // round every few minutes; the on-open warm (syncUserInboxes) covers the "I just
+  // opened Mail" case immediately. A forced warm ignores the budget.
+  if (!force && accts.length > MAIL_SYNC_BUDGET) {
+    const sorted = accts.slice().sort((a, b) => (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0));
+    let cursor = '';
+    try { const cr = await env.DB.prepare("SELECT value FROM settings WHERE user_id=1 AND key='mail_sync_cursor'").first(); cursor = (cr && cr.value) || ''; } catch {}
+    let start = sorted.findIndex((a) => String(a.id) > cursor);
+    if (start < 0) start = 0;
+    const windowed = [];
+    for (let k = 0; k < sorted.length && windowed.length < MAIL_SYNC_BUDGET; k++) windowed.push(sorted[(start + k) % sorted.length]);
+    accts = windowed;
+    await env.DB.prepare("INSERT INTO settings (user_id,key,value) VALUES (1,'mail_sync_cursor',?) ON CONFLICT(user_id,key) DO UPDATE SET value=excluded.value").bind(String(windowed[windowed.length - 1].id)).run().catch(() => {});
+  }
   // Sync in small batches, not all at once: a Worker invocation can only hold a
   // handful of simultaneous outbound sockets, so firing 10+ IMAP connections
   // together makes the overflow ones fail (and a failed SELECT reads as an empty
@@ -791,7 +809,8 @@ async function syncOneInbox(env, acct) {
     const unseen = total ? await im.unseenCount() : 0;
     // Message-ids we already had. An unseen one that's new to us is a genuine
     // arrival. Skip the very first population of an account (would flood).
-    const prev = await env.DB.prepare("SELECT message_id, seen FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
+    const prev = await env.DB.prepare("SELECT uid, message_id, seen, flagged FROM mail_cache WHERE account=? AND mailbox='INBOX'").bind(acct.id).all();
+    const prevMeta = await env.DB.prepare("SELECT unseen FROM mail_cache_meta WHERE account=? AND mailbox='INBOX'").bind(acct.id).first().catch(() => null);
     const known = new Set((prev.results || []).map((r) => r.message_id).filter(Boolean));
     // Once we've recorded a message as read, keep it read. Some servers - Gmail
     // especially - are slow or flaky at reflecting an IMAP \Seen back on a re-fetch,
@@ -812,6 +831,18 @@ async function syncOneInbox(env, acct) {
     const stickyReads = msgs.filter((m) => !m.seen && m.messageId && prevSeen.get(m.messageId) === true).length;
     const effUnseen = Math.max(0, unseen - stickyReads);
     const nowIso = new Date().toISOString();
+    // Delta: if the inbox is identical to what's cached - same messages, same read
+    // and flag state, same unseen - skip the whole rewrite and just stamp it freshly
+    // synced. A quiet-but-active inbox changes nothing most ticks, so this turns ~40
+    // row writes a minute into one. Order-independent (both sides sorted), so D1's
+    // row order can't trip it. (Robin, 2026-10-20: mail at scale.)
+    const sigSort = (arr) => arr.slice().sort().join('|');
+    const newSig = sigSort(msgs.map((m) => `${m.uid}:${m.messageId || ''}:${seenOf(m) ? 1 : 0}:${m.flagged ? 1 : 0}`));
+    const prevSig = sigSort((prev.results || []).map((r) => `${r.uid}:${r.message_id || ''}:${r.seen ? 1 : 0}:${r.flagged ? 1 : 0}`));
+    if (prev.results && prev.results.length && newSig === prevSig && prevMeta && Number(prevMeta.unseen) === effUnseen) {
+      await env.DB.prepare("UPDATE mail_cache_meta SET synced_at=? WHERE account=? AND mailbox='INBOX'").bind(nowIso, acct.id, 'INBOX').run().catch(() => {});
+      return { account: acct.id, newUnread: 0, unseen: effUnseen, unchanged: true };
+    }
     const stmts = [env.DB.prepare('DELETE FROM mail_cache WHERE account=? AND mailbox=?').bind(acct.id, 'INBOX')];
     for (const m of msgs) {
       stmts.push(env.DB.prepare(
