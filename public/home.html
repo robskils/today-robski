@@ -212,6 +212,13 @@ nav {
 .hero-fold { position: absolute; z-index: 0; pointer-events: none; color: var(--rust); opacity: .05;
   width: min(62vh, 560px); height: auto; left: -11%; bottom: -16%; }
 @media (max-width: 860px) { .hero-fold { width: 300px; left: -17%; bottom: -6%; opacity: .045; } }
+/* The hero's gradient fold, carried to a few statement bands below - two mirrored
+   angles so adjacent folds don't read as a repeat. Kept subtle. */
+.foldface { position: relative; isolation: isolate; }
+.foldface::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(121deg, var(--facet-a) 0 44%, transparent 44.5%), linear-gradient(-128deg, var(--facet-b) 0 31%, transparent 31.5%); }
+.foldface-alt::before { background: linear-gradient(-121deg, var(--facet-a) 0 44%, transparent 44.5%), linear-gradient(128deg, var(--facet-b) 0 31%, transparent 31.5%); }
+.foldface > .wrap { position: relative; z-index: 1; }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
 .hero-copy { min-width: 0; }
 .hero h1, .hero-tag { padding-right: 0.12em; }
@@ -625,13 +632,13 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </section>
 
-<section class="litany-band">
+<section class="litany-band foldface">
   <div class="wrap reveal">
     <p class="litany">Your time, your people, your plans, your rhythms - and the scattered digital life wrapped around them. Gathered into one calm place, and <em>wholly yours.</em></p>
   </div>
 </section>
 
-<section class="band fold-band" id="fold">
+<section class="band fold-band foldface foldface-alt" id="fold">
   <div class="wrap">
     <div class="band-head center reveal">
       <div class="eyebrow">The idea behind the name</div>
@@ -825,7 +832,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </section>
 
-<section class="closing" id="invite">
+<section class="closing foldface" id="invite">
   <div class="wrap reveal">
     <div class="eyebrow" style="text-align:center">Early access</div>
     <h2>Come into the fold.</h2>

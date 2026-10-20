@@ -19,6 +19,9 @@
   --pine-soft: rgba(47, 93, 87, 0.10);
   --dawn-1: rgba(168, 132, 74, 0.16);
   --dawn-2: rgba(217, 138, 91, 0.14);
+  --crease: rgba(120, 92, 45, 0.07);
+  --facet-a: rgba(255, 251, 240, 0.6);
+  --facet-b: rgba(120, 92, 45, 0.065);
   --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
   --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
 }
@@ -40,6 +43,9 @@
     --pine-soft: rgba(127, 189, 176, 0.12);
     --dawn-1: rgba(194, 160, 95, 0.16);
     --dawn-2: rgba(217, 138, 91, 0.12);
+    --crease: rgba(194, 160, 95, 0.085);
+    --facet-a: rgba(255, 247, 228, 0.04);
+    --facet-b: rgba(0, 0, 0, 0.17);
     --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
     --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
   }
@@ -47,13 +53,28 @@
 
 html { scroll-behavior: smooth; }
 body {
-  background: var(--paper);
+  position: relative;
+  background:
+    repeating-linear-gradient(118deg, transparent 0 96px, var(--crease) 96px 96.7px, transparent 96.7px 214px),
+    repeating-linear-gradient(-122deg, transparent 0 138px, var(--crease) 138px 138.7px, transparent 138.7px 300px),
+    var(--paper);
   color: var(--ink);
   font-family: 'Hanken Grotesk', system-ui, sans-serif;
   font-size: 18px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+/* Folded-paper facet across the top of every blog page, fading out below the
+   header - the origami hero look, carried from home.html. (Robin, 2026-10-21.) */
+body::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 600px; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(119deg, var(--facet-a) 0 43%, transparent 43.5%),
+    linear-gradient(-129deg, var(--facet-b) 0 30%, transparent 30.5%),
+    radial-gradient(60% 55% at 25% 0%, var(--dawn-1), transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent);
 }
 .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 28px; }
 h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; }

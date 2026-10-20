@@ -4,7 +4,7 @@
 :root[data-theme='light'] {
   --paper:#ece2cf; --paper-2:#e4d9c0; --card:#f6efdd;
   --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
-  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05);
+  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5);
   --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
@@ -13,7 +13,7 @@
 :root[data-theme='dark'] {
   --paper:#111327; --paper-2:#1a1c31; --card:#1a1c31;
   --ink:#ece7f2; --ink-2:rgba(236,231,242,.64); --ink-3:rgba(236,231,242,.40);
-  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06);
+  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4);
   --accent:#c2a05f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
@@ -4760,16 +4760,21 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 [data-sub-id].drop-after { box-shadow:inset 0 -3px 0 var(--accent); }
 
 .pane { min-width:0; padding:30px clamp(20px,4vw,52px) 90px; max-width:1100px; position:relative; z-index:1; }
-/* The empty right margin on wide screens is filled with a Moroccan quatrefoil
-   lattice in the brand gold (theme-aware). Anchored to the pane's right edge so
-   it shows ONLY in the gap - never behind content - and collapses to nothing
-   when the window is too narrow to have a gap. (Robin, 2026-10-15.) */
+/* The empty right margin on wide screens is filled with an origami crease
+   tessellation: a faint triangle-grid of fold lines in the brand gold
+   (theme-aware), echoing the homepage's folded-paper look. Anchored to the pane's
+   right edge so it shows ONLY in the gap - never behind content - and collapses to
+   nothing when the window is too narrow to have a gap. (Robin: swap the Moroccan
+   lattice for the fold, 2026-10-21.) */
 .main::after { content:''; position:fixed; top:0; bottom:0; right:0;
   left:calc(var(--sidebar-w,326px) + 1100px); z-index:0; pointer-events:none;
-  background:url(/brand/moroccan-gold.svg) 0 0 / 96px 106px repeat;
-  -webkit-mask:linear-gradient(to left,#000 0 60%, transparent);
-          mask:linear-gradient(to left,#000 0 60%, transparent); opacity:.5; }
-:root[data-theme='dark'] .main::after { background-image:url(/brand/moroccan-dark.svg); opacity:.4; }
+  background:
+    repeating-linear-gradient(60deg, var(--fold-pat) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(-60deg, var(--fold-pat) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(0deg, var(--fold-pat) 0 1px, transparent 1px 42px);
+  -webkit-mask:linear-gradient(to left,#000 0 55%, transparent);
+          mask:linear-gradient(to left,#000 0 55%, transparent); opacity:.6; }
+:root[data-theme='dark'] .main::after { opacity:.45; }
 /* Sidebar collapsed: no sidebar width, so the pane sits at the far left - re-anchor
    the pattern to the pane's right edge so it fills the now-wider gap, not a band
    of empty paper the sidebar's width across. */
