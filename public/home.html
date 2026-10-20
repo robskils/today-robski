@@ -83,6 +83,9 @@
   --pine-soft: rgba(47, 93, 87, 0.10);
   --dawn-1: rgba(168, 132, 74, 0.18);
   --dawn-2: rgba(217, 138, 91, 0.14);
+  --crease: rgba(120, 92, 45, 0.07);
+  --facet-a: rgba(255, 251, 240, 0.6);
+  --facet-b: rgba(120, 92, 45, 0.065);
   --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
   --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
 }
@@ -104,6 +107,9 @@
     --pine-soft: rgba(127, 189, 176, 0.12);
     --dawn-1: rgba(194, 160, 95, 0.16);
     --dawn-2: rgba(217, 138, 91, 0.12);
+    --crease: rgba(194, 160, 95, 0.085);
+    --facet-a: rgba(255, 247, 228, 0.04);
+    --facet-b: rgba(0, 0, 0, 0.17);
     --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
     --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
   }
@@ -111,7 +117,10 @@
 
 html { scroll-behavior: smooth; }
 body {
-  background: var(--paper);
+  background:
+    repeating-linear-gradient(118deg, transparent 0 96px, var(--crease) 96px 96.7px, transparent 96.7px 214px),
+    repeating-linear-gradient(-122deg, transparent 0 138px, var(--crease) 138px 138.7px, transparent 138.7px 300px),
+    var(--paper);
   color: var(--ink);
   font-family: 'Hanken Grotesk', system-ui, sans-serif;
   font-size: 18px;
@@ -192,9 +201,17 @@ nav {
 .lang-menu a.on { color: var(--rust); font-weight: 600; }
 
 /* ── hero ── */
-.hero { position: relative; padding: 92px 0 60px; }
-.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none;
-  background: radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%), radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
+.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
+.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none; overflow: hidden;
+  background:
+    linear-gradient(119deg, var(--facet-a) 0 43%, transparent 43.5%),
+    linear-gradient(-129deg, var(--facet-b) 0 34%, transparent 34.5%),
+    radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%),
+    radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
+/* A large, faint fold-mark behind the hero - the origami motif as a watermark. */
+.hero-fold { position: absolute; z-index: 0; pointer-events: none; color: var(--rust); opacity: .05;
+  width: min(62vh, 560px); height: auto; left: -11%; bottom: -16%; }
+@media (max-width: 860px) { .hero-fold { width: 300px; left: -17%; bottom: -6%; opacity: .045; } }
 .hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
 .hero-copy { min-width: 0; }
 .hero h1, .hero-tag { padding-right: 0.12em; }
@@ -549,6 +566,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <header class="hero">
   <div class="hero-glow"></div>
+  <svg class="hero-fold" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Invite-only, in early access</div>
