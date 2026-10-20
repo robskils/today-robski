@@ -4,10 +4,21 @@
 //
 // Accounts live in D1; the password is AES-256-GCM encrypted at rest with a key
 // derived from AUTH_SECRET. Robin types it once in the app; it's never logged.
-import { connect } from 'cloudflare:sockets';
 import PostalMime from 'postal-mime';
 import { aiKey, aiNeedsKey, logAiUsage } from './ai.js';
 import { signJWT } from './auth.js';
+
+// `connect` comes from `cloudflare:sockets`, a Workers-runtime-only module Node
+// can't resolve. Import it lazily - never at module scope - so pulling mail.js
+// in for its pure helpers (buildMessage, the IMAP/MIME parsers, parseIcs) under
+// `node --test` doesn't load the socket module and throw
+// ERR_UNSUPPORTED_ESM_URL_SCHEME. wrangler bundles the dynamic import fine, and
+// the module system caches it so repeated opens don't re-import.
+let _connect;
+const sockConnect = async (addr, opts) => {
+  if (!_connect) _connect = (await import('cloudflare:sockets')).connect;
+  return _connect(addr, opts);
+};
 
 // A short-lived signed URL for one attachment, so the reader can open it as a
 // normal link (system browser handles it) instead of a blob download - which
@@ -121,7 +132,7 @@ async function imapOpen(env, acct) {
   // the spaced form, so strip whitespace for Google hosts (their passwords never
   // contain any) - a "wrong password" that is really just stray spaces.
   if (/g(oogle)?mail\.com/i.test(acct.imap_host)) pass = pass.replace(/\s+/g, '');
-  const socket = connect({ hostname: acct.imap_host, port: acct.imap_port }, { secureTransport: 'on', allowHalfOpen: false });
+  const socket = await sockConnect({ hostname: acct.imap_host, port: acct.imap_port }, { secureTransport: 'on', allowHalfOpen: false });
   const reader = new Reader(socket.readable);
   const writer = socket.writable.getWriter();
   const enc = new TextEncoder();
@@ -440,7 +451,7 @@ export async function smtpSend(env, acct, msg) {
   // a secret pasted with a trailing newline/space is a classic 535 auth failure.
   const pass = acct.pass != null ? String(acct.pass).trim() : await decryptPass(env, acct.pass_enc);
   const implicitTls = Number(acct.smtp_port) === 465;
-  let socket = connect({ hostname: acct.smtp_host, port: Number(acct.smtp_port) }, implicitTls ? { secureTransport: 'on' } : { secureTransport: 'starttls' });
+  let socket = await sockConnect({ hostname: acct.smtp_host, port: Number(acct.smtp_port) }, implicitTls ? { secureTransport: 'on' } : { secureTransport: 'starttls' });
   let reader = new Reader(socket.readable);
   let writer = socket.writable.getWriter();
   const enc = new TextEncoder();

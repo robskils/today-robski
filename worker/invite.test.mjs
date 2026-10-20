@@ -3,7 +3,7 @@
 // It carries two pieces of somebody's typed text - the inviter's display name
 // and their note - into a stranger's inbox, so the escaping is the part that
 // matters. The rest pins the copy Robin asked for: the invitation is from a
-// person, to Lifebook, and it never asks anyone for a code.
+// person, to LifeFold, and it never asks anyone for a code.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,9 +14,9 @@ const LINK = 'https://daybook.fyi/join/AB2CD3EF';
 test('names the inviter and the product, and nothing else', () => {
   const html = inviteEmail({ from: 'Robin', link: LINK });
   assert.match(html, /Robin has invited you to join/);
-  assert.match(html, /<em>Lifebook<\/em>/);
-  // "Robski Lifebook" was the old wordmark. An invitation is to Lifebook, not to
-  // somebody else's Lifebook.
+  assert.match(html, /<em>LifeFold<\/em>/);
+  // "Robski Lifebook" was the old wordmark. An invitation is to LifeFold, not to
+  // somebody else's named copy.
   assert.doesNotMatch(html, /Robski/);
 });
 
