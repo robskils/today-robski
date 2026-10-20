@@ -840,10 +840,10 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
       <li><a href="#" data-cookie-settings>Cookie settings</a></li>
-      <li><a href="mailto:contact@daybook.fyi">Contact</a></li>
+      <li><a href="mailto:contact@lifefold.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
   </div>
 </footer>
 
@@ -940,7 +940,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you 🌱</h3><p>We\'ll be in touch soon. LifeFold grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
-      .catch(() => fail('Something went wrong - email contact@daybook.fyi and we\'ll sort you out.'));
+      .catch(() => fail('Something went wrong - email contact@lifefold.co and we\'ll sort you out.'));
   });
   // Gentle scroll reveal; if IO is unavailable, everything just shows.
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {

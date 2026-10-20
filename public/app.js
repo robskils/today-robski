@@ -966,9 +966,9 @@ function renderGuideIndex() {
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
-        <a class="guide-legal-link" href="mailto:contact@daybook.fyi">Contact us ✉</a>
+        <a class="guide-legal-link" href="mailto:contact@lifefold.co">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@daybook.fyi">contact@daybook.fyi</a>.<br>© ${new Date().getFullYear()} LifeFold · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@lifefold.co">contact@lifefold.co</a>.<br>© ${new Date().getFullYear()} LifeFold · daybook.fyi</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -2070,24 +2070,52 @@ async function openAdmin() {
 const admN = (n) => (n || 0).toLocaleString();
 const admUSD = (n) => '$' + (n || 0).toFixed(2);
 const admTok = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n || 0));
-function adminUserRow(u) {
+// One member as a tap-to-open row: the lowdown (who, plan, when last used,
+// joined) on the face; a tap opens the rest - email, AI usage this month, free
+// period, and the controls to change plan / grant free time / suspend. One row
+// holds everything about one person, so there's no tab-hunting. (Robin, 2026-10-20.)
+function adminMemberRow(u) {
+  const a = state.admin || {};
   const owner = u.id === 1;
-  const plans = PLAN_KEYS;
-  // The free period (free_until) is editable after signup: grant N months from
-  // today, or remove it. The select is an action, so it always sits on its
-  // placeholder; the current state reads in the meta line.
+  const now = Date.now();
+  const t = u.last_seen ? (Date.parse(u.last_seen) || 0) : 0;
+  const online = !!t && (now - t < 150000);
+  const used = t ? (online ? 'online now' : timeAgo(t)) : 'never used';
+  const name = (u.name || '').trim();
+  const sub = (u.subdomain || '').trim();
+  const primary = esc(name || sub || u.email || 'Someone');
+  const subPill = (sub && esc(sub) !== primary) ? `<span class="am-sub">@${esc(sub)}</span>` : '';
   const fu = u.free_until ? new Date(u.free_until) : null;
-  const freeActive = fu && fu.getTime() > Date.now();
-  const freeForever = freeActive && fu.getFullYear() >= 9999;   // the "forever" sentinel (free_until far in the future)
+  const freeActive = fu && fu.getTime() > now;
+  const freeForever = freeActive && fu.getFullYear() >= 9999;
+  const ai = (a.aiByUser || {})[u.id];
+  const open = a.openMember === u.id;
+  const planBadge = `<span class="am-plan plan-${normPlan(u.plan)}">${esc(planLabel(u.plan))}</span>`;
+  const head = `<button type="button" class="am-head" data-adm-member="${u.id}" aria-expanded="${open ? 'true' : 'false'}">
+      <span class="am-dot ${online ? 'on' : (t ? 'idle' : 'never')}" title="${online ? 'online now' : (t ? 'last used ' + esc(fmtDateY(u.last_seen)) : 'never used')}" aria-hidden="true"></span>
+      <span class="am-id"><span class="am-name">${primary}</span>${subPill}</span>
+      ${planBadge}
+      <span class="am-used ${online ? 'on' : ''}">${esc(used)}</span>
+      <span class="am-joined">joined ${esc(fmtDateY(u.created_at))}</span>
+      <span class="am-chev" aria-hidden="true">${open ? '▾' : '▸'}</span>
+    </button>`;
+  if (!open) return `<div class="am-row${u.status === 'suspended' ? ' susp' : ''}">${head}</div>`;
   const freeOpts = [['1', '1 month'], ['3', '3 months'], ['6', '6 months'], ['12', '12 months'], ['24', '24 months']];
-  const freeCtl = owner ? '' : `<select class="sel au-free-sel" data-admin-free="${u.id}" title="Grant or change this member's free period"><option value="">Free period…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select>`;
-  return `<div class="adm-user ${u.status === 'suspended' ? 'susp' : ''}">
-    <div class="adm-user-main"><span class="au-sub">${esc(u.subdomain || '—')}</span><span class="au-email">${esc(u.email)}</span></div>
-    <div class="adm-user-meta">${u.aiCalls ? `<span class="au-usage">${admN(u.aiCalls)} AI calls</span> · ` : ''}<span>joined ${esc(fmtDateY(u.created_at))}</span>${u.last_seen ? ` · <span title="last used ${esc(fmtDateY(u.last_seen))}">active ${daysAgoLabel(Date.parse(u.last_seen))}</span>` : ' · never active'}${freeActive ? ` · <span class="au-free-badge">${freeForever ? 'free forever' : `free until ${esc(fmtDateY(u.free_until))}`}</span>` : ''}</div>
-    <div class="adm-user-acts">${owner ? `<span class="au-plan">${esc(planLabel(u.plan))} · owner</span>`
-      : `<select class="sel au-plan-sel" data-admin-plan="${u.id}">${plans.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select>
-        ${freeCtl}
-        <button class="ghost ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`}
+  const planCtl = owner ? '<span class="am-ownertag">Owner account</span>'
+    : `<label class="am-ctl"><span>Plan</span><select class="sel" data-admin-plan="${u.id}">${PLAN_KEYS.map((p) => `<option value="${p}" ${normPlan(u.plan) === p ? 'selected' : ''}>${PLAN_LABEL[p]}</option>`).join('')}</select></label>`;
+  const freeCtl = owner ? '' : `<label class="am-ctl"><span>Free period</span><select class="sel" data-admin-free="${u.id}"><option value="">Set…</option>${freeOpts.map(([m, l]) => `<option value="${m}">${l} from today</option>`).join('')}<option value="forever">Forever</option>${freeActive ? '<option value="0">Remove free period</option>' : ''}</select></label>`;
+  const suspendBtn = owner ? '' : `<button class="ghost am-suspend ${u.status === 'suspended' ? '' : 'acct-danger'}" data-admin-status="${u.id}" data-status="${u.status === 'suspended' ? 'active' : 'suspended'}">${u.status === 'suspended' ? 'Reactivate' : 'Suspend'}</button>`;
+  const facts = [
+    `<a class="am-email" href="mailto:${esc(u.email)}">${esc(u.email)}</a>`,
+    t ? `last used ${esc(fmtDateY(u.last_seen))}` : 'never signed in',
+    ai ? `${admN(ai.calls)} AI calls this month · ${admUSD(ai.cost)}` : 'no AI use this month',
+    freeActive ? (freeForever ? '✦ free forever' : `✦ free until ${esc(fmtDateY(u.free_until))}`) : null,
+    u.status === 'suspended' ? '⏸ suspended' : null,
+  ].filter(Boolean);
+  return `<div class="am-row open${u.status === 'suspended' ? ' susp' : ''}">${head}
+    <div class="am-body">
+      <div class="am-facts">${facts.join('<span class="am-sep"> · </span>')}</div>
+      <div class="am-ctls">${planCtl}${freeCtl}${suspendBtn}</div>
     </div>
   </div>`;
 }
@@ -2124,45 +2152,27 @@ function renderAdmin() {
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
   // thumbing past the whole business to reach the quotes. One tab at a time,
   // exactly as Settings does it.
-  const TABS = [['overview', 'Overview'], ['members', 'Members'], ['invites', 'Invites'], ['costs', 'Costs'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
-  if (!TABS.some(([k]) => k === a.tab)) a.tab = 'overview';
+  const TABS = [['members', 'Members'], ['costs', 'Costs'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
+  if (!TABS.some(([k]) => k === a.tab)) a.tab = 'members';
   const tab = a.tab;
-  const reqN = (a.requests || []).length;   // pending join requests, badged on the Invites tab so it's findable
-  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}${k === 'invites' && reqN ? ` <span class="seg-badge">${reqN > 99 ? '99+' : reqN}</span>` : ''}</button>`).join('')}</div>`;
+  const reqN = (a.requests || []).length;   // pending join requests, badged on Members (they live under the Requests segment now)
+  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}${k === 'members' && reqN ? ` <span class="seg-badge">${reqN > 99 ? '99+' : reqN}</span>` : ''}</button>`).join('')}</div>`;
 
-  const overviewPane = `
-    <div class="adm-cards">
-      ${card('Members', admN(uOv.total), `${uOv.active7 || 0} active this week`, 'data-adm-tab="members"')}
-      ${card('New members', admN(uOv.new7), `${admN(uOv.new30)} in the last 30 days`, 'data-adm-tab="members"')}
-      ${card('AI cost this month', admUSD(ai.totalCost), `${admN(ai.calls)} calls${ai.month ? ' · ' + ai.month : ''}`, (a.aiUsage || []).length ? 'data-adm-jump="ai"' : '')}
-      ${card('Invitations', admN(inv.total), `${inv.unused || 0} still open`, 'data-adm-tab="invites"')}
-    </div>
-    ${planChips ? `<div class="adm-plans">${planChips}</div>` : ''}
-    <div class="home-sec-h" style="margin-top:8px">Usage</div>
-    <div class="adm-usage">
-      <span class="adm-usage-stat"><b>${admN(uOv.active1 || 0)}</b> active today</span>
-      <span class="adm-usage-stat"><b>${admN(uOv.active7 || 0)}</b> this week</span>
-      <span class="adm-usage-stat"><b>${admN(uOv.active30 || 0)}</b> this month</span>
-      <span class="adm-usage-stat"><b>${admN(uOv.total || 0)}</b> all members</span>
-    </div>
-    ${(a.aiUsage || []).length ? `<div class="home-sec-h" id="adm-ai-usage" style="margin-top:8px">AI usage · this month</div>
-      <div class="admin-list">${a.aiUsage.map((r) => `<div class="admin-row"><span class="au-sub">${esc(r.subdomain || ('user ' + r.userId))}</span><span class="au-email">${admTok(r.inTokens)} in · ${admTok(r.outTokens)} out · ${admN(r.calls)} calls</span><span class="au-plan">${admUSD(r.cost)}</span></div>`).join('')}</div>` : ''}`;
-
-  // Sortable members list: recently active (by last_seen), longest idle (the
-  // inverse - who's drifting), or recently joined (by created_at). (Robin, 2026-10-18.)
-  const MEMBER_SORTS = [['active', 'Recently active'], ['idle', 'Longest idle'], ['joined', 'Recently joined']];
-  const msort = a.memberSort || 'active';
-  const tms = (s) => Date.parse(s) || 0;
-  const sortedUsers = users.slice().sort((x, y) =>
-    msort === 'joined' ? tms(y.created_at) - tms(x.created_at)
-      : msort === 'idle' ? tms(x.last_seen) - tms(y.last_seen)
-        : tms(y.last_seen) - tms(x.last_seen));
-  const memberSortBar = `<div class="adm-sortbar"><label class="adm-sort-l">Sort <select class="sel" data-admin-usersort>${MEMBER_SORTS.map(([v, l]) => `<option value="${v}"${msort === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>`;
-  const membersPane = `${memberSortBar}<div class="adm-users">${sortedUsers.map(adminUserRow).join('') || '<div class="home-empty">No members yet.</div>'}</div>`;
-
+  // ── People: one consolidated view (was Overview + Members + Invites) ──────
+  // An activity segment picker over tap-to-open member rows, with pending
+  // invitations and website join-requests as their own segments. The whole
+  // lowdown on anyone is one tap - no tab-hunting. (Robin, 2026-10-20.)
+  a.aiByUser = {}; (a.aiUsage || []).forEach((r) => { a.aiByUser[r.userId] = r; });
+  const NOW = Date.now(); const DAY = 86400000;
+  const lastSeenMs = (u) => (u.last_seen ? (Date.parse(u.last_seen) || 0) : 0);
+  const BUCKET = {
+    today: (u) => lastSeenMs(u) >= NOW - DAY,
+    week: (u) => lastSeenMs(u) >= NOW - 7 * DAY,
+    month: (u) => lastSeenMs(u) >= NOW - 30 * DAY,
+    dormant: (u) => lastSeenMs(u) < NOW - 30 * DAY,   // includes never-active (0)
+    all: () => true,
+  };
   const pendingInv = (state.invites || []).filter((i) => !i.used_by);
-  const activated = users.slice().sort((x, y) => new Date(y.last_seen || 0) - new Date(x.last_seen || 0));
-  // People who asked for an invite from the website - invite them (prefilled) or dismiss.
   const requests = a.requests || [];
   const reqRow = (r) => `<div class="adm-req">
       <div class="adm-req-main">
@@ -2172,19 +2182,31 @@ function renderAdmin() {
       </div>
       <div class="adm-req-acts"><button class="add-btn wide" data-req-invite="${r.id}" data-req-email="${esc(r.email)}">✦ Invite</button><button class="ghost adm-req-x" data-req-dismiss="${r.id}" title="Dismiss this request">Dismiss</button></div>
     </div>`;
-  const requestsCard = `<div class="set-card">
-      <div class="home-sec-h">Requests to join${requests.length ? ` · ${requests.length}` : ''}</div>
-      <p class="inv-hint">People who asked for an invite from the website. Invite them - you still pick the plan and any free period - or dismiss.</p>
-      ${requests.length ? `<div class="adm-req-list">${requests.map(reqRow).join('')}</div>` : '<div class="home-empty" style="padding:4px 0 0">No open requests right now.</div>'}
-    </div>`;
-  const invitesPane = `${requestsCard}
-    <div class="set-card" style="margin-top:14px">
-      <div class="inv-new"><button class="add-btn wide" data-admin-invite>✦ Invite someone</button></div>
-      <div class="home-sec-h" style="margin-top:4px">Awaiting a reply${pendingInv.length ? ` · ${pendingInv.length}` : ''}</div>
-      <p class="inv-hint">Invitations sent but not yet accepted. LifeFold sends one link - no code to type. Re-send a nudge, or cancel to free the slot.</p>
-      <div class="inv-list">${pendingInv.map(inviteRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No open invitations - everyone you invited has joined.</div>'}</div>
-      <p class="inv-hint" style="margin-top:14px">Looking for everyone who's joined? That's the <button class="linklike" data-adm-tab="members">Members</button> tab.</p>
-    </div>`;
+  const FILTERS = [
+    ['today', 'Active today', users.filter(BUCKET.today).length],
+    ['week', 'This week', users.filter(BUCKET.week).length],
+    ['month', 'This month', users.filter(BUCKET.month).length],
+    ['all', 'All members', users.length],
+    ['dormant', 'Dormant', users.filter(BUCKET.dormant).length],
+    ['invited', 'Invited', pendingInv.length],
+    ['requests', 'Requests', requests.length],
+  ];
+  let mfilt = a.memberFilter || 'all';
+  if (!FILTERS.some(([k]) => k === mfilt)) mfilt = 'all';
+  const fchips = FILTERS.map(([k, l, n]) => `<button type="button" class="am-fchip ${mfilt === k ? 'on' : ''}${k === 'requests' && n ? ' urgent' : ''}" data-adm-filter="${k}">${l}<span class="am-fcount">${n}</span></button>`).join('');
+  const statStrip = `<div class="am-stat"><b>${admN(users.length)}</b> member${users.length === 1 ? '' : 's'} · <b>${admN(users.filter(BUCKET.today).length)}</b> active today · <b>${admN(users.filter(BUCKET.week).length)}</b> this week · ${admUSD((ai || {}).totalCost)} AI this month</div>`;
+  let mBody;
+  if (mfilt === 'invited') {
+    mBody = `<p class="inv-hint">Invitations sent but not yet accepted - one link, no code to type. Re-send a nudge, or cancel to free the slot.</p>${pendingInv.length ? `<div class="inv-list">${pendingInv.map(inviteRow).join('')}</div>` : '<div class="home-empty">No open invitations - everyone you invited has joined.</div>'}`;
+  } else if (mfilt === 'requests') {
+    mBody = `<p class="inv-hint">People who asked for an invite from the website. Invite them - you still pick the plan and any free period - or dismiss.</p>${requests.length ? `<div class="adm-req-list">${requests.map(reqRow).join('')}</div>` : '<div class="home-empty">No open requests right now.</div>'}`;
+  } else {
+    const shown = users.slice().filter(BUCKET[mfilt]).sort((x, y) => lastSeenMs(y) - lastSeenMs(x));
+    mBody = shown.length ? `<div class="am-list">${shown.map(adminMemberRow).join('')}</div>` : `<div class="home-empty">No one ${mfilt === 'dormant' ? 'dormant' : 'to show'} right now.</div>`;
+  }
+  const membersPane = `${statStrip}
+    <div class="am-bar"><div class="am-fchips">${fchips}</div><button class="add-btn wide am-invite" data-admin-invite>✦ Invite someone</button></div>
+    ${mBody}`;
 
   const setupPane = `<div class="set-card">
       <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
@@ -2240,11 +2262,9 @@ function renderAdmin() {
       <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
     </div>`;
 
-  const panes = { overview: overviewPane, members: membersPane, invites: invitesPane, costs: costsPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
+  const panes = { members: membersPane, costs: costsPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
-    overview: 'Members, usage and what AI is costing',
-    members: `${users.length} on LifeFold`,
-    invites: `${inv.unused || 0} still open`,
+    members: `${users.length} on LifeFold · tap anyone for the full picture`,
     costs: 'What it costs to run LifeFold, by month',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
@@ -3031,7 +3051,7 @@ function renderSettings() {
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
           ${managed
             ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
-            : '<a class="add-btn wide" href="mailto:contact@daybook.fyi?subject=LifeFold%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
+            : '<a class="add-btn wide" href="mailto:contact@lifefold.co?subject=LifeFold%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
         </div>
       </div>`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -3930,7 +3950,7 @@ function renderNav() {
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
         ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of LifeFold on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@daybook.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} LifeFold</span></div>
+        <div class="nav-legal"><a href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@lifefold.co">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} LifeFold</span></div>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
@@ -20332,6 +20352,8 @@ document.addEventListener('click', (e) => {
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
+  { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; renderAdmin(); return; } }
+  { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
   { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://lifefold.co/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }

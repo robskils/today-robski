@@ -2928,6 +2928,53 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .au-sub { font-weight:600; color:var(--ink); min-width:90px; }
 .au-email { flex:1; min-width:0; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .au-plan { color:var(--ink-3); text-transform:capitalize; }
+/* ── Members (consolidated): stat strip, activity chips, tap-to-open rows ── */
+.am-stat { font-size:14px; color:var(--ink-2); margin:0 0 14px; }
+.am-stat b { color:var(--ink); font-weight:700; }
+.am-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; }
+.am-fchips { display:flex; flex-wrap:wrap; gap:7px; flex:1 1 auto; min-width:0; }
+.am-fchip { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:999px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); font:inherit; font-size:13.5px; line-height:1; cursor:pointer; transition:background .12s,border-color .12s,color .12s; }
+.am-fchip:hover { border-color:var(--accent); }
+.am-fchip.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink,#fff); font-weight:600; }
+.am-fcount { font-weight:700; font-size:12px; padding:1px 7px; border-radius:999px; background:color-mix(in srgb,var(--ink) 8%,transparent); color:inherit; }
+.am-fchip.on .am-fcount { background:rgba(255,255,255,.22); }
+.am-fchip.urgent:not(.on) { border-color:color-mix(in srgb,var(--danger,#c4412e) 50%,var(--line-2)); color:var(--danger,#c4412e); }
+.am-fchip.urgent:not(.on) .am-fcount { background:color-mix(in srgb,var(--danger,#c4412e) 14%,transparent); }
+.am-invite { flex:none; }
+.am-list { display:flex; flex-direction:column; gap:7px; }
+.am-row { border:1px solid var(--line); border-radius:12px; background:var(--card); overflow:hidden; transition:border-color .12s; }
+.am-row.open { border-color:var(--accent); }
+.am-row.susp { opacity:.6; }
+.am-head { display:flex; align-items:center; gap:11px; width:100%; text-align:left; background:none; border:0; cursor:pointer; padding:12px 15px; font:inherit; color:var(--ink); }
+.am-head:hover { background:color-mix(in srgb,var(--ink) 3%,transparent); }
+.am-dot { flex:none; width:9px; height:9px; border-radius:50%; background:var(--ink-3); }
+.am-dot.on { background:#3fae5a; box-shadow:0 0 0 3px color-mix(in srgb,#3fae5a 22%,transparent); }
+.am-dot.idle { background:var(--accent); }
+.am-dot.never { background:var(--line-2); }
+.am-id { display:flex; align-items:baseline; gap:8px; min-width:0; flex:1 1 auto; }
+.am-name { font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.am-sub { font-size:12.5px; color:var(--ink-3); flex:none; }
+.am-plan { flex:none; font-size:12px; font-weight:600; padding:3px 9px; border-radius:999px; background:color-mix(in srgb,var(--ink) 7%,transparent); color:var(--ink-2); }
+.am-plan.plan-byok { background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); }
+.am-plan.plan-managed { background:var(--accent); color:var(--accent-ink,#fff); }
+.am-used { flex:none; font-size:13px; color:var(--ink-2); white-space:nowrap; }
+.am-used.on { color:#3fae5a; font-weight:600; }
+.am-joined { flex:none; font-size:12.5px; color:var(--ink-3); white-space:nowrap; }
+.am-chev { flex:none; font-size:11px; color:var(--ink-3); }
+.am-body { padding:0 15px 14px 35px; display:flex; flex-direction:column; gap:12px; }
+.am-facts { font-size:13px; color:var(--ink-2); line-height:1.6; }
+.am-facts .am-email { color:var(--accent); font-weight:600; }
+.am-sep { color:var(--ink-3); }
+.am-ctls { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px 14px; }
+.am-ctl { display:flex; flex-direction:column; gap:4px; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+.am-ctl .sel { margin:0; width:auto; max-width:none; padding:7px 26px 7px 11px; font-size:13.5px; text-transform:none; letter-spacing:0; }
+.am-ctls .ghost { padding:7px 13px; font-size:13px; align-self:center; }
+.am-ownertag { font-size:13px; color:var(--ink-3); font-style:italic; align-self:center; }
+@media (max-width:560px){
+  .am-head { flex-wrap:wrap; }
+  .am-joined { display:none; }
+  .am-body { padding-left:15px; }
+}
 /* Admin Invites tab: the "Activated accounts" usage table. */
 /* One shared grid so Joined / Last seen / Plan line up as true columns across
    every row; each row is a subgrid item spanning all four tracks, keeping its
