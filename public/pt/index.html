@@ -382,6 +382,13 @@ section { position: relative; }
 .share-case b { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: var(--ink); }
 .share-case span:last-child { font-size: 14px; color: var(--ink-3); }
 @media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
+/* "Not a box. A fold." - the three fold pillars */
+.fold-beats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+.fold-beat { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 28px 24px; display: flex; flex-direction: column; gap: 10px; transition: transform .16s, border-color .16s, box-shadow .16s; }
+.fold-beat:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow); }
+.fold-beat b { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1.26; }
+.fold-beat p { margin: 0; font-size: 15.5px; color: var(--ink-2); line-height: 1.55; }
+@media (max-width: 760px) { .fold-beats { grid-template-columns: 1fr; } }
 
 /* Reflection - a secondary story, set apart with a soft pine tint */
 .wellbeing-band { background: var(--pine-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -541,7 +548,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Apenas por convite, em acesso antecipado</div>
-      <p class="hero-tag reveal">life&middot;fold, s. - a sua vida inteira, num só lugar</p>
+      <p class="hero-tag reveal">life&middot;fold, s. - reunir toda a sua vida num só lugar</p>
       <h1 class="reveal">Para uma vida<br><em>bem vivida</em></h1>
       <p class="hero-sub reveal">O LifeFold reúne os dois lados da sua vida - reflexão e ação - num conjunto de ferramentas ligadas que falam entre si. Ajuda-o a gerir, concretizar e encontrar sentido no seu dia a dia.</p>
       <div class="hero-actions reveal">
@@ -583,12 +590,27 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
   </div>
 </section>
 
+<section class="band fold-band" id="fold">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">A ideia por trás do nome</div>
+      <h2>Não uma caixa. Uma dobra.</h2>
+      <p>O símbolo é uma dobra de origami, e a ideia também.</p>
+    </div>
+    <div class="fold-beats reveal">
+      <div class="fold-beat"><b>Guarda a forma da sua vida</b><p>O trabalho, a saúde, as pessoas que ama, os seus objetivos, as partes mais calmas e interiores - uma vida tem muitas dobras. O LifeFold mantém-nas juntas num lugar sereno e organizado. Não uma caixa rígida: uma estrutura viva que se molda a si.</p></div>
+      <div class="fold-beat"><b>Venha para dentro da dobra</b><p>Trazer as suas listas dispersas e notas soltas é, no fundo, trazer-se a si - do disperso ao reunido, de carregar tudo a sentir-se amparado. Assente, incluído, em casa consigo mesmo.</p></div>
+      <div class="fold-beat"><b>Dobrar é um ato criativo</b><p>Como no origami, uma dobra pega no que é plano e dá-lhe profundidade, forma e uma beleza serena. O LifeFold dobra a lista diária avassaladora numa forma que consegue mesmo segurar - com sentido, e manejável.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="band" id="tools">
   <div class="wrap">
     <div class="band-head center reveal">
       <div class="eyebrow">Todo o seu conjunto</div>
-      <h2>O livro que o faz brilhar</h2>
-      <p>Tudo num só lugar - correio, calendário, notas, tarefas, finanças e pessoas para a ação; bem-estar, objetivos e Life Spaces para a vida interior. Ligado para que nada escape, e tratado com discrição, para que tenha tudo sob controlo sem parecer que se esforça.</p>
+      <h2>Tudo, dobrado num só lugar</h2>
+      <p>Tudo num só lugar - correio, calendário, notas, tarefas, finanças e pessoas para a ação; bem-estar, objetivos e Life Spaces para a vida interior. Ligado para que nada escape, e tratado com discrição, para que tenha tudo sob controlo.</p>
     </div>
     <div class="toolshow reveal">
       <div class="ts-tiles" id="tsTiles">
