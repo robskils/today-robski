@@ -4,7 +4,7 @@
 :root[data-theme='light'] {
   --paper:#ece2cf; --paper-2:#e4d9c0; --card:#f6efdd;
   --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
-  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5);
+  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5); --body-crease:rgba(120,92,45,.04);
   --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
@@ -13,7 +13,7 @@
 :root[data-theme='dark'] {
   --paper:#111327; --paper-2:#1a1c31; --card:#1a1c31;
   --ink:#ece7f2; --ink-2:rgba(236,231,242,.64); --ink-3:rgba(236,231,242,.40);
-  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4);
+  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4); --body-crease:rgba(194,160,95,.05);
   --accent:#c2a05f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
@@ -53,7 +53,14 @@
 html { -webkit-text-size-adjust:100%; }
 body {
   font-family:'Inter',system-ui,-apple-system,sans-serif;
-  font-size:18px; line-height:1.5; color:var(--ink); background:var(--paper);
+  font-size:18px; line-height:1.5; color:var(--ink);
+  /* Default app background: the warm paper with a whisper of origami fold creases.
+     A chosen bg pattern (body[data-bg]) overrides this; Plain now means "folded
+     paper" rather than flat. (Robin, 2026-10-21.) */
+  background-color:var(--paper);
+  background-image:
+    repeating-linear-gradient(118deg, transparent 0 104px, var(--body-crease) 104px 104.7px, transparent 104.7px 236px),
+    repeating-linear-gradient(-122deg, transparent 0 150px, var(--body-crease) 150px 150.7px, transparent 150.7px 330px);
   -webkit-font-smoothing:antialiased; padding-bottom:env(safe-area-inset-bottom);
 }
 h1,h2 { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; letter-spacing:-.01em; }
