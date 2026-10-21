@@ -8353,7 +8353,11 @@ function areaGoto(key) {
   // and scroll to it. (Robin: keep the stats buttons - they jump to the cards.)
   const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Notes: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
   const id = GOTO_TILE[key];
-  if (id && state.area_open) { state.area_open.toolTile = id; renderArea(); settle(`#pane [data-area-tool="${id}"]`); return; }
+  // Land on the open section's CONTENT panel, not the tile button up in the grid:
+  // the panel renders below the whole grid, so scrolling to the tile left you
+  // staring at the button with the actual tasks/notes still off-screen below.
+  // (Robin, 2026-10-21: a metric should jump to its content, not its button.)
+  if (id && state.area_open) { state.area_open.toolTile = id; renderArea(); settle('#pane .area-tool-panel'); return; }
   settle('#pane .area-tools');
 }
 // The order the overview sections sit in, dragged by the ⠿ grip. Global (like

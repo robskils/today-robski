@@ -8427,6 +8427,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .page-kicker { display:inline-flex; align-items:center; gap:10px; font-family:'IM Fell English SC',Georgia,serif; font-size:13px; font-weight:400; text-transform:uppercase; letter-spacing:.22em; color:color-mix(in srgb, hsl(var(--h,220) var(--lane-s) var(--lane-l)) 55%, var(--ink-3)); margin:2px 0 2px 3px; }
 .page-kicker::before { content:""; width:20px; height:2px; border-radius:2px; background:currentColor; opacity:.55; }
 .area-mast .am-plate h1 { margin-top:0; }
+/* Mobile: the Life Space name gets the whole first line; Share / star / caret
+   wrap to a line of their own beneath it, so a longer name is never clipped by
+   the controls crammed beside it. (Robin, 2026-10-21: name obscured on mobile.) */
+@media (max-width:820px){
+  .area-mast .am-plate h1 { flex-wrap:wrap; font-size:clamp(28px,7vw,40px); }
+  .area-mast .am-plate h1 .area-h1-tools { flex-basis:100%; margin-left:0; margin-top:6px; }
+}
 .area-tabs-kick { padding-top:16px; }
 .area-tab-kick { margin:0; }
 @media (max-width:560px){
