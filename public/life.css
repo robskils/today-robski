@@ -8454,8 +8454,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 }
 
 /* Cover-image picker (opens from the masthead). */
-.cover-dialog { width:min(580px,94vw); max-height:88vh; overflow:auto; text-align:left; }
-.cover-dialog .recur-p { margin-bottom:12px; }
+.cover-dialog { width:min(580px,94vw); max-height:88vh; overflow:auto; text-align:left; padding:26px; }
+/* A calmer header: a larger title with real space before the subtitle, and the
+   subtitle given room to breathe before the controls. (Robin, 2026-10-21.) */
+.cover-dialog .recur-h { font-size:21px; letter-spacing:-.01em; margin-bottom:12px; }
+.cover-dialog .recur-p { margin:0 0 20px; color:var(--ink-2); line-height:1.5; }
 .cv-actions { display:flex; gap:8px; align-items:stretch; margin:2px 0 12px; flex-wrap:wrap; }
 .cv-upload { flex:none; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
 .cv-up-ic { font-size:15px; }
