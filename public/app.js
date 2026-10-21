@@ -2933,17 +2933,19 @@ function renderSettings() {
   // collapsing scroll, so the settings you reach for most are one tap in. Your
   // LifeFold card and your security (two-factor) are not separate tabs - they
   // live inside Account: the card as a sub-page (Edit card), two-factor inline.
+  // Tools sits right after Appearance; Manage retired - every tile it held (Life
+  // Spaces, Mail accounts, Practices, Spending categories, Reviews, Flow) is
+  // reachable from its own view. (Robin, 2026-10-22.)
   const TABS = [
     ['account', t('set.tab.account')],
     ['ai', t('set.tab.ai')],
     ['appearance', t('set.tab.appearance')],
+    ['sections', t('set.tab.sections')],
     ['mobile', t('set.tab.mobile')],
     ['feeds', t('set.tab.feeds')],
     ['notifications', t('set.tab.notifications')],
-    ['sections', t('set.tab.sections')],
     ['invites', t('set.tab.invites')],
     ['import', t('set.tab.import')],
-    ['manage', t('set.tab.manage')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
   // LifeFold card editor opens from Account and returns there.
