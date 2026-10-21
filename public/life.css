@@ -8442,7 +8442,6 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cv-upload { flex:none; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
 .cv-up-ic { font-size:15px; }
 .cv-search { display:flex; gap:8px; margin:2px 0 12px; }
-.cv-actions .cv-search { flex:1 1 200px; margin:0; }
 .cover-dialog input { font:inherit; font-size:15px; padding:10px 13px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink); }
 .cover-dialog input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent); }
 .cv-q { flex:1 1 auto; min-width:0; }
@@ -8452,12 +8451,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(102px,1fr)); gap:8px; }
 .cv-thumb { aspect-ratio:4/3; border-radius:11px; border:1px solid var(--line); background:var(--paper-2) center/cover no-repeat; cursor:pointer; transition:transform .1s, box-shadow .13s, border-color .12s; }
 .cv-thumb:hover { transform:translateY(-2px); border-color:var(--accent); box-shadow:0 12px 24px -12px rgba(0,0,0,.5); }
-.cv-url-l { display:block; font-size:13px; color:var(--ink-3); }
-.cv-url-row { display:flex; gap:8px; margin-top:7px; }
-.cv-url { flex:1 1 auto; min-width:0; }
 .cv-remove { color:var(--danger,#b4453a); margin-right:auto; }
-/* The Remove cover / Close row wants room, not to sit cramped against the URL field
-   and the dialog edge. (Robin.) */
+/* The Remove cover / Close row wants room, not to sit cramped against the dialog
+   edge. (Robin.) */
 .cover-dialog .ui-dialog-btns { margin-top:18px; gap:12px; }
 .cover-dialog .ui-btn { padding:12px 22px; }
 

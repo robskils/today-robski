@@ -8888,7 +8888,7 @@ function renderArea() {
         ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=LifeFold&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>`
-        : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover photo"><span class="amc-ic">❏</span>Photo</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
+        : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
@@ -9437,13 +9437,12 @@ function openAreaCover() {
   const cur = (area.props && area.props.cover) || null;
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog" style="--h:${hueOf(area)}">
     <div class="recur-h">Cover image</div>
-    <p class="recur-p">Upload a photo from your computer, search free photos, or paste a link.</p>
+    <p class="recur-p">Upload an image from your computer, or search free photos.</p>
     <div class="cv-actions">
-      <label class="ui-btn primary cv-upload"><input type="file" accept="image/*" hidden data-cv-file><span class="cv-up-ic">⬆</span>Upload a photo</label>
-      <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="or search free photos…" value="${esc(area.title || '')}"><button class="ui-btn cv-go" type="submit">Search</button></form>
+      <label class="ui-btn primary cv-upload"><input type="file" accept="image/*" hidden data-cv-file><span class="cv-up-ic">⬆</span>Upload an image</label>
     </div>
+    <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="Search free photos…" value="${esc(area.title || '')}"><button class="ui-btn cv-go" type="submit">Search</button></form>
     <div class="cv-results" data-cv-results></div>
-    <label class="cv-url-l">Or paste an image URL<div class="cv-url-row"><input class="cv-url" data-cv-url placeholder="https://…/photo.jpg"><button class="ui-btn cv-url-go" data-cv-url-go type="button">Use</button></div></label>
     <div class="ui-dialog-btns">${cur ? '<button class="ui-btn cv-remove" data-cv-remove>Remove cover</button>' : '<span></span>'}<button class="ui-btn cancel" data-cv-cancel>Close</button></div>
   </div></div>`;
   const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
@@ -9460,12 +9459,12 @@ function openAreaCover() {
   };
   const runSearch = async () => {
     const q = el.querySelector('[data-cv-q]').value.trim();
-    if (!q) { results.innerHTML = '<div class="cv-hint">Type a word to search, or paste a link below.</div>'; return; }
+    if (!q) { results.innerHTML = '<div class="cv-hint">Type a word to search.</div>'; return; }
     results.innerHTML = '<div class="cv-hint">Searching…</div>';
     try {
       const r = await api(`/api/unsplash?q=${encodeURIComponent(q)}`);
-      if (!r.available) { results.innerHTML = '<div class="cv-hint">Photo search isn’t switched on yet - paste an image link below for now.</div>'; return; }
-      if (!r.results || !r.results.length) { results.innerHTML = '<div class="cv-hint">No photos found - try another word, or paste a link.</div>'; return; }
+      if (!r.available) { results.innerHTML = '<div class="cv-hint">Photo search isn’t switched on yet - upload an image instead for now.</div>'; return; }
+      if (!r.results || !r.results.length) { results.innerHTML = '<div class="cv-hint">No photos found - try another word.</div>'; return; }
       results.innerHTML = `<div class="cv-grid">${r.results.map((p, i) => `<button class="cv-thumb" data-cv-pick="${i}" style="background-image:url('${esc(p.thumb)}')" title="Photo by ${esc(p.by)} on Unsplash" aria-label="Photo by ${esc(p.by)}"></button>`).join('')}</div>`;
       results.querySelectorAll('[data-cv-pick]').forEach((b) => b.addEventListener('click', () => {
         const p = r.results[+b.dataset.cvPick];
@@ -9481,11 +9480,6 @@ function openAreaCover() {
     catch (err) { results.innerHTML = `<div class="cv-hint">${esc(err.message || 'Upload failed')}</div>`; }
   });
   el.querySelector('[data-cv-search]').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
-  el.querySelector('[data-cv-url-go]').addEventListener('click', () => {
-    const u = el.querySelector('[data-cv-url]').value.trim();
-    if (!/^https?:\/\//i.test(u)) { toast('Paste a full image URL (https://…)'); return; }
-    apply({ src: 'url', url: u });
-  });
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
 }
