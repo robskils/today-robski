@@ -4760,6 +4760,17 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 [data-sub-id].drop-after { box-shadow:inset 0 -3px 0 var(--accent); }
 
 .pane { min-width:0; padding:30px clamp(20px,4vw,52px) 90px; max-width:1100px; position:relative; z-index:1; }
+/* The whole Life Space page carries a faint origami fold in its own colour: a quiet
+   crease tessellation behind the content, tinting per space off --area-h (set in
+   renderArea). The cover band above is the statement; this is the paper it sits on.
+   (Robin, 2026-10-21: origami on the whole Life page, not just the header.) */
+body[data-view="area"] { --area-c:hsl(var(--area-h,220) var(--lane-s) var(--lane-l)); }
+body[data-view="area"] .pane {
+  background-image:
+    repeating-linear-gradient(60deg, color-mix(in srgb,var(--area-c) 8%,transparent) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(-60deg, color-mix(in srgb,var(--area-c) 8%,transparent) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(0deg, color-mix(in srgb,var(--area-c) 8%,transparent) 0 1px, transparent 1px 49px);
+}
 /* The empty right margin on wide screens is filled with an origami crease
    tessellation: a faint triangle-grid of fold lines in the brand gold
    (theme-aware), echoing the homepage's folded-paper look. Anchored to the pane's

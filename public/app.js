@@ -8535,6 +8535,9 @@ function renderArea() {
   // reopen to look back on what you've done in this area.
   const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'done');
   const h = hueOf(area);
+  // Expose the space's hue on the body so the whole Life Space page can carry a
+  // faint origami fold in its own colour (see body[data-view="area"] .pane). (Robin.)
+  try { document.body.style.setProperty('--area-h', h); } catch {}
   const cover = (area.props && area.props.cover) || null;
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
