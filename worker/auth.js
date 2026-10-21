@@ -376,9 +376,9 @@ export function codeEmail(code, kind) {
              name and the tagline. alt is empty on purpose: with images off the
              serif wordmark below already says LifeFold, so a blocked image
              should leave nothing behind rather than a second "LifeFold". -->
-        <tr><td style="padding:34px 38px 0" align="center">
-          <img src="https://lifefold.co/email-mark.png" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>book</i></p>
+        <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
+          <img src="https://lifefold.co/email-mark.png?v=2" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>Fold</i></p>
         </td></tr>
 
         <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->

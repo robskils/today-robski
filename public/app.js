@@ -10309,7 +10309,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png?v=2' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
