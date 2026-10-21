@@ -4,7 +4,7 @@
 :root[data-theme='light'] {
   --paper:#ece2cf; --paper-2:#e4d9c0; --card:#f6efdd;
   --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
-  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5); --body-crease:rgba(120,92,45,.04);
+  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5); --body-crease:rgba(120,92,45,.04); --facet-a:rgba(255,252,244,.55); --facet-b:rgba(120,92,45,.055);
   --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
@@ -13,7 +13,7 @@
 :root[data-theme='dark'] {
   --paper:#111327; --paper-2:#1a1c31; --card:#1a1c31;
   --ink:#ece7f2; --ink-2:rgba(236,231,242,.64); --ink-3:rgba(236,231,242,.40);
-  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4); --body-crease:rgba(194,160,95,.05);
+  --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4); --body-crease:rgba(194,160,95,.05); --facet-a:rgba(255,248,230,.035); --facet-b:rgba(0,0,0,.16);
   --accent:#c2a05f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
@@ -62,6 +62,18 @@ body {
     repeating-linear-gradient(118deg, transparent 0 104px, var(--body-crease) 104px 104.7px, transparent 104.7px 236px),
     repeating-linear-gradient(-122deg, transparent 0 150px, var(--body-crease) 150px 150.7px, transparent 150.7px 330px);
   -webkit-font-smoothing:antialiased; padding-bottom:env(safe-area-inset-bottom);
+}
+/* The dynamic fold: angular planes of light and shadow meeting at creases, fixed to
+   the viewport, so the whole app reads as one sheet of folded paper catching the
+   light - the homepage's gradient fold, carried in. Sits behind all content (the
+   shell and panes are transparent); a chosen bg pattern layers over the creases but
+   this depth stays. (Robin, 2026-10-21: more like the homepage's dynamic fold.) */
+body::before {
+  content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    linear-gradient(118deg, var(--facet-a) 0 39%, transparent 39.5%),
+    linear-gradient(-124deg, var(--facet-b) 0 29%, transparent 29.5%),
+    linear-gradient(34deg, var(--facet-a) 0 19%, transparent 19.5%);
 }
 h1,h2 { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; letter-spacing:-.01em; }
 button,input,select { font:inherit; color:inherit; }
