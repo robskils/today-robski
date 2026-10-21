@@ -2095,9 +2095,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .conn-add { margin:8px 0 2px; }
 .conn-add > summary small, .conn-pick > summary small { color:var(--ink-3); font-weight:400; }
 /* Notes sort + starred filter on a Life Space. (Robin, 2026-10-20.) */
-.pg-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; }
-.pg-sort { width:auto; max-width:200px; }
-.pg-starfilter { border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink-2); font:inherit; font-size:14px; padding:7px 14px; cursor:pointer; white-space:nowrap; }
+/* Note sort + star-filter: sized to match the .ovt-act pills they now share a
+   row with (Robin, 2026-10-21: four controls in one toolbar). */
+.pg-sort { width:auto; max-width:200px; font-size:13px; padding:7px 12px; border-radius:999px; }
+.pg-starfilter { border:1px solid var(--line); border-radius:999px; background:var(--card); color:var(--ink-2); font:inherit; font-size:13px; padding:7px 13px; cursor:pointer; white-space:nowrap; }
 .pg-starfilter:hover { border-color:var(--accent); }
 .pg-starfilter.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb, var(--accent) 12%, var(--card)); }
 /* Life Space masthead: search and the Wheel-of-Life score share one row, wheel on the right. (Robin, 2026-10-20.) */
@@ -5747,7 +5748,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .ovt-ctl-l { font-size:13px; font-weight:600; color:var(--ink-3); flex:none; }
 .ovt-onoff { display:flex; align-items:center; gap:9px; font-size:14px; color:var(--ink-2); cursor:pointer; }
 .ovt-onoff input { width:18px; height:18px; accent-color:var(--c,var(--accent)); flex:none; }
-.ovt-acts { display:flex; flex-wrap:wrap; gap:8px; }
+.ovt-acts { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .ovt-act { font:inherit; font-size:13px; font-weight:500; padding:7px 13px; border:1px solid var(--line); border-radius:999px; background:var(--paper); color:var(--ink-2); cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .ovt-act:hover { border-color:var(--c,var(--accent)); color:var(--ink); background:var(--card); }
 .ovt-members { margin-top:2px; }

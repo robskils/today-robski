@@ -8539,6 +8539,7 @@ function renderArea() {
   // faint origami fold in its own colour (see body[data-view="area"] .pane). (Robin.)
   try { document.body.style.setProperty('--area-h', h); } catch {}
   const cover = (area.props && area.props.cover) || null;
+  const coverHidden = !!(area.props && area.props.coverHidden);
   const visImgs = ((area.props && area.props.attachments) || []).filter((x) => isImgType(x.type));
   const visionInner = `<button class="vision-card area-vision" data-open-vision="${area.id}" style="--h:${h}">${(area.props && (area.props.vision || '').trim()) ? `<div class="vc-text">${esc(area.props.vision)}</div>` : '<div class="vc-empty">Picture this area at its best — tap to write your vision and add images.</div>'}${visImgs.length ? `<div class="vc-thumbs">${visImgs.slice(0, 5).map((im) => `<img data-vimg="${area.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
   const tblCards = tables.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
@@ -8659,13 +8660,17 @@ function renderArea() {
   const pgMore = (!pgQuery && pgMatches.length > PG_CAP)
     ? `<button class="area-seemore" data-area-pages-all>${pgAll ? '− Show fewer' : `Show all ${pgMatches.length} notes →`}</button>`
     : '';
+  // Sort + star-filter controls. They used to sit in their own row above the
+  // note cards; now they ride in the panel's action row alongside Connect / New
+  // note, so the four controls read as one toolbar. No wrapper - the select and
+  // button flow as direct children of .ovt-acts. (Robin, 2026-10-21.)
   const pgControls = pgAllItems.length > 1
-    ? `<div class="pg-controls"><select class="sel pg-sort" data-note-sort><option value="recent" ${pgSort === 'recent' ? 'selected' : ''}>Most recent</option><option value="starred" ${pgSort === 'starred' ? 'selected' : ''}>Starred first</option><option value="alpha" ${pgSort === 'alpha' ? 'selected' : ''}>A–Z</option></select><button class="pg-starfilter ${pgStarOnly ? 'on' : ''}" data-note-staronly>★ Starred only</button></div>`
+    ? `<select class="sel pg-sort" data-note-sort><option value="recent" ${pgSort === 'recent' ? 'selected' : ''}>Most recent</option><option value="starred" ${pgSort === 'starred' ? 'selected' : ''}>Starred first</option><option value="alpha" ${pgSort === 'alpha' ? 'selected' : ''}>A–Z</option></select><button class="pg-starfilter ${pgStarOnly ? 'on' : ''}" data-note-staronly>★ Starred only</button>`
     : '';
   const pagesBody = pgAllItems.length
     ? (pgMatches.length
-        ? `${pgControls}<div class="tbl-cards noteord-cards">${pgShown.map(ntCard).join('')}</div>${pgMore}`
-        : `${pgControls}<div class="home-empty">${pgStarOnly ? 'No starred notes here yet.' : `No notes here match “${esc(((state.area_open && state.area_open.q) || '').trim())}”.`}</div>`)
+        ? `<div class="tbl-cards noteord-cards">${pgShown.map(ntCard).join('')}</div>${pgMore}`
+        : `<div class="home-empty">${pgStarOnly ? 'No starred notes here yet.' : `No notes here match “${esc(((state.area_open && state.area_open.q) || '').trim())}”.`}</div>`)
     : '<div class="home-empty">No pages here yet.</div>';
   const tablesBody = tables.length ? `<div class="tbl-cards noteord-cards">${tableCards}</div>` : '<div class="home-empty">No tables here yet.</div>';
   // Everything below Vision & Goals and the stats strip is now one grid of square
@@ -8819,7 +8824,7 @@ function renderArea() {
   // the middle, and Books & Films + Reflections close out the list. (Robin.)
   const SECTIONS = [
     { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
-    { id: 'pages', ic: '▤', label: 'Notes', show: toolShow('Pages and tables', !!pagesCount), count: pagesCount || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New note</button>'), body: () => pagesBody },
+    { id: 'pages', ic: '▤', label: 'Notes', show: toolShow('Pages and tables', !!pagesCount), count: pagesCount || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New note</button>') + pgControls, body: () => pagesBody },
     { id: 'tables', ic: '▦', label: 'Tables', show: !secHidden('Pages and tables') && !!tables.length, count: tables.length || null, body: () => tablesBody },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: emailsBody },
     { id: 'files', ic: '📎', label: 'Files', show: !secHidden('Files'), count: attList.length || null, body: () => areaAttachHtml(area) },
@@ -8873,13 +8878,17 @@ function renderArea() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life Spaces', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
-    <header class="area-hero area-mast ${cover ? 'has-cover' : 'no-cover'}" style="--h:${h}">
-      ${cover ? `<div class="am-cover">
+    <header class="area-hero area-mast ${cover && !coverHidden ? 'has-cover' : 'no-cover'}" style="--h:${h}">
+      ${coverHidden
+        ? (canEditArea ? `<button class="am-add-cover" data-area-cover-show title="Show the cover">＋ Cover</button>` : '')
+        : cover
+        ? `<div class="am-cover">
         <div class="am-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div>
         <span class="am-cover-scrim"></span>
-        ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button></div>` : ''}
+        ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}
         ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=LifeFold&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
-      </div>` : (canEditArea ? `<button class="am-add-cover" data-area-cover title="Add a cover image">＋ Cover</button>` : '')}
+      </div>`
+        : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover photo"><span class="amc-ic">❏</span>Photo</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
@@ -9411,6 +9420,16 @@ async function coverUpload(file) {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
     return (await res.json()).url;
   } finally { if (objUrl) URL.revokeObjectURL(objUrl); }
+}
+// Hide or show the cover band. A hidden cover keeps whatever photo was set
+// (so Show brings it back untouched); with no photo, Hide just folds the
+// origami band away and leaves the slim ＋ Cover button in its place.
+function setAreaCoverHidden(hidden) {
+  const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
+  area.props = { ...(area.props || {}), coverHidden: !!hidden };
+  const s = state.areas.find((x) => x.id === area.id); if (s) s.props = { ...(s.props || {}), coverHidden: !!hidden };
+  renderArea();
+  api(`/api/blocks/${area.id}`, { method: 'PATCH', body: JSON.stringify({ props: { coverHidden: !!hidden } }) }).catch((e) => toast(e.message));
 }
 function openAreaCover() {
   const area = state.area_open && state.area_open.area; if (!area || area.sharedBy) return;
@@ -20738,6 +20757,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
   if (t.closest('[data-area-cover-adjust]')) { openCoverAdjust(); return; }
+  if (t.closest('[data-area-cover-hide]')) { setAreaCoverHidden(true); return; }
+  if (t.closest('[data-area-cover-show]')) { setAreaCoverHidden(false); return; }
   if (t.closest('[data-area-cover]')) { openAreaCover(); return; }
   { const ac = t.closest('[data-area-connect]'); if (ac) { openAreaConnect(ac.dataset.areaConnect); return; } }
   if (t.closest('[data-ov-colour-toggle]')) { try { localStorage.setItem('life.ovcolour', localStorage.getItem('life.ovcolour') === '1' ? '0' : '1'); } catch {} renderArea(); return; }
