@@ -1825,6 +1825,17 @@ body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 .dp-foot { display:flex; justify-content:flex-end; margin-top:12px; }
 .dp-link { color:var(--accent); font-size:15px; padding:6px 10px; border-radius:8px; }
 .dp-link:hover { background:var(--paper-2); }
+/* Time picker: two scroll columns, an Hour and a five-minute Minute. Reuses the
+   .dp-bg backdrop. (Robin, 2026-10-21: minute spinner in 5s, not 60.) */
+.tp-card { width:min(300px,92vw); background:var(--card); border:1px solid var(--line-2); border-radius:16px; box-shadow:0 30px 70px -20px rgba(0,0,0,.5); padding:16px; }
+.tp-head { text-align:center; font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.01em; color:var(--ink); margin-bottom:14px; }
+.tp-cols { display:flex; gap:12px; }
+.tp-col { flex:1; min-width:0; }
+.tp-col-l { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); text-align:center; margin-bottom:7px; }
+.tp-scroll { height:216px; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:3px; padding:4px; border:1px solid var(--line); border-radius:12px; background:var(--paper); overscroll-behavior:contain; }
+.tp-cell { padding:11px 0; border:0; background:transparent; border-radius:9px; font:inherit; font-size:17px; font-variant-numeric:tabular-nums; color:var(--ink); text-align:center; cursor:pointer; transition:background .1s; }
+.tp-cell:hover { background:var(--paper-2); }
+.tp-cell.tp-sel { background:color-mix(in srgb,var(--accent) 16%,var(--card)); font-weight:700; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent); }
 
 .scope { font-size:15px; color:var(--ink-3); margin-bottom:12px; min-height:20px; }
 .scope b { color:var(--ink-2); font-weight:500; }

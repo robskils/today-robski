@@ -1139,6 +1139,7 @@ function navBack() {
 let _backTrapArmed = false;
 function appHandleBack() {
   const dp = document.getElementById('dp-pop'); if (dp && dp.innerHTML) { closeDatePicker(); return true; }
+  const tpp = document.getElementById('tp-pop'); if (tpp && tpp.innerHTML) { closeTimePicker(); return true; }
   const pal = document.getElementById('palette'); if (pal && pal.innerHTML.trim()) { closePalette(); return true; }
   const mv = document.getElementById('move-overlay'); if (mv && mv.innerHTML) { closeMove(); return true; }
   if (document.getElementById('prac-editor-host')) { closePracticeEditor(); return true; }
@@ -9716,6 +9717,55 @@ function dpStep(delta) {
   if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
   dp.m = m; dp.y = y; renderDatePicker();
 }
+// ── custom time picker ────────────────────────────────────────────────
+// Native <input type="time"> ignores `step` on the mobile wheel, so the minute
+// spinner still scrolls through all sixty. Same hidden-input + button + popup
+// pattern as the date field, with an Hour column and a Minute column that only
+// offers five-minute marks. (Robin, 2026-10-21: every 5 minutes, not every one.)
+const tpLabel = (hhmm) => (/^\d{1,2}:\d{2}$/.test(hhmm || '') ? hhmm : 'Set time');
+function timeFieldHtml(id, hhmm) {
+  return `<input type="hidden" id="${id}" value="${esc(hhmm || '')}"><button type="button" class="time-field sel ce-timefield" data-tp-open="${id}">${esc(tpLabel(hhmm))}</button>`;
+}
+function openTimePicker(id) {
+  const inp = document.getElementById(id); if (!inp) return;
+  const v = /^\d{1,2}:\d{2}$/.test(inp.value || '') ? inp.value : '09:00';
+  let [h, m] = v.split(':').map(Number);
+  m = Math.round(m / 5) * 5; if (m >= 60) { m = 0; h = (h + 1) % 24; }
+  state.tp = { id, h: ((h % 24) + 24) % 24, m };
+  renderTimePicker();
+}
+function renderTimePicker() {
+  const tp = state.tp; if (!tp) return;
+  let el = document.getElementById('tp-pop');
+  if (!el) { el = document.createElement('div'); el.id = 'tp-pop'; document.body.appendChild(el); }
+  let hCells = ''; for (let h = 0; h < 24; h++) hCells += `<button type="button" class="tp-cell${h === tp.h ? ' tp-sel' : ''}" data-tp-h="${h}">${p2(h)}</button>`;
+  let mCells = ''; for (let m = 0; m < 60; m += 5) mCells += `<button type="button" class="tp-cell${m === tp.m ? ' tp-sel' : ''}" data-tp-m="${m}">${p2(m)}</button>`;
+  el.innerHTML = `<div class="dp-bg tp-bg" data-tp-close><div class="tp-card" role="dialog" aria-label="Pick a time">
+    <div class="tp-head">${p2(tp.h)}:${p2(tp.m)}</div>
+    <div class="tp-cols">
+      <div class="tp-col"><div class="tp-col-l">Hour</div><div class="tp-scroll">${hCells}</div></div>
+      <div class="tp-col"><div class="tp-col-l">Min</div><div class="tp-scroll">${mCells}</div></div>
+    </div>
+    <div class="tp-foot"><button type="button" class="dp-link" data-tp-done>Done</button></div>
+  </div></div>`;
+  requestAnimationFrame(() => { try { el.querySelectorAll('.tp-scroll').forEach((col) => { const sel = col.querySelector('.tp-sel'); if (sel) col.scrollTop += sel.getBoundingClientRect().top - col.getBoundingClientRect().top - col.clientHeight / 2 + sel.offsetHeight / 2; }); } catch {} });
+}
+function closeTimePicker() { const el = document.getElementById('tp-pop'); if (el) el.innerHTML = ''; state.tp = null; }
+// Set a time field's value and refresh its button label. No change event (a
+// caller syncing one field off another can't loop); tpSet fires change itself.
+function setTimeField(id, hhmm) {
+  const inp = document.getElementById(id); if (!inp) return;
+  inp.value = hhmm || '';
+  const btn = document.querySelector(`[data-tp-open="${id}"]`); if (btn) btn.textContent = tpLabel(hhmm);
+}
+function tpSet(part, val) {
+  const tp = state.tp; if (!tp) return;
+  if (part === 'h') tp.h = val; else tp.m = val;
+  const hhmm = `${p2(tp.h)}:${p2(tp.m)}`;
+  setTimeField(tp.id, hhmm);
+  const inp = document.getElementById(tp.id); if (inp) inp.dispatchEvent(new Event('change', { bubbles: true }));
+  renderTimePicker();
+}
 const addDayISO = (iso, n = 1) => { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d + n); return ymd(dt.getFullYear(), dt.getMonth(), dt.getDate()); };
 const isoToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const minToLabel = (m) => `${p2(Math.floor(m / 60))}:${p2(m % 60)}`;
@@ -9971,7 +10021,11 @@ function restoreCalForm(s) {
   if ((f.dataset.ev || '') !== s.ev) return;   // a different event opened - don't paste a stale draft onto it
   const set = (id, val) => { if (val === undefined) return; const el = document.getElementById(id); if (el) el.value = val; };
   if (s.evgap) f.dataset.evgap = s.evgap;
-  ['ce-title:title', 'ce-time:time', 'ce-endtime:endtime', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  ['ce-title:title', 'ce-loc:loc', 'ce-url:url', 'ce-repeat:repeat', 'ce-area:area', 'ce-contact:contact', 'ce-contact-search:contactSearch', 'ce-notes:notes'].forEach((p) => { const [id, k] = p.split(':'); set(id, s[k]); });
+  // Time fields are custom (hidden input + button): set the value AND refresh the
+  // button label, or a restored draft would show the old time on the button.
+  if (s.time !== undefined) setTimeField('ce-time', s.time);
+  if (s.endtime !== undefined) setTimeField('ce-endtime', s.endtime);
   if (Array.isArray(s.alarmChans)) { const cset = new Set(s.alarmChans); f.querySelectorAll('.ce-chan-cb').forEach((c) => { c.checked = cset.has(c.value); }); }
   if (s.date !== undefined) setDateField('ce-date', s.date);
   if (s.enddate !== undefined) setDateField('ce-enddate', s.enddate);
@@ -10159,9 +10213,9 @@ function showCalForm(ev) {
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
     <div class="ce-when">
-      <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}<input id="ce-time" type="time" step="300" class="sel ce-timefield" value="${startTime}"></span>
+      <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}${timeFieldHtml('ce-time', startTime)}</span>
       <span class="ce-warrow">→</span>
-      <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}<input id="ce-endtime" type="time" step="300" class="sel ce-timefield" value="${endTime}"></span>
+      <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}${timeFieldHtml('ce-endtime', endTime)}</span>
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
     </div>
     <div class="ce-grid">
@@ -13649,8 +13703,8 @@ function showQuickEvent() {
   $('#qt-wrap').innerHTML = `<form id="qe-form" class="add-task add-event" data-evgap="60" style="margin-bottom:22px">
     <input id="qe-title" class="ce-title" placeholder="Event title…" autocomplete="off" required>
     <div class="ce-when">
-      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}<input id="qe-time" type="time" step="300" class="sel ce-timefield" value="${start}"></span></div>
-      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}<input id="qe-endtime" type="time" step="300" class="sel ce-timefield" value="${endTime}"></span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Starts</span><span class="ce-when-fields">${dateFieldHtml('qe-date', today)}${timeFieldHtml('qe-time', start)}</span></div>
+      <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}${timeFieldHtml('qe-endtime', endTime)}</span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
     <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
@@ -19669,6 +19723,7 @@ async function openRowResult(tableId, rowId) {
 document.addEventListener('keydown', (e) => {
   if (document.getElementById('tblpick-overlay') && document.getElementById('tblpick-overlay').innerHTML && e.key === 'Escape') { e.preventDefault(); closeTableEntryPicker(); return; }
   if (state.dp && e.key === 'Escape') { e.preventDefault(); closeDatePicker(); return; }
+  if (state.tp && e.key === 'Escape') { e.preventDefault(); closeTimePicker(); return; }
   if (state.contactMenu && e.key === 'Escape') { e.preventDefault(); state.contactMenu = null; renderContacts(); return; }
   if (state.linkpick) { if (e.key === 'Escape') { e.preventDefault(); closeLinkPicker(); return; } if (e.key === 'Enter' && e.target.id === 'linkpick-input') { e.preventDefault(); linkPickUrl(); return; } }
   if (state.shortcutsOpen && e.key === 'Escape') { e.preventDefault(); closeShortcuts(); return; }
@@ -20681,6 +20736,11 @@ document.addEventListener('click', (e) => {
   const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
   if (t.closest('[data-dp-jump-today]')) { datePick(todayISO()); return; }
   if (t.closest('[data-dp-close]') && !t.closest('.dp-cal')) { closeDatePicker(); return; }
+  { const tpo = t.closest('[data-tp-open]'); if (tpo) { openTimePicker(tpo.dataset.tpOpen); return; } }
+  { const tph = t.closest('[data-tp-h]'); if (tph) { tpSet('h', +tph.dataset.tpH); return; } }
+  { const tpm = t.closest('[data-tp-m]'); if (tpm) { tpSet('m', +tpm.dataset.tpM); return; } }
+  if (t.closest('[data-tp-done]')) { closeTimePicker(); return; }
+  if (t.closest('[data-tp-close]') && !t.closest('.tp-card')) { closeTimePicker(); return; }
   if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
   if (t.closest('[data-mail-add-cancel]')) { clearMailAddDraft(); const h = $('#mail-acct-form'); if (h) h.innerHTML = ''; return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
