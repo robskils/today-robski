@@ -2863,15 +2863,16 @@ const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your norm
 // Everything after the tool buttons on mobile Home can be reordered and hidden
 // from Settings → Mobile. Today and the tool buttons stay pinned at the top.
 // key -> [section class, display name]. Order here is the default arrangement.
+// Starred Goals, Life Spaces and Toolbox were dropped here (2026-10-22): since the
+// Home rebuild they're lead blocks driven by the on-Home "Homepage sections" chips,
+// not home-sec-* elements, so their toggles controlled nothing. These are the
+// sections this panel genuinely still orders/hides on mobile.
 const MOBILE_SECTIONS = [
   ['priority', 'home-sec-p1', 'Priority Tasks'],
-  ['focus', 'home-sec-focus', 'Starred Goals'],
   ['notepad', 'home-sec-notepad', 'Notepad'],
   ['favs', 'home-sec-favs', 'Starred'],
-  ['favareas', 'home-sec-favareas', 'Life Spaces'],
   ['keepintouch', 'home-sec-kit', 'Keep in touch'],
   ['people', 'home-sec-people', 'People online'],
-  ['toolbox', 'home-toolbox', 'Toolbox'],
 ];
 const MOBILE_KEYS = MOBILE_SECTIONS.map((s) => s[0]);
 const MSEC_CLASS = Object.fromEntries(MOBILE_SECTIONS.map((s) => [s[0], s[1]]));
