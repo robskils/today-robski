@@ -335,6 +335,21 @@ const SPECIAL_NAMES = {
   Trash: ['Trash', 'Deleted', 'Deleted Items', 'Deleted Messages', '[Gmail]/Trash', 'INBOX.Trash'],
   Drafts: ['Drafts', 'Draft', '[Gmail]/Drafts', 'INBOX.Drafts'],
 };
+// Some IMAP servers (seen on Purelymail) now and then answer SELECT with EXISTS 0
+// for a mailbox that isn't empty; a re-SELECT a moment later returns the true
+// count. Retry a zero a few times before trusting it, so a flaky "empty" doesn't
+// read as a vanished inbox (the message list) or a missing message (opening one).
+// A genuinely empty mailbox just costs a couple of quick extra round-trips on a
+// cold read. select() still throws on a real "cannot open", which is a different
+// failure and not retried. (Robin, 2026-10-21: lifefold INBOX read as empty.)
+async function selectCount(im, mbox, tries = 3, gapMs = 350) {
+  let total = await im.select(mbox);
+  for (let i = 1; i < tries && !total; i++) {
+    await new Promise((r) => setTimeout(r, gapMs));
+    total = await im.select(mbox);
+  }
+  return total;
+}
 async function resolveMailbox(im, wanted) {
   if (!wanted || /^INBOX$/i.test(wanted)) return 'INBOX';
   const flag = SPECIAL_USE[wanted];
@@ -843,7 +858,7 @@ async function syncOneInbox(env, acct) {
   const im = await imapOpen(env, acct);
   try {
     await im.login();
-    const total = await im.select('INBOX');
+    const total = await selectCount(im, 'INBOX');
     const msgs = total ? await im.listRange(total, 0, 40) : [];
     const unseen = total ? await im.unseenCount() : 0;
     // Message-ids we already had. An unseen one that's new to us is a genuine
@@ -1168,7 +1183,7 @@ export async function handleMail(request, env, url, json, err) {
           return json({ total: out.length, unseen: 0, offset: 0, messages: out.slice(0, cap), searchedAll, failed }, request);
         }
         const box = await resolveMailbox(im, mailbox);
-        const total = await im.select(box);
+        const total = await selectCount(im, box);
         let messages = !total ? []
           : unseen ? await im.listUnseen(limit)
           : await im.listRange(total, offset, limit);
@@ -1232,7 +1247,7 @@ export async function handleMail(request, env, url, json, err) {
       try {
         await im.login();
         mailbox = await resolveMailbox(im, mailbox);
-        await im.select(mailbox);
+        await selectCount(im, mailbox);
         // A durable-bucket email was archived when filed, so its stored UID no
         // longer resolves (a moved message gets a fresh UID) - and a stale UID could
         // even point at a different message in the archive. When a Message-ID is
@@ -1245,6 +1260,12 @@ export async function handleMail(request, env, url, json, err) {
           if (found) { mailbox = found.mailbox; uid = found.uid; }
           else if (!uid) return err('message not found', request, 404);
         }
+        // Re-select the target mailbox before fetching: the Message-ID sweep above
+        // can leave a different folder selected, and on a server whose SEARCH comes
+        // back blank (Purelymail) we fall through to the passed UID - which must be
+        // read from ITS mailbox, not wherever the sweep stopped. selectCount also
+        // rides out a flaky empty SELECT so the fetch sees the real message.
+        await selectCount(im, mailbox);
         // Fast path: for heavy messages, fetch only the body (see lightFetchMessage).
         // Falls back to a full parse on anything unusual, so display never breaks.
         let light = null; try { light = await lightFetchMessage(im, uid); } catch { light = null; }
