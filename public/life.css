@@ -2387,10 +2387,14 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-drawer { display:contents; }
 .nav-menu-toggle, .nav-drawer-head, .nav-drawer-x, .nav-drawer-bg, .nav-mlist, .nav-mpeople, .nav-topline-sp { display:none; }
 .nav-brand:hover { background:var(--paper); opacity:.9; }
-.nav-brand em { font-style:normal; color:var(--gold); }
+/* The sidebar lockup now wears the highlight colour, not gold: for anyone on the
+   default accent it still reads gold (light-theme --accent == --gold), but a
+   customised accent makes the logo their own. Dark theme keeps gold (below).
+   (Robin, 2026-10-21: light version - more highlight, less gold.) */
+.nav-brand em { font-style:normal; color:var(--accent); }
 /* "Lifebook" is one word; only "book" leans italic, at natural spacing after the
    roman "Life" (the old -.07em tuck closed Day's loose y-b gap; Life's e-b sits
-   right on its own). The gold mark carries the colour. (Brand, 2026-10-15.) */
+   right on its own). The mark carries the colour. (Brand, 2026-10-15.) */
 .wm-bk { font-style:italic; margin-left:0; }
 .nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
@@ -2400,7 +2404,9 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark:hover { transform:translateY(-2px); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .home-mark:hover .brand-mark { opacity:1; }
 .home-mark:active { transform:translateY(0); }
-.nav-brand .brand-mark { width:1.4em; height:1.4em; margin:0 .14em 0 .18em; vertical-align:-.32em; color:var(--gold); }
+.nav-brand .brand-mark { width:1.4em; height:1.4em; margin:0 .14em 0 .18em; vertical-align:-.32em; color:var(--accent); }
+/* Dark theme keeps the gold lockup - it reads beautifully on the night-sky navy. */
+:root[data-theme='dark'] .nav-brand em, :root[data-theme='dark'] .nav-brand .brand-mark { color:var(--gold); }
 /* Firm the sidebar monogram a touch - the fine Cormorant strokes read a little
    light at this size, so give the letters + dot a hairline of their own colour
    (the ring, a separate circle, is untouched). (Robin, 2026-10-15.) */
