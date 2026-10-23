@@ -11505,7 +11505,7 @@ async function mailToQuad(msgs, quad) {
     for (const o of list) { delete state.mailQuads[mailFileKey(o)]; state.mail.gone.delete(o._key); }
     persistMailQuads(undel); toast(ok ? 'Restored to inbox' : 'Could not undo'); loadMessages();
   } : null;
-  toast(toInbox ? 'Back in the inbox' : (archived ? `Filed in ${q ? q.label : quad} - archived from inbox` : `Filed in ${q ? q.label : quad}`), undo);
+  toast(toInbox ? 'Back in the inbox' : `Filed in ${q ? q.label : quad}`, undo);
   // Reading an email we just moved OUT of the list we're triaging (filed to another
   // bucket, sent back to the inbox, or archived-on-file)? Keep going in the SAME
   // list: open the next one in it (or drop back to it), per the after-triage choice.
