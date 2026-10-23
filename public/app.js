@@ -7194,6 +7194,7 @@ async function openCompass() {
   state.view = { type: 'compass' };
   renderNav();
   renderCompass();
+  landReflContent();   // scroll to the Compass itself, past the tool tiles (the other tools do this too)
   if (state.compassHistory === undefined) {
     try { const r = await api('/api/kv/compass_history'); state.compassHistory = (r && r.value) ? JSON.parse(r.value) : []; }
     catch { state.compassHistory = []; }
