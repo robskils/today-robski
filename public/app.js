@@ -19543,6 +19543,22 @@ async function setCell(rowId, colId, value) {
 document.addEventListener('mousedown', (e) => { if (e.target && e.target.closest && e.target.closest('#pal-list [data-pal-i], #pal-list [data-pal-smart]')) e.preventDefault(); });
 function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0, smart: false, smartTerms: [], smartBusy: false, smartAdded: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
+// Recent searches: the queries that actually found something, newest first, capped.
+// They fill the empty palette (under New note / New event) instead of a dump of
+// every command. (Robin, 2026-10-23: show my recent searches, not random stuff.)
+function recentSearches() { try { const a = JSON.parse(localStorage.getItem('life.pal.recent') || '[]'); return Array.isArray(a) ? a.filter((x) => typeof x === 'string' && x.trim()).slice(0, 8) : []; } catch { return []; } }
+function pushRecentSearch(q) {
+  q = String(q || '').trim(); if (q.length < 2) return;
+  let list = recentSearches().filter((x) => x.toLowerCase() !== q.toLowerCase());
+  list.unshift(q); list = list.slice(0, 8);
+  try { localStorage.setItem('life.pal.recent', JSON.stringify(list)); } catch {}
+}
+// Put a query into the open palette and re-run it (clicking a recent search).
+function palSetQuery(q) {
+  state.pal.q = String(q || '');
+  const inp = $('#pal-input'); if (inp) { inp.value = state.pal.q; inp.focus(); }
+  buildPalette();
+}
 const ACTIONS = [
   { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
   { kind: 'action', title: 'New note', run: () => newNote(null) },
@@ -19590,10 +19606,14 @@ function buildPalette() {
   // A fresh query drops any earlier "smarter search" expansion.
   state.pal.smart = false; state.pal.smartTerms = []; state.pal.smartBusy = false; state.pal.smartAdded = 0;
   if (!q) {
-    state.pal.items = [...ACTIONS,
-      ...state.noteTops.slice(0, 5).map((n) => ({ kind: 'note', id: n.id, title: n.title || 'Untitled' })),
-      ...state.tables.slice(0, 5).map((t) => ({ kind: 'table', id: t.id, title: t.title || 'Untitled' })),
-      ...state.areas.slice(0, 6).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }))];
+    // Empty palette: two quick actions up top, then your recent searches under a
+    // rule - not a dump of every command. (Robin, 2026-10-23.)
+    const acts = [
+      { kind: 'action', title: 'New note', run: () => newNote(null) },
+      { kind: 'action', title: 'New event', run: () => Promise.resolve(showQuickEvent()) },
+    ];
+    const recents = recentSearches().map((s) => ({ kind: 'recent', title: s }));
+    state.pal.items = [...acts, ...recents];
     state.pal.sel = 0; renderPalItems(); return;
   }
   const _ql = q.toLowerCase();
@@ -19687,21 +19707,28 @@ function renderPalette() {
 const PAL_KIND_LABEL = { note: 'Note', table: 'Table', area: 'Life Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
+  if (it.kind === 'recent') return '🕘';
   if (it.kind === 'row') return it.parentTitle || 'Table';
   return PAL_KIND_LABEL[it.kind] || it.kind;
 }
 function renderPalItems() {
   const el = $('#pal-list'); if (!el) return;
   const items = state.pal.items;
-  const list = items.length ? items.map((it, i) => `<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
-      <span class="pal-kind ${it.kind === 'action' ? '' : `kmark pal-k-${esc(it.kind)}`}">${esc(palKindLabel(it))}</span>
-      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${it.kind === 'action' ? '' : '<span class="pal-hint">open</span>'}</div>`).join('') : (state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
+  const firstRecent = items.findIndex((it) => it.kind === 'recent');
+  const kindCls = (it) => (it.kind === 'action' ? '' : it.kind === 'recent' ? 'muted' : `kmark pal-k-${esc(it.kind)}`);
+  const hint = (it) => (it.kind === 'action' ? '' : it.kind === 'recent' ? '<span class="pal-hint">search</span>' : '<span class="pal-hint">open</span>');
+  const list = items.length ? items.map((it, i) => `${i === firstRecent ? '<div class="pal-divider">Recent searches</div>' : ''}<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
+      <span class="pal-kind ${kindCls(it)}">${esc(palKindLabel(it))}</span>
+      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${hint(it)}</div>`).join('') : (state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
   el.innerHTML = list + palSmartFooter();
 }
 function execItem(it) {
+  if (!it) { closePalette(); return; }
+  if (it.kind === 'recent') { palSetQuery(it.title); return; }   // re-run that search, keep the palette open
+  const q = state.pal.q.trim();
   closePalette();
-  if (!it) return;
   if (it.kind === 'action') return it.run().catch((e) => toast(e.message));
+  if (q) pushRecentSearch(q);   // opened a result off a query - remember what you searched
   if (it.kind === 'note') return openNote(it.id).catch((e) => toast(e.message));
   if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));
   if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
