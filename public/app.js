@@ -1468,7 +1468,11 @@ function navTopSecs(v) {
 // Mode lives in life.theme.mode ('auto'|'light'|'dark'); the resolved light/dark
 // is mirrored to today.theme so the first-paint inline script and the embedded
 // Today planner match.
-function themeMode() { const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
+// Only the owner (admin) pins a theme; everyone else follows day/night
+// automatically - night view after dusk, day view through the day, no choice to
+// make. (Robin, 2026-10-24: for most people except admins it's always automatic.)
+function themeLocked() { return !!(state.me && state.me.id !== 1); }
+function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
 function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 function applyTheme(rerender) {
@@ -1483,6 +1487,7 @@ function applyTheme(rerender) {
   if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 5 * 60 * 1000);
 }
 function cycleTheme() {
+  if (themeLocked()) return;   // members follow day/night automatically; nothing to cycle
   const m = themeMode();
   // From Auto, flip straight to the OPPOSITE of what's showing (one visible click,
   // no dead Auto→same-colour step). Then dark→auto returns to automatic.
@@ -3051,7 +3056,7 @@ function renderSettings() {
 
   const appearancePane = `<div class="set-card">
         <div class="set-row"><div><div class="set-row-t">${t('set.language')}</div><div class="set-row-s">${t('set.language.hint')}</div></div><select class="sel" data-set-locale style="max-width:170px">${LANGS.map(([v, l]) => `<option value="${v}" ${locale() === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-        <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">Auto follows your local sunrise &amp; sunset.</div></div><button class="add-btn wide" data-theme-toggle>${themeLabel()}</button></div>
+        <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Auto follows your local sunrise &amp; sunset.'}</div></div>${themeLocked() ? `<span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span>` : `<button class="add-btn wide" data-theme-toggle>${themeLabel()}</button>`}</div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
@@ -3988,7 +3993,7 @@ function renderNav() {
       <div class="nav-bottom">
         <div class="nav-bottom-row">
           <button class="nav-theme nav-guide ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide title="${t('nav.guide')}"><span class="ns-ic">ⓘ</span><span class="ns-lbl"> ${t('nav.guide')}</span></button>
-          <button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>
+          ${themeLocked() ? '' : `<button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>`}
           <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
@@ -24363,6 +24368,9 @@ function showRequired2fa() {
     // off to a <sub>.daybook.fyi address. The app just runs here. (Robin, 2026-10-15.)
     if (me && me.user) {
       state.me = me.user;
+      // Now we know whether they're the admin: a member is pinned to the automatic
+      // day/night theme, so re-resolve in case they'd previously chosen one. (Robin.)
+      try { if (themeLocked()) applyTheme(false); } catch {}
       // Two-factor becomes required three months after an account opens. Past that,
       // a member without it set up must turn it on before using LifeFold. Sign-out
       // is always offered, so this asks firmly but can never lock anyone out.
