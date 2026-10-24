@@ -4194,7 +4194,7 @@ async function maybeRefreshFixtures(env) {
   if (!wanted.size) return;
   const cache = await getTeamCache(env);
   for (const [id, name] of wanted) {
-    const fx = await fetchTeamFixtures(id);
+    const fx = await fetchTeamFixtures(id, env);
     if (fx.length) cache[id] = { name, fixtures: fx, fetched: now };
     else if (!cache[id]) cache[id] = { name, fixtures: [], fetched: now };
   }
@@ -4853,7 +4853,7 @@ export default {
       }
       // Search TheSportsDB for a team to follow.
       if (path === '/api/feeds/search' && request.method === 'GET') {
-        return json({ teams: await searchTeams(url.searchParams.get('q') || '') }, request);
+        return json({ teams: await searchTeams(url.searchParams.get('q') || '', env) }, request);
       }
       // Fetch fixtures for the user's followed teams now (used when a team is
       // just added, so its games appear without waiting for the cron).
@@ -4862,7 +4862,7 @@ export default {
         const cache = await getTeamCache(env);
         let count = 0;
         for (const t of teams) {
-          const fx = await fetchTeamFixtures(t.id);
+          const fx = await fetchTeamFixtures(t.id, env);
           if (fx.length) { cache[String(t.id)] = { name: t.name || 'Team', fixtures: fx, fetched: Date.now() }; count += fx.length; }
         }
         await setSetting(env, 'kv_team_fixtures', JSON.stringify(cache), 1);

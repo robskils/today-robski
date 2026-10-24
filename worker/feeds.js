@@ -44,11 +44,17 @@ export async function fetchHolidays(code, year) {
 }
 
 // ── Team fixtures (any team) ─────────────────────────────────────────────────
-// TheSportsDB free tier (test key "3"). The user searches for their team; we
-// store its id + name and fetch its next ~15 games (eventsnext) with a UTC
-// timestamp, normalised to a Lisbon wall-clock {date, min}. Portugal and the UK
-// share the same clock all year, so no cross-zone shift is needed for either.
-const SDB = 'https://www.thesportsdb.com/api/v1/json/3';
+// TheSportsDB free tier. The user searches for their team; we store its id +
+// name and fetch its next ~15 games (eventsnext) with a UTC timestamp,
+// normalised to a Lisbon wall-clock {date, min}. Portugal and the UK share the
+// same clock all year, so no cross-zone shift is needed for either.
+//
+// The API key lives in the URL. TheSportsDB PERMANENTLY DISABLED the old free
+// key "3" (2026) - which made every team search and every fixture fetch return
+// nothing, silently. "123" is their current free test key; a SPORTSDB_KEY secret
+// overrides it, so the next key rotation is a config change, not a code change
+// and a redeploy. (Robin: couldn't add Napoli - the key was dead.)
+const sdbBase = (env) => `https://www.thesportsdb.com/api/v1/json/${(env && env.SPORTSDB_KEY) || '123'}`;
 // Format a UTC instant as Europe/Lisbon local {date:'YYYY-MM-DD', min}.
 function toLisbon(dateUTC) {
   try {
@@ -76,11 +82,11 @@ export function parseTeamFixtures(apiJson) {
   return out;
 }
 // Search for a team by name. Returns a short, safe list for the picker.
-export async function searchTeams(q) {
+export async function searchTeams(q, env) {
   const query = String(q || '').trim();
   if (query.length < 2) return [];
   try {
-    const r = await fetch(`${SDB}/searchteams.php?t=${encodeURIComponent(query)}`, { headers: { 'User-Agent': 'LifeFold/1.0' } });
+    const r = await fetch(`${sdbBase(env)}/searchteams.php?t=${encodeURIComponent(query)}`, { headers: { 'User-Agent': 'LifeFold/1.0' } });
     if (!r.ok) return [];
     const j = await r.json().catch(() => ({}));
     return ((j && j.teams) || []).slice(0, 12).map((t) => ({
@@ -92,11 +98,11 @@ export async function searchTeams(q) {
 }
 // Fetch + normalise a team's upcoming fixtures. [] on any failure so a feed
 // hiccup never breaks the calendar.
-export async function fetchTeamFixtures(teamId) {
+export async function fetchTeamFixtures(teamId, env) {
   const id = String(teamId || '').replace(/[^0-9]/g, '');
   if (!id) return [];
   try {
-    const r = await fetch(`${SDB}/eventsnext.php?id=${id}`, { headers: { 'User-Agent': 'LifeFold/1.0' } });
+    const r = await fetch(`${sdbBase(env)}/eventsnext.php?id=${id}`, { headers: { 'User-Agent': 'LifeFold/1.0' } });
     if (!r.ok) return [];
     return parseTeamFixtures(await r.json().catch(() => ({})));
   } catch { return []; }
