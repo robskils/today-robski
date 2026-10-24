@@ -22385,7 +22385,7 @@ function reKit() { const v = state.view && state.view.type; if (v === 'home') re
 async function homeKitTouched(taskId) {
   const removed = removeKitLocal(taskId); if (!removed) return;
   reKit();
-  try { await api(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast(`Noted — ${removed.name} is back on the list in due course`); }
+  try { await api(`/api/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ done: true }) }); toast('Noted - back on the list when it\'s next due'); }
   catch (e) { toast(e.message); }
 }
 // The × on a keep-in-touch nudge: not "I spoke to them" (that's the ✓) but "not
