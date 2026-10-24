@@ -6,9 +6,9 @@
    worker reads to auto-route the apex. */
 (function () {
   var A = window.__alts || {}, L = window.__lang || 'en';
-  var NAME = { en: 'EN', pt: 'PT', fr: 'FR', es: 'ES' };
-  var FULL = { en: 'English', pt: 'Português', fr: 'Français', es: 'Español' };
-  var ORDER = ['en', 'pt', 'fr', 'es'];
+  var NAME = { en: 'EN', pt: 'PT', fr: 'FR', es: 'ES', it: 'IT', de: 'DE' };
+  var FULL = { en: 'English', pt: 'Português', fr: 'Français', es: 'Español', it: 'Italiano', de: 'Deutsch' };
+  var ORDER = ['en', 'pt', 'fr', 'es', 'it', 'de'];
   function remember(l) { try { document.cookie = 'db_lang=' + l + '; path=/; max-age=31536000; samesite=lax'; } catch (e) {} }
   remember(L);
   function link(l, role) {

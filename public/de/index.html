@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LifeFold - ein ruhiges Zuhause für dein ganzes Leben</title>
+<meta name="description" content="LifeFold vereint E-Mail, Kalender, Aufgaben, Notizen, Reflexion und Finanzen an einem ruhigen, privaten Ort. Leg alles ab und vertrau darauf, dass es wiederkommt. Alle deine Daten gehören dir.">
+<link rel="canonical" href="https://lifefold.co/de">
+<link rel="alternate" hreflang="en" href="https://lifefold.co/">
+<link rel="alternate" hreflang="pt-PT" href="https://lifefold.co/pt">
+<link rel="alternate" hreflang="fr" href="https://lifefold.co/fr">
+<link rel="alternate" hreflang="es" href="https://lifefold.co/es">
+<link rel="alternate" hreflang="it" href="https://lifefold.co/it">
+<link rel="alternate" hreflang="de" href="https://lifefold.co/de">
+<link rel="alternate" hreflang="x-default" href="https://lifefold.co/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="icon" href="/favicon.svg?v=8">
+<meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LifeFold">
+<meta property="og:title" content="LifeFold - für ein gut gelebtes Leben">
+<meta property="og:description" content="E-Mail, Kalender, Aufgaben, Notizen, Reflexion und Finanzen an einem ruhigen, privaten Ort. Leg alles ab und vertrau darauf, dass es wiederkommt. Alle deine Daten gehören dir.">
+<meta property="og:url" content="https://lifefold.co/de">
+<meta property="og:image" content="https://lifefold.co/og-image.v3.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="LifeFold - für ein gut gelebtes Leben">
+<meta property="og:locale" content="de_DE">
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LifeFold - für ein gut gelebtes Leben">
+<meta name="twitter:description" content="Leg es ab und vertrau darauf, dass es wiederkommt. Ein ruhiges, privates Zuhause für alles, was du mit dir trägst - da, wenn du es brauchst.">
+<meta name="twitter:image" content="https://lifefold.co/og-image.v3.png">
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://lifefold.co/#website",
+      "url": "https://lifefold.co/de",
+      "name": "LifeFold",
+      "slogan": "Für ein gut gelebtes Leben",
+      "description": "Ein ruhiges, privates Zuhause für dein Leben: Aufgaben, Notizen, Reflexion und Finanzen an einem Ort.",
+      "inLanguage": "de-DE"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "LifeFold",
+      "slogan": "Für ein gut gelebtes Leben",
+      "url": "https://lifefold.co/de",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "description": "LifeFold ist ein ruhiges, privates Zuhause für alles, was du mit dir trägst - Aufgaben, Notizen, Reflexion und Finanzen - in zwei Tipps festgehalten, wieder da, wenn du es brauchst. Deine Daten sind privat, und die KI ist optional, mit deinem eigenen Schlüssel.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+    }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper: #f4f1ea;
+  --paper-2: #ece7db;
+  --card: #fbf9f4;
+  --ink: #211c17;
+  --ink-2: #574e44;
+  --ink-3: #8b8073;
+  --line: rgba(33, 28, 23, 0.12);
+  --line-2: rgba(33, 28, 23, 0.22);
+  /* Brand gold (ochre) - kept in the --rust var names so every rule follows. */
+  --rust: #a8844a;
+  --rust-deep: #8c6d39;
+  --rust-soft: rgba(168, 132, 74, 0.15);
+  --rust-ink: #fff;
+  --pine: #2f5d57;
+  --pine-soft: rgba(47, 93, 87, 0.10);
+  --dawn-1: rgba(168, 132, 74, 0.18);
+  --dawn-2: rgba(217, 138, 91, 0.14);
+  --crease: rgba(120, 92, 45, 0.07);
+  --facet-a: rgba(255, 251, 240, 0.6);
+  --facet-b: rgba(120, 92, 45, 0.065);
+  --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
+  --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #17130e;
+    --paper-2: #1e1810;
+    --card: #221b12;
+    --ink: #f1ece3;
+    --ink-2: #bcb1a1;
+    --ink-3: #8b8070;
+    --line: rgba(241, 236, 227, 0.12);
+    --line-2: rgba(241, 236, 227, 0.22);
+    --rust: #c2a05f;
+    --rust-deep: #a8844a;
+    --rust-soft: rgba(194, 160, 95, 0.16);
+    --rust-ink: #15120c;
+    --pine: #7fbdb0;
+    --pine-soft: rgba(127, 189, 176, 0.12);
+    --dawn-1: rgba(194, 160, 95, 0.16);
+    --dawn-2: rgba(217, 138, 91, 0.12);
+    --crease: rgba(194, 160, 95, 0.085);
+    --facet-a: rgba(255, 247, 228, 0.04);
+    --facet-b: rgba(0, 0, 0, 0.17);
+    --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
+    --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
+  }
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background:
+    repeating-linear-gradient(118deg, transparent 0 96px, var(--crease) 96px 96.7px, transparent 96.7px 214px),
+    repeating-linear-gradient(-122deg, transparent 0 138px, var(--crease) 138px 138.7px, transparent 138.7px 300px),
+    var(--paper);
+  color: var(--ink);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; }
+h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+
+.eyebrow {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--rust); margin-bottom: 16px;
+}
+
+a { color: inherit; }
+
+/* ── buttons ── */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 13px; padding: 14px 24px; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, background .16s, border-color .16s; border: 1px solid transparent; }
+.btn-primary { background: var(--rust); color: var(--rust-ink); box-shadow: var(--shadow-sm); }
+.btn-primary:hover { transform: translateY(-2px); background: var(--rust-deep); box-shadow: 0 16px 34px -16px rgba(168, 132, 74, 0.6); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-2); }
+.btn-ghost:hover { transform: translateY(-2px); border-color: var(--ink); }
+
+/* ── nav ── */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
+.brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
+.brand-mark { width: 34px; height: 34px; color: var(--rust); flex: none; }
+/* LifeFold is one word; "book" just leans into italic. No space, same colour -
+   and nudged left a touch so the roman "y" meets the italic "b" cleanly. */
+.brand .wm-bk { font-style: italic; margin-left: 0; }
+.nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
+.nav-links a { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; transition: color .18s; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { display: flex; align-items: center; gap: 14px; }
+.nav-cta .btn { padding: 10px 18px; font-size: 15px; border-radius: 11px; }
+@media (max-width: 1024px) { .nav-links { display: none; } }
+/* Phone header: the wordmark plus both CTAs crammed onto one row looked tight, so
+   give it two calm rows - the LifeFold wordmark centred on top, the actions on
+   their own row beneath, each with room to breathe. (Robin.) */
+@media (max-width: 560px) {
+  .wrap { padding: 0 20px; }
+  .nav-in { position: relative; flex-direction: column; align-items: center; height: auto; gap: 13px; padding: 14px 0 16px; }
+  .brand { font-size: 22px; gap: 9px; }
+  .brand-mark { width: 30px; height: 30px; }
+  /* Language chip tucked into the top-right corner so the wordmark stays centred.
+     Selector beats .lang-switch.lang-dd (0,2,0), which otherwise forces relative. */
+  .nav-cta .lang-switch.nav-lang { position: absolute; top: 16px; right: 0; margin: 0; }
+  .nav-cta { width: 100%; justify-content: center; gap: 12px; }
+  .nav-cta .btn { padding: 10px 18px; font-size: 14.5px; border-radius: 11px; white-space: nowrap; }
+  .nav-cta .btn-ghost { padding: 10px 18px; border-color: var(--line-2); background: var(--card); }
+}
+/* language switcher */
+.lang-switch { display: inline-flex; align-items: center; gap: 1px; }
+.lang-switch a { display: inline-block; padding: 4px 7px; border-radius: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink-3); text-decoration: none; transition: color .16s, background .16s; }
+.lang-switch a:hover { color: var(--ink); background: var(--rust-soft); }
+.lang-switch a.on { color: var(--rust); }
+.nav-lang { margin-right: 2px; }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
+.foot-lang-label { font-size: 13px; color: var(--ink-3); }
+.lang-switch.lang-dd { position: relative; gap: 0; }
+.lang-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--ink-2); background: transparent; border: 1px solid var(--line-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; line-height: 1; transition: border-color .16s, color .16s; }
+.lang-btn:hover { color: var(--ink); border-color: var(--ink); }
+.lang-caret { font-size: 10px; opacity: .7; }
+.lang-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 160px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display: none; z-index: 60; }
+.lang-switch.lang-dd.open .lang-menu { display: block; }
+.lang-menu a { display: block; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.lang-menu a:hover { background: var(--rust-soft); color: var(--ink); }
+.lang-menu a.on { color: var(--rust); font-weight: 600; }
+
+/* ── hero ── */
+.hero { position: relative; padding: 92px 0 60px; overflow: hidden; }
+.hero-glow { position: absolute; inset: 0 0 auto 0; height: 100%; z-index: 0; pointer-events: none; overflow: hidden;
+  background:
+    linear-gradient(119deg, var(--facet-a) 0 43%, transparent 43.5%),
+    linear-gradient(-129deg, var(--facet-b) 0 34%, transparent 34.5%),
+    radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%),
+    radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
+/* A large, faint fold-mark behind the hero - the origami motif as a watermark. */
+.hero-fold { position: absolute; z-index: 0; pointer-events: none; color: var(--rust); opacity: .05;
+  width: min(62vh, 560px); height: auto; left: -11%; bottom: -16%; }
+@media (max-width: 860px) { .hero-fold { width: 300px; left: -17%; bottom: -6%; opacity: .045; } }
+/* The hero's gradient fold, carried to a few statement bands below - two mirrored
+   angles so adjacent folds don't read as a repeat. Kept subtle. */
+.foldface { position: relative; isolation: isolate; }
+.foldface::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(121deg, var(--facet-a) 0 44%, transparent 44.5%), linear-gradient(-128deg, var(--facet-b) 0 31%, transparent 31.5%); }
+.foldface-alt::before { background: linear-gradient(-121deg, var(--facet-a) 0 44%, transparent 44.5%), linear-gradient(128deg, var(--facet-b) 0 31%, transparent 31.5%); }
+.foldface > .wrap { position: relative; z-index: 1; }
+.hero-in { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
+.hero-copy { min-width: 0; }
+.hero h1, .hero-tag { padding-right: 0.12em; }
+.hero-badge { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); background: var(--card); border: 1px solid var(--line); padding: 7px 15px 7px 12px; border-radius: 999px; margin-bottom: 26px; box-shadow: var(--shadow-sm); }
+.hero-badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 0 var(--rust); animation: pulse 2.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rust) 55%, transparent); } 70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.hero-tag { font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(19px, 2.3vw, 23px); line-height: 1.2; letter-spacing: -0.01em; color: var(--rust); margin-bottom: 15px; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 72px); line-height: 1.04; font-weight: 600; letter-spacing: -0.01em; }
+.hero h1 em { font-style: italic; color: var(--rust); padding-right: 0.16em; margin-right: -0.16em; }
+.hero-sub { margin-top: 24px; font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 48ch; line-height: 1.55; }
+.hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.hero-note { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
+
+/* hero app-surface cluster */
+.cluster { position: relative; min-height: 470px; min-width: 0; }
+.dcard { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 16px 18px; }
+.win-bar { display: flex; align-items: center; gap: 6px; padding-bottom: 11px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
+.win-bar .wd { width: 8px; height: 8px; border-radius: 50%; opacity: .6; }
+.wd.r { background: var(--rust); } .wd.a { background: #c2913a; } .wd.p { background: var(--pine); }
+.win-ttl { margin-left: 5px; font-size: 11.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.plan { display: flex; flex-direction: column; }
+.prow { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 15px; color: var(--ink); }
+.prow + .prow { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pt { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-3); width: 36px; flex: none; }
+.adot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.adot.rust { background: var(--rust); } .adot.pine { background: var(--pine); } .adot.gold { background: #c2913a; } .adot.blue { background: #5f7e8c; }
+.plbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow.done .plbl { color: var(--ink-3); text-decoration: line-through; }
+.ptick { color: var(--rust); font-size: 13px; flex: none; }
+.pcal { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; flex: none; }
+.dc-area { width: 212px; }
+.area-top { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }
+.adot.big { width: 11px; height: 11px; }
+.area-name { font-weight: 600; font-size: 14.5px; color: var(--ink); flex: 1; }
+.area-days { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.area-ring { display: flex; align-items: center; gap: 13px; margin-bottom: 14px; }
+.ring { width: 58px; height: 58px; flex: none; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--line); stroke-width: 4.5; }
+.ring-fg { fill: none; stroke: var(--rust); stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 119.4; stroke-dashoffset: 38.2; }
+.ring-meta strong { display: block; font-family: 'Fraunces', serif; font-size: 22px; color: var(--ink); line-height: 1; }
+.ring-meta span { font-size: 11.5px; color: var(--ink-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 11px; font-weight: 600; color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-variant-numeric: tabular-nums; }
+.dc-reflect { width: 288px; }
+.r-lbl { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--rust); margin-bottom: 9px; }
+.r-q { font-family: 'Fraunces', serif; font-style: italic; font-size: 16.5px; line-height: 1.4; color: var(--ink); margin-bottom: 13px; }
+.mood { display: flex; align-items: center; gap: 6px; }
+.md { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line-2); }
+.md.on { background: var(--pine); border-color: var(--pine); }
+.mood-l { margin-left: 5px; font-size: 12px; color: var(--ink-3); }
+.dc-plan { top: 0; left: 0; z-index: 2; width: 298px; transform: rotate(-1.5deg); }
+.dc-area { top: 150px; right: -8px; z-index: 4; transform: rotate(2deg); }
+.dc-reflect { bottom: 0; left: 22px; z-index: 3; transform: rotate(-1deg); }
+
+@media (max-width: 880px) {
+  .hero-in { grid-template-columns: 1fr; gap: 30px; }
+  .hero-sub { max-width: 46ch; }
+  .cluster { min-height: 456px; margin: 0 auto; max-width: 330px; }
+  .dc-area { right: -4px; } .dc-reflect { left: 6px; }
+}
+
+/* ── section scaffolding ── */
+section { position: relative; }
+.band { padding: 96px 0; }
+.band-head { max-width: 640px; margin-bottom: 52px; }
+.band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+.band-head p { margin-top: 16px; font-size: 19px; color: var(--ink-2); line-height: 1.55; }
+/* The litany — the breadth of a life, ending on "your life". */
+.litany-band { padding: clamp(60px,9vw,104px) 0; border-bottom: 1px solid var(--line); background-image: radial-gradient(60% 80% at 8% 0%, rgba(168, 132, 74,.05), transparent 60%); }
+.litany { font-family: 'Fraunces', serif; font-weight: 400; font-size: clamp(27px,4.4vw,47px); line-height: 1.28; letter-spacing: -0.015em; color: var(--ink); max-width: 24ch; text-wrap: balance; }
+.litany em { color: var(--rust); font-style: italic; }
+
+/* concept */
+.concept { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.concept-lead { font-family: 'Fraunces', serif; font-size: clamp(24px, 3vw, 31px); line-height: 1.32; font-weight: 400; letter-spacing: -0.01em; }
+.concept-lead em { color: var(--rust); font-style: italic; }
+.concept-body p { color: var(--ink-2); font-size: 18px; line-height: 1.6; }
+.concept-body p + p { margin-top: 18px; }
+@media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 28px; } }
+.holds { list-style: none; margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; }
+.holds li { display: flex; flex-direction: column; gap: 2px; padding-left: 15px; border-left: 2px solid var(--rust); }
+.holds b { font-size: 16px; font-weight: 600; }
+.holds span { font-size: 14.5px; color: var(--ink-3); line-height: 1.4; }
+@media (max-width: 460px) { .holds { grid-template-columns: 1fr; } }
+
+/* ethos band */
+.ethos { padding: 88px 0; text-align: center; background: var(--paper); }
+.ethos-line { font-family: 'Fraunces', serif; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.18; font-weight: 500; letter-spacing: -0.02em; text-wrap: balance; max-width: 20ch; margin: 6px auto 0; }
+.ethos-line em { font-style: italic; color: var(--rust); }
+.ethos-sub { margin: 22px auto 0; max-width: 46ch; font-size: 18px; color: var(--ink-2); line-height: 1.55; }
+
+/* tools grid */
+.tools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.tool { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 26px 24px 28px; box-shadow: var(--shadow-sm); transition: transform .16s, border-color .16s; }
+.tool:hover { transform: translateY(-3px); border-color: var(--line-2); }
+.tool-ic { font-size: 26px; margin-bottom: 16px; display: block; }
+.tool h3 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; }
+.tool p { font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+.tools-foot { margin-top: 30px; text-align: center; font-family: 'Fraunces', serif; font-style: italic; font-size: clamp(20px, 2.6vw, 26px); color: var(--ink); }
+.tools-foot span { color: var(--rust); }
+@media (max-width: 880px) { .tools-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .tools-grid { grid-template-columns: 1fr; } }
+
+/* interactive tools showcase */
+.ts-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.tstile { flex: 1 1 172px; max-width: 208px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); cursor: pointer; font: inherit; color: var(--ink); transition: transform .16s, border-color .16s, background .16s; }
+.tstile:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.tstile .tsi { font-size: 23px; line-height: 1; }
+.tstile .tsn { font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+.tstile.on { border-color: var(--rust); background: var(--rust-soft); }
+.tstile.on .tsn { color: var(--rust); }
+.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 32px 34px; }
+.tsp-ic { width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; font-size: 25px; background: var(--rust-soft); color: var(--rust); margin-bottom: 17px; }
+.tsp-name { font-family: 'Fraunces', serif; font-size: clamp(26px, 3vw, 34px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+.tsp-tag { color: var(--rust); font-weight: 600; font-size: 14px; margin: 7px 0 14px; }
+.tsp-desc { color: var(--ink-2); font-size: 16px; line-height: 1.55; max-width: 46ch; }
+.tsp-feats { list-style: none; margin: 15px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.tsp-feats li { position: relative; padding-left: 24px; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
+.tsp-feats li::before { content: '✓'; position: absolute; left: 0; top: 1px; width: 16px; height: 16px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+.tspv { background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.pv-rows { display: flex; flex-direction: column; }
+.pv-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14.5px; color: var(--ink); }
+.pv-row + .pv-row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pv-ava { width: 26px; height: 26px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-weight: 700; font-size: 12px; display: grid; place-items: center; flex: none; }
+.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-t b { font-weight: 600; }
+.pv-chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink-2); flex: none; }
+.pv-chip.q-urgent { color: var(--rust); background: var(--rust-soft); border-color: color-mix(in srgb, var(--rust) 35%, var(--line)); }
+.pv-chip.q-important { color: #a9791f; background: color-mix(in srgb, #c2913a 13%, transparent); border-color: color-mix(in srgb, #c2913a 40%, var(--line)); }
+.pv-chip.q-chilled { color: var(--pine); background: var(--pine-soft); border-color: color-mix(in srgb, var(--pine) 35%, var(--line)); }
+.pv-chip.q-others { color: var(--ink-3); }
+.pv-quad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; padding-top: 11px; border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.pv-quad .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-right: 2px; }
+.pv-time { width: 40px; font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
+.pv-amt { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; font-size: 13.5px; flex: none; }
+.pv-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line-2); flex: none; }
+.pv-check.on { background: var(--rust); border-color: var(--rust); position: relative; }
+.pv-check.on::after { content: '✓'; color: #fff; font-size: 11px; position: absolute; inset: 0; display: grid; place-items: center; }
+.pv-done { color: var(--ink-3); text-decoration: line-through; }
+.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.pv-abar { flex: 1; }
+.pv-aname { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 6px; color: var(--ink); }
+.pv-apct { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pv-bar { height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pv-bar > i { display: block; height: 100%; background: var(--rust); border-radius: 999px; }
+.pv-note-h { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.pv-note-l { font-size: 14px; color: var(--ink-2); line-height: 1.5; margin-bottom: 11px; }
+.pv-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.pv-link { font-size: 11px; font-weight: 600; color: var(--rust); background: var(--rust-soft); border: 1px solid color-mix(in srgb, var(--rust) 22%, var(--line)); border-radius: 7px; padding: 3px 8px; }
+.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pv-tbl th { text-align: left; color: var(--ink-3); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+.pv-tbl td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--ink); }
+@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; } }
+@media (max-width: 520px) { .ts-tiles { gap: 9px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
+.flow-dia { max-width: 600px; margin: 46px auto 0; }
+.flow-dia svg { width: 100%; height: auto; display: block; }
+@keyframes flowDash { to { stroke-dashoffset: -110; } }
+@media (prefers-reduced-motion: no-preference) { .flow-dia .orbit { animation: flowDash 3.6s linear infinite; } }
+
+/* Tinted so the tool grid reads as its own band. */
+#tools { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+/* Life Spaces - the "special sauce" band */
+.areas-band { position: relative; background-image: radial-gradient(80% 60% at 100% 0%, var(--dawn-1), transparent 58%); }
+.areas-band h2 { margin-bottom: 20px; }
+.areas-grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 60px; align-items: center; }
+.areas-lead { font-family: 'Fraunces', serif; font-size: clamp(22px, 2.8vw, 30px); line-height: 1.32; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 18px; }
+.areas-band em { color: var(--rust); font-style: italic; }
+.areas-band p { color: var(--ink-2); font-size: 19px; line-height: 1.58; }
+.areas-band .areas-lead { color: var(--ink); }
+.areas-band p + p { margin-top: 16px; }
+@media (max-width: 820px) { .areas-grid { grid-template-columns: 1fr; gap: 32px; } }
+/* the little "it all flows into one area" diagram */
+.areas-flow { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 36px 26px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.af-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; max-width: 320px; }
+.af-chip { font-size: 14px; font-weight: 600; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; box-shadow: var(--shadow-sm); }
+.af-arrow { color: var(--rust); font-size: 26px; line-height: 1; opacity: .75; }
+.af-area { display: inline-flex; align-items: center; gap: 10px; font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--rust-ink); background: var(--rust); border-radius: 14px; padding: 12px 22px; box-shadow: 0 16px 32px -16px rgba(168, 132, 74, 0.6); }
+.af-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; opacity: .9; }
+/* Sharing: the life-areas differentiator, use-cases as a filled grid of cards. */
+.areas-share { margin-top: 64px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
+.areas-share-h { font-family: 'Fraunces', serif; font-size: clamp(24px, 3vw, 34px); font-weight: 400; letter-spacing: -0.01em; margin: 14px 0 14px; }
+.areas-share-lead { color: var(--ink-2); font-size: 19px; line-height: 1.55; max-width: 54ch; margin: 0 auto 36px; }
+.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 16px; }
+.share-case { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: transform .16s, border-color .16s, box-shadow .16s; }
+.share-case:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow); }
+.share-case .sc-ic { font-size: 30px; line-height: 1; margin-bottom: 5px; }
+.share-case b { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: var(--ink); }
+.share-case span:last-child { font-size: 14px; color: var(--ink-3); }
+@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
+/* "Not a box. A fold." - the three fold pillars */
+.fold-beats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+.fold-beat { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 28px 24px; display: flex; flex-direction: column; gap: 10px; transition: transform .16s, border-color .16s, box-shadow .16s; }
+.fold-beat:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--shadow); }
+.fold-beat b { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1.26; }
+.fold-beat p { margin: 0; font-size: 15.5px; color: var(--ink-2); line-height: 1.55; }
+@media (max-width: 760px) { .fold-beats { grid-template-columns: 1fr; } }
+
+/* Reflection - a secondary story, set apart with a soft pine tint */
+.wellbeing-band { background: var(--pine-soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wellbeing-band .eyebrow { color: var(--pine); }
+
+/* A touch of bling: the hero's emphasised phrase warms from rust through dawn. */
+.hero h1 em { font-style: italic; background: linear-gradient(100deg, var(--rust), #d98a5b 52%, var(--rust-deep)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* privacy band (pine) */
+.privacy { background: var(--pine); color: #f3efe6; overflow: hidden; position: relative; }
+.privacy::before { content: ''; position: absolute; inset: 0; background: radial-gradient(50% 80% at 85% 20%, rgba(255,255,255,0.08), transparent 70%); pointer-events: none; }
+.privacy .wrap { position: relative; }
+.privacy .eyebrow { color: #d7ede8; }
+.privacy h2 { color: #fff; margin-bottom: 24px; }
+.privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.privacy-lead { font-size: 19px; line-height: 1.6; color: rgba(243, 239, 230, 0.9); }
+.privacy-lead + .privacy-lead { margin-top: 20px; }
+.privacy-lead b { color: #fff; font-weight: 600; }
+.privacy-points { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.privacy-points li { display: flex; gap: 14px; font-size: 16.5px; line-height: 1.45; color: rgba(243, 239, 230, 0.92); }
+.privacy-points .tick { flex: none; width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.14); display: grid; place-items: center; font-size: 14px; color: #fff; }
+@media (max-width: 820px) { .privacy-grid { grid-template-columns: 1fr; gap: 30px; } }
+
+/* capture */
+.capture-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; }
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.step { display: flex; gap: 16px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 15px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.step-n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--rust-soft); color: var(--rust); font-family: 'Fraunces', serif; font-weight: 600; font-size: 18px; display: grid; place-items: center; }
+.step-t b { display: block; font-size: 17px; margin-bottom: 3px; }
+.step-t span { font-size: 15px; color: var(--ink-2); }
+@media (max-width: 820px) { .capture-grid { grid-template-columns: 1fr; gap: 28px; } }
+
+/* closing cta */
+.closing { text-align: center; padding: 104px 0; background: var(--paper-2); border-top: 1px solid var(--line); }
+.closing h2 { font-size: clamp(34px, 5vw, 54px); }
+.closing p { margin: 20px auto 0; max-width: 46ch; font-size: 19px; color: var(--ink-2); }
+.closing .hero-actions { justify-content: center; margin-top: 36px; }
+/* Request-an-invite form */
+.invite-form { max-width: 520px; margin: 32px auto 0; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.if-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.invite-form input, .invite-form textarea { width: 100%; font-family: inherit; font-size: 16px; color: var(--ink); background: var(--card); border: 1px solid var(--line-2); border-radius: 13px; padding: 13px 15px; }
+.invite-form textarea { margin-top: 12px; resize: vertical; line-height: 1.5; }
+.invite-form input::placeholder, .invite-form textarea::placeholder { color: var(--ink-3); }
+.invite-form input:focus, .invite-form textarea:focus { outline: none; border-color: var(--rust); box-shadow: 0 0 0 3px var(--rust-soft); }
+.if-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 16px; }
+.if-note { margin-top: 12px; text-align: center; font-size: 15px; color: var(--rust); }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 600; }
+.invite-thanks p { margin: 10px auto 0; max-width: 42ch; color: var(--ink-2); font-size: 17px; }
+@media (max-width: 520px) { .if-grid { grid-template-columns: 1fr; } }
+
+/* footer */
+footer { border-top: 1px solid var(--line); padding: 46px 0; }
+.foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+/* Hangs under the wordmark, not the mark: 26px of icon + the 11px .brand gap. */
+.foot-tag { font-family: 'Fraunces', serif; font-style: italic; font-size: 15.5px; color: var(--ink-3); padding-left: 37px; }
+.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.foot-links { display: flex; gap: 26px; list-style: none; flex-wrap: wrap; }
+.foot-links a { color: var(--ink-3); text-decoration: none; font-size: 15px; transition: color .18s; }
+.foot-links a:hover { color: var(--ink); }
+.foot-meta { font-size: 14.5px; color: var(--ink-3); }
+.foot-lisboa { font-family: 'Fraunces', Georgia, serif; font-style: italic; color: var(--rust); letter-spacing: -0.005em; }
+.foot-meta a { color: var(--rust); text-decoration: none; } .foot-meta a:hover { text-decoration: underline; }
+
+/* reveal */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-badge .pulse { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* sign-in modal */
+.signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px;
+  background: color-mix(in srgb, var(--ink) 46%, transparent); backdrop-filter: blur(4px); }
+.signin-overlay[hidden] { display: none; }
+.signin-box { position: relative; width: min(440px, 100%); background: var(--card); border: 1px solid var(--line);
+  border-radius: 20px; padding: 34px 32px 28px; box-shadow: 0 40px 90px -30px rgba(0,0,0,0.5); }
+.signin-close { position: absolute; top: 14px; right: 16px; border: 0; background: none; color: var(--ink-3);
+  font-size: 26px; line-height: 1; cursor: pointer; padding: 4px; }
+.signin-close:hover { color: var(--ink); }
+.signin-h { font-family: 'Fraunces', serif; font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-top: 8px; }
+.signin-p { margin-top: 8px; font-size: 15.5px; color: var(--ink-2); line-height: 1.5; }
+.signin-label { display: block; margin: 22px 0 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.signin-field { display: flex; align-items: stretch; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; background: var(--paper); transition: border-color .15s; }
+.signin-field:focus-within { border-color: var(--rust); }
+.signin-input { flex: 1; min-width: 0; border: 0; background: none; padding: 13px 14px; font-family: inherit; font-size: 17px; color: var(--ink); outline: none; }
+.signin-go { width: 100%; justify-content: center; margin-top: 16px; }
+.signin-err { margin-top: 10px; font-size: 14px; color: var(--rust); }
+.signin-foot { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); text-align: center; }
+.signin-foot a { color: var(--rust); text-decoration: none; font-weight: 600; }
+.signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1.5px solid var(--rust); border-radius: 999px; text-align: center; font-size: 15px; font-weight: 600; color: var(--rust); cursor: pointer; font-family: inherit; transition: background .18s, color .18s; }
+.signin-smslink:hover { background: var(--rust); color: var(--rust-ink); }
+</style>
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card); border-top:1px solid var(--line); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2); }
+.dbk-consent .dbk-accept { background:var(--rust); color:var(--rust-ink); border-color:var(--rust); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+</style>
+<script>
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    if (document.querySelector('.dbk-consent')) return;
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie-Optionen');
+    b.innerHTML = '<p>LifeFold nutzt Analyse-Cookies, um zu verstehen, wie die Seite genutzt wird: nichts Persönliches und nie etwas aus deinen LifeFold-Inhalten. Erlaubst du es? <a href="/privacy">Datenschutz</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Ablehnen</button><button class="dbk-accept" type="button">Akzeptieren</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="/de"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a>
+    <ul class="nav-links">
+      <li><a href="#idea">Dein LifeFold</a></li>
+      <li><a href="#tools">Werkzeuge</a></li>
+      <li><a href="#private">Datenschutz</a></li>
+      <li><a href="/blog">Journal</a></li>
+    </ul>
+    <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
+      <a class="btn btn-ghost" href="#" data-signin>Anmelden</a>
+      <a class="btn btn-primary" href="#invite">Einladung anfragen</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-glow"></div>
+  <svg class="hero-fold" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <div class="hero-badge reveal"><span class="pulse"></span>Nur auf Einladung, im Early Access</div>
+      <h1 class="reveal">Für ein Leben,<br><em>gut gelebt</em></h1>
+      <p class="hero-sub reveal">Deine Tage und Pläne, die Menschen, die du liebst, das stillere Innenleben - viel zu tragen, und fast alles verstreut. LifeFold faltet es zu einem einzigen, lebendigen Ort zusammen, an dem alles verbunden ist, nichts verloren geht und du in der Mitte stehst.</p>
+      <div class="hero-actions reveal">
+        <a class="btn btn-primary" href="#invite">Einladung anfragen →</a>
+        <a class="btn btn-ghost" href="#" data-signin>Anmelden</a>
+      </div>
+      <p class="hero-note reveal">Privat von Grund auf. Keine Werbung, kein Datenverkauf, kein Lärm.</p>
+    </div>
+    <div class="cluster reveal">
+      <div class="dcard dc-plan">
+        <div class="win-bar"><span class="wd r"></span><span class="wd a"></span><span class="wd p"></span><span class="win-ttl">Heute &middot; Di. 7. Okt.</span></div>
+        <div class="plan">
+          <div class="prow done"><span class="pt">07:30</span><span class="adot gold"></span><span class="plbl">Morgenmeditation</span><span class="ptick">✓</span></div>
+          <div class="prow"><span class="pt">10:00</span><span class="adot rust"></span><span class="plbl">Angebot für Sintra schreiben</span></div>
+          <div class="prow"><span class="pt">13:00</span><span class="adot blue"></span><span class="plbl">Mittagessen mit Marta</span><span class="pcal">cal</span></div>
+          <div class="prow"><span class="pt">18:00</span><span class="adot pine"></span><span class="plbl">Spazieren, bevor das Licht geht</span></div>
+        </div>
+      </div>
+      <div class="dcard dc-area">
+        <div class="area-top"><span class="adot rust big"></span><span class="area-name">Reise nach Frigiliana</span><span class="area-days">12 Tage</span></div>
+        <div class="area-ring">
+          <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="ring-bg" cx="22" cy="22" r="19"></circle><circle class="ring-fg" cx="22" cy="22" r="19"></circle></svg>
+          <div class="ring-meta"><strong>68%</strong><span>im Plan</span></div>
+        </div>
+        <div class="chips"><span class="chip">✉ 3</span><span class="chip">◷ 2</span><span class="chip">▤ 5</span><span class="chip">€ 1,2k</span></div>
+      </div>
+      <div class="dcard dc-reflect">
+        <div class="r-lbl">Reflexion</div>
+        <p class="r-q">„Was hat der heutige Tag von mir verlangt, und was habe ich ihm gegeben?“</p>
+        <div class="mood"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Diese Woche stabil</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="litany-band foldface">
+  <div class="wrap reveal">
+    <p class="litany">Deine Zeit, deine Menschen, deine Pläne, deine Rhythmen - und das verstreute digitale Leben, das alles umgibt. An einem einzigen ruhigen Ort versammelt, und <em>ganz die deinen.</em></p>
+  </div>
+</section>
+
+<section class="band fold-band foldface foldface-alt" id="fold">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">Die Idee hinter dem Namen</div>
+      <h2>Keine Schachtel. Eine Faltung.</h2>
+      <p>Das Symbol ist eine Origami-Faltung - und die Idee dahinter auch.</p>
+    </div>
+    <div class="fold-beats reveal">
+      <div class="fold-beat"><b>Es hält die Form deines Lebens</b><p>Arbeit, Gesundheit, die Menschen, die du liebst, deine Ziele, die ruhigeren, inneren Teile - ein Leben hat viele Faltungen. LifeFold hält sie an einem ruhigen, geordneten Ort zusammen. Keine starre Schachtel: eine lebendige Struktur, die sich dir anpasst.</p></div>
+      <div class="fold-beat"><b>Vom Verstreuten zum Ganzen</b><p>Deine verstreuten Listen und losen Notizen hereinzuholen heißt im Grunde, dich selbst hereinzuholen - vom Verstreuten zum Gesammelten, vom Alles-Tragen zum Getragenwerden. Geerdet, aufgehoben, zu Hause bei dir selbst.</p></div>
+      <div class="fold-beat"><b>Falten ist ein schöpferischer Akt</b><p>Wie beim Origami nimmt eine Faltung das Flache und gibt ihm Tiefe, Form und eine stille Schönheit. LifeFold faltet die erdrückende Tagesliste in eine Form, die du wirklich halten kannst - sinnvoll und machbar.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="tools">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">Dein ganzes Set</div>
+      <h2>Jedes Werkzeug, in eines gefaltet</h2>
+      <p>Alles an einem Ort - E-Mail, Kalender, Notizen, Aufgaben, Finanzen und Menschen fürs Tun; Wohlbefinden, Ziele und Life Spaces fürs Innenleben. Verbunden, damit nichts entwischt, und unaufdringlich geführt, damit du den Überblick behältst.</p>
+    </div>
+    <div class="toolshow reveal">
+      <div class="ts-tiles" id="tsTiles">
+        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Life Spaces</span></button>
+        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">E-Mail</span></button>
+        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Kalender</span></button>
+        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Aufgaben</span></button>
+        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notizen</span></button>
+        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">Lesen &amp; Sehen</span></button>
+        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Reflexion</span></button>
+        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Journal</span></button>
+        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
+        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Ziele</span></button>
+        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Rückblicke</span></button>
+        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Lebensliste</span></button>
+        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Kontakte</span></button>
+        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Teilen</span></button>
+        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Nachrichten</span></button>
+        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Finanzen</span></button>
+        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tabellen</span></button>
+      </div>
+      <div class="tspanel" id="tsPanel"></div>
+    </div>
+    <script>
+    (function(){
+      var T={
+        areas:{ic:'◈',name:'Life Spaces',tag:'Das Herz von LifeFold',desc:`Deine E-Mails, dein Kalender, deine Aufgaben, Notizen, Ziele, Menschen und Ausgaben sammeln sich rund um die echten Teile deines Lebens - und jeder zeigt auf einen Blick, wo er steht.`,feats:["E-Mail, Kalender, Aufgaben, Notizen, Ziele, Menschen und Ausgaben sammeln sich nach Bereich","Gib ihm ein Datum, und er wird zum Projekt, das herunterzählt","Teile einen Bereich mit den Menschen, die ihn leben"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Reise nach Frigiliana <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Gesundheit <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%;background:var(--pine)"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Umzug <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%;background:#5f7e8c"></i></div></div></div>`},
+        mail:{ic:'✉',name:'E-Mail',tag:'Jedes Postfach, ein Raum',desc:`Bring all deine Konten in einen Strom - Gmail, Outlook, jedes IMAP-Postfach - und bearbeite sie alle wie eines.`,feats:["Alle deine Konten in einem Posteingang vereint","Schnell sortieren: Dringend, Wichtig, Entspannt","Eine Mail in einem Life Space ablegen und dort teilen"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: Angebot Sintra</span><span class="pv-chip q-urgent">Dringend</span></div><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Stadt Lissabon</b> · Grundsteuer 2026</span><span class="pv-chip q-important">Wichtig</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Dojo-Zeiten</span><span class="pv-chip q-chilled">Entspannt</span></div></div><div class="pv-quad"><span class="lbl">Sortieren</span><span class="pv-chip q-urgent">Dringend</span><span class="pv-chip q-important">Wichtig</span><span class="pv-chip q-chilled">Entspannt</span><span class="pv-chip q-others">Andere</span></div>`},
+        calendar:{ic:'◑',name:'Kalender',tag:'Monat, Woche, Agenda',desc:`Ein Blick auf deine Tage - synchron mit dem Kalender, den du schon nutzt.`,feats:["Monat, Woche und Agenda in einer Ansicht","Zwei-Wege-Sync mit deinem Google-Kalender","Ein Termin kann als Praxis zählen"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Angebot durchsehen</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Mittagessen mit Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga am Fluss</span></div></div>`},
+        tasks:{ic:'✓',name:'Aufgaben',tag:'Dein Tag, im Fluss',desc:`Ein Tag aus Strömungen, keine mahnende Liste - bleib im Fluss, wenn du drin bist.`,feats:["Fließende Strömungen, nie ein rotes „überfällig“, das nervt","Taucht genau dann wieder auf, wenn es dran ist","Jede Aufgabe trägt ihren Life Space"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot gold"></span><span class="pv-t pv-done">Morgenmeditation</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Angebot für Sintra schreiben</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Spazieren, bevor das Licht geht</span></div></div>`},
+        notes:{ic:'▤',name:'Notizen',tag:'Frei schreiben, alles verknüpfen',desc:`Eine hingekritzelte Idee, ein längerer Gedanke oder ein Plan mit allem verknüpft - in Sekunden festgehalten und dorthin gebunden, wo er hingehört.`,feats:["In zwei Tipps festhalten, von überall","Eine Website, eine Aufgabe, einen Termin, eine Person verknüpfen","Jede Notiz in eine Tabelle verwandeln, wann du willst"],pv:`<div class="pv-note-h">Reise nach Frigiliana</div><p class="pv-note-l">Die Küstenstraße, das Haus mit der blauen Tür. Termine vor dem 20. bestätigen.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Fähre buchen</span><span class="pv-link">◷ Fr. 12.</span><span class="pv-link">↳ Reise nach Frigiliana</span></div>`},
+        readwatch:{ic:'☆',name:'Lesen &amp; Sehen',tag:'Für später aufheben',desc:`Heb die Websites, Artikel, Bücher und Filme auf, die du noch vorhast - mit einem Tipp, bereit für den Moment, in dem du Zeit hast.`,feats:["Festhalten mit einem Tipp - per Bookmarklet oder iOS-Kurzbefehl","Artikel, Websites, Bücher und Filme, alles sortiert","Hol dir eins vor an einem freien Abend"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Film</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Viertausend Wochen</span><span class="pv-chip">Buch</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - die Lissabon-Ausgabe</span><span class="pv-chip">Link</span></div></div>`},
+        wellbeing:{ic:'✎',name:'Reflexion',tag:'Das Innenleben, gepflegt',desc:`Die nachdenkliche Hälfte - Journal, Rückblicke, Träume, Lesungen und ein sanftes Coaching, direkt neben dem Tun.`,feats:["Journal, Rückblicke, Träume und sanftes Coaching","Reflexionswerkzeuge - das I Ging, das Horoskop, spirituelle Karten - um einen Gedanken zu entzünden","Gut gemacht: das Horoskop liest dein ganzes Geburtshoroskop"],pv:`<p class="r-q" style="margin:0 0 12px">„Was hat der heutige Tag von mir verlangt, und was habe ich ihm gegeben?“</p><div class="mood" style="margin-bottom:13px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Diese Woche stabil</span></div><div class="chips"><span class="chip">Journal</span><span class="chip">Träume</span><span class="chip">Lesungen</span></div>`},
+        journal:{ic:'✒',name:'Journal',tag:'Auf dem Papier denken',desc:`Wähl einen Impuls, schreib, und geh mit einer Nachfrage tiefer, wann immer du weiter willst.`,feats:["Ein Impuls-Wähler, um loszulegen","„Tiefer gehen“ stellt die nächste Frage","Einträge bleiben in deinem Wohlbefinden-Verlauf"],pv:`<p class="r-q" style="margin:0 0 10px">„Wofür mache ich diese Woche Platz?“</p><p class="pv-note-l" style="margin:0">Weniger Lärm. Ein echtes Gespräch mit Marta. Ein Spaziergang ohne Ziel.</p>`},
+        coaching:{ic:'✦',name:'Coaching',tag:'Eine Frage, kein Vortrag',desc:`Ein sanftes, freiwilliges Coaching, das genau das Richtige im richtigen Moment fragt - gestützt auf deine eigenen Ziele und Rückblicke.`,feats:["Ausgehend von deinen Zielen und Rückblicken","Es fragt; es befiehlt nie","Freiwillig, mit deinem eigenen KI-Schlüssel"],pv:`<p class="r-q" style="margin:0 0 11px">„Du hast das Fitnessstudio dreimal verschoben - was steht wirklich im Weg?“</p><div class="chips"><span class="chip">Nachdenken</span><span class="chip">Neu rahmen</span><span class="chip">Nochmal versuchen</span></div>`},
+        goals:{ic:'◎',name:'Ziele',tag:'Vorsätze, die wahr werden',desc:`Leg fest, was zählt, teil es in Schritte und sieh zu, wie es vorangeht.`,feats:["Ein Ziel in echte nächste Schritte teilen","Der Fortschritt auf einen Blick","Verbunden mit den Life Spaces, in denen sie leben"],pv:`<div class="pv-aname">Einen Halbmarathon laufen <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:60%;background:var(--pine)"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10 km ohne Pause</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Für den Lauf anmelden</span></div></div>`},
+        reviews:{ic:'↻',name:'Rückblicke',tag:'Zurückschauen, um voranzukommen',desc:`Ein ruhiger Rhythmus von Rückblicken - wöchentlich, monatlich, nach Jahreszeiten - um zu sehen, wie das Leben wirklich läuft, und neu auszurichten, was zählt.`,feats:["Erinnerungen in deinem eigenen Takt","Zieht echte Zahlen aus deinen Life Spaces","Sieh deinen Fortschritt und richte dann deine Vorsätze neu aus"],pv:`<div class="pv-aname">Wöchentlicher Rückblick <span class="pv-apct">3 von 4 erledigt</span></div><div class="pv-bar" style="margin-bottom:13px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viaje a Frigiliana</span><span class="pv-amt">im Plan</span></div><div class="pv-row"><span class="pv-t">Nächster</span><span class="pv-amt">Sonntag</span></div></div>`},
+        bucket:{ic:'⚑',name:'Lebensliste',tag:'Die Liste fürs Leben',desc:`Die Erlebnisse, Orte und Träume, die du nicht verpassen willst - festgehalten und im richtigen Moment zu echten Plänen angeschoben.`,feats:["Träume, Reisen, Fähigkeiten, Einmaliges - alles an einem Ort","Mach aus jeder Zeile ein Ziel mit echten nächsten Schritten","Hak sie ab, wie das Leben wirklich geschieht"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Ein Nordlicht sehen</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Surfen lernen</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Den Jakobsweg gehen</span></div></div>`},
+        contacts:{ic:'☺',name:'Kontakte',tag:'Deine Menschen nah bei dir',desc:`Die Menschen in deinem Leben, nah - wer sie sind, was ihnen wichtig ist, wann ihr zuletzt gesprochen habt.`,feats:["Hinweise, um in Kontakt zu bleiben, wenn es Zeit ist","Geburtstage und was ihnen wichtig ist","Sie leben in den Life Spaces, zu denen sie gehören"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · zuletzt vor 6 Wochen gesprochen</span><span class="pv-chip">Hallo sagen</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · Geburtstag am Freitag</span><span class="pv-chip">Erinnern</span></div></div>`},
+        sharing:{ic:'⇄',name:'Teilen',tag:'Teile einen Bereich, nicht dein ganzes Leben',desc:`Lad die Menschen aus einem Teil deines Lebens nur zu diesem Bereich ein - Co-Eltern, Familie, eine Reise - und halt alles andere privat.`,feats:["Zugriff pro Bereich - nichts anderes dringt durch","Eine geteilte Pinnwand für jeden Bereich","Sie sehen nur, was du auswählst"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Die Kinder</b> · geteilter Bereich</span><span class="pv-chip">2 Personen</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Du</span><span class="pv-chip">Eigentümer</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Co-Elternteil</span><span class="pv-chip">kann bearbeiten</span></div></div>`},
+        messaging:{ic:'❝',name:'Nachrichten',tag:'Sprich dort, wo das Leben ist',desc:`Schreib den Menschen in einem geteilten Bereich, genau dort, wo Pläne, Termine und Dateien schon leben - ohne App-Wechsel.`,feats:["Verknüpft mit dem Bereich, um den es geht","Alle sehen denselben Kontext","Schluss mit verstreuten Gruppenchats"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">Bleibt die Übergabe Freitag um 18:00?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Ja - ich bring die Sporttasche mit.</span></div></div>`},
+        money:{ic:'€',name:'Finanzen',tag:'Wohin es geht, nach Life Space',desc:`Sieh deine Ausgaben, sortiert nach den Teilen deines Lebens, die dir wichtig sind.`,feats:["Ausgaben, sortiert nach Life Space","Sieh, wohin es wirklich geht","Keine Tabellen-Kalkulationen, kein Aufwand"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Reise nach Frigiliana</span><span class="pv-amt">1.240 €</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Gesundheit</span><span class="pv-amt">85 €</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Zuhause</span><span class="pv-amt">430 €</span></div></div>`},
+        tables:{ic:'▦',name:'Tabellen',tag:'Struktur, wenn du sie willst',desc:`Mach aus einer Notiz eine echte Tabelle für alles, was es wert ist, verfolgt zu werden - genau dort, wo du sie geschrieben hast.`,feats:["Eine echte Tabelle, wo du sie brauchst","Entsteht aus einer Notiz mit einem Tipp","Verfolge, was sich lohnt"],pv:`<table class="pv-tbl"><thead><tr><th>Ort</th><th>Gesehen</th><th>Hin?</th></tr></thead><tbody><tr><td>Haus mit blauer Tür</td><td>Ja</td><td>★</td></tr><tr><td>Gasthof an der Küstenstraße</td><td>Noch nicht</td><td>-</td></tr></tbody></table>`}
+      };
+      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
+      function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
+      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
+      render('areas');
+    })();
+    </script>
+  </div>
+</section>
+
+<section class="band flow-band" id="flow">
+  <div class="wrap">
+    <div class="band-head center reveal">
+      <div class="eyebrow">Wie es fließt</div>
+      <h2>Alles spricht mit allem</h2>
+      <p>Eine E-Mail wird zum Termin; ein Termin zur Notiz; eine Notiz zur Aufgabe - jeder Teil nährt den nächsten. Alles sammelt sich in deinen Life Spaces, LifeFold verbindet alles, und du bist mittendrin im Herzen.</p>
+    </div>
+    <div class="flow-dia reveal">
+      <svg viewBox="0 0 560 470" role="img" aria-label="Informationen fließen zwischen den Werkzeugen von LifeFold, sammeln sich in deinen Life Spaces, mit dir in der Mitte">
+        <defs>
+          <marker id="fa" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9" fill="none" stroke="var(--rust)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        </defs>
+        <circle class="orbit" cx="280" cy="230" r="175" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="2 8" stroke-linecap="round"/>
+        <g stroke="var(--rust)" stroke-width="1.4" opacity="0.26">
+          <line x1="280" y1="142" x2="280" y2="97"/>
+          <line x1="364" y1="203" x2="407" y2="189"/>
+          <line x1="332" y1="301" x2="358" y2="338"/>
+          <line x1="228" y1="301" x2="202" y2="338"/>
+          <line x1="196" y1="203" x2="154" y2="189"/>
+        </g>
+        <g fill="none" stroke="var(--rust)" stroke-width="2" stroke-linecap="round" marker-end="url(#fa)">
+          <path d="M328 62 A175 175 0 0 1 425 132"/>
+          <path d="M455 224 A175 175 0 0 1 418 338"/>
+          <path d="M340 394 A175 175 0 0 1 220 394"/>
+          <path d="M142 338 A175 175 0 0 1 105 224"/>
+        </g>
+        <circle cx="280" cy="230" r="86" fill="var(--rust-soft)" stroke="var(--rust)" stroke-width="1.5"/>
+        <text x="280" y="170" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="9" font-weight="700" letter-spacing="1" fill="var(--rust)">LIFE SPACES</text>
+        <circle cx="280" cy="230" r="56" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text x="280" y="199" text-anchor="middle" font-family="'Fraunces',serif" font-size="13.5" font-weight="600" fill="var(--ink)">LifeFold</text>
+        <circle cx="280" cy="232" r="27" fill="var(--rust)"/>
+        <text x="280" y="237" text-anchor="middle" font-family="'Hanken Grotesk',sans-serif" font-size="12" font-weight="600" fill="var(--rust-ink)">Du</text>
+        <g font-family="'Hanken Grotesk',sans-serif">
+          <g><circle cx="280" cy="55" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="280" y="51" text-anchor="middle" font-size="18" fill="var(--rust)">✉</text><text x="280" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">E-Mail</text></g>
+          <g><circle cx="446" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="446" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">◑</text><text x="446" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Kalender</text></g>
+          <g><circle cx="383" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="383" y="368" text-anchor="middle" font-size="18" fill="var(--rust)">▤</text><text x="383" y="387" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Notiz</text></g>
+          <g><circle cx="177" cy="372" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="177" y="369" text-anchor="middle" font-size="17" fill="var(--rust)">☀</text><text x="177" y="388" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Heute</text></g>
+          <g><circle cx="114" cy="176" r="40" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/><text x="114" y="172" text-anchor="middle" font-size="18" fill="var(--rust)">✓</text><text x="114" y="191" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">Aufgabe</text></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section class="band areas-band" id="connect">
+  <div class="wrap areas-grid">
+    <div class="reveal">
+      <div class="eyebrow">Die geheime Zutat</div>
+      <h2>Life Spaces verbinden die Punkte</h2>
+      <p class="areas-lead">Jeder Teil deines Lebens bekommt seinen Life Space - ein Projekt, die Familie, deine Gesundheit, das Geschäft. Ordne irgendetwas einem zu, und die E-Mails, Termine, Aufgaben, Notizen und Ausgaben <em>dieses Lebensteils</em> sammeln sich dort.</p>
+      <p>Eine E-Mail wird zur Aufgabe. Eine Notiz wird zur Tabelle. Eine Zahlung legt sich von selbst im richtigen Life Space ab. Nichts stapelt sich in abgeschotteten Fächern; es <em>fließt</em> dorthin, wo es hingehört - damit du dein Leben leicht hältst und der Überforderung ausweichst.</p>
+    </div>
+    <div class="areas-flow reveal" aria-hidden="true">
+      <div class="af-tools"><span class="af-chip">✉ E-Mail</span><span class="af-chip">◑ Termin</span><span class="af-chip">✓ Aufgabe</span><span class="af-chip">▤ Notiz</span><span class="af-chip">💰 Ausgabe</span></div>
+      <div class="af-arrow">↓</div>
+      <div class="af-area"><span class="af-dot"></span>Familie</div>
+    </div>
+  </div>
+  <div class="wrap areas-share reveal">
+    <div class="eyebrow">Besser zusammen</div>
+    <h3 class="areas-share-h">Teile einen Life Space mit den Menschen, die ihn leben.</h3>
+    <p class="areas-share-lead">Öffne einen Teil deines Lebens für die Menschen, die ihn mit dir leben - und nur diesen Teil. Jeder sieht, was er soll; niemand ertrinkt in einem Gruppenchat.</p>
+    <div class="share-cases">
+      <div class="share-case"><span class="sc-ic">👨‍👩‍👧</span><b>Co-Eltern</b><span>bei „Die Kinder“</span></div>
+      <div class="share-case"><span class="sc-ic">🏡</span><b>Eine Familie</b><span>beim „Umzug“</span></div>
+      <div class="share-case"><span class="sc-ic">🎉</span><b>Eine Gruppe</b><span>bei einem Event</span></div>
+      <div class="share-case"><span class="sc-ic">💞</span><b>Ein Paar</b><span>bei den Finanzen</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band wellbeing-band" id="wellbeing">
+  <div class="wrap band-head center reveal">
+    <div class="eyebrow">Für das Innenleben</div>
+    <h2>Das Innenleben, auch mitgefaltet</h2>
+    <p>Die meisten Werkzeuge kümmern sich ums Tun und lassen den Rest von dir draußen. LifeFold faltet beide Hälften in eine - das äußere Leben aus Aufgaben und Plänen, das innere Leben aus Gedanken, Gefühlen und dem, was all das bedeutet - damit jede der anderen mehr Sinn gibt. Das Journal, die Rückblicke, die Träume, ein sanftes Coaching und die Reflexionswerkzeuge (ein Horoskop, das dein ganzes Geburtshoroskop liest, das I Ging, spirituelle Karten) sind keine angeklebten Extras; sie sind die Art, ein wenig Bewusstsein in die gewöhnlichen Tage zu tragen und das Leben zu bemerken, das du wirklich lebst. Da, wenn du sie brauchst, beiseite, wenn nicht.</p>
+  </div>
+</section>
+
+<section class="band concept" id="idea">
+  <div class="wrap concept-grid">
+    <div class="reveal">
+      <div class="eyebrow">Wo es beginnt</div>
+      <p class="concept-lead">Ein Leben ist viele Teile zugleich - das Tun und das Träumen, das Dringende und das Stille. LifeFold führt sie zu einer einzigen <em>lebendigen Form</em> zusammen.</p>
+      <ul class="holds">
+        <li><b>Dein Tag</b><span>Kalender, Aufgaben und Termine</span></li>
+        <li><b>Deine Gewohnheiten</b><span>Die Routinen, die du hältst</span></li>
+        <li><b>Deine Reflexionen</b><span>Gedanken, Gefühle, Lehren</span></li>
+        <li><b>Deine To-dos</b><span>Das Dringende jetzt und die lange Sicht</span></li>
+      </ul>
+    </div>
+    <div class="concept-body reveal">
+      <p>Wir tragen zu viel auf einmal. Halb erinnerte Aufgaben, Ideen, die wir behalten wollten, Geld, das wir im Blick behalten wollten, Gefühle, bei denen wir nie saßen. Ohne festen Ort entweicht es: auf Haftnotizen, in zehn verschiedene Apps oder es geht einfach still verloren.</p>
+      <p>LifeFold ist, wo alles hereinkommt. Du legst etwas ab und lässt es los, und es kommt zurück, wenn du es brauchst: die Aufgabe, wenn der Tag sie verlangt, die Notiz, wenn du planst, die Reflexion, wenn du innehältst.</p>
+      <p>Leg es voller Vertrauen ab. Finde es in Ruhe wieder. Das ist die Faltung.</p>
+    </div>
+  </div>
+</section>
+
+<section class="ethos">
+  <div class="wrap reveal">
+    <div class="eyebrow" style="text-align:center">Der Geist von LifeFold</div>
+    <p class="ethos-line">Was du brauchst, an den richtigen Ort gebracht, im <em>richtigen Moment.</em></p>
+    <p class="ethos-sub">Im Einklang mit den Rhythmen deines Lebens - nichts schreit nach deiner Aufmerksamkeit, und nichts, das es wert ist, entfällt dir.</p>
+  </div>
+</section>
+
+<section class="band privacy" id="private">
+  <div class="wrap privacy-grid">
+    <div class="reveal">
+      <div class="eyebrow">Privat von Grund auf</div>
+      <h2>Deins. Und sicher.</h2>
+      <p class="privacy-lead">LifeFold bewahrt die persönlichsten Teile deines Lebens - deine Reflexionen, deine Beziehungen, deine Passwörter. Darum ist es ordentlich geschützt: <b>Anmeldung in zwei Schritten</b>, verschlüsselt, wo es zählt. Das ist sicher.</p>
+      <p class="privacy-lead">Und deine Daten? Wir wollen sie nicht. Das ist nicht unser Ding. Wir bauen ein Geschäft auf <b>Vertrauen und Werten</b>, nicht darauf, dich zu verkaufen - also wird nichts von dir ausgewertet, verkauft oder irgendeinem Modell zum Fraß vorgeworfen. Es gehört dir. <b>Punkt.</b> Exportier alles mit einem Tipp, leg es in deinem eigenen Speicher ab, wenn du magst, bring deine eigene KI mit - die Entscheidung liegt immer bei dir.</p>
+    </div>
+    <ul class="privacy-points reveal">
+      <li><span class="tick">✓</span><div>Anmeldung in zwei Schritten - dein LifeFold, gut verschlossen.</div></li>
+      <li><span class="tick">✓</span><div>Nie ausgewertet, nie verkauft, nie zum Trainieren von irgendwas benutzt. Es gehört dir. Punkt.</div></li>
+      <li><span class="tick">✓</span><div>Exportier alles, wann du willst, mit einem Tipp - oder leg es in deinem eigenen Speicher ab.</div></li>
+      <li><span class="tick">✓</span><div>Schließ dein Konto, wann du willst, und nimm alles mit. Keine Hürden, kein schlechtes Gewissen.</div></li>
+      <li><span class="tick">✓</span><div>Ein Geschäft, gebaut auf Vertrauen und Werten, nicht auf deinen Daten.</div></li>
+    </ul>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap capture-grid">
+    <div class="reveal">
+      <div class="eyebrow">Gemacht, um schnell zu sein</div>
+      <h2>Zwei Tipps, und es ist drin</h2>
+      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Festhalten soll mühelos sein, besonders am Handy. Hol in Sekunden aus dem Kopf, was dich beschäftigt, und lass es los - LifeFold legt es am richtigen Ort für dich ab.</p></div>
+    </div>
+    <div class="steps reveal">
+      <div class="step"><span class="step-n">1</span><div class="step-t"><b>Öffnen und notieren</b><span>Eine Aufgabe, eine Notiz, eine Zahl, ein Gefühl - was immer dich beschäftigt.</span></div></div>
+      <div class="step"><span class="step-n">2</span><div class="step-t"><b>Lass es los</b><span>Es landet am richtigen Ort, dem Life Space zugeordnet, zu dem es gehört.</span></div></div>
+      <div class="step"><span class="step-n">3</span><div class="step-t"><b>Es kommt zurück</b><span>Im richtigen Moment - in deinem Tag, deinen Plänen oder deinem Rückblick.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="closing foldface" id="invite">
+  <div class="wrap reveal">
+    <div class="eyebrow" style="text-align:center">Early Access</div>
+    <h2>Komm herein in die Faltung.</h2>
+    <p>LifeFold ist nur auf Einladung, solange es jung ist, und wächst behutsam von Mund zu Mund, damit es ruhig und gut gepflegt bleibt. Erzähl uns ein wenig von dir, und wir machen dir einen Platz.</p>
+    <form class="invite-form reveal" id="invite-form" novalidate>
+      <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="if-grid">
+        <input id="if-name" placeholder="Dein Name" autocomplete="name" required>
+        <input id="if-email" type="email" placeholder="Deine E-Mail-Adresse" autocomplete="email" required>
+      </div>
+      <textarea id="if-why" placeholder="Wofür würdest du LifeFold nutzen? Eine Zeile genügt." rows="2"></textarea>
+      <div class="if-actions">
+        <button class="btn btn-primary" type="submit" id="if-submit">Einladung anfragen →</button>
+        <a class="btn btn-ghost" href="#" data-signin>Ich habe schon ein Konto</a>
+      </div>
+      <p class="if-note" id="if-note" hidden></p>
+    </form>
+  </div>
+</section>
+
+<footer id="signin">
+  <div class="wrap foot-in">
+    <div class="foot-brand"><a class="brand" href="/de"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a><span class="foot-tag">Für ein gut gelebtes Leben</span></div>
+    <ul class="foot-links">
+      <li><a href="#idea">Dein LifeFold</a></li>
+      <li><a href="#tools">Werkzeuge</a></li>
+      <li><a href="#private">Datenschutz</a></li>
+      <li><a href="/blog">Journal</a></li>
+      <li><a href="#invite">Einladung anfragen</a></li>
+      <li><a href="/privacy">Datenschutz</a></li>
+      <li><a href="/terms">Nutzungsbedingungen</a></li>
+      <li><a href="#" data-cookie-settings>Cookie-Einstellungen</a></li>
+      <li><a href="mailto:contact@lifefold.co">Contacto</a></li>
+    </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Sprache</span><div class="lang-switch"></div></div>
+    <div class="foot-meta">Fragen? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
+  </div>
+</footer>
+
+<script>
+/* Homepage order: move the flow diagram, then the tools showcase, to just above the closing CTA */
+(function(){
+  try {
+    var invite = document.getElementById('invite');
+    var flow = document.getElementById('flow');
+    var tools = document.getElementById('tools');
+    if (invite && flow && tools && invite.parentNode) {
+      invite.parentNode.insertBefore(flow, invite);
+      invite.parentNode.insertBefore(tools, invite);
+    }
+    var idea = document.getElementById('idea');
+    var connect = document.getElementById('connect');
+    if (idea && connect && connect.parentNode) { connect.parentNode.insertBefore(idea, connect); }
+  } catch (e) {}
+})();
+</script>
+
+<div class="signin-overlay" id="signin-modal" hidden>
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="In deinem LifeFold anmelden">
+    <button class="signin-close" data-signin-close aria-label="Schließen">&times;</button>
+    <div class="eyebrow">Willkommen zurück</div>
+    <h3 class="signin-h">Melde dich in deinem LifeFold an</h3>
+    <p class="signin-p">Gib deine E-Mail-Adresse ein, und wir schicken dir einen Code. Von dort bringen wir dich in dein eigenes LifeFold.</p>
+    <form id="signin-form">
+      <label class="signin-label" for="signin-email">Deine E-Mail-Adresse</label>
+      <div class="signin-field">
+        <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="du@beispiel.de">
+      </div>
+      <button class="btn btn-primary signin-go" type="submit">Weiter →</button>
+      <button type="button" class="signin-smslink" id="signin-sms">Schick mir den Code per SMS</button>
+      <p class="signin-err" id="signin-err" hidden></p>
+    </form>
+    <p class="signin-foot">Noch kein LifeFold? <a href="#invite" data-signin-close>Einladung anfragen</a></p>
+  </div>
+</div>
+
+<script>window.__lang='de';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es',it:'/it',de:'/de'};</script>
+<script src="/i18n.js" defer></script>
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // Sign-in asks for an email, nothing else. The subdomain was never a
+  // credential - the API resolves you from your token and never looks at the
+  // hostname - so asking for it only gave people something to misremember, and
+  // typing it wrong silently dropped you on a stranger's address with no error.
+  // /signin serves the app shell, which owns the code flow and then hands you to
+  // your own LifeFold. The email rides in the fragment: never sent to a server,
+  // never logged, and consumed once so a reload doesn't re-send a code.
+  const sm = document.getElementById('signin-modal');
+  // If this browser is already signed in on a LifeFold subdomain (a shared crumb
+  // the app leaves on .daybook.fyi), skip the email step and go straight there -
+  // the subdomain shows your dashboard if the session's still good, or its own
+  // sign-in if it has expired.
+  const openSignin = (e) => {
+    if (e) e.preventDefault();
+    sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
+  };
+  const closeSignin = () => { sm.hidden = true; };
+  document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
+  document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
+  sm.addEventListener('click', (e) => { if (e.target === sm) closeSignin(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
+  document.getElementById('signin-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signin-email').value.trim();
+    const err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Gib deine E-Mail-Adresse ein.'; err.hidden = false; return; }
+    location.href = '/signin#e=' + encodeURIComponent(email);
+  });
+  document.getElementById('signin-sms').addEventListener('click', function () {
+    const email = document.getElementById('signin-email').value.trim();
+    const err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Gib zuerst deine E-Mail ein, damit wir wissen, wohin die SMS geht.'; err.hidden = false; return; }
+    location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
+  });
+  // Request-an-invite form: posts to the worker, which stores it and emails us.
+  const invForm = document.getElementById('invite-form');
+  if (invForm) invForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('if-name').value.trim();
+    const email = document.getElementById('if-email').value.trim();
+    const why = document.getElementById('if-why').value.trim();
+    const hp = document.getElementById('if-hp').value;
+    const note = document.getElementById('if-note');
+    const btn = document.getElementById('if-submit');
+    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Einladung anfragen →'; };
+    if (!name) return fail('Bitte gib deinen Namen an.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Bitte gib eine gültige E-Mail-Adresse an.');
+    note.hidden = true; btn.disabled = true; btn.textContent = 'Wird gesendet…';
+    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Danke 🌱</h3><p>Wir melden uns sehr bald. LifeFold wächst von Mund zu Mund: Wenn du jemanden kennst, der es lieben würde, schick ihn zu uns.</p></div>'; })
+      .catch(() => fail('Etwas ist schiefgelaufen - schreib an contact@lifefold.co und wir regeln das.'));
+  });
+  // Gentle scroll reveal; if IO is unavailable, everything just shows.
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+  }
+</script>
+</body>
+</html>

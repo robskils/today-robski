@@ -4398,6 +4398,10 @@ export default {
         '/es/diario/invitar-amigos': '/es/diario/invitar-amigos.html', '/es/diario/conectar-cuentas': '/es/diario/conectar-cuentas.html', '/es/diario/instalar-como-app': '/es/diario/instalar-como-app.html',
         '/es/privacidad': '/es/privacidad.html', '/es/terminos': '/es/terminos.html', '/es/soporte': '/es/soporte.html',
         '/es/como-funciona': '/es/como-funciona.html',
+        // Italian & German: homepage only for now; their secondary links point to
+        // the English pages until those get translated. (Robin, 2026-10-24.)
+        '/it': '/it/index.html',
+        '/de': '/de/index.html',
       };
       // Old "page" slugs kept working after the Pages -> Notes rename, so existing
       // links and search results 301 to the new slug rather than 404.
