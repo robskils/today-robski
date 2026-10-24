@@ -102,9 +102,14 @@ async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const token = () => localStorage.getItem(KEY) || '';
+// The device's IANA timezone, resolved once. Sent on every request (X-Tz) so the
+// server runs the calendar, reminders and morning brief on the wall clock you're
+// actually on - Rome when you're in Italy, not always Lisbon. (Robin, 2026-10-24.)
+let _deviceTz;
+function deviceTz() { if (_deviceTz === undefined) { try { _deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { _deviceTz = ''; } } return _deviceTz; }
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', ...opts.headers } });
+  const res = await fetch(path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', 'X-Tz': deviceTz(), ...opts.headers } });
   if (res.status === 401) { localStorage.removeItem(KEY); if (!$('#gate2')) showGate('Your session expired. Sign in again.'); throw new Error('unauthorized'); }
   if (!res.ok) {
     const b = await res.json().catch(() => ({}));
@@ -24324,6 +24329,10 @@ function showRequired2fa() {
     // opens in the chosen language without a reload). setLocale keeps kv in step.
     try { const lc = locKv && locKv.value; if ((lc === 'pt' || lc === 'en') && localStorage.getItem('life.locale') !== lc) localStorage.setItem('life.locale', lc); } catch {}
     try { document.documentElement.lang = locale(); } catch {}
+    // Record this device's timezone on the account, so the every-minute cron
+    // (event reminders, the morning brief, surface nudges) fires on your wall
+    // clock even while the app is closed. Once per load, only when it changed.
+    try { const tz = deviceTz(); if (tz && localStorage.getItem('life.tz') !== tz) { localStorage.setItem('life.tz', tz); api('/api/kv/tz', { method: 'PUT', body: JSON.stringify({ value: tz }) }).catch(() => {}); } } catch {}
     try { state.modules = JSON.parse((modKv && modKv.value) || '{}') || {}; } catch { state.modules = {}; }
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));

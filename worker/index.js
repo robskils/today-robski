@@ -20,7 +20,23 @@ import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from '.
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
 import { addTrackerItem, getTracker } from './tracker.js';
 
-const TZ = 'Europe/Lisbon';
+const TZ = 'Europe/Lisbon';   // the fallback zone when we don't know where the user is
+
+// A calendar should run in the timezone the user is actually in. The client
+// sends its IANA zone on every request (X-Tz header); the cron reads each
+// member's last-seen zone from kv_tz. Everything time-shaped - a day, an event
+// time, a reminder, the morning brief - resolves its zone through tzOf(env), so
+// it all lands on the user's wall clock. Whenever we have no valid zone we fall
+// back to Lisbon, so nothing regresses for a client that isn't sending one.
+// (Robin, travelling in Italy and an hour out, 2026-10-24.)
+function validTz(t) {
+  if (typeof t !== 'string' || t.length > 64 || !/^[A-Za-z][A-Za-z0-9_+.-]*\/[A-Za-z0-9_+./-]+$/.test(t)) return '';
+  try { new Intl.DateTimeFormat('en-US', { timeZone: t }); return t; } catch { return ''; }
+}
+function tzOf(env) { return (env && validTz(env.tz)) || TZ; }
+// The zone to use for one member in the cron, where there's no request header to
+// read: their last-seen device zone, saved to kv_tz on each app load.
+async function tzForUser(env, uid) { try { return validTz(await getSetting(env, 'kv_tz', uid)) || TZ; } catch { return TZ; } }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -205,10 +221,10 @@ async function calendarEvents(env, day, uid = env.uid) {
   const g = await googleCtx(env, uid);
   if (!g) return { events: [], error: null };   // not connected = native only, no error
 
-  const start = zonedDayStart(day, TZ);
+  const start = zonedDayStart(day, tzOf(env));
   // Not start + 24h: a Lisbon DST day is 23 or 25 hours long, which would drop
   // a late event in October and pull in a small-hours one in March.
-  const end = zonedDayStart(nextDayStr(day), TZ);
+  const end = zonedDayStart(nextDayStr(day), tzOf(env));
 
   const url = new URL(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(g.calId)}/events`,
@@ -237,8 +253,8 @@ async function calendarEvents(env, day, uid = env.uid) {
         let startMin = 0;
         let duration = 24 * 60;
         if (!allDay) {
-          const sp = localParts(new Date(e.start.dateTime), TZ);
-          const ep = localParts(new Date(e.end.dateTime), TZ);
+          const sp = localParts(new Date(e.start.dateTime), tzOf(env));
+          const ep = localParts(new Date(e.end.dateTime), tzOf(env));
           // Google returns anything overlapping the window, so an event can
           // start yesterday or end tomorrow. Clip it to this day.
           startMin = sp.date < day ? 0 : sp.min;
@@ -268,8 +284,8 @@ async function calendarRange(env, from, to) {
   const g = await googleCtx(env);
   if (!g) return { events: [], error: null };
   if (!isValidDay(from) || !isValidDay(to)) return { events: [], error: 'bad_range' };
-  const start = zonedDayStart(from, TZ);
-  const end = zonedDayStart(nextDayStr(to), TZ);
+  const start = zonedDayStart(from, tzOf(env));
+  const end = zonedDayStart(nextDayStr(to), tzOf(env));
   const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(g.calId)}/events`);
   url.searchParams.set('timeMin', start.toISOString());
   url.searchParams.set('timeMax', end.toISOString());
@@ -287,7 +303,7 @@ async function calendarRange(env, from, to) {
         return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, notes, allDay: true, date: e.start.date, end_date: e.end?.date || null, recurringId: e.recurringEventId || null };
       }
       const s = new Date(e.start.dateTime), en = new Date(e.end.dateTime);
-      const sp = localParts(s, TZ), ep = localParts(en, TZ);
+      const sp = localParts(s, tzOf(env)), ep = localParts(en, tzOf(env));
       return { id: e.id, title: e.summary || '(no title)', location: e.location || null, url, notes, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min, recurringId: e.recurringEventId || null };
     });
     return { events, error: null };
@@ -360,7 +376,7 @@ async function createEvent(request, env) {
   const title = String(b.title || '').trim();
   if (!title) return err('title required', request);
 
-  const day = b.day || todayStr(TZ);
+  const day = b.day || todayStr(tzOf(env));
   if (!isValidDay(day)) return err('bad date', request);
 
   // All-day events use calendar dates (end is exclusive, so a single day spans
@@ -369,7 +385,7 @@ async function createEvent(request, env) {
   if (b.start) {
     // ISO / wall-clock path used by mail calendar invites. A "…Z" datetime is an
     // absolute instant; a naive one is wall-clock in tz (Google resolves it).
-    const tz = b.tz && b.tz !== 'UTC' ? b.tz : TZ;
+    const tz = b.tz && b.tz !== 'UTC' ? b.tz : tzOf(env);
     start = { dateTime: b.start, timeZone: tz };
     end = { dateTime: b.end || b.start, timeZone: tz };
   } else if (b.allDay) {
@@ -381,9 +397,9 @@ async function createEvent(request, env) {
     const duration = Number(b.duration);
     if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
     if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
-    const base = zonedDayStart(day, TZ).getTime();
-    start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ };
-    end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ };
+    const base = zonedDayStart(day, tzOf(env)).getTime();
+    start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: tzOf(env) };
+    end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: tzOf(env) };
   }
 
   try {
@@ -505,9 +521,9 @@ async function updateEvent(request, env, id) {
       const startMin = Number(b.start_min), duration = Number(b.duration);
       if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return err('bad start', request);
       if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return err('bad duration', request);
-      const base = zonedDayStart(b.day, TZ).getTime();
-      patch.start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: TZ, date: null };
-      patch.end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: TZ, date: null };
+      const base = zonedDayStart(b.day, tzOf(env)).getTime();
+      patch.start = { dateTime: new Date(base + startMin * 60000).toISOString(), timeZone: tzOf(env), date: null };
+      patch.end = { dateTime: new Date(base + (startMin + duration) * 60000).toISOString(), timeZone: tzOf(env), date: null };
     }
   }
   try {
@@ -722,13 +738,13 @@ async function importEvents(request, env, jsonR, errR) {
   // Everything past here needs the AI (reading an image, or loose text).
   const key = await aiKey(env, 'anthropic', 'import');
   if (!key) return errR(fromUrl ? "That link had no structured event data, so reading it needs AI - turn it on in Settings › Plan, or paste the event's text." : aiNeedsKey('anthropic'), request, 503);
-  const today = todayStr(TZ);
+  const today = todayStr(tzOf(env));
   const system = [
     `You extract calendar events from a flyer, poster, listing or pasted text. The material may be in any language (often European Portuguese).`,
     `Return ONLY a JSON array - no prose, no markdown fences. Each element is an event object with these fields:`,
     `"title" (concise, in the material's own language), "date" ("YYYY-MM-DD"), "allDay" (boolean), "start" ("HH:MM" 24h, or null if all-day/unknown), "end" ("HH:MM" or null), "location" (string, "" if none), "notes" (string, "" if none - put performers, ticket info, descriptions here).`,
     `One event per distinct listed item that has its own time or clear slot; keep concurrent items as separate events. If something spans a whole day with no single time, set allDay true. If an end time is given use it, else null.`,
-    `Resolve dates to real calendar dates using any year shown on the material; if no year is given, pick the next future occurrence relative to today (${today}, Europe/Lisbon). Omit anything with no determinable date. If you find no events, return [].`,
+    `Resolve dates to real calendar dates using any year shown on the material; if no year is given, pick the next future occurrence relative to today (${today}, ${tzOf(env)}). Omit anything with no determinable date. If you find no events, return [].`,
     fromUrl ? `The text below is a web page (likely a single event listing - its JSON-LD structured data is the most reliable source). Extract the event(s) it describes.` : '',
   ].filter(Boolean).join(' ');
   const content = [];
@@ -1830,14 +1846,14 @@ function eventPropsFromBody(b) {
   if (b.start) {
     const s = new Date(b.start);
     if (isNaN(s)) return null;
-    const sp = localParts(s, TZ);
+    const sp = localParts(s, tzOf(env));
     const e = b.end ? new Date(b.end) : new Date(s.getTime() + 3600000);
-    const ep = localParts(isNaN(e) ? new Date(s.getTime() + 3600000) : e, TZ);
+    const ep = localParts(isNaN(e) ? new Date(s.getTime() + 3600000) : e, tzOf(env));
     p.allDay = false; p.date = sp.date; p.start_min = sp.min;
     p.duration = Math.max(15, Math.round((e.getTime() - s.getTime()) / 60000) || 60);
     return p;
   }
-  const day = b.day || todayStr(TZ);
+  const day = b.day || todayStr(tzOf(env));
   if (!isValidDay(day)) return null;
   p.date = day;
   if (b.allDay) {
@@ -2437,27 +2453,31 @@ async function searchExpand(request, env, json, err) {
 // block and it re-arms, leave it and it never fires twice, even if the cron
 // runs late and the block appears in two consecutive windows.
 async function runAlerts(env) {
-  const now = localParts(new Date(), TZ);          // { date, min } in Lisbon
-  const target = now.min + 5;
   let due = 0;
   for (const u of await activeUsers(env)) {
-    due += await runAlertsForUser(env, u, now, target)
+    due += await runAlertsForUser(env, u)
       .catch((e) => { console.error('runAlerts', u.id, e.message); return 0; });
   }
-  return { checked: now, due };
+  return { due };
 }
 
 // One member's 5-minutes-before texts. Each texts their own saved number, so a
 // block on someone else's day never reaches the owner's phone. The owner keeps
 // the ALERT_PHONE secret as a fallback; everyone else must save a number first,
-// and an empty number simply means no texts (never a misdirected one).
-async function runAlertsForUser(env, user, now, target) {
+// and an empty number simply means no texts (never a misdirected one). "Now" is
+// computed in each member's own zone, so a block at 14:00 alerts at 13:55 on
+// their clock wherever they are. (Robin.)
+async function runAlertsForUser(env, user) {
   const uid = user.id;
   const pref = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='sms_block_alerts'").bind(uid).first().catch(() => null);
   if (pref && pref.value === '0') return 0;         // default on; only '0' silences
   const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
   const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
   if (!phone) return 0;
+  // Now that we know this user gets texts, read their zone so "now" (and the
+  // 5-min window) are on their wall clock wherever they are. (Robin.)
+  const now = localParts(new Date(), await tzForUser(env, uid));
+  const target = now.min + 5;
 
   // A 3-minute window (4-6 min out) absorbs a skipped or late cron tick
   // without alerting twice, since alerted_min guards the repeat.
@@ -2501,7 +2521,7 @@ async function runSurfaceAlertsAll(env) {
 
 async function runSurfaceAlertsForUser(env, user) {
   const uid = user.id;
-  const now = localParts(new Date(), TZ);
+  const now = localParts(new Date(), await tzForUser(env, uid));   // the morning window is on the user's clock
   const last = await getSetting(env, 'last_surface_day', uid);
   if (!briefDue(now.min, now.date, last)) return 0;   // once, in the morning window
 
@@ -2673,7 +2693,12 @@ async function runEventRemindersForUser(env, user) {
   const alarmVals = Object.values(alarms);
   if (!alarmVals.length) return 0;
 
-  const now = localParts(new Date(), TZ);
+  // The reminder must fire on the user's wall clock, not Lisbon's: an 11:30 event
+  // for someone in Italy is due at 11:30 Rome. uenv.tz carries their last-seen
+  // zone (kv_tz) into localParts and calendarRange. Resolved only once we know
+  // there's an alarm to check, so a quiet account costs no extra read. (Robin.)
+  uenv.tz = await tzForUser(env, uid);
+  const now = localParts(new Date(), tzOf(uenv));
   // Look far enough ahead to actually SEE an event whose (start - lead) is now:
   // a 1-month-before reminder sits ~30 days out. Size the window to the longest
   // lead the user has set, +1 day for the midnight crossing.
@@ -2787,7 +2812,11 @@ async function sendSystemMail(env, { to, subject, html, text }) {
 async function runDailyBrief(env, { force = false, user = null } = {}) {
   const uid = user ? user.id : (env.uid || 1);
   const owner = uid === 1;
-  const now = localParts(new Date(), TZ);
+  // The 08:45 send-window and the day the brief covers both run on the member's
+  // own zone; attaching tz to env also lands the calendar it renders on their
+  // wall clock. A request-triggered test (force) keeps any header zone. (Robin.)
+  if (!validTz(env.tz)) env = { ...env, tz: await tzForUser(env, uid) };
+  const now = localParts(new Date(), tzOf(env));
   if (!force) {
     const last = await getSetting(env, 'last_brief_day', uid);
     if (!briefDue(now.min, now.date, last)) return { sent: false, reason: 'not due' };
@@ -3039,7 +3068,7 @@ async function homeAlerts(request, env, json) {
   const contacts = new Map();
   // A week's notice before a birthday (default), so there's time to do something
   // nice - inDays 0 = today. (Robin.)
-  const [ty, tm, td] = localParts(new Date(), TZ).date.split('-').map(Number);
+  const [ty, tm, td] = localParts(new Date(), tzOf(env)).date.split('-').map(Number);
   const t0 = Date.UTC(ty, tm - 1, td);
   const daysUntilBday = (bmmdd) => {
     const [mm, dd] = bmmdd.split('-').map(Number); if (!mm || !dd) return -1;
@@ -3056,7 +3085,7 @@ async function homeAlerts(request, env, json) {
     if (p.birthday && p.bdayLead !== 0) { const inDays = daysUntilBday(String(p.birthday).slice(-5)); const lead = Math.min(Math.max(Number(p.bdayLead) || 7, 1), 90); if (inDays >= 0 && inDays <= lead) birthdays.push({ id: r.id, name: r.title || 'A contact', inDays }); }
   }
   birthdays.sort((a, b) => a.inDays - b.inDays);
-  const today = localParts(new Date(), TZ).date;   // YYYY-MM-DD in Lisbon
+  const today = localParts(new Date(), tzOf(env)).date;   // YYYY-MM-DD in Lisbon
   let p1 = 0; let taskOpen = 0; const p1list = []; const surfaced = []; const keepInTouch = [];
   for (const r of tks.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
@@ -3107,7 +3136,7 @@ async function connectList(request, env, json) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
   }
-  const today = localParts(new Date(), TZ).date;
+  const today = localParts(new Date(), tzOf(env)).date;
   const people = [];
   for (const r of tks.results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
@@ -3150,7 +3179,7 @@ async function areasSummary(request, env) {
   return json({ summary: sum }, request);
 }
 async function handleDay(request, env, url) {
-  const day = url.searchParams.get('date') || todayStr(TZ);
+  const day = url.searchParams.get('date') || todayStr(tzOf(env));
   if (!isValidDay(day)) return err('bad date', request);
 
   const cfg = await getLaneConfig(env);
@@ -3220,7 +3249,7 @@ async function handleDay(request, env, url) {
 
   return json({
     day,
-    today: todayStr(TZ),
+    today: todayStr(tzOf(env)),
     slots,
     events: cal.events,
     calendar_error: cal.error,
@@ -3246,7 +3275,7 @@ async function handleTasks(request, env, url) {
         AND (json_extract(props,'$.done') IS NULL OR json_extract(props,'$.done') = 0)
         AND COALESCE(json_extract(props,'$.priority'), '') != ''
         AND (json_extract(props,'$.snooze') IS NULL OR json_extract(props,'$.snooze') <= ?)`,
-  ).bind(env.uid, todayLisbon()).all();
+  ).bind(env.uid, todayLisbon(tzOf(env))).all();
 
   const areaNames = Object.fromEntries(cfg.areas.map((a) => [a.id, a.title]));
   const all = results.map((r) => blockToTask(r, cfg.areaMap, areaNames));
@@ -3265,7 +3294,7 @@ async function handleTasks(request, env, url) {
 async function createSlot(request, env) {
   const b = await request.json();
   if (!b.title) return err('title required', request);
-  const day = b.day || todayStr(TZ);
+  const day = b.day || todayStr(tzOf(env));
   if (!isValidDay(day)) return err('bad date', request);
 
   // A slot needs a lane, but a drag must NEVER hard-fail on a blank or stale one.
@@ -3434,7 +3463,7 @@ async function updateSlot(request, env, id) {
 // ticking its scheduled block behave identically: the block's done flag is the
 // truth, and a sole-task block follows its task.
 // Local (Lisbon) date as YYYY-MM-DD. Snooze/repeat granularity is a whole day.
-function todayLisbon() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Lisbon' }); }
+function todayLisbon(tz = TZ) { return new Date().toLocaleDateString('en-CA', { timeZone: tz }); }
 // Advance a 'YYYY-MM-DD' anchor by one repeat period (UTC math on the string,
 // so no clock/DST drift). Monthly preserves the day-of-month, clamped short.
 // Adding months has to clamp: the 31st plus a month is the 30th where there is
@@ -3486,7 +3515,7 @@ async function setTaskDone(env, id, done) {
   if (done && p.repeat) {
     // A repeating task is never "finished": completing it rolls the snooze date
     // forward to the next occurrence and leaves it open, so it reappears then.
-    const today = todayLisbon();
+    const today = todayLisbon(tzOf(env));
     // A keep-in-touch nudge measures from the day you ACTUALLY got in touch, so
     // it anchors on today rather than on the date it fell due. Ticking a monthly
     // one three weeks late means the next is a month from now, not a week away -
@@ -3635,7 +3664,7 @@ async function createActivity(request, env) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
   ).bind(lane, title, safeUrl(b.url), Math.round(duration), next.p, env.uid,
     p.area, p.note, p.video, p.timed, p.tracked, p.days, p.time_min, p.cadence, p.priority,
-    p.avoid, p.avoidSince || (p.avoid ? todayLisbon() : null), p.meta).first();
+    p.avoid, p.avoidSince || (p.avoid ? todayLisbon(tzOf(env)) : null), p.meta).first();
 
   return json(row, request, 201);
 }
@@ -3658,7 +3687,7 @@ async function updateActivity(request, env, id) {
   const newKeys = ['area', 'note', 'video', 'timed', 'tracked', 'days', 'time_min', 'cadence', 'priority', 'avoid', 'avoidSince', 'meta'];
   if (newKeys.some((k) => b[k] !== undefined)) {
     const p = await practiceFields(env, b);
-    if (b.avoid !== undefined) { set.avoid = p.avoid; if (p.avoid && b.avoidSince === undefined) set.avoid_since = todayLisbon(); }
+    if (b.avoid !== undefined) { set.avoid = p.avoid; if (p.avoid && b.avoidSince === undefined) set.avoid_since = todayLisbon(tzOf(env)); }
     if (b.avoidSince !== undefined) set.avoid_since = p.avoidSince;
     if (b.area !== undefined) { set.area = p.area; if (p.lane && set.lane === undefined) set.lane = p.lane; }
     if (b.note !== undefined) set.note = p.note;
@@ -4098,9 +4127,9 @@ async function maybeReviewReminders(env) {
 async function reviewRemindersForUser(env, uid) {
   const { cfg } = reviewRemConfig(await getSetting(env, 'kv_review_reminders', uid));
   if (!REVIEW_TYPES.some((k) => cfg[k].on)) return;
-  const parts = localParts(new Date(), TZ);
-  if (parts.min < 525) return;              // fire from 08:45 Lisbon, never at midnight
-  const today = parts.date;                 // YYYY-MM-DD (Lisbon)
+  const parts = localParts(new Date(), await tzForUser(env, uid));
+  if (parts.min < 525) return;              // fire from 08:45 on the user's clock, never at midnight
+  const today = parts.date;                 // YYYY-MM-DD in the user's zone
 
   const due = [];
   let changed = false;
@@ -4537,7 +4566,10 @@ export default {
       // - they simply see the scoped env. Every data query reads env.uid.
       const currentUser = await resolveUser(request, env);
       if (!currentUser) return err('unauthorized', request, 401);
-      env = { ...env, uid: currentUser.id, user: currentUser };
+      // The device tells us which timezone it's in (X-Tz); tzOf(env) uses it for
+      // every time calculation on this request, falling back to Lisbon if absent
+      // or bogus. The cron reads the same zone from kv_tz (written on app load).
+      env = { ...env, uid: currentUser.id, user: currentUser, tz: validTz(request.headers.get('X-Tz')) };
 
       // Per-member Google Calendar connect.
       if (path === '/api/gcal/status' && request.method === 'GET') return json(gcalStatus(env), request);
