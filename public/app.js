@@ -4420,7 +4420,7 @@ async function openHome() {
   // Re-pull reviews each time Home opens, so a review filed on another device clears
   // the "due" nudge here (state.reviews would otherwise stay stale). (Robin.)
   api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); } }).catch(() => {});
-  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd, palRec] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -4432,6 +4432,7 @@ async function openHome() {
     api('/api/kv/home_mobile').catch(() => null),
     api('/api/kv/home_side_order').catch(() => null),
     api('/api/kv/home_feeddismiss').catch(() => null),
+    api('/api/kv/pal_recent').catch(() => null),
   ]);
   // The mobile Home arrangement follows the account too, so a change made on the
   // desktop settings shows up on the phone.
@@ -4443,6 +4444,7 @@ async function openHome() {
   // from the server so a rearrangement made on one desktop shows on the next.
   if (order && order.value) { try { if (Array.isArray(JSON.parse(order.value))) localStorage.setItem('life.home.mainOrder', order.value); } catch {} }
   if (rec) mergeRecent(rec.value);   // fold the server's recent list into this device's before rendering
+  if (palRec) mergeRecentSearches(palRec.value);   // and the account's recent searches, so ⌘K shows yesterday's phone searches here too
   if (fd) mergeFeedDismiss(fd.value);   // fold in the account's dismissed-feed rows so they stay cleared after a re-login and across devices
   // The pinned spirit card follows the account: take the server's if we have one.
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
@@ -19563,17 +19565,50 @@ async function setCell(rowId, colId, value) {
 // "doesn't open". Preventing the mousedown default keeps focus; the click still
 // fires and opens the result. (Robin: tapped a task in search, it didn't open.)
 document.addEventListener('mousedown', (e) => { if (e.target && e.target.closest && e.target.closest('#pal-list [data-pal-i], #pal-list [data-pal-smart]')) e.preventDefault(); });
-function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0, smart: false, smartTerms: [], smartBusy: false, smartAdded: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
+function openPalette() { state.pal = { open: true, q: '', items: [], sel: 0, loading: false, smart: false, smartTerms: [], smartBusy: false, smartAdded: 0 }; renderPalette(); buildPalette(); setTimeout(() => $('#pal-input')?.focus(), 0); }
 function closePalette() { state.pal.open = false; $('#palette').innerHTML = ''; }
 // Recent searches: the queries that actually found something, newest first, capped.
 // They fill the empty palette (under New note / New event) instead of a dump of
-// every command. (Robin, 2026-10-23: show my recent searches, not random stuff.)
-function recentSearches() { try { const a = JSON.parse(localStorage.getItem('life.pal.recent') || '[]'); return Array.isArray(a) ? a.filter((x) => typeof x === 'string' && x.trim()).slice(0, 8) : []; } catch { return []; } }
+// every command. Stored as {q, ts} and MIRRORED to the account (kv_pal_recent),
+// so a search you ran on your phone yesterday turns up on the desktop today - the
+// same follow-you-around sync as Recently viewed. (Robin, 2026-10-24.)
+function recentSearchRows() {
+  try {
+    const a = JSON.parse(localStorage.getItem('life.pal.recent') || '[]');
+    if (!Array.isArray(a)) return [];
+    // Back-compat: older builds stored bare strings.
+    return a.map((x) => (typeof x === 'string' ? { q: x, ts: 0 } : x)).filter((x) => x && typeof x.q === 'string' && x.q.trim());
+  } catch { return []; }
+}
+function recentSearches() { return recentSearchRows().slice(0, 8).map((x) => x.q); }
+function syncRecentSearches(rows) {
+  clearTimeout(window.__palRecentSyncT);
+  window.__palRecentSyncT = setTimeout(() => { api('/api/kv/pal_recent', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(rows) }) }).catch(() => {}); }, 500);
+}
 function pushRecentSearch(q) {
   q = String(q || '').trim(); if (q.length < 2) return;
-  let list = recentSearches().filter((x) => x.toLowerCase() !== q.toLowerCase());
-  list.unshift(q); list = list.slice(0, 8);
-  try { localStorage.setItem('life.pal.recent', JSON.stringify(list)); } catch {}
+  let rows = recentSearchRows().filter((x) => x.q.toLowerCase() !== q.toLowerCase());
+  rows.unshift({ q, ts: Date.now() }); rows = rows.slice(0, 8);
+  try { localStorage.setItem('life.pal.recent', JSON.stringify(rows)); } catch {}
+  syncRecentSearches(rows);
+}
+// Union the account's recent-search list with this device's, newer timestamp wins,
+// cap, cache locally, and push the union back if this device knew one the server
+// didn't. Mirrors mergeRecent. (Robin: show yesterday's phone searches here too.)
+function mergeRecentSearches(serverJson) {
+  let server = [];
+  try { const a = JSON.parse(serverJson || '[]'); if (Array.isArray(a)) server = a.map((x) => (typeof x === 'string' ? { q: x, ts: 0 } : x)); } catch {}
+  const byKey = new Map();
+  for (const x of [...server, ...recentSearchRows()]) {
+    if (!x || typeof x.q !== 'string' || !x.q.trim()) continue;
+    const k = x.q.toLowerCase(), prev = byKey.get(k);
+    if (!prev || (x.ts || 0) > (prev.ts || 0)) byKey.set(k, x);
+  }
+  const merged = [...byKey.values()].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 8);
+  const mergedJson = JSON.stringify(merged);
+  try { localStorage.setItem('life.pal.recent', mergedJson); } catch {}
+  if (mergedJson !== JSON.stringify(server)) api('/api/kv/pal_recent', { method: 'PUT', body: JSON.stringify({ value: mergedJson }) }).catch(() => {});
+  if (state.pal && state.pal.open && !state.pal.q.trim()) buildPalette();   // refresh the open empty palette
 }
 // Put a query into the open palette and re-run it (clicking a recent search).
 function palSetQuery(q) {
@@ -19581,43 +19616,6 @@ function palSetQuery(q) {
   const inp = $('#pal-input'); if (inp) { inp.value = state.pal.q; inp.focus(); }
   buildPalette();
 }
-const ACTIONS = [
-  { kind: 'action', title: 'Keyboard shortcuts', run: () => openShortcuts() },
-  { kind: 'action', title: 'New note', run: () => newNote(null) },
-  { kind: 'action', title: 'New reflection', run: () => quickAdd('journal') },
-  { kind: 'action', title: 'Go to Reflection', run: () => openJournal() },
-  { kind: 'action', title: 'Settings', run: () => openSettings() },
-  { kind: 'action', title: 'Change accent colour', run: () => openSettings() },
-  { kind: 'action', title: 'Save a link', run: () => quickAdd('save') },
-  { kind: 'action', title: 'Go to Read & Watch', run: () => openReadwatch() },
-  { kind: 'action', title: 'New table', run: () => newTable() },
-  { kind: 'action', title: 'Go to Tasks', run: () => openTasks() },
-  { kind: 'action', title: 'Go to Calendar', run: () => openCalendar() },
-  { kind: 'action', title: 'Go to Mail', run: () => openMail() },
-  { kind: 'action', title: 'Go to Today', run: () => openToday() },
-  { kind: 'action', title: 'Go to Contacts', run: () => openContacts() },
-  { kind: 'action', title: 'New contact', run: () => quickAdd('contact') },
-  { kind: 'action', title: 'Go to Goals', run: () => openGoals('goals') },
-  { kind: 'action', title: 'Money · Portfolio', run: () => openFinancial('portfolio') },
-  { kind: 'action', title: 'New goal', run: () => quickAdd('goal') },
-  { kind: 'action', title: 'Bucket list', run: () => openGoals('bucket') },
-  // Every tool is reachable by name from search, so typing "Journal" jumps
-  // straight there. (Ranked to the top by the actRank sort in buildPalette.)
-  { kind: 'action', title: 'Go to Home', run: () => openHome() },
-  { kind: 'action', title: 'Go to Notes', run: () => openNotesList() },
-  { kind: 'action', title: 'Go to Journal', run: () => openJournal() },
-  { kind: 'action', title: 'Go to Reflection', run: () => openJournal() },
-  { kind: 'action', title: 'Go to Coaching', run: () => openJournal() },
-  { kind: 'action', title: 'Go to Practices', run: () => openTracker() },
-  { kind: 'action', title: 'Go to Tracker', run: () => openTracker() },
-  { kind: 'action', title: 'Go to Meditation', run: () => openMeditation() },
-  { kind: 'action', title: 'Go to Spirit cards', run: () => openSpiritCards() },
-  { kind: 'action', title: 'Go to I Ching', run: () => openIChing() },
-  { kind: 'action', title: 'Go to Horoscope', run: () => openHoroscope() },
-  { kind: 'action', title: 'Go to Life Spaces', run: () => openAreasList() },
-  { kind: 'action', title: 'Go to Saved', run: () => openReadwatch() },
-  { kind: 'action', title: 'Money · Spending', run: () => openFinancial('spending') },
-];
 // Search-result ordering by kind, used ONLY to break ties within the same
 // relevance band (see titleRank). Rows sit mid-pack now, not dumped at the
 // bottom, so a strongly-matching table row mixes in with everything else. (Robin.)
@@ -19638,22 +19636,18 @@ function buildPalette() {
     state.pal.items = [...acts, ...recents];
     state.pal.sel = 0; renderPalItems(); return;
   }
-  const _ql = q.toLowerCase();
-  // A tool typed by name should lead: rank by how well the query matches the
-  // tool's own name (ignoring a leading "Go to"/"New"/"Open"), so "journal"
-  // surfaces the Journal tool ahead of "New journal entry" and the rest.
-  const _actKw = (a) => a.title.toLowerCase().replace(/^(go to|open|new|create)\s+/, '');
-  const _actRank = (a) => { const kw = _actKw(a); return kw === _ql ? 0 : kw.startsWith(_ql) ? 1 : a.title.toLowerCase().startsWith(_ql) ? 2 : 3; };
-  const acts = ACTIONS.filter((a) => a.title.toLowerCase().includes(_ql)).sort((a, b) => _actRank(a) - _actRank(b));
-  // Show the matching tools at once (content hits fill in after the search).
-  state.pal.items = acts; state.pal.sel = 0; renderPalItems();
+  const ql = q.toLowerCase();
+  // Typing searches your own stuff - notes, tables, tasks, Life Spaces, people -
+  // not a command menu. The "Go to X" / settings actions were pulled out on
+  // purpose: they flooded a one-letter query and buried the real results, and the
+  // sidebar already reaches every tool. (Robin, 2026-10-24: "we've let them go".)
+  state.pal.loading = true; state.pal.items = []; state.pal.sel = 0; renderPalItems();
   clearTimeout(palT);
   palT = setTimeout(async () => {
     try {
       const hits = await api(`/api/search?q=${encodeURIComponent(q)}`);
       // A slower earlier search must not overwrite the current query's results.
       if (state.pal.q.trim() !== q) return;
-      const ql = q.toLowerCase();
       // A page is a whole corner of your life, so a matching one should always
       // be near the top - even if the worker's row cap dropped it. Inject matching
       // areas locally (from state.areas) and merge with the worker hits, deduped.
@@ -19665,9 +19659,10 @@ function buildPalette() {
       // within a band, so the worker's relevance order still holds.
       const titleRank = (b) => { const t0 = (b.kind === 'row' ? rowLabel(b) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
       const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
-      state.pal.items = [...acts, ...ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }))];
+      state.pal.loading = false;
+      state.pal.items = ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }));
       state.pal.sel = 0; renderPalItems();
-    } catch (e) { toast(e.message); }
+    } catch (e) { state.pal.loading = false; toast(e.message); }
   }, 150);
 }
 // "Try other words & languages": one opt-in AI call that expands the query into
@@ -19741,7 +19736,7 @@ function renderPalItems() {
   const hint = (it) => (it.kind === 'action' ? '' : it.kind === 'recent' ? '<span class="pal-hint">search</span>' : '<span class="pal-hint">open</span>');
   const list = items.length ? items.map((it, i) => `${i === firstRecent ? '<div class="pal-divider">Recent searches</div>' : ''}<div class="pal-item ${i === state.pal.sel ? 'sel' : ''}" data-pal-i="${i}">
       <span class="pal-kind ${kindCls(it)}">${esc(palKindLabel(it))}</span>
-      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${hint(it)}</div>`).join('') : (state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
+      <span class="pal-t">${esc(it.title)}</span>${it.via ? `<span class="pal-via" title="Found via '${esc(it.via)}'">${esc(it.via)}</span>` : ''}${hint(it)}</div>`).join('') : (state.pal.loading ? '<div class="pal-empty">Searching…</div>' : state.pal.q.trim() ? '<div class="pal-empty">No matches.</div>' : '');
   el.innerHTML = list + palSmartFooter();
 }
 function execItem(it) {
