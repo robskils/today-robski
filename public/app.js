@@ -9974,6 +9974,7 @@ function renderCalendar() {
       ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
   $('#pane').innerHTML = `
     ${pageCrumb('Calendar')}
+    <div class="pane-head home-head cal-pagehead"><h1>${t('nav.calendar')}</h1></div>
     <div class="cal-head">
       <div class="cal-head-l"><h1>${title}</h1><span class="cal-now" id="cal-now"></span></div>
       <div class="cal-nav">
