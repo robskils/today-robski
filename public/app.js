@@ -3770,6 +3770,7 @@ function navItems(v) {
     spirit: modOn('reflect') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
     iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
     compass: modOn('reflect') ? `<button class="nav-item ${v.type === 'compass' ? 'on' : ''}" data-open-compass><span class="nav-ic">⚖</span><span class="nav-lbl">${t('wb.compass')}</span></button>` : '',
+    horoscope: modOn('reflect') ? `<button class="nav-item" data-open-horo><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.horoscope')}</span></button>` : '',
     insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
@@ -3865,7 +3866,7 @@ function navGridHtml(v) {
     ${grp('daily', t('nav.grp.daily'), [NI.today, NI.tracker, NI.practices])}
     ${peopleBox(v)}
     ${grp('money', t('nav.grp.money'), [NI.financial, NI.finSpending, NI.finPortfolio, NI.finAdvice])}
-    ${grp('wellbeing', t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.compass, NI.iching, NI.spirit, NI.meditation, NI.insights])}
+    ${grp('wellbeing', t('nav.grp.wellbeing'), [NI.wellbeing, NI.reflect, NI.coaching, NI.dreams, NI.compass, NI.iching, NI.spirit, NI.horoscope, NI.meditation, NI.insights])}
     ${grp('reviews', 'Reviews', [NI.rvAll, NI.rvDaily, NI.rvWeekly, NI.rvMonthly, NI.rvQuarterly, NI.rvYearly])}
   </div>`;
 }
