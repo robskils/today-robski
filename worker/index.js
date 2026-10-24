@@ -344,9 +344,12 @@ function eventDescription(url, notes) {
 }
 async function createEvent(request, env) {
   const b = await request.json().catch(() => ({}));
-  // No external calendar in charge for this user -> store it natively in D1.
-  // (Owner + Google connected keeps writing through to Google, unchanged.)
-  if (!(env.uid === 1 && env.GOOGLE_REFRESH_TOKEN)) {
+  // Writes go to Google when a calendar is in charge: the owner's shared Workspace
+  // calendar, or a MEMBER'S OWN connected calendar - googleCtx returns the right
+  // token + calendar for each (owner first, so the owner path is untouched). Nobody
+  // connected -> store it natively in D1. (Robin, 2026-10-24: member two-way sync.)
+  const g = await googleCtx(env);
+  if (!g) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
     if (b.area !== undefined) await setEventAreaFor(env, r.id, b.area).catch(() => {});
@@ -384,8 +387,8 @@ async function createEvent(request, env) {
   }
 
   try {
-    const token = await googleAccessToken(env);
-    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const token = g.token;
+    const calId = g.calId;
 
     // A mail invite carries the organiser's iCalUID. Gmail adds invitations to the
     // calendar on its own, so blindly creating an event here made a second copy -
@@ -480,7 +483,8 @@ async function updateEvent(request, env, id) {
     if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, native.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
-  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  const g = await googleCtx(env);
+  if (!g) return err('Calendar not connected', request, 503);
   const patch = {};
   if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
   if (b.location !== undefined) patch.location = String(b.location || '').trim();
@@ -507,8 +511,8 @@ async function updateEvent(request, env, id) {
     }
   }
   try {
-    const token = await googleAccessToken(env);
-    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const token = g.token;
+    const calId = g.calId;
     const res = await fetch(
       // sendUpdates=none: never notify attendees/organizer of a LifeFold-side edit.
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}?sendUpdates=none`,
@@ -1632,11 +1636,12 @@ async function deleteEvent(request, env, id) {
     return json({ ok: true }, request);
   }
 
-  if (env.uid !== 1 || !env.GOOGLE_REFRESH_TOKEN) return err('Calendar not connected', request, 503);
+  const g = await googleCtx(env);
+  if (!g) return err('Calendar not connected', request, 503);
 
   try {
-    const token = await googleAccessToken(env);
-    const calId = env.GOOGLE_CALENDAR_ID || 'primary';
+    const token = g.token;
+    const calId = g.calId;
     const evUrl = (eid) => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eid)}`;
     const authH = { Authorization: `Bearer ${token}` };
 
