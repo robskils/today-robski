@@ -2942,6 +2942,24 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-cost-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:23px; font-weight:600; color:var(--ink); font-variant-numeric:lining-nums tabular-nums; margin-left:auto; line-height:1; }
 .adm-plan-chip { font-size:13px; padding:4px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-2); text-transform:capitalize; }
 .adm-signup .scope { font-size:12.5px; color:var(--ink-3); font-weight:400; }
+/* Integration health panel - the outside services LifeFold leans on. */
+.adm-health-badge { font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+.adm-health-badge.ok { color:#2f7d4f; background:color-mix(in srgb,#2f7d4f 12%,var(--card)); }
+.adm-health-badge.down { color:var(--danger,#c4412e); background:color-mix(in srgb,var(--danger,#c4412e) 12%,var(--card)); }
+.adm-health-list { display:flex; flex-direction:column; margin-top:12px; }
+.adm-health-row { display:flex; align-items:center; gap:12px; padding:12px 2px; border-top:1px solid var(--line); }
+.adm-health-row:first-child { border-top:0; }
+.ahr-dot { flex:none; width:10px; height:10px; border-radius:50%; }
+.ahr-dot.ok { background:#2f9d5f; box-shadow:0 0 0 3px color-mix(in srgb,#2f9d5f 22%,transparent); }
+.ahr-dot.down { background:var(--danger,#c4412e); box-shadow:0 0 0 3px color-mix(in srgb,var(--danger,#c4412e) 22%,transparent); }
+.ahr-main { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.ahr-label { font-size:15px; font-weight:600; color:var(--ink); }
+.ahr-detail { font-size:13px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ahr-state { flex:none; font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 10px; border-radius:999px; }
+.ahr-state.ok { color:#2f7d4f; background:color-mix(in srgb,#2f7d4f 12%,var(--card)); }
+.ahr-state.down { color:var(--danger,#c4412e); background:color-mix(in srgb,var(--danger,#c4412e) 13%,var(--card)); }
+.adm-health-row.down { background:color-mix(in srgb,var(--danger,#c4412e) 5%,transparent); border-radius:10px; }
+.adm-health-acts { margin-top:14px; }
 /* Default life areas editor on the admin page. */
 .adm-areas { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .adm-area-chip { display:inline-flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--line-2); border-radius:999px; padding:5px 8px 5px 12px; box-shadow:var(--shadow); }

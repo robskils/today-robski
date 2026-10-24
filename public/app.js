@@ -2055,12 +2055,13 @@ async function cancelInviteAction(code) {
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
   try {
-    const [ov, u, ai, s, q, rq, co] = await Promise.all([
+    const [ov, u, ai, s, q, rq, co, h] = await Promise.all([
       api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
       api('/api/admin/settings'), api('/api/admin/quotes'), api('/api/admin/invite-requests').catch(() => ({ requests: [] })),
       api('/api/admin/costs').catch(() => ({ months: [] })),
+      api('/api/admin/health').catch(() => null),
     ]);
-    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [], costs: co || { months: [] } };
+    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [], costs: co || { months: [] }, health: h || state.admin.health };
   } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
@@ -2153,7 +2154,7 @@ function renderAdmin() {
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
   // thumbing past the whole business to reach the quotes. One tab at a time,
   // exactly as Settings does it.
-  const TABS = [['members', 'Members'], ['costs', 'Costs'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
+  const TABS = [['members', 'Members'], ['costs', 'Costs'], ['health', 'Health'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
   if (!TABS.some(([k]) => k === a.tab)) a.tab = 'members';
   const tab = a.tab;
   const reqN = (a.requests || []).length;   // pending join requests, badged on Members (they live under the Requests segment now)
@@ -2263,10 +2264,32 @@ function renderAdmin() {
       <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
     </div>`;
 
-  const panes = { members: membersPane, costs: costsPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
+  // ── Health: the outside services LifeFold leans on, up or down ───────────
+  // Robin: "we don't like silent breakages." Probed every half hour by the
+  // worker; this is the glanceable status, a Check-now, and the alert toggle.
+  const hs = a.health || null;
+  const svcList = hs && hs.services ? Object.entries(hs.services) : [];
+  const svcDown = svcList.filter(([, v]) => !v.ok).length;
+  const healthPane = `<div class="set-card">
+      <div class="home-sec-h">Integrations ${svcList.length ? (svcDown ? `<span class="adm-health-badge down">${svcDown} down</span>` : '<span class="adm-health-badge ok">all up</span>') : ''}</div>
+      <p class="inv-hint">The outside services LifeFold depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
+      ${svcList.length ? `<div class="adm-health-list">${svcList.map(([k, v]) => `
+        <div class="adm-health-row${v.ok ? '' : ' down'}" title="${esc(v.ok ? 'Up' : 'Down')} since ${esc(timeAgo(v.since || v.at))}">
+          <span class="ahr-dot ${v.ok ? 'ok' : 'down'}"></span>
+          <div class="ahr-main"><span class="ahr-label">${esc(v.label || k)}</span><span class="ahr-detail">${esc(v.detail || '')}</span></div>
+          <span class="ahr-state ${v.ok ? 'ok' : 'down'}">${v.ok ? 'Up' : 'Down'}</span>
+        </div>`).join('')}</div>` : `<div class="home-empty" style="padding:4px 0 0">${a.healthLoading ? 'Checking…' : 'No status yet.'}</div>`}
+      <div class="adm-health-acts"><button class="add-btn wide" data-health-check ${a.healthLoading ? 'disabled' : ''}>${a.healthLoading ? 'Checking…' : '↻ Check now'}</button></div>
+    </div>
+    <div class="set-card" style="margin-top:14px">
+      <label class="set-mod"><span><b>Email me when something breaks</b><br><span class="scope">One email to you when a service goes down - and one when it's back. Never repeats while it stays down.</span></span><input type="checkbox" data-health-alerts ${hs && hs.alerts !== false ? 'checked' : ''}></label>
+    </div>`;
+
+  const panes = { members: membersPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
     members: `${users.length} on LifeFold · tap anyone for the full picture`,
     costs: 'What it costs to run LifeFold, by month',
+    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services LifeFold depends on',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
     brand: 'The LifeFold logo, icons and colours',
@@ -2280,6 +2303,21 @@ function renderAdmin() {
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${esc(subs[tab] || '')}</span></div>
       ${panes[tab] || ''}
     </section>`;
+}
+// Re-probe the integrations on demand and repaint the Health panel.
+async function runHealthCheckNow() {
+  const a = state.admin = state.admin || {};
+  a.healthLoading = true; renderAdmin();
+  try { a.health = await api('/api/admin/health/check', { method: 'POST' }); }
+  catch (e) { toast(e.message); }
+  a.healthLoading = false; renderAdmin();
+}
+// Turn the owner breakage-alert email on or off.
+async function toggleHealthAlerts(on) {
+  const a = state.admin = state.admin || {};
+  if (a.health) a.health = { ...a.health, alerts: !!on };
+  try { await api('/api/admin/health/alerts', { method: 'POST', body: JSON.stringify({ on: !!on }) }); toast(on ? 'Breakage alerts on' : 'Breakage alerts off'); }
+  catch (e) { toast(e.message); }
 }
 async function addQuote() {
   const text = ($('#q-text') || {}).value || ''; const author = ($('#q-author') || {}).value || '';
@@ -20494,6 +20532,7 @@ document.addEventListener('click', (e) => {
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
+  if (t.closest('[data-health-check]')) { runHealthCheckNow(); return; }
   { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; state.admin.freeEdit = null; renderAdmin(); return; } }
   { const fe = t.closest('[data-admin-freeedit]'); if (fe) { state.admin = state.admin || {}; state.admin.freeEdit = Number(fe.dataset.adminFreeedit); renderAdmin(); return; } }
   { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
@@ -21242,6 +21281,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
+  if (e.target.matches('[data-health-alerts]')) { toggleHealthAlerts(e.target.checked); return; }
   if (e.target.matches('[data-adm-area]')) { saveDefaultAreas(adminAreaListFromDom()); return; }
   { const ap = e.target.closest('[data-admin-plan]'); if (ap) { setUserPlan(ap.dataset.adminPlan, e.target.value); return; } }
   { const af = e.target.closest('[data-admin-free]'); if (af) { const v = e.target.value; state.admin = state.admin || {}; state.admin.freeEdit = null; if (v !== '') setUserFree(af.dataset.adminFree, v === 'forever' ? 'forever' : Number(v)); else renderAdmin(); return; } }

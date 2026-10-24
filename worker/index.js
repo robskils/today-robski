@@ -15,6 +15,7 @@ import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
 import { feedRangeEvents, feedDayEvents, fetchTeamFixtures, searchTeams, feedTeams, fetchCountries, fetchHolidays, yearsIn, feedSources, fetchSourceEvents, normFeedUrl, hashId, hostLabel, lisbonToday, addDaysIso, lookupPlace, suggestFeeds, unsplashSearch, unsplashTrigger } from './feeds.js';
+import { runHealthProbes } from './health.js';
 import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition, recordSnapshot, performance as portfolioPerformance } from './portfolio.js';
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
@@ -4220,6 +4221,69 @@ async function maybeRefreshSources(env) {
   }
 }
 
+// ── integration health ────────────────────────────────────────────────────
+// Robin: "we don't like silent breakages." Probe the external services LifeFold
+// leans on, store up/down under the owner (user 1), and email the owner when a
+// service CHANGES state - down, or back up. Transition-only, so a persistent
+// outage never re-sends; the Admin → Health panel shows the live status. The
+// probes (worker/health.js) judge health from the real response, which is what
+// would have caught TheSportsDB's dead key the day it happened.
+async function getIntegrationHealth(env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id=1 AND key='integration_health'").first().catch(() => null);
+  try { return (row && row.value) ? JSON.parse(row.value) : {}; } catch { return {}; }
+}
+async function ownerEmail(env) {
+  if (env.BRIEF_EMAIL) return env.BRIEF_EMAIL;
+  const u = await env.DB.prepare('SELECT email FROM users WHERE id=1').first().catch(() => null);
+  if (u && u.email) return u.email;
+  const admins = String(env.ADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter((s) => s && !s.startsWith('*'));
+  return admins[0] || null;
+}
+async function runHealthCheck(env) {
+  const now = Date.now();
+  const prev = await getIntegrationHealth(env);
+  const results = await runHealthProbes(env);
+  const merged = {}; const wentDown = []; const recovered = [];
+  for (const [k, r] of Object.entries(results)) {
+    const was = prev[k];
+    const changed = !was || was.ok !== r.ok;
+    merged[k] = { ...r, since: changed ? now : (was.since || now) };
+    if (r.ok === false && (!was || was.ok !== false)) wentDown.push(merged[k]);
+    if (r.ok === true && was && was.ok === false) recovered.push(merged[k]);
+  }
+  // Keep any stored service this run didn't cover (e.g. one whose key was removed),
+  // so the panel never silently loses a row.
+  for (const [k, v] of Object.entries(prev)) if (!(k in merged)) merged[k] = v;
+  await setSetting(env, 'integration_health', JSON.stringify(merged), 1);
+  await setSetting(env, 'health_checked', String(now), 1);
+  if ((wentDown.length || recovered.length) && (await getSetting(env, 'health_alerts', 1)) !== '0') {
+    await sendHealthAlert(env, wentDown, recovered).catch((e) => console.error('healthAlert:', e.message));
+  }
+  return merged;
+}
+// Self-gated to ~30 min off the every-minute cron (one indexed read a minute).
+async function maybeHealthCheck(env) {
+  const last = await getSetting(env, 'health_checked', 1);
+  if (last && (Date.now() - Number(last)) < 30 * 60 * 1000) return;
+  await runHealthCheck(env);
+}
+async function sendHealthAlert(env, down, up) {
+  const to = await ownerEmail(env);
+  if (!to) return;
+  const home = 'https://lifefold.co';
+  const row = (s) => `<tr><td style="padding:5px 0;border-bottom:1px solid #eadfce;"><b>${escHtml(s.label)}</b><br><span style="color:#6b6459;font-size:14px;">${escHtml(s.detail || '')}</span></td></tr>`;
+  const downHtml = down.length ? `<p style="margin:0 0 6px;">${down.length === 1 ? 'This service just stopped responding properly:' : 'These services just stopped responding properly:'}</p><table style="width:100%;border-collapse:collapse;margin-bottom:16px;">${down.map(row).join('')}</table>` : '';
+  const upHtml = up.length ? `<p style="margin:0 0 6px;">Back up again:</p><table style="width:100%;border-collapse:collapse;">${up.map(row).join('')}</table>` : '';
+  const headline = down.length ? (down.length === 1 ? `${down[0].label.split(' · ')[0]} looks down` : `${down.length} integrations look down`) : 'An integration is back up';
+  const html = brandedSystemEmail({
+    home, eyebrow: 'Integration alert', headline,
+    bodyHtml: `${downHtml}${upHtml}<p style="margin:12px 0 0;color:#6b6459;font-size:14px;">Spotted automatically by LifeFold's health check. Open Admin → Health for the full status, or reply to turn these alerts off.</p>`,
+    ctaHref: `${home}/app`, ctaLabel: 'Open LifeFold',
+    preheader: headline, title: `LifeFold · ${headline}`,
+  });
+  await sendSystemMail(env, { to, subject: `${down.length ? '⚠️' : '✅'} LifeFold: ${headline}`, html, text: `${headline}. ${[...down, ...up].map((s) => `${s.label} - ${s.detail}`).join(' | ')}` });
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -4245,6 +4309,9 @@ export default {
     // Keep the Fulham fixtures cache fresh (self-gated to ~12h).
     ctx.waitUntil(maybeRefreshFixtures(env).catch((e) => console.error('fixtures:', e.message)));
     ctx.waitUntil(maybeRefreshSources(env).catch((e) => console.error('sources:', e.message)));
+    // Probe the external integrations (self-gated to ~30 min); email the owner if
+    // one changes state, so a dependency can't break silently. (Robin.)
+    ctx.waitUntil(maybeHealthCheck(env).catch((e) => console.error('healthCheck:', e.message)));
   },
 
   // Mail sync consumer: the cron enqueues one job per due mailbox; here we sync them
@@ -4611,6 +4678,10 @@ export default {
           if (path === '/api/admin/costs' && request.method === 'GET') return json(await adminCosts(env), request);
           if (path === '/api/admin/settings' && request.method === 'GET') return json(await getAdminSettings(env), request);
           if (path === '/api/admin/settings' && request.method === 'POST') return json(await setAdminSettings(env, await request.json().catch(() => ({}))), request);
+          // Integration health: the stored status, an on-demand re-check, and the alert toggle.
+          if (path === '/api/admin/health' && request.method === 'GET') return json({ services: await getIntegrationHealth(env), checkedAt: Number(await getSetting(env, 'health_checked', 1)) || null, alerts: (await getSetting(env, 'health_alerts', 1)) !== '0' }, request);
+          if (path === '/api/admin/health/check' && request.method === 'POST') return json({ services: await runHealthCheck(env), checkedAt: Date.now(), alerts: (await getSetting(env, 'health_alerts', 1)) !== '0' }, request);
+          if (path === '/api/admin/health/alerts' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setSetting(env, 'health_alerts', b.on ? '1' : '0', 1); return json({ ok: true, alerts: !!b.on }, request); }
           const um = path.match(/^\/api\/admin\/user\/(\d+)$/);
           if (um && request.method === 'PATCH') return json({ users: await updateUser(env, um[1], await request.json().catch(() => ({}))) }, request);
         } catch (e) { return err(e.message, request, 400); }
