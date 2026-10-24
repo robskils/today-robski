@@ -1045,14 +1045,6 @@ function labelForView(v) {
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
 // single note reads "LifeFold Notes", a contact "LifeFold Contacts", etc.
 const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
-// The current tool's name for the mobile top bar (blank on Home): shown after the
-// "LifeFold" wordmark so the bar reads "LifeFold Mail", "LifeFold Calendar", ...
-function mobileToolName() {
-  const v = state.view || { type: 'home' };
-  if (!v.type || v.type === 'home') return '';
-  const toolType = CRUMB_PARENT[v.type] || v.type;
-  try { return labelForView({ type: toolType }); } catch { return ''; }
-}
 // The back button that rides in the top line (to the right of the ☰ menu), shown
 // only when there is somewhere to go back to.
 function mobileBackHtml() {
@@ -3939,7 +3931,7 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em>${(() => { const tn = mobileToolName(); return tn ? `<span class="nav-tool">${esc(tn)}</span>` : ''; })()}</button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em></button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>

@@ -2403,7 +2403,6 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    roman "Life" (the old -.07em tuck closed Day's loose y-b gap; Life's e-b sits
    right on its own). The mark carries the colour. (Brand, 2026-10-15.) */
 .wm-bk { font-style:italic; margin-left:0; }
-.nav-tool { display:none; }   /* the "<Tool>" after the wordmark is mobile-only */
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
 /* A quiet Lifebook mark closing the Home main column, in the chosen accent. */
 .home-mark { display:flex; justify-content:center; margin:36px auto 6px; padding:8px; background:none; border:0; border-radius:50%; cursor:pointer; transition:transform .16s cubic-bezier(.2,.8,.2,1), background .16s; }
@@ -6966,13 +6965,13 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(12px);
   }
   /* ☰ menu · ← back · "Lifebook <Tool>" - all left-aligned on one row. */
-  .nav-topline { flex:1 1 100%; display:flex; align-items:center; justify-content:flex-start; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
-  .nav-brand { flex:0 1 auto; width:auto; min-width:0; padding:8px 6px; margin:0; font-size:23px; text-align:left; display:flex; align-items:center; gap:.28em; overflow:hidden; }
+  /* ☰ menu on the left, the LifeFold logo dead-centre, ✉ messages on the right.
+     The 1fr flanks keep the logo centred whether or not the messages button is
+     showing. No current-tool name after it - the bottom tab bar says where you
+     are. (Robin, 2026-10-24.) */
+  .nav-topline { flex:1 1 100%; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; min-width:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; -webkit-user-select:none; user-select:none; }
+  .nav-brand { grid-column:2; justify-self:center; width:auto; min-width:0; padding:8px 6px; margin:0; font-size:23px; text-align:center; display:flex; align-items:center; gap:.28em; overflow:hidden; }
   .nav-brand em { flex:none; }
-  /* The current tool's name, sitting after the wordmark: lighter, so "Lifebook"
-     still reads as the brand and the tool as where you are. */
-  .nav-brand .nav-tool { display:inline; font-style:normal; font-weight:600; color:var(--ink-2); font-size:1em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-  /* Left-aligned now, so the centering spacer is gone. */
   .nav-topline-sp { display:none; }
   .mtop-back { flex:none; }
   .nav-topline .nav-brand .brand-mark { width:1.24em; height:1.24em; }
@@ -7009,9 +7008,9 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:11px; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
   .nav-menu-toggle:active { background:var(--paper-2); }
-  .nav-msgbtn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; margin-left:auto; border-radius:11px; font-size:20px; line-height:1; color:var(--accent); border:1px solid var(--line); background:var(--card); -webkit-tap-highlight-color:transparent; }
+  .nav-msgbtn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; grid-column:3; justify-self:end; border-radius:11px; font-size:20px; line-height:1; color:var(--accent); border:1px solid var(--line); background:var(--card); -webkit-tap-highlight-color:transparent; }
   .nav-msgbtn:active { background:var(--paper-2); }
-  .nav-topline { justify-content:flex-start; }
+  .nav-menu-toggle { grid-column:1; justify-self:start; }
   body.nav-drawer-open { overflow:hidden; }
   /* backdrop-filter on .nav would make the fixed drawer position relative to the
      header, not the viewport; drop it while the drawer is open. */
