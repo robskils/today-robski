@@ -6897,6 +6897,26 @@ async function openHoroscope() {
       if (r && r.value) { const b = JSON.parse(r.value); if (b && b.date) { state.birth = b; try { localStorage.setItem('life.birth', JSON.stringify(b)); } catch {} if (document.getElementById('horo')) renderHoro(); } }
     } catch {}
   }
+  await geocodeBirthIfNeeded();   // self-heal a place saved before geocoding worked, so Rising can compute
+}
+// A profile saved before the geocoder was wired has a birthplace but no lat/lon,
+// so the rising sign (Ascendant) can't be computed and the reading quietly drops
+// to Sun + Moon. Geocode it once, persist the coords, and re-render so Rising
+// appears without the person re-entering anything. (Robin, 2026-10-24.)
+async function geocodeBirthIfNeeded() {
+  const b = state.birth;
+  if (!b || !b.place || (b.lat != null && b.lon != null)) return;
+  try {
+    const g = await api(`/api/geocode?q=${encodeURIComponent(b.place)}`);
+    if (g && g.found) {
+      state.birth = { ...b, lat: g.lat, lon: g.lon, tz: g.tz, placeLabel: g.label };
+      try { localStorage.setItem('life.birth', JSON.stringify(state.birth)); } catch {}
+      api('/api/kv/birth_profile', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.birth) }) }).catch(() => {});
+      // Re-render so the Rising chip appears; the reading refreshes with all three
+      // next time it's cast (today's pinned one is left as is).
+      if (document.getElementById('horo')) renderHoro();
+    }
+  } catch {}
 }
 async function saveBirth() {
   const date = (document.getElementById('ho-date') || {}).value || '';
