@@ -1217,7 +1217,14 @@ button { cursor:pointer; background:none; border:0; }
 .rv-didbig b { color:var(--done); font-size:34px; font-variant-numeric:tabular-nums; }
 .rv-didbig.rv-didnone { font-size:18px; color:var(--ink-3); }
 .rv-didbig.rv-didnone b { display:none; }
+.rv-didbig.rv-didprac { margin-top:20px; }
 .rv-didlist { margin-top:10px; }
+/* Practices kept, given the same card treatment as ticked tasks (Robin). */
+.rvd-prac { border-top-style:dashed; }
+.rvd-prac-ic { margin-right:5px; color:var(--accent); }
+.rvm-praccount { flex:none; font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); border-radius:999px; padding:2px 9px; }
+.rvm-card.rvm-static { cursor:default; }
+.rvm-card.rvm-static:hover { border-color:var(--line); }
 /* ── Submitted review, read as a report ─────────────────────────────── */
 /* The report reads like a short magazine article. */
 .rr { --c:hsl(var(--h,40) 45% 50%); max-width:680px; }

@@ -17658,6 +17658,10 @@ async function openReviewCard(id) {
   // Load tasks so the wins strip can enrich each done task (age, goal, priority,
   // day) and the deeper reviews can map tasks onto goals.
   api('/api/blocks?kind=task').then((tasks) => { if (state.review_open && state.review_open.review.id === id) { state.review_open.tasks = tasks; if (state.view.type === 'reviewcard') renderReviewCard(); } }).catch(() => {});
+  // Load practices too, so the kept-practices breakdown can tint each by its Life
+  // Space and link straight through to the practice. (Robin: practices matter as
+  // much as tasks in a review.)
+  loadPractices().then(() => { if (state.view && state.view.type === 'reviewcard' && state.review_open && state.review_open.review.id === id) renderReviewCard(); }).catch(() => {});
 }
 // The review's timeframe, shown in relation to NOW rather than as a dry range:
 // a relative headline (This week / Last week / 3 weeks ago), a bar with a "today"
@@ -18109,7 +18113,7 @@ function renderReviewReport() {
       ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
       ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
-      ${doneN ? rrSec('moved', 'What moved', reviewWinsHtml(m, p, true)) : ''}
+      ${(doneN || practicesK) ? rrSec('moved', 'What moved', `${doneN ? reviewWinsHtml(m, p, true) : ''}${reviewPracticesHtml(m)}`) : ''}
       ${recordHtml}
       <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
     </article>`;
@@ -18169,7 +18173,6 @@ function renderReviewCard() {
   const st = p.status || 'done';
   const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No page'; };
   const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
-  const practiceStr = (m.practices || []).map((x) => `${esc(x.title)}${x.count > 1 ? ` ×${x.count}` : ''}`).join(' · ');
   const quiet = (m.quietAreas || []).map(areaName);
   const wheelHiddenSet = new Set(p.wheelHidden || []);
   const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id) && !(a.props && a.props.reviewOff));
@@ -18202,9 +18205,8 @@ function renderReviewCard() {
     <section class="rv-mirror">
       ${rvSecH('record', 'What you did')}
       ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
-      ${(m.practices || []).reduce((a, x) => a + x.count, 0) ? `<div class="rv-stats"><button class="rv-stat good rv-stat-btn" data-open-practices title="Open the Practices page"><b>${(m.practices || []).reduce((a, x) => a + x.count, 0)}</b> practices kept →</button></div>` : ''}
       ${(m.tasksDone || []).length ? reviewWinsHtml(m, p) : ''}
-      ${practiceStr ? `<div class="rv-line"><button class="rv-line-k rvi-link" data-open-practices>Practices</button> ${esc(practiceStr)}</div>` : ''}
+      ${(() => { const pk = (m.practices || []).reduce((a, x) => a + x.count, 0); return pk ? `<div class="rv-didbig rv-didprac"><b>${pk}</b> practice tick${pk === 1 ? '' : 's'} this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>${reviewPracticesHtml(m)}` : ''; })()}
       ${(m.surfaced || []).length ? `<div class="rv-surfaced">
         <div class="rv-surfaced-h">☀ Surfaced from snooze · ${(m.surfaced || []).length}</div>
         <div class="rv-surfaced-note">Tasks you'd parked that came back this ${periodWord} - did they land, or do they need re-parking?</div>
@@ -18551,6 +18553,24 @@ function reviewDoneCards(m) {
   }
   const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Life Space</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
   return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${nA}</b> area${nA === 1 ? '' : 's'} · tap any to open it</div>${toggle}${groups}</div>`;
+}
+// The practices you kept in the period, each a card showing how many days you
+// ticked it off. Ticking practices counts as much as ticking tasks (Robin), so
+// they get the same card treatment, not just a number. Title-matched to the live
+// practices so each is tinted by its Life Space and taps straight through; a
+// practice since renamed or deleted still shows as a plain card.
+function reviewPracticesHtml(m) {
+  const kept = (m.practices || []).filter((x) => x && x.count > 0).slice().sort((a, b) => b.count - a.count);
+  if (!kept.length) return '';
+  const acts = (state.practices && state.practices.activities) || [];
+  const byTitle = new Map(acts.map((a) => [(a.title || '').toLowerCase(), a]));
+  const total = kept.reduce((a, x) => a + x.count, 0);
+  const card = (x) => {
+    const live = byTitle.get((x.title || '').toLowerCase()) || null;
+    const a = (live && live.area) ? areaById(live.area) : null;
+    return `<button class="rvm-card rvm-prac ${live ? '' : 'rvm-static'}" ${live ? `data-prc-open="${live.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-t">${esc(x.title || 'Untitled')}</span><span class="rvm-praccount">×${x.count}</span></button>`;
+  };
+  return `<div class="rvd-list rvd-prac"><div class="rvd-total"><span class="rvd-prac-ic">☯</span><b>${total}</b> practice tick${total === 1 ? '' : 's'} across <b>${kept.length}</b> practice${kept.length === 1 ? '' : 's'} · tap any to open it</div><div class="rvm-cards">${kept.map(card).join('')}</div></div>`;
 }
 // The compact record the summary is written from - the same mirror the card
 // already shows, with area ids resolved to names so the brief can name them.
