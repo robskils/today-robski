@@ -10018,7 +10018,7 @@ function renderCalendar() {
       const evs = byDay[d.iso] || [];
       return `<div class="cw-day ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
         <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span><button class="cal-add-day cw-add" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div>
-        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
+        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}${e.acctColor ? ' acct-ev' : ''}" data-cal-ev="${e.id}"${e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : ''}>${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
     }).join('')}</div>`;
   } else {
     title = `All of ${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
@@ -10029,7 +10029,7 @@ function renderCalendar() {
       // lead with what's still to come - a glance should show the next thing, not
       // this morning's done meetings. (Keep all-day events; never blank the day.)
       if (d.today && evs.length > 3) { const upcoming = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (upcoming.length) evs = upcoming; }
-      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}" data-cal-ev="${e.id}" title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
+      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}${e.acctColor ? ' acct-ev' : ''}" data-cal-ev="${e.id}"${e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : ''} title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
       const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
       const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
       return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
@@ -10047,7 +10047,7 @@ function renderCalendar() {
   // Rolling agenda: today, then every day forward for the loaded window, each in
   // one uniform style. Empty days stay as a slim date line so the scroll never
   // dead-ends; days with events list them. Extend with "Show more days".
-  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); const a = e.area ? areaById(e.area) : null; return `<div class="cal-ag-row${a ? ' has-area' : ''}${e.allDay ? ' allday' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${a ? `<span class="cal-ag-area"><span class="cal-ag-adot"></span>${esc(a.title)}</span>` : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
+  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); const a = e.area ? areaById(e.area) : null; return `<div class="cal-ag-row${a ? ' has-area' : ''}${e.allDay ? ' allday' : ''}${e.acctColor ? ' acct-ev' : ''}"${a ? ` style="--h:${hueOf(a)}"` : (e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : '')} data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${a ? `<span class="cal-ag-area"><span class="cal-ag-adot"></span>${esc(a.title)}</span>` : ''}${e.acctLabel ? `<span class="cal-ag-area cal-ag-acct"><span class="cal-ag-adot" style="background:hsl(${Number(e.acctColor) || 210} 62% 52%)"></span>${esc(e.acctLabel)}</span>` : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
   const cq = (state.calQuery || '').trim().toLowerCase();
   const isAgenda = c.mode === 'agenda' && !cq;
   let rollHtml = '';

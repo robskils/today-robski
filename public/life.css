@@ -8093,6 +8093,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* Feed events (holidays, fixtures): dashed + muted, read-only. */
 .cal-chip.feed, .cw-ev.feed { background:transparent; border:1px dashed var(--line-2); color:var(--ink-2); }
 .cal-chip.feed.allday { background:color-mix(in srgb,var(--ink-3) 10%,transparent); color:var(--ink-2); }
+/* A connected extra account's events: its own colour (beats the dashed .feed look). */
+.cal-chip.acct-ev, .cw-ev.acct-ev { background:color-mix(in srgb,var(--acct) 15%,var(--card)); border:1px solid color-mix(in srgb,var(--acct) 34%,transparent); border-left:3px solid var(--acct); color:var(--ink); }
+.cal-chip.acct-ev b, .cw-ev.acct-ev b { color:var(--acct); }
+.cal-ag-row.acct-ev { box-shadow:inset 3px 0 0 var(--acct); }
+.cal-ag-acct .cal-ag-adot { background:var(--acct) !important; }
 .cal-more { font-size:11.5px; color:var(--ink-3); padding:0 4px; }
 .cal-agenda { margin-top:26px; }
 .cal-agenda-top { margin-top:6px; margin-bottom:22px; }
