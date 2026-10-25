@@ -9956,14 +9956,51 @@ function gcalBarHtml() {
   // connecting one can never disturb the owner's shared calendar. Read-only for
   // now; editing and other providers (Yahoo/iCloud) are coming. (Robin, 2026-10-25.)
   const accts = state.gcalAccounts || [];
-  const rows = accts.map((a) => `<div class="gcal-acct"><span class="gcal-acct-dot" style="background:hsl(${Number(a.color) || 210} 60% 55%)"></span><span class="gcal-acct-t">${esc(a.label || 'Google account')}</span><span class="gcal-acct-tag">read-only</span><button class="ghost gcal-x" data-gcal-acct-x="${esc(a.id)}" title="Disconnect this account">Disconnect</button></div>`).join('');
+  const rows = accts.map((a) => {
+    const isDav = a.provider === 'caldav';
+    return `<div class="gcal-acct"><span class="gcal-acct-dot" style="background:hsl(${Number(a.color) || 210} 60% 55%)"></span><span class="gcal-acct-t">${esc(a.label || (isDav ? 'Calendar' : 'Google account'))}</span><span class="gcal-acct-tag${isDav ? ' two-way' : ''}">${isDav ? 'two-way' : 'read-only'}</span><button class="ghost gcal-x" data-gcal-acct-x="${esc(a.id)}" title="Disconnect this account">Disconnect</button></div>`;
+  }).join('');
   const extra = `<div class="gcal-extra">
     <div class="gcal-extra-h">Other calendars${accts.length ? ` <span class="gcal-extra-n">${accts.length}</span>` : ''}</div>
     ${rows}
-    <button class="add-btn wide gcal-addbtn" data-gcal-add>＋ Connect another Google account</button>
-    <div class="gcal-extra-hint">Add more Google or Workspace accounts and their events show here. Per-account colours, editing, and Yahoo &amp; iCloud are on the way.</div>
+    <div class="gcal-addrow">
+      <button class="add-btn wide gcal-addbtn" data-gcal-add>＋ Google account</button>
+      <button class="add-btn wide gcal-addbtn" data-caldav-open>＋ iCloud / Yahoo</button>
+    </div>
+    ${caldavFormHtml()}
+    <div class="gcal-extra-hint">Add more Google or Workspace accounts (read-only), or an iCloud, Yahoo or other CalDAV calendar - those are two-way, so you can add, edit and delete events here.</div>
   </div>`;
   return `${primary}${extra}`;
+}
+// Inline form to connect a CalDAV calendar (iCloud, Yahoo, any CalDAV server).
+// Shown when the user taps "＋ iCloud / Yahoo". Fields are read by id on save, so
+// a re-render would clear them - only the provider change toggles the URL row,
+// and it does so in place (see the change handler) rather than re-rendering.
+function caldavHint(p) {
+  return p === 'yahoo'
+    ? 'Yahoo: Account Info → Account Security → Generate app password, then paste it here.'
+    : p === 'other'
+      ? 'Enter your account email, an app-specific password, and the full https:// CalDAV address of your server.'
+      : 'iCloud: appleid.apple.com → Sign-In &amp; Security → App-Specific Passwords → generate one, then paste it here.';
+}
+function caldavFormHtml() {
+  if (!state.caldavForm || !state.caldavForm.open) return '';
+  const p = state.caldavForm.provider || 'icloud';
+  const hint = caldavHint(p);
+  return `<div class="caldav-form">
+    <div class="caldav-form-h">Connect a calendar</div>
+    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">◑</span>Provider</span>
+      <select id="caldav-provider" class="sel">
+        <option value="icloud" ${p === 'icloud' ? 'selected' : ''}>iCloud</option>
+        <option value="yahoo" ${p === 'yahoo' ? 'selected' : ''}>Yahoo</option>
+        <option value="other" ${p === 'other' ? 'selected' : ''}>Other (CalDAV URL)</option>
+      </select></label>
+    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">✉</span>Account email</span><input id="caldav-email" class="sel" type="email" inputmode="email" placeholder="you@icloud.com" autocomplete="username"></label>
+    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔑</span>App-specific password</span><input id="caldav-pass" class="sel" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off"></label>
+    <label class="ce-field" id="caldav-url-row" ${p === 'other' ? '' : 'hidden'}><span class="ce-flbl"><span class="ce-fic">🔗</span>CalDAV URL</span><input id="caldav-url" class="sel" type="url" inputmode="url" placeholder="https://caldav.example.com"></label>
+    <div class="caldav-form-btns"><button class="add-btn wide" data-caldav-save>Connect</button><button class="ghost" data-caldav-cancel>Cancel</button></div>
+    <div class="caldav-hint">${hint}</div>
+  </div>`;
 }
 async function gcalConnect() {
   try { const r = await api('/api/gcal/connect'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
@@ -9973,6 +10010,25 @@ async function gcalConnect() {
 async function gcalConnectAdd() {
   try { const r = await api('/api/gcal/connect-add'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
   catch (e) { toast(e.message); }
+}
+// Open / close the inline CalDAV connect form (iCloud / Yahoo / other).
+function caldavOpenForm() { state.caldavForm = { open: true, provider: (state.caldavForm && state.caldavForm.provider) || 'icloud' }; renderCalendar(); }
+function caldavCloseForm() { state.caldavForm = { open: false }; renderCalendar(); }
+async function caldavConnect() {
+  const provider = (document.getElementById('caldav-provider') || {}).value || 'icloud';
+  const email = ((document.getElementById('caldav-email') || {}).value || '').trim();
+  const password = (document.getElementById('caldav-pass') || {}).value || '';
+  const url = ((document.getElementById('caldav-url') || {}).value || '').trim();
+  if (!email || !password) { toast('Enter the account email and app-specific password.'); return; }
+  if (provider === 'other' && !/^https:\/\//i.test(url)) { toast('Enter the full https:// CalDAV address.'); return; }
+  const btn = document.querySelector('[data-caldav-save]'); if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
+  try {
+    const r = await api('/api/caldav/connect', { method: 'POST', body: JSON.stringify({ provider, email, password, url }) });
+    state.caldavForm = { open: false };
+    try { const ar = await api('/api/gcal/accounts'); state.gcalAccounts = (ar && ar.accounts) || state.gcalAccounts; } catch {}
+    toast(`Connected ${r.label || 'calendar'} ✓`);
+    if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); }
+  } catch (e) { toast(e.message || 'Could not connect that calendar.'); if (btn) { btn.disabled = false; btn.textContent = 'Connect'; } }
 }
 async function gcalAccountDisconnect(id) {
   const a = (state.gcalAccounts || []).find((x) => x.id === id);
@@ -20926,7 +20982,7 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast(e.feed === 'gcal' ? `From ${esc(e.acctLabel || 'a connected account')} - read-only for now` : 'From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); if (!e.feed) requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast(e.feed === 'gcal' ? `From ${esc(e.acctLabel || 'a connected account')} - read-only for now` : e.feed === 'caldav' ? `Part of a repeating series - edit it in ${esc(e.acctLabel || 'your calendar app')} for now` : 'From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); if (!e.feed) requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } return; }
   if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
@@ -20935,6 +20991,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   if (t.closest('[data-gcal-add]')) { gcalConnectAdd(); return; }
+  if (t.closest('[data-caldav-open]')) { caldavOpenForm(); return; }
+  if (t.closest('[data-caldav-cancel]')) { caldavCloseForm(); return; }
+  if (t.closest('[data-caldav-save]')) { caldavConnect(); return; }
   { const gx = t.closest('[data-gcal-acct-x]'); if (gx) { gcalAccountDisconnect(gx.dataset.gcalAcctX); return; } }
   { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } const d = document.getElementById('ce-directions'); if (d) d.hidden = !(inp && inp.value.trim()); return; } }
   { const dr = t.closest('[data-ce-directions]'); if (dr) { const loc = (document.getElementById('ce-loc') || {}).value; if (loc && loc.trim()) openExternal('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(loc.trim())); return; } }
@@ -21300,6 +21359,13 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-src-label]')) { discoverState().addLabel = e.target.value; return; }
   if (e.target.matches('[data-src-city]')) { discoverState().cityInput = e.target.value; return; }
   if (e.target.matches('[data-timer-area]')) { timerState.area = e.target.value || null; saveTimer(); return; }
+  if (e.target.matches('#caldav-provider')) {   // toggle the URL row + hint in place (don't re-render; it would clear the typed fields)
+    const p = e.target.value || 'icloud';
+    if (state.caldavForm) state.caldavForm.provider = p;
+    const row = document.getElementById('caldav-url-row'); if (row) row.hidden = p !== 'other';
+    const hint = document.querySelector('.caldav-hint'); if (hint) hint.innerHTML = caldavHint(p);
+    return;
+  }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-contact-photo]')) { const f = e.target.files && e.target.files[0]; if (f) contactSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }

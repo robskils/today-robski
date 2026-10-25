@@ -11,6 +11,7 @@ import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdm
 import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache, enqueueMailSync, queueSyncAccount, recordMailHealth } from './mail.js';
 import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable, gcalAddConnectUrl, listCalendarAccounts, getCalendarAccount, gcalAccountToken, removeCalendarAccount } from './gcal.js';
+import { CALDAV_PRESETS, caldavDiscover, caldavRangeEvents, caldavGet, caldavPut, caldavDelete, caldavStore, caldavCreds, caldavRrule } from './caldav.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
@@ -331,6 +332,7 @@ async function handleCalendar(request, env, url) {
   }
   // Extra connected calendars (additional Google accounts), read-only + coloured.
   try { events.push(...await googleExtraRangeEvents(env, env.uid, from, to)); } catch (e) { console.error('extraCalRange:', e.message); }
+  try { events.push(...await caldavExtraRangeEvents(env, env.uid, from, to)); } catch (e) { console.error('caldavExtraRange:', e.message); }
   return json({ events, error: g.error || null }, request);
 }
 
@@ -370,15 +372,146 @@ async function googleExtraRangeEvents(env, uid, from, to) {
   }
   return out;
 }
+// Shape one range event (either source) into a day-view event for `day`.
+function extraDayShape(e, day) {
+  const common = { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, acct: e.acct, acctColor: e.acctColor, acctLabel: e.acctLabel, feed: e.feed };
+  if (e.allDay) return { ...common, allDay: true, start_min: 0, duration: 1440 };
+  const startMin = e.date < day ? 0 : e.start_min;
+  const endMin = (e.end_date && e.end_date > day) ? 1440 : (e.end_min != null ? e.end_min : e.start_min + 60);
+  return { ...common, allDay: false, start_min: startMin, duration: Math.max(15, endMin - startMin) };
+}
 async function googleExtraDayEvents(env, uid, day) {
   return (await googleExtraRangeEvents(env, uid, day, day))
     .filter((e) => e.date <= day && (e.end_date || e.date) >= day)
-    .map((e) => {
-      if (e.allDay) return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: true, start_min: 0, duration: 1440, acct: e.acct, acctColor: e.acctColor, acctLabel: e.acctLabel };
-      const startMin = e.date < day ? 0 : e.start_min;
-      const endMin = (e.end_date && e.end_date > day) ? 1440 : (e.end_min != null ? e.end_min : e.start_min + 60);
-      return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: false, start_min: startMin, duration: Math.max(15, endMin - startMin), acct: e.acct, acctColor: e.acctColor, acctLabel: e.acctLabel };
-    });
+    .map((e) => extraDayShape(e, day));
+}
+
+// Extra CalDAV accounts (iCloud, Yahoo, any CalDAV server) merged onto the
+// calendar, coloured per account, same acct:<id>:<uid> id scheme so edits route
+// back here. Recurring instances are flagged feed:'caldav' (read-only) since an
+// edit by UID would rewrite the whole series; single events are two-way. Each
+// account is isolated in a try/catch. (Robin, 2026-10-25.)
+async function caldavExtraRangeEvents(env, uid, from, to) {
+  const accts = (await listCalendarAccounts(env, uid)).filter((a) => a.provider === 'caldav' && a.enabled);
+  if (!accts.length) return [];
+  const start = zonedDayStart(from, tzOf(env)), end = zonedDayStart(nextDayStr(to), tzOf(env)), tz = tzOf(env);
+  const out = [];
+  for (const a of accts) {
+    try {
+      const row = await getCalendarAccount(env, a.id, uid); if (!row) continue;
+      const creds = await caldavCreds(env, row); if (!creds) continue;
+      for (const e of await caldavRangeEvents(creds.url, creds.user, creds.pass, start, end, tz)) {
+        out.push({ id: `acct:${a.id}:${e.uid}`, title: e.title, location: e.location || null, url: null, notes: e.notes || null, acct: a.id, acctColor: a.color || null, acctLabel: a.label || null, feed: e.recurring ? 'caldav' : undefined, allDay: e.allDay, date: e.date, start_min: e.start_min, end_date: e.end_date, end_min: e.end_min });
+      }
+    } catch (e) { console.error('caldavRange', a.id, e.message); }
+  }
+  return out;
+}
+async function caldavExtraDayEvents(env, uid, day) {
+  return (await caldavExtraRangeEvents(env, uid, day, day))
+    .filter((e) => e.date <= day && (e.end_date || e.date) >= day)
+    .map((e) => extraDayShape(e, day));
+}
+// Turn a create/update body into the buildVcalendar payload, mirroring the Google
+// path's date maths exactly so a CalDAV event behaves like a Google one. All-day
+// DTEND is exclusive (day after the last). Returns { error } on bad input.
+function caldavPayloadFromBody(env, b, title) {
+  const clean = (v) => { const s = String(v == null ? '' : v).trim(); return s || null; };
+  const rrule = b.repeat !== undefined ? caldavRrule(b.repeat) : undefined;   // honour the repeat picker
+  if (b.allDay) {
+    const day = isValidDay(b.day) ? b.day : todayStr(tzOf(env));
+    const endDate = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+    return { allDay: true, title, startDate: day, endDate, location: clean(b.location), notes: clean(b.notes), rrule };
+  }
+  if (b.start) {   // ISO path (e.g. a mail invite): absolute instants
+    const s = new Date(b.start); if (isNaN(s)) return { error: 'bad start' };
+    let e = new Date(b.end || b.start); if (isNaN(e) || e <= s) e = new Date(s.getTime() + 3600000);
+    return { allDay: false, title, startInstant: s, endInstant: e, location: clean(b.location), notes: clean(b.notes), rrule };
+  }
+  const day = isValidDay(b.day) ? b.day : todayStr(tzOf(env));
+  const startMin = Number(b.start_min), duration = Number(b.duration);
+  if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return { error: 'bad start' };
+  if (!Number.isFinite(duration) || duration < 5 || duration > 1440) return { error: 'bad duration' };
+  const base = zonedDayStart(day, tzOf(env)).getTime();
+  return { allDay: false, title, startInstant: new Date(base + startMin * 60000), endInstant: new Date(base + (startMin + duration) * 60000), location: clean(b.location), notes: clean(b.notes), rrule };
+}
+// Create an event on a connected CalDAV account (iCloud/Yahoo/…). The id we hand
+// back is namespaced acct:<id>:<uid> so a later edit/delete routes straight here.
+async function createCaldavEvent(request, env, b, row) {
+  const title = String(b.title || '').trim();
+  if (!title) return err('title required', request);
+  const creds = await caldavCreds(env, row);
+  if (!creds) return err('That calendar is not connected.', request, 400);
+  const payload = caldavPayloadFromBody(env, b, title);
+  if (payload.error) return err(payload.error, request);
+  const uid = `lf-${(crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.floor(Math.random() * 1e9))}@lifefold.co`;
+  try {
+    const ok = await caldavPut(creds.url, creds.user, creds.pass, uid, payload);
+    if (!ok) return err('That calendar would not take the event.', request, 502);
+    return json({ ok: true, id: `acct:${row.id}:${uid}` }, request, 201);
+  } catch (e) { console.error('caldav create:', e.message); return err('Could not reach that calendar.', request, 502); }
+}
+// Edit a CalDAV event. A CalDAV PUT replaces the whole event, and a drag sends
+// only day+start_min+duration, so fetch the current event and merge the supplied
+// fields over it. A repeating series is edited in the source app for now.
+async function updateCaldavEvent(request, env, b, row, uid) {
+  const creds = await caldavCreds(env, row);
+  if (!creds) return err('That calendar is not connected.', request, 400);
+  let cur = null;
+  try { cur = await caldavGet(creds.url, creds.user, creds.pass, uid, tzOf(env)); } catch (e) { console.error('caldav get:', e.message); }
+  if (!cur) return err('That event is not on the calendar.', request, 404);
+  if (cur.recurring) return err('That event is part of a repeating series - edit it in your calendar app for now.', request, 400);
+  const merged = {
+    title: b.title !== undefined ? b.title : cur.title,
+    allDay: b.allDay !== undefined ? b.allDay : cur.allDay,
+    day: b.day !== undefined ? b.day : cur.date,
+    location: b.location !== undefined ? b.location : cur.location,
+    notes: b.notes !== undefined ? b.notes : cur.notes,
+  };
+  if (!merged.allDay) {
+    merged.start_min = b.start_min !== undefined ? b.start_min : cur.start_min;
+    if (b.duration !== undefined) merged.duration = b.duration;
+    else {   // reconstruct the current span (minutes), capped to a day
+      const spanDays = Math.round((Date.parse(cur.end_date || cur.date) - Date.parse(cur.date)) / 86400000);
+      const endMin = cur.end_min != null ? cur.end_min : (cur.start_min || 0) + 60;
+      merged.duration = Math.min(1440, Math.max(5, spanDays * 1440 + endMin - (cur.start_min || 0)));
+    }
+  } else if (b.end_date !== undefined) merged.end_date = b.end_date;
+  const title = String(merged.title || '').trim();
+  if (!title) return err('title required', request);
+  const payload = caldavPayloadFromBody(env, merged, title);
+  if (payload.error) return err(payload.error, request);
+  try {
+    const ok = await caldavPut(creds.url, creds.user, creds.pass, uid, payload);
+    if (!ok) return err('That calendar would not update the event.', request, 502);
+    return json({ ok: true, id: `acct:${row.id}:${uid}` }, request);
+  } catch (e) { console.error('caldav update:', e.message); return err('Could not reach that calendar.', request, 502); }
+}
+// Connect flow: discover the account's default calendar, store it encrypted.
+async function connectCaldav(request, env) {
+  const b = await request.json().catch(() => ({}));
+  const provider = String(b.provider || '').toLowerCase().trim();
+  const email = String(b.email || '').trim();
+  const pass = String(b.password || '');
+  if (!email || !pass) return err('Enter the account email and an app-specific password.', request, 400);
+  let base;
+  if (provider === 'other' || provider === 'custom') {
+    base = String(b.url || '').trim();
+    if (!/^https:\/\//i.test(base)) return err('Enter the full https:// CalDAV address.', request, 400);
+  } else {
+    const preset = CALDAV_PRESETS[provider];
+    if (!preset) return err('Choose a calendar provider.', request, 400);
+    base = preset.base;
+  }
+  let disco;
+  try { disco = await caldavDiscover(base, email, pass); }
+  catch (e) { return err(e.message || 'Could not connect to that calendar.', request, 400); }
+  const presetLabel = (CALDAV_PRESETS[provider] && CALDAV_PRESETS[provider].label) || 'Calendar';
+  const label = String(b.label || '').trim() || `${presetLabel} (${email.split('@')[0]})`;
+  try {
+    const id = await caldavStore(env, env.uid, { label, calUrl: disco.calUrl, user: email, pass });
+    return json({ ok: true, id, label }, request, 201);
+  } catch (e) { console.error('caldav store:', e.message); return err('Could not save that calendar.', request, 500); }
 }
 
 // Create a real event on the Google calendar. Needs the calendar.events scope:
@@ -418,7 +551,9 @@ async function createEvent(request, env) {
   let g, acctId = null;
   if (b.acct) {
     const row = await getCalendarAccount(env, b.acct);
-    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!row) return err('That calendar is not connected.', request, 400);
+    if (row.provider === 'caldav') return await createCaldavEvent(request, env, b, row);
+    const tok = await gcalAccountToken(env, row);
     if (!tok) return err('That calendar is not connected.', request, 400);
     g = { token: tok, calId: row.cal_id || 'primary' }; acctId = row.id;
   } else {
@@ -568,7 +703,9 @@ async function updateEvent(request, env, id) {
   let eid = id, acctG = null;
   if (am) {
     const row = await getCalendarAccount(env, am[1]);
-    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!row) return err('That calendar is not connected.', request, 400);
+    if (row.provider === 'caldav') return await updateCaldavEvent(request, env, b, row, am[2]);
+    const tok = await gcalAccountToken(env, row);
     if (!tok) return err('That calendar is not connected.', request, 400);
     acctG = { token: tok, calId: row.cal_id || 'primary' }; eid = am[2];
   }
@@ -1710,7 +1847,14 @@ async function deleteEvent(request, env, id) {
   const am = String(id).match(/^acct:([a-z0-9]+):(.+)$/);
   if (am) {
     const row = await getCalendarAccount(env, am[1]);
-    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!row) return err('That calendar is not connected.', request, 400);
+    if (row.provider === 'caldav') {
+      const creds = await caldavCreds(env, row);
+      if (!creds) return err('That calendar is not connected.', request, 400);
+      try { const ok = await caldavDelete(creds.url, creds.user, creds.pass, am[2]); return ok ? json({ ok: true }, request) : err('That calendar would not delete the event.', request, 502); }
+      catch (e) { console.error('caldav delete:', e.message); return err('Could not reach that calendar.', request, 502); }
+    }
+    const tok = await gcalAccountToken(env, row);
     if (!tok) return err('That calendar is not connected.', request, 400);
     const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(row.cal_id || 'primary')}/events/${encodeURIComponent(am[2])}?sendUpdates=none`, { method: 'DELETE', headers: { Authorization: `Bearer ${tok}` } });
     if (res.ok || res.status === 410 || res.status === 404) return json({ ok: true }, request);
@@ -3312,6 +3456,7 @@ async function handleDay(request, env, url) {
   }
   // Extra connected calendars (additional Google accounts), read-only + coloured.
   try { cal.events.push(...await googleExtraDayEvents(env, env.uid, day)); } catch (e) { console.error('extraCalDay:', e.message); }
+  try { cal.events.push(...await caldavExtraDayEvents(env, env.uid, day)); } catch (e) { console.error('caldavExtraDay:', e.message); }
 
   const byslot = new Map();
   for (const r of linksRes.results) {
@@ -4757,6 +4902,9 @@ export default {
       }
       { const am = path.match(/^\/api\/gcal\/accounts\/([a-z0-9]+)$/);
         if (am && request.method === 'DELETE') { await removeCalendarAccount(env, am[1]); return json({ ok: true }, request); } }
+      // Connect a CalDAV calendar (iCloud, Yahoo, any CalDAV server) with an
+      // app-specific password. Discovers the default calendar, stores it encrypted.
+      if (path === '/api/caldav/connect' && request.method === 'POST') return await connectCaldav(request, env);
 
       // Invites: any member can invite others; Robin (user 1) is admin and sees
       // all. A member sees only their own and can only grant the free plan.

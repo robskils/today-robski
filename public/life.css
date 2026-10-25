@@ -8062,7 +8062,14 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .gcal-acct-t { flex:1; min-width:0; font-size:14.5px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .gcal-acct-tag { flex:none; font-size:11px; font-weight:600; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:2px 8px; }
 .gcal-addbtn { margin-top:12px; }
+.gcal-addrow { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.gcal-addrow .gcal-addbtn { margin-top:0; }
+.gcal-acct-tag.two-way { color:var(--done); background:color-mix(in srgb,var(--done) 14%,transparent); }
 .gcal-extra-hint { font-size:12.5px; color:var(--ink-3); margin-top:11px; line-height:1.5; }
+.caldav-form { margin-top:12px; padding:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper-2); display:flex; flex-direction:column; gap:10px; }
+.caldav-form-h { font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); }
+.caldav-form-btns { display:flex; gap:10px; align-items:center; margin-top:2px; }
+.caldav-hint { font-size:12.5px; color:var(--ink-3); line-height:1.5; }
 .cal-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
 .cal-dow { background:var(--paper-2); color:var(--ink-3); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; text-align:center; padding:9px 0; }
 .cal-cell { background:var(--card); min-height:104px; padding:6px 6px 8px; cursor:pointer; display:flex; flex-direction:column; gap:4px; transition:background .12s; overflow:hidden; }
