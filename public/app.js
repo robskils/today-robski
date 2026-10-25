@@ -10350,7 +10350,11 @@ function syncEventEnd(prefix) {
   const form = evFormOf(prefix); let gap = form ? Number(form.dataset.evgap) : 60; if (!(gap > 0)) gap = 60;
   const d = new Date(startMs + gap * 60000);
   setDateField(`${prefix}-enddate`, `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
-  const et = document.getElementById(`${prefix}-endtime`); if (et) et.value = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  // Use setTimeField, not a bare .value - the time field is now a custom picker
+  // (hidden input + a button label), so a raw .value left the END TIME showing its
+  // stale label while the start moved. That was the "+1h default stopped working"
+  // bug: the value updated under the hood but you couldn't see it. (Robin, 2026-10-25.)
+  setTimeField(`${prefix}-endtime`, `${pad2(d.getHours())}:${pad2(d.getMinutes())}`);
 }
 // The Location field doubles as a search: type a contact's name (or part of an
 // address, or a place you've used before) and pick the full address in one tap -
