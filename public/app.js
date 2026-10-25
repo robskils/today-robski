@@ -3024,6 +3024,12 @@ function renderSettings() {
     state.availCountries = [];
     api('/api/feeds/countries').then((r) => { state.availCountries = (r && r.countries) || []; }).catch(() => {});
   }
+  // The connect-a-calendar panel (Google + CalDAV) also lives on this tab, so load
+  // its status + accounts here in case the calendar view wasn't opened first.
+  if (state.settings.tab === 'feeds') {
+    if (state.gcal === undefined) { state.gcal = null; api('/api/gcal/status').then((r) => { state.gcal = r; if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {}); }
+    if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {}); }
+  }
   // The Card tab (and the Account tab's card preview) need the card data loaded.
   if (state.card === undefined) {
     state.card = {};
@@ -3157,7 +3163,8 @@ function renderSettings() {
   const managePane = `<div class="set-tiles">${tiles.map(([ic, label, sub, attr]) => `<button class="set-tile" ${attr}><span class="set-tile-ic">${ic}</span><span class="set-tile-t">${label}</span><span class="set-tile-s">${sub}</span></button>`).join('')}</div>`;
 
   const f = state.feeds || {};
-  const feedsPane = `<div class="set-card set-notifs">
+  const feedsPane = `${gcalBarHtml('settings')}
+      <div class="set-card set-notifs">
         <p class="inv-hint" style="margin:0 0 14px">Add public holidays and your team's fixtures onto your calendar. They appear as read-only entries (you can't edit or delete a single one) - untick a feed to remove them all.</p>
         <div class="set-notif-group"><div class="set-notif-h">Public holidays</div>
           <p class="feed-teams-lead">Add any country and its public holidays appear on your calendar.</p>
@@ -9937,9 +9944,16 @@ async function loadCalendar() {
 }
 // The member Google-connect strip. Hidden for the owner (who reads the shared
 // Workspace calendar) and when the member calendar client isn't configured yet.
-function gcalBarHtml() {
+function calsHidden() { try { return localStorage.getItem('lf_cals_hidden') === '1'; } catch { return false; } }
+// ctx === 'settings' -> the permanent home (Settings › Calendar), always shown, no
+// close button. Otherwise it's the calendar-view copy, which carries an × so Robin
+// can get it off the calendar; dismissal is remembered and it stays reachable in
+// Calendar settings. (Robin, 2026-10-25.)
+function gcalBarHtml(ctx) {
+  const inSettings = ctx === 'settings';
   const s = state.gcal;
   if (!s || !s.available) return '';
+  if (!inSettings && calsHidden()) return '';
   const acct = state.account;
   // The member's PRIMARY connection (their own calendar) stays member-only and
   // fails CLOSED: the owner reads the shared Workspace calendar and must never
@@ -9960,15 +9974,16 @@ function gcalBarHtml() {
     const isDav = a.provider === 'caldav';
     return `<div class="gcal-acct"><span class="gcal-acct-dot" style="background:hsl(${Number(a.color) || 210} 60% 55%)"></span><span class="gcal-acct-t">${esc(a.label || (isDav ? 'Calendar' : 'Google account'))}</span><span class="gcal-acct-tag${isDav ? ' two-way' : ''}">${isDav ? 'two-way' : 'read-only'}</span><button class="ghost gcal-x" data-gcal-acct-x="${esc(a.id)}" title="Disconnect this account">Disconnect</button></div>`;
   }).join('');
+  const closeX = inSettings ? '' : '<button class="gcal-extra-x" data-cals-hide title="Hide from the calendar - manage calendars in Settings › Calendar">×</button>';
   const extra = `<div class="gcal-extra">
-    <div class="gcal-extra-h">Other calendars${accts.length ? ` <span class="gcal-extra-n">${accts.length}</span>` : ''}</div>
+    <div class="gcal-extra-h">Other calendars${accts.length ? ` <span class="gcal-extra-n">${accts.length}</span>` : ''}${closeX}</div>
     ${rows}
     <div class="gcal-addrow">
       <button class="add-btn wide gcal-addbtn" data-gcal-add>＋ Google account</button>
       <button class="add-btn wide gcal-addbtn" data-caldav-open>＋ iCloud / Yahoo</button>
     </div>
     ${caldavFormHtml()}
-    <div class="gcal-extra-hint">Add more Google or Workspace accounts (read-only), or an iCloud, Yahoo or other CalDAV calendar - those are two-way, so you can add, edit and delete events here.</div>
+    <div class="gcal-extra-hint">Add more Google or Workspace accounts (read-only), or an iCloud, Yahoo or other CalDAV calendar - those are two-way, so you can add, edit and delete events here.${inSettings ? '' : ' Tap × to tuck this away; it lives in Settings › Calendar.'}</div>
   </div>`;
   return `${primary}${extra}`;
 }
@@ -20990,6 +21005,7 @@ document.addEventListener('click', (e) => {
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
+  if (t.closest('[data-cals-hide]')) { try { localStorage.setItem('lf_cals_hidden', '1'); } catch {} toast('Tucked away - find it in Settings › Calendar'); renderCalendar(); return; }
   if (t.closest('[data-gcal-add]')) { gcalConnectAdd(); return; }
   if (t.closest('[data-caldav-open]')) { caldavOpenForm(); return; }
   if (t.closest('[data-caldav-cancel]')) { caldavCloseForm(); return; }
