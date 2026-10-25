@@ -9918,9 +9918,10 @@ async function openCalendar(dateStr) {
   // The connect flow bounces back to /calendar?gcal=... - surface the outcome once.
   try {
     const g = new URLSearchParams(location.search).get('gcal');
-    if (g) { history.replaceState(null, '', location.pathname); toast(g === 'connected' ? 'Google Calendar connected' : g === 'denied' ? 'Calendar connect cancelled' : 'Could not connect the calendar - try again'); }
+    if (g) { history.replaceState(null, '', location.pathname); toast(g === 'added' ? 'Account connected - its events will show here.' : g === 'connected' ? 'Google Calendar connected' : g === 'denied' ? 'Calendar connect cancelled' : g === 'noretry' ? 'Google did not return access - try connecting again.' : 'Could not connect the calendar - try again'); if (g === 'added') loadCalendar(); }
   } catch {}
   api('/api/gcal/status').then((s) => { state.gcal = s; if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
+  api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
   await loadCalendar();
 }
 async function loadCalendar() {
@@ -9939,19 +9940,49 @@ async function loadCalendar() {
 function gcalBarHtml() {
   const s = state.gcal;
   if (!s || !s.available) return '';
-  // Owner-only feature, and the guard fails CLOSED: the owner reads the shared
-  // Workspace calendar and must never connect as a member (it 403s and hides
-  // their events). If we don't yet positively know this is a non-owner member,
-  // show nothing rather than risk offering the owner a connect that breaks them.
   const acct = state.account;
+  // The member's PRIMARY connection (their own calendar) stays member-only and
+  // fails CLOSED: the owner reads the shared Workspace calendar and must never
+  // connect as a member on their own row (it 403s and hides their events).
   const knownMember = acct && acct.isOwner === false && !(state.me && state.me.id === 1);
-  if (!knownMember) return '';
-  if (s.connected) return `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`;
-  return `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your LifeFold ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+  let primary = '';
+  if (knownMember) {
+    primary = s.connected
+      ? `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`
+      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your LifeFold ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+  }
+  // Additional connected calendars - for EVERYONE (owner included). Each is stored
+  // as its own row (calendar_accounts), separate from the primary path above, so
+  // connecting one can never disturb the owner's shared calendar. Read-only for
+  // now; editing and other providers (Yahoo/iCloud) are coming. (Robin, 2026-10-25.)
+  const accts = state.gcalAccounts || [];
+  const rows = accts.map((a) => `<div class="gcal-acct"><span class="gcal-acct-dot" style="background:hsl(${Number(a.color) || 210} 60% 55%)"></span><span class="gcal-acct-t">${esc(a.label || 'Google account')}</span><span class="gcal-acct-tag">read-only</span><button class="ghost gcal-x" data-gcal-acct-x="${esc(a.id)}" title="Disconnect this account">Disconnect</button></div>`).join('');
+  const extra = `<div class="gcal-extra">
+    <div class="gcal-extra-h">Other calendars${accts.length ? ` <span class="gcal-extra-n">${accts.length}</span>` : ''}</div>
+    ${rows}
+    <button class="add-btn wide gcal-addbtn" data-gcal-add>＋ Connect another Google account</button>
+    <div class="gcal-extra-hint">Add more Google or Workspace accounts and their events show here. Per-account colours, editing, and Yahoo &amp; iCloud are on the way.</div>
+  </div>`;
+  return `${primary}${extra}`;
 }
 async function gcalConnect() {
   try { const r = await api('/api/gcal/connect'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
   catch (e) { toast(e.message); }
+}
+// Connect an ADDITIONAL Google account (its own calendar_accounts row).
+async function gcalConnectAdd() {
+  try { const r = await api('/api/gcal/connect-add'); if (r && r.url) location.href = r.url; else toast('Calendar connect is not set up yet.'); }
+  catch (e) { toast(e.message); }
+}
+async function gcalAccountDisconnect(id) {
+  const a = (state.gcalAccounts || []).find((x) => x.id === id);
+  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in LifeFold.`, { okLabel: 'Disconnect', danger: true }))) return;
+  try {
+    await api(`/api/gcal/accounts/${id}`, { method: 'DELETE' });
+    state.gcalAccounts = (state.gcalAccounts || []).filter((x) => x.id !== id);
+    toast('Account disconnected');
+    if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); }
+  } catch (e) { toast(e.message); }
 }
 async function gcalDisconnect() {
   if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in LifeFold.', { okLabel: 'Disconnect', danger: true }))) return;
@@ -20891,7 +20922,7 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast('From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); if (!e.feed) requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast(e.feed === 'gcal' ? `From ${esc(e.acctLabel || 'a connected account')} - read-only for now` : 'From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); if (!e.feed) requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } return; }
   if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
@@ -20899,6 +20930,8 @@ document.addEventListener('click', (e) => {
   const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
+  if (t.closest('[data-gcal-add]')) { gcalConnectAdd(); return; }
+  { const gx = t.closest('[data-gcal-acct-x]'); if (gx) { gcalAccountDisconnect(gx.dataset.gcalAcctX); return; } }
   { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } const d = document.getElementById('ce-directions'); if (d) d.hidden = !(inp && inp.value.trim()); return; } }
   { const dr = t.closest('[data-ce-directions]'); if (dr) { const loc = (document.getElementById('ce-loc') || {}).value; if (loc && loc.trim()) openExternal('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(loc.trim())); return; } }
   if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
