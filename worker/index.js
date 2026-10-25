@@ -10,7 +10,7 @@ import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery }
 import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
 import { briefDue, briefEmail, briefSubject, esc as escHtml } from './brief.js';
 import { handleMail, smtpSend, buildMessage, syncMailCache, enqueueMailSync, queueSyncAccount, recordMailHealth } from './mail.js';
-import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable } from './gcal.js';
+import { gcalConnectUrl, gcalCallback, gcalMemberToken, gcalDisconnect, gcalStatus, gcalAvailable, gcalAddConnectUrl, listCalendarAccounts, getCalendarAccount, gcalAccountToken, removeCalendarAccount } from './gcal.js';
 import { handleAttachments } from './attachments.js';
 import { sendSms } from './sms.js';
 import { sendPush } from './webpush.js';
@@ -329,7 +329,56 @@ async function handleCalendar(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     events.push(...feedRangeEvents(await userHolidays(env, feeds, from, to), await userFixtures(env, feeds), from, to));
   }
+  // Extra connected calendars (additional Google accounts), read-only + coloured.
+  try { events.push(...await googleExtraRangeEvents(env, env.uid, from, to)); } catch (e) { console.error('extraCalRange:', e.message); }
   return json({ events, error: g.error || null }, request);
+}
+
+// ── additional connected calendars (calendar_accounts) ────────────────────
+// Events from the user's EXTRA connected Google accounts, merged onto the
+// calendar read-only (phase 1), each tagged with its account + colour and a
+// namespaced id `acct:<accountId>:<eventId>` so a later edit can route back to
+// the right account. The primary owner-shared / users.gcal path (googleCtx) is
+// untouched; every account is isolated in a try/catch so one bad token can never
+// break the calendar. (Robin, 2026-10-25.)
+async function fetchAcctGoogleRaw(acct, token, start, end) {
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(acct.cal_id || 'primary')}/events`);
+  url.searchParams.set('timeMin', start.toISOString());
+  url.searchParams.set('timeMax', end.toISOString());
+  url.searchParams.set('singleEvents', 'true');
+  url.searchParams.set('orderBy', 'startTime');
+  url.searchParams.set('maxResults', '2500');
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return [];
+  return ((await res.json()).items || []).filter((e) => e.status !== 'cancelled');
+}
+async function googleExtraRangeEvents(env, uid, from, to) {
+  const accts = (await listCalendarAccounts(env, uid)).filter((a) => a.provider === 'google' && a.enabled);
+  if (!accts.length) return [];
+  const start = zonedDayStart(from, tzOf(env)), end = zonedDayStart(nextDayStr(to), tzOf(env));
+  const out = [];
+  for (const a of accts) {
+    try {
+      const row = await getCalendarAccount(env, a.id, uid); if (!row) continue;
+      const token = await gcalAccountToken(env, row); if (!token) continue;
+      for (const e of await fetchAcctGoogleRaw(row, token, start, end)) {
+        const base = { id: `acct:${a.id}:${e.id}`, title: e.summary || '(no title)', location: e.location || null, url: eventMeetingUrl(e) || null, notes: e.description || null, acct: a.id, acctColor: a.color || null, acctLabel: a.label || null, feed: 'gcal', readonly: true, recurringId: e.recurringEventId || null };
+        if (e.start?.date) out.push({ ...base, allDay: true, date: e.start.date, end_date: e.end?.date || null });
+        else { const sp = localParts(new Date(e.start.dateTime), tzOf(env)), ep = localParts(new Date(e.end.dateTime), tzOf(env)); out.push({ ...base, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min }); }
+      }
+    } catch (e) { console.error('acctRange', a.id, e.message); }
+  }
+  return out;
+}
+async function googleExtraDayEvents(env, uid, day) {
+  return (await googleExtraRangeEvents(env, uid, day, day))
+    .filter((e) => e.date <= day && (e.end_date || e.date) >= day)
+    .map((e) => {
+      if (e.allDay) return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: true, start_min: 0, duration: 1440, feed: 'gcal', readonly: true, acctColor: e.acctColor, acctLabel: e.acctLabel };
+      const startMin = e.date < day ? 0 : e.start_min;
+      const endMin = (e.end_date && e.end_date > day) ? 1440 : (e.end_min != null ? e.end_min : e.start_min + 60);
+      return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: false, start_min: startMin, duration: Math.max(15, endMin - startMin), feed: 'gcal', readonly: true, acctColor: e.acctColor, acctLabel: e.acctLabel };
+    });
 }
 
 // Create a real event on the Google calendar. Needs the calendar.events scope:
@@ -3223,6 +3272,8 @@ async function handleDay(request, env, url) {
   if (feedCountries(feeds).length || feedTeams(feeds).length) {
     cal.events.push(...feedDayEvents(await userHolidays(env, feeds, day, day), await userFixtures(env, feeds), day));
   }
+  // Extra connected calendars (additional Google accounts), read-only + coloured.
+  try { cal.events.push(...await googleExtraDayEvents(env, env.uid, day)); } catch (e) { console.error('extraCalDay:', e.message); }
 
   const byslot = new Map();
   for (const r of linksRes.results) {
@@ -4239,17 +4290,28 @@ async function ownerEmail(env) {
   const admins = String(env.ADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter((s) => s && !s.startsWith('*'));
   return admins[0] || null;
 }
+// How many consecutive failed checks before an email. At the ~30-min cadence
+// that's roughly an hour and a half of sustained failure - so a service that
+// blips down and recovers is never emailed about. (Robin, 2026-10-25: the
+// football feed flapped up/down and sent ~8 emails in a night - far too twitchy.
+// Only tell me about a PERSISTENT problem, not a 5-minute one.)
+const HEALTH_ALERT_AFTER = 3;
 async function runHealthCheck(env) {
   const now = Date.now();
   const prev = await getIntegrationHealth(env);
   const results = await runHealthProbes(env);
   const merged = {}; const wentDown = []; const recovered = [];
   for (const [k, r] of Object.entries(results)) {
-    const was = prev[k];
-    const changed = !was || was.ok !== r.ok;
-    merged[k] = { ...r, since: changed ? now : (was.since || now) };
-    if (r.ok === false && (!was || was.ok !== false)) wentDown.push(merged[k]);
-    if (r.ok === true && was && was.ok === false) recovered.push(merged[k]);
+    const was = prev[k] || {};
+    const fails = r.ok ? 0 : (was.fails || 0) + 1;        // consecutive failed checks
+    const since = (was.ok === r.ok && was.since) ? was.since : now;
+    let alerted = !!was.alerted;                           // have we emailed about THIS outage?
+    // Email only when a failure has persisted across several checks, and only once
+    // per outage; email "recovered" only if we'd actually warned. A short blip (fails
+    // never reaches the threshold, alerted stays false) stays completely silent.
+    if (!r.ok && fails >= HEALTH_ALERT_AFTER && !alerted) { wentDown.push({ ...r, since }); alerted = true; }
+    if (r.ok && alerted) { recovered.push({ ...r, since }); alerted = false; }
+    merged[k] = { ...r, since, fails, alerted };
   }
   // Keep any stored service this run didn't cover (e.g. one whose key was removed),
   // so the panel never silently loses a row.
@@ -4650,6 +4712,13 @@ export default {
       if (path === '/api/gcal/disconnect' && request.method === 'POST') {
         await gcalDisconnect(env); return json({ ok: true }, request);
       }
+      // Additional connected calendars (extra Google accounts, phase 1).
+      if (path === '/api/gcal/accounts' && request.method === 'GET') return json({ accounts: await listCalendarAccounts(env) }, request);
+      if (path === '/api/gcal/connect-add' && request.method === 'GET') {
+        try { return json({ url: await gcalAddConnectUrl(env) }, request); } catch (e) { return err(e.message, request, 503); }
+      }
+      { const am = path.match(/^\/api\/gcal\/accounts\/([a-z0-9]+)$/);
+        if (am && request.method === 'DELETE') { await removeCalendarAccount(env, am[1]); return json({ ok: true }, request); } }
 
       // Invites: any member can invite others; Robin (user 1) is admin and sees
       // all. A member sees only their own and can only grant the free plan.

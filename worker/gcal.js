@@ -75,6 +75,12 @@ export async function gcalCallback(request, env, url) {
   if (!email && data.access_token) {
     try { email = (await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${data.access_token}` } }).then((r) => r.json())).email || ''; } catch {}
   }
+  if (st.add) {
+    // An additional account - store it as its own calendar_accounts row, leaving
+    // the user's first (users.gcal) connection exactly as it is.
+    await gcalStoreAddedAccount(env, st.uid, data.refresh_token, email);
+    return bounce(home(sd, 'added'));
+  }
   const enc = await encryptSecret(env, data.refresh_token);
   await env.DB.prepare('UPDATE users SET gcal_refresh_enc = ?, gcal_email = ? WHERE id = ?').bind(enc, email || null, st.uid).run();
   return bounce(home(sd, 'connected'));
@@ -106,4 +112,71 @@ export async function gcalDisconnect(env) {
   if (enc) { try { const r = await decryptSecret(env, enc); await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(r)}`, { method: 'POST' }); } catch {} }
   delete cache[env.uid];
   await env.DB.prepare('UPDATE users SET gcal_refresh_enc = NULL, gcal_email = NULL WHERE id = ?').bind(env.uid).run();
+}
+
+// ── multiple connected calendars (calendar_accounts) ───────────────────────
+// Beyond the single users.gcal above, a user can connect several more Google
+// accounts (and, in phase 2, CalDAV). Each is a row in calendar_accounts, merged
+// onto the calendar as an extra source. The consent flow is the same - the only
+// difference is `add:1` in the signed state, which tells the callback to INSERT a
+// new row instead of overwriting the users row. (Robin, 2026-10-25.)
+const rid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}${Math.random()}`).replace(/-/g, '').slice(0, 16);
+// Spread connected calendars around the colour wheel so each reads distinctly.
+const ACCT_HUES = [205, 150, 275, 35, 330, 95, 250, 15];
+
+export async function gcalAddConnectUrl(env) {
+  if (!gcalAvailable(env)) throw new Error('Calendar connect is not set up yet.');
+  const now = Math.floor(Date.now() / 1000);
+  const state = await signJWT({ k: 'gcal', add: 1, uid: env.uid, sd: (env.user && env.user.subdomain) || 'robski', iat: now, exp: now + 600 }, env.AUTH_SECRET);
+  const p = new URLSearchParams({
+    client_id: env.GCAL_MEMBER_CLIENT_ID, redirect_uri: REDIRECT_URI, response_type: 'code',
+    scope: SCOPES, access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true', state,
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${p.toString()}`;
+}
+
+// Called from gcalCallback when the signed state carries add:1. Stores the new
+// account as its own calendar_accounts row (never touching the users.gcal path).
+export async function gcalStoreAddedAccount(env, uid, refreshToken, email) {
+  const enc = await encryptSecret(env, refreshToken);
+  const n = await env.DB.prepare('SELECT COUNT(*) AS c FROM calendar_accounts WHERE user_id = ?').bind(uid).first().catch(() => ({ c: 0 }));
+  const hue = ACCT_HUES[((n && n.c) || 0) % ACCT_HUES.length];
+  await env.DB.prepare(
+    "INSERT INTO calendar_accounts (id, user_id, provider, label, color, refresh_enc, cal_id, writable, enabled, created_at) VALUES (?, ?, 'google', ?, ?, ?, 'primary', 1, 1, ?)",
+  ).bind(rid(), uid, email || 'Google account', String(hue), enc, new Date().toISOString()).run();
+}
+
+// The user's extra connected calendars, for the picker + the settings list.
+export async function listCalendarAccounts(env, uid = env.uid) {
+  const rows = (await env.DB.prepare('SELECT id, provider, label, color, cal_id, writable, enabled FROM calendar_accounts WHERE user_id = ? ORDER BY created_at').bind(uid).all().catch(() => ({ results: [] }))).results || [];
+  return rows.map((r) => ({ id: r.id, provider: r.provider, label: r.label, color: r.color, calId: r.cal_id, writable: r.writable !== 0, enabled: r.enabled !== 0 }));
+}
+
+// One extra account's refresh-token row (decrypted token lives only in memory).
+export async function getCalendarAccount(env, id, uid = env.uid) {
+  return env.DB.prepare('SELECT * FROM calendar_accounts WHERE id = ? AND user_id = ?').bind(id, uid).first().catch(() => null);
+}
+
+// An access token for a specific connected Google account, cached by its id.
+export async function gcalAccountToken(env, acct) {
+  if (!acct || acct.provider !== 'google' || !acct.refresh_enc || !gcalAvailable(env)) return null;
+  const key = `acct:${acct.id}`;
+  const c = cache[key];
+  if (c && c.expires > Date.now() + 30_000) return c.token;
+  let refresh; try { refresh = await decryptSecret(env, acct.refresh_enc); } catch { return null; }
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: env.GCAL_MEMBER_CLIENT_ID, client_secret: env.GCAL_MEMBER_CLIENT_SECRET, refresh_token: refresh, grant_type: 'refresh_token' }),
+  });
+  if (!res.ok) { console.error('gcal acct token:', acct.id, res.status); return null; }
+  const data = await res.json();
+  cache[key] = { token: data.access_token, expires: Date.now() + (data.expires_in || 3600) * 1000 };
+  return data.access_token;
+}
+
+export async function removeCalendarAccount(env, id, uid = env.uid) {
+  const acct = await getCalendarAccount(env, id, uid);
+  if (acct && acct.refresh_enc) { try { const r = await decryptSecret(env, acct.refresh_enc); await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(r)}`, { method: 'POST' }); } catch {} }
+  delete cache[`acct:${id}`];
+  await env.DB.prepare('DELETE FROM calendar_accounts WHERE id = ? AND user_id = ?').bind(id, uid).run().catch(() => {});
 }

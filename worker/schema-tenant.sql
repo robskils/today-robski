@@ -39,6 +39,31 @@ CREATE TABLE IF NOT EXISTS users (
 INSERT OR IGNORE INTO users (id, email, name, subdomain, plan, status, created_at)
   VALUES (1, 'robin@lumley-savile.com', 'Robski', 'robski', 'premium', 'active', '2026-08-24T00:00:00Z');
 
+-- ── Connected calendars (multi-account, multi-provider) ────────────────
+-- Beyond the single Google account on users.gcal_*, a member can connect
+-- several more calendars. Each row is one connected calendar, merged onto the
+-- LifeFold calendar in its own colour and (when writable) editable in place.
+-- Google uses an OAuth refresh token; CalDAV (Yahoo/iCloud) uses a URL + username
+-- + app password. Event ids from these carry an `acct:<id>:` prefix so a write
+-- routes back to the right account. The existing owner-shared + users.gcal paths
+-- are untouched - these are purely additional sources. (Robin, 2026-10-25.)
+CREATE TABLE IF NOT EXISTS calendar_accounts (
+  id              TEXT PRIMARY KEY,               -- short random id; namespaces this account's event ids
+  user_id         INTEGER NOT NULL,
+  provider        TEXT NOT NULL,                  -- 'google' | 'caldav'
+  label           TEXT,                           -- the account email / display name
+  color           TEXT,                           -- hue 0-360 for its events on the calendar
+  refresh_enc     TEXT,                           -- google: OAuth refresh token, AES-256-GCM
+  caldav_url      TEXT,                           -- caldav: the calendar collection URL
+  caldav_user     TEXT,                           -- caldav: username (usually the email)
+  caldav_pass_enc TEXT,                           -- caldav: app password, AES-256-GCM
+  cal_id          TEXT DEFAULT 'primary',         -- google: calendar id; caldav: collection path
+  writable        INTEGER NOT NULL DEFAULT 1,
+  enabled         INTEGER NOT NULL DEFAULT 1,
+  created_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_calacct_user ON calendar_accounts(user_id);
+
 -- ── Invite / discount codes ───────────────────────────────────────────
 -- The friends round and every later promo run through here. `free=1` is the
 -- daughter-and-friends case: Standard at no charge, provided they add own keys.
