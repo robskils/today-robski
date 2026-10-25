@@ -10331,6 +10331,8 @@ function showCalForm(ev) {
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
       <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life Space</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'LifeFold')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
+      ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
     ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
@@ -10422,7 +10424,7 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, acct, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
@@ -10432,12 +10434,13 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a page
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
   const co = contact !== undefined ? { contact: contact || null } : {};    // a person this event is with
+  const ac = acct ? { acct } : {};   // create in a specific connected account (the Calendar picker)
   const alrm = alarms !== undefined ? { alarms: (Array.isArray(alarms) ? alarms : (alarms === '' || alarms == null ? [] : [alarms])).map(Number).filter((n) => Number.isFinite(n) && n >= 0), ...(alarmCh ? { alarmCh } : {}) } : {};   // reminders: one or more leads (minutes before) + channel (app/sms/email/both)
   if (allDay) {
     // Stored end is exclusive (the day after the last), so a multi-day trip pushes
     // the inclusive end date on by one.
     const multi = endDate && endDate > startDate ? { end_date: addDayISO(endDate, 1) } : {};
-    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
+    return { title, day: startDate, allDay: true, location: location || undefined, ...multi, ...rep, ...nt, ...ar, ...ur, ...co, ...ac, ...alrm };
   }
   // Duration = the gap between the two date+times (spanning days if it crosses
   // midnight). A non-positive or missing end falls back to an hour.
@@ -10445,11 +10448,12 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   let duration = Math.max(0, daysBetween(startDate, endDate)) * 1440 + isoToMin(endTime) - sMin;
   if (!(duration > 0)) duration = 60;
   duration = Math.max(15, duration);
-  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...alrm };
+  return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...ac, ...alrm };
 }
 async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh) {
   if (Array.isArray(alarms) ? alarms.length : (alarms !== undefined && alarms !== '')) ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, isNew: !id, fallbackDate: state.cal.selected }));
+  const acct = !id ? ((document.getElementById('ce-calacct') || {}).value || undefined) : undefined;   // new event: which connected calendar
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, acct, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });

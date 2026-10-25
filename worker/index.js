@@ -362,7 +362,7 @@ async function googleExtraRangeEvents(env, uid, from, to) {
       const row = await getCalendarAccount(env, a.id, uid); if (!row) continue;
       const token = await gcalAccountToken(env, row); if (!token) continue;
       for (const e of await fetchAcctGoogleRaw(row, token, start, end)) {
-        const base = { id: `acct:${a.id}:${e.id}`, title: e.summary || '(no title)', location: e.location || null, url: eventMeetingUrl(e) || null, notes: e.description || null, acct: a.id, acctColor: a.color || null, acctLabel: a.label || null, feed: 'gcal', readonly: true, recurringId: e.recurringEventId || null };
+        const base = { id: `acct:${a.id}:${e.id}`, title: e.summary || '(no title)', location: e.location || null, url: eventMeetingUrl(e) || null, notes: e.description || null, acct: a.id, acctColor: a.color || null, acctLabel: a.label || null, recurringId: e.recurringEventId || null };
         if (e.start?.date) out.push({ ...base, allDay: true, date: e.start.date, end_date: e.end?.date || null });
         else { const sp = localParts(new Date(e.start.dateTime), tzOf(env)), ep = localParts(new Date(e.end.dateTime), tzOf(env)); out.push({ ...base, allDay: false, date: sp.date, start_min: sp.min, end_date: ep.date, end_min: ep.min }); }
       }
@@ -374,10 +374,10 @@ async function googleExtraDayEvents(env, uid, day) {
   return (await googleExtraRangeEvents(env, uid, day, day))
     .filter((e) => e.date <= day && (e.end_date || e.date) >= day)
     .map((e) => {
-      if (e.allDay) return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: true, start_min: 0, duration: 1440, feed: 'gcal', readonly: true, acctColor: e.acctColor, acctLabel: e.acctLabel };
+      if (e.allDay) return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: true, start_min: 0, duration: 1440, acct: e.acct, acctColor: e.acctColor, acctLabel: e.acctLabel };
       const startMin = e.date < day ? 0 : e.start_min;
       const endMin = (e.end_date && e.end_date > day) ? 1440 : (e.end_min != null ? e.end_min : e.start_min + 60);
-      return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: false, start_min: startMin, duration: Math.max(15, endMin - startMin), feed: 'gcal', readonly: true, acctColor: e.acctColor, acctLabel: e.acctLabel };
+      return { id: e.id, title: e.title, location: e.location, url: e.url, notes: e.notes, allDay: false, start_min: startMin, duration: Math.max(15, endMin - startMin), acct: e.acct, acctColor: e.acctColor, acctLabel: e.acctLabel };
     });
 }
 
@@ -410,11 +410,20 @@ function eventDescription(url, notes) {
 }
 async function createEvent(request, env) {
   const b = await request.json().catch(() => ({}));
-  // Writes go to Google when a calendar is in charge: the owner's shared Workspace
-  // calendar, or a MEMBER'S OWN connected calendar - googleCtx returns the right
-  // token + calendar for each (owner first, so the owner path is untouched). Nobody
-  // connected -> store it natively in D1. (Robin, 2026-10-24: member two-way sync.)
-  const g = await googleCtx(env);
+  // A new event can target a specific CONNECTED account (the "Calendar" picker
+  // sends b.acct): we write to that account's Google calendar and namespace the
+  // returned id `acct:<id>:<eventId>`. Otherwise the existing path - the owner's
+  // shared Workspace calendar or a member's own connected calendar (googleCtx),
+  // else native D1. (Robin, 2026-10-24/25.)
+  let g, acctId = null;
+  if (b.acct) {
+    const row = await getCalendarAccount(env, b.acct);
+    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!tok) return err('That calendar is not connected.', request, 400);
+    g = { token: tok, calId: row.cal_id || 'primary' }; acctId = row.id;
+  } else {
+    g = await googleCtx(env);
+  }
   if (!g) {
     const r = await createNativeEvent(env, b);
     if (r.error) return err(r.error, request);
@@ -504,9 +513,13 @@ async function createEvent(request, env) {
     }
 
     const ev = await res.json();
-    if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, ev.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
-    return json({ ok: true, id: ev.id }, request, 201);
+    // LifeFold-side metadata (area/contact/url/reminders) only for the primary
+    // calendar; events created in an extra connected account are stand-alone.
+    if (!acctId) {
+      if (b.area !== undefined) await setEventAreaFor(env, ev.id, b.area).catch(() => {});
+      if (b.contact !== undefined) await setEventContactFor(env, ev.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, ev.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, ev.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
+    }
+    return json({ ok: true, id: acctId ? `acct:${acctId}:${ev.id}` : ev.id }, request, 201);
   } catch (e) {
     console.error('createEvent:', e.message);
     return err('Could not reach Google Calendar.', request, 502);
@@ -549,7 +562,17 @@ async function updateEvent(request, env, id) {
     if (b.contact !== undefined) await setEventContactFor(env, native.id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, native.id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, native.id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
     return json({ ok: true, id: native.id }, request);
   }
-  const g = await googleCtx(env);
+  // An event from a connected extra account (id = acct:<id>:<eventId>): route the
+  // edit to THAT account's Google calendar, using the real event id. (Robin.)
+  const am = String(id).match(/^acct:([a-z0-9]+):(.+)$/);
+  let eid = id, acctG = null;
+  if (am) {
+    const row = await getCalendarAccount(env, am[1]);
+    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!tok) return err('That calendar is not connected.', request, 400);
+    acctG = { token: tok, calId: row.cal_id || 'primary' }; eid = am[2];
+  }
+  const g = acctG || await googleCtx(env);
   if (!g) return err('Calendar not connected', request, 503);
   const patch = {};
   if (b.title !== undefined) { const t = String(b.title).trim(); if (!t) return err('title required', request); patch.summary = t; }
@@ -581,16 +604,18 @@ async function updateEvent(request, env, id) {
     const calId = g.calId;
     const res = await fetch(
       // sendUpdates=none: never notify attendees/organizer of a LifeFold-side edit.
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(id)}?sendUpdates=none`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eid)}?sendUpdates=none`,
       { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(patch) },
     );
     if (res.status === 401 || res.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
     if (res.status === 404) return err('That event is not on the calendar.', request, 404);
     if (!res.ok) { console.error('google update event:', res.status, await res.text()); return err('Google would not update that event.', request, 502); }
     const ev = await res.json();
-    if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
-    if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
-    return json({ ok: true, id: ev.id }, request);
+    if (!acctG) {   // LifeFold-side metadata only for the primary calendar
+      if (b.area !== undefined) await setEventAreaFor(env, id, b.area).catch(() => {});
+      if (b.contact !== undefined) await setEventContactFor(env, id, b.contact).catch(() => {}); if (b.url !== undefined) await setEventUrlFor(env, id, b.url).catch(() => {}); if (b.alarm !== undefined || b.alarms !== undefined) await setEventAlarmFor(env, id, b.alarms !== undefined ? b.alarms : b.alarm, b.alarmCh).catch(() => {});
+    }
+    return json({ ok: true, id: acctG ? id : ev.id }, request);
   } catch (e) {
     console.error('updateEvent:', e.message);
     return err('Could not reach Google Calendar.', request, 502);
@@ -1679,6 +1704,19 @@ async function lookupMedia(request, env, url, json, err) {
 // its own D1, hence the confirm step in the UI.
 async function deleteEvent(request, env, id) {
   const scope = new URL(request.url).searchParams.get('scope') || 'single';
+
+  // An event from a connected extra account (id = acct:<id>:<eventId>): a direct
+  // delete on that account's calendar. (Robin, 2026-10-25.)
+  const am = String(id).match(/^acct:([a-z0-9]+):(.+)$/);
+  if (am) {
+    const row = await getCalendarAccount(env, am[1]);
+    const tok = row && row.provider === 'google' ? await gcalAccountToken(env, row) : null;
+    if (!tok) return err('That calendar is not connected.', request, 400);
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(row.cal_id || 'primary')}/events/${encodeURIComponent(am[2])}?sendUpdates=none`, { method: 'DELETE', headers: { Authorization: `Bearer ${tok}` } });
+    if (res.ok || res.status === 410 || res.status === 404) return json({ ok: true }, request);
+    console.error('acct delete:', res.status);
+    return err('Google would not delete that event.', request, 502);
+  }
 
   // Native event? A recurring occurrence can be dropped on its own (exdate) or
   // the series trimmed from here on (until); a plain event just gets archived.
@@ -5260,9 +5298,12 @@ export default {
       // Google event ids are base32hex-ish, plus '_' on recurring instances.
       // Google ids are word chars + hyphen; a native recurring occurrence adds a
       // `::YYYY-MM-DD` suffix, so ':' must be allowed too.
-      const evMatch = path.match(/^\/api\/events\/([\w:-]+)$/);
-      if (evMatch && request.method === 'PATCH') return updateEvent(request, env, evMatch[1]);
-      if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, evMatch[1]);
+      // One path segment, decoded - so an id carrying ':' works whether the client
+      // sent it raw (calendar) or percent-encoded (the Today timeline encodes it).
+      // This also covers the acct:<id>:<eventId> ids of connected extra accounts.
+      const evMatch = path.match(/^\/api\/events\/([^/]+)$/);
+      if (evMatch && request.method === 'PATCH') return updateEvent(request, env, decodeURIComponent(evMatch[1]));
+      if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, decodeURIComponent(evMatch[1]));
 
       const actMatch = path.match(/^\/api\/activities\/(\d+)$/);
       if (actMatch) {

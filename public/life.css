@@ -2669,6 +2669,8 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .ce-directions:hover { background:color-mix(in srgb,var(--accent) 18%,var(--card)); border-color:var(--accent); }
 .ce-fic { font-size:12px; letter-spacing:0; opacity:.85; }
 .ce-field .sel { width:100%; max-width:none; margin:0; }
+.ce-inacct-v { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-2); padding:9px 0 0; }
+.ce-inacct-dot { width:11px; height:11px; border-radius:50%; flex:none; }
 /* Short selects sit two-up, so the card isn't a tall stack of full-width bars;
    they drop to one column when the calendar panel is narrow. (Robin.) */
 /* Location search suggestions (contacts' addresses + past places). */
