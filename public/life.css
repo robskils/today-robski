@@ -2217,10 +2217,44 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    instead of crushing both into cramped columns. Robin, emphatically: never
    squeeze the content - move it to the bottom when space is tight. */
 .note-cq { container:notecq / inline-size; min-width:0; }
-.note-layout { display:grid; grid-template-columns:minmax(0,1fr) 272px; column-gap:36px; row-gap:0; align-items:start; grid-template-areas:"main side" "attach side"; }
-.note-main { grid-area:main; min-width:0; }
+/* Single column: the note body runs full width, with the Linked & attached panel
+   stacked beneath it (the old right-hand side column was retired). (Robin, 2026-10-26.) */
+.note-layout { display:block; }
+.note-main { min-width:0; }
 .note-attach { grid-area:attach; min-width:0; }
 .note-side { grid-area:side; position:sticky; top:16px; min-width:0; }
+/* ── Linked & attached panel (bottom of a note) ─────────────────────────── */
+.nx-wrap { margin:34px 0 0; }
+.nx-lbl { font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 12px 4px; }
+.nx-panel { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow-sm); overflow:hidden; }
+.nx-items { display:flex; flex-direction:column; gap:8px; padding:16px 17px; }
+.nx-items-empty { color:var(--ink-3); font-size:14.5px; padding:20px 18px; }
+.nx-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--paper); font-size:15px; color:var(--ink); }
+.nx-ic { flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; background:color-mix(in srgb,var(--accent) 12%,transparent); overflow:hidden; }
+.nx-ic-file { background:var(--paper-2); }
+.nx-thumb { width:100%; height:100%; object-fit:cover; }
+.nx-open { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; background:none; border:0; font:inherit; font-size:15px; color:var(--ink); cursor:pointer; padding:0; text-decoration:none; }
+.nx-open:hover { color:var(--accent); }
+.nx-kind { flex:none; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+.nx-meta { flex:none; color:var(--ink-3); font-size:13px; }
+.nx-x { flex:none; width:24px; height:24px; border:0; background:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; border-radius:6px; }
+.nx-x:hover { color:var(--rust,#c4412e); background:var(--paper-2); }
+.nx-attach { border-top:1px solid var(--line); background:var(--paper); padding:13px 15px; }
+.nx-attach-tabs { display:inline-flex; gap:4px; background:var(--paper-2); border-radius:12px; padding:4px; }
+.nx-attach-tab { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border:0; background:none; font:inherit; font-size:14px; font-weight:600; color:var(--ink-3); border-radius:9px; cursor:pointer; transition:background .12s,color .12s,box-shadow .12s; }
+.nx-attach-tab.on { color:var(--ink); background:var(--card); box-shadow:var(--shadow-sm); }
+.nx-addbody { margin-top:12px; }
+.nx-field input { width:100%; }
+.nx-sugg { margin-top:9px; display:flex; flex-direction:column; gap:6px; }
+.nx-sugg:empty { display:none; }
+.nx-sugg-row { display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:11px; background:var(--card); border:1px solid var(--line); font:inherit; font-size:14.5px; color:var(--ink); cursor:pointer; text-align:left; width:100%; }
+.nx-sugg-row:hover { border-color:var(--accent); }
+.nx-sugg-row .ic { flex:none; width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; background:color-mix(in srgb,var(--accent) 12%,transparent); }
+.nx-sugg-row .kind { margin-left:auto; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); }
+.nx-sugg-hint { color:var(--ink-3); font-size:13.5px; padding:8px 2px; line-height:1.5; }
+.nx-filebar { display:flex; gap:9px; flex-wrap:wrap; }
+.nx-choose { display:inline-flex; align-items:center; gap:7px; padding:10px 15px; border:1px dashed var(--line-2); border-radius:12px; background:none; color:var(--ink-2); font:inherit; font-size:14.5px; cursor:pointer; }
+.nx-choose:hover { border-color:var(--accent); color:var(--accent); }
 /* A quiet header over the note's right rail, in the same small-caps gold style as
    the sidebar section titles (.nav-grp), so the whole connected column reads as
    one labelled group. (Robin, 2026-10-15.) */
