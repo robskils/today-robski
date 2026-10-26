@@ -19835,7 +19835,53 @@ function palSetQuery(q) {
 // Search-result ordering by kind, used ONLY to break ties within the same
 // relevance band (see titleRank). Rows sit mid-pack now, not dumped at the
 // bottom, so a strongly-matching table row mixes in with everything else. (Robin.)
-const SEARCH_KIND_RANK = { area: 0, goal: 1, contact: 2, note: 3, table: 4, row: 5, task: 6 };
+const SEARCH_KIND_RANK = { nav: -1, area: 0, goal: 1, contact: 2, note: 3, table: 4, row: 5, task: 6 };
+// Where typing can take you: the tools and settings pages. Shown ONLY when what you
+// type matches one (by name or a keyword), so they never flood the results or the
+// empty box - but "settings", "journal", "calendar"… still jump you there. Gated by
+// the same module switches as the sidebar. (Robin, 2026-10-26: wanted these back for
+// typed queries, just not as the default list.)
+function palNavTargets() {
+  const T = [];
+  const add = (title, run, kw) => T.push({ kind: 'nav', title, run, kw: `${title} ${kw || ''}`.toLowerCase() });
+  add('Home', () => openHome(), 'start');
+  if (modOn('today')) add('Today', () => openToday(), 'flow day plan');
+  if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
+  if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
+  if (modOn('notes')) { add('Notes', () => openNotesList(), 'note write'); add('Tables', () => openNotesList(), 'table spreadsheet'); }
+  if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
+  if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
+  if (modOn('reflect')) { add('Reflection', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching'); add('Journal', () => openJournal(), 'diary write morning pages free write'); }
+  if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
+  if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
+  if (modOn('saved')) add('Read & Watch', () => openReadwatch(), 'bookmarks reading list watchlist saved');
+  if (modOn('discover')) add('Discover', () => openDiscover(), 'events near me what is on');
+  if (modOn('timer')) add('Toolbox', () => openToolbox(), 'focus timer pomodoro practices');
+  add('Your card', () => openCard(), 'profile tagline photo');
+  add('Settings', () => openSettings(), 'preferences account options');
+  add('Appearance', () => openSettings('appearance'), 'theme colour color dark light background language');
+  add('Plan & AI', () => openSettings('ai'), 'ai keys subscription plan billing');
+  add('Notifications', () => openSettings('notifications'), 'alerts reminders morning brief');
+  add('Calendar settings', () => openSettings('feeds'), 'holidays fixtures connect google icloud caldav');
+  add('Tools on & off', () => openSettings('sections'), 'turn off modules');
+  add('Security', () => openSettings('security'), 'two-factor 2fa password passkey');
+  add('Invite people', () => openSettings('invites'), 'invite friends family');
+  return T;
+}
+const PAL_NAV_MAX = 6;
+// The nav targets whose name or a keyword matches the query, best matches first.
+function palNavHits(ql) {
+  if (!ql || ql.length < 2) return [];
+  const rank = (it) => {
+    const t0 = it.title.toLowerCase();
+    if (t0 === ql) return 0;
+    if (t0.startsWith(ql)) return 1;
+    if (it.kw.split(/\s+/).some((w) => w.startsWith(ql))) return 2;
+    if (it.kw.includes(ql)) return 3;
+    return 99;
+  };
+  return palNavTargets().map((it) => ({ ...it, _r: rank(it) })).filter((it) => it._r < 99).sort((a, b) => a._r - b._r).slice(0, PAL_NAV_MAX);
+}
 let palT;
 function buildPalette() {
   const q = state.pal.q.trim();
@@ -19854,10 +19900,12 @@ function buildPalette() {
   }
   const ql = q.toLowerCase();
   // Typing searches your own stuff - notes, tables, tasks, Life Spaces, people -
-  // not a command menu. The "Go to X" / settings actions were pulled out on
-  // purpose: they flooded a one-letter query and buried the real results, and the
-  // sidebar already reaches every tool. (Robin, 2026-10-24: "we've let them go".)
-  state.pal.loading = true; state.pal.items = []; state.pal.sel = 0; renderPalItems();
+  // PLUS any tool or settings page whose name or a keyword matches, so "settings",
+  // "journal", "calendar"… still jump you there. These only appear on a real match
+  // (never as a default list), so a one-letter query isn't flooded. Nav hits show
+  // instantly while the content search loads under them. (Robin, 2026-10-26.)
+  const navHits = palNavHits(ql);
+  state.pal.loading = true; state.pal.items = navHits.slice(); state.pal.sel = 0; renderPalItems();
   clearTimeout(palT);
   palT = setTimeout(async () => {
     try {
@@ -19869,14 +19917,14 @@ function buildPalette() {
       // areas locally (from state.areas) and merge with the worker hits, deduped.
       const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
       const seen = new Set(areaHits.map((a) => a.id));
-      const merged = [...areaHits, ...hits.filter((h) => !seen.has(h.id))];
+      const merged = [...navHits, ...areaHits, ...hits.filter((h) => !seen.has(h.id))];
       // Rank: an exact title match first, then a title that STARTS with what you
       // typed, then by kind (area, goal, contact, note, table, task, row). Stable
       // within a band, so the worker's relevance order still holds.
       const titleRank = (b) => { const t0 = (b.kind === 'row' ? rowLabel(b) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
       const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
       state.pal.loading = false;
-      state.pal.items = ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)') }));
+      state.pal.items = ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)'), run: b.run }));
       state.pal.sel = 0; renderPalItems();
     } catch (e) { state.pal.loading = false; toast(e.message); }
   }, 150);
@@ -19937,7 +19985,7 @@ function renderPalette() {
 }
 // The little type chip. A row shows the table it belongs to ("Portugal Place"),
 // not a bare "Row", so you know which card a hit relates to. (Robin.)
-const PAL_KIND_LABEL = { note: 'Note', table: 'Table', area: 'Life Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+const PAL_KIND_LABEL = { nav: 'Go to', note: 'Note', table: 'Table', area: 'Life Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
   if (it.kind === 'recent') return '🕘';
@@ -19961,6 +20009,7 @@ function execItem(it) {
   const q = state.pal.q.trim();
   closePalette();
   if (it.kind === 'action') return it.run().catch((e) => toast(e.message));
+  if (it.kind === 'nav') return Promise.resolve(it.run()).catch((e) => toast(e.message));   // jump to a tool/settings page
   if (q) pushRecentSearch(q);   // opened a result off a query - remember what you searched
   if (it.kind === 'note') return openNote(it.id).catch((e) => toast(e.message));
   if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));

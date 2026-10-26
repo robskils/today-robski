@@ -6221,6 +6221,7 @@ body.area-as-member tr.tr-task.is-private { opacity:.5; }
 .pal-kind.pal-k-note { --pk:#c98a1e; }
 .pal-kind.pal-k-table { --pk:#8a5cc4; }
 .pal-kind.pal-k-task { --pk:#d9483b; }
+.pal-kind.pal-k-nav { --pk:#1f8f86; }
 .pal-kind.pal-k-goal { --pk:#2c9c9c; }
 .pal-kind.pal-k-bucket { --pk:#c4568f; }
 .pal-kind.pal-k-journal { --pk:#b5835a; }
