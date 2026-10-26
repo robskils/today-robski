@@ -2852,12 +2852,6 @@ async function unassignFrom(fid) { try { const r = await api(`/api/tasks/${state
 function closeAssign() { const el = document.getElementById('assign'); if (el) el.remove(); state.assign = null; if (state.view && state.view.type === 'taskcard') openTaskCard(state.view.id); }
 async function acceptAssign(taskId) { try { state.assignments = await api('/api/assignments/accept', { method: 'POST', body: JSON.stringify({ taskId }) }); toast('Accepted - it\'s in your tasks now'); if (state.view && state.view.type === 'tasks') { await openTasks(); } } catch (e) { toast(e.message); } }
 async function declineAssign(taskId) { try { state.assignments = await api('/api/assignments/decline', { method: 'POST', body: JSON.stringify({ taskId }) }); if (state.view && state.view.type === 'tasks') renderTasks(); } catch (e) { toast(e.message); } }
-// Open (or create) the shared meeting note for a friend, then show it. It's a
-// normal shared note, so the live-sync poll in openNote keeps both sides in step.
-async function openMeetingNote(friendId) {
-  try { const r = await api('/api/meeting', { method: 'POST', body: JSON.stringify({ friendId }) }); if (r.created) toast('Shared notes started - take them together'); await openNote(r.noteId); }
-  catch (e) { toast(e.message); }
-}
 // Live-ish sync for a shared note: poll the block, and when the other side has
 // changed it, reload - unless you're mid-edit, in which case wait and flag it so
 // your typing is never clobbered.
@@ -14902,7 +14896,7 @@ function friendsPaneHtml(opts) {
       ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on LifeFold<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on LifeFold</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on LifeFold - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to LifeFold by email">✦ Invite to LifeFold</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-notes="${f.id}" title="Shared notes">📝</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to LifeFold.</div>')}
+      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to LifeFold.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
@@ -21241,7 +21235,6 @@ document.addEventListener('click', (e) => {
   { const fac = t.closest('[data-friend-accept]'); if (fac) { friendAccept(fac.dataset.friendAccept); return; } }
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
-  { const fno = t.closest('[data-friend-notes]'); if (fno) { openMeetingNote(Number(fno.dataset.friendNotes)); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on LifeFold` : 'No contacts on LifeFold yet'); }); return; }

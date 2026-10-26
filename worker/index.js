@@ -4,7 +4,6 @@ import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvi
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
-import { openMeeting } from './meetings.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey, encryptSecret, decryptSecret } from './ai.js';
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
@@ -5210,8 +5209,6 @@ export default {
       // Mark folio/page shares seen, so Home's "shared with you" alert clears the
       // new flag once you've acknowledged them (mirrors the folio feed). (Robin.)
       if (path === '/api/shared/seen' && request.method === 'POST') { await setSetting(env, 'shares_seen', new Date().toISOString()); return json({ ok: true }, request); }
-      // Meeting notes: a shared note per friend pair (Friends phase 3c).
-      if (path === '/api/meeting' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await openMeeting(env, b.friendId), request); } catch (e) { return err(e.message, request, 400); } }
       // Assigning a task to a friend (Friends phase 3b).
       if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
       if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }
