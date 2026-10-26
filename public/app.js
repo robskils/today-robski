@@ -8738,7 +8738,8 @@ function renderArea() {
     </section>`; };
   // Vision: write it straight here, no click-through. A "Highlight" toggle pulls
   // a few standout lines out as pull-quotes above the full vision.
-  const visionHl = !!(area.props && area.props.visionHighlight);
+  // On by default: the best bits are highlighted unless you explicitly turn it off.
+  const visionHl = !(area.props && area.props.visionHighlight === false);
   const visionText = canEditArea
     ? `<textarea class="area-vision-edit" data-area-vision="${area.id}" rows="3" placeholder="Picture this area at its best - write it in the present tense…">${esc(visionSnip)}</textarea>`
     : (visionSnip ? `<div class="area-vision-ro">${esc(visionSnip)}</div>` : '<div class="home-empty">Nothing yet.</div>');
