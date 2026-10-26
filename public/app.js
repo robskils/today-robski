@@ -3038,6 +3038,17 @@ function renderSettings() {
     if (state.gcal === undefined) { state.gcal = null; api('/api/gcal/status').then((r) => { state.gcal = r; if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {}); }
     if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; if (state.view && state.view.type === 'settings') renderSettings(); }).catch(() => {}); }
   }
+  // The Getting-started checklist on the Account tab needs the setup signals
+  // (areas, contacts, mail accounts) loaded once so its ticks are accurate - state
+  // starts them empty, so a flag, not an undefined check, gates the one-time load.
+  if (state.settings.tab === 'account' && !state._setupLoaded) {
+    state._setupLoaded = true;
+    const rr = () => { if (state.view && state.view.type === 'settings' && state.settings.tab === 'account') renderSettings(); };
+    api('/api/blocks?kind=area').then((r) => { state.areas = r || []; rr(); }).catch(() => {});
+    loadContacts().then(rr).catch(() => {});
+    state.mail = state.mail || {};
+    try { mailApi('/accounts').then((r) => { state.mail.accounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); }).catch(() => {}); } catch {}
+  }
   // The Card tab (and the Account tab's card preview) need the card data loaded.
   if (state.card === undefined) {
     state.card = {};
@@ -3050,7 +3061,7 @@ function renderSettings() {
     ? `<button class="crumb-back set-subback" data-set-tab="account">← Account settings</button>`
     : `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
-  const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
+  const accountPane = state.account ? `${welcomeGuideHtml()}${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
       <div class="set-card set-account">
         <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
         <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
@@ -3063,7 +3074,7 @@ function renderSettings() {
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
         ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
-        <div class="acct-actions"><button class="ghost" data-onb-replay>✦ Replay the welcome guide</button><button class="ghost" data-account-signout>↪ Sign out</button></div>
+        <div class="acct-actions"><button class="ghost" data-account-signout>↪ Sign out</button></div>
       </div>
       <div class="set-acct-cols">
         <div class="set-card set-cardpreview">
@@ -20661,7 +20672,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
   if (t.closest('[data-onb-replay]')) { showOnboarding(); return; }
-  if (t.closest('[data-onb-open-hub]')) { showOnboarding(); return; }
+  { const oh = t.closest('[data-onb-open-hub]'); if (oh) { showOnboarding(oh.dataset.onbOpenHub || null); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
   { const ad = t.closest('[data-alias-del]'); if (ad) { delAlias(ad.dataset.aliasDel); return; } }
@@ -24164,6 +24175,8 @@ document.addEventListener('submit', (e) => { if (e.target.id === 'gate-form') ga
 // the bold part (most of the link) has e.target === the <b> and was being ignored
 // - which is why the tappable area felt tiny.
 document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#gate-sms')) gateSend('sms'); });
+// Remember whether the Getting-started checklist is expanded (toggle doesn't bubble, so capture).
+document.addEventListener('toggle', (e) => { if (e.target && e.target.matches && e.target.matches('details[data-welcome]')) { try { localStorage.setItem('lf_welcome_open', e.target.open ? '1' : '0'); } catch {} } }, true);
 
 // ── boot ─────────────────────────────────────────────
 // Parse a mailto: URI (to + ?subject/body/cc/bcc) into compose fields.
@@ -24212,8 +24225,59 @@ async function finishOnboarding() {
   closeOnbHub();
   if (state.view && state.view.type === 'home') renderHome();
 }
-function showOnboarding() {
-  state.onb = { open: null, account: state.account || null, mailDone: false, areas: (state.areas && state.areas.length) ? state.areas : null, mailAccounts: null };
+// ── Getting-started checklist (Settings › Account) ───────────────────────────
+// The same setup steps as the onboarding hub (showOnboarding/TILES), shown as a
+// collapsible, tick-as-you-go checklist at the top of the Account page. Reads
+// global state; tapping an item opens the hub at that step. Completion detectors
+// mirror the hub's TILES - keep them in step. (Robin, 2026-10-26.)
+function welcomeItems() {
+  const a = state.account || {};
+  const card = state.card || {};
+  const areas = state.areas || [];
+  const contacts = state.contacts || [];
+  const mailConnected = !!(state.mail && Array.isArray(state.mail.accounts) && state.mail.accounts.length > 0);
+  return [
+    { id: 'card', ic: '◗', label: 'Make it yours', done: !!(card.photo || (card.tagline || '').trim()) },
+    { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: areas.length > 0 },
+    { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
+    { id: 'ai', ic: '✦', label: 'Turn on AI', done: !!(a.aiAnthropicSet || a.aiGeminiSet) },
+    { id: 'phone', ic: '📱', label: 'A backup way in', done: !!(a.phone || '').trim() },
+    { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
+    { id: 'contacts', ic: '👥', label: 'Import contacts', done: contacts.length > 0 },
+  ];
+}
+// Remembered open/closed; defaults open while there's still something left to do.
+function welcomeOpen(items) {
+  try { const v = localStorage.getItem('lf_welcome_open'); if (v === '1') return true; if (v === '0') return false; } catch {}
+  const list = items || welcomeItems();
+  return list.filter((x) => x.done).length < list.length;
+}
+function welcomeGuideHtml() {
+  const items = welcomeItems();
+  const doneN = items.filter((x) => x.done).length;
+  const pct = Math.round((doneN / items.length) * 100);
+  const allDone = doneN === items.length;
+  return `<details class="set-card set-welcome"${welcomeOpen(items) ? ' open' : ''} data-welcome>
+    <summary class="set-welcome-sum">
+      <span class="set-welcome-ic">✦</span>
+      <span class="set-welcome-tt"><span class="set-welcome-t">Getting started</span><span class="set-welcome-sub">${allDone ? 'All set - nicely done' : `${doneN} of ${items.length} done`}</span></span>
+      <span class="set-welcome-prog" aria-hidden="true"><span style="width:${pct}%"></span></span>
+      <span class="set-welcome-chev" aria-hidden="true">▾</span>
+    </summary>
+    <div class="set-welcome-body">
+      <p class="set-welcome-lede">Set LifeFold up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
+      <div class="set-welcome-grid">
+        ${items.map((x) => `<button class="wg-item${x.done ? ' done' : ''}" data-onb-open-hub="${x.id}" title="${x.done ? 'Done - open to review' : 'Set this up'}">
+          <span class="wg-item-pip" aria-hidden="true">${x.done ? '✓' : ''}</span>
+          <span class="wg-item-ic">${x.ic}</span>
+          <span class="wg-item-l">${esc(x.label)}</span>
+        </button>`).join('')}
+      </div>
+    </div>
+  </details>`;
+}
+function showOnboarding(openId) {
+  state.onb = { open: openId || null, account: state.account || null, mailDone: false, areas: (state.areas && state.areas.length) ? state.areas : null, mailAccounts: null };
   if (!document.getElementById('onb')) { const d = document.createElement('div'); d.id = 'onb'; document.body.appendChild(d); }
   const rr = () => { if (state.onb) renderOnboarding(); };
   if (!state.onb.account) api('/api/account').then((a) => { if (state.onb) { state.onb.account = a; state.account = a; rr(); } }).catch(() => {});
