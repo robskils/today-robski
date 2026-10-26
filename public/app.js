@@ -1216,6 +1216,7 @@ function addNewMenuHtml() {
   const item = (kind, ic, label) => `<button class="addnew-item" data-quick-add="${kind}"><span class="addnew-ic">${ic}</span>${esc(label)}</button>`;
   const items = [
     modOn('notes') ? item('note', '▤', 'Note') : '',
+    modOn('notes') ? `<button class="addnew-item" data-new-table><span class="addnew-ic">⊞</span>Table</button>` : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
     modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Life Space</button>` : '',
