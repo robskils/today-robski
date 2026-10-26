@@ -3109,7 +3109,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .sc-face { position:absolute; inset:0; border-radius:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 34px 80px -34px rgba(0,0,0,.7); }
 .sc-back { background:linear-gradient(160deg,#3a2f2a,#1d1813); color:#e8dcc8; border:1px solid rgba(255,255,255,.13); gap:16px; }
 .sc-back .sc-mark { font-size:58px; color:#e0684f; }
-.sc-hint { font-size:12.5px; letter-spacing:.2em; text-transform:uppercase; opacity:.68; }
+.sc-draw-hint { font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.85; line-height:1.7; }
 .sc-front { background:linear-gradient(160deg,#faf6ee,#efe7d4); color:#211c17; transform:rotateY(180deg); gap:16px; border:1px solid rgba(0,0,0,.06); }
 .sc-sym { font-size:56px; line-height:1; }
 .sc-name { font-family:'Cormorant Garamond',Georgia,serif; font-size:33px; font-weight:600; margin:0; }

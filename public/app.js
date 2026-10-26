@@ -6478,7 +6478,7 @@ function renderSpirit() {
     <div class="spirit-page">
       <div class="spirit-card-wrap">
         <div class="spirit-card ${c ? 'drawn' : ''}">
-          <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-hint">Tap to draw</span></div>
+          <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-draw-hint">Tap to pull a spirit card</span></div>
           <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
         </div>
         <button class="spirit-card-hit" type="button" data-spirit-draw aria-label="${c ? 'Draw another spirit card' : 'Tap to draw a spirit card'}"></button>
