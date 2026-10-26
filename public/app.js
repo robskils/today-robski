@@ -12519,9 +12519,18 @@ function mailFetchMsg(row) {
   state.mail._inflight = state.mail._inflight || {};
   if (!state.mail._inflight[key]) {
     const midQ = row.messageId ? `&messageId=${encodeURIComponent(row.messageId)}` : '';
-    state.mail._inflight[key] = mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid || 0}${midQ}`)
-      .then((m) => { const c = state.mail.msgCache; c[key] = m; const ks = Object.keys(c); if (ks.length > 40) delete c[ks[0]]; return m; })
-      .finally(() => { delete state.mail._inflight[key]; });
+    const req = mailApi(`/message?account=${row._acct}&mailbox=${encodeURIComponent(row._mailbox)}&uid=${row.uid || 0}${midQ}`);
+    // Time the fetch out so a hung IMAP connection settles instead of spinning for
+    // ever - which also left the key stuck "in flight", so every later tap returned
+    // the same dead promise and the message would never open. On timeout it rejects,
+    // clears, and a retry works. (Robin, 2026-10-26.)
+    let tmr;
+    state.mail._inflight[key] = Promise.race([
+      req,
+      new Promise((_, rej) => { tmr = setTimeout(() => rej(new Error('That message took too long to load. Try again.')), 25000); }),
+    ])
+      .then((m) => { clearTimeout(tmr); const c = state.mail.msgCache; c[key] = m; const ks = Object.keys(c); if (ks.length > 40) delete c[ks[0]]; return m; })
+      .finally(() => { clearTimeout(tmr); delete state.mail._inflight[key]; });
   }
   return state.mail._inflight[key];
 }
@@ -12588,12 +12597,22 @@ async function openMessage(key) {
   // /message doesn't report flags, so carry the row's starred state across -
   // otherwise the reader star always shows empty and needs two clicks to set.
   const apply = (m) => { state.mail.open = { ...m, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged }; };
-  if (cached) apply(cached); else renderMail(true);   // cached opens instantly, no loading flash
+  // Open the reader IMMEDIATELY. Cached -> the full message. Not cached -> a
+  // provisional open from the row (sender, subject, date) with the body marked
+  // loading, so you land in the reader at once instead of staring at the list while
+  // IMAP fetches a slow or large body. The message never just "won't open" now.
+  // (Robin, 2026-10-26.)
+  if (cached) apply(cached); else state.mail.open = { ...row, _loadingBody: true };
+  renderMail();
   mailMarkReadLocal(mailReadKey(row));   // remember it read (by Message-ID or a stable fallback), so it never shows as new again
   if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
-  if (cached) { renderMail(); prefetchAround(key); return; }
-  try { apply(await mailFetchMsg(row)); } catch (e) { toast(e.message); }
-  renderMail();
+  if (cached) { prefetchAround(key); return; }
+  try { apply(await mailFetchMsg(row)); renderMail(); }
+  catch (e) {
+    // Keep the reader open (headers) and show the error in the body with a retry,
+    // rather than silently stranding you on a half-open message.
+    if (state.mail.open && state.mail.open._key === key) { delete state.mail.open._loadingBody; state.mail.open._bodyError = e.message || 'Could not load this message.'; renderMail(); }
+  }
   prefetchAround(key);   // warm the next few so j/k keeps flowing
 }
 async function mailDelete(key) {
@@ -13716,7 +13735,9 @@ function renderMail(loading) {
       ${o.invite ? inviteCardHtml(o.invite) : ''}
       ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
       ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button>${o.from && o.from.address ? '<span class="mail-imgbar-note">and always from this sender</span>' : ''}</span></div>` : ''}
-      ${(o.html && !state.mail.plain) ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`}</div>`;
+      ${o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
+        : o._bodyError ? `<div class="mail-text mail-body-err">⚠ ${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
+        : (o.html && !state.mail.plain) ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`}</div>`;
   } else {
     reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
   }
@@ -20968,6 +20989,7 @@ document.addEventListener('click', (e) => {
   const mjoin = t.closest('[data-mail-join]'); if (mjoin) { openExternal(mjoin.dataset.mailJoin); return; }
   if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }
   const mchk = t.closest('[data-mail-check]'); if (mchk) { e.preventDefault(); e.stopPropagation(); mailToggleSelect(mchk.dataset.mailCheck); return; }   // select box sits inside the row button
+  if (t.closest('[data-mail-retry]')) { const k = state.mail.open && state.mail.open._key; if (k) { if (state.mail.msgCache) delete state.mail.msgCache[k]; openMessage(k); } return; }
   const mbulk = t.closest('[data-mail-bulk]'); if (mbulk) { mailBulk(mbulk.dataset.mailBulk); return; }
   const mmto = t.closest('[data-mail-move-to]'); if (mmto) { const mm = state.mail.moveMenu; if (mm) mailMoveTargets(mm.keys, mmto.dataset.mailMoveTo); return; }
   const mmquad = t.closest('[data-mail-move-quad]'); if (mmquad) { const mm = state.mail.moveMenu; if (mm) { const keys = [...mm.keys]; state.mail.moveMenu = null; renderMail(); mailToQuad(keys, mmquad.dataset.mailMoveQuad); } return; }
@@ -22086,8 +22108,10 @@ document.addEventListener('pointermove', (e) => {
     const dx = Math.abs(e.clientX - mailDragPress.sx), dy = Math.abs(e.clientY - mailDragPress.sy);
     // Still within the long-press wait: a real move is a scroll, so stand down.
     if (!mailDragPress.longOk) { if (dx > 8 || dy > 8) { clearTimeout(mailDragPress.timer); mailDragPress = null; } return; }
-    // Long-press satisfied (or mouse): the first genuine move arms the drag.
-    if (dx > 6 || dy > 6) mailDragPress.begin();
+    // Long-press satisfied (or mouse): a CLEAR move arms the drag. The threshold is
+    // deliberately generous - a plain click often jitters a few px, and arming a drag
+    // on that cancelled the tap-to-open and left the message looking un-openable.
+    if (dx > 10 || dy > 10) mailDragPress.begin();
     return;
   }
   const d = mailDrag; if (!d || e.pointerId !== d.pid) return;
@@ -22106,6 +22130,14 @@ function mailDragEnd(e) {
   const q = document.querySelector('.mail-quads'); if (q) q.classList.remove('mail-quads-armed');
   if (d.over) d.over.classList.remove('mail-quad-hot');
   if (d.over) { mailDragSuppressClick = Date.now(); mailToQuad(d.key, d.over.dataset.mailQuadDrop); }
+  else {
+    // Released NOT on a quadrant: this was a click (or a cancelled drag), so open the
+    // message - never leave it un-openable. mailTapOpenedAt suppresses the trailing
+    // synthetic click so it doesn't double-open. (Robin: "it won't open", 2026-10-26.)
+    mailTapOpenedAt = Date.now();
+    if (state.mail.selected && state.mail.selected.size) mailToggleSelect(d.key);
+    else openMessage(d.key);
+  }
 }
 document.addEventListener('pointerup', mailDragEnd);
 document.addEventListener('pointercancel', mailDragEnd);
