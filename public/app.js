@@ -23425,32 +23425,71 @@ async function openAttachment(blockId, attId) {
 }
 // Before an image goes to storage, shrink it: a note wants a legible picture,
 // not a 12-megapixel original. We cap the longest edge and re-encode as JPEG,
-// which turns a multi-megabyte phone photo into a few hundred KB. Anything that
-// isn't a decodable raster photo - a PDF, an animated GIF, an SVG, or a format
-// the browser can't read such as HEIC - passes straight through untouched, so
-// this never breaks an upload that would otherwise have worked.
-// This is a place for small photos, not raw camera files. Cap the longest edge
-// hard and re-encode as JPEG, so a 12-megapixel phone photo lands as a couple of
-// hundred KB. Only an already-small file (under 180 KB, i.e. nothing to gain) is
-// left alone; anything the browser can't decode (PDF, GIF, SVG, HEIC) passes
-// through untouched so this never breaks an upload that would otherwise work.
+// stepping the quality (and, if still heavy, the edge) down until it lands
+// comfortably small - a few hundred KB, not a multi-megabyte camera file.
+//
+// iPhone photos are the hard case. Pick one from Photos in a Chromium browser
+// (Brave, Chrome) and it arrives as HEIC, which Chromium can neither decode nor
+// display - so the old code handed the raw HEIC to the server and the picture
+// came back blank, or rejected as too big. We now convert HEIC to JPEG in the
+// browser first, lazy-loading the decoder (~1.3 MB) only when we actually meet
+// one, so the photo both uploads small and genuinely shows. A PDF, an animated
+// GIF or an SVG still passes through untouched; an already-small image (under
+// 180 KB, nothing to gain) is left alone.
 const IMG_MAX_EDGE = 1280;
+const IMG_TARGET = 1.6 * 1024 * 1024;   // aim well under the 25 MB ceiling, and small enough to view
+const isHeic = (f) => /image\/hei[cf]/i.test(f.type || '') || /\.hei[cf]$/i.test(f.name || '');
+let heicLoader;
+// Load the HEIC decoder on demand - it's big, and most uploads never need it.
+function loadHeicDecoder() {
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (heicLoader) return heicLoader;
+  heicLoader = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = '/heic2any.min.js?v=0.0.4';
+    s.onload = () => window.heic2any ? res(window.heic2any) : rej(new Error('decoder unavailable'));
+    s.onerror = () => { heicLoader = null; rej(new Error('decoder failed to load')); };
+    document.head.appendChild(s);
+  });
+  return heicLoader;
+}
 async function shrinkImage(file) {
-  if (!isImgType(file.type) || /gif|svg/i.test(file.type) || file.size <= 180 * 1024) return file;
-  let url;
+  const heic = isHeic(file);
+  if (!heic && (!isImgType(file.type) || /gif|svg/i.test(file.type) || file.size <= 180 * 1024)) return file;
+  let url, src = file;
   try {
-    let bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
-    if (!bmp) { url = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
-    const w = bmp.width, h = bmp.height; if (!w || !h) return file;
-    const scale = Math.min(1, IMG_MAX_EDGE / Math.max(w, h));
-    const dw = Math.max(1, Math.round(w * scale)), dh = Math.max(1, Math.round(h * scale));
-    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
-    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh);
+    // An iPhone HEIC must become a JPEG before anything else can read it.
+    if (heic) {
+      const heic2any = await loadHeicDecoder();
+      const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.82 });
+      const jb = Array.isArray(out) ? out[0] : out;
+      src = new File([jb], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+    }
+    let bmp = await createImageBitmap(src, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { url = URL.createObjectURL(src); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) return heic ? src : file;
+    // Downscale the long edge, then re-encode - dropping quality first and, if it
+    // is still heavy, the edge too - until it's comfortably under the target.
+    let edge = IMG_MAX_EDGE, blob = null;
+    for (let pass = 0; pass < 4; pass++) {
+      const scale = Math.min(1, edge / Math.max(w, h));
+      const dw = Math.max(1, Math.round(w * scale)), dh = Math.max(1, Math.round(h * scale));
+      const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
+      cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh);
+      blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', [0.78, 0.7, 0.62, 0.55][pass]));
+      if (blob && blob.size <= IMG_TARGET) break;
+      edge = Math.round(edge * 0.8);
+    }
     if (bmp.close) bmp.close();
-    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.78));
-    if (!blob || blob.size >= file.size) return file;   // no real saving - keep the original
-    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
-  } catch { return file; } finally { if (url) URL.revokeObjectURL(url); }
+    if (!blob) return heic ? src : file;
+    // A normal image is only replaced if we actually saved bytes; a HEIC must
+    // return the JPEG regardless, since the original can't be shown at all.
+    if (!heic && blob.size >= file.size) return file;
+    return new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch (e) {
+    if (heic) throw new Error("couldn't read that iPhone photo - in Photos, choose Share then Save to Files (or Export as JPEG) and add that copy.");
+    return file;
+  } finally { if (url) URL.revokeObjectURL(url); }
 }
 // Read the file's bytes into memory FIRST, then upload the buffer - never stream
 // the File straight to fetch. A photo picked from Photos is often a lazy handle
@@ -23473,6 +23512,7 @@ async function uploadFiles(blockId, files) {
   let ok = 0;
   for (const f0 of Array.from(files)) {
     try {
+      if (isHeic(f0)) toast('Preparing photo…');
       const f = await shrinkImage(f0);
       const att = await postAttachment(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
       host.props = host.props || {};
@@ -23491,6 +23531,7 @@ async function uploadCellFiles(key, files) {
   let ok = 0;
   for (const f0 of Array.from(files)) {
     try {
+      if (isHeic(f0)) toast('Preparing photo…');
       const f = await shrinkImage(f0);
       const att = await postAttachment(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
       row.props.values[colId] = [...(Array.isArray(row.props.values[colId]) ? row.props.values[colId] : []), att];
