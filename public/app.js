@@ -6360,8 +6360,8 @@ function noteToggleArea(areaId) {
 // answers are ordinary paragraphs. Nothing leaves the device unless Dig deeper
 // is pressed (see /api/journal/deepen).
 const JOURNAL_MODES = [
-  { key: 'free', label: 'Free write', icon: '✍️', prompts: [
-    "Just start writing and don't stop to edit - three pages, stream of consciousness, whatever's in your head right now. Keep the words coming and see where it goes.",
+  { key: 'free', label: 'Free write / Morning Pages', icon: '✍️', prompts: [
+    "Just start writing and don't stop to edit - stream of consciousness, whatever's in your head right now. Keep the words coming and see where it goes.",
   ] },
   { key: 'reflect', label: 'Reflect on the day', icon: '🌙', prompts: [
     'What happened today that I want to remember?',
@@ -7521,6 +7521,8 @@ function renderJournalList() {
 async function startJournalEntry() {
   if (!state.journal) await openJournal();
   state.journal.picking = true; renderJournalList();
+  // Land at the top of the options, not wherever the entry list was scrolled to.
+  try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {}
 }
 async function newJournalEntry(modeKey, prompt) {
   const date = new Date().toISOString();
