@@ -24449,6 +24449,15 @@ function renderOnboarding() {
     ${panel}
     <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open LifeFold' : 'Done for now'}</button>
   </div></div>`;
+  // When a step opens (especially arriving from the Account checklist), bring its
+  // panel into view so you land on the actual content, not the tile grid above it.
+  if (s.open && s._scrolledTo !== s.open) {
+    s._scrolledTo = s.open;
+    requestAnimationFrame(() => {
+      const sheet = document.querySelector('#onb .onb-sheet'), p = document.querySelector('#onb .onb-panel');
+      if (sheet && p) sheet.scrollTo({ top: Math.max(0, p.offsetTop - 14), behavior: 'smooth' });
+    });
+  } else if (!s.open) { s._scrolledTo = null; }
 }
 async function onbSaveAi(provider) {
   const el = document.querySelector(`[data-onb-ai="${provider}"]`); const value = (el && el.value || '').trim();
