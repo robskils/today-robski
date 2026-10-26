@@ -3439,10 +3439,11 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .alias-chip.ok .alias-badge { color:#3f9e5f; }
 .alias-chip.pending { border-style:dashed; color:var(--ink-2); }
 .alias-chip.pending .alias-badge { filter:grayscale(.2); }
-.alias-verify { margin-top:8px; padding:10px 12px; background:color-mix(in srgb,var(--accent) 6%,transparent); border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); border-radius:10px; }
-.av-note { display:block; font-size:13px; color:var(--ink-2); margin-bottom:8px; } .av-note b { color:var(--ink); }
+.alias-verify { margin-top:10px; padding:14px 15px; background:color-mix(in srgb,var(--accent) 12%,var(--card)); border:1.5px solid color-mix(in srgb,var(--accent) 45%,var(--line)); border-radius:12px; box-shadow:var(--shadow-sm); }
+.av-head { font-size:15.5px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.av-note { display:block; font-size:15px; color:var(--ink-2); margin-bottom:10px; line-height:1.5; } .av-note b { color:var(--ink); }
 .alias-verify-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.alias-verify-row input { width:110px; flex:none; letter-spacing:.18em; text-align:center; font-variant-numeric:tabular-nums; }
+.alias-verify-row input.av-code { width:130px; flex:none; letter-spacing:.2em; text-align:center; font-variant-numeric:tabular-nums; font-size:18px; }
 .acct-plan { display:flex; align-items:center; gap:12px; } .acct-plan b { text-transform:capitalize; }
 .acct-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
 
@@ -3513,6 +3514,9 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .acct-privacy a { color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line-2); white-space:nowrap; }
 .acct-privacy a:hover { color:var(--accent); border-color:var(--accent); }
 .acct-danger { color:var(--rust,#c4412e); } .acct-danger:hover { border-color:var(--rust,#c4412e); }
+.set-closebox { display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+.set-closebox-txt { min-width:0; }
+.set-closebox .acct-danger { flex:none; align-self:flex-start; }
 /* Settings: section on/off switches. */
 .set-mods { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .set-mod { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 14px; background:var(--paper); border:1px solid var(--line); border-radius:11px; font-size:15px; color:var(--ink); }
@@ -7302,16 +7306,15 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* The button's depth comes from the shared .btn-accent treatment below; the
    gate one is simply full width and a touch taller. */
 .gate2-btn { width:100%; min-height:52px; font-size:17px; margin-top:2px; }
-/* The text route is a quiet, self-selecting link under the primary button - not a
-   co-equal second button. Its own wording ("Use Lifebook for your email?") means a
-   newcomer signing up with an outside address glides past it, while a returning
-   user whose mailbox now lives inside Lifebook - and so can't open the emailed code
-   - spots their way in. It texts the code to THEIR own saved phone. */
-.gate2-smslink { display:block; width:100%; background:none; border:1px solid transparent; margin:6px 0 0;
-  padding:11px 14px; border-radius:12px; font-size:14px; line-height:1.45; color:var(--ink-3); cursor:pointer; text-wrap:balance;
-  transition:background .12s, border-color .12s; }
-.gate2-smslink:hover { background:var(--paper-2); border-color:var(--line-2); }
-.gate2-smslink b { color:var(--ink-2); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+/* The text route: a clearly tappable SECONDARY button under the primary (outlined,
+   not filled - so it reads as the alternative, not a co-equal). It texts the code to
+   THEIR own saved phone - the way in when the mailbox you'd read the code from lives
+   inside LifeFold. Bordered by default so it never reads as un-clickable text. */
+.gate2-smslink { display:block; width:100%; background:var(--card); border:1px solid var(--line-2); margin:10px 0 0;
+  padding:12px 14px; border-radius:12px; font-size:15px; line-height:1.45; color:var(--ink-2); cursor:pointer; text-wrap:balance;
+  transition:background .12s, border-color .12s, color .12s; }
+.gate2-smslink:hover { background:var(--paper-2); border-color:var(--accent); color:var(--ink); }
+.gate2-smslink b { color:var(--ink); font-weight:600; }
 .gate2-smslink:hover b { color:var(--accent); }
 .gate2-smslink:disabled { opacity:.5; cursor:default; }
 /* On a phone give it a proper tap target - a soft bordered pill, easy to hit,
