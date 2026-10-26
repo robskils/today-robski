@@ -26,7 +26,10 @@ function asJson(r) { try { return JSON.parse(r.body); } catch { return null; } }
 // (no key), so it never shows as "down" for a feature the owner hasn't set up.
 export const HEALTH_PROBES = [
   {
-    key: 'sportsdb', label: 'Football fixtures · TheSportsDB',
+    // Low-importance feed, and TheSportsDB's free tier is flaky - so it needs a much
+    // longer run of failures before it's worth an email. Only a genuinely persistent
+    // outage (hours), not an hour's wobble. (Robin, 2026-10-26.)
+    key: 'sportsdb', label: 'Football fixtures · TheSportsDB', alertAfter: 12,
     async probe(env) {
       try {
         const key = (env && env.SPORTSDB_KEY) || '123';
@@ -79,7 +82,7 @@ export async function runHealthProbes(env) {
   const out = {};
   await Promise.all(HEALTH_PROBES.filter((p) => !p.needs || p.needs(env)).map(async (p) => {
     const r = await p.probe(env).catch((e) => ({ ok: false, detail: (e && e.message) || 'Failed' }));
-    out[p.key] = { label: p.label, ok: !!r.ok, detail: String(r.detail || '').slice(0, 180), at: Date.now() };
+    out[p.key] = { label: p.label, ok: !!r.ok, detail: String(r.detail || '').slice(0, 180), at: Date.now(), ...(p.alertAfter ? { alertAfter: p.alertAfter } : {}) };
   }));
   return out;
 }

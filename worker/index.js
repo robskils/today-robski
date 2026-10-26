@@ -4491,7 +4491,8 @@ async function runHealthCheck(env) {
     // Email only when a failure has persisted across several checks, and only once
     // per outage; email "recovered" only if we'd actually warned. A short blip (fails
     // never reaches the threshold, alerted stays false) stays completely silent.
-    if (!r.ok && fails >= HEALTH_ALERT_AFTER && !alerted) { wentDown.push({ ...r, since }); alerted = true; }
+    const alertAfter = r.alertAfter || HEALTH_ALERT_AFTER;   // some feeds (e.g. football) tolerate a longer outage before a warning
+    if (!r.ok && fails >= alertAfter && !alerted) { wentDown.push({ ...r, since }); alerted = true; }
     if (r.ok && alerted) { recovered.push({ ...r, since }); alerted = false; }
     merged[k] = { ...r, since, fails, alerted };
   }
