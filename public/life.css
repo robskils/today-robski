@@ -7412,19 +7412,25 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .su-signout { background:none; border:0; color:var(--accent); text-decoration:underline; text-underline-offset:3px; cursor:pointer; font-size:inherit; padding:0; }
 
 /* ── toast ───────────────────────────────────────── */
+/* An elegant, theme-aware card (not a black pill): every toast carries a × to close
+   it, errors stay until you do, and a longer message wraps. (Robin, 2026-10-26.) */
 .toast {
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
-  background:var(--ink); color:var(--paper); padding:12px 20px; border-radius:999px;
-  font-size:15.5px; box-shadow:var(--shadow); z-index:40; max-width:90vw;
+  display:flex; align-items:center; gap:11px; text-align:left;
+  background:var(--card); color:var(--ink); border:1px solid var(--line-2);
+  padding:12px 12px 12px 17px; border-radius:15px; font-size:15.5px; line-height:1.4;
+  box-shadow:0 20px 46px -20px rgba(0,0,0,.55), 0 3px 10px -5px rgba(0,0,0,.35);
+  z-index:50; width:auto; max-width:min(94vw,460px);
 }
-/* With an Undo button a toast carries a longer message ("Filed in Read Later -
-   archived from inbox"), so it's a fixed-width rounded card - not a pill that
-   shrinks to one word and wraps into a tall ellipse. The message takes the room
-   left of Undo and wraps to a line or two. (Robin, 2026-10-23.) */
-.toast:has(.toast-undo) { display:flex; align-items:center; gap:12px; width:min(94vw,440px); padding:12px 14px 12px 18px; border-radius:16px; text-align:left; }
-.toast-msg { flex:1 1 auto; min-width:0; line-height:1.35; }
-.toast-undo { flex:none; border:0; background:color-mix(in srgb,var(--paper) 22%,transparent); color:var(--paper); font:inherit; font-weight:600; padding:6px 14px; border-radius:999px; cursor:pointer; }
-.toast-undo:hover { background:color-mix(in srgb,var(--paper) 34%,transparent); }
+.toast.toast-wide { width:min(94vw,460px); }
+.toast-msg { flex:1 1 auto; min-width:0; }
+.toast-ic { flex:none; font-size:17px; line-height:1; }
+.toast-undo { flex:none; border:1px solid var(--line-2); background:none; color:var(--ink); font:inherit; font-weight:600; padding:6px 14px; border-radius:999px; cursor:pointer; transition:border-color .12s,color .12s; }
+.toast-undo:hover { border-color:var(--accent); color:var(--accent); }
+.toast-x { flex:none; width:27px; height:27px; border:0; background:none; color:var(--ink-3); font-size:15px; line-height:1; cursor:pointer; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:background .12s,color .12s; }
+.toast-x:hover { background:var(--paper-2); color:var(--ink); }
+.toast-err { border-color:color-mix(in srgb,var(--rust,#c4412e) 55%,var(--line)); }
+.toast-err .toast-ic { color:var(--rust,#c4412e); }
 /* On a phone the toast must clear the bottom tab bar - at bottom:26px a "Filed in
    Read Later" message sat half-hidden behind it. Lift it above the bar (and above
    it in the stack). (Robin, 2026-10-23.) */

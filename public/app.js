@@ -149,16 +149,28 @@ async function api(path, opts = {}) {
   return res.status === 204 ? null : res.json();
 }
 let toastT;
-function toast(m, undoFn) {
+function toast(m, undoFn, opts) {
+  opts = opts || {};
+  const err = !!opts.error;
+  const sticky = !!opts.sticky || err;   // errors stay until you close them, so you can read them
   const t = $('#toast');
-  if (undoFn) {
-    t.innerHTML = '<span class="toast-msg"></span><button class="toast-undo" type="button">Undo</button>';
-    t.querySelector('.toast-msg').textContent = m;
-    t.querySelector('.toast-undo').onclick = () => { t.hidden = true; clearTimeout(toastT); try { undoFn(); } catch {} };
-  } else { t.textContent = m; }
+  const hide = () => { t.hidden = true; clearTimeout(toastT); };
+  t.className = 'toast' + (err ? ' toast-err' : '') + (undoFn ? ' toast-wide' : '');
+  t.innerHTML = `${err ? '<span class="toast-ic">⚠</span>' : ''}<span class="toast-msg"></span>${undoFn ? '<button class="toast-undo" type="button">Undo</button>' : ''}<button class="toast-x" type="button" aria-label="Dismiss">✕</button>`;
+  t.querySelector('.toast-msg').textContent = m;
+  t.querySelector('.toast-x').onclick = hide;
+  if (undoFn) t.querySelector('.toast-undo').onclick = () => { hide(); try { undoFn(); } catch {} };
   t.hidden = false; clearTimeout(toastT);
-  toastT = setTimeout(() => { t.hidden = true; }, undoFn ? 7000 : 2600);
+  // Length-aware timing so a longer message is readable; errors never auto-dismiss.
+  const dur = undoFn ? 7000 : Math.min(7000, Math.max(3200, String(m || '').length * 55));
+  if (!sticky) toastT = setTimeout(hide, dur);
+  // Pause the countdown while the pointer rests on it (desktop), so it won't vanish
+  // mid-read; the × is always there to close it on touch.
+  t.onmouseenter = () => clearTimeout(toastT);
+  t.onmouseleave = () => { if (!sticky) toastT = setTimeout(hide, 1600); };
 }
+// A sticky, clearly-flagged error toast - stays until dismissed with its ×.
+function toastError(m) { return toast(m, null, { error: true }); }
 // A general undo stack. Anything regrettable registers "how to reverse me" via
 // pushUndo; ⌘Z (or the toast's Undo button) runs the most recent one. Each entry
 // runs at most once, so the button and the shortcut can't double-fire.
@@ -23466,7 +23478,7 @@ async function uploadFiles(blockId, files) {
       host.props = host.props || {};
       host.props.attachments = [...(host.props.attachments || []), att];
       ok++;
-    } catch (e) { toast('Upload failed: ' + e.message); }
+    } catch (e) { toastError('Upload failed: ' + e.message); }
   }
   if (ok) { rerenderHost(); loadThumbs(); }
 }
@@ -23483,7 +23495,7 @@ async function uploadCellFiles(key, files) {
       const att = await postAttachment(`/api/blocks/${rowId}/attachments?col=${encodeURIComponent(colId)}&name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
       row.props.values[colId] = [...(Array.isArray(row.props.values[colId]) ? row.props.values[colId] : []), att];
       ok++;
-    } catch (e) { toast('Upload failed: ' + e.message); }
+    } catch (e) { toastError('Upload failed: ' + e.message); }
   }
   if (ok) renderTable();
 }
