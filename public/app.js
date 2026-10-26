@@ -19196,7 +19196,22 @@ function noteLinkSearchRows(q) {
   for (const tk of (state.allTasks || [])) { if (count >= 18) break; if (!tk.props || tk.props.note === n.id || tk.props.done) continue; if (!(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
   const cids = new Set(((n.props && n.props.contacts) || []).map(String));
   for (const c of (state.contacts || [])) { if (count >= 18) break; if (cids.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-contact="${c.id}"><span class="ic">👤</span>${esc(c.title || 'Unnamed')}<span class="kind">Person</span></button>`); count++; }
-  if (Array.isArray(state.noteEvents)) { const linkedEv = new Set(noteEventLinks(n).map((x) => evBaseId(x))); for (const ev of state.noteEvents) { if (count >= 18) break; if (linkedEv.has(evBaseId(ev)) || !(ev.title || '').trim()) continue; if (!(ev.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-event="${esc(evBaseId(ev))}"><span class="ic">📅</span>${esc(ev.title || 'Event')}<span class="kind">Event</span></button>`); count++; } }
+  // Events come last, DEDUPED by base id (a repeating event shows once, not one row
+  // per occurrence) and capped, so a busy recurring event never floods out the notes
+  // and tasks above it. (Robin, 2026-10-26.)
+  if (Array.isArray(state.noteEvents)) {
+    const linkedEv = new Set(noteEventLinks(n).map((x) => evBaseId(x)));
+    const seenEv = new Set(); let evShown = 0;
+    for (const ev of state.noteEvents) {
+      if (count >= 18 || evShown >= 5) break;
+      const base = evBaseId(ev);
+      if (linkedEv.has(base) || seenEv.has(base) || !(ev.title || '').trim()) continue;
+      if (!(ev.title || '').toLowerCase().includes(ql)) continue;
+      seenEv.add(base);
+      out.push(`<button class="nx-sugg-row" data-note-link-event="${esc(base)}"><span class="ic">📅</span>${esc(ev.title || 'Event')}<span class="kind">Event</span></button>`);
+      count++; evShown++;
+    }
+  }
   return out.join('') || '<div class="nx-sugg-hint">No matches. Paste a web address to add it as a link.</div>';
 }
 function noteConnectedPanel(n) {
@@ -19206,7 +19221,7 @@ function noteConnectedPanel(n) {
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${n.id}">${items}</div></div>`;
   const addTab = (state.note && state.note.addTab) || 'link';
   const q = (state.note && state.note.linkQuery) || '';
-  if (addTab === 'link' && !Array.isArray(state.noteEvents)) loadNoteEvents();
+  if (addTab === 'link') ensureLinkPool();
   const linkPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your LifeFold, or paste a web address…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
   const filePane = `<div class="nx-filebar"><label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Choose a file</label><label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label><button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button></div>`;
   return `<div class="nx-wrap">
@@ -19222,6 +19237,16 @@ function noteConnectedPanel(n) {
       </div>
     </div>
   </div>`;
+}
+// The Link search spans notes, tables, people and events, but opening a note
+// doesn't load those lists - so make sure they're in hand (each once), and repaint
+// when they land. Without this the search showed only events. (Robin, 2026-10-26.)
+function ensureLinkPool() {
+  const rr = () => { if (state.view && state.view.type === 'note') renderNote(); };
+  if (!Array.isArray(state.noteTops)) { state.noteTops = []; api('/api/blocks?kind=note').then((r) => { state.noteTops = r || []; rr(); }).catch(() => {}); }
+  if (!Array.isArray(state.tables)) { state.tables = []; api('/api/blocks?kind=table').then((r) => { state.tables = r || []; rr(); }).catch(() => {}); }
+  if (!Array.isArray(state.noteEvents)) loadNoteEvents();
+  if (!contactsLoaded) loadContacts().then(rr).catch(() => {});
 }
 async function addNoteWebLink(url) {
   const n = state.note && state.note.current; if (!n) return;
