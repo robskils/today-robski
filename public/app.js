@@ -24414,7 +24414,7 @@ async function openMailCompose(c) {
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() {
   if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
-  try { navigator.registerProtocolHandler('mailto', location.origin + '/?mailto=%s'); return { ok: true }; }
+  try { navigator.registerProtocolHandler('mailto', location.origin + '/mail?mailto=%s'); return { ok: true }; }
   catch (e) { return { ok: false, reason: (e && e.name === 'SecurityError') ? 'blocked' : ((e && e.message) || 'error') }; }
 }
 

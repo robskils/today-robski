@@ -4712,6 +4712,13 @@ export default {
         }
       }
       if (isApex && path === '/') {
+        // The browser's mail handler was first registered pointing at "/" (the
+        // marketing page, which never parsed it - so a mailto just opened home).
+        // Bounce any mailto into the app, which reads ?mailto= and opens a
+        // pre-addressed compose. New registrations point at /mail directly; this
+        // keeps handlers registered before the fix working without re-registering.
+        const mt = url.searchParams.get('mailto');
+        if (mt) return withHsts(new Response(null, { status: 302, headers: { location: '/mail?mailto=' + encodeURIComponent(mt), 'cache-control': 'no-store' } }));
         // Language: honour a saved choice (set by the switcher), otherwise sniff
         // Accept-Language once and redirect a non-English visitor to their locale.
         // English stays canonical at '/', so crawlers and en visitors never move.
