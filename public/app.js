@@ -19381,15 +19381,17 @@ function renderNote() {
           // is predictable. (Robin: a connected card must be top + open, not left
           // stranded at the bottom.)
           const subHtml = `<details class="subpages nside-card" data-subpages data-nside="connected" ${noteCardOpen('connected', connected.length > 0) ? 'open' : ''}><summary class="sub-h">Linked Notes${connected.length ? ` · ${connected.length}` : ''}</summary>${kids}${noteConnectPickerHtml()}<button class="subpage add" data-new-sub><span class="sp-ico">+</span><span class="sp-t">New note</span></button></details>`;
+          // Linked Tasks is PINNED to the top of the column (Robin, 2026-10-26). The
+          // rest float by whether they hold anything: connected rises, empty sinks.
           const secs = [
             { has: connected.length > 0, html: subHtml },
-            { has: (state.allTasks || []).some((t) => t.props && t.props.note === n.id && !t.props.done), html: noteTasksHtml(n.id) },
             { has: noteEventLinks(n).length > 0, html: connectedEventsHtml(n) },
             { has: blockContactIds(n).length > 0, html: noteContactsHtml(n) },
             { has: blockLinks(n).length > 0, html: noteExtLinksHtml(n) },
             { has: true, html: relatedNotesHtml(n) },   // '' when no related notes, so it drops out
           ].filter((s) => s.html);
-          return secs.map((s, i) => ({ ...s, i })).sort((a, b) => (b.has - a.has) || (a.i - b.i)).map((s) => s.html).join('');
+          const rest = secs.map((s, i) => ({ ...s, i })).sort((a, b) => (b.has - a.has) || (a.i - b.i)).map((s) => s.html).join('');
+          return noteTasksHtml(n.id) + rest;
         })()}
       </aside>
       <div class="note-attach">${attachSection(n)}</div>
