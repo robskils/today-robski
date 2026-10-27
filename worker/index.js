@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, closeAccount } from './accounts.js';
-import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
+import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, searchPeople, isOnline } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { aiKey, aiNeedsKey, logAiUsage, setAiKey, encryptSecret, decryptSecret } from './ai.js';
@@ -5067,6 +5067,10 @@ export default {
           await maybePushMessage(env, Number(b.to), (env.user && (env.user.name || env.user.subdomain)) || 'Someone', b.body);
           return json(r, request, 201);
         } catch (e) { return err(e.message, request, 403); }
+      }
+      if (path === '/api/messages/react' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        try { return json(await reactMessage(env, b.id, !!b.on), request); } catch (e) { return err(e.message, request, 403); }
       }
       if (path === '/api/messages/unread' && request.method === 'GET') return json(await unreadCounts(env), request);
 

@@ -2771,7 +2771,7 @@ async function loadChat() {
     if (!state.chat || state.chat.with !== to) return;   // switched chats mid-request
     // Compare the content, not the count. A count misses a message that arrives in
     // the same poll as one being removed, and it can't see a message change at all.
-    const sig = (list) => (list || []).map((m) => `${m.id || ''}:${m.body}`).join('\u0000');
+    const sig = (list) => (list || []).map((m) => `${m.id || ''}:${m.body}:${m.reaction || ''}`).join('\u0000');
     if (sig(r.messages) !== sig(state.chat.messages)) { state.chat.messages = r.messages; renderChatMessages(); }
   } catch {}
 }
@@ -2820,7 +2820,21 @@ function renderChat() {
   const emoPanel = document.getElementById('chat-emojis');
   if (emoPanel) emoPanel.addEventListener('click', (ev) => { const b = ev.target.closest('[data-emoji]'); if (!b) return; ev.preventDefault(); chatInsertEmoji(b.dataset.emoji); });
   const msgsBox = document.getElementById('chat-msgs');
-  if (msgsBox) msgsBox.addEventListener('pointerdown', () => chatEmojiToggle(false));
+  if (msgsBox) {
+    msgsBox.addEventListener('pointerdown', () => chatEmojiToggle(false));
+    // Desktop: click the hover heart. Touch: double-tap the bubble.
+    msgsBox.addEventListener('click', (ev) => { const b = ev.target.closest('[data-react]'); if (!b) return; ev.preventDefault(); toggleReaction(b.dataset.react); });
+    let lastTap = { id: null, t: 0 };
+    msgsBox.addEventListener('pointerup', (ev) => {
+      if (ev.pointerType !== 'touch') return;   // mouse uses the heart button, not double-click (keeps text selection)
+      if (ev.target.closest('[data-react]')) return;
+      const msgEl = ev.target.closest('.chat-msg[data-mid]'); if (!msgEl) return;
+      const id = msgEl.dataset.mid; if (!/^\d+$/.test(id)) return;
+      const now = Date.now();
+      if (lastTap.id === id && now - lastTap.t < 350) { lastTap = { id: null, t: 0 }; toggleReaction(id); }
+      else lastTap = { id, t: now };
+    });
+  }
   // Focus the box on a desktop, but never on a phone: focusing raises the keyboard
   // over the conversation before you've had a chance to read a word of it.
   const inp = document.getElementById('chat-input');
@@ -2832,8 +2846,40 @@ function renderChatMessages() {
   // we were: someone reading back through the history shouldn't be dragged to the
   // end every time the 4s poll finds a new message.
   const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
-  box.innerHTML = state.chat.messages.map((m) => `<div class="chat-msg ${m.mine ? 'mine' : ''}${m.pending ? ' pending' : ''}"><span class="cm-body">${esc(m.body)}</span></div>`).join('') || '<div class="chat-empty">Say hello 👋</div>';
+  box.innerHTML = state.chat.messages.map((m) => {
+    const canReact = /^\d+$/.test(String(m.id || ''));   // a pending (not-yet-saved) message can't be hearted
+    const reacted = !!m.reaction;
+    const badge = reacted ? `<span class="cm-heart" aria-label="Hearted">${esc(m.reaction)}</span>` : '';
+    // The hover affordance on desktop; hidden on touch (double-tap hearts there).
+    const btn = canReact ? `<button class="cm-react" type="button" data-react="${m.id}" aria-label="${reacted ? 'Remove heart' : 'Heart this message'}" title="${reacted ? 'Remove heart' : 'Heart'}">${reacted ? '❤️' : '♡'}</button>` : '';
+    return `<div class="chat-msg ${m.mine ? 'mine' : ''}${m.pending ? ' pending' : ''}${reacted ? ' reacted' : ''}" data-mid="${esc(String(m.id || ''))}"><span class="cm-body">${esc(m.body)}</span>${btn}${badge}</div>`;
+  }).join('') || '<div class="chat-empty">Say hello 👋</div>';
   if (atEnd) box.scrollTop = box.scrollHeight;
+}
+// Heart a message: double-tap on touch, the hover heart button on desktop. The
+// heart lives on the message and both people see it, so it syncs through the
+// same 4s poll that carries new messages.
+async function toggleReaction(id) {
+  if (!state.chat) return;
+  const msg = (state.chat.messages || []).find((m) => Number(m.id) === Number(id));
+  if (!msg || !/^\d+$/.test(String(msg.id))) return;
+  const prev = msg.reaction || null;
+  const on = !prev;
+  msg.reaction = on ? '❤️' : null;   // optimistic: show it instantly
+  renderChatMessages();
+  try { navigator.vibrate && navigator.vibrate(8); } catch {}
+  const to = state.chat.with;
+  try {
+    const r = await api('/api/messages/react', { method: 'POST', body: JSON.stringify({ id: Number(id), on }) });
+    if (!state.chat || state.chat.with !== to) return;
+    if (r && r.messages) { state.chat.messages = r.messages; renderChatMessages(); }
+  } catch (e) {
+    if (state.chat && state.chat.with === to) {
+      const mm = state.chat.messages.find((m) => Number(m.id) === Number(id));
+      if (mm) { mm.reaction = prev; renderChatMessages(); }
+    }
+    toast((e && e.message) || 'Could not update the heart.');
+  }
 }
 async function sendChat(e) {
   if (e) e.preventDefault();

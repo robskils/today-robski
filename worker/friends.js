@@ -94,9 +94,19 @@ export async function areFriends(env, other) {
 export async function getMessages(env, withId) {
   withId = Number(withId);
   if (!(await areFriends(env, withId))) throw new Error('You are not connected with that person.');
-  const rows = (await env.DB.prepare('SELECT id, from_id, body, ts FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id').bind(env.uid, withId, withId, env.uid).all()).results || [];
+  const rows = (await env.DB.prepare('SELECT id, from_id, body, ts, reaction FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id').bind(env.uid, withId, withId, env.uid).all()).results || [];
   await env.DB.prepare('UPDATE messages SET read_at=? WHERE to_id=? AND from_id=? AND read_at IS NULL').bind(new Date().toISOString(), env.uid, withId).run().catch(() => {});
-  return { messages: rows.map((r) => ({ id: r.id, mine: r.from_id === env.uid, body: r.body, ts: r.ts })) };
+  return { messages: rows.map((r) => ({ id: r.id, mine: r.from_id === env.uid, body: r.body, ts: r.ts, reaction: r.reaction || null })) };
+}
+// Heart (or un-heart) a message. Either person in the conversation may toggle it,
+// and both see it: the reaction lives on the message, not per-reader. We only
+// ever store a heart, so an arbitrary body can't be smuggled into the column.
+export async function reactMessage(env, id, on) {
+  id = Number(id);
+  const row = await env.DB.prepare('SELECT from_id, to_id FROM messages WHERE id=?').bind(id).first().catch(() => null);
+  if (!row || (row.from_id !== env.uid && row.to_id !== env.uid)) throw new Error('Message not found.');
+  await env.DB.prepare('UPDATE messages SET reaction=? WHERE id=?').bind(on ? '❤️' : null, id).run();
+  return getMessages(env, row.from_id === env.uid ? row.to_id : row.from_id);
 }
 export async function sendMessage(env, toId, body) {
   toId = Number(toId); body = String(body || '').slice(0, 4000).trim();
