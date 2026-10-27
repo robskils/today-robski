@@ -666,7 +666,7 @@ document.addEventListener('dragover', (e) => {
   // another), so an existing column isn't turned into three.
   const pr = prose.getBoundingClientRect();
   let colTarget = null;
-  if (e.clientX > pr.left + pr.width * 0.56 && headDrag.head.parentNode === prose) {
+  if (e.clientX > pr.left + pr.width * 0.5 && headDrag.head.parentNode === prose) {
     const tops = heads.filter((h) => h.parentNode === prose);
     for (let i = 0; i < tops.length; i++) {
       const top = tops[i].getBoundingClientRect().top;
@@ -697,9 +697,10 @@ document.addEventListener('drop', (e) => {
   const dropIdx = parseInt(prose.dataset.headDrop || '-1', 10);
   const colTarget = (colIdx >= 0 && colIdx < heads.length) ? heads[colIdx] : null;
   const vTarget = (dropIdx >= 0 && dropIdx < heads.length) ? heads[dropIdx] : null;
-  const section = sectionNodes(headDrag.head);
+  const dragHead = headDrag.head;   // grab before cleanup nulls headDrag
+  const section = sectionNodes(dragHead);
   cleanupHeadDrag(); delete prose.dataset.headDrop; delete prose.dataset.headCol;
-  if (colTarget && colTarget.parentNode === prose && headDrag.head.parentNode === prose && !section.includes(colTarget)) {
+  if (colTarget && colTarget.parentNode === prose && dragHead.parentNode === prose && !section.includes(colTarget)) {
     makeColumnRow(prose, colTarget, section);
   } else if (!colTarget) {
     if (vTarget && section.includes(vTarget)) return;   // onto its own section: no-op
