@@ -7498,17 +7498,17 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    beside the heading instead of poking out of the writing card. Only when the
    note actually has headings; a plain note isn't pushed in. Tighter on a phone,
    where the grip is hidden and only the arrow needs room. */
-.prose.prose-heads { padding-left:40px; }
-@media (max-width:760px){ .prose.prose-heads { padding-left:24px; } }
+.prose.prose-heads { padding-left:48px; }
+@media (max-width:760px){ .prose.prose-heads { padding-left:28px; } }
 /* The fold arrow: a clear little button, not a faint glyph. The clickable box
    fills the heading line so it's an easy tap, and it carries a soft chip so you
    can see it's there. (Robin: the arrow was too subtle.) */
-.fold-toggle { position:absolute; left:-18px; top:0; width:19px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-2); background:color-mix(in srgb,var(--ink) 10%,transparent); cursor:pointer; user-select:none; font-size:21px; line-height:1; border-radius:7px; transition:color .12s, background .12s; }
-.fold-toggle:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 18%,transparent); }
+.fold-toggle { position:absolute; left:-26px; top:0.18em; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:15px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
+.fold-toggle:hover { filter:brightness(1.08); transform:scale(1.06); }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it
    stays a pointer-device gesture; on touch it's hidden and the section stacks. */
-.head-grip { position:absolute; left:-40px; top:0; width:22px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-2); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:.65; transition:opacity .12s, color .12s; }
+.head-grip { position:absolute; left:-48px; top:0; width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--ink-2); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:.65; transition:opacity .12s, color .12s; }
 .prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.9; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }
