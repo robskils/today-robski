@@ -440,7 +440,8 @@ async function hydrateEmbeds() {
     el.classList.remove('loading');
     const del = el.classList.contains('lc-inline') ? '<button class="lc-x" data-card-del title="Remove">×</button>' : '';
     const up = el.classList.contains('lc-inline') ? LC_UP_BTN : '';
-    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>${up}${del}`;
+    const grip = el.classList.contains('lc-inline') ? LC_GRIP_BTN : '';
+    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>${grip}${up}${del}`;
   }
 }
 // A scraped title that is really an error/challenge page, not the article.
@@ -450,6 +451,9 @@ const badLinkTitle = (t) => !t || /^\s*(error|forbidden|40[134]|access denied|at
 // down the page - there's otherwise no caret spot above a non-editable card.
 // Stripped back out on save along with the card itself.
 const LC_UP_BTN = '<button class="lc-up" data-card-spaceabove title="Add space above">+</button>';
+// Drag handle: press and drag to move the card to another spot in the note.
+// Works with mouse and touch (pointer events); stripped on save with the card.
+const LC_GRIP_BTN = '<button class="lc-grip" data-card-grip title="Drag to move" aria-label="Drag to move">⠿</button>';
 const lcCache = {};
 function lcCacheGet(u) {
   if (lcCache[u]) return lcCache[u];
@@ -486,7 +490,7 @@ function decorateProse(html) {
     card.className = 'link-card lc-inline loading';
     card.setAttribute('contenteditable', 'false');
     card.setAttribute('data-linkcard', href);
-    card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span>${LC_UP_BTN}<button class="lc-x" data-card-del title="Remove">×</button>`;
+    card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span>${LC_GRIP_BTN}${LC_UP_BTN}<button class="lc-x" data-card-del title="Remove">×</button>`;
     p.replaceWith(card);
   });
   // A bare YouTube URL as plain text (not a link) - e.g. typed or imported before
@@ -701,6 +705,49 @@ document.addEventListener('drop', (e) => {
   setupFolds();
 });
 document.addEventListener('dragend', () => { if (headDrag) cleanupHeadDrag(); });
+// Drag an inline card to a new spot in the note. Pointer events (not HTML5 drag)
+// so it works the same with a mouse or a finger; the grip has touch-action:none
+// so a touch-drag reorders instead of scrolling. A thin line shows where it will
+// land; on release the card moves there and the note saves.
+let cardDrag = null;
+function cardDropPosition(y) {
+  if (!cardDrag) return;
+  const prose = cardDrag.prose;
+  const blocks = [...prose.children].filter((c) => c !== cardDrag.card);
+  let before = null;
+  for (const b of blocks) { const r = b.getBoundingClientRect(); if (y < r.top + r.height / 2) { before = b; break; } }
+  cardDrag.before = before;
+  const pr = prose.getBoundingClientRect();
+  const last = blocks[blocks.length - 1];
+  const topY = before ? before.getBoundingClientRect().top : (last ? last.getBoundingClientRect().bottom : pr.top);
+  const ind = cardDrag.ind;
+  ind.style.left = pr.left + 'px'; ind.style.width = pr.width + 'px'; ind.style.top = (topY - 1) + 'px';
+}
+document.addEventListener('pointerdown', (e) => {
+  const grip = e.target.closest && e.target.closest('[data-card-grip]'); if (!grip) return;
+  const card = grip.closest('.lc-inline'); const prose = card && card.closest('.prose[contenteditable="true"]');
+  if (!card || !prose) return;
+  e.preventDefault();
+  const ind = document.createElement('div'); ind.className = 'lc-drop-ind'; document.body.appendChild(ind);
+  cardDrag = { prose, card, id: e.pointerId, before: undefined, ind };
+  card.classList.add('lc-dragging');
+  try { grip.setPointerCapture(e.pointerId); } catch {}
+  cardDropPosition(e.clientY);
+});
+document.addEventListener('pointermove', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); cardDropPosition(e.clientY); });
+function endCardDrag(commit, e) {
+  const cd = cardDrag; cardDrag = null;
+  cd.card.classList.remove('lc-dragging');
+  if (cd.ind) cd.ind.remove();
+  if (commit && cd.before !== cd.card && cd.before !== cd.card.nextElementSibling) {
+    if (cd.before) cd.prose.insertBefore(cd.card, cd.before); else cd.prose.appendChild(cd.card);
+    if (cd.prose.dataset.prose) saveProse(cd.prose.dataset.prose, cd.prose.innerHTML, cd.prose.dataset.blockId);
+  }
+  // Swallow the click that a release fires, so a drag never also opens the link.
+  cd.card.dataset.justDragged = '1'; setTimeout(() => { try { delete cd.card.dataset.justDragged; } catch {} }, 60);
+}
+document.addEventListener('pointerup', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); endCardDrag(true, e); });
+document.addEventListener('pointercancel', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; endCardDrag(false, e); });
 // Keep saved HTML clean: a small whitelist, unwrap everything else, drop all
 // attributes but a link's href. Content is Robin's own, so this is about
 // tidiness (stray pasted styles) more than security.
@@ -21406,7 +21453,8 @@ document.addEventListener('click', (e) => {
   // attachments (delete wins over open since the × sits inside the tile)
   const cdel = t.closest('[data-card-del]'); if (cdel) { e.preventDefault(); e.stopPropagation(); removeCardEl(cdel); return; }
   const cup = t.closest('[data-card-spaceabove]'); if (cup) { e.preventDefault(); e.stopPropagation(); addSpaceAboveCard(cup.closest('.lc-inline')); return; }
-  const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
+  const cgrip = t.closest('[data-card-grip]'); if (cgrip) { e.preventDefault(); e.stopPropagation(); return; }   // the grip is for dragging, never opens the link
+  const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { if (lcard.dataset.justDragged) return; e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
