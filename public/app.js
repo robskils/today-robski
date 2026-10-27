@@ -21308,6 +21308,8 @@ document.addEventListener('click', (e) => {
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
   { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) state.note.addTab = at.dataset.noteAddtab; renderNote(); return; } }
   { const au = t.closest('[data-note-addurl]'); if (au) { addNoteWebLink(au.dataset.noteAddurl); return; } }
+  { const tat = t.closest('[data-task-addtab]'); if (tat) { if (state.task_open) state.task_open.addTab = tat.dataset.taskAddtab; connResetPick(); renderTaskCard(); return; } }
+  { const cau = t.closest('[data-conn-addurl]'); if (cau) { const ctx = connCtx(); if (ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, cau.dataset.connAddurl); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
   { const nle = t.closest('[data-note-link-event]'); if (nle) { noteLinkEvent(nle.dataset.noteLinkEvent); return; } }
@@ -23005,7 +23007,8 @@ function attachTaskToGoal(taskId, goalId) { if (!goalId) return; const t = taskC
 function detachTaskFromGoal(taskId, goalId) { const t = taskCopies(taskId)[0]; if (!t) return; setTaskGoalIds(taskId, taskGoalIds(t).filter((x) => x !== goalId)); }
 async function openTaskCard(id) {
   const task = await api(`/api/blocks/${id}`);
-  state.task_open = { task };
+  state.task_open = { task, addTab: 'link' };
+  connResetPick();   // start the Link search clean, not with another card's query
   state.view = { type: 'taskcard', id };
   recordRecent('task', id, task.title, blockAreas(task)[0]);
   renderNav(); renderTaskCard();
@@ -23089,13 +23092,9 @@ function renderTaskCard() {
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
     <div class="task-boxes">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
-      ${taskGoalsHtml(t)}
-      ${connectedContactsSection('task', t)}
-      ${externalLinksHtml('task', t)}
-      ${connectionsSection('task', t)}
     </div>
     ${taskEmailHtml(t)}
-    ${attachSection(t)}`;
+    ${taskConnectedPanel(t)}`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
@@ -23181,13 +23180,106 @@ function connectAddSectionHtml() {
     ${connChipsHtml(conns)}
     ${connPickInner()}</details>`;
 }
+// ── Task "Linked & attached" panel ──────────────────────────────────────────
+// The task card used to carry five separate boxes - Goals, Contacts, Web links,
+// Connected and Attachments. That's the same clutter the note panel already
+// retired, so a task now gets the one-panel treatment too: a single list of
+// everything it links to, with a Link tab (search anything in LifeFold - notes,
+// tasks, people, events, GOALS, pages - or paste a web address) and an
+// Attach-a-file tab. Every row reuses the existing add/unlink plumbing, so
+// storage is unchanged: a goal still lives in props.goals (the task counts
+// toward it), people in props.connections / props.contacts, web links in
+// props.links, files in R2. (Robin, 2026-10-27.)
+function taskLinkedRows(t) {
+  const rows = [], seen = new Set();
+  // Goals first - attaching a task to a goal makes it count toward that goal, so
+  // these mean more than a loose link.
+  for (const gid of taskGoalIds(t)) {
+    const g = (state.goals || []).find((x) => String(x.id) === String(gid)); if (!g) continue;
+    seen.add(String(gid)); const meas = goalMeasure(g);
+    rows.push(nxOpenRow('🎯', g.title || 'Goal', 'Goal', meas ? esc(meas) : '', `data-open-goal="${g.id}"`, `data-task-ungoal="${t.id}:${g.id}"`));
+  }
+  // Everything connected two-way (notes, tables, people, events, pages, and any
+  // goal added as a plain connection), skipping a goal already shown above.
+  for (const c of connOf(t)) {
+    if (seen.has(String(c.id))) continue; seen.add(String(c.id));
+    rows.push(nxOpenRow(CONN_ICO[c.kind] || '•', c.title, CONN_KIND_LABEL[c.kind] || '', '', connOpenAttr(c), `data-conn-unlink="${esc(c.id)}"`));
+  }
+  // Legacy per-task contacts (props.contacts) not already covered by a connection.
+  for (const cid of blockContactIds(t)) {
+    if (seen.has(String(cid))) continue; const c = findContact(cid); if (!c) continue; seen.add(String(cid));
+    rows.push(nxOpenRow('👤', c.title || 'Unnamed', 'Person', '', `data-open-contact="${c.id}"`, `data-bc-unlink data-bc-kind="task" data-bc-id="${t.id}" data-bc-cid="${c.id}"`));
+  }
+  // Web links (props.links).
+  blockLinks(t).forEach((l, i) => {
+    const rawu = linkUrlOf(l); const url = /^https?:\/\//i.test(rawu) ? rawu : 'https://' + rawu;
+    const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(rawu);
+    let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="task" data-xlink-id="${t.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+  });
+  // Attachments (R2-backed files).
+  for (const a of ((t.props && t.props.attachments) || [])) {
+    const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : attIcon(a.type);
+    rows.push(`<div class="nx-row"><span class="nx-ic nx-ic-file">${ic}</span><button class="nx-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button><span class="nx-meta">${fmtBytes(a.size)}</span><button class="nx-x" data-att-del="${a.id}" title="Remove" aria-label="Remove">×</button></div>`);
+  }
+  return rows;
+}
+// Link-tab results for a task, styled like the note panel's search. Backed by the
+// connections picker (/api/search spans every kind, goals included); a URL-ish
+// query offers a "link this web address" row instead.
+function taskLinkSearchRows() {
+  const t = state.task_open && state.task_open.task; if (!t) return '';
+  const cp = state.connPick || { q: '', results: [] };
+  const raw = (cp.q || '').trim(); const out = [];
+  if (/^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(raw)) out.push(`<button class="nx-sugg-row" data-conn-addurl="${esc(raw)}"><span class="ic">🌐</span>Link this web address<span class="kind">${esc(raw.replace(/^https?:\/\//, '').slice(0, 36))}</span></button>`);
+  if (!raw) return out.join('') || '<div class="nx-sugg-hint">Search your notes, tasks, people, events and goals - or paste a web address.</div>';
+  if (cp.loading && !(cp.results || []).length) return out.join('') + '<div class="nx-sugg-hint">Searching…</div>';
+  const have = new Set([...connCurrentIds(connCtx()).map(String), ...taskGoalIds(t).map(String)]); have.add(String(t.id));
+  const rows = (cp.results || []).filter((r) => CONN_KINDS.includes(r.kind) && !have.has(String(r.id))).slice(0, 14);
+  for (const r of rows) out.push(`<button class="nx-sugg-row" data-conn-pick="${esc(r.id)}" data-conn-kind="${esc(r.kind)}" data-conn-title="${esc(r.title || 'Untitled')}"><span class="ic">${CONN_ICO[r.kind] || '•'}</span>${esc(r.title || 'Untitled')}<span class="kind">${CONN_KIND_LABEL[r.kind] || ''}</span></button>`);
+  return out.join('') || '<div class="nx-sugg-hint">No matches. Paste a web address to add it as a link.</div>';
+}
+function taskConnectedPanel(t) {
+  const canEdit = !(t.sharedBy && !t.canEdit);
+  const rows = taskLinkedRows(t);
+  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : `<div class="nx-items nx-items-empty">Nothing linked or attached${canEdit ? ' yet - add something below' : ''}.</div>`;
+  if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${t.id}">${items}</div></div>`;
+  const addTab = (state.task_open && state.task_open.addTab) || 'link';
+  if (state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
+  const linkPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your LifeFold, or paste a web address…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
+  const filePane = `<div class="nx-filebar"><label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Choose a file</label><label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label><button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button></div>`;
+  return `<div class="nx-wrap">
+    <div class="nx-lbl">Linked &amp; attached</div>
+    <div class="nx-panel" data-att-zone="${t.id}">
+      ${items}
+      <div class="nx-attach">
+        <div class="nx-attach-tabs">
+          <button class="nx-attach-tab ${addTab === 'link' ? 'on' : ''}" data-task-addtab="link"><span>🔗</span>Link</button>
+          <button class="nx-attach-tab ${addTab === 'file' ? 'on' : ''}" data-task-addtab="file"><span>📎</span>Attach a file</button>
+        </div>
+        <div class="nx-addbody">${addTab === 'file' ? filePane : linkPane}</div>
+      </div>
+    </div>
+  </div>`;
+}
+// Add a web address straight to a block's props.links (no prompt) - used by the
+// task/goal Link tab when the typed query is a URL.
+async function addBlockWebLink(kind, id, url) {
+  const b = linkableBlock(kind, id); if (!b) return;
+  url = (url || '').trim(); if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const links = blockLinks(b).slice(); links.push({ url });
+  b.props = b.props || {}; b.props.links = links;
+  connResetPick(); linkableRerender(kind);
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
+}
 // Debounced search against /api/search (spans every kind). Repaints only the list,
 // so the search box keeps focus.
 function connSearch(q) {
   state.connPick = state.connPick || { q: '', results: [], token: 0 };
   state.connPick.q = q;
   clearTimeout(state.connPick.timer);
-  const paint = () => { const l = document.getElementById('conn-list'); if (l) l.innerHTML = connPickRows(); };
+  const paint = () => { const l = document.getElementById('conn-list'); if (l) l.innerHTML = (state.view && state.view.type === 'taskcard') ? taskLinkSearchRows() : connPickRows(); };
   if (!q.trim()) { state.connPick.results = []; state.connPick.loading = false; paint(); return; }
   state.connPick.loading = true; paint();
   const myToken = ++state.connPick.token;
@@ -23228,6 +23320,9 @@ async function connPickChoose(id, kind, title) {
     connResetPick(); renderTasks(); return;
   }
   const host = ctx.block; host.props = host.props || {};
+  // On a task card, attaching a goal means "this task counts toward it" - keep it
+  // in props.goals (its own, two-way goal plumbing), not a loose connection.
+  if (ctx.kind === 'task' && kind === 'goal') { connResetPick(); attachTaskToGoal(host.id, id); return; }
   const cur = connOf(host).slice();
   if (!cur.some((c) => String(c.id) === String(id))) cur.push(entry);
   host.props.connections = cur;
