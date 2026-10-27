@@ -9177,11 +9177,11 @@ function renderArea() {
     .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"')
     .replace(/\s+/g, ' ').trim().slice(0, 170);
   const emailsBody = () => (emails.length ? `<div class="email-list">${emails.map((n) => { const s = emailSnippet(n); return `<button class="email-card" data-open-note="${n.id}"><div class="ec-top"><span class="ec-ic">✉</span><span class="ec-subj">${esc(n.title || '(no subject)')}</span></div>${s ? `<div class="ec-snip">${esc(s)}</div>` : ''}</button>`; }).join('')}</div>` : '<div class="home-empty">No emails filed here.</div>');
-  // Order: Tasks leads, Pages & tables second (Robin); the glanceable feeds sit in
-  // the middle, and Books & Films + Reflections close out the list. (Robin.)
+  // Order: Notes leads, Tasks second (Robin, 2026-10-27); the glanceable feeds sit
+  // in the middle, and Books & Films + Reflections close out the list. (Robin.)
   const SECTIONS = [
-    { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'pages', ic: '▤', label: 'Notes', show: toolShow('Pages and tables', !!pagesCount), count: pagesCount || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New note</button>') + pgControls, body: () => pagesBody },
+    { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'tables', ic: '▦', label: 'Tables', show: !secHidden('Pages and tables') && !!tables.length, count: tables.length || null, body: () => tablesBody },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: emailsBody },
     { id: 'files', ic: '📎', label: 'Files', show: !secHidden('Files'), count: attList.length || null, body: () => areaAttachHtml(area) },
