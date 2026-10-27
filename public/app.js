@@ -6545,7 +6545,7 @@ function renderNotesList() {
   // stay in reach however far you scroll the list. Everything below scrolls under it.
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.notes'))}
-    <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
+    <div class="pane-head home-head"><h1>${t('nav.notes')} &amp; ${t('notes.type.table')}</h1></div>
     ${notesControlsHtml(true)}
     ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
     ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
@@ -20500,6 +20500,40 @@ document.addEventListener('keydown', (e) => {
             ed.dispatchEvent(new Event('input', { bubbles: true }));
             return;
           }
+        }
+      }
+    }
+  }
+  // An inline card (link preview or video) is non-editable, so a Backspace or
+  // Delete that merges across it wipes the CARD, not the blank line you meant to
+  // clear (Robin: "removing the space removed the card too"). Guard it: Delete on
+  // an empty line just above a card drops that line and keeps the card; Backspace
+  // on an empty line just below one does the same; anything that would merge real
+  // content into a card is blocked. The card still goes only via its × button.
+  if ((e.key === 'Backspace' || e.key === 'Delete') && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    const ed = e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+    const sel = window.getSelection();
+    if (ed && sel && sel.isCollapsed && sel.anchorNode && ed.contains(sel.anchorNode)) {
+      let B = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+      while (B && B.parentElement !== ed) B = B.parentElement;
+      const isCard = (el) => !!(el && el.nodeType === 1 && el.classList && el.classList.contains('lc-inline'));
+      if (B && (isCard(B.previousElementSibling) || isCard(B.nextElementSibling))) {
+        const empty = !B.textContent.trim() && !B.querySelector('img, .lc-inline, table');
+        const rr = document.createRange(); rr.selectNodeContents(B); rr.setEnd(sel.anchorNode, sel.anchorOffset);
+        const atStart = rr.toString().length === 0;
+        rr.selectNodeContents(B); rr.setStart(sel.anchorNode, sel.anchorOffset);
+        const atEnd = rr.toString().length === 0;
+        const caretTo = (el) => { if (!el || isCard(el)) return; const r = document.createRange(); r.selectNodeContents(el); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); };
+        const persist = () => { if (ed.dataset.prose) saveProse(ed.dataset.prose, ed.innerHTML, ed.dataset.blockId); };
+        if (e.key === 'Backspace' && atStart && isCard(B.previousElementSibling)) {
+          e.preventDefault();
+          if (empty) { const after = B.nextElementSibling; B.remove(); caretTo(after); persist(); }
+          return;
+        }
+        if (e.key === 'Delete' && atEnd && isCard(B.nextElementSibling)) {
+          e.preventDefault();
+          if (empty) { const after = B.nextElementSibling.nextElementSibling; B.remove(); caretTo(after); persist(); }
+          return;
         }
       }
     }
