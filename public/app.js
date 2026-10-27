@@ -24560,6 +24560,16 @@ function applyFmt(cmd) {
     return;
   }
   else if (cmd === 'collapse') collapseSection(prose);
+  // A heading/quote/paragraph change restructures the block, so refresh the fold
+  // chips, grips and the heading gutter right away. Without this a new H1/H2/H3
+  // only got its chip on the next full re-render - you had to leave the card and
+  // come back. Strip first so a toggled-off heading doesn't keep an orphan chip,
+  // then setupFolds re-adds them to the current headings (and re-runs the indent).
+  // sanitizeProse strips these again before the body is saved. (Robin, 2026-10-27.)
+  if (cmd === 'normal' || cmd === 'h1' || cmd === 'h2' || cmd === 'h3' || cmd === 'quote' || cmd === 'collapse') {
+    prose.querySelectorAll('.fold-toggle, .head-grip').forEach((x) => x.remove());
+    setupFolds();
+  }
   positionBubble();
   saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 }
