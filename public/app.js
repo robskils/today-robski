@@ -13334,7 +13334,7 @@ function renderMailAccounts(note) {
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 10px">Make LifeFold open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ This has to be set up in the <b>Brave browser itself</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Tap <a href="https://robski.daybook.fyi/mail" target="_blank" rel="noopener"><b>robski.daybook.fyi/mail</b></a> to open LifeFold in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Safari / iOS can't do this.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://lifefold.co/mail" target="_blank" rel="noopener"><b>lifefold.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with LifeFold. Safari / iOS can't do this.</p>
       <button class="add-btn wide" data-mail-handler>Set LifeFold as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
@@ -21495,7 +21495,7 @@ document.addEventListener('click', (e) => {
     // In the installed app there's no address bar, so Brave's "allow handler" icon
     // has nowhere to appear - it must be done in a normal Brave tab.
     if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-      toast('Do this in a normal Brave tab, not the installed app - open robski.daybook.fyi/mail in Brave and tap this there.');
+      toast('Do this in a normal Brave tab, not the installed app - open lifefold.co/mail in Brave and tap this there.');
       return;
     }
     const r = registerMailHandler();

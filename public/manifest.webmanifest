@@ -19,6 +19,9 @@
     { "name": "Tasks", "url": "/tasks", "icons": [{ "src": "/icon-192.v10.png", "sizes": "192x192" }] },
     { "name": "Well-being", "url": "/journal", "icons": [{ "src": "/icon-192.v10.png", "sizes": "192x192" }] }
   ],
+  "protocol_handlers": [
+    { "protocol": "mailto", "url": "/mail?mailto=%s" }
+  ],
   "share_target": {
     "action": "/share",
     "method": "GET",
