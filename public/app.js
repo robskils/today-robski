@@ -781,7 +781,7 @@ function sanitizeProse(html) {
 // ── tabs ─────────────────────────────────────────────
 // A tab is a saved destination (view + label), not a whole live instance.
 // Switching re-opens that view; the active tab tracks wherever you navigate.
-const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviews: '🔄', reviewcard: '🔄', toolbox: '🧰', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥', help: 'ⓘ' };
+const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', mail: '✉', mailaccounts: '✉', messages: '🗨', today: '☀', note: '▤', notes: '▤', table: '▦', tables: '▦', area: '◈', areas: '◈', contacts: '👤', contactcard: '👤', goals: '🎯', goalcard: '🎯', bucketcard: '🎯', reviews: '🔄', reviewcard: '🔄', toolbox: '🧰', visioncard: '🎯', visionwall: '🖼', financial: '💰', settings: '⚙', admin: '🛠', friends: '👥', help: 'ⓘ' };
 // ── In-app guides ─────────────────────────────────────────────────────
 // The little i by the tabs. Hovering shows a one-line tip for whatever tool
 // you're on; clicking pins the full guide in its own tab. Content is plain and
@@ -1135,6 +1135,7 @@ function labelForView(v) {
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'connect': return t('nav.connect'); case 'daybookpeople': return 'LifeFold';
+    case 'messages': return 'Messages';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
     case 'wheel': return 'Wheel of Life';
@@ -1175,6 +1176,7 @@ function openView(v) {
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'connect': return openConnect(); case 'daybookpeople': return openLifeFoldPeople();
+    case 'messages': return openMessagesPage();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     case 'reviews': return openReviews(v.rtype); case 'reviewcard': return openReviewCard(v.id);
     case 'wheel': return openWheel();
@@ -2669,8 +2671,10 @@ const friendPending = () => ((state.friendStatus || {}).incoming || 0) + ((state
 // The hamburger badge counts connection requests; unread messages get their own
 // message icon in the top bar. (Robin, 2026-10-14.)
 const navReq = () => (state.friendStatus || {}).incoming || 0;
-// Tap the top-bar message icon: if one person messaged, open that chat; if a few
-// did, open the people hub to pick. (Robin, 2026-10-14.)
+const navUnread = () => (state.friendStatus || {}).unread || 0;
+// Tap the top-bar message icon: if just one person messaged, jump straight into
+// that chat; otherwise open the Messages page to pick. (Robin, 2026-10-14; the
+// fallback now lands on the Messages inbox rather than the people hub.)
 function openMessages() {
   const by = (state.friendStatus && state.friendStatus.unreadBy) || {};
   const ids = Object.keys(by).filter((k) => by[k] > 0);
@@ -2680,7 +2684,7 @@ function openMessages() {
     openChat(id, (f && f.name) || 'Message');
     return;
   }
-  openLifeFoldPeople().catch(() => {});
+  openMessagesPage().catch(() => {});
 }
 // Admin home alert: open Admin on the Invites tab, where the requests live. The
 // alert persists until each request is actually dealt with (invited/dismissed),
@@ -2734,6 +2738,7 @@ async function refreshFriendStatus() {
     if (changed && state.view && !editing) {
       if (state.view.type === 'home') renderHome();
       else if (state.view.type === 'daybookpeople') renderLifeFoldPeople();   // online-first list stays live
+      else if (state.view.type === 'messages') refreshMessages();   // new messages / read state stay live
     }
   } catch {}
 }
@@ -2925,7 +2930,56 @@ async function sendChat(e) {
     toast(err.message || 'Message not sent - it is back in the box.');
   }
 }
-function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } const el = document.getElementById('chat'); if (el) el.remove(); state.chat = null; }
+function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } const el = document.getElementById('chat'); if (el) el.remove(); state.chat = null; if (state.view && state.view.type === 'messages') refreshMessages(); }
+// ── Messages: one place for every conversation ─────────────────────────────
+// A chat used to exist only as a per-person slide-in; this page lists them all,
+// newest first, with a preview and unread count, and opens the same slide-in on
+// tap. Reached from the People box in the sidebar. (Robin, 2026-10-27.)
+async function openMessagesPage() {
+  const gen = bumpNav();
+  state.view = { type: 'messages' };
+  renderNav();
+  renderMessagesPage();   // paint at once from cache (Loading / empty / last list)
+  try {
+    const r = await api('/api/messages/threads');
+    if (gen !== navGen) return;
+    state.threads = r.threads || [];
+    if (state.threads.length) loadCards(state.threads.map((x) => x.id));
+    renderMessagesPage();
+  } catch { if (gen === navGen) { state.threads = state.threads || []; renderMessagesPage(); } }
+}
+async function refreshMessages() {
+  try { const r = await api('/api/messages/threads'); state.threads = r.threads || []; if (state.view && state.view.type === 'messages') renderMessagesPage(); } catch {}
+}
+function renderMessagesPage() {
+  if (!(state.view && state.view.type === 'messages')) return;
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const liveUnread = (state.friendStatus && state.friendStatus.unreadBy) || {};
+  // Merge live presence + unread from the 90s status poll so dots and badges stay
+  // current without re-fetching the whole list.
+  const threads = (state.threads || []).map((th) => ({
+    ...th,
+    online: onSet.has(th.id) || !!th.online,
+    unread: (String(th.id) in liveUnread) ? liveUnread[th.id] : th.unread,
+  }));
+  const rows = threads.map((th) => {
+    const when = th.ts ? timeAgo(Date.parse(th.ts)) : '';
+    const snippet = (th.mine ? 'You: ' : '') + (th.body || '');
+    const un = th.unread || 0;
+    return `<button class="msg-thread${un ? ' unread' : ''}" data-friend-chat="${th.id}" data-friend-name="${esc(th.name || '')}">
+      ${personAvatar(th.id, th.name, th.online ? 'online' : '')}
+      <span class="mt-body"><span class="mt-top"><span class="mt-name">${esc(th.name || 'Someone')}</span><span class="mt-time">${esc(when)}</span></span><span class="mt-snippet">${esc(snippet)}</span></span>
+      ${un ? `<span class="mt-badge" aria-label="${un} unread">${un > 99 ? '99+' : un}</span>` : ''}
+    </button>`;
+  }).join('');
+  const body = threads.length ? `<div class="msg-threads">${rows}</div>`
+    : (state.threads == null ? '<div class="msg-empty muted">Loading…</div>'
+      : `<div class="msg-empty"><p>No messages yet.</p><p class="muted">Say hello to someone from <button class="link-btn" data-open-daybook>LifeFold Contacts</button>.</p></div>`);
+  $('#pane').innerHTML = `
+    ${pageCrumb('Messages')}
+    <div class="pane-head"><h1>Messages</h1></div>
+    ${body}`;
+}
 // ── Sharing a note/task with friends (Friends phase 3a) ───────────────
 async function openShare(id, title, kind) {
   state.share = { id, title, kind, friends: (state.friends && state.friends.friends) || [], shares: [], loading: true };
@@ -4020,6 +4074,7 @@ function navItems(v) {
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">🗨</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
   };
 }
 // A flat, importance-ordered single column of clear tool buttons - the mobile
@@ -4027,7 +4082,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -4109,6 +4164,7 @@ function peopleBox() {
   // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">🗨</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live LifeFold people, names and all, under a collapsible header so it can
@@ -20924,6 +20980,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openLifeFoldPeople().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-messages-page]')) { openMessagesPage().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
   if (t.closest('[data-shared-seen]')) { state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST' }).catch(() => {}); return; }

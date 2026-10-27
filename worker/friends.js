@@ -121,6 +121,27 @@ export async function unreadCounts(env) {
   for (const r of rows) { byFriend[r.from_id] = r.n; total += r.n; }
   return { total, byFriend };
 }
+// Every conversation I'm part of, newest activity first: the latest message with
+// each person (and whether it was mine), plus how many from them I've not read.
+// Powers the Messages page. The subquery finds the max message id per other
+// party, then we join back for that row's body + the person's name/presence.
+export async function messageThreads(env) {
+  const rows = (await env.DB.prepare(
+    `SELECT m.id, m.from_id, m.to_id, m.body, m.ts, u.name, u.subdomain, u.last_seen
+       FROM messages m
+       JOIN (SELECT CASE WHEN from_id=?1 THEN to_id ELSE from_id END AS other, MAX(id) AS maxid
+               FROM messages WHERE from_id=?1 OR to_id=?1 GROUP BY other) x ON m.id = x.maxid
+       JOIN users u ON u.id = (CASE WHEN m.from_id=?1 THEN m.to_id ELSE m.from_id END)
+      ORDER BY m.id DESC`,
+  ).bind(env.uid).all()).results || [];
+  const ur = (await env.DB.prepare('SELECT from_id, COUNT(*) AS n FROM messages WHERE to_id=? AND read_at IS NULL GROUP BY from_id').bind(env.uid).all()).results || [];
+  const unreadBy = {}; for (const r of ur) unreadBy[r.from_id] = r.n;
+  const threads = rows.map((r) => {
+    const other = r.from_id === env.uid ? r.to_id : r.from_id;
+    return { id: other, name: r.name || r.subdomain, subdomain: r.subdomain, lastSeen: r.last_seen || null, online: isOnline(r.last_seen), body: r.body, ts: r.ts, mine: r.from_id === env.uid, unread: unreadBy[other] || 0 };
+  });
+  return { threads };
+}
 
 // Lean status for polling: pending connect requests, who's online, unread chat.
 // Deliberately skips the contact-scan that getFriends does (that's the heavy bit)

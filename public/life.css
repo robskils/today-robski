@@ -2905,6 +2905,22 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .fr-body { flex:1 1 150px; }
 .fr-nm { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fr-pending { flex:none; font-size:13px; color:var(--ink-3); font-style:italic; }
+/* ── Messages page: the conversation inbox ─────────────────────────────── */
+.msg-threads { display:flex; flex-direction:column; gap:8px; }
+.msg-thread { display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:12px 15px; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--ink); font-family:inherit; cursor:pointer; transition:border-color .12s, background .12s, box-shadow .12s; }
+.msg-thread:hover { border-color:var(--line-2); box-shadow:var(--shadow-sm); }
+.msg-thread.unread { border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); background:color-mix(in srgb, var(--accent) 6%, var(--card)); }
+.mt-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mt-top { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.mt-name { font-weight:600; font-size:16px; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mt-time { flex:none; font-size:13px; color:var(--ink-3); }
+.mt-snippet { font-size:15px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.msg-thread.unread .mt-snippet { color:var(--ink); font-weight:500; }
+.mt-badge { flex:none; min-width:22px; height:22px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--accent-ink); background:var(--accent); border-radius:11px; }
+.msg-empty { padding:30px 18px; color:var(--ink); font-size:16px; }
+.msg-empty p { margin:0 0 8px; }
+.msg-empty .muted { color:var(--ink-3); }
+.msg-empty .link-btn { background:none; border:0; padding:0; font:inherit; color:var(--accent); cursor:pointer; text-decoration:underline; }
 .home-sec-h:has(.fr-rescan) { display:flex; align-items:center; gap:9px; }
 .fr-rescan { margin-left:auto; font-size:13px; padding:5px 11px; border:1px solid var(--line); border-radius:999px; color:var(--ink-3); }
 .fr-rescan:hover { color:var(--accent); border-color:var(--line-2); }
@@ -7519,16 +7535,17 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    where the grip is hidden and only the arrow needs room. */
 .prose.prose-heads { padding-left:48px; }
 @media (max-width:760px){ .prose.prose-heads { padding-left:28px; } }
-/* The fold arrow: a clear little chip, not a faint glyph. `top` is half the
-   heading's font-size (carried in --hsize per level) so the chip's TOP lines up
-   with the cap-height of the heading text across h1/h2/h3, whatever the size.
-   The ▼ glyph is sized near the chip for a bold, obvious arrow. (Robin.) */
-.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .5); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:22px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
-.fold-toggle:hover { filter:brightness(1.08); transform:scale(1.06); }
+/* The fold arrow: a clear little chip, not a faint glyph. The grip, the chip and
+   the title all sit centred on the heading's first line: `top` is half the line
+   height (--hsize carries the font-size per level, line-height 1.75, so ×0.875 is
+   the line's middle) and translateY(-50%) centres the chip on it. The ▼ glyph is
+   sized near the chip for a bold, obvious arrow. (Robin.) */
+.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:22px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
+.fold-toggle:hover { filter:brightness(1.08); transform:translateY(-50%) scale(1.06); }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it
    stays a pointer-device gesture; on touch it's hidden and the section stacks. */
-.head-grip { position:absolute; left:-48px; top:0; width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:.7; transition:opacity .12s, color .12s; }
+.head-grip { position:absolute; left:-48px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:.7; transition:opacity .12s, color .12s; }
 .prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.9; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }
