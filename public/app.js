@@ -2863,21 +2863,46 @@ function renderChat() {
   const inp = document.getElementById('chat-input');
   if (inp && !window.matchMedia('(max-width:820px)').matches) inp.focus();
 }
+// One message's classes + inner HTML, shared by the full render and the in-place
+// reaction update below so the two markups can never drift apart.
+function chatMsgClass(m) {
+  return `chat-msg ${m.mine ? 'mine' : ''}${m.pending ? ' pending' : ''}${m.reaction ? ' reacted' : ''}`.replace(/\s+/g, ' ').trim();
+}
+function chatMsgInner(m) {
+  const canReact = /^\d+$/.test(String(m.id || ''));   // a pending (not-yet-saved) message can't be hearted
+  const reacted = !!m.reaction;
+  const badge = reacted ? `<span class="cm-heart" aria-label="Hearted">${esc(m.reaction)}</span>` : '';
+  // The hover affordance on desktop; hidden on touch (double-tap hearts there).
+  const btn = canReact ? `<button class="cm-react" type="button" data-react="${m.id}" aria-label="${reacted ? 'Remove heart' : 'Heart this message'}" title="${reacted ? 'Remove heart' : 'Heart'}">${reacted ? '❤️' : '♡'}</button>` : '';
+  return `<span class="cm-body">${esc(m.body)}</span>${btn}${badge}`;
+}
 function renderChatMessages() {
   const box = document.getElementById('chat-msgs'); if (!box || !state.chat) return;
   // Whether we were already at the bottom BEFORE the repaint. Scroll down only if
   // we were: someone reading back through the history shouldn't be dragged to the
   // end every time the 4s poll finds a new message.
   const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
-  box.innerHTML = state.chat.messages.map((m) => {
-    const canReact = /^\d+$/.test(String(m.id || ''));   // a pending (not-yet-saved) message can't be hearted
-    const reacted = !!m.reaction;
-    const badge = reacted ? `<span class="cm-heart" aria-label="Hearted">${esc(m.reaction)}</span>` : '';
-    // The hover affordance on desktop; hidden on touch (double-tap hearts there).
-    const btn = canReact ? `<button class="cm-react" type="button" data-react="${m.id}" aria-label="${reacted ? 'Remove heart' : 'Heart this message'}" title="${reacted ? 'Remove heart' : 'Heart'}">${reacted ? '❤️' : '♡'}</button>` : '';
-    return `<div class="chat-msg ${m.mine ? 'mine' : ''}${m.pending ? ' pending' : ''}${reacted ? ' reacted' : ''}" data-mid="${esc(String(m.id || ''))}"><span class="cm-body">${esc(m.body)}</span>${btn}${badge}</div>`;
-  }).join('') || '<div class="chat-empty">Say hello 👋</div>';
+  box.innerHTML = state.chat.messages.map((m) => `<div class="${chatMsgClass(m)}" data-mid="${esc(String(m.id || ''))}">${chatMsgInner(m)}</div>`).join('') || '<div class="chat-empty">Say hello 👋</div>';
   if (atEnd) box.scrollTop = box.scrollHeight;
+}
+// Flip one message's heart WITHOUT rebuilding the whole list. A full re-render
+// destroys the very button the cursor is on, and the browser won't re-apply
+// :hover to the replacement until you move the mouse - so the heart you just
+// clicked appeared to vanish. Mutating the one node in place keeps it put.
+function applyReactionDom(id, reaction) {
+  const box = document.getElementById('chat-msgs'); if (!box) return;
+  let el = null;
+  try { el = box.querySelector(`.chat-msg[data-mid="${CSS.escape(String(id))}"]`); } catch { el = null; }
+  if (!el) return;
+  const on = !!reaction;
+  el.classList.toggle('reacted', on);
+  const btn = el.querySelector('.cm-react');
+  if (btn) { btn.textContent = on ? '❤️' : '♡'; btn.setAttribute('aria-label', on ? 'Remove heart' : 'Heart this message'); btn.setAttribute('title', on ? 'Remove heart' : 'Heart'); }
+  let badge = el.querySelector('.cm-heart');
+  if (on) {
+    if (!badge) { badge = document.createElement('span'); badge.className = 'cm-heart'; badge.setAttribute('aria-label', 'Hearted'); el.appendChild(badge); }
+    badge.textContent = reaction;
+  } else if (badge) { badge.remove(); }
 }
 // Heart a message: double-tap on touch, the hover heart button on desktop. The
 // heart lives on the message and both people see it, so it syncs through the
@@ -2888,18 +2913,25 @@ async function toggleReaction(id) {
   if (!msg || !/^\d+$/.test(String(msg.id))) return;
   const prev = msg.reaction || null;
   const on = !prev;
-  msg.reaction = on ? '❤️' : null;   // optimistic: show it instantly
-  renderChatMessages();
+  msg.reaction = on ? '❤️' : null;   // optimistic
+  applyReactionDom(id, msg.reaction);   // in place: the heart you clicked fills in, it doesn't vanish
   try { navigator.vibrate && navigator.vibrate(8); } catch {}
   const to = state.chat.with;
+  const sig = (list) => (list || []).map((m) => `${m.id || ''}:${m.body}:${m.reaction || ''}`).join('\u0000');
   try {
     const r = await api('/api/messages/react', { method: 'POST', body: JSON.stringify({ id: Number(id), on }) });
     if (!state.chat || state.chat.with !== to) return;
-    if (r && r.messages) { state.chat.messages = r.messages; renderChatMessages(); }
+    if (r && r.messages) {
+      const before = sig(state.chat.messages);
+      state.chat.messages = r.messages;
+      // Only repaint if the server disagrees with what we already show. A blanket
+      // re-render here would drop the hover and bring back the flicker we just cured.
+      if (sig(r.messages) !== before) renderChatMessages();
+    }
   } catch (e) {
     if (state.chat && state.chat.with === to) {
       const mm = state.chat.messages.find((m) => Number(m.id) === Number(id));
-      if (mm) { mm.reaction = prev; renderChatMessages(); }
+      if (mm) { mm.reaction = prev; applyReactionDom(id, mm.reaction); }
     }
     toast((e && e.message) || 'Could not update the heart.');
   }
