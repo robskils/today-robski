@@ -18633,6 +18633,9 @@ function renderReviewReport() {
     const panel = (recTabs.find((x) => x[0] === active) || recTabs[0])[2];
     recordHtml = rrSec('record', 'The record', `${tabBar}<div class="rr-tabpanel">${panel}</div>`);
   }
+  // Forward-looking coda: what's on the horizon now that you've looked back.
+  const dlItems = reviewDeadlineItems(p);
+  const deadlinesHtml = dlItems.length ? rrSec('deadlines', `On the horizon · ${dlItems.length}`, `<div class="rv-dl-list">${reviewDeadlineRows(p)}</div>`) : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
@@ -18651,6 +18654,7 @@ function renderReviewReport() {
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
       ${(doneN || practicesK) ? rrSec('moved', 'What moved', `${doneN ? reviewWinsHtml(m, p, true) : ''}${reviewPracticesHtml(m)}`) : ''}
       ${recordHtml}
+      ${deadlinesHtml}
       <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
     </article>`;
   loadThumbs();
@@ -18660,9 +18664,12 @@ function goalDueISO(g) { const p = gp(g); return p.targetDate || ((p.horizon ===
 // Deadlines approaching, shown in a review: active goals whose finish-by date
 // falls within the look-ahead for this cadence (wider for longer reviews), plus
 // anything already overdue. Weekly only shows it when something is actually near.
-function reviewDeadlinesHtml(p) {
+// The look-ahead items for a review: active goals, open due tasks and areas with
+// a finish-by date inside this cadence's horizon (wider for longer reviews), plus
+// anything already overdue. Forward-looking, so it rides in the submitted report
+// (a coda after the retrospective), not in the input step.
+function reviewDeadlineItems(p) {
   const rtype = p.rtype || 'weekly';
-  const todayI = localISO(new Date());
   const win = { weekly: 21, monthly: 62, quarterly: 124, yearly: 366 }[rtype] || 62;
   const horizonI = localISO(new Date(Date.now() + win * 86400000));
   const goalItems = (state.goals || [])
@@ -18674,11 +18681,13 @@ function reviewDeadlinesHtml(p) {
   const areaItems = (state.areas || [])
     .filter((a) => a.props && a.props.due)
     .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Life Space', due: a.props.due, area: a.id }));
-  const items = [...goalItems, ...taskItems, ...areaItems]
+  return [...goalItems, ...taskItems, ...areaItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
-  if (!items.length) return '';
-  const rows = items.map((x) => {
+}
+function reviewDeadlineRows(p) {
+  const todayI = localISO(new Date());
+  return reviewDeadlineItems(p).map((x) => {
     const a = x.area ? areaById(x.area) : null;
     const diff = Math.round((Date.parse(x.due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
     const when = diff < 0 ? `${-diff}d overdue` : diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : `in ${diff}d`;
@@ -18687,10 +18696,9 @@ function reviewDeadlinesHtml(p) {
     const ic = x.kind === 'goal' ? '🎯' : x.kind === 'area' ? '◈' : '✓';
     return `<button class="rv-dl-row ${cls}" ${openAttr}${a ? ` style="--h:${hueOf(a)}"` : ''}><span class="rv-dl-dot"></span><span class="rv-dl-ic">${ic}</span><span class="rv-dl-t">${esc(x.title)}</span><span class="rv-dl-when">${esc(when)}</span></button>`;
   }).join('');
-  return `<section class="rv-deadlines">${rvSecH('deadlines', `⏳ Deadlines approaching · ${items.length}`)}${rvSecOpen('deadlines') ? `<div class="rv-dl-list">${rows}</div>` : ''}</section>`;
 }
 function renderReviewCard() {
-  const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
+  const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly;
   // The mode set at open decides it: a submitted OR past-period review reads as a
   // finished report; a current review opens as the working form. Tapping Edit flips
   // the mode to 'edit', so any report can still be changed.
@@ -18707,9 +18715,6 @@ function renderReviewCard() {
   // started one is 'inprogress' until you mark it done, so an unfinished review is
   // never mistaken for a lost one - it's waiting for you, clearly labelled.
   const st = p.status || 'done';
-  const areaName = (id) => { const a = areaById(id); return a ? a.title : 'No page'; };
-  const pill = (label, n, cls) => `<span class="rv-stat ${cls || ''}"><b>${n}</b> ${label}</span>`;
-  const quiet = (m.quietAreas || []).map(areaName);
   const wheelHiddenSet = new Set(p.wheelHidden || []);
   const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id) && !(a.props && a.props.reviewOff));
   // By page: a score /5 (draws the Wheel of Life) AND a line on how it went.
@@ -18737,34 +18742,6 @@ function renderReviewCard() {
       </div>` : ''}
       <button class="rv-editdates" data-rv-editdates>${R.editDates ? 'Done' : 'Adjust dates'}</button>
     </div>
-
-    <section class="rv-mirror">
-      ${rvSecH('record', 'What you did')}
-      ${rvSecOpen('record') ? `${(m.tasksDone || []).length ? `<div class="rv-didbig"><b>${(m.tasksDone || []).length}</b> ticked off this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>` : '<div class="rv-didbig rv-didnone">Nothing ticked off on the record this time.</div>'}
-      ${(m.tasksDone || []).length ? reviewWinsHtml(m, p) : ''}
-      ${(() => { const pk = (m.practices || []).reduce((a, x) => a + x.count, 0); return pk ? `<div class="rv-didbig rv-didprac"><b>${pk}</b> practice tick${pk === 1 ? '' : 's'} this ${p.rtype === 'weekly' ? 'week' : periodWord}</div>${reviewPracticesHtml(m)}` : ''; })()}
-      ${(m.surfaced || []).length ? `<div class="rv-surfaced">
-        <div class="rv-surfaced-h">☀ Surfaced from snooze · ${(m.surfaced || []).length}</div>
-        <div class="rv-surfaced-note">Tasks you'd parked that came back this ${periodWord} - did they land, or do they need re-parking?</div>
-        <div class="rvm-cards">${(m.surfaced || []).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rvm-card rvm-task ${t.id ? '' : 'rvm-static'}" ${t.id ? `data-open-task="${t.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-sun">☀</span><span class="rvm-t">${esc(t.title || 'Untitled')}</span>${a ? `<span class="rvm-area"><span class="rvm-dot"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div>
-      </div>` : ''}` : ''}
-    </section>
-
-    <section class="rv-analysis">
-      ${rvSecH('read', '✦ The read')}
-      ${rvSecOpen('read') ? `${reviewSentimentHtml(p, r)}<ul class="rv-insight-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>
-      ${st !== 'done'
-        ? `<p class="rv-read-note">✦ Claude's written read of your ${periodWord} arrives once you submit this review.</p>`
-        : p.doneSummary
-        ? `<div class="rv-summary rv-summary-open"><div class="rv-summary-body">${reviewSummaryHtml(p.doneSummary)}</div><div class="rv-summary-foot"><span class="rv-summary-note">A deeper read, written from your record by Claude. A guide, not gospel.</span><button class="ghost rv-summary-regen" data-rv-summary-regen>↻ Rewrite</button></div></div>`
-        : (!!(state.account && state.account.aiOff))
-          ? `<p class="rv-read-note">Turn on AI in Settings for a deeper, written read of your ${periodWord}.</p>`
-          : R.summaryFailed
-            ? `<div class="rv-analyse-cta"><button class="add-btn wide rv-analyse-btn" data-rv-analyse>✦ Get the deeper read</button><span class="rv-finish-hint">Where your effort actually went, the momentum, and one steer for the ${periodWord} ahead.</span></div>`
-            : `<div class="rv-summary-load"><span class="rv-summary-spin">✦</span> Reading your ${periodWord}…</div>`}` : ''}
-    </section>
-
-    ${reviewDeadlinesHtml(p)}
 
     ${(() => {
       const answered = cfg.prompts.filter((q, i) => String((p.answers || {})[i] || '').trim()).length;
@@ -18804,7 +18781,7 @@ function renderReviewCard() {
 
     <div class="rv-finish">${st === 'done'
       ? `<span class="rv-done-badge">✓ Submitted${p.doneAt ? ` · ${esc(dpLabel(p.doneAt))}` : ''}</span><button class="add-btn wide" data-review-report>View report</button>`
-      : `<button class="add-btn wide rv-markdone" data-review-submit="${r.id}">✓ Submit this review</button><span class="rv-finish-hint">Files it as done. Everything saves as you go, so there's no rush - and you can reopen it later.</span>`}</div>`;
+      : `<button class="add-btn wide rv-markdone" data-review-submit="${r.id}">✓ Submit this review</button><span class="rv-finish-hint">Submit to get your full report - the written read on your ${periodWord}, your figures, and what moved, all in one place. It saves as you go, so there's no rush; reopen it anytime.</span>`}</div>`;
 }
 async function patchReview(id, patch, isProps) {
   const r = state.review_open && state.review_open.review;
