@@ -6,6 +6,7 @@
   --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
   --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5); --body-crease:rgba(120,92,45,.04); --facet-a:rgba(255,252,244,.55); --facet-b:rgba(120,92,45,.055);
   --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
+  --note-surface:rgba(255,253,248,.66); --note-edge:rgba(27,24,32,.10);
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
   --shadow:0 1px 2px rgba(27,24,32,.05),0 5px 12px -4px rgba(27,24,32,.09),0 18px 34px -16px rgba(27,24,32,.16);
@@ -15,6 +16,7 @@
   --ink:#ece7f2; --ink-2:rgba(236,231,242,.64); --ink-3:rgba(236,231,242,.40);
   --line:rgba(236,231,242,.12); --line-2:rgba(236,231,242,.22); --pat-ink:rgba(236,231,242,.06); --fold-pat:rgba(194,160,95,.4); --body-crease:rgba(194,160,95,.05); --facet-a:rgba(255,248,230,.035); --facet-b:rgba(0,0,0,.16);
   --accent:#c2a05f; --accent-ink:#12100b; --gold:#b8945a; --done:#6fa877;
+  --note-surface:rgba(9,10,22,.52); --note-edge:rgba(236,231,242,.11);
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
   --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 16px -5px rgba(0,0,0,.5),0 22px 44px -18px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.045);
@@ -2186,7 +2188,18 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
 
-.note-body { min-height:140px; font-size:18.5px; line-height:1.75; color:var(--ink); cursor:text; }
+/* The writing surface: a classy, semi-transparent "sheet" floating on the folded
+   LifeFold background, so prose reads easily over the pattern instead of sitting
+   straight on it. Translucent + a soft backdrop blur (near-white in light, near-
+   black in dark - heading that way, never fully opaque). (Robin, 2026-10-27.) */
+.note-body {
+  min-height:140px; font-size:18.5px; line-height:1.75; color:var(--ink); cursor:text;
+  background:var(--note-surface);
+  -webkit-backdrop-filter:blur(10px) saturate(1.04); backdrop-filter:blur(10px) saturate(1.04);
+  border:1px solid var(--note-edge); border-radius:16px;
+  padding:clamp(18px,3.2vw,30px);
+  box-shadow:inset 0 1px 0 var(--facet-a), 0 12px 32px -20px rgba(0,0,0,.4);
+}
 .note-body h2 { font-size:26px; margin:22px 0 8px; }
 .note-body h3 { font-size:22px; margin:20px 0 6px; }
 .note-body h4 { font-size:19px; margin:16px 0 4px; color:var(--ink-2); }
