@@ -753,6 +753,7 @@ function sanitizeProse(html) {
       const href = el.tagName === 'A' ? el.getAttribute('href') : null;
       const imgSrc = el.tagName === 'IMG' ? (el.getAttribute('src') || '') : null;
       const imgAlt = el.tagName === 'IMG' ? (el.getAttribute('alt') || '') : null;
+      const imgInline = el.tagName === 'IMG' ? el.getAttribute('data-att-inline') : null;   // an R2-backed inline image: store just its id, src is re-fetched on render
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
@@ -769,7 +770,8 @@ function sanitizeProse(html) {
       // Images (e.g. kept when an email becomes a note) hold only a safe src + alt.
       // cid: / unknown sources can't be displayed, so drop those.
       if (el.tagName === 'IMG') {
-        if (imgSrc && /^(https?:|data:image\/)/i.test(imgSrc)) { el.setAttribute('src', imgSrc); el.setAttribute('loading', 'lazy'); if (imgAlt) el.setAttribute('alt', imgAlt); }
+        if (imgInline) { el.setAttribute('data-att-inline', imgInline); if (imgAlt) el.setAttribute('alt', imgAlt); }   // keep the id only; render re-fetches the bytes from R2
+        else if (imgSrc && /^(https?:|data:image\/)/i.test(imgSrc)) { el.setAttribute('src', imgSrc); el.setAttribute('loading', 'lazy'); if (imgAlt) el.setAttribute('alt', imgAlt); }
         else { const p = el.parentNode; if (p) p.removeChild(el); return; }
       }
     });
@@ -19475,7 +19477,8 @@ function noteLinkedRows(n) {
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
     rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="note" data-xlink-id="${n.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
   });
-  for (const a of ((n.props && n.props.attachments) || [])) { const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : attIcon(a.type); rows.push(`<div class="nx-row"><span class="nx-ic nx-ic-file">${ic}</span><button class="nx-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button><span class="nx-meta">${fmtBytes(a.size)}</span><button class="nx-x" data-att-del="${a.id}" title="Remove" aria-label="Remove">×</button></div>`); }
+  const inlineIds = inlineAttIds(n);   // images placed inline in the body aren't also listed here
+  for (const a of ((n.props && n.props.attachments) || [])) { if (inlineIds.has(a.id)) continue; const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : attIcon(a.type); rows.push(`<div class="nx-row"><span class="nx-ic nx-ic-file">${ic}</span><button class="nx-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button><span class="nx-meta">${fmtBytes(a.size)}</span><button class="nx-x" data-att-del="${a.id}" title="Remove" aria-label="Remove">×</button></div>`); }
   return rows;
 }
 function noteLinkSearchRows(q) {
@@ -19750,7 +19753,7 @@ function renderNote() {
           <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
           ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
           ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
+          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-insert-image>🖼 Insert image</button><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
       </div>
     </div>
@@ -19765,7 +19768,7 @@ function renderNote() {
         ${noteConnectedPanel(n)}
       </div>
     </div></div>`;
-  autoGrowSoon($('#note-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
+  autoGrowSoon($('#note-title')); loadThumbs(); loadInlineImages(); hydrateEmbeds(); setupFolds();
 }
 
 // ── file a note in a page ───────────────────────
@@ -20669,10 +20672,22 @@ document.addEventListener('input', (e) => {
     clearTimeout(window.__goalNumT); window.__goalNumT = setTimeout(() => patchGoal(gid, { current }, true), 400);
   }
 });
+// Remember where the caret last sat inside an editable prose, so the "Insert
+// image" button can drop a picture there even after the menu took focus.
+let lastProseRange = null;
+document.addEventListener('selectionchange', () => {
+  const s = window.getSelection(); if (!s || !s.rangeCount) return;
+  const n = s.anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement);
+  const pr = el && el.closest && el.closest('.prose[contenteditable="true"]');
+  if (pr) lastProseRange = s.getRangeAt(0).cloneRange();
+});
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
   const cd = e.clipboardData; if (!cd) return;
+  // An image on the clipboard (a screenshot, or Copy Image) goes in inline.
+  const imgFile = [...(cd.files || [])].find((f) => isImgType(f.type) || isHeic(f));
+  if (imgFile) { e.preventDefault(); insertInlineImage(prose, imgFile); return; }
   // Paste is always driven off the plain-text copy. Markdown is converted to
   // rich HTML; anything else is inserted as plain text. We deliberately do NOT
   // fall through to the browser's default rich paste: that drops inline tags
@@ -20699,6 +20714,23 @@ document.addEventListener('paste', (e) => {
     document.execCommand('insertText', false, tidyPasteText(text));
   }
   prose.dispatchEvent(new Event('input', { bubbles: true }));   // trigger the debounced save
+});
+// Drag an image file onto the note's writing area to drop it in inline, right at
+// the point you let go. (Dropping a file on the attachments panel still files it
+// as an attachment - that's a different drop zone.)
+const dropProse = (e) => (e.target.closest && e.target.closest('.prose[contenteditable="true"][data-block-id]'));
+const dragHasFiles = (e) => [...((e.dataTransfer && e.dataTransfer.types) || [])].includes('Files');
+document.addEventListener('dragover', (e) => { const pr = dropProse(e); if (pr && dragHasFiles(e)) { e.preventDefault(); pr.classList.add('prose-dropping'); } });
+document.addEventListener('dragleave', (e) => { const pr = dropProse(e); if (pr && !pr.contains(e.relatedTarget)) pr.classList.remove('prose-dropping'); });
+document.addEventListener('drop', (e) => {
+  const pr = dropProse(e); if (!pr) return;
+  const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter((f) => isImgType(f.type) || isHeic(f));
+  if (!files.length) return;
+  e.preventDefault(); pr.classList.remove('prose-dropping');
+  let range = null;
+  if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(e.clientX, e.clientY);
+  else if (document.caretPositionFromPoint) { const cp = document.caretPositionFromPoint(e.clientX, e.clientY); if (cp) { range = document.createRange(); range.setStart(cp.offsetNode, cp.offset); range.collapse(true); } }
+  (async () => { for (const f of files) await insertInlineImage(pr, f, range); })();
 });
 document.addEventListener('input', (e) => {
   if (e.target.classList && (e.target.classList.contains('note-title') || e.target.classList.contains('area-vision-edit'))) autoGrow(e.target);
@@ -21678,6 +21710,7 @@ document.addEventListener('click', (e) => {
   { const lx = t.closest('[data-card-link-x]'); if (lx) { const i = Number(lx.dataset.cardLinkX); if (state.card && state.card.links) { state.card.links.splice(i, 1); saveCard(); rerenderCard(); } return; } }
   if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); rerenderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
+  if (t.closest('[data-note-insert-image]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineImage(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
   if (t.closest('[data-note-tidy]')) { tidyNoteFormatting(); return; }
 
@@ -23899,6 +23932,67 @@ async function uploadFiles(blockId, files) {
     } catch (e) { toastError('Upload failed: ' + e.message); }
   }
   if (ok) { rerenderHost(); loadThumbs(); }
+}
+// ── inline images in prose ─────────────────────────────────────────────────
+// An inline image is a normal R2 attachment on the block (so the bytes stay out
+// of the note body - D1 and every autosave stay light), referenced in the prose
+// as <img data-att-inline="attId">. sanitizeProse keeps just that id; the bytes
+// are re-fetched into a blob: URL on render (loadInlineImages), exactly like the
+// attachment thumbnails. Inline-placed images are hidden from the attachments
+// list so they don't show twice. (Robin, 2026-10-27.)
+function inlineAttIds(block) {
+  const ids = new Set(); const body = (block && block.body) || '';
+  const re = /data-att-inline="([\w-]+)"/g; let m;
+  while ((m = re.exec(body))) ids.add(m[1]);
+  return ids;
+}
+async function loadInlineImages() {
+  for (const img of document.querySelectorAll('.prose[data-block-id] img[data-att-inline]')) {
+    if (img.dataset.loaded) continue;
+    const prose = img.closest('.prose[data-block-id]'); const blockId = prose && prose.dataset.blockId;
+    const id = img.getAttribute('data-att-inline'); if (!blockId || !id) continue;
+    try { img.src = await attUrl(blockId, { id }); img.dataset.loaded = '1'; img.classList.remove('img-loading'); }
+    catch { img.classList.add('img-broken'); }
+  }
+}
+// Upload a chosen/pasted/dropped image, then drop it into the prose at `range`
+// (or the caret, or the end). Reuses the same shrink + HEIC + upload path as a
+// normal attachment.
+async function insertInlineImage(prose, file, range) {
+  if (!prose || !file || !(isImgType(file.type) || isHeic(file))) return;
+  const blockId = prose.dataset.blockId; if (!blockId) return;
+  const host = attHost();
+  try {
+    if (isHeic(file)) toast('Preparing photo…');
+    const f = await shrinkImage(file);
+    const att = await postAttachment(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(f.name)}&type=${encodeURIComponent(f.type || 'application/octet-stream')}`, f);
+    if (host && host.id === blockId) { host.props = host.props || {}; host.props.attachments = [...(host.props.attachments || []), att]; }
+    const img = document.createElement('img');
+    img.className = 'prose-img'; img.setAttribute('data-att-inline', att.id); if (att.name) img.alt = att.name;
+    try { img.src = await attUrl(blockId, att); img.dataset.loaded = '1'; } catch {}
+    const para = document.createElement('p'); para.appendChild(img);
+    // Place it on its own line after whichever block the caret/drop was in; if we
+    // have no position in this prose, append at the end.
+    let r = (range && prose.contains(range.startContainer)) ? range : null;
+    if (!r) { const sel = window.getSelection(); if (sel && sel.rangeCount && prose.contains(sel.anchorNode)) r = sel.getRangeAt(0); }
+    let block = r ? (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement) : null;
+    block = block && block.closest && block.closest('.prose[data-block-id] > *');
+    if (block && block.parentElement === prose) block.after(para); else prose.appendChild(para);
+    if (!para.nextElementSibling) { const after = document.createElement('p'); after.innerHTML = '<br>'; para.after(after); }
+    // caret onto the line after the image, ready to keep typing
+    const nx = para.nextElementSibling;
+    if (nx) { const sel = window.getSelection(); const nr = document.createRange(); nr.setStart(nx, 0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); }
+    saveProse(prose.dataset.prose, prose.innerHTML, blockId);
+  } catch (e) { toastError('Could not add image: ' + ((e && e.message) || 'upload failed')); }
+}
+// A file picker for the "Insert image" button: insert each chosen image at the
+// last place the caret sat in the note's prose.
+function pickInlineImage() {
+  const prose = document.querySelector('.note-body .prose[contenteditable="true"][data-block-id]'); if (!prose) return;
+  const range = (lastProseRange && prose.contains(lastProseRange.startContainer)) ? lastProseRange : null;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.hidden = true;
+  inp.addEventListener('change', async () => { for (const f of Array.from(inp.files || [])) await insertInlineImage(prose, f, range); inp.remove(); });
+  document.body.appendChild(inp); inp.click();
 }
 // Table-cell attachments: bytes stored in R2 under the row block, metadata in the
 // cell's value list (props.values[colId]) via the ?col= param.

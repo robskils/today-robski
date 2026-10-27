@@ -2208,6 +2208,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* Nothing in a note body should force horizontal scroll on a narrow screen. */
 .note-body, .prose { overflow-wrap:break-word; }
 .note-body img, .prose img { max-width:100%; height:auto; border-radius:10px; margin:8px 0; }
+/* Inline images dropped/pasted/inserted into a note. The bytes live in R2; the
+   src is a blob: URL filled in on render, so before it arrives show a tidy
+   placeholder instead of a broken-image icon. */
+.prose img.prose-img { display:block; }
+.prose img[data-att-inline]:not([src]) { display:block; min-height:140px; background:var(--paper-2); border:1px dashed var(--line-2); }
+.prose img.img-broken { min-height:60px; }
+.prose.prose-dropping { outline:2px dashed var(--accent); outline-offset:4px; border-radius:12px; }
 .note-body pre, .prose pre { max-width:100%; overflow-x:auto; }
 .note-body table, .prose table { display:block; max-width:100%; overflow-x:auto; }
 /* Collapsible sections (details/summary) in notes + prose. */
