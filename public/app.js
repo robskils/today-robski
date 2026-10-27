@@ -439,11 +439,17 @@ async function hydrateEmbeds() {
     const icon = info.icon || `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
     el.classList.remove('loading');
     const del = el.classList.contains('lc-inline') ? '<button class="lc-x" data-card-del title="Remove">×</button>' : '';
-    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>${del}`;
+    const up = el.classList.contains('lc-inline') ? LC_UP_BTN : '';
+    el.innerHTML = `${info.image ? `<span class="lc-thumb"><img src="${esc(info.image)}" alt="" loading="lazy" onerror="this.parentElement.remove()"></span>` : ''}<span class="lc-main"><span class="lc-title">${esc(title)}</span>${info.desc ? `<span class="lc-desc">${esc(info.desc)}</span>` : ''}<span class="lc-site"><img class="lc-fav" src="${esc(icon)}" alt="" loading="lazy" onerror="this.remove()">${esc(host)}</span></span>${up}${del}`;
   }
 }
 // A scraped title that is really an error/challenge page, not the article.
 const badLinkTitle = (t) => !t || /^\s*(error|forbidden|40[134]|access denied|attention required|just a moment|are you (a )?human|please wait)/i.test(t);
+// A hover handle on an inline card: drops an empty line in just above the card,
+// so a card sitting flush at the top (or against another card) can be nudged
+// down the page - there's otherwise no caret spot above a non-editable card.
+// Stripped back out on save along with the card itself.
+const LC_UP_BTN = '<button class="lc-up" data-card-spaceabove title="Add space above">+</button>';
 const lcCache = {};
 function lcCacheGet(u) {
   if (lcCache[u]) return lcCache[u];
@@ -480,7 +486,7 @@ function decorateProse(html) {
     card.className = 'link-card lc-inline loading';
     card.setAttribute('contenteditable', 'false');
     card.setAttribute('data-linkcard', href);
-    card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span><button class="lc-x" data-card-del title="Remove">×</button>`;
+    card.innerHTML = `<span class="lc-main"><span class="lc-title">${esc(prettyHost(href))}</span><span class="lc-site">${esc(prettyHost(href))}</span></span>${LC_UP_BTN}<button class="lc-x" data-card-del title="Remove">×</button>`;
     p.replaceWith(card);
   });
   // A bare YouTube URL as plain text (not a link) - e.g. typed or imported before
@@ -21365,6 +21371,7 @@ document.addEventListener('click', (e) => {
   }
   // attachments (delete wins over open since the × sits inside the tile)
   const cdel = t.closest('[data-card-del]'); if (cdel) { e.preventDefault(); e.stopPropagation(); removeCardEl(cdel); return; }
+  const cup = t.closest('[data-card-spaceabove]'); if (cup) { e.preventDefault(); e.stopPropagation(); addSpaceAboveCard(cup.closest('.lc-inline')); return; }
   const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
@@ -23784,6 +23791,18 @@ function removeCardEl(btn) {
   const card = btn.closest('.link-card, .embed-yt'); if (!card) return;
   const prose = card.closest('.prose'); if (!prose) { card.remove(); return; }
   card.remove();
+  if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
+}
+// Drop an empty line in just above an inline card and put the caret there, so a
+// card sitting flush at the top (or against another card) can be nudged down the
+// page - keep pressing Enter to add more. Saved as plain empty paragraphs; the
+// card re-inflates around them on the next render.
+function addSpaceAboveCard(card) {
+  if (!card) return;
+  const prose = card.closest('.prose'); if (!prose || !prose.isContentEditable) return;
+  const p = document.createElement('p'); p.innerHTML = '<br>';
+  prose.insertBefore(p, card);
+  try { const sel = getSelection(); const r = document.createRange(); r.setStart(p, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); prose.focus(); } catch {}
   if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
 }
 // Notes edited under the brief "cards live in props.cards" model kept their URLs
