@@ -12065,7 +12065,7 @@ async function mailToArea(areaId) {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const content = sanitizeProse(emailSourceHtml(o)) || '<p></p>';
+  const content = sanitizeProse(emailToProse(emailSourceHtml(o))) || '<p></p>';
   try {
     const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, props: { area: areaId, areas: [areaId], fromEmail: true } }) });
     // Remember that this email is filed here, so the reader can show it later.
@@ -13921,7 +13921,7 @@ async function openMailTaskMenu(anchor) {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const content = sanitizeProse(emailSourceHtml(o));
+  const content = sanitizeProse(emailToProse(emailSourceHtml(o)));
   const r = anchor ? anchor.getBoundingClientRect() : { left: 240, bottom: 200 };
   const w = 300;
   // The email travels with the task as its own thing (props.email), so the card
@@ -13977,6 +13977,66 @@ async function mailToEvent() {
   renderFlyerImport();   // so the textarea holds the email text before we read it
   flyerFind();           // extract events and show the tick-to-confirm results
 }
+// Turn a marketing/HTML email into clean note prose - just the words and the
+// pictures. Emails are built from nested layout tables with a <style> block,
+// invisible preheader padding and a raft of "view in browser / unsubscribe"
+// boilerplate, none of which belongs in a note. We drop the styling and the
+// scaffolding, flatten to headings / paragraphs / real images / links, strip the
+// invisible characters and bin the usual cruft. (Robin, 2026-10-27.)
+const MAIL_INVIS = /[​-‍⁠﻿͏­᠎]/g;
+const mailCleanInvis = (s) => (s || '').replace(MAIL_INVIS, '').replace(/ /g, ' ');
+const MAIL_JUNK = [
+  /can'?t see (this|the)/i, /view (this |the )?(e-?mail|message|version)?\s*(in|online)/i, /view in browser/i,
+  /this (e-?mail|message) was sent/i, /no longer wish to receive/i, /unsubscribe/i,
+  /change your (e-?mail )?preferences/i, /update your preferences/i, /manage (your )?(preferences|subscription)/i,
+  /add us to your address book/i, /©\s*\d{4}/, /all rights reserved/i, /sent from this site/i, /visit our social/i,
+];
+const mailIsJunk = (plain) => plain.length < 160 && MAIL_JUNK.some((re) => re.test(plain));
+function emailToProse(html) {
+  let doc; try { doc = new DOMParser().parseFromString(html || '', 'text/html'); } catch { return ''; }
+  doc.querySelectorAll('style, script, noscript, title, meta, link, head').forEach((n) => n.remove());
+  // Drop anything hidden (preheaders, mso/desktop-only duplicate columns).
+  doc.querySelectorAll('[style], [aria-hidden="true"], [hidden]').forEach((el) => {
+    const s = (el.getAttribute('style') || '').replace(/\s+/g, '').toLowerCase();
+    if (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true'
+      || /display:none|max-height:0|font-size:0|line-height:0|opacity:0|mso-hide:all|visibility:hidden/.test(s)) el.remove();
+  });
+  const out = []; let para = [];
+  const flush = () => {
+    if (!para.length) return;
+    const txt = mailCleanInvis(para.join('')).replace(/\s+/g, ' ').trim(); para = [];
+    if (!txt) return;
+    const plain = txt.replace(/<[^>]+>/g, '').trim();
+    if (!plain || mailIsJunk(plain)) return;
+    out.push(`<p>${txt}</p>`);
+  };
+  const BLOCK = /^(P|DIV|TR|TABLE|TBODY|THEAD|UL|OL|LI|BLOCKQUOTE|HR|TD|TH|FIGURE|SECTION|ARTICLE|HEADER|FOOTER|CENTER|NAV)$/;
+  const walk = (node) => {
+    for (const c of node.childNodes) {
+      if (c.nodeType === 3) { const t = mailCleanInvis(c.textContent); if (/\S/.test(t)) para.push(esc(t)); continue; }
+      if (c.nodeType !== 1) continue;
+      const tag = c.tagName;
+      if (/^H[1-6]$/.test(tag)) { flush(); const h = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (h && !mailIsJunk(h)) out.push(`<h3>${esc(h)}</h3>`); continue; }
+      if (tag === 'IMG') { const src = c.getAttribute('src') || ''; if (/^https?:/i.test(src)) { flush(); out.push(`<p><img src="${esc(src)}" alt="${esc(c.getAttribute('alt') || '')}"></p>`); } continue; }
+      if (tag === 'A') {
+        if (c.querySelector('img')) { walk(c); continue; }   // a linked image: keep the picture
+        const href = c.getAttribute('href') || ''; const txt = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim();
+        if (txt) para.push(/^https?:/i.test(href) ? `<a href="${esc(href)}">${esc(txt)}</a>` : esc(txt));
+        continue;
+      }
+      if (tag === 'STRONG' || tag === 'B') { const x = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (x) para.push(`<strong>${esc(x)}</strong>`); continue; }
+      if (tag === 'EM' || tag === 'I') { const x = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (x) para.push(`<em>${esc(x)}</em>`); continue; }
+      if (tag === 'BR') { flush(); continue; }
+      if (BLOCK.test(tag)) { flush(); walk(c); flush(); continue; }
+      walk(c);   // inline wrapper (span, font, u…): recurse, keep the text
+    }
+  };
+  walk(doc.body); flush();
+  // Emails duplicate blocks (mobile vs desktop columns, repeated CTAs): drop a
+  // block identical to the one just before it.
+  const cleaned = []; for (const b of out) { if (b !== cleaned[cleaned.length - 1]) cleaned.push(b); }
+  return cleaned.join('');
+}
 async function mailToNote() {
   const o = state.mail && state.mail.open; if (!o) return;
   const title = ((o.subject || '').trim()) || '(no subject)';
@@ -13985,7 +14045,7 @@ async function mailToNote() {
   const when = o.date ? new Date(o.date).toLocaleString() : '';
   const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
   const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
-  const content = sanitizeProse(emailSourceHtml(o)) || '<p></p>';
+  const content = sanitizeProse(emailToProse(emailSourceHtml(o))) || '<p></p>';
   try {
     const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: hdr + content, parent_id: null, props: { fromEmail: true } }) });
     if (Array.isArray(state.noteTops)) state.noteTops.push(note);
