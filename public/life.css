@@ -7094,6 +7094,13 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .link-card.lc-inline .lc-up { position:absolute; top:8px; right:38px; width:24px; height:24px; padding:0; border:none; border-radius:50%; background:rgba(20,18,24,.55); color:#fff; font-size:19px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s, background .12s; z-index:2; }
 .link-card.lc-inline:hover .lc-up { opacity:1; }
 .link-card.lc-inline .lc-up:hover { background:var(--accent); }
+/* Touch screens (phone, tablet) have no hover, so the card's + / x controls would
+   never appear - leave them gently visible there, and space the + further from the
+   x so each is an easy, separate tap. (Read-only prose still hides them above.) */
+@media (hover: none) {
+  .link-card.lc-inline .lc-up, .link-card.lc-inline .lc-x, .embed-yt.lc-inline .embed-x { opacity:.75; }
+  .link-card.lc-inline .lc-up { right:46px; }
+}
 @media (max-width:560px){ .yt-card-thumb { width:124px; } }
 
 .foot-search { display:none; }
