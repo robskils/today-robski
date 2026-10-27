@@ -553,27 +553,41 @@ function applyFold(head, folded) {
 // depth is worked out live here and written as an inline margin the save sanitiser
 // strips (see sanitizeProse), so nothing is persisted into the body.
 const PROSE_INDENT_EM = 1.5;
-function applyProseIndent(prose) {
-  const kids = [...prose.children];
-  let base = 99;   // shallowest heading level present (a note of only H2s starts flush)
+// Indent one flow of blocks (the prose itself, or a single column) by heading
+// depth. A column indents within its own width, independent of the others.
+function indentRun(kids) {
+  let base = 99;
   for (const k of kids) { const l = HLVL[k.tagName]; if (l && l < base) base = l; }
-  // The left gutter (for the fold chevrons) only exists when there are headings,
-  // so a plain note isn't pushed in for no reason.
-  prose.classList.toggle('prose-heads', base !== 99);
-  if (base === 99) { for (const k of kids) k.style.marginLeft = ''; return; }
-  let cur = 0;     // indent depth for the current section's content
+  if (base === 99) { for (const k of kids) k.style.marginLeft = ''; return false; }
+  let cur = 0;
   for (const k of kids) {
-    const l = HLVL[k.tagName];
-    let depth;
+    const l = HLVL[k.tagName]; let depth;
     if (l) { depth = l - base; cur = depth + 1; }   // a heading sits at its level; its content one deeper
     else { depth = cur; }
     k.style.marginLeft = depth > 0 ? `${(depth * PROSE_INDENT_EM).toFixed(2)}em` : '';
   }
+  return true;
+}
+function applyProseIndent(prose) {
+  // A column row is a standalone block: it gets no indent, and each column indents
+  // its own content. Everything else is the top-level run.
+  const topKids = [...prose.children].filter((k) => !(k.classList && k.classList.contains('ncols')));
+  let anyHead = indentRun(topKids);
+  prose.querySelectorAll(':scope > .ncols').forEach((row) => {
+    row.style.marginLeft = '';
+    row.querySelectorAll(':scope > .ncol').forEach((col) => { if (indentRun([...col.children])) anyHead = true; });
+  });
+  // The left gutter (for the fold chevrons) only exists when there are headings,
+  // so a plain note isn't pushed in for no reason.
+  prose.classList.toggle('prose-heads', anyHead);
 }
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
     applyProseIndent(prose);
-    const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
+    // All section heads in document order - including any inside column wrappers -
+    // so a sidebar section is foldable and draggable too, and the fold index stays
+    // consistent whether or not a note uses columns.
+    const heads = [...prose.querySelectorAll('h1, h2, h3')];
     if (!heads.length) return;
     const folded = getFolds(prose.dataset.blockId);
     heads.forEach((h, i) => {
@@ -596,10 +610,39 @@ function setupFolds() {
 // so the content travels with its title. Drop lands the section above whichever
 // heading you're hovering, or at the end past the last one.
 let headDrag = null;
+// A section = a heading plus every block under it, up to the next same-or-higher
+// heading (within the same container - the prose itself or one column).
+function sectionNodes(head) { return [head, ...proseSiblingsUnder(head)]; }
+function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-col-drop').forEach((h) => h.classList.remove('head-drop', 'head-col-drop')); }
 function cleanupHeadDrag() {
   if (headDrag && headDrag.head) headDrag.head.classList.remove('head-dragging');
-  document.querySelectorAll('.head-drop').forEach((h) => h.classList.remove('head-drop'));
+  clearHeadDrops();
   headDrag = null;
+}
+// Wrap two top-level sections side by side: the target on the left, the dragged
+// one on the right. The row takes the target's place in the flow.
+function makeColumnRow(prose, targetHead, draggedNodes) {
+  const targetNodes = sectionNodes(targetHead);
+  const row = document.createElement('div'); row.className = 'ncols';
+  const c1 = document.createElement('div'); c1.className = 'ncol';
+  const c2 = document.createElement('div'); c2.className = 'ncol';
+  row.appendChild(c1); row.appendChild(c2);
+  prose.insertBefore(row, targetHead);
+  targetNodes.forEach((n) => c1.appendChild(n));
+  draggedNodes.forEach((n) => c2.appendChild(n));
+}
+// After any move, keep the column structure honest: an emptied column is removed,
+// and a row that no longer holds two real columns is unwrapped back to a plain
+// full-width run. Content is only ever moved out, never dropped.
+function normalizeColumns(prose) {
+  prose.querySelectorAll('.ncols').forEach((row) => {
+    row.querySelectorAll(':scope > .ncol').forEach((col) => { if (!col.firstElementChild) col.remove(); });
+    const cols = [...row.querySelectorAll(':scope > .ncol')];
+    if (cols.length >= 2) return;
+    const parent = row.parentNode;
+    cols.forEach((col) => { while (col.firstChild) parent.insertBefore(col.firstChild, row); });
+    row.remove();
+  });
 }
 document.addEventListener('dragstart', (e) => {
   const grip = e.target.closest && e.target.closest('.head-grip'); if (!grip) return;
@@ -615,8 +658,29 @@ document.addEventListener('dragover', (e) => {
   const prose = e.target.closest && e.target.closest('.prose[data-block-id]');
   if (prose !== headDrag.prose) return;
   e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-  const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
-  prose.querySelectorAll('.head-drop').forEach((h) => h.classList.remove('head-drop'));
+  clearHeadDrops(prose);
+  const heads = [...prose.querySelectorAll('h1, h2, h3')];
+  const section = sectionNodes(headDrag.head);
+  // Columnise: hovering the RIGHT side of another TOP-LEVEL section pairs the two
+  // into two columns. Only top-level sections pair (you drag a section beside
+  // another), so an existing column isn't turned into three.
+  const pr = prose.getBoundingClientRect();
+  let colTarget = null;
+  if (e.clientX > pr.left + pr.width * 0.56 && headDrag.head.parentNode === prose) {
+    const tops = heads.filter((h) => h.parentNode === prose);
+    for (let i = 0; i < tops.length; i++) {
+      const top = tops[i].getBoundingClientRect().top;
+      const bot = (i + 1 < tops.length) ? tops[i + 1].getBoundingClientRect().top : pr.bottom;
+      if (e.clientY >= top && e.clientY < bot) { colTarget = tops[i]; break; }
+    }
+    if (colTarget && (colTarget === headDrag.head || section.includes(colTarget))) colTarget = null;
+  }
+  if (colTarget) {
+    prose.dataset.headCol = String(heads.indexOf(colTarget)); prose.dataset.headDrop = '-1';
+    colTarget.classList.add('head-col-drop');
+    return;
+  }
+  prose.dataset.headCol = '-1';
   let target = null;
   for (const h of heads) { const r = h.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { target = h; break; } }
   prose.dataset.headDrop = target ? String(heads.indexOf(target)) : '-1';
@@ -628,15 +692,22 @@ document.addEventListener('drop', (e) => {
   const over = e.target.closest && e.target.closest('.prose[data-block-id]');
   if (over !== prose) { cleanupHeadDrag(); return; }
   e.preventDefault();
-  const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')];
-  const idx = parseInt(prose.dataset.headDrop || '-1', 10);
-  const target = (idx >= 0 && idx < heads.length) ? heads[idx] : null;
-  const section = [headDrag.head, ...proseSiblingsUnder(headDrag.head)];
-  cleanupHeadDrag(); delete prose.dataset.headDrop;
-  if (target && section.includes(target)) return;   // dropping onto its own section: no-op
-  const frag = document.createDocumentFragment();
-  section.forEach((n) => frag.appendChild(n));       // detaches each node, then re-inserts as a unit
-  if (target) prose.insertBefore(frag, target); else prose.appendChild(frag);
+  const heads = [...prose.querySelectorAll('h1, h2, h3')];
+  const colIdx = parseInt(prose.dataset.headCol || '-1', 10);
+  const dropIdx = parseInt(prose.dataset.headDrop || '-1', 10);
+  const colTarget = (colIdx >= 0 && colIdx < heads.length) ? heads[colIdx] : null;
+  const vTarget = (dropIdx >= 0 && dropIdx < heads.length) ? heads[dropIdx] : null;
+  const section = sectionNodes(headDrag.head);
+  cleanupHeadDrag(); delete prose.dataset.headDrop; delete prose.dataset.headCol;
+  if (colTarget && colTarget.parentNode === prose && headDrag.head.parentNode === prose && !section.includes(colTarget)) {
+    makeColumnRow(prose, colTarget, section);
+  } else if (!colTarget) {
+    if (vTarget && section.includes(vTarget)) return;   // onto its own section: no-op
+    const frag = document.createDocumentFragment();
+    section.forEach((n) => frag.appendChild(n));         // detach as a unit
+    if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else prose.appendChild(frag);
+  } else { return; }
+  normalizeColumns(prose);
   // Fold state is keyed by heading position, which just changed - clear it for
   // this note so no heading shows wrongly folded after the move.
   try { const all = proseFolds(); delete all[prose.dataset.blockId]; localStorage.setItem('life.prose.folds', JSON.stringify(all)); } catch {}
@@ -677,6 +748,22 @@ function sanitizeProse(html) {
       // The render-time table scroll wrapper: unwrap it so the stored body holds
       // just the <table> (decorateProse re-wraps on render).
       if (c.tagName === 'DIV' && c.classList.contains('ptable-wrap')) { walk(c); const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
+      // Column layout wrappers (a section dragged beside another). These DO persist
+      // in the body - the arrangement travels with the content - so keep the div
+      // and its class, but never let a stray/empty one survive: an empty .ncol is
+      // dropped, and a .ncols that no longer holds two real columns is unwrapped
+      // back to a plain run. Content is only ever moved, never deleted.
+      if (c.tagName === 'DIV' && c.classList.contains('ncol')) {
+        walk(c);
+        if (!c.firstElementChild) { c.remove(); return; }          // empty column: drop the wrapper, keep nothing (there's nothing)
+        [...c.attributes].forEach((a) => c.removeAttribute(a.name)); c.setAttribute('class', 'ncol'); return;
+      }
+      if (c.tagName === 'DIV' && c.classList.contains('ncols')) {
+        walk(c);
+        const cols = [...c.children].filter((x) => x.tagName === 'DIV' && x.classList.contains('ncol'));
+        if (cols.length < 2) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }   // not a real 2-col row: unwrap, keep content
+        [...c.attributes].forEach((a) => c.removeAttribute(a.name)); c.setAttribute('class', 'ncols'); return;
+      }
       walk(c);
       let tag = c.tagName;
       if (tag === 'B') tag = 'STRONG'; else if (tag === 'I') tag = 'EM';
@@ -21334,7 +21421,7 @@ document.addEventListener('click', (e) => {
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
-  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll(':scope > h1, :scope > h2, :scope > h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
+  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '▸' : '▾'; setFold(prose.dataset.blockId, i, folded); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on LifeFold` : 'No contacts on LifeFold yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
