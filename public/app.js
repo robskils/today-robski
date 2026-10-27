@@ -13972,14 +13972,44 @@ const MAIL_JUNK = [
   /add us to your address book/i, /©\s*\d{4}/, /all rights reserved/i, /sent from this site/i, /visit our social/i,
 ];
 const mailIsJunk = (plain) => plain.length < 160 && MAIL_JUNK.some((re) => re.test(plain));
+// Resolve an <img>'s real source. Newsletters lazy-load: the real picture sits
+// in data-src / data-original / srcset while src holds a transparent-gif
+// placeholder (which rendered as a broken thumbnail). Prefer the lazy source,
+// then src, then the largest srcset candidate; drop 1x1 spacers and beacons.
+function mailImgSrc(img) {
+  const ok = (v) => { v = (v || '').trim(); return /^https?:\/\//i.test(v) ? v : ''; };
+  const fromSet = (ss) => { if (!ss) return ''; const last = ss.split(',').pop().trim().split(/\s+/)[0]; return ok(last); };
+  const src = ok(img.getAttribute('data-src')) || ok(img.getAttribute('data-original'))
+    || ok(img.getAttribute('data-lazy-src')) || ok(img.getAttribute('src'))
+    || fromSet(img.getAttribute('data-srcset')) || fromSet(img.getAttribute('srcset'));
+  if (!src) return '';
+  const w = parseInt(img.getAttribute('width') || '0', 10), h = parseInt(img.getAttribute('height') || '0', 10);
+  if ((w && w <= 3) || (h && h <= 3)) return '';   // 1x1 tracking pixel / spacer by size
+  if (/1x1|\bspacer\b|blank\.gif|transparent\.(?:gif|png)|\/s\.gif|\/open[\/._?]|\/wf\/open|beacon|\/track(?:ing)?[\/._?]/i.test(src)) return '';
+  return src;
+}
+// Harvest plain text block by block, removing only genuinely-hidden nodes. A
+// safety net: if the structured pass below returns no words (an unfamiliar
+// layout defeated it), the note still gets the email's text rather than a lone
+// picture.
+function mailHarvestText(html) {
+  let d; try { d = new DOMParser().parseFromString(html || '', 'text/html'); } catch { return []; }
+  d.querySelectorAll('style, script, noscript, title, meta, link, head, [aria-hidden="true"], [hidden]').forEach((n) => n.remove());
+  d.querySelectorAll('[style]').forEach((el) => { const s = (el.getAttribute('style') || '').replace(/\s+/g, '').toLowerCase(); if (/display:none|visibility:hidden|mso-hide:all/.test(s)) el.remove(); });
+  d.querySelectorAll('p, div, br, li, tr, td, h1, h2, h3, h4, h5, h6, blockquote, table').forEach((el) => el.appendChild(d.createTextNode('\n')));
+  return mailCleanInvis(d.body.textContent || '').replace(/[^\S\n]+/g, ' ').split(/\n+/).map((s) => s.trim()).filter((s) => s && !mailIsJunk(s));
+}
 function emailToProse(html) {
   let doc; try { doc = new DOMParser().parseFromString(html || '', 'text/html'); } catch { return ''; }
   doc.querySelectorAll('style, script, noscript, title, meta, link, head').forEach((n) => n.remove());
-  // Drop anything hidden (preheaders, mso/desktop-only duplicate columns).
+  // Drop genuinely-hidden nodes (preheaders, mso/desktop-only duplicate columns).
+  // NOT font-size:0 / line-height:0: those are whitespace-collapse hacks that
+  // wrap the real content, so removing them used to blank the whole note.
   doc.querySelectorAll('[style], [aria-hidden="true"], [hidden]').forEach((el) => {
     const s = (el.getAttribute('style') || '').replace(/\s+/g, '').toLowerCase();
     if (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true'
-      || /display:none|max-height:0|font-size:0|line-height:0|opacity:0|mso-hide:all|visibility:hidden/.test(s)) el.remove();
+      || /display:none|visibility:hidden|opacity:0|mso-hide:all/.test(s)
+      || (/max-height:0/.test(s) && /overflow:hidden/.test(s))) el.remove();
   });
   const out = []; let para = [];
   const flush = () => {
@@ -13997,7 +14027,7 @@ function emailToProse(html) {
       if (c.nodeType !== 1) continue;
       const tag = c.tagName;
       if (/^H[1-6]$/.test(tag)) { flush(); const h = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (h && !mailIsJunk(h)) out.push(`<h3>${esc(h)}</h3>`); continue; }
-      if (tag === 'IMG') { const src = c.getAttribute('src') || ''; if (/^https?:/i.test(src)) { flush(); out.push(`<p><img src="${esc(src)}" alt="${esc(c.getAttribute('alt') || '')}"></p>`); } continue; }
+      if (tag === 'IMG') { const src = mailImgSrc(c); if (src) { flush(); out.push(`<p><img src="${esc(src)}" alt="${esc(c.getAttribute('alt') || '')}"></p>`); } continue; }
       if (tag === 'A') {
         if (c.querySelector('img')) { walk(c); continue; }   // a linked image: keep the picture
         const href = c.getAttribute('href') || ''; const txt = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim();
@@ -14015,6 +14045,14 @@ function emailToProse(html) {
   // Emails duplicate blocks (mobile vs desktop columns, repeated CTAs): drop a
   // block identical to the one just before it.
   const cleaned = []; for (const b of out) { if (b !== cleaned[cleaned.length - 1]) cleaned.push(b); }
+  // If nothing with words survived (only images, or an unfamiliar layout slipped
+  // past the walk), harvest the plain text so a note is never reduced to a lone
+  // picture when the email plainly had words.
+  const hasText = cleaned.some((b) => /^<(p|h3)>/.test(b) && b.replace(/<[^>]+>/g, '').trim());
+  if (!hasText) {
+    const text = mailHarvestText(html).map((line) => `<p>${esc(line)}</p>`);
+    if (text.length) return [...text, ...cleaned.filter((b) => /<img/.test(b))].join('');
+  }
   return cleaned.join('');
 }
 async function mailToNote() {
