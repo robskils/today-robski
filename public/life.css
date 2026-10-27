@@ -2240,7 +2240,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nx-wrap { margin:34px 0 0; }
 .nx-lbl { font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 12px 4px; }
 .nx-panel { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow-sm); overflow:hidden; }
-.nx-items { display:flex; flex-direction:column; gap:8px; padding:16px 17px; }
+/* Linked items flow into two columns when there's room and more than one; a
+   single item stays full width, and they stack back to one column on a phone. */
+.nx-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:8px; padding:16px 17px; }
+@media (max-width:620px){ .nx-items { grid-template-columns:1fr; } }
 .nx-items-empty { color:var(--ink-3); font-size:14.5px; padding:20px 18px; }
 .nx-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--paper); font-size:15px; color:var(--ink); }
 .nx-ic { flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; background:color-mix(in srgb,var(--accent) 12%,transparent); overflow:hidden; }
