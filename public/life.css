@@ -2242,7 +2242,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nx-panel { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow-sm); overflow:hidden; }
 /* Linked items flow into two columns when there's room and more than one; a
    single item stays full width, and they stack back to one column on a phone. */
-.nx-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:8px; padding:16px 17px; }
+.nx-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(46%,1fr)); gap:8px; padding:16px 17px; }
 @media (max-width:620px){ .nx-items { grid-template-columns:1fr; } }
 .nx-items-empty { color:var(--ink-3); font-size:14.5px; padding:20px 18px; }
 .nx-row { display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:13px; background:var(--paper); font-size:15px; color:var(--ink); }
