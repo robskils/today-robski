@@ -7503,7 +7503,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* The fold arrow: a clear little button, not a faint glyph. The clickable box
    fills the heading line so it's an easy tap, and it carries a soft chip so you
    can see it's there. (Robin: the arrow was too subtle.) */
-.fold-toggle { position:absolute; left:-26px; top:0.18em; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:15px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
+.fold-toggle { position:absolute; left:-26px; top:0.18em; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:20px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
 .fold-toggle:hover { filter:brightness(1.08); transform:scale(1.06); }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it
