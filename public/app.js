@@ -1504,7 +1504,7 @@ function navSection(key, v) {
     const friends = (state.friends && state.friends.friends) || [];
     const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
     const isOnline = (f) => onSet.has(f.id) || !!f.online;
-    const sorted = friends.slice().sort((a, b) => (isOnline(b) - isOnline(a)) || (a.name || '').localeCompare(b.name || ''));
+    const sorted = friendsByRecency(friends);
     rows = sorted.map((f) => {
       const on = isOnline(f); const un = unreadFrom(f.id);
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
@@ -2477,6 +2477,22 @@ async function setUserFree(id, months) {
 // ── Friends on LifeFold ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
+// Order LifeFold contacts by who was online most recently: anyone online right
+// now (live presence poll, or the last-known flag) sits at the top, then the
+// rest by how recently they were last seen, newest first, down to never-seen.
+// Used by the sidebar lists and the Contacts / LifeFold Contacts pages so they
+// all agree. (Robin, 2026-10-27.)
+function friendsByRecency(list) {
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const online = (f) => onSet.has(f.id) || !!f.online;
+  const seen = (f) => (f.lastSeen ? (Date.parse(f.lastSeen) || 0) : 0);
+  return (list || []).slice().sort((a, b) => {
+    const oa = online(a) ? 1 : 0, ob = online(b) ? 1 : 0;
+    if (oa !== ob) return ob - oa;                       // online now first
+    if (!oa && !ob) { const d = seen(b) - seen(a); if (d) return d; }   // both offline: most recent first
+    return (a.name || '').localeCompare(b.name || '');   // tie / both online: by name
+  });
+}
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
@@ -4116,7 +4132,7 @@ function navPeopleRows() {
   const friends = (state.friends && state.friends.friends) || [];
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   const isOnline = (f) => onSet.has(f.id) || !!f.online;
-  const sorted = friends.slice().sort((a, b) => (isOnline(b) - isOnline(a)) || (a.name || '').localeCompare(b.name || ''));
+  const sorted = friendsByRecency(friends);
   return sorted.map((f) => {
     const on = isOnline(f); const un = unreadFrom(f.id);
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
@@ -15106,12 +15122,11 @@ function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
   const fr = (f, action) => friendRow(f, action);
-  // Online contacts first (by the live presence poll), then alphabetical - so
-  // whoever is around right now sits at the top of the list. (Robin, 2026-10-14.)
+  // Most recently online first: whoever is around right now sits at the top,
+  // then the rest by how recently they were last seen. (Robin, 2026-10-27.)
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   const hasStatus = !!(state.friendStatus && Array.isArray(state.friendStatus.online));
-  const friendsSorted = (d.friends || []).map((f) => ({ ...f, online: hasStatus ? onSet.has(f.id) : !!f.online }))
-    .sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0) || (a.name || '').localeCompare(b.name || ''));
+  const friendsSorted = friendsByRecency((d.friends || []).map((f) => ({ ...f, online: hasStatus ? onSet.has(f.id) : !!f.online })));
   const showSuggest = !opts.skipSuggest && d.suggestions && d.suggestions.length;
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
@@ -15120,7 +15135,7 @@ function friendsPaneHtml(opts) {
       ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on LifeFold<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on LifeFold</button>`)).join('')}</div>` : ''}
       <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on LifeFold - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to LifeFold by email">✦ Invite to LifeFold</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? d.friends.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to LifeFold.</div>')}
+      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to LifeFold.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;

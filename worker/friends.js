@@ -20,7 +20,7 @@ export async function getFriends(env) {
        FROM friends f JOIN users u ON u.id = f.friend_id
       WHERE f.user_id = ? ORDER BY u.name`,
   ).bind(env.uid).all()).results || [];
-  const map = (r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, canAssign: !!r.can_assign, online: isOnline(r.last_seen) });
+  const map = (r) => ({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, canAssign: !!r.can_assign, online: isOnline(r.last_seen), lastSeen: r.last_seen || null });
   const friends = rows.filter((r) => r.status === 'accepted').map(map);
   const incoming = rows.filter((r) => r.status === 'in').map(map);
   const outgoing = rows.filter((r) => r.status === 'out').map(map);
