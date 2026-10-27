@@ -7526,7 +7526,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* Two columns: drag one section beside another to pair them. A column row is a
    standalone block in the note's flow. Stacks back to a single column on a phone,
    so a note always reads top-to-bottom there (and dragging is a desktop gesture). */
-.prose .ncols { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; margin:16px 0; }
+.prose .ncols { display:grid; grid-template-columns:1fr 1fr; gap:38px; align-items:start; margin:16px 0; }
 .prose .ncol { min-width:0; }
 .prose .ncol > :first-child { margin-top:0; }
 @media (max-width:760px){ .prose .ncols { grid-template-columns:1fr; gap:0; margin:0; } }

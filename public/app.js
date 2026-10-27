@@ -546,39 +546,18 @@ function applyFold(head, folded) {
   proseSiblingsUnder(head).forEach((el) => el.classList.toggle('folded-hidden', folded));
   head.classList.toggle('folded', folded);
 }
-// Inject the chevrons and re-apply saved folds. Idempotent; safe to call each render.
-// Indent so content reads as belonging to its heading: the shallowest heading in
-// the note sits flush-left and every level below - and the text/bullets under it -
-// steps in. The prose is a flat list of siblings with no section wrappers, so the
-// depth is worked out live here and written as an inline margin the save sanitiser
-// strips (see sanitizeProse), so nothing is persisted into the body.
-const PROSE_INDENT_EM = 1.5;
-// Indent one flow of blocks (the prose itself, or a single column) by heading
-// depth. A column indents within its own width, independent of the others.
-function indentRun(kids) {
-  let base = 99;
-  for (const k of kids) { const l = HLVL[k.tagName]; if (l && l < base) base = l; }
-  if (base === 99) { for (const k of kids) k.style.marginLeft = ''; return false; }
-  let cur = 0;
-  for (const k of kids) {
-    const l = HLVL[k.tagName]; let depth;
-    if (l) { depth = l - base; cur = depth + 1; }   // a heading sits at its level; its content one deeper
-    else { depth = cur; }
-    k.style.marginLeft = depth > 0 ? `${(depth * PROSE_INDENT_EM).toFixed(2)}em` : '';
-  }
-  return true;
-}
+// Content used to step in under each heading to show it belonged there. With the
+// fold / drag / column system the hierarchy already reads from the headings and
+// the folding, so that extra indent just ate width - we keep everything flush now.
+// We only reserve the left gutter (for the fold arrow + drag grip) when the note
+// actually has headings. (Robin, 2026-10-27.) Any old live margin is cleared here;
+// nothing indent-related was ever saved into the body.
+const hasHead = (kids) => kids.some((k) => HLVL[k.tagName]);
+const clearMargins = (kids) => kids.forEach((k) => { if (k.style && k.style.marginLeft) k.style.marginLeft = ''; });
 function applyProseIndent(prose) {
-  // A column row is a standalone block: it gets no indent, and each column indents
-  // its own content. Everything else is the top-level run.
-  const topKids = [...prose.children].filter((k) => !(k.classList && k.classList.contains('ncols')));
-  let anyHead = indentRun(topKids);
-  prose.querySelectorAll(':scope > .ncols').forEach((row) => {
-    row.style.marginLeft = '';
-    row.querySelectorAll(':scope > .ncol').forEach((col) => { if (indentRun([...col.children])) anyHead = true; });
-  });
-  // The left gutter (for the fold chevrons) only exists when there are headings,
-  // so a plain note isn't pushed in for no reason.
+  clearMargins([...prose.children]);
+  let anyHead = hasHead([...prose.children]);
+  prose.querySelectorAll(':scope > .ncols > .ncol').forEach((col) => { clearMargins([...col.children]); if (hasHead([...col.children])) anyHead = true; });
   prose.classList.toggle('prose-heads', anyHead);
 }
 function setupFolds() {
