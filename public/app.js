@@ -14963,11 +14963,13 @@ function renderTasks() {
         <label class="atf"><span>${t('field.area')}</span><select id="task-area" class="sel">${opts}</select></label>
         <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
         <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-        <label class="atf"><span>${t('task.surfaceon')}</span>${dateFieldHtml('task-snooze', '')}</label>
         <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
         <label class="atf" id="task-repeatfrom-wrap" hidden><span>${t('task.nextdue')}</span><select id="task-repeatfrom" class="sel"><option value="due">${t('task.onschedule')}</option><option value="done">${t('task.aftertick')}</option></select></label>
       </div>
-      <label class="atf-hide"><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until it surfaces<small>Set a "Surface on" date above, and it stays out of the way until then.</small></span></label>
+      <div class="atf-surface">
+        <div class="atf-surface-row"><span class="atf-surface-lbl"><span class="atf-surface-ic">⏳</span>${t('task.surfaceon')}</span>${dateFieldHtml('task-snooze', '')}<span class="atf-surface-note">it pops onto Today that morning</span></div>
+        <label class="atf-surface-hide"><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until then</span></label>
+      </div>
       <label class="atf atf-full"><span>${t('field.notes')}</span><textarea id="task-notes" class="sel" rows="3" placeholder="${t('task.notesph')}" autocomplete="off"></textarea></label>
       ${connectAddSectionHtml()}
       <div class="atf-actions">

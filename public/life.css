@@ -196,6 +196,16 @@ button { cursor:pointer; background:none; border:0; }
 .atf-hide input { margin-top:3px; flex:none; width:18px; height:18px; accent-color:var(--accent); }
 .atf-hide span { display:flex; flex-direction:column; gap:2px; }
 .atf-hide small { font-size:13px; color:var(--ink-3); line-height:1.4; }
+/* Task resurfacing, structured like an event's "when" block: a labelled date
+   strip with the hide toggle folded in, not a loose grid cell + a checkbox. */
+.atf-surface { display:flex; flex-direction:column; gap:12px; padding:14px 15px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
+.atf-surface-row { display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
+.atf-surface-lbl { flex:none; display:inline-flex; align-items:center; gap:7px; font-size:12.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.atf-surface-ic { color:var(--accent); font-size:15px; }
+.atf-surface-row .date-field { max-width:none; }
+.atf-surface-note { font-size:13px; color:var(--ink-3); }
+.atf-surface-hide { display:flex; align-items:center; gap:10px; font-size:14.5px; color:var(--ink); cursor:pointer; border-top:1px solid var(--line); padding-top:12px; }
+.atf-surface-hide input { flex:none; width:18px; height:18px; accent-color:var(--accent); }
 .atf-full textarea.sel { width:100%; min-height:76px; resize:vertical; font-size:16px; line-height:1.5; padding:11px 14px; font-family:inherit; }
 .tbadges { display:inline-flex; gap:6px; margin-left:8px; vertical-align:middle; }
 .tbadge { display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; white-space:nowrap; }
