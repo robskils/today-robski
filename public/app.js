@@ -1661,9 +1661,9 @@ function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(
 // on accent) recolours the whole app. Cached in localStorage for instant paint
 // and mirrored to settings (kv_accent) so it follows you across devices.
 const ACCENT_PRESETS = [
-  ['#c4412e', 'Rust'], ['#c2703a', 'Amber'], ['#3f7d93', 'Teal'],
-  ['#5a7d5a', 'Forest'], ['#6b5b95', 'Plum'], ['#4f6d9c', 'Indigo'],
-  ['#a8844a', 'Ochre'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
+  ['#a8844a', 'LifeFold'], ['#c4412e', 'Rust'], ['#c2703a', 'Amber'],
+  ['#3f7d93', 'Teal'], ['#5a7d5a', 'Forest'], ['#6b5b95', 'Plum'],
+  ['#4f6d9c', 'Indigo'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
 function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
@@ -1690,10 +1690,10 @@ async function syncAccentFromServer() {
 // follows you across devices. 'none' = plain (no texture).
 const BG_PATTERNS = [['none', 'Plain'], ['dots', 'Dots'], ['grid', 'Grid'], ['diagonal', 'Lines'], ['waves', 'Waves'], ['tiles', 'Tiles'], ['paisley', 'Paisley']];
 function savedBgPattern() { try { return localStorage.getItem('life.bgpattern') || 'none'; } catch { return 'none'; } }
-function applyBgPattern(key) {
-  const k = BG_PATTERNS.some(([v]) => v === key) ? key : 'none';
-  if (k === 'none') delete document.body.dataset.bg; else document.body.dataset.bg = k;
-}
+// Background patterns were retired (Robin, 2026-10-28): always render plain, so
+// any pattern someone set before then no longer shows. The kv value is left
+// untouched, so the choice could be restored later without data loss.
+function applyBgPattern() { delete document.body.dataset.bg; }
 async function setBgPattern(key) {
   try { localStorage.setItem('life.bgpattern', key || 'none'); } catch {}
   applyBgPattern(key);
@@ -2146,14 +2146,14 @@ const aiProvLabel = (p) => ({ anthropic: 'Claude', openai: 'ChatGPT', gemini: 'G
 // which provider it is. No picking, no per-provider boxes.
 function aiConnectHtml(a) {
   if (a.aiAnySet && a.aiProvider) {
-    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers Reflection, Email Scribe, reviews, the I Ching read and more.</div>
+    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in LifeFold.</div>
       <button class="ghost ai-disconnect" data-ai-disconnect="${esc(a.aiProvider)}">Disconnect ${esc(aiProvLabel(a.aiProvider))}</button>
-      <p class="plan-note">Most tools run on whatever you pick. A couple that need special senses - <b>voice notes</b> (audio) and <b>bank-statement import</b> (PDF) - run on <b>Gemini</b> (free), so add a Gemini key if you'd like those too.</p>`;
+      ${a.aiProvider === 'gemini' ? '' : '<p class="plan-note"><b>Voice notes</b> and the <b>Money</b> tools (reading a statement, summarising the finance videos you follow) are the one exception - they need <b>Gemini</b>, the only AI that reads audio and video. A <b>free</b> Gemini key covers both; paste one below and they switch on too.</p>'}`;
   }
   return `<p class="plan-desc">LifeFold runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
     <div class="ai-key-in"><input class="sel" type="password" data-ai-key-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-ai-connect>Connect</button></div>
     <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div>
-    <p class="plan-note">Most tools run on whatever you pick. A couple that need special senses - <b>voice notes</b> (audio) and <b>bank-statement import</b> (PDF) - run on <b>Gemini</b> (free), so add a Gemini key if you'd like those too.</p>`;
+    <p class="plan-note">Your one key powers everything. The <b>one exception</b> is <b>voice notes</b> and the <b>Money</b> tools, which need <b>Gemini</b> (it alone reads audio and video) - a <b>free</b> Gemini key covers them.</p>`;
 }
 async function connectAiKey() {
   const el = document.querySelector('[data-ai-key-any]'); const value = (el && el.value || '').trim();
@@ -3235,24 +3235,33 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // the AI settings and the onboarding guide can say plainly what a key is for.
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
+// prov === 'gemini' means the feature genuinely needs Gemini (it alone reads audio
+// and video): voice notes, and Money (statement photos/PDFs + the finance videos
+// you follow). 'any' means it runs on the one AI you connected, whatever it is.
 const AI_USES = [
-  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, dream reflections, and weighing a decision with Compass', 'Claude'],
-  ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'Claude'],
-  ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'Claude'],
-  ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'Claude'],
-  ['money', 'Money', 'sums up the channels you follow, and turns a pasted or photographed statement into tidy transactions', 'Gemini'],
-  ['import', 'Event import', 'reads events off a file, flyer, photo or webpage so you can add them to your calendar', 'Claude'],
-  ['journalvoice', 'Voice journaling', 'turns a spoken recording into a written-up journal entry and fills your prompts', 'Gemini'],
-  ['search', 'Smarter search', 'finds what you meant across languages and in other words, when a plain search comes up short', 'Claude'],
+  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, dream reflections, and weighing a decision with Compass', 'any'],
+  ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'any'],
+  ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'any'],
+  ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'any'],
+  ['money', 'Money', 'reads a photographed or PDF statement into tidy transactions, and sums up the finance videos you follow', 'gemini'],
+  ['import', 'Event import', 'reads events off a file, flyer, photo or webpage so you can add them to your calendar', 'any'],
+  ['journalvoice', 'Voice journaling', 'turns a spoken recording into a written-up journal entry and fills your prompts', 'gemini'],
+  ['search', 'Smarter search', 'finds what you meant across languages and in other words, when a plain search comes up short', 'any'],
 ];
-const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) =>
-  `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span></li>`).join('')}</ul>`;
+// A feature's AI badge. Gemini-pinned features always show Gemini; everything else
+// shows the one AI you connected (or "Your AI" before you add a key).
+function aiUseBadge(prov) {
+  if (prov === 'gemini') return { label: 'Gemini', cls: 'gemini' };
+  const a = state.account || {};
+  if (a.aiAnySet && a.aiProvider) return { label: aiProvLabel(a.aiProvider), cls: ({ anthropic: 'claude', openai: 'chatgpt', gemini: 'gemini' }[a.aiProvider] || 'any') };
+  return { label: 'Your AI', cls: 'any' };
+}
+const aiUsesHtml = () => `<ul class="ai-uses">${AI_USES.map(([, f, why, prov]) => { const b = aiUseBadge(prov); return `<li><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span><span class="ai-use-prov ai-use-${b.cls}">${esc(b.label)}</span></li>`; }).join('')}</ul>`;
 // The same list in Settings, each a switch: leave AI on but turn off just the uses
 // you don't want. Off when master AI is off (shown, but inert). aiFeatures[key] ===
 // false means the user switched that one off; absent = on.
 const aiFeatureOn = (key) => { const f = (state.account && state.account.aiFeatures) || {}; return f[key] !== false; };
-const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.aiOff); return `<ul class="ai-uses ai-uses-toggle${off ? ' ai-disabled' : ''}">${AI_USES.map(([key, f, why, prov]) =>
-  `<li><label class="ai-use-row"><span class="ai-use-main"><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span></span><span class="ai-use-prov ai-use-${prov.toLowerCase()}">${prov}</span><input type="checkbox" class="ai-use-sw" data-ai-feature="${key}" ${aiFeatureOn(key) ? 'checked' : ''} ${off ? 'disabled' : ''}></label></li>`).join('')}</ul>`; };
+const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.aiOff); return `<ul class="ai-uses ai-uses-toggle${off ? ' ai-disabled' : ''}">${AI_USES.map(([key, f, why, prov]) => { const b = aiUseBadge(prov); return `<li><label class="ai-use-row"><span class="ai-use-main"><span class="ai-use-f">${f}</span><span class="ai-use-why">${why}</span></span><span class="ai-use-prov ai-use-${b.cls}">${esc(b.label)}</span><input type="checkbox" class="ai-use-sw" data-ai-feature="${key}" ${aiFeatureOn(key) ? 'checked' : ''} ${off ? 'disabled' : ''}></label></li>`; }).join('')}</ul>`; };
 // Reusable Gmail app-password guidance. A normal Google password won't work over
 // IMAP - this is the single biggest thing that trips people up, so spell it out
 // with the exact links.
@@ -3319,7 +3328,6 @@ function renderSettings() {
   const cur = (savedAccent() || '#c4412e').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
-  const bgSwatches = BG_PATTERNS.map(([k, l]) => `<button class="bg-swatch-btn ${savedBgPattern() === k ? 'on' : ''}" data-bgpat="${k}" title="${l}"><span class="bg-swatch" data-bg="${k}"></span><span class="bg-swatch-l">${l}</span></button>`).join('');
   state.settings = state.settings || {};
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
@@ -3398,19 +3406,19 @@ function renderSettings() {
   const phoneSet = !!(state.account && (state.account.phone || '').trim());
   const editingPhone = !!(state.settings && state.settings.editPhone);
   const ec = (state.settings && state.settings.emailChange) || null;   // in-progress primary-email change
-  const accountPane = state.account ? `${welcomeGuideHtml()}${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
+  const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
       <div class="set-card set-account">
         <div class="set-pair${ec ? ' set-pair-stack' : ''}">
         ${(nameSet && !editingName)
-          ? `<div class="set-field set-field-ro"><span>Full name</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.name)}">${esc(state.account.name)}</span><button type="button" class="ghost set-edit" data-edit-name>Edit</button></div></div>`
+          ? `<div class="set-field set-field-ro"><span>Full name</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.name)}">${esc(state.account.name)}</span><button type="button" class="set-edit-ic" data-edit-name title="Edit" aria-label="Edit name">✎</button></div></div>`
           : `<label class="set-field"><span>Full name</span><span class="set-ro-row"><input class="sel" id="acct-name-input" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name">${nameSet ? '<button type="button" class="ghost set-edit" data-done-name>Done</button>' : ''}</span></label>`}
         ${!ec
-          ? `<div class="set-field set-field-ro"><span>Primary email</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.email || '')}">${esc(state.account.email || '')}</span><button type="button" class="ghost set-edit" data-edit-email>Edit</button></div></div>`
+          ? `<div class="set-field set-field-ro"><span>Primary email</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.email || '')}">${esc(state.account.email || '')}</span><button type="button" class="set-edit-ic" data-edit-email title="Edit" aria-label="Edit primary email">✎</button></div></div>`
           : ec.step === 'code'
             ? `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">We emailed a 6-digit code to <b>${esc(ec.email)}</b>. Enter it to make it your primary address - your current address stays as a backup sign-in and gets a heads-up.</p><div class="email-change-row"><input class="sel av-code" id="email-change-code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-confirm>Confirm &amp; switch</button><button type="button" class="ghost" data-email-change-resend>Resend</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`
             : `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">Enter your new email. We'll send a 6-digit code to confirm it's yours; your current address stays on as a backup sign-in.</p><div class="email-change-row"><input class="sel" id="email-change-input" type="email" inputmode="email" placeholder="new@email.com" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-send>Send code</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`}
         ${(phoneSet && !editingPhone)
-          ? `<div class="set-field set-field-ro"><span>Phone</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.phone)}">${esc(state.account.phone)}</span><button type="button" class="ghost set-edit" data-edit-phone>Edit</button></div></div>`
+          ? `<div class="set-field set-field-ro"><span>Phone</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.phone)}">${esc(state.account.phone)}</span><button type="button" class="set-edit-ic" data-edit-phone title="Edit" aria-label="Edit phone">✎</button></div></div>`
           : (() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="set-ro-row"><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span>${phoneSet ? '<button type="button" class="ghost set-edit" data-done-phone>Done</button>' : ''}</span></label>${ccDatalist()}`; })()}
         </div>
         <div class="set-field"><span>Also sign in with these addresses</span>
@@ -3454,12 +3462,8 @@ function renderSettings() {
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
-        <div class="set-block"><div class="set-row-t">Background</div><div class="set-row-s">A little texture behind everything - keep it plain, or pick a faint pattern.</div>
-          <div class="bg-swatches">${bgSwatches}</div>
-        </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
-        ${state.account ? `<label class="set-mod"><span>Wheel of Life on Life Spaces<small>Show each Life Space's Wheel of Life score and tab. Off by default - tick to switch it on.</small></span><input type="checkbox" data-account-wheelareas ${wheelOnAreas() ? 'checked' : ''}></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? (() => {
@@ -3566,9 +3570,12 @@ function renderSettings() {
   const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, import: importPane(), manage: managePane };
   const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), import: t('set.sub.import'), manage: t('set.sub.manage') };
 
+  const setupItems = state.account ? welcomeItems() : [];
+  const setupDone = setupItems.length > 0 && setupItems.every((x) => x.done);
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
     <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
+    ${state.account && !setupDone ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
@@ -9218,7 +9225,7 @@ function renderArea() {
   const wheelReviewed = Math.min(Number((area.props && area.props.wheelScore) || 0), 5) > 0;
   // Respect the section-visibility setting: a tab you've hidden (Vision / Goals /
   // Bucket list) drops out entirely - no tab button and no panel. (Robin.)
-  const TABS = ['Vision', 'Goals', ...((wheelOnAreas() && wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
+  const TABS = ['Vision', 'Goals', ...((wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
   let openTile = state.area_open.tileOpen;
   // Default: all tabs closed - nothing is forced open. A stale value not in TABS
   // also resolves to closed. Click a tab to open it; click the open one to close
@@ -9428,7 +9435,7 @@ function renderArea() {
         <div class="am-kicker">Life Space</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${wheelOnAreas() ? areaSentimentHtml(area) : ''}<span class="area-h1-tools am-rowtools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings &amp; overview">▾</button></span></div>
+        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${areaSentimentHtml(area)}<span class="area-h1-tools am-rowtools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings &amp; overview">▾</button></span></div>
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -17718,14 +17725,6 @@ function weekStart() {
   try { const l = localStorage.getItem('life.weekStart'); if (l != null && /^[0-6]$/.test(l)) return Number(l); } catch {}
   return 1;
 }
-// Whether to surface the Wheel of Life score/tab on Life Space pages. Off by
-// default - people opt in from Settings › Appearance. A localStorage mirror keeps
-// it instant (and hidden-by-default) before the account loads. (Robin, 2026-10-28.)
-function wheelOnAreas() {
-  if (state.account && typeof state.account.wheelAreas === 'boolean') return state.account.wheelAreas;
-  try { const l = localStorage.getItem('life.wheelAreas'); if (l === '1') return true; if (l === '0') return false; } catch {}
-  return false;
-}
 // The most recently completed week per the chosen week-start, ending on-or-before
 // the anchor - i.e. "the week just gone".
 function weeklyWindow(anchorISO) {
@@ -21176,7 +21175,6 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   if (e.target.matches('[data-account-currency]')) { const code = e.target.value; if (state.account) state.account.currency = code; saveAccount({ currency: code }); const c = (CURRENCIES_APP.find((x) => x[0] === code) || [])[3] || code; toast(`Money shown in ${c}`); }
-  if (e.target.matches('[data-account-wheelareas]')) { const on = e.target.checked; if (state.account) state.account.wheelAreas = on; try { localStorage.setItem('life.wheelAreas', on ? '1' : '0'); } catch {} saveAccount({ wheelAreas: on }); toast(on ? 'Wheel of Life showing on Life Spaces' : 'Wheel of Life hidden on Life Spaces'); return; }
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
@@ -25564,7 +25562,7 @@ function onbAi() {
       ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`
       : `<div class="onb-prov"><div class="onb-prov-in"><input class="sel" type="password" data-onb-ai-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-onb-ai-connect>Connect</button></div>
         <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div></div>`}
-    <p class="onb-p onb-muted">A couple of tools (voice notes, bank-statement import) run on Gemini (free), so a Gemini key covers those too. Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - see Settings → Plan.</p>`;
+    <p class="onb-p onb-muted">Voice notes and the Money tools are the one exception - they need Gemini (it alone reads audio and video), and a free Gemini key covers them. Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - see Settings → Plan.</p>`;
 }
 async function onbConnectAi() {
   const el = document.querySelector('[data-onb-ai-any]'); const value = (el && el.value || '').trim();

@@ -3547,8 +3547,13 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .set-pair.set-pair-stack > .set-field { flex:0 0 auto; width:100%; }
 .set-ro-row { display:flex; align-items:center; gap:10px; min-width:0; }
 .set-ro-row .sel { flex:1 1 auto; min-width:0; }
-.set-ro-val { flex:1 1 auto; min-width:0; color:var(--ink-2); font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.set-ro-val { flex:1 1 auto; min-width:0; color:var(--ink); font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .set-edit { flex:none; padding:6px 13px; font-size:13.5px; }
+/* Read-only account fields read as a filled field with a quiet pencil to edit,
+   rather than a value with a text button floating off at the column edge. */
+.set-field-ro .set-ro-row { justify-content:space-between; background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:0 6px 0 13px; min-height:44px; }
+.set-edit-ic { flex:none; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:9px; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; transition:color .12s, background .12s; }
+.set-edit-ic:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
 .set-ro-row .acct-phone { flex:1 1 auto; min-width:0; }
 .email-change { display:flex; flex-direction:column; gap:8px; }
 .email-change-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -4806,6 +4811,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .ai-use-prov { flex:none; font-size:11px; font-weight:600; letter-spacing:.03em; padding:2px 8px; border-radius:999px; }
 .ai-use-claude { color:#a5502f; background:color-mix(in srgb,#c4712e 16%,transparent); }
 .ai-use-gemini { color:#3367b8; background:color-mix(in srgb,#4285f4 15%,transparent); }
+.ai-use-chatgpt { color:#0f7a5a; background:color-mix(in srgb,#10a37f 16%,transparent); }
+.ai-use-any { color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,transparent); }
 /* Each AI use as its own switch (Settings > Plan). */
 .ai-uses-toggle { gap:4px; }
 .ai-uses-toggle li { display:block; }
