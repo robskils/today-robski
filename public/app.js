@@ -1704,6 +1704,26 @@ async function syncBgPatternFromServer() {
   try { const r = await api('/api/kv/bgpattern'); const k = (r && r.value) || 'none'; if (k !== savedBgPattern()) { try { localStorage.setItem('life.bgpattern', k); } catch {} applyBgPattern(k); } } catch {}
 }
 
+// ── date style (per-user) ──────────────────────────────────────────────
+// UK ('en-GB') reads "23 October"; US ('en-US') reads "October 23". Neither
+// carries an ordinal suffix (no "23rd"). dloc() is the locale every date label
+// in the app formats through, so this one switch flips them all. Cached in
+// localStorage for instant paint, mirrored to kv_datestyle across devices.
+// (Robin, 2026-10-28.)
+function savedDateStyle() { try { const v = localStorage.getItem('life.datestyle'); return (v === 'us' || v === 'uk') ? v : ''; } catch { return ''; } }
+function dateStyle() { return savedDateStyle() || 'uk'; }
+function dloc() { return dateStyle() === 'us' ? 'en-US' : 'en-GB'; }
+async function setDateStyle(v) {
+  v = v === 'us' ? 'us' : 'uk';
+  try { localStorage.setItem('life.datestyle', v); } catch {}
+  renderNav();
+  if (state.view && state.view.type === 'settings') renderSettings(); else rerenderCurrent();
+  try { await api('/api/kv/datestyle', { method: 'PUT', body: JSON.stringify({ value: v }) }); } catch {}
+}
+async function syncDateStyleFromServer() {
+  try { const r = await api('/api/kv/datestyle'); const v = (r && (r.value === 'us' || r.value === 'uk')) ? r.value : ''; if (v && v !== savedDateStyle()) { try { localStorage.setItem('life.datestyle', v); } catch {} renderNav(); if (state.view) rerenderCurrent(); } } catch {}
+}
+
 // ── Settings hub ──────────────────────────────────────────────────────
 function openSettings(tab) { state.settings = state.settings || {}; if (tab) state.settings.tab = tab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 // 🇵🇹 from "PT" - two regional-indicator symbols (client mirror of the worker's).
@@ -2341,7 +2361,7 @@ function adminAcctRow(u) {
   const t = u.last_seen ? new Date(u.last_seen).getTime() : 0;
   const online = !!t && (Date.now() - t < 150000);
   const seen = t ? (online ? 'online now' : timeAgo(t)) : 'not yet';
-  const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '-';
+  const joined = u.created_at ? new Date(u.created_at).toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: '2-digit' }) : '-';
   const name = (u.name || '').trim();
   const sub = (u.subdomain || '').trim();
   const email = (u.email || '').trim();
@@ -2466,7 +2486,7 @@ function renderAdmin() {
   // Costs: measured AI spend + fixed infrastructure, by month (this month, last, …).
   const costMonths = (a.costs && a.costs.months) || [];
   const costFixed = (a.costs && a.costs.fixed) || [];
-  const monthLabel = (ym, i) => { const d = new Date(ym + '-01T00:00'); const nm = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); return i === 0 ? `${nm} · this month` : i === 1 ? `${nm} · last month` : nm; };
+  const monthLabel = (ym, i) => { const d = new Date(ym + '-01T00:00'); const nm = d.toLocaleDateString(dloc(), { month: 'long', year: 'numeric' }); return i === 0 ? `${nm} · this month` : i === 1 ? `${nm} · last month` : nm; };
   const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
   const costsPane = `<div class="set-card">
       <div class="home-sec-h">Running costs</div>
@@ -3464,6 +3484,7 @@ function renderSettings() {
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
+        ${state.account ? `<label class="set-mod"><span>Date style<small>How dates read across the app</small></span><select class="sel" data-datestyle style="max-width:190px"><option value="uk" ${dateStyle() === 'uk' ? 'selected' : ''}>UK - 23 October</option><option value="us" ${dateStyle() === 'us' ? 'selected' : ''}>US - October 23</option></select></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? (() => {
@@ -4818,11 +4839,9 @@ const firstName = () => {
   const m = state.me || {};
   return String(m.name || '').trim().split(/\s+/)[0] || String(m.subdomain || '').trim();
 };
-// "Saturday 29th August" - weekday, ordinal day, month.
+// "Saturday 29 August" (UK) or "Saturday, August 29" (US) - clean, no ordinal.
 function homeDate() {
-  const d = new Date();
-  const ord = (n) => { const v = n % 100; return n + (['th', 'st', 'nd', 'rd'][(v - 20) % 10] || ['th', 'st', 'nd', 'rd'][v] || 'th'); };
-  return `${d.toLocaleDateString('en-GB', { weekday: 'long' })} ${ord(d.getDate())} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
+  return new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
 }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so
 // it stays right without re-rendering the page.
@@ -4954,7 +4973,7 @@ function homeDayLabel(off) {
   // Beyond tomorrow, just the weekday name (Monday, Tuesday…).
   const ds = addDaysStr(state.home.today || dayKey(new Date()), off);
   const [y, m, d] = ds.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(dloc(), { weekday: 'long', timeZone: 'UTC' });
 }
 function homeTodayItems() {
   const off = state.home.dayOffset || 0;
@@ -6775,7 +6794,7 @@ const JMODE_EXTRA = { coaching: { icon: '🧭', label: 'Coaching session' }, dai
 const journalModeMeta = (key) => journalModeOf(key) || JMODE_EXTRA[key] || null;
 function journalDateLabel(iso) {
   const d = iso ? new Date(iso) : new Date();
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 function journalSnippet(n) {
   const d = document.createElement('div'); d.innerHTML = String(n.body || '');
@@ -6901,10 +6920,10 @@ async function saveReadingToLedger(kind, areaId) {
     toast(`Saved to ${area ? area.title : 'lifespace'} ✓`);
   } catch (e) { toast(e.message); }
 }
-const spiritWhen = (at) => { try { return new Date(at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
+const spiritWhen = (at) => { try { return new Date(at).toLocaleString(dloc(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch { return ''; } };
 // Short date for the reflection history stacks (I Ching, spirit cards) - matches
 // the Insights list's date format so the cards stack and read identically. (Robin.)
-const reflWhen = (at) => { try { return new Date(at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
+const reflWhen = (at) => { try { return new Date(at).toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } };
 // The cards you've taken, as a persistent stack you can come back to and reopen
 // - the same robust, revisitable card list as Insights (not a tucked-away
 // collapsible). Each reopens the card face-up; the × removes it. (Robin.)
@@ -7337,7 +7356,7 @@ function renderHoro() {
     const chips = [sunSign ? chip('Sun', sunSign) : '', (chart && chart.hasTime && chart.moon) ? chip('Moon', chart.moon) : '', (chart && chart.rising) ? chip('Rising', chart.rising) : ''].filter(Boolean).join('');
     const chartHint = chart && !chart.hasTime ? 'Add your birth time to reveal your Moon and rising signs.'
       : (chart && chart.hasTime && !chart.rising) ? 'Add your birth place to reveal your rising sign.' : '';
-    const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const today = new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     body = `<div class="ho-read">
       <div class="ho-chart">${chips}</div>
       ${z ? `<p class="ho-arch">Sun in ${esc(z[0])} - you are ${esc(z[5])}.</p>` : ''}
@@ -7575,6 +7594,9 @@ const WB_TOOL = {
 function wbToolTilesHtml(opts) {
   opts = opts || {};
   const sel = opts.sel || null;
+  // The tool tiles belong on the Reflection hub only. A sub-page (any `sel`) gets
+  // no tile strip - the breadcrumb takes you back. (Robin, 2026-10-28.)
+  if (sel) return '';
   const liveIch = !!currentIching(), liveHoro = !!currentHoro(), liveSpirit = !!currentSpirit();
   const dot = '<span class="wb-tile-live" title="You have a live reading"></span>';
   const tile = (attr, ic, key, title, o) => {
@@ -7720,7 +7742,7 @@ function renderWellbeing() {
   const stat = (n, l) => `<div class="wb-stat"><b>${n}</b><span>${esc(l)}</span></div>`;
   const statsHtml = entries.length ? `<div class="wb-stats">${stat(entries.length, entries.length === 1 ? 'entry' : 'entries')}${stat(weekN, 'this week')}${stat(lastLbl, 'last entry')}</div>` : '';
   // A single feed of everything recent across the tools, newest first.
-  const rel = (ts) => { const dd = Math.floor((now - ts) / 86400000); return dd <= 0 ? 'today' : dd === 1 ? 'yesterday' : dd < 7 ? `${dd}d ago` : new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+  const rel = (ts) => { const dd = Math.floor((now - ts) / 86400000); return dd <= 0 ? 'today' : dd === 1 ? 'yesterday' : dd < 7 ? `${dd}d ago` : new Date(ts).toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); };
   const items = wbRecentItems();
   const recent = items.map((x) => `<button class="wb-recent-row" ${x.attr}><span class="wb-rr-ic">${x.ic}</span><span class="wb-rr-body"><span class="wb-rr-t">${esc(x.title || x.label)}</span><span class="wb-rr-k">${esc(x.label)}</span></span><span class="wb-rr-when">${esc(rel(x.ts))}</span></button>`).join('');
   const recentHtml = items.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent</span></div><div class="wb-recent-list">${recent}</div></section>` : '';
@@ -7761,7 +7783,7 @@ function insParas(text) {
   else { const sents = s.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [s]; paras = []; for (let i = 0; i < sents.length; i += 3) paras.push(sents.slice(i, i + 3).join('').trim()); }
   return paras.map((p) => p.trim()).filter(Boolean).map((p) => `<p class="j-insights-t">${esc(p)}</p>`).join('');
 }
-function insDate(b) { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } }
+function insDate(b) { try { return new Date((b.props && b.props.ts) || b.created_at).toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return ''; } }
 async function openInsights() {
   state.view = { type: 'insights' };
   renderNav();
@@ -11387,7 +11409,7 @@ async function openTracker() {
   if (state.view && state.view.type === 'tracker') renderTracker();
 }
 function renderTracker() {
-  const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayLabel = new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
     <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><button class="add-btn wide trk-newtop" data-prc-new>＋ New practice</button></div>
@@ -11403,8 +11425,8 @@ function renderToday() {
   const _t2Scroll = { practices: document.querySelector('.t2-practices')?.scrollTop || 0, day: document.querySelector('.t2-day')?.scrollTop || 0, tasks: document.querySelector('.t2-tasks')?.scrollTop || 0 };
   const _t2Win = document.querySelector('.t2-grid') ? window.scrollY : 0;
   const d = new Date(T.day + 'T00:00');
-  const dateLabel = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-  const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = d.toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayLabel = new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
   // Always show the day + date; when it's today, lead with "Today" and set the date beside it.
   const h1 = isToday ? `${t('nav.planner')} <span class="t2-dsmall">${esc(dateLabel)}</span>` : esc(dateLabel);
   const nav = `<span class="t2-nav">${!isToday ? `<button class="t2-navbtn" data-t2-today>${t('nav.today')}</button>` : ''}<button class="t2-arw" data-t2-day="-1" aria-label="Previous day">‹</button><button class="t2-arw" data-t2-day="1" aria-label="Next day">›</button></span>`;
@@ -11595,7 +11617,7 @@ function t2DayHtml() {
   }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
   return `
-    <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>${esc(new Date(T.day + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long' }))}</h2></div><span class="t2-daysub">calendar &amp; what you've planned</span></div>
+    <div class="t2-stickytop t2-dayhead"><div class="t2-colh"><h2>${esc(new Date(T.day + 'T00:00').toLocaleDateString(dloc(), { weekday: 'long' }))}</h2></div><span class="t2-daysub">calendar &amp; what you've planned</span></div>
     <div class="t2-colscroll t2-dayscroll">
       ${allDay.length ? `<div class="t2-allday">${allDay.map((e) => `<span class="t2-adchip">${esc(e.title || '(all-day)')}</span>`).join('')}</div>` : ''}
       ${floating.length ? `<div class="t2-tray"><span class="t2-tray-h">Anytime today</span>${floating.map((s) => t2SlotBlock(s, true)).join('')}</div>` : ''}
@@ -13864,9 +13886,9 @@ function linkifyText(text) {
 function inviteCardHtml(inv) {
   let when = '';
   try {
-    if (inv.allDay) when = new Date(inv.startDate + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · all day';
+    if (inv.allDay) when = new Date(inv.startDate + 'T00:00:00').toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' }) + ' · all day';
     else { const s = new Date(inv.start), e = inv.end ? new Date(inv.end) : null; const opt = { hour: '2-digit', minute: '2-digit' };
-      when = s.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + s.toLocaleTimeString(undefined, opt) + (e ? '–' + e.toLocaleTimeString(undefined, opt) : ''); }
+      when = s.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + s.toLocaleTimeString(undefined, opt) + (e ? '–' + e.toLocaleTimeString(undefined, opt) : ''); }
   } catch {}
   if (!state.calAdded && !state._calAddedReq) { state._calAddedReq = true; loadCalAdded().then(() => { if (state.view && state.view.type === 'mail') renderMail(); }); }
   const added = calInviteAdded(inv);
@@ -15253,7 +15275,7 @@ function fmtBirthday(iso) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return iso || '';
   const d = new Date(iso + 'T00:00'); if (isNaN(d)) return iso;
   const y = Number(iso.slice(0, 4));
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', ...(y > 1901 ? { year: 'numeric' } : {}) });
+  return d.toLocaleDateString(dloc(), { day: 'numeric', month: 'long', ...(y > 1901 ? { year: 'numeric' } : {}) });
 }
 // The Details block read-only: the facts as text and tappable links. Phone dials,
 // email composes, the address carries its Maps links. An Edit flips to the form.
@@ -16479,7 +16501,7 @@ function portfolioBody() {
     return `<div class="fin-chip"><span class="lab">${esc(p.label)}</span><span class="fin-cv ${cls}">${sign}${p.pct.toFixed(2)}%</span><span class="fin-abs">${sign}${eur0(p.abs)}</span></div>`;
   }).join('');
   const rates = (d.rates || []).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
-  const asOf = d.ts ? new Date(d.ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const asOf = d.ts ? new Date(d.ts).toLocaleString(dloc(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
   const gains = [];
   if (d.unrealisedTotal != null) gains.push(`<span class="fin-gain ${d.unrealisedTotal >= 0 ? 'up' : 'down'}">${d.unrealisedTotal >= 0 ? '▲' : '▼'} ${eurSigned(d.unrealisedTotal)} unrealised</span>`);
   if (d.realisedTotal) gains.push(`<span class="fin-gain ${d.realisedTotal >= 0 ? 'up' : 'down'}">${d.realisedTotal >= 0 ? '▲' : '▼'} ${eurSigned(d.realisedTotal)} realised</span>`);
@@ -16508,7 +16530,7 @@ function portfolioBody() {
       <thead><tr><th>Sold</th><th>When</th><th class="fh-r">Proceeds</th><th class="fh-r">Realised</th></tr></thead>
       <tbody>${sales.map((s) => `<tr>
         <td class="fh-name">${esc(s.name)}${s.units ? ` · ${fmtQty(s.units)}` : ''}</td>
-        <td class="fh-where">${esc(new Date(s.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</td>
+        <td class="fh-where">${esc(new Date(s.ts).toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: 'numeric' }))}</td>
         <td class="fh-r">${eur0(s.proceeds)}</td>
         <td class="fh-r ${s.realised == null ? '' : (s.realised >= 0 ? 'up' : 'down')}">${s.realised == null ? '—' : eurSigned(s.realised)}</td>
       </tr>`).join('')}</tbody>
@@ -16578,7 +16600,7 @@ function adviceBody() {
   const chips = (f.channels || []).map((c) => `<span class="adv-chan"><a href="${esc((c.props || {}).url || '#')}" target="_blank" rel="noopener noreferrer">${esc(c.title || 'Channel')}</a><button class="adv-chan-x" data-adv-chan-del="${c.id}" title="Stop tracking">×</button></span>`).join('');
   const t = f.trends || {};
   const trends = t.text ? `<div class="adv-trends">
-      <div class="adv-trends-h">📈 Long-term trends${t.ts ? `<span class="adv-trends-ts">across ${t.from || ''} videos · ${esc(new Date(t.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>` : ''}<button class="ghost adv-trends-r" data-adv-trends title="Regenerate">↻</button></div>
+      <div class="adv-trends-h">📈 Long-term trends${t.ts ? `<span class="adv-trends-ts">across ${t.from || ''} videos · ${esc(new Date(t.ts).toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }))}</span>` : ''}<button class="ghost adv-trends-r" data-adv-trends title="Regenerate">↻</button></div>
       <p class="adv-trends-t">${esc(t.text)}</p>
       ${(t.signals || []).length ? `<ul class="adv-signals">${t.signals.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
     </div>` : '';
@@ -16594,7 +16616,7 @@ function adviceBody() {
 }
 function adviceVideoCard(v) {
   const p = v.props || {};
-  const when = p.published ? new Date(p.published).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const when = p.published ? new Date(p.published).toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const acts = (p.actions || []).map((a) => `<li>${esc(a)}</li>`).join('');
   const tops = (p.topics || []).map((tp) => `<span class="adv-topic">${esc(tp)}</span>`).join('');
   return `<div class="adv-card">
@@ -16669,7 +16691,7 @@ function spendCatToggleType(cat, col) {
   if (col === 'income') { const s = spendAlsoIncome(); s.has(cat) ? s.delete(cat) : s.add(cat); saveSpendCatType('income', [...s]); }
   else { const s = spendAlsoExpense(); s.has(cat) ? s.delete(cat) : s.add(cat); saveSpendCatType('expense', [...s]); }
 }
-const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); };
+const monthLabel = (ym) => { const [y, m] = ym.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString(dloc(), { month: 'long', year: 'numeric' }); };
 const eurSigned = (n) => { const c = appCurrency(); return (n < 0 ? '-' : '') + c[1] + Math.abs(Math.round(n)).toLocaleString(c[2]); };
 function txnList() { return (state.financial.txns || []).map((t) => ({ id: t.id, ...(t.props || {}) })).filter((t) => t.date); }
 function spendMonths() { return [...new Set(txnList().map((t) => t.date.slice(0, 7)))].sort().reverse(); }
@@ -16740,7 +16762,7 @@ function spendTrend(months) {
   const all = txnList();
   const data = months.map((m) => { const r = all.filter((t) => t.date.slice(0, 7) === m); return { m, in: r.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), out: r.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0) }; });
   const max = Math.max(1, ...data.map((d) => Math.max(d.in, d.out)));
-  const bars = data.map((d) => `<div class="sp-tcol" data-sp-month-jump="${d.m}"><div class="sp-tbars"><i class="in" style="height:${Math.round(d.in / max * 100)}%" title="In ${eur0(d.in)}"></i><i class="out" style="height:${Math.round(d.out / max * 100)}%" title="Out ${eur0(d.out)}"></i></div><span class="sp-tlab">${esc(new Date(+d.m.slice(0, 4), +d.m.slice(5, 7) - 1).toLocaleDateString('en-GB', { month: 'short' }))}</span></div>`).join('');
+  const bars = data.map((d) => `<div class="sp-tcol" data-sp-month-jump="${d.m}"><div class="sp-tbars"><i class="in" style="height:${Math.round(d.in / max * 100)}%" title="In ${eur0(d.in)}"></i><i class="out" style="height:${Math.round(d.out / max * 100)}%" title="Out ${eur0(d.out)}"></i></div><span class="sp-tlab">${esc(new Date(+d.m.slice(0, 4), +d.m.slice(5, 7) - 1).toLocaleDateString(dloc(), { month: 'short' }))}</span></div>`).join('');
   return `<div class="sp-trend"><div class="sp-trend-h">In vs out · last ${data.length} months <span class="sp-tkey"><i class="in"></i>in <i class="out"></i>out</span></div><div class="sp-trendbars">${bars}</div></div>`;
 }
 function spendImportView() {
@@ -17060,7 +17082,7 @@ function reviewArchiveCardHtml(r) {
   const lbl = (REVIEWS[p.rtype] || {}).label || 'Review';
   const prog = p.status === 'inprogress';
   const pt = periodTitle(p.rtype, p.from, p.to);
-  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
   const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${sd(p.from)} – ${sd(p.to)}` : pt.main) : pt.main;
   const sentiment = wv ? (AREA_SENTIMENT[Math.max(1, Math.round(wv))] || '') : '';
   return `<button class="rv-card rv-card-tall ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
@@ -17075,8 +17097,8 @@ function reviewsTypeBody(k) {
   const todayI = localISO(new Date());
   const label = (REVIEWS[k] || {}).label || 'Review';
   const low = label.toLowerCase();
-  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-  const fullD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) : '';
+  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
+  const fullD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'short' }) : '';
   const all = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === k).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const cur = activeReviewWindow(k, todayI);
   const curRev = all.find((r) => (r.props || {}).to === cur.to);
@@ -17988,7 +18010,7 @@ function reviewsBody() {
   // Due day = the covered week's review day (its end); once filed, next week's.
   const eff = submittedThisWeek ? localISO(new Date(Date.parse(curWin.to + 'T00:00') + 7 * 86400000)) : curWin.to;
   const dueDate = new Date(eff + 'T00:00');
-  const dueLbl = dueDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  const dueLbl = dueDate.toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'short' });
   const diff = Math.round((dueDate - new Date(todayISO + 'T00:00')) / 86400000);
   const wkWord = inProgWk ? 'this' : 'last';
   let dueLine;
@@ -18001,7 +18023,7 @@ function reviewsBody() {
     : submittedThisWeek
     ? `<button class="rv-start-weekly rv-hero-done" data-open-review="${thisWeek.id}"><span class="rvw-ic">✓</span><span class="rvw-body"><b>${inProgWk ? 'This' : 'Last'} week's review - submitted</b><small>Tap to look back over it.</small></span><span class="rvw-go">→</span></button>`
     : `<button class="rv-start-weekly" data-start-review="weekly"><span class="rvw-ic">🔄</span><span class="rvw-body"><b>Start ${wkWord} week's review</b><small>${inProgWk ? "It's only partway through - start now and add to it as the week goes." : "A few minutes, and you'll know where you stand."}</small></span><span class="rvw-go">→</span></button>`;
-  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
   // Each review type shows two equal tiles - its Current period and the Previous
   // one - so "the previous review is the same size as the current". A tile opens
   // its report if filed, continues it if started, or starts it if not. (Robin.)
@@ -18075,7 +18097,7 @@ function reviewsBody() {
 function reviewCarousels() {
   const past = state.reviews || [];
   const today = localISO(new Date());
-  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
   const BACK = { weekly: 8, monthly: 6, quarterly: 4, yearly: 3 };   // how many to show when there's no older review to reach back to
   const rows = RTYPE_ORDER.map((k) => {
     const ofType = past.filter((r) => ((r.props || {}).rtype || 'weekly') === k);
@@ -18460,7 +18482,7 @@ function reviewWhenHtml(p) {
   else if (sinceEnd <= 45) rel = `Last ${word}`;
   else rel = `${Math.round(sinceEnd / (word === 'year' ? 365 : word === 'quarter' ? 91 : 30))} ${word}s ago`;
   const pct = Math.max(0, Math.min(100, Math.round((today - d0) / Math.max(DAY, d1 - d0) * 100)));
-  const shortD = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const shortD = (iso) => new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
   const range = `${shortD(from)} – ${shortD(to)}`;
   let detail;
   if (inRange) { const dayIn = Math.round((today - d0) / DAY) + 1; const left = len - dayIn; detail = `Day ${dayIn} of ${len} · ${left > 0 ? `${left} to go` : 'review day'}`; }
@@ -18480,7 +18502,7 @@ function reviewWhenHtml(p) {
     for (let i = 0; i < len; i++) {
       const dt = new Date(d0.getTime() + i * DAY); const iso = localISO(dt);
       const st = iso < todayISO ? 'done' : (iso === todayISO ? 'today' : 'future');
-      blocks += `<div class="rv-wb rv-wb-${st}" title="${dt.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}"><span class="rv-wb-l">${dt.toLocaleDateString('en-GB', { weekday: 'narrow' })}</span><span class="rv-wb-n">${dt.getDate()}</span></div>`;
+      blocks += `<div class="rv-wb rv-wb-${st}" title="${dt.toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'short' })}"><span class="rv-wb-l">${dt.toLocaleDateString(dloc(), { weekday: 'narrow' })}</span><span class="rv-wb-n">${dt.getDate()}</span></div>`;
     }
     track = `<div class="rv-week-blocks">${blocks}</div>`;
   } else {
@@ -18832,7 +18854,7 @@ function renderReviewReport() {
   // The period, stated plainly and big: the span (1 month) + the exact dates, so
   // you know what you're looking at at a glance.
   const spanWords = { weekly: '1 week', monthly: '1 month', quarterly: '3 months', yearly: '1 year' }[p.rtype] || '';
-  const shortDR = (iso) => new Date(iso + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const shortDR = (iso) => new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
   const rangeLine = (p.from && p.to) ? `${shortDR(p.from)} - ${shortDR(p.to)}` : (pt.range || '');
   // Which week of the year - a small sense of where you are in the run.
   const weekNo = (p.rtype === 'weekly' && p.to) ? (() => { const w = isoWeekInfo(p.to); return `Week ${w.week} / ${w.total}`; })() : '';
@@ -19446,7 +19468,7 @@ function autoGrowSoon(el) { if (!el) return; requestAnimationFrame(() => autoGro
 // on Google events too. Both ends are written on connect/disconnect.
 const noteEventLinks = (n) => (n && n.props && Array.isArray(n.props.events)) ? n.props.events.filter((e) => e && e.id) : [];
 const evBaseId = (e) => String((e && e.id) || '').split('::')[0];
-const evShortDate = (iso) => { if (!iso) return ''; try { return new Date(String(iso).slice(0, 10) + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch { return String(iso).slice(0, 10); } };
+const evShortDate = (iso) => { if (!iso) return ''; try { return new Date(String(iso).slice(0, 10) + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); } catch { return String(iso).slice(0, 10); } };
 // A pool of recent + upcoming events (native AND Google) for the note-side picker
 // and suggestions. Loaded once, lazily; refreshes the note when it lands.
 function loadNoteEvents() {
@@ -21175,6 +21197,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   if (e.target.matches('[data-account-currency]')) { const code = e.target.value; if (state.account) state.account.currency = code; saveAccount({ currency: code }); const c = (CURRENCIES_APP.find((x) => x[0] === code) || [])[3] || code; toast(`Money shown in ${c}`); }
+  if (e.target.matches('[data-datestyle]')) { setDateStyle(e.target.value); toast(e.target.value === 'us' ? 'Dates: October 23' : 'Dates: 23 October'); }
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
@@ -25959,6 +25982,7 @@ function showRequired2fa() {
     // address-bar icon from appearing. It's wired to the button in Accounts instead.
     syncAccentFromServer();  // pick up a custom accent colour saved on another device
     syncBgPatternFromServer();  // and the background pattern, likewise
+    syncDateStyleFromServer();  // and the UK/US date style, likewise
 
     loadAccount();           // name, handle & contact details for the LifeFold card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
