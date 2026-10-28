@@ -8889,6 +8889,36 @@ function areaSentimentHtml(area) {
   const x = area.sharedBy ? '' : '<button class="as-x" data-area-sechide="Sentiment" title="Hide this - put it back in ▾ › Sections" aria-label="Hide">×</button>';
   return `<div class="area-sentiment s${sc}" title="From your last Wheel of Life rating${when ? `, ${esc(dpLabel(when))}` : ''}">${dots}<span class="as-lbl">${AREA_SENTIMENT[sc]}</span><span class="as-sub">${sc}/5 · last review</span>${x}</div>`;
 }
+// A compact "who has access" row for the masthead, sitting under Add/Share: round
+// faces (you + anyone you share with) and a ＋ to give someone access. The faces
+// open each person's LifeFold card; the ＋ opens the same Share surface the ▾
+// overview uses - this is just the quick view. (Robin, 2026-10-28: faces replace
+// the Life Space Access box.)
+function areaFacesRow(area) {
+  const canEdit = !area.sharedBy || !!area.canEdit;
+  const shares = state.area_open && state.area_open.shares;
+  if (shares && shares.length) loadCards(shares.map((s) => s.id));
+  const friends = (state.friends && state.friends.friends) || [];
+  const faces = [];
+  // A lifespace shared TO you leads with its owner's face; then always you.
+  if (area.sharedBy) faces.push(`<span class="aface aface-owner" title="${esc(area.sharedBy)} · owner"><span class="fr-av">${esc(initial(area.sharedBy))}</span></span>`);
+  {
+    const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
+    const photo = state.card && state.card.photo;
+    const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your LifeFold card">${av}</button>`);
+  }
+  const LIM = 6;
+  const list = shares || [];
+  for (const s of list.slice(0, LIM)) {
+    const f = friends.find((x) => x.id === s.id) || {};
+    const name = f.name || s.name || 'Someone';
+    faces.push(`<button class="aface" data-open-personcard="${s.id}" title="${esc(name)}${s.canEdit === false ? ' · view only' : ''}">${personAvatar(s.id, name, '')}</button>`);
+  }
+  const more = list.length > LIM ? `<span class="aface aface-more" title="${list.length - LIM} more with access">+${list.length - LIM}</span>` : '';
+  const add = (canEdit && !area.sharedBy) ? `<button class="aface aface-add" data-area-invite title="Give someone access" aria-label="Give someone access">＋</button>` : '';
+  return `<div class="area-faces">${faces.join('')}${more}${add}</div>`;
+}
 // Days until a birthday (MM-DD), 0 = today, for the lifespace "Today" section.
 function bdayInDays(bday) {
   const mmdd = String(bday || '').slice(-5); const [mm, dd] = mmdd.split('-').map(Number); if (!mm || !dd) return -1;
@@ -9271,10 +9301,10 @@ function renderArea() {
   // Life Space Access always shows (unless hidden via Sections). On a lifespace shared WITH
   // me it names the owner + me, so you can always see who can see this lifespace - we
   // always need it. (Robin, 2026-10-14.)
-  const accessCount = area.sharedBy ? (2 + memberCount) : (memberCount ? memberCount + 1 : null);
-  const accessCard = secHidden('Shared with') ? '' : `<section class="area-dash-shared">${areaSecH('Who has access', 'Life Space Access', accessCount, '👥')}${areaSecOpen('Who has access') ? areaMembersBody(area) : ''}</section>`;
-  const notepadCard = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad">${areaSecH('Notepad', 'Notepad', null, '📝')}${areaSecOpen('Notepad') ? `<div class="area-notepad-body">${areaWallBody(area)}</div>` : ''}</section>`;
-  const folioAccess = (accessCard || notepadCard) ? `<div class="area-dash-fl area-quickrow area-access-row" style="--h:${h}">${accessCard}${notepadCard}</div>` : '';
+  // The "Who has access" box is retired: access now reads as faces in the masthead
+  // (and the full controls live in the ▾ overview / Share). The Notepad drops to the
+  // very bottom of the page, full width. (Robin, 2026-10-28.)
+  const notepadFull = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad area-notepad-full" style="--h:${h}">${areaSecH('Notepad', 'Notepad', null, '📝')}${areaSecOpen('Notepad') ? `<div class="area-notepad-body">${areaWallBody(area)}</div>` : ''}</section>`;
   // Latest Updates: a Facebook-style wall of what everyone with access has done in
   // this lifespace, newest first. Life Spaces are made for sharing, so it names the person
   // ("Smita added an event"). A cross-member feed from /api/area/:id/updates.
@@ -9314,7 +9344,7 @@ function renderArea() {
         <div class="am-kicker">Life Space</div>
         <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${areaAddBtn}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaSentimentHtml(area)}</div>
+        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaFacesRow(area)}${wheelOnAreas() ? areaSentimentHtml(area) : ''}</div>
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -9324,8 +9354,8 @@ function renderArea() {
     ${areaDash}
     ${areaVisionGoals}
     ${latestUpdates}
-    ${folioAccess}
     ${areaTools}
+    ${notepadFull}
     </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)

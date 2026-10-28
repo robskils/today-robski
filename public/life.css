@@ -8897,3 +8897,21 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    the slim pill but tighten it so it sits with the ★ / ▾ tools. (Robin, 2026-10-28.) */
 .area-h1-tools .area-addnew-head { margin-left:0; }
 .area-h1-tools .area-addnew-head .addnew-btn { padding:7px 14px; font-size:13.5px; }
+/* Keep Add / Share / ★ / ▾ on one baseline: equal heights, vertically centred. */
+.area-h1-tools > * { align-self:center; }
+.area-h1-tools .note-share, .area-h1-tools .area-addnew-head .addnew-btn { min-height:34px; display:inline-flex; align-items:center; }
+/* Who-has-access faces under Add / Share: overlapping round avatars and a ＋ to
+   give access, sitting at the right of the search row. (Robin, 2026-10-28.) */
+.area-faces { display:flex; align-items:center; margin-left:auto; padding-left:6px; }
+.area-faces > * { margin-left:-9px; }
+.area-faces > *:first-child { margin-left:0; }
+.aface { flex:none; border:0; background:none; padding:0; border-radius:50%; cursor:pointer; line-height:0; }
+.area-faces .aface .fr-av { width:36px; height:36px; font-size:14px; box-shadow:0 0 0 2px var(--paper); }
+.aface:hover { z-index:3; }
+.aface:hover .fr-av { box-shadow:0 0 0 2px var(--accent); }
+.aface-owner, .aface-more { cursor:default; }
+.aface-more { width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-size:12.5px; font-weight:700; box-shadow:0 0 0 2px var(--paper); }
+.aface-add { width:36px; height:36px; border-radius:50%; display:grid; place-items:center; border:1px dashed var(--line-2); background:var(--card); color:var(--ink-2); font-size:19px; box-shadow:0 0 0 2px var(--paper); cursor:pointer; transition:border-color .12s,color .12s; }
+.aface-add:hover { border-color:var(--accent); color:var(--accent); }
+/* Notepad lives at the very bottom now, full width with a little air above it. */
+.area-notepad-full { margin-top:26px; }
