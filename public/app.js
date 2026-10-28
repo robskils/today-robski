@@ -19592,6 +19592,38 @@ function noteLinkSearchRows(q) {
   }
   return out.join('') || '<div class="nx-sugg-hint">No matches found.</div>';
 }
+// The Add-Task pane's live list: existing open tasks you can link (recent first,
+// filtered by what you type). Creating a new one is the Create button / Enter.
+// (Robin, 2026-10-28.)
+function noteTaskPaneRows(q) {
+  const n = state.note && state.note.current; if (!n) return '';
+  const ql = (q || '').trim().toLowerCase();
+  let list = (state.allTasks || []).filter((tk) => tk.props && tk.props.note !== n.id && !tk.props.done);
+  if (ql) list = list.filter((tk) => (tk.title || '').toLowerCase().includes(ql));
+  list = list.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 12);
+  const rows = list.map((tk) => `<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`).join('');
+  if (rows) return rows;
+  return `<div class="nx-sugg-hint">${ql ? 'No open task matches - press Create to make it.' : 'Type a title and press Create to make a task for this note, or search to link one you already have.'}</div>`;
+}
+// Create a brand-new task bound to this note (props.note), from the Add-Task
+// field. Like newNoteTask but reads the input instead of a prompt and keeps the
+// pane open so you can add another. (Robin, 2026-10-28.)
+async function addNoteTaskFromPane() {
+  const n = state.note && state.note.current; if (!n) return;
+  const inp = document.getElementById('nx-task-input');
+  const title = ((inp && inp.value) || (state.note && state.note.taskQuery) || '').trim();
+  if (!title) { if (inp) inp.focus(); return; }
+  const area = (n.props && n.props.area) || blockAreas(n)[0] || null;
+  const noteTitle = n.title || '';
+  if (state.note) state.note.taskQuery = '';
+  try {
+    const tk = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority: null, done: false, note: n.id, noteTitle } }) });
+    state.allTasks = state.allTasks || []; state.allTasks.push(tk);
+    toast('Task created');
+  } catch (e) { toast(e.message); }
+  renderNote();
+  const i = document.getElementById('nx-task-input'); if (i) i.focus();
+}
 function noteConnectedPanel(n) {
   const canEdit = !(n.sharedBy && !n.canEdit);
   const rows = noteLinkedRows(n);
@@ -19601,10 +19633,14 @@ function noteConnectedPanel(n) {
   // field; Attach/Camera/Scan fire straight away. 'none' = just the row, nothing open.
   const addTab = (state.note && state.note.addTab) || 'none';
   const q = (state.note && state.note.linkQuery) || '';
+  const tq = (state.note && state.note.taskQuery) || '';
   if (addTab === 'connect') ensureLinkPool();
   const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, goals, spaces, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-note-weblink><input class="sel" id="nx-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
-  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
+  // Make a task to come back to this note: type a title and Create, or search to
+  // link an existing one. Brings back the old right-column "+ New task". (Robin, 2026-10-28.)
+  const taskPane = `<form class="nx-weblink" data-note-taskadd><input class="sel" id="nx-task-input" data-nx-task-q placeholder="New task for this note, or search to link one…" value="${esc(tq)}" autocomplete="off"><button type="submit" class="nx-weblink-add">Create</button></form><div class="nx-sugg" id="nx-task-list">${noteTaskPaneRows(tq)}</div>`;
+  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
     <div class="nx-panel" data-att-zone="${n.id}">
@@ -19613,6 +19649,7 @@ function noteConnectedPanel(n) {
         <div class="nx-addrow">
           <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 LifeFold Connect</button>
           <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">🌐 Add Web Link</button>
+          <button type="button" class="nx-choose ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">✓ Add Task</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
           <button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button>
@@ -20939,6 +20976,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-card-website]')) { state.card = state.card || {}; state.card.website = e.target.value; cardLivePreview(); clearTimeout(window.__cardWs); window.__cardWs = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-note-conn-q]') && state.note) { state.note.connQuery = e.target.value; const el = document.getElementById('nconn-list'); if (el) el.innerHTML = noteConnListRows(); return; }
   if (e.target.matches('[data-note-link-q]') && state.note) { state.note.linkQuery = e.target.value; const el = document.getElementById('nx-link-list'); if (el) el.innerHTML = noteLinkSearchRows(e.target.value); return; }
+  if (e.target.matches('[data-nx-task-q]') && state.note) { state.note.taskQuery = e.target.value; const el = document.getElementById('nx-task-list'); if (el) el.innerHTML = noteTaskPaneRows(e.target.value); return; }
   if (e.target.matches('[data-card-link-url]') || e.target.matches('[data-card-link-label]')) {
     const i = Number(e.target.dataset.cardLinkUrl != null ? e.target.dataset.cardLinkUrl : e.target.dataset.cardLinkLabel);
     state.card = state.card || {}; state.card.links = state.card.links || [];
@@ -21790,7 +21828,7 @@ document.addEventListener('click', (e) => {
   { const ad = t.closest('[data-balias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.baliasDel), ad.dataset.aliasCtx); return; } }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
-  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) { const want = at.dataset.noteAddtab; state.note.addTab = (state.note.addTab === want) ? 'none' : want; renderNote(); const sel = state.note.addTab === 'connect' ? '[data-note-link-q]' : state.note.addTab === 'weblink' ? '#nx-weblink-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
+  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) { const want = at.dataset.noteAddtab; state.note.addTab = (state.note.addTab === want) ? 'none' : want; renderNote(); const sel = state.note.addTab === 'connect' ? '[data-note-link-q]' : state.note.addTab === 'weblink' ? '#nx-weblink-input' : state.note.addTab === 'task' ? '#nx-task-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
   { const au = t.closest('[data-note-addurl]'); if (au) { addNoteWebLink(au.dataset.noteAddurl); return; } }
   { const tat = t.closest('[data-task-addtab]'); if (tat) { if (state.task_open) { const want = tat.dataset.taskAddtab; state.task_open.addTab = (state.task_open.addTab === want) ? 'none' : want; connResetPick(); renderTaskCard(); const sel = state.task_open.addTab === 'connect' ? '[data-conn-q]' : state.task_open.addTab === 'weblink' ? '#conn-weblink-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
   { const cau = t.closest('[data-conn-addurl]'); if (cau) { const ctx = connCtx(); if (ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, cau.dataset.connAddurl); return; } }
@@ -22318,6 +22356,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
   if (e.target.matches && e.target.matches('[data-note-weblink]')) { const i = $('#nx-weblink-input'); if (i && state.note) addNoteWebLink(i.value); return; }
+  if (e.target.matches && e.target.matches('[data-note-taskadd]')) { addNoteTaskFromPane(); return; }
   if (e.target.matches && e.target.matches('[data-conn-weblink]')) { const i = $('#conn-weblink-input'); const ctx = connCtx(); if (i && ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() }); state.taskDraft = null; } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
