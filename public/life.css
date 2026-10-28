@@ -2283,6 +2283,13 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nx-filebar { display:flex; gap:9px; flex-wrap:wrap; }
 .nx-choose { display:inline-flex; align-items:center; gap:7px; padding:10px 15px; border:1px dashed var(--line-2); border-radius:12px; background:none; color:var(--ink-2); font:inherit; font-size:14.5px; cursor:pointer; }
 .nx-choose:hover { border-color:var(--accent); color:var(--accent); }
+/* One flat row of entry points: Connect / Web link / Attach / Camera / Scan. */
+.nx-addrow { display:flex; gap:9px; flex-wrap:wrap; }
+.nx-choose.on { border-style:solid; background:color-mix(in srgb,var(--accent) 15%,var(--card)); border-color:color-mix(in srgb,var(--accent) 48%,var(--line)); color:var(--ink); }
+.nx-weblink { display:flex; gap:8px; align-items:center; }
+.nx-weblink input { flex:1; min-width:0; }
+.nx-weblink-add { flex:none; padding:11px 17px; border:0; border-radius:10px; background:var(--accent); color:var(--accent-ink,#fff); font:inherit; font-size:14.5px; font-weight:600; white-space:nowrap; cursor:pointer; }
+.nx-weblink-add:hover { background:color-mix(in srgb,var(--accent) 85%,#000); }
 /* A quiet header over the note's right rail, in the same small-caps gold style as
    the sidebar section titles (.nav-grp), so the whole connected column reads as
    one labelled group. (Robin, 2026-10-15.) */

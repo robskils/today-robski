@@ -19578,21 +19578,27 @@ function noteConnectedPanel(n) {
   const rows = noteLinkedRows(n);
   const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : `<div class="nx-items nx-items-empty">Nothing linked or attached${canEdit ? ' yet - add something below' : ''}.</div>`;
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${n.id}">${items}</div></div>`;
-  const addTab = (state.note && state.note.addTab) || 'link';
+  // One flat row of entry points (Robin: "idiot proof"). Connect/Web link reveal a
+  // field; Attach/Camera/Scan fire straight away. 'none' = just the row, nothing open.
+  const addTab = (state.note && state.note.addTab) || 'none';
   const q = (state.note && state.note.linkQuery) || '';
-  if (addTab === 'link') ensureLinkPool();
-  const linkPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your LifeFold, or paste a web address…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
-  const filePane = `<div class="nx-filebar"><label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Choose a file</label><label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label><button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button></div>`;
+  if (addTab === 'connect') ensureLinkPool();
+  const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
+  const weblinkPane = `<form class="nx-weblink" data-note-weblink><input class="sel" id="nx-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
+  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
     <div class="nx-panel" data-att-zone="${n.id}">
       ${items}
       <div class="nx-attach">
-        <div class="nx-attach-tabs">
-          <button class="nx-attach-tab ${addTab === 'link' ? 'on' : ''}" data-note-addtab="link"><span>🔗</span>Link</button>
-          <button class="nx-attach-tab ${addTab === 'file' ? 'on' : ''}" data-note-addtab="file"><span>📎</span>Attach a file</button>
+        <div class="nx-addrow">
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 LifeFold Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">🌐 Add Web Link</button>
+          <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
+          <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
+          <button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button>
         </div>
-        <div class="nx-addbody">${addTab === 'file' ? filePane : linkPane}</div>
+        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
       </div>
     </div>
   </div>`;
@@ -21745,9 +21751,9 @@ document.addEventListener('click', (e) => {
   { const ad = t.closest('[data-balias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.baliasDel), ad.dataset.aliasCtx); return; } }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
-  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) state.note.addTab = at.dataset.noteAddtab; renderNote(); return; } }
+  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) { const want = at.dataset.noteAddtab; state.note.addTab = (state.note.addTab === want) ? 'none' : want; renderNote(); const sel = state.note.addTab === 'connect' ? '[data-note-link-q]' : state.note.addTab === 'weblink' ? '#nx-weblink-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
   { const au = t.closest('[data-note-addurl]'); if (au) { addNoteWebLink(au.dataset.noteAddurl); return; } }
-  { const tat = t.closest('[data-task-addtab]'); if (tat) { if (state.task_open) state.task_open.addTab = tat.dataset.taskAddtab; connResetPick(); renderTaskCard(); return; } }
+  { const tat = t.closest('[data-task-addtab]'); if (tat) { if (state.task_open) { const want = tat.dataset.taskAddtab; state.task_open.addTab = (state.task_open.addTab === want) ? 'none' : want; connResetPick(); renderTaskCard(); const sel = state.task_open.addTab === 'connect' ? '[data-conn-q]' : state.task_open.addTab === 'weblink' ? '#conn-weblink-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
   { const cau = t.closest('[data-conn-addurl]'); if (cau) { const ctx = connCtx(); if (ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, cau.dataset.connAddurl); return; } }
   { const ntl = t.closest('[data-note-task-link]'); if (ntl) { linkTaskToNote(ntl.dataset.noteTaskLink, state.note.current.id); return; } }
   { const ntu = t.closest('[data-note-task-unlink]'); if (ntu) { unlinkTaskFromNote(ntu.dataset.noteTaskUnlink); return; } }
@@ -22269,6 +22275,8 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   if (e.target.matches && e.target.matches('[data-prc-add-form]')) { const ar = $('#prc-area'), i = $('#prc-new'); practiceAdd(ar && ar.value, i && i.value); return; }
   if (e.target.matches && e.target.matches('[data-t2-taskadd]')) { t2AddTask(); return; }
+  if (e.target.matches && e.target.matches('[data-note-weblink]')) { const i = $('#nx-weblink-input'); if (i && state.note) addNoteWebLink(i.value); return; }
+  if (e.target.matches && e.target.matches('[data-conn-weblink]')) { const i = $('#conn-weblink-input'); const ctx = connCtx(); if (i && ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, i.value); return; }
   if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() }); state.taskDraft = null; } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
@@ -23448,7 +23456,7 @@ function attachTaskToGoal(taskId, goalId) { if (!goalId) return; const t = taskC
 function detachTaskFromGoal(taskId, goalId) { const t = taskCopies(taskId)[0]; if (!t) return; setTaskGoalIds(taskId, taskGoalIds(t).filter((x) => x !== goalId)); }
 async function openTaskCard(id) {
   const task = await api(`/api/blocks/${id}`);
-  state.task_open = { task, addTab: 'link' };
+  state.task_open = { task, addTab: 'none' };
   connResetPick();   // start the Link search clean, not with another card's query
   state.view = { type: 'taskcard', id };
   recordRecent('task', id, task.title, blockAreas(task)[0]);
@@ -23685,20 +23693,24 @@ function taskConnectedPanel(t) {
   const rows = taskLinkedRows(t);
   const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : `<div class="nx-items nx-items-empty">Nothing linked or attached${canEdit ? ' yet - add something below' : ''}.</div>`;
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${t.id}">${items}</div></div>`;
-  const addTab = (state.task_open && state.task_open.addTab) || 'link';
-  if (state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
-  const linkPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your LifeFold, or paste a web address…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
-  const filePane = `<div class="nx-filebar"><label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Choose a file</label><label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label><button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button></div>`;
+  const addTab = (state.task_open && state.task_open.addTab) || 'none';
+  if (addTab === 'connect' && state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
+  const connectPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your pages, people, tasks &amp; events…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
+  const weblinkPane = `<form class="nx-weblink" data-conn-weblink><input class="sel" id="conn-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
+  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
     <div class="nx-panel" data-att-zone="${t.id}">
       ${items}
       <div class="nx-attach">
-        <div class="nx-attach-tabs">
-          <button class="nx-attach-tab ${addTab === 'link' ? 'on' : ''}" data-task-addtab="link"><span>🔗</span>Link</button>
-          <button class="nx-attach-tab ${addTab === 'file' ? 'on' : ''}" data-task-addtab="file"><span>📎</span>Attach a file</button>
+        <div class="nx-addrow">
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 LifeFold Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-task-addtab="weblink">🌐 Add Web Link</button>
+          <label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Attach File</label>
+          <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label>
+          <button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button>
         </div>
-        <div class="nx-addbody">${addTab === 'file' ? filePane : linkPane}</div>
+        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
       </div>
     </div>
   </div>`;
