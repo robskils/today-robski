@@ -19752,7 +19752,9 @@ async function addNoteTaskFromPane() {
 function noteConnectedPanel(n) {
   const canEdit = !(n.sharedBy && !n.canEdit);
   const rows = noteLinkedRows(n);
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : `<div class="nx-items nx-items-empty">Nothing linked or attached${canEdit ? ' yet - add something below' : ''}.</div>`;
+  // When empty, show nothing above the buttons (the buttons speak for themselves);
+  // keep a one-liner only on a view-only share, where there are no buttons. (Robin.)
+  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : (canEdit ? '' : '<div class="nx-items nx-items-empty">Nothing linked or attached.</div>');
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${n.id}">${items}</div></div>`;
   // One flat row of entry points (Robin: "idiot proof"). Connect/Web link reveal a
   // field; Attach/Camera/Scan fire straight away. 'none' = just the row, nothing open.
@@ -19771,7 +19773,7 @@ function noteConnectedPanel(n) {
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel" data-att-zone="${n.id}">
+    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}" data-att-zone="${n.id}">
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
@@ -22097,7 +22099,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-show-snoozed]')) { state.showSnoozed = true; renderTasks(); return; }
   if (t.closest('[data-hide-snoozed]')) { state.showSnoozed = false; renderTasks(); return; }
   const clrSnz = t.closest('[data-clear-snooze]'); if (clrSnz) { patchTaskProps(clrSnz.dataset.clearSnooze, { snooze: null }); return; }
-  { const sc = t.closest('[data-surface-ch]'); if (sc) { const [ch, id] = sc.dataset.surfaceCh.split(':'); const tk = taskCopies(id)[0]; if (tk) { const acctEmail = !(state.account && state.account.surfaceEmail === false); const acctSms = !!(state.account && state.account.surfaceSms); const cur = ch === 'email' ? (tk.props.surfaceEmail == null ? acctEmail : !!tk.props.surfaceEmail) : (tk.props.surfaceSms == null ? acctSms : !!tk.props.surfaceSms); patchTaskProps(id, ch === 'email' ? { surfaceEmail: !cur } : { surfaceSms: !cur }); } return; } }
+  { const sc = t.closest('[data-surface-ch]'); if (sc) { const [ch, id] = sc.dataset.surfaceCh.split(':'); const tk = taskCopies(id)[0]; if (tk) { const acctEmail = !(state.account && state.account.surfaceEmail === false); const acctSms = !!(state.account && state.account.surfaceSms); let patch; if (ch === 'app') { const cur = tk.props.surfaceApp == null ? true : !!tk.props.surfaceApp; patch = { surfaceApp: !cur }; } else if (ch === 'email') { const cur = tk.props.surfaceEmail == null ? acctEmail : !!tk.props.surfaceEmail; patch = { surfaceEmail: !cur }; } else { const cur = tk.props.surfaceSms == null ? acctSms : !!tk.props.surfaceSms; patch = { surfaceSms: !cur }; } patchTaskProps(id, patch); } return; } }
   { const qpb = t.closest('[data-task-qprio]'); if (qpb) { const s = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set()); const p = qpb.dataset.taskQprio; if (s.has(p)) s.delete(p); else s.add(p); renderTasks(); return; } }
   { const aqpb = t.closest('[data-area-qprio]'); if (aqpb) { const s = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set()); const p = aqpb.dataset.areaQprio; if (s.has(p)) s.delete(p); else s.add(p); renderArea(); return; } }
   if (t.closest('[data-tf-toggle]')) { state.taskFiltersOpen = !state.taskFiltersOpen; renderTasks(); return; }
@@ -22360,7 +22362,12 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
-  if (e.target.matches('[data-dur-task]')) patchTaskProps(e.target.dataset.durTask, { duration: e.target.value ? Number(e.target.value) : null });
+  if (e.target.matches('[data-dur-task]')) {
+    const id = e.target.dataset.durTask;
+    if (e.target.value === 'other') { const cur = (state.task_open && state.task_open.task && state.task_open.task.props.duration) || null; promptCustomDuration(cur).then((min) => { if (min !== undefined) patchTaskProps(id, { duration: min }); else rerenderCurrent(); }); }
+    else patchTaskProps(id, { duration: e.target.value ? Number(e.target.value) : null });
+    return;
+  }
   if (e.target.matches('[data-task-kanban]')) setTaskKanban(e.target.dataset.taskKanban, e.target.value);
   if (e.target.matches('[data-refl-save]')) { const v = e.target.value; e.target.value = ''; if (v) saveReadingToLedger(e.target.dataset.reflSave, v); }
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
@@ -23716,6 +23723,28 @@ async function openTaskCard(id) {
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
 // cover the useful range; '—' clears it.
 const DURATION_OPTS = [['', '—'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1 hr 30 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours'], [480, '8 hours']];
+// A precise label for N minutes, using the preset wording where it matches.
+function durExactLabel(min) {
+  min = Number(min); if (!min) return '—';
+  const o = DURATION_OPTS.find(([v]) => Number(v) === min); if (o) return o[1];
+  const h = Math.floor(min / 60), m = min % 60;
+  return [h ? `${h} hr${h > 1 ? 's' : ''}` : '', m ? `${m} min` : ''].filter(Boolean).join(' ') || `${min} min`;
+}
+// Duration <option>s: the presets, a custom entry if the current value isn't one of
+// them, and an "Other…" entry that prompts for an exact number of minutes. (Robin.)
+function durationOptionsHtml(cur) {
+  const curStr = String(cur || '');
+  const isPreset = DURATION_OPTS.some(([v]) => String(v) === curStr);
+  const custom = (curStr && !isPreset) ? `<option value="${esc(curStr)}" selected>${esc(durExactLabel(cur))}</option>` : '';
+  return DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${curStr === String(v) ? 'selected' : ''}>${l}</option>`).join('') + custom + '<option value="other">Other…</option>';
+}
+async function promptCustomDuration(curMin) {
+  const raw = await uiPrompt('How long will it take, in minutes?', { title: 'Custom duration', okLabel: 'Set', value: curMin ? String(curMin) : '', placeholder: 'e.g. 25' });
+  if (raw == null) return undefined;   // cancelled
+  const n = Math.round(Number(String(raw).replace(/[^\d.]/g, '')));
+  if (!n || n <= 0) { toast('Enter a number of minutes'); return undefined; }
+  return Math.min(n, 60 * 24 * 7);   // cap at a week
+}
 // The "Surface & reminders" block on a task: when it comes back to your Today,
 // whether to be alerted and on which channel (text, email or both), whether to
 // hide it until then, and how it repeats. Channels default to your account-wide
@@ -23727,19 +23756,24 @@ function taskSurfaceHtml(t) {
   const hasPhone = !!(state.account && state.account.phone);
   const email = p.surfaceEmail == null ? acctEmail : !!p.surfaceEmail;
   const sms = p.surfaceSms == null ? acctSms : !!p.surfaceSms;
+  const app = p.surfaceApp == null ? true : !!p.surfaceApp;   // in-app notification; default on (Robin)
   const notify = p.surfaceNotify !== false;
   const clear = p.snooze ? `<button type="button" class="tf-clear tfs-clear" data-clear-snooze="${id}">clear</button>` : '';
   let chanHint = '';
   if (notify && p.snooze) {
-    if (!email && !sms) chanHint = 'No channel picked, so nothing will reach you - choose text, email, or both.';
-    else { const bits = []; if (email) bits.push('email'); if (sms) bits.push(hasPhone ? 'text' : 'text (add a phone number in Settings first)'); chanHint = `A ${bits.join(' and a ')} on the morning it surfaces.`; }
+    const bits = [];
+    if (app) bits.push('in the app');
+    if (email) bits.push('by email');
+    if (sms) bits.push(hasPhone ? 'by text' : 'by text (add a phone number in Settings first)');
+    const joinList = (arr) => (arr.length <= 1 ? (arr[0] || '') : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`);
+    chanHint = bits.length ? `A nudge ${joinList(bits)} on the morning it surfaces.` : 'No channel picked above, so nothing will reach you - pick at least one.';
   }
   const open = tfCardOpen('surface');
   const body = `<div class="tfs-cardbody">
     <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
     ${p.snooze ? `<div class="tfs-block">
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
-      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
+      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${app ? 'on' : ''}" data-surface-ch="app:${id}"><span class="tfs-chip-ic">📲</span> In app</button><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
       <p class="tfs-note">${esc(chanHint)}</p>` : ''}
       <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until then</span></label>
     </div>` : ''}
@@ -23787,7 +23821,7 @@ function renderTaskCard() {
       <label class="tf-field"><span class="tf-label">Priority</span>
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
-        <select class="sel" data-dur-task="${t.id}">${DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${String(t.props.duration || '') === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <select class="sel" data-dur-task="${t.id}">${durationOptionsHtml(t.props.duration)}</select></label>
       <label class="tf-field"><span class="tf-label">Due by</span>
         ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
       <div class="tf-field"><span class="tf-label">Life Spaces</span>
@@ -23949,7 +23983,9 @@ function taskLinkSearchRows() {
 function taskConnectedPanel(t) {
   const canEdit = !(t.sharedBy && !t.canEdit);
   const rows = taskLinkedRows(t);
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : `<div class="nx-items nx-items-empty">Nothing linked or attached${canEdit ? ' yet - add something below' : ''}.</div>`;
+  // When empty, show nothing above the buttons (the buttons speak for themselves);
+  // keep a one-liner only on a view-only share, where there are no buttons. (Robin.)
+  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : (canEdit ? '' : '<div class="nx-items nx-items-empty">Nothing linked or attached.</div>');
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${t.id}">${items}</div></div>`;
   const addTab = (state.task_open && state.task_open.addTab) || 'none';
   if (addTab === 'connect' && state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
@@ -23958,7 +23994,7 @@ function taskConnectedPanel(t) {
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel" data-att-zone="${t.id}">
+    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}" data-att-zone="${t.id}">
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">

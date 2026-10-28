@@ -2267,6 +2267,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nx-x { flex:none; width:24px; height:24px; border:0; background:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; border-radius:6px; }
 .nx-x:hover { color:var(--rust,#c4412e); background:var(--paper-2); }
 .nx-attach { border-top:1px solid var(--line); background:var(--paper); padding:13px 15px; }
+/* Empty panel: no items above, so drop the divider - just the buttons. (Robin.) */
+.nx-panel-noitems .nx-attach { border-top:0; }
 .nx-attach-tabs { display:flex; gap:9px; }
 .nx-attach-tab { display:inline-flex; align-items:center; gap:7px; padding:9px 17px; border:1px solid var(--line-2); background:var(--card); font:inherit; font-size:14.5px; font-weight:600; color:var(--ink-2); border-radius:999px; cursor:pointer; transition:background .13s,border-color .13s,color .13s; }
 .nx-attach-tab:hover { border-color:var(--accent); color:var(--ink); }

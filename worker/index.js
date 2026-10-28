@@ -2714,6 +2714,18 @@ async function runSurfaceAlertsForUser(env, user) {
     const to = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
     if (to) await sendSurfaceMail(env, { to, tasks: emailDue.map((d) => ({ id: d.id, title: d.title })), home }).catch(() => {});
   }
+  // In-app push to the person's installed devices (default on per task). Fires
+  // alongside email/text; no-op when they have no push subscriptions. (Robin.)
+  const appDue = due.filter((d) => (d.props.surfaceApp == null ? true : !!d.props.surfaceApp));
+  if (appDue.length) {
+    const titles = appDue.map((d) => d.title);
+    await pushAll(env, {
+      type: 'surface',
+      title: appDue.length === 1 ? 'A task surfaced to Today' : `${appDue.length} tasks surfaced to Today`,
+      body: titles.slice(0, 3).join(', ') + (appDue.length > 3 ? '…' : ''),
+      url: appDue.length === 1 ? `/task/${appDue[0].id}` : '/today',
+    }, uid).catch(() => {});
+  }
 
   // Mark each as told for this surfacing. Re-snoozing to a new date resets it
   // (surfacedNotified no longer equals the snooze), so it can alert again when
