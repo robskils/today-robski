@@ -362,3 +362,13 @@ CREATE TABLE IF NOT EXISTS invite_requests (
   handled    INTEGER DEFAULT 0,
   created_at TEXT NOT NULL
 );
+
+-- Feedback people send from the Guide; the owner reviews it under Admin > Feedback.
+CREATE TABLE IF NOT EXISTS feedback (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER,
+  email      TEXT,
+  page       TEXT,
+  body       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);

@@ -1092,6 +1092,7 @@ function renderHelp(key) {
   $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide', attr: 'data-open-guide' }, { label: h.title }])}
     <div class="pane-head home-head"><h1>${esc(h.title)}</h1></div>
     <div class="help-doc"><p class="help-lede">${h.tip}</p>${h.body}
+      <div class="help-feedback"><button class="add-btn wide help-feedback-btn" data-guide-feedback="${esc(h.title)}">💬 Give feedback on this</button></div>
       <p class="help-foot"><button class="help-back-link" data-open-guide>← All guides</button></p>
       <p class="guide-tagline">For a life well lived</p></div>`;
 }
@@ -1123,6 +1124,9 @@ function renderGuideIndex() {
       </div>
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
+      <div class="guide-sec-h">Tell us what you think</div>
+      <p class="guide-start-p">Spotted something, hit a snag, or have an idea? We read every note.</p>
+      <button class="add-btn wide help-feedback-btn" data-guide-feedback="Guide">💬 Give feedback</button>
       <div class="guide-sec-h">Privacy &amp; terms</div>
       <p class="guide-start-p"><b>Your data belongs to you.</b> LifeFold is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your LifeFold is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
@@ -2252,13 +2256,14 @@ async function cancelInviteAction(code) {
 async function openAdmin() {
   state.view = { type: 'admin' }; renderNav(); state.admin = state.admin || {}; renderAdmin();
   try {
-    const [ov, u, ai, s, q, rq, co, h] = await Promise.all([
+    const [ov, u, ai, s, q, rq, co, h, fb] = await Promise.all([
       api('/api/admin/overview'), api('/api/admin/users'), api('/api/admin/ai-usage'),
       api('/api/admin/settings'), api('/api/admin/quotes'), api('/api/admin/invite-requests').catch(() => ({ requests: [] })),
       api('/api/admin/costs').catch(() => ({ months: [] })),
       api('/api/admin/health').catch(() => null),
+      api('/api/admin/feedback').catch(() => ({ feedback: [] })),
     ]);
-    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [], costs: co || { months: [] }, health: h || state.admin.health };
+    state.admin = { ...state.admin, overview: ov, users: u.users || [], aiUsage: ai.usage || [], settings: s, quotes: q.quotes || [], requests: (rq && rq.requests) || [], costs: co || { months: [] }, health: h || state.admin.health, feedback: (fb && fb.feedback) || [] };
   } catch (e) { toast(e.message); }
   if (!state.invites) loadInvites();
   renderAdmin();
@@ -2351,11 +2356,13 @@ function renderAdmin() {
   // Admin is five unrelated jobs stacked in one scroll, which on a phone means
   // thumbing past the whole business to reach the quotes. One tab at a time,
   // exactly as Settings does it.
-  const TABS = [['members', 'Members'], ['costs', 'Costs'], ['health', 'Health'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
+  const TABS = [['members', 'Members'], ['feedback', 'Feedback'], ['costs', 'Costs'], ['health', 'Health'], ['setup', 'Setup'], ['quotes', 'Quotes'], ['brand', 'Brand']];
   if (!TABS.some(([k]) => k === a.tab)) a.tab = 'members';
   const tab = a.tab;
   const reqN = (a.requests || []).length;   // pending join requests, badged on Members (they live under the Requests segment now)
-  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}${k === 'members' && reqN ? ` <span class="seg-badge">${reqN > 99 ? '99+' : reqN}</span>` : ''}</button>`).join('')}</div>`;
+  const fbN = (a.feedback || []).length;   // feedback from the Guide, badged on its tab
+  const segBadge = (k) => (k === 'members' && reqN ? ` <span class="seg-badge">${reqN > 99 ? '99+' : reqN}</span>` : k === 'feedback' && fbN ? ` <span class="seg-badge">${fbN > 99 ? '99+' : fbN}</span>` : '');
+  const seg = `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-adm-tab="${k}">${l}${segBadge(k)}</button>`).join('')}</div>`;
 
   // ── People: one consolidated view (was Overview + Members + Invites) ──────
   // An activity segment picker over tap-to-open member rows, with pending
@@ -2482,9 +2489,22 @@ function renderAdmin() {
       <label class="set-mod"><span><b>Email me when something breaks</b><br><span class="scope">One email to you when a service goes down - and one when it's back. Never repeats while it stays down.</span></span><input type="checkbox" data-health-alerts ${hs && hs.alerts !== false ? 'checked' : ''}></label>
     </div>`;
 
-  const panes = { members: membersPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
+  // Feedback people sent from the Guide: newest first, each clearable once read.
+  const feedback = a.feedback || [];
+  const fbRow = (f) => `<div class="adm-req">
+      <div class="adm-req-main">
+        <div class="adm-req-top"><span class="adm-req-nm">${esc(f.email || 'Someone')}</span>${f.created_at ? `<span class="adm-req-when">${timeAgo(new Date(f.created_at).getTime())}</span>` : ''}</div>
+        ${f.page ? `<div class="adm-fb-page">On: ${esc(f.page)}</div>` : ''}
+        <p class="adm-req-why adm-fb-body">${esc(f.body)}</p>
+      </div>
+      <div class="adm-req-acts"><button class="ghost adm-req-x" data-fb-del="${f.id}" title="Remove this feedback">Clear</button></div>
+    </div>`;
+  const feedbackPane = `<div class="set-card">${feedback.length ? `<div class="adm-req-list">${feedback.map(fbRow).join('')}</div>` : '<div class="home-empty">No feedback yet. Every Guide page has a “Give feedback” button that lands here.</div>'}</div>`;
+
+  const panes = { members: membersPane, feedback: feedbackPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
     members: `${users.length} on LifeFold · tap anyone for the full picture`,
+    feedback: feedback.length ? `${feedback.length} note${feedback.length === 1 ? '' : 's'} from the Guide` : 'What people send from the Guide',
     costs: 'What it costs to run LifeFold, by month',
     health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services LifeFold depends on',
     setup: 'Registration & what new accounts start with',
@@ -11106,6 +11126,32 @@ function uiPrompt(message, opts = {}) {
   });
 }
 
+// A little feedback form opened from any Guide page. Submits to /api/feedback,
+// which the owner reviews under Admin > Feedback. (Robin, 2026-10-28.)
+function openFeedbackForm(page) {
+  const el = uiDialogHost();
+  el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box fb-dialog">
+    <div class="recur-h">Give feedback</div>
+    <p class="recur-p">Anything you'd change, a snag you hit, or an idea - it goes straight to us.${page ? ` <span class="fb-page">About: ${esc(page)}</span>` : ''}</p>
+    <textarea class="ui-dialog-input fb-textarea" id="fb-text" rows="5" placeholder="What's on your mind?" autocomplete="off"></textarea>
+    <div class="ui-dialog-btns">
+      <button class="ui-btn cancel" data-fb="0">Cancel</button>
+      <button class="ui-btn primary" data-fb="1">Send feedback</button>
+    </div></div></div>`;
+  const ta = el.querySelector('#fb-text');
+  const close = () => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  const send = async () => {
+    const body = (ta.value || '').trim(); if (!body) { ta.focus(); return; }
+    close();
+    try { await api('/api/feedback', { method: 'POST', body: JSON.stringify({ page: page || '', body }) }); toast('Thank you - your feedback is in ✓'); }
+    catch (e) { toast(e.message); }
+  };
+  document.addEventListener('keydown', onKey, true);
+  el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(); });
+  el.querySelectorAll('[data-fb]').forEach((b) => b.addEventListener('click', () => (b.dataset.fb === '1' ? send() : close())));
+  setTimeout(() => ta.focus(), 20);
+}
 // ── view: today (the real day planner, embedded) ─────
 // The planner is the actual today app (index.html/today.js), embedded in a
 // same-origin iframe so it stays one codebase - no reimplementation, no drift -
@@ -21241,6 +21287,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-disc-toggle]')) { try { localStorage.setItem('life.home.discOpen', (localStorage.getItem('life.home.discOpen') !== '0') ? '0' : '1'); } catch {} renderHome(); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
   if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
+  { const gf = t.closest('[data-guide-feedback]'); if (gf) { openFeedbackForm(gf.dataset.guideFeedback || ''); return; } }
   const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); if (window.matchMedia('(max-width:820px)').matches) openHelp(hlp.dataset.helpOpen); else openHelpTab(hlp.dataset.helpOpen); return; }
   const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
@@ -21475,6 +21522,7 @@ document.addEventListener('click', (e) => {
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
+  { const fbd = t.closest('[data-fb-del]'); if (fbd) { const id = fbd.dataset.fbDel; if (state.admin) state.admin.feedback = (state.admin.feedback || []).filter((f) => String(f.id) !== String(id)); renderAdmin(); api('/api/admin/feedback', { method: 'DELETE', body: JSON.stringify({ id: Number(id) }) }).catch((e) => toast(e.message)); return; } }
   if (t.closest('[data-health-check]')) { runHealthCheckNow(); return; }
   { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; state.admin.freeEdit = null; renderAdmin(); return; } }
   { const fe = t.closest('[data-admin-freeedit]'); if (fe) { state.admin = state.admin || {}; state.admin.freeEdit = Number(fe.dataset.adminFreeedit); renderAdmin(); return; } }

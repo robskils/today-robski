@@ -4613,6 +4613,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .help-pop-b a { color:var(--accent); }
 .help-lede { font-size:18px; color:var(--ink-2); margin-bottom:20px; }
 .help-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:14px; color:var(--ink-3); }
+/* "Give feedback" on a Guide page: a slim centred pill, not a loud full-width bar. */
+.help-feedback { margin:22px 0 4px; text-align:center; }
+.help-feedback-btn { width:auto; display:inline-flex; align-items:center; gap:7px; }
 .help-back-link { color:var(--accent); font-size:14px; }
 .help-back-link:hover { text-decoration:underline; }
 /* Guide home page: the welcome-checklist card, then a grid of tool guides. */
@@ -4930,6 +4933,8 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .adm-req-email { display:block; font-size:13.5px; color:var(--accent); text-decoration:none; margin-top:1px; }
 .adm-req-email:hover { text-decoration:underline; }
 .adm-req-why { margin:8px 0 0; font-size:14.5px; color:var(--ink-2); line-height:1.5; border-left:2px solid color-mix(in srgb,var(--accent) 40%,var(--line)); padding-left:11px; }
+.adm-fb-page { font-size:11.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; font-weight:600; margin:2px 0; }
+.adm-fb-body { white-space:pre-wrap; }
 .adm-req-acts { display:flex; align-items:center; gap:8px; flex:none; }
 .inv-list { display:flex; flex-direction:column; gap:7px; margin-top:16px; }
 .inv-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:11px; background:var(--paper); flex-wrap:wrap; }
@@ -6290,6 +6295,9 @@ body.area-as-member tr.tr-task.is-private { opacity:.5; }
 .ce-recur-note { display:inline-flex; align-items:center; font-size:14px; color:var(--ink-3); padding:6px 2px; }
 .ui-dialog-input { width:100%; box-sizing:border-box; padding:12px 14px; font-size:16px; margin-bottom:16px; background:var(--paper); border:1px solid var(--line-2); border-radius:11px; color:var(--ink); }
 .ui-dialog-input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+/* Feedback modal: a roomy textarea instead of the single-line input. */
+textarea.fb-textarea { height:auto; min-height:120px; line-height:1.5; resize:vertical; font-family:inherit; }
+.fb-page { display:block; margin-top:5px; font-size:12.5px; color:var(--ink-3); }
 .cgm-dialog { width:min(460px,92vw); }
 .cgm-dialog .ui-dialog-input { margin-bottom:12px; }
 .cgm-or { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin:4px 0 10px; }

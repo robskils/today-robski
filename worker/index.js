@@ -4851,6 +4851,9 @@ export default {
           if (path === '/api/admin/health' && request.method === 'GET') return json({ services: await getIntegrationHealth(env), checkedAt: Number(await getSetting(env, 'health_checked', 1)) || null, alerts: (await getSetting(env, 'health_alerts', 1)) !== '0' }, request);
           if (path === '/api/admin/health/check' && request.method === 'POST') return json({ services: await runHealthCheck(env), checkedAt: Date.now(), alerts: (await getSetting(env, 'health_alerts', 1)) !== '0' }, request);
           if (path === '/api/admin/health/alerts' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await setSetting(env, 'health_alerts', b.on ? '1' : '0', 1); return json({ ok: true, alerts: !!b.on }, request); }
+          // Feedback people sent from the Guide.
+          if (path === '/api/admin/feedback' && request.method === 'GET') { const { results } = await env.DB.prepare('SELECT id, user_id, email, page, body, created_at FROM feedback ORDER BY id DESC LIMIT 500').all().catch(() => ({ results: [] })); return json({ feedback: results || [] }, request); }
+          if (path === '/api/admin/feedback' && request.method === 'DELETE') { const b = await request.json().catch(() => ({})); if (b.id != null) await env.DB.prepare('DELETE FROM feedback WHERE id = ?').bind(b.id).run().catch(() => {}); return json({ ok: true }, request); }
           const um = path.match(/^\/api\/admin\/user\/(\d+)$/);
           if (um && request.method === 'PATCH') return json({ users: await updateUser(env, um[1], await request.json().catch(() => ({}))) }, request);
         } catch (e) { return err(e.message, request, 400); }
@@ -4996,6 +4999,17 @@ export default {
       if (path === '/api/geocode' && request.method === 'GET') return geocodePlace(request, env, json, err);
       if (path === '/api/areas/summary' && request.method === 'GET') return areasSummary(request, env);
       if (path === '/api/home/alerts' && request.method === 'GET') return homeAlerts(request, env, json);
+      // Feedback from the Guide (any signed-in member); the owner reviews it under
+      // Admin > Feedback. We store who sent it and which Guide page. (Robin.)
+      if (path === '/api/feedback' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const body = String(b.body || '').trim().slice(0, 4000);
+        if (!body) return err('Feedback text required', request);
+        const page = String(b.page || '').trim().slice(0, 120);
+        const u = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+        await env.DB.prepare('INSERT INTO feedback (user_id, email, page, body, created_at) VALUES (?, ?, ?, ?, ?)').bind(env.uid, (u && u.email) || '', page, body, new Date().toISOString()).run();
+        return json({ ok: true }, request, 201);
+      }
       if (path === '/api/connect' && request.method === 'GET') return connectList(request, env, json);
       if (path === '/api/export' && request.method === 'GET') return handleExport(request, env);
 
