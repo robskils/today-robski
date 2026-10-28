@@ -17181,7 +17181,7 @@ function renderGoals() {
   const focusN = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus).length;
   const allN = state.goals.filter((g) => (gp(g).status || 'active') === 'active').length;
   const tabs = `<div class="goals-tabs">
-    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By area</button>
+    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By Life Space</button>
     <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">★ Starred${focusN ? ` · ${focusN}` : ''}</button>
     <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
     <button class="gtab ${view === 'bucket' ? 'on' : ''}" data-goals-view="bucket">✦ Bucket list${(state.bucket || []).length ? ` · ${state.bucket.length}` : ''}</button>
@@ -17257,13 +17257,24 @@ function toggleGoalArea(id) {
   renderGoals();
 }
 // Goals organised the way Robin thinks: for each Page, its Vision then its
-// Goals. ("This quarter's focus" is its own tab now, not the lead here.)
+// Goals. ("This quarter's focus" is its own tab now, not the lead here.) A sort
+// control (mirroring the Goals-list tab) orders the goals within each Space.
+const GOAL_AREA_SORTS = [['focus', 'Starred first'], ['title', 'A–Z'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated']];
+function goalAreaSort() { return state.goalsAreaSort || (state.goalsAreaSort = (() => { try { return localStorage.getItem('life.goals.areasort') || 'focus'; } catch { return 'focus'; } })()); }
 function goalsByAreaBody() {
   const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
   const done = state.goals.filter((g) => gp(g).status === 'done');
+  const sortMode = goalAreaSort();
+  const gcmp = {
+    focus: (x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''),
+    title: (x, y) => (x.title || '').localeCompare(y.title || ''),
+    progress: (x, y) => goalProgress(y) - goalProgress(x),
+    due: (x, y) => String(gp(x).targetDate || '9999').localeCompare(String(gp(y).targetDate || '9999')),
+    updated: (x, y) => String(y.updated_at || '').localeCompare(String(x.updated_at || '')),
+  }[sortMode] || (() => 0);
   const areaSections = state.areas.map((a) => {
     const p = a.props || {};
-    const goals = active.filter((g) => gp(g).area === a.id).sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''));
+    const goals = active.filter((g) => gp(g).area === a.id).sort(gcmp);
     const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
     const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
     const open = goalAreaOpen(a.id);
@@ -17277,7 +17288,8 @@ function goalsByAreaBody() {
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
   const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
   // The "this quarter's focus" strip lives on its own tab now, not at the top here.
-  return `${areaSections}${noAreaSec}
+  const controls = `<div class="glist-controls glist-controls-area"><select class="sel" data-garea-sort title="Sort goals within each Life Space">${GOAL_AREA_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>Sort: ${esc(l)}</option>`).join('')}</select></div>`;
+  return `${controls}${areaSections}${noAreaSec}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
 }
 // Bucket list: its own box, off to the side of Goals - collapsed by default so
@@ -22480,6 +22492,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-glist-status]')) { state.goalsListStatus = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-glist-area]')) { state.goalsListArea = e.target.value; renderGoals(); return; }
   if (e.target.matches('[data-glist-sort]')) { state.goalsListSort = e.target.value; renderGoals(); return; }
+  if (e.target.matches('[data-garea-sort]')) { state.goalsAreaSort = e.target.value; try { localStorage.setItem('life.goals.areasort', e.target.value); } catch {} renderGoals(); return; }
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
   if (e.target.matches('[data-repeatcount-task]')) { const n = Math.max(0, Math.min(999, parseInt(e.target.value, 10) || 0)); patchTaskProps(e.target.dataset.repeatcountTask, { repeatCount: n || null }); }
