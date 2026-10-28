@@ -19528,6 +19528,7 @@ function noteLinkedRows(n) {
   for (const tk of (state.allTasks || []).filter((x) => x.props && x.props.note === n.id && !x.props.done)) rows.push(nxOpenRow('✓', tk.title, 'Task', '', `data-open-task="${tk.id}"`, `data-note-task-unlink="${tk.id}"`));
   const cids = (n.props && Array.isArray(n.props.contacts)) ? n.props.contacts.map(String) : [];
   for (const cid of cids) { const c = (state.contacts || []).find((x) => String(x.id) === cid); if (c) rows.push(nxOpenRow('👤', c.title || 'Unnamed', 'Person', '', `data-open-contact="${c.id}"`, `data-note-unlink-contact="${c.id}"`)); }
+  if (n.props && n.props.goal) { const g = (state.goals || []).find((x) => String(x.id) === String(n.props.goal)); if (g) rows.push(nxOpenRow('🎯', g.title || 'Goal', 'Goal', '', `data-open-goal="${g.id}"`, `data-note-unlink-goal="${n.id}"`)); }
   for (const ev of noteEventLinks(n)) rows.push(nxOpenRow('📅', ev.title, 'Event', ev.date ? esc(evShortDate(ev.date)) : '', `data-open-event-date="${esc(String(ev.date || '').slice(0, 10))}"`, `data-note-unlink-event="${esc(evBaseId(ev))}"`));
   blockLinks(n).forEach((l, i) => {
     const raw = linkUrlOf(l);
@@ -19547,11 +19548,13 @@ function noteLinkSearchRows(q) {
   const n = state.note && state.note.current; if (!n) return '';
   const raw = (q || '').trim(); const ql = raw.toLowerCase();
   const out = [];
-  if (/^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(raw)) out.push(`<button class="nx-sugg-row" data-note-addurl="${esc(raw)}"><span class="ic">🌐</span>Link this web address<span class="kind">${esc(raw.replace(/^https?:\/\//, '').slice(0, 36))}</span></button>`);
-  if (ql.length < 1) return out.join('') || '<div class="nx-sugg-hint">Search your notes, tasks, people and events - or paste a web address.</div>';
+  if (ql.length < 1) return out.join('') || '<div class="nx-sugg-hint">Search your pages, goals, spaces, people, tasks and events.</div>';
   const connIds = new Set((state.note.connected || []).map((c) => String(c.id)));
   let count = 0;
   for (const c of [...(state.noteTops || []), ...(state.tables || [])]) { if (count >= 18) break; if (!c || String(c.id) === String(n.id) || connIds.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; const isT = isTableNote(c); out.push(`<button class="nx-sugg-row" data-note-connect="${c.id}"><span class="ic">${isT ? '▦' : '▤'}</span>${esc(c.title || 'Untitled')}<span class="kind">${isT ? 'Table' : 'Note'}</span></button>`); count++; }
+  // Goals and Life Spaces too, so Connect finds everything in your LifeFold. (Robin.)
+  { const curGoal = n.props && n.props.goal; for (const g of (state.goals || [])) { if (count >= 18) break; if ((gp(g).status || 'active') === 'done') continue; if (String(g.id) === String(curGoal)) continue; if (!(g.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-goal="${g.id}"><span class="ic">🎯</span>${esc(g.title || 'Untitled goal')}<span class="kind">Goal</span></button>`); count++; } }
+  { const curAreas = new Set(blockAreas(n).map(String)); for (const a of (state.areas || [])) { if (count >= 18) break; if (curAreas.has(String(a.id))) continue; if (!(a.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-area="${a.id}"><span class="ic">◈</span>${esc(a.title || 'Life Space')}<span class="kind">Space</span></button>`); count++; } }
   for (const tk of (state.allTasks || [])) { if (count >= 18) break; if (!tk.props || tk.props.note === n.id || tk.props.done) continue; if (!(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
   const cids = new Set(((n.props && n.props.contacts) || []).map(String));
   for (const c of (state.contacts || [])) { if (count >= 18) break; if (cids.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-contact="${c.id}"><span class="ic">👤</span>${esc(c.title || 'Unnamed')}<span class="kind">Person</span></button>`); count++; }
@@ -19571,7 +19574,7 @@ function noteLinkSearchRows(q) {
       count++; evShown++;
     }
   }
-  return out.join('') || '<div class="nx-sugg-hint">No matches. Paste a web address to add it as a link.</div>';
+  return out.join('') || '<div class="nx-sugg-hint">No matches found.</div>';
 }
 function noteConnectedPanel(n) {
   const canEdit = !(n.sharedBy && !n.canEdit);
@@ -19583,7 +19586,7 @@ function noteConnectedPanel(n) {
   const addTab = (state.note && state.note.addTab) || 'none';
   const q = (state.note && state.note.linkQuery) || '';
   if (addTab === 'connect') ensureLinkPool();
-  const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
+  const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, goals, spaces, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-note-weblink><input class="sel" id="nx-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
   return `<div class="nx-wrap">
@@ -19611,6 +19614,8 @@ function ensureLinkPool() {
   if (!Array.isArray(state.noteTops)) { state.noteTops = []; api('/api/blocks?kind=note').then((r) => { state.noteTops = r || []; rr(); }).catch(() => {}); }
   if (!Array.isArray(state.tables)) { state.tables = []; api('/api/blocks?kind=table').then((r) => { state.tables = r || []; rr(); }).catch(() => {}); }
   if (!Array.isArray(state.noteEvents)) loadNoteEvents();
+  if (!Array.isArray(state.goals)) { state.goals = []; api('/api/blocks?kind=goal').then((r) => { state.goals = r || []; rr(); }).catch(() => {}); }
+  if (!Array.isArray(state.areas) || !state.areas.length) { api('/api/blocks?kind=area').then((r) => { if (Array.isArray(r) && r.length) { state.areas = r.sort((a, b) => (a.title || '').localeCompare(b.title || '')); rr(); } }).catch(() => {}); }
   if (!contactsLoaded) loadContacts().then(rr).catch(() => {});
 }
 async function addNoteWebLink(url) {
@@ -19622,6 +19627,21 @@ async function addNoteWebLink(url) {
   if (state.note) state.note.linkQuery = '';
   renderNote();
   try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { links } }) }); } catch (e) { toast(e.message); }
+}
+// Link this note to a goal (stored on the note as props.goal; the goal card reads
+// it back as a connected note). Unlink clears it.
+async function noteLinkGoal(goalId) {
+  const n = state.note && state.note.current; if (!n || !goalId) return;
+  n.props = n.props || {}; n.props.goal = goalId;
+  if (state.note) state.note.linkQuery = '';
+  renderNote();
+  try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: goalId } }) }); toast('Linked to goal'); } catch (e) { toast(e.message); }
+}
+async function noteUnlinkGoal() {
+  const n = state.note && state.note.current; if (!n) return;
+  n.props = n.props || {}; n.props.goal = null;
+  renderNote();
+  try { await api(`/api/blocks/${n.id}`, { method: 'PATCH', body: JSON.stringify({ props: { goal: null } }) }); } catch (e) { toast(e.message); }
 }
 function noteExtLinksHtml(n) {
   const links = blockLinks(n);
@@ -21761,6 +21781,9 @@ document.addEventListener('click', (e) => {
   { const nue = t.closest('[data-note-unlink-event]'); if (nue) { noteUnlinkEvent(nue.dataset.noteUnlinkEvent); return; } }
   { const nlc = t.closest('[data-note-link-contact]'); if (nlc) { noteLinkContact(nlc.dataset.noteLinkContact); return; } }
   { const nuc = t.closest('[data-note-unlink-contact]'); if (nuc) { noteUnlinkContact(nuc.dataset.noteUnlinkContact); return; } }
+  { const nlg = t.closest('[data-note-link-goal]'); if (nlg) { noteLinkGoal(nlg.dataset.noteLinkGoal); return; } }
+  { const nug = t.closest('[data-note-unlink-goal]'); if (nug) { noteUnlinkGoal(); return; } }
+  { const nla = t.closest('[data-note-link-area]'); if (nla) { if (state.note && state.note.current) { state.note.linkQuery = ''; addNoteArea(state.note.current.id, nla.dataset.noteLinkArea); } return; } }
   { const eln = t.closest('[data-ev-link-note]'); if (eln) { eventLinkNote(eln.dataset.evLinkNote, eln.dataset.evNoteTitle); return; } }
   { const eun = t.closest('[data-ev-unlink-note]'); if (eun) { eventUnlinkNote(eun.dataset.evUnlinkNote); return; } }
   { const oed = t.closest('[data-open-event-date]'); if (oed) { const d = oed.dataset.openEventDate; openCalendar().then(() => { if (d) { state.cal.selected = d; const [yy, mm] = d.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); loadCalendar(); } }).catch((x) => toast(x.message)); return; } }
@@ -23686,7 +23709,7 @@ function taskLinkSearchRows() {
   const have = new Set([...connCurrentIds(connCtx()).map(String), ...taskGoalIds(t).map(String)]); have.add(String(t.id));
   const rows = (cp.results || []).filter((r) => CONN_KINDS.includes(r.kind) && !have.has(String(r.id))).slice(0, 14);
   for (const r of rows) out.push(`<button class="nx-sugg-row" data-conn-pick="${esc(r.id)}" data-conn-kind="${esc(r.kind)}" data-conn-title="${esc(r.title || 'Untitled')}"><span class="ic">${CONN_ICO[r.kind] || '•'}</span>${esc(r.title || 'Untitled')}<span class="kind">${CONN_KIND_LABEL[r.kind] || ''}</span></button>`);
-  return out.join('') || '<div class="nx-sugg-hint">No matches. Paste a web address to add it as a link.</div>';
+  return out.join('') || '<div class="nx-sugg-hint">No matches found.</div>';
 }
 function taskConnectedPanel(t) {
   const canEdit = !(t.sharedBy && !t.canEdit);
@@ -23695,7 +23718,7 @@ function taskConnectedPanel(t) {
   if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${t.id}">${items}</div></div>`;
   const addTab = (state.task_open && state.task_open.addTab) || 'none';
   if (addTab === 'connect' && state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
-  const connectPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your pages, people, tasks &amp; events…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
+  const connectPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your pages, goals, people, tasks &amp; events…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-conn-weblink><input class="sel" id="conn-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
   return `<div class="nx-wrap">
