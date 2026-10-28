@@ -5920,6 +5920,10 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
    (The old Connections hub folded in here.) */
 .ovt-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
 .ovt-tile { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:15px 8px; border:1px solid var(--line); border-radius:14px; background:var(--paper); color:var(--ink); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; }
+/* Activated section: a border in the Life Space's colour + a coloured icon, so the
+   tools that are on read at a glance. Hover / expanded states still win. (Robin.) */
+.ovt-tile.ovt-live { border-color:color-mix(in srgb,var(--c,var(--accent)) 55%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 5%,var(--paper)); }
+.ovt-tile.ovt-live .ovt-ic { color:var(--c,var(--accent)); }
 .ovt-tile:hover { border-color:var(--c,var(--accent)); background:var(--card); transform:translateY(-1px); }
 .ovt-tile.on { border-color:var(--c,var(--accent)); background:color-mix(in srgb,var(--c,var(--accent)) 15%,var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,var(--accent)) 42%,transparent); }
 .ovt-tile.on .ovt-ic { color:var(--c,var(--accent)); }
@@ -8916,20 +8920,19 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 }
 .area-addnew .addnew-btn:hover { background:color-mix(in srgb,var(--c) 7%,transparent); border-color:color-mix(in srgb,var(--c) 45%,var(--line-2)); color:color-mix(in srgb,var(--c) 70%,var(--ink)); }
 .area-addnew .addnew-btn .an-plus { font-weight:400; }
-/* "Add to this area" now rides the masthead title row, just left of Share. Keep
-   the slim pill but tighten it so it sits with the ★ / ▾ tools. (Robin, 2026-10-28.) */
-.area-h1-tools .area-addnew-head { margin-left:0; }
-.area-h1-tools .area-addnew-head .addnew-btn { padding:7px 14px; font-size:13.5px; }
-/* Keep Add / ★ / ▾ on one baseline: equal heights, vertically centred. */
+/* The star / caret left in the title row sit on one centred baseline. */
 .area-h1-tools > * { align-self:center; }
-.area-h1-tools .area-addnew-head .addnew-btn { min-height:34px; display:inline-flex; align-items:center; }
+/* "Add to this Space" rides the SEARCH row now, between the search box and the
+   access faces; the search box flexes to fill whatever's left. (Robin, 2026-10-28.) */
+.am-searchrow .area-addnew-row { flex:none; align-self:center; margin:0; }
+.am-searchrow .area-addnew-row .addnew-btn { min-height:38px; display:inline-flex; align-items:center; }
 /* The favourite star gets a ring so it reads as a real control, not stray text. */
 .area-h1-tools .star { opacity:1; width:34px; height:34px; padding:0; display:inline-grid; place-items:center; border:1px solid var(--line-2); border-radius:50%; background:var(--card); font-size:16px; transition:border-color .12s,color .12s,background .12s; }
 .area-h1-tools .star:hover { border-color:#eea90b; }
 .area-h1-tools .star.on { border-color:color-mix(in srgb,#eea90b 55%,var(--line)); background:color-mix(in srgb,#eea90b 12%,var(--card)); }
-/* Who-has-access faces under Add / Share: overlapping round avatars and a ＋ to
-   give access, sitting at the right of the search row. (Robin, 2026-10-28.) */
-.area-faces { display:flex; align-items:center; margin-left:auto; padding-left:6px; }
+/* Who-has-access faces: overlapping round avatars and a ＋ to give access, sitting
+   on the search row just right of "Add to this Space". (Robin, 2026-10-28.) */
+.area-faces { display:flex; align-items:center; flex:none; align-self:center; margin-left:0; padding-left:2px; }
 .area-faces > * { margin-left:-9px; }
 .area-faces > *:first-child { margin-left:0; }
 .aface { flex:none; border:0; background:none; padding:0; border-radius:50%; cursor:pointer; line-height:0; }

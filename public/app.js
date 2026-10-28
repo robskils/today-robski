@@ -9162,8 +9162,8 @@ function renderArea() {
   // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
   // Defined here, before areaVisionGoals uses it - a const can't be read above
   // its declaration (that TDZ error stopped lifespaces opening). (Robin, 2026-10-13.)
-  const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew area-addnew-head">
-        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
+  const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew area-addnew-row">
+        <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this Space<span class="an-ch">▾</span></button>
         <div class="addnew-menu" hidden>
           <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
           <button class="addnew-item" data-area-add-note><span class="addnew-ic">▤</span>Note</button>
@@ -9342,9 +9342,9 @@ function renderArea() {
         : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${areaAddBtn}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaFacesRow(area)}${wheelOnAreas() ? areaSentimentHtml(area) : ''}</div>
+        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${wheelOnAreas() ? areaSentimentHtml(area) : ''}</div>
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
@@ -9437,7 +9437,9 @@ function areaOverviewHtml(area, c, blocks) {
   const setTile = (state.area_open && state.area_open.setTile) || null;
   const pieceTile = (p) => {
     const n = pieceCount[p.k]; const openT = setTile === p.k; const off = hidden.includes(p.k);
-    return `<button class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ''}" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${esc(SEC_LABELS[p.k] || p.k)} settings"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>`;
+    // An activated (not hidden) section wears a border in the Life Space's colour so
+    // it's obvious which tools are on; a hidden one stays faint. (Robin, 2026-10-28.)
+    return `<button class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${esc(SEC_LABELS[p.k] || p.k)} settings"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>`;
   };
   const pieceShareCtl = (k) => {
     const hiddenK = hidden.includes(k);
