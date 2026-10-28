@@ -8926,6 +8926,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    access faces; the search box flexes to fill whatever's left. (Robin, 2026-10-28.) */
 .am-searchrow .area-addnew-row { flex:none; align-self:center; margin:0; }
 .am-searchrow .area-addnew-row .addnew-btn { min-height:38px; display:inline-flex; align-items:center; }
+/* The ★ ring and the ▾ settings caret ride the far right of that same row now, so
+   the title row is nothing but the Life Space name. (Robin, 2026-10-28.) */
+.am-searchrow .am-rowtools { flex:none; align-self:center; margin-left:8px; }
 /* The favourite star gets a ring so it reads as a real control, not stray text. */
 .area-h1-tools .star { opacity:1; width:34px; height:34px; padding:0; display:inline-grid; place-items:center; border:1px solid var(--line-2); border-radius:50%; background:var(--card); font-size:16px; transition:border-color .12s,color .12s,background .12s; }
 .area-h1-tools .star:hover { border-color:#eea90b; }
