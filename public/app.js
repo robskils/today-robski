@@ -23695,12 +23695,24 @@ function taskSurfaceHtml(t) {
       <p class="tfs-note">${esc(chanHint)}</p>` : ''}
       <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until then</span></label>
     </div>` : ''}
+  </div>`;
+  return `<section class="tf-surface ${open ? '' : 'folded'}">
+    ${tfCardHead('surface', 'Surface')}
+    ${open ? body : ''}
+  </section>`;
+}
+// Repeat lives in its own box (under "Who can see this") rather than crammed into
+// Surface, where it never logically belonged. (Robin, 2026-10-28.)
+function taskRepeatHtml(t) {
+  const p = t.props; const id = t.id;
+  const open = tfCardOpen('repeat');
+  const body = `<div class="tfs-cardbody">
     <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
     ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>
     <label class="tfs-row"><span class="tfs-l">How many times<small class="tf-hint">${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done so far` : 'leave blank to repeat forever'}</small></span><span class="tfs-ctrl"><input type="number" min="1" max="999" inputmode="numeric" class="sel tfs-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞ forever"></span></label>` : ''}
   </div>`;
-  return `<section class="tf-surface ${open ? '' : 'folded'}">
-    ${tfCardHead('surface', 'Surface')}
+  return `<section class="tf-surface tf-repeat ${open ? '' : 'folded'}">
+    ${tfCardHead('repeat', 'Repeat')}
     ${open ? body : ''}
   </section>`;
 }
@@ -23736,7 +23748,7 @@ function renderTaskCard() {
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
     </div>
     ${noteAliasesControl(t, 'task')}
-    <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
+    <div class="tf-cardrow">${taskSurfaceHtml(t)}<div class="tf-cardcol">${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}${taskRepeatHtml(t)}</div></div>
     <div class="task-lower">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
       ${taskEmailHtml(t)}
