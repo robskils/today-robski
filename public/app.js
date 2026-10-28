@@ -5886,7 +5886,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="home-setup-main" data-onb-open-hub>
       <span class="hsu-ic">${MARK}</span>
-      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, add your Life Spaces, connect your email - at your own pace.</span></span>
+      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, connect your email and calendar, bring your things in - at your own pace.</span></span>
       <span class="hsu-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
@@ -21546,11 +21546,14 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
-  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('account'); else if (d === 'contacts') openContacts(); else if (d === 'invite') inviteToLifeFold(); return; } }
+  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('security'); else if (d === 'contacts') openContacts(); else if (d === 'import') openSettings('import'); else if (d === 'calendar') openCalendar(); else if (d === 'invite') inviteToLifeFold(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   { if (t.closest('[data-onb-ai-connect]')) { onbConnectAi(); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
+  if (t.closest('[data-onb-name-save]')) { onbSaveName(); return; }
+  { const oac = t.closest('[data-onb-accent]'); if (oac) { onbPickAccent(oac.dataset.onbAccent); return; } }
+  if (t.closest('[data-onb-photo-x]')) { onbRemovePhoto(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
   { const oh = t.closest('[data-onb-open-hub]'); if (oh) { showOnboarding(oh.dataset.onbOpenHub || null); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
@@ -22310,6 +22313,7 @@ document.addEventListener('change', (e) => {
     return;
   }
   if (e.target.matches('[data-card-photo]')) { const f = e.target.files && e.target.files[0]; if (f) cardSetPhoto(f); e.target.value = ''; return; }
+  if (e.target.matches('[data-onb-photo]')) { const f = e.target.files && e.target.files[0]; if (f) onbSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-contact-photo]')) { const f = e.target.files && e.target.files[0]; if (f) contactSetPhoto(f); e.target.value = ''; return; }
   if (e.target.matches('[data-sig-photo]')) { const f = e.target.files && e.target.files[0]; if (f) sigSetPhoto(e.target.dataset.sigPhoto, f); e.target.value = ''; return; }
   if (e.target.matches('[data-card-accent-custom]')) { state.card = state.card || {}; state.card.accent = e.target.value; saveCard(); rerenderCard(); return; }
@@ -22405,6 +22409,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-rw-area]')) { rwSetArea(e.target.dataset.rwArea, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
+  if (e.target.matches('[data-onb-accent-custom]')) { setAccent(e.target.value); if (e.type === 'change' && state.onb) renderOnboarding(); }
   if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
@@ -25442,18 +25447,20 @@ async function finishOnboarding() {
 function welcomeItems() {
   const a = state.account || {};
   const card = state.card || {};
-  const areas = state.areas || [];
   const contacts = state.contacts || [];
   const mailConnected = !!(state.mail && Array.isArray(state.mail.accounts) && state.mail.accounts.length > 0);
-  return [
-    { id: 'card', ic: '◗', label: 'Make it yours', done: !!(card.photo || (card.tagline || '').trim()) },
-    { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: areas.length > 0 },
+  const onManaged = a.isOwner || isManagedPlan(a.plan);
+  const items = [
+    { id: 'identity', ic: '◗', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
-    { id: 'ai', ic: '✦', label: 'Add your AI', done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiOpenaiSet || a.aiGeminiSet) },
+    { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 },
+    { id: 'import', ic: '⤓', label: 'Import your things', done: contacts.length > 0 },
     { id: 'phone', ic: '📱', label: 'A backup way in', done: !!(a.phone || '').trim() },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
-    { id: 'contacts', ic: '👥', label: 'Import contacts', done: contacts.length > 0 },
   ];
+  // AI is handled for Premium Plus, so there's nothing to set up - hide it there.
+  if (!onManaged) items.push({ id: 'ai', ic: '✦', label: 'Add your AI', done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiOpenaiSet || a.aiGeminiSet) });
+  return items;
 }
 // Remembered open/closed; defaults open while there's still something left to do.
 function welcomeOpen(items) {
@@ -25493,6 +25500,7 @@ function showOnboarding(openId) {
   if (state.card === undefined) api('/api/kv/card_profile').then((r) => { try { state.card = (r && r.value) ? JSON.parse(r.value) : {}; } catch { state.card = {}; } rr(); }).catch(() => { state.card = state.card || {}; });
   api('/api/blocks?kind=area').then((areas) => { const s = (areas || []).sort((x, y) => (x.title || '').localeCompare(y.title || '')); state.areas = s; if (state.onb) { state.onb.areas = s; rr(); } }).catch(() => { if (state.onb) state.onb.areas = state.onb.areas || []; });
   if (state.contacts === undefined) loadContacts().then(rr).catch(() => {});
+  if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; rr(); }).catch(() => {}); }
   try { mailApi('/accounts').then((r) => { if (state.onb) { state.onb.mailAccounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); } }).catch(() => {}); } catch {}
   renderOnboarding();
 }
@@ -25608,14 +25616,68 @@ function onbDone() {
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
 }
-// Panels for the tiles that open a richer surface - a short, warm line then a
-// button through to the full tool. (The lifespaces/AI/email/phone tiles do it inline
-// via onbAreas/onbAi/onbEmail/onbPhone above.)
-function onbCardPanel() { return `<p class="onb-p">Your LifeFold card is how you show up to the people you share with - a name, a photo, a short line about you, your colour.</p><button class="add-btn wide" data-onb-nav="card">Open your card →</button>`; }
-function onbToolsPanel() { return `<p class="onb-p">LifeFold has lots of tools - tasks, calendar, notes, money, reflection and more. Switch on just what you want and add the rest whenever you like.</p><button class="add-btn wide" data-onb-nav="tools">Choose your tools →</button>`; }
-function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Recommended for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
-function onbImportPanel() { return `<p class="onb-p">Bring your address book in with a <b>vCard (.vcf)</b> - export one from Google Contacts, Outlook, iCloud, your phone or any address book, then import it on your Contacts page.</p><button class="add-btn wide" data-onb-nav="contacts">Go to Contacts to import →</button>`; }
-function onbInvitePanel() { return `<p class="onb-p">LifeFold is better shared. Invite someone and you can share a whole Life Space, a page, a table or just a few tasks - entirely up to you.</p><button class="add-btn wide" data-onb-nav="invite">Invite someone →</button>`; }
+// "Make it yours": name, a highlight colour and a photo, all inline - the three
+// quick touches that make a new LifeFold feel like the member's own. Each writes
+// straight through (account name, the app accent, the card photo) and re-renders
+// the hub in place. (Robin, 2026-10-28.)
+function onbIdentity() {
+  const a = state.onb.account || state.account || {};
+  const card = state.card || {};
+  const cur = (savedAccent() || '').toLowerCase();
+  const swatches = ACCENT_PRESETS.map(([hex, name]) =>
+    `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-onb-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
+  const photo = card.photo
+    ? `<span class="dbc-photo sm" style="background-image:url('${card.photo}')"></span>`
+    : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c4412e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
+  return `<p class="onb-p">A few quick touches to make LifeFold feel like yours - change any of it later.</p>
+    <div class="onb-field"><span class="onb-l">Your name</span>
+      <span class="onb-inline"><input id="onb-name" class="sel" value="${esc(a.name || '')}" placeholder="What should we call you?" maxlength="60" autocomplete="name"><button class="add-btn wide" data-onb-name-save>Save</button></span></div>
+    <div class="onb-field"><span class="onb-l">Highlight colour <span class="onb-opt">if you like</span></span>
+      <div class="onb-acc">${swatches}</div>
+      <label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-onb-accent-custom></label></div>
+    <div class="onb-field"><span class="onb-l">Photo <span class="onb-opt">if you like</span></span>
+      <div class="onb-photo-row">${photo}
+        <label class="add-btn wide onb-photo-btn"><input type="file" accept="image/*" hidden data-onb-photo><span>${card.photo ? 'Change photo' : 'Add a photo'}</span></label>
+        ${card.photo ? '<button class="ghost" data-onb-photo-x>Remove</button>' : ''}</div></div>`;
+}
+async function onbSaveName() {
+  const el = document.getElementById('onb-name'); const v = (el && el.value || '').trim();
+  const btn = document.querySelector('[data-onb-name-save]'); if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const acct = await api('/api/account', { method: 'PATCH', body: JSON.stringify({ name: v }) });
+    if (state.onb) state.onb.account = acct; state.account = acct; if (state.me) state.me.name = acct.name;
+    renderNav(); toast('Saved'); if (state.onb) renderOnboarding();
+  } catch (e) { toast(e.message); if (btn) { btn.disabled = false; btn.textContent = 'Save'; } }
+}
+function onbPickAccent(hex) { setAccent(hex); if (state.onb) renderOnboarding(); }
+async function onbSetPhoto(file) {
+  try { const uri = await avatarDataUri(file); state.card = state.card || {}; state.card.photo = uri; saveCard(); toast('Photo added'); if (state.onb) renderOnboarding(); }
+  catch (e) { toast(e.message || 'Could not read that image'); }
+}
+function onbRemovePhoto() { if (state.card) { delete state.card.photo; saveCard(); } if (state.onb) renderOnboarding(); }
+// Your LifeFold calendar works from the start (native events, no account). This
+// step brings an OUTSIDE calendar in - Google read-only, or iCloud/Yahoo two-way
+// - which the Calendar view's own connect strip handles in full.
+function onbCalendar() {
+  const accts = state.gcalAccounts || [];
+  return `<p class="onb-p">Your LifeFold calendar already works - add events on the Calendar anytime, no account needed.</p>
+    <p class="onb-p">To see an <b>outside</b> calendar here too, connect it: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
+    ${accts.length ? `<div class="onb-ok">✓ ${accts.length} calendar${accts.length === 1 ? '' : 's'} connected. Manage them on the Calendar, or in Settings › Calendar.</div>` : ''}
+    <button class="add-btn wide" data-onb-nav="calendar">Open the Calendar to connect →</button>`;
+}
+// What you can bring in today. Notes and contacts have a home to send you to;
+// events and statements live on their own tools (mentioned, not linked).
+function onbImport() {
+  return `<p class="onb-p">Bring what you already have into LifeFold. A few things import today:</p>
+    <ul class="onb-tips">
+      <li><b>Notes</b> - Markdown or text files from Obsidian, Bear, Apple Notes, Notion and the like.</li>
+      <li><b>Contacts</b> - a vCard (.vcf) from Google, Outlook, iCloud or your phone.</li>
+      <li><b>Events</b> - a flyer, photo, screenshot or link, read onto your Calendar.</li>
+      <li><b>Bank statements</b> - a CSV or PDF, sorted into tidy transactions in Money.</li>
+    </ul>
+    <div class="onb-btn-row"><button class="add-btn wide" data-onb-nav="import">Import notes →</button><button class="add-btn wide" data-onb-nav="contacts">Import contacts →</button></div>`;
+}
+function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
 // The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
 // in any order, whenever you like. Done bits carry a tick; a progress bar sums
 // them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
@@ -25623,24 +25685,26 @@ function renderOnboarding() {
   const s = state.onb; if (!s) return;
   const a = s.account || state.account || {};
   const card = state.card || {};
-  const areas = (s.areas || state.areas || []);
   const contacts = state.contacts || [];
   const mailConnected = !!s.mailDone || (Array.isArray(s.mailAccounts) && s.mailAccounts.length > 0);
   const name = (state.me && state.me.name) ? state.me.name.split(' ')[0] : '';
+  // Robin's order: make it yours, then your connections (email, calendar,
+  // import), then the safety steps (a backup way in, lock it down), then AI.
+  // (Robin, 2026-10-28.)
+  const onManaged = a.isOwner || isManagedPlan(a.plan);
   const TILES = [
-    { id: 'card', ic: '◗', label: 'Make it yours', hint: 'Name, photo & a line about you', done: !!(card.photo || (card.tagline || '').trim()), body: onbCardPanel },
-    { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The areas of your life', done: areas.length > 0, body: onbAreas },
-    { id: 'tools', ic: '🧰', label: 'Choose your tools', hint: 'Turn parts on or off', opt: true, body: onbToolsPanel },
+    { id: 'identity', ic: '◗', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside LifeFold', opt: true, done: mailConnected, body: onbEmail },
-    { id: 'ai', ic: '✦', label: 'Turn on AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnthropicSet || a.aiGeminiSet), body: onbAi },
+    { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: (state.gcalAccounts || []).length > 0, body: onbCalendar },
+    { id: 'import', ic: '⤓', label: 'Import your things', hint: 'Notes, contacts, events…', opt: true, done: contacts.length > 0, body: onbImport },
     { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
-    { id: 'contacts', ic: '👥', label: 'Import contacts', hint: 'Google, Outlook, your phone…', opt: true, done: contacts.length > 0, body: onbImportPanel },
-    { id: 'invite', ic: '💌', label: 'Invite people', hint: 'Share with friends & family', opt: true, body: onbInvitePanel },
   ];
-  // Only the essentials (your card + your Life Spaces) count toward "all set".
-  // The optional extras - AI, email, phone, 2FA, contacts - must never make a new
-  // member look unfinished or imply they're required. AI especially. (Robin, 2026-10-16.)
+  // AI is handled for you on Premium Plus, so there's nothing to add there.
+  if (!onManaged) TILES.push({ id: 'ai', ic: '✦', label: 'Add AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiGeminiSet || a.aiOpenaiSet), body: onbAi });
+  // Only "make it yours" counts toward "all set". Every connection and safety
+  // step is genuinely optional and must never make a new member look unfinished
+  // or imply it's required - AI especially. (Robin, 2026-10-16.)
   const countable = TILES.filter((x) => ('done' in x) && !x.opt);
   const doneN = countable.filter((x) => x.done).length;
   const allDone = doneN >= countable.length;

@@ -4927,6 +4927,18 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .onb-mailform .add-btn.wide { align-self:flex-start; }
 .onb-ok { font-size:15px; color:#3f9e5f; background:color-mix(in srgb,#3f9e5f 10%,transparent); border:1px solid color-mix(in srgb,#3f9e5f 30%,transparent); border-radius:12px; padding:14px 16px; line-height:1.5; margin-bottom:14px; }
 .onb-tips { margin:4px 0 10px; padding-left:20px; display:flex; flex-direction:column; gap:8px; font-size:14.5px; line-height:1.5; color:var(--ink-2); }
+/* Onboarding "Make it yours" inline fields (name, highlight colour, photo) + import buttons. */
+.onb-field { display:flex; flex-direction:column; gap:9px; margin:0 0 18px; }
+.onb-field > .onb-l { font-size:13px; font-weight:600; letter-spacing:.02em; color:var(--ink-2); }
+.onb-inline { display:flex; gap:9px; align-items:center; }
+.onb-inline .sel { flex:1; min-width:0; margin:0; }
+.onb-inline .add-btn.wide { flex:none; }
+.onb-acc { display:flex; flex-wrap:wrap; gap:10px 14px; }
+.onb-field .acc-custom-l { margin-top:2px; }
+.onb-photo-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.onb-photo-row .dbc-photo.sm, .onb-photo-row .add-btn.wide { flex:none; }
+.onb-btn-row { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+.onb-btn-row .add-btn.wide { flex:0 1 auto; }
 /* Onboarding life-area chips: a dot in the area's own hue, its name, and a quiet × */
 .onb-areas { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 12px; }
 .onb-area { display:inline-flex; align-items:center; gap:8px; padding:8px 10px 8px 12px; border:1px solid var(--line-2); border-radius:999px; background:var(--paper); font-size:14.5px; color:var(--ink); }
