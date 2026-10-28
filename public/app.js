@@ -10119,7 +10119,10 @@ function openDatePicker(id) {
   // An event's end can't fall before its start, so the end picker greys out any
   // day earlier than the chosen start.
   const min = id === 'ce-enddate' ? ((document.getElementById('ce-date') || {}).value || null) : null;
-  state.dp = { id, y, m: m - 1, min, optionalYear, noYear };
+  // Clicking the already-set day clears the field (toggle off) - e.g. remove a
+  // contact's birthday - except for the event start/end, which must carry a date.
+  const clearable = !/^(ce|qe)-(date|enddate)$/.test(id);
+  state.dp = { id, y, m: m - 1, min, optionalYear, noYear, clearable };
   renderDatePicker();
 }
 // Newest first, so this year and the next few sit at the top where a due date or
@@ -10173,14 +10176,19 @@ function setDateField(id, iso) {
   inp.value = iso || '';
   const btn = document.querySelector(`[data-dp-open="${id}"]`); if (btn) btn.textContent = dpLabel(iso);
 }
-function datePick(iso) {
+function datePick(iso, toggle) {
   const dp = state.dp; if (!dp) return;
   const inp = document.getElementById(dp.id);
   if (inp) {
+    const cur = inp.value || '';
+    const already = dp.noYear ? (('--' + iso.slice(5)) === cur) : (iso === cur);
+    // Tapping the day that's already set toggles the date OFF (clears it) - so you
+    // can remove a contact's birthday by clicking its highlighted day again. Only
+    // for a grid tap (not the "Today" link) and never the required event dates.
     // A birthday with the year left off keeps only the day and month, in vCard's
-    // --MM-DD form. Which is what most birthdays actually are: you know it's the
-    // 3rd of September, and the year is either private or not the point.
-    setDateField(dp.id, dp.noYear ? `--${iso.slice(5)}` : iso);
+    // --MM-DD form (you know it's the 3rd of September; the year is often private).
+    const v = (toggle && already && dp.clearable) ? '' : (dp.noYear ? `--${iso.slice(5)}` : iso);
+    setDateField(dp.id, v);
     inp.dispatchEvent(new Event('change', { bubbles: true }));
   }
   closeDatePicker();
@@ -21774,7 +21782,7 @@ document.addEventListener('click', (e) => {
     return;
   }
   const dpo = t.closest('[data-dp-open]'); if (dpo) { openDatePicker(dpo.dataset.dpOpen); return; }
-  const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick); return; }
+  const dpp = t.closest('[data-dp-pick]'); if (dpp) { datePick(dpp.dataset.dpPick, true); return; }
   const dpst = t.closest('[data-dp-step]'); if (dpst) { dpStep(+dpst.dataset.dpStep); return; }
   if (t.closest('[data-dp-jump-today]')) { datePick(todayISO()); return; }
   if (t.closest('[data-dp-close]') && !t.closest('.dp-cal')) { closeDatePicker(); return; }
