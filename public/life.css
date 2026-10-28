@@ -8108,13 +8108,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 @media (max-width:620px){ .cc-fact-addr { max-width:none; } }
 .cc-fact-addr .cc-adr-views { margin-top:-2px; }
 .focus-notes { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:6px 16px 16px; }
-/* Task card: Goals, Contacts, Links and Notes tile two-up on two rows. Each
-   is already a card, so drop its own top margin and let the grid gap space them. */
-.task-boxes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start; margin-top:18px; }
-/* Boxes start the same size (a shared min-height) and then grow independently
-   with their content - align-items:start lets each keep its own height. */
-.task-boxes > .focus-notes, .task-boxes > .xlinks { margin-top:0; min-height:168px; box-sizing:border-box; }
-@media (max-width:720px) { .task-boxes { grid-template-columns:minmax(0,1fr); gap:14px; } }
+/* Task card lower stack: Notes, the source email and the Linked & attached panel,
+   full width in a column. On desktop Notes drops to the bottom (order:3) so the
+   panel leads and Notes gets the full width; on a phone it stays where it was,
+   first and full width. (Robin, 2026-10-28.) */
+.task-lower { display:flex; flex-direction:column; gap:18px; margin-top:18px; }
+.task-lower > .focus-notes { min-height:168px; box-sizing:border-box; }
+@media (min-width:721px) { .task-lower > .focus-notes { order:3; } }
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
 .focus-notes .prose { min-height:96px; }
 /* A task made from an email shows the email in its own section. */

@@ -23737,11 +23737,11 @@ function renderTaskCard() {
     </div>
     ${noteAliasesControl(t, 'task')}
     <div class="tf-cardrow">${taskSurfaceHtml(t)}${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>
-    <div class="task-boxes">
+    <div class="task-lower">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
-    </div>
-    ${taskEmailHtml(t)}
-    ${taskConnectedPanel(t)}`;
+      ${taskEmailHtml(t)}
+      ${taskConnectedPanel(t)}
+    </div>`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
 
@@ -23903,10 +23903,10 @@ function taskConnectedPanel(t) {
       <div class="nx-attach">
         <div class="nx-addrow">
           <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 LifeFold Connect</button>
-          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-task-addtab="weblink">🌐 Add Web Link</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label>
           <button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button>
+          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-task-addtab="weblink">🌐 Add Web Link</button>
         </div>
         ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
       </div>
