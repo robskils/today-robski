@@ -156,7 +156,7 @@ function toast(m, undoFn, opts) {
   const t = $('#toast');
   const hide = () => { t.hidden = true; clearTimeout(toastT); };
   t.className = 'toast' + (err ? ' toast-err' : '') + (undoFn ? ' toast-wide' : '');
-  t.innerHTML = `${err ? '<span class="toast-ic">⚠</span>' : ''}<span class="toast-msg"></span>${undoFn ? '<button class="toast-undo" type="button">Undo</button>' : ''}<button class="toast-x" type="button" aria-label="Dismiss">✕</button>`;
+  t.innerHTML = `${err ? '<span class="toast-ic">⚠</span>' : ''}<span class="toast-msg"></span>${undoFn ? `<button class="toast-undo" type="button">${esc(opts.actionLabel || 'Undo')}</button>` : ''}<button class="toast-x" type="button" aria-label="Dismiss">✕</button>`;
   t.querySelector('.toast-msg').textContent = m;
   t.querySelector('.toast-x').onclick = hide;
   if (undoFn) t.querySelector('.toast-undo').onclick = () => { hide(); try { undoFn(); } catch {} };
@@ -1407,10 +1407,10 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
       const html = await res.text();
       const m = html.match(/app\.js\?v=([0-9]+)/);
       if (m && m[1] && m[1] !== BOOT_VER) {
-        // Never yank the page out from under someone mid-entry: defer the reload
-        // while an add form is open (task, contact, quick-add). Re-check next return.
-        if (document.querySelector('.add-task, #task-form, #qt-form, #contact-form')) { lastCheck = 0; return; }
-        updating = true; location.reload();
+        // A new build is live. Never yank the page out mid-work - show a quiet,
+        // sticky "tap to refresh" nudge and let the choice be theirs. (Robin.)
+        updating = true;
+        toast('A new version of LifeFold is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
       }
     } catch { /* offline - keep running what we have */ }
   }
