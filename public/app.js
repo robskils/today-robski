@@ -1799,7 +1799,7 @@ function feedTeamSearchInput(q) {
     } catch { if (res) res.innerHTML = '<div class="feed-res-note">Search failed - try again.</div>'; }
   }, 350);
 }
-async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
+async function loadAccount() { try { state.account = await api('/api/account'); try { if (typeof state.account.wheelAreas === 'boolean') localStorage.setItem('life.wheelAreas', state.account.wheelAreas ? '1' : '0'); } catch {} if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 // Whether AI features can run for this account: master switch on, and either the
 // owner (managed key) or a stored own key. Optimistic before the account loads.
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnySet || a.aiAnthropicSet; }
@@ -3415,6 +3415,7 @@ function renderSettings() {
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
+        ${state.account ? `<label class="set-mod"><span>Wheel of Life on Life Spaces<small>Show each Life Space's Wheel of Life score and tab. Off by default - tick to switch it on.</small></span><input type="checkbox" data-account-wheelareas ${wheelOnAreas() ? 'checked' : ''}></label>` : ''}
       </div>`;
 
   const aiPane = state.account ? (() => {
@@ -9112,7 +9113,7 @@ function renderArea() {
   const wheelReviewed = Math.min(Number((area.props && area.props.wheelScore) || 0), 5) > 0;
   // Respect the section-visibility setting: a tab you've hidden (Vision / Goals /
   // Bucket list) drops out entirely - no tab button and no panel. (Robin.)
-  const TABS = ['Vision', 'Goals', ...((wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
+  const TABS = ['Vision', 'Goals', ...((wheelOnAreas() && wheelTracked && wheelReviewed) ? ['Wheel of Life'] : []), 'Bucket list'].filter((k) => !secHidden(k));
   let openTile = state.area_open.tileOpen;
   // Default: all tabs closed - nothing is forced open. A stale value not in TABS
   // also resolves to closed. Click a tab to open it; click the open one to close
@@ -9131,7 +9132,7 @@ function renderArea() {
   // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
   // Defined here, before areaVisionGoals uses it - a const can't be read above
   // its declaration (that TDZ error stopped lifespaces opening). (Robin, 2026-10-13.)
-  const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew">
+  const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew area-addnew-head">
         <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this area<span class="an-ch">▾</span></button>
         <div class="addnew-menu" hidden>
           <button class="addnew-item" data-area-add-task><span class="addnew-ic">✓</span>Task</button>
@@ -9142,7 +9143,7 @@ function renderArea() {
           <button class="addnew-item" data-area-add-contact><span class="addnew-ic">👤</span>Contact</button>
         </div>
       </div>`;
-  const areaVisionGoals = `${tabsKicker}<div class="area-tabs-row">${tabBar}${areaAddBtn ? `<div class="area-tabs-add">${areaAddBtn}</div>` : ''}</div>${(topKick || topCard) ? `<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>` : ''}`;
+  const areaVisionGoals = `${tabsKicker}${tabBar ? `<div class="area-tabs-row">${tabBar}</div>` : ''}${(topKick || topCard) ? `<div class="area-tilepanel" style="--h:${h}">${topKick}${topCard}</div>` : ''}`;
   // The at-a-glance dashboard now lives in the main page (not tucked in the ▾ panel):
   // a stats strip plus what you last opened here.
   // The dashboard metrics double as a quick-jump section menu: each populated part
@@ -9311,7 +9312,7 @@ function renderArea() {
         : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${areaAddBtn}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaSentimentHtml(area)}</div>
       </div>
@@ -17565,6 +17566,14 @@ function weekStart() {
   try { const l = localStorage.getItem('life.weekStart'); if (l != null && /^[0-6]$/.test(l)) return Number(l); } catch {}
   return 1;
 }
+// Whether to surface the Wheel of Life score/tab on Life Space pages. Off by
+// default - people opt in from Settings › Appearance. A localStorage mirror keeps
+// it instant (and hidden-by-default) before the account loads. (Robin, 2026-10-28.)
+function wheelOnAreas() {
+  if (state.account && typeof state.account.wheelAreas === 'boolean') return state.account.wheelAreas;
+  try { const l = localStorage.getItem('life.wheelAreas'); if (l === '1') return true; if (l === '0') return false; } catch {}
+  return false;
+}
 // The most recently completed week per the chosen week-start, ending on-or-before
 // the anchor - i.e. "the week just gone".
 function weeklyWindow(anchorISO) {
@@ -20995,6 +21004,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-brief]')) { saveAccount({ briefEmail: e.target.checked }); toast(e.target.checked ? 'Morning brief on' : 'Morning brief off'); }
   if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   if (e.target.matches('[data-account-currency]')) { const code = e.target.value; if (state.account) state.account.currency = code; saveAccount({ currency: code }); const c = (CURRENCIES_APP.find((x) => x[0] === code) || [])[3] || code; toast(`Money shown in ${c}`); }
+  if (e.target.matches('[data-account-wheelareas]')) { const on = e.target.checked; if (state.account) state.account.wheelAreas = on; try { localStorage.setItem('life.wheelAreas', on ? '1' : '0'); } catch {} saveAccount({ wheelAreas: on }); toast(on ? 'Wheel of Life showing on Life Spaces' : 'Wheel of Life hidden on Life Spaces'); return; }
   if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
