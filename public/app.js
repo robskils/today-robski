@@ -21758,7 +21758,23 @@ document.addEventListener('click', (e) => {
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
   { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }
-  const cday = t.closest('[data-cal-day]'); if (cday) { state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
+  const cday = t.closest('[data-cal-day]'); if (cday) {
+    state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
+    // On mobile month view the selected day's header + events sit ABOVE the grid, so
+    // tapping a day down the grid would change them out of sight. Scroll them up to
+    // just under the pinned toolbar so you see "Thursday 15 October" and its events.
+    // (Robin, 2026-10-28.)
+    const toDay = state.cal.mode === 'month' && window.matchMedia('(max-width:820px)').matches;
+    renderCalendar();
+    if (toDay) requestAnimationFrame(() => {
+      const head = document.querySelector('.cal-agenda-top'); if (!head) return;
+      const nav = document.querySelector('.cal-nav'); const crumb = document.querySelector('#pane .crumbbar');
+      const stuck = Math.max(nav ? nav.getBoundingClientRect().bottom : 0, crumb ? crumb.getBoundingClientRect().bottom : 0, 0);
+      const y = window.scrollY + head.getBoundingClientRect().top - stuck - 10;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    });
+    return;
+  }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
   if (t.closest('[data-cals-hide]')) { try { localStorage.setItem('lf_cals_hidden', '1'); } catch {} toast('Tucked away - find it in Settings › Calendar'); renderCalendar(); return; }
