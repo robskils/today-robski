@@ -5886,7 +5886,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="home-setup-main" data-onb-open-hub>
       <span class="hsu-ic">${MARK}</span>
-      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, connect your email and calendar, bring your things in - at your own pace.</span></span>
+      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, connect your email and calendar, bring it all in - at your own pace.</span></span>
       <span class="hsu-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
@@ -25454,7 +25454,7 @@ function welcomeItems() {
     { id: 'identity', ic: '◗', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 },
-    { id: 'import', ic: '⤓', label: 'Import your things', done: contacts.length > 0 },
+    { id: 'import', ic: '⤓', label: 'Bring it all in', done: contacts.length > 0 },
     { id: 'phone', ic: '📱', label: 'A backup way in', done: !!(a.phone || '').trim() },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
   ];
@@ -25696,7 +25696,7 @@ function renderOnboarding() {
     { id: 'identity', ic: '◗', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside LifeFold', opt: true, done: mailConnected, body: onbEmail },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: (state.gcalAccounts || []).length > 0, body: onbCalendar },
-    { id: 'import', ic: '⤓', label: 'Import your things', hint: 'Notes, contacts, events…', opt: true, done: contacts.length > 0, body: onbImport },
+    { id: 'import', ic: '⤓', label: 'Bring it all in', hint: 'Notes, contacts, events…', opt: true, done: contacts.length > 0, body: onbImport },
     { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
   ];
