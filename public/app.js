@@ -1110,17 +1110,7 @@ function renderGuideIndex() {
         <div class="guide-ethos-tag">For a life well lived</div>
         <p class="guide-ethos-p">LifeFold holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
       </div>
-      <p class="help-lede">Here's how it all works. Start with the welcome guide, or pick a tool.</p>
-      <div class="guide-start">
-        <div class="guide-start-h">✦ New here? The welcome guide</div>
-        <p class="guide-start-p">A quick set-up, any time you want to run through it:</p>
-        <ol class="guide-checklist">
-          <li><b>Choose your username</b> - your LifeFold's own web address.</li>
-          <li><b>Add AI</b> - bring your own key, or go Premium Plus and we handle it for you.</li>
-          <li><b>Connect your email</b> - Gmail (with a one-tap app-password guide) and the rest.</li>
-        </ol>
-        <button class="add-btn wide" data-onb-replay>Open the welcome guide</button>
-      </div>
+      <p class="help-lede">Here's how it all works. Pick a tool below to see its guide.</p>
       <div class="guide-sec-h">All the guides</div>
       <div class="guide-grid">${cards}</div>
       <div class="guide-sec-h">Tell us what you think</div>
@@ -21563,7 +21553,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
-  if (t.closest('[data-onb-replay]')) { showOnboarding(); return; }
   { const oh = t.closest('[data-onb-open-hub]'); if (oh) { showOnboarding(oh.dataset.onbOpenHub || null); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
