@@ -8695,7 +8695,7 @@ const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') ===
 // remembered per section label across areas).
 // Sections that start collapsed on a life-area overview (Vision is a quiet
 // backdrop, not the first thing you want to scroll past every visit).
-const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Latest updates', 'Who has access']);
+const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Who has access']);
 // Stored explicitly (1 = collapsed, 0 = open) once you've toggled it; before
 // that, the per-key default decides. Old entries (presence = collapsed) still read.
 const areaSecOpen = (k) => {
