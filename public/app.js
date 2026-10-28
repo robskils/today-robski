@@ -9342,7 +9342,7 @@ function renderArea() {
         : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
         <div class="am-kicker">Life Space</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${areaAddBtn}${shareBtn(area, 'area')}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}><span class="area-h1-tools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}${areaAddBtn}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings & overview">▾</button></span></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
         <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaFacesRow(area)}${wheelOnAreas() ? areaSentimentHtml(area) : ''}</div>
       </div>
@@ -9502,10 +9502,10 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-muted" style="margin-top:6px">For an area that’s a project with an end date. It shows on Home and in your reviews as the date nears.</div>
     </div>`;
   return `<section class="area-ov">
-    ${colourBlock}
     ${deadlineBlock}
     ${sectionsBlock}
     ${reviewsBlock}
+    ${colourBlock}
   </section>`;
 }
 // Members of a page: the people it's shared with, as a horizontal row of
