@@ -1614,7 +1614,11 @@ function recentRows(v) {
   }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
 }
 function navTopOpen() { try { const x = localStorage.getItem('life.nav.topsec'); return x === null ? 'recent' : x; } catch { return 'recent'; } }
-function setNavTop(which) { const cur = navTopOpen(); const next = cur === which ? '' : which; try { localStorage.setItem('life.nav.topsec', next); } catch {} renderNav(); }
+// Toggle the Starred / Recent expander. navHeld is cleared first so the re-render
+// lands synchronously on this tap rather than waiting on the pointer-hold flush -
+// that deferral was leaving the Starred button looking dead on mobile. Safe because
+// this runs on the click (the gesture is already over). (Robin, 2026-10-28.)
+function setNavTop(which) { const cur = navTopOpen(); const next = cur === which ? '' : which; try { localStorage.setItem('life.nav.topsec', next); } catch {} navHeld = false; renderNav(); }
 function navTopSecs(v) {
   const open = navTopOpen();
   const favN = (state.favs || []).length;
@@ -4186,7 +4190,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'practices', 'wellbeing', 'insights', 'goals', 'reviews', 'areas', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'practices', 'wellbeing', 'areas', 'insights', 'goals', 'reviews', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -4203,6 +4207,19 @@ function mobileNavOrder() {
         localStorage.setItem('life.nav.morder', JSON.stringify(saved));
       }
       localStorage.setItem('life.nav.contactsUnderTasks', '1');
+    }
+  } catch {}
+  // One-time (2026-10-28): lift Life Spaces to directly under Reflection
+  // (wellbeing) for anyone with a saved drawer order, matching the new default.
+  // Guarded so it runs once and never fights a later manual reorder. (Robin.)
+  try {
+    if (!localStorage.getItem('life.nav.areasUnderReflect')) {
+      if (saved.length && saved.includes('areas') && saved.includes('wellbeing')) {
+        saved = saved.filter((k) => k !== 'areas');
+        saved.splice(saved.indexOf('wellbeing') + 1, 0, 'areas');
+        localStorage.setItem('life.nav.morder', JSON.stringify(saved));
+      }
+      localStorage.setItem('life.nav.areasUnderReflect', '1');
     }
   } catch {}
   // Slot any default item missing from a saved order into its NATURAL place (just
