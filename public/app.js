@@ -10549,7 +10549,7 @@ function calNowLabel() {
   try {
     const nowMin = d.getHours() * 60 + d.getMinutes();
     const evs = ((state.cal && state.cal.events) || []).filter((e) => e.date === todayISO() && !e.allDay && e.start_min != null && e.start_min >= nowMin).sort((a, b) => a.start_min - b.start_min);
-    if (evs.length) { const e = evs[0]; nextBit = `<span class="cal-now-next">next ${esc(minToLabel(e.start_min))} · ${esc((e.title || '').slice(0, 44))}</span>`; }
+    if (evs.length) { const e = evs[0]; nextBit = `<span class="cal-now-next">Next Event: ${esc(minToLabel(e.start_min))} · ${esc((e.title || '').slice(0, 44))}</span>`; }
   } catch {}
   return `<b>${hm}</b>${nextBit}`;
 }
