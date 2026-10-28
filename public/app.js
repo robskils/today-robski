@@ -1023,8 +1023,8 @@ const HELP = {
       <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
-  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own keys, or Premium Plus where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across LifeFold.</p><p>There are two ways to power it. <b>Bring your own keys</b> (Free and Premium): add your own Anthropic and Gemini keys and you control the cost - nothing is stored but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
+  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own key, or Premium Plus where we handle it.',
+    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across LifeFold.</p><p>There are two ways to power it. <b>Bring your own AI</b> (Free and Premium): paste one key from whatever AI you use - <b>Claude, ChatGPT or Gemini</b> - and it powers everything; you control the cost and we store nothing but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when LifeFold reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
@@ -1802,7 +1802,7 @@ function feedTeamSearchInput(q) {
 async function loadAccount() { try { state.account = await api('/api/account'); if (state.view && state.view.type === 'settings') renderSettings(); } catch {} }
 // Whether AI features can run for this account: master switch on, and either the
 // owner (managed key) or a stored own key. Optimistic before the account loads.
-function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnthropicSet; }
+function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnySet || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 
 // ── Your LifeFold card ─────────────────────────────────────────────────────
@@ -2141,7 +2141,27 @@ async function closeMyAccount() {
   } catch (e) { toast(e.message); }
 }
 async function clearAiKey(provider) {
-  try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value: '' }) }); renderSettings(); toast('Key removed'); }
+  try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ provider, value: '' }) }); renderSettings(); toast('Disconnected'); }
+  catch (e) { toast(e.message); }
+}
+const aiProvLabel = (p) => ({ anthropic: 'Claude', openai: 'ChatGPT', gemini: 'Gemini' }[p] || '');
+// Friction-free connect: one field, any of the three keys, the server works out
+// which provider it is. No picking, no per-provider boxes.
+function aiConnectHtml(a) {
+  if (a.aiAnySet && a.aiProvider) {
+    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers Reflection, Email Scribe, reviews, the I Ching read and more.</div>
+      <button class="ghost ai-disconnect" data-ai-disconnect="${esc(a.aiProvider)}">Disconnect ${esc(aiProvLabel(a.aiProvider))}</button>
+      <p class="plan-note">Most tools run on whatever you pick. A couple that need special senses - <b>voice notes</b> (audio) and <b>bank-statement import</b> (PDF) - run on <b>Gemini</b> (free), so add a Gemini key if you'd like those too.</p>`;
+  }
+  return `<p class="plan-desc">LifeFold runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
+    <div class="ai-key-in"><input class="sel" type="password" data-ai-key-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-ai-connect>Connect</button></div>
+    <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div>
+    <p class="plan-note">Most tools run on whatever you pick. A couple that need special senses - <b>voice notes</b> (audio) and <b>bank-statement import</b> (PDF) - run on <b>Gemini</b> (free), so add a Gemini key if you'd like those too.</p>`;
+}
+async function connectAiKey() {
+  const el = document.querySelector('[data-ai-key-any]'); const value = (el && el.value || '').trim();
+  if (!value) { toast('Paste a key first'); return; }
+  try { state.account = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ value }) }); renderSettings(); toast('Connected ✓'); }
   catch (e) { toast(e.message); }
 }
 async function addAlias() {
@@ -3407,19 +3427,15 @@ function renderSettings() {
     return `<div class="set-card">
         <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across LifeFold.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
         <div class="set-row-t" style="margin-top:16px">Where LifeFold uses AI</div>
-        <p class="set-row-s" style="margin:0 0 10px">Every place LifeFold calls on Claude or Gemini. Switch off any you'd rather it didn't - the rest keep working.</p>
+        <p class="set-row-s" style="margin:0 0 10px">Every place LifeFold calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
         ${aiUsesTogglesHtml()}
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">Two ways to run it</div>
       <div class="plan-cards ${a.aiOff ? 'ai-disabled' : ''}">
         <div class="plan-card ${managed ? '' : 'on'}">
-          <div class="plan-h"><b>Bring your own keys</b>${badge(!managed)}</div>
+          <div class="plan-h"><b>Bring your own AI</b>${badge(!managed)}</div>
           <div class="plan-price">Free &amp; Premium</div>
-          <p class="plan-desc">Plug in your own keys and you control the cost. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> is pay-as-you-go, usually a few pennies.</p>
-          ${aiKeyRow('anthropic', 'Claude (Anthropic) &middot; Reflection &amp; Email Scribe', a.aiAnthropicSet, 'sk-ant-…')}
-          <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a Claude key at console.anthropic.com ↗</a>
-          ${aiKeyRow('gemini', 'Gemini (Google) &middot; money advice &amp; statement import', a.aiGeminiSet, 'AIza…')}
-          <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free Gemini key at aistudio.google.com ↗</a>
+          ${aiConnectHtml(a)}
         </div>
         <div class="plan-card plan-full ${managed ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(managed)}</div>
@@ -21287,6 +21303,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
+  { if (t.closest('[data-ai-connect]')) { connectAiKey(); return; } }
+  { const adc = t.closest('[data-ai-disconnect]'); if (adc) { clearAiKey(adc.dataset.aiDisconnect); return; } }
   // The setup hub (icon-tile + expand). Open from the Home "Getting started" card.
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
@@ -21294,6 +21312,7 @@ document.addEventListener('click', (e) => {
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
   { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('account'); else if (d === 'contacts') openContacts(); else if (d === 'invite') inviteToLifeFold(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
+  { if (t.closest('[data-onb-ai-connect]')) { onbConnectAi(); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
   if (t.closest('[data-onb-phone-save]')) { onbSavePhone(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
@@ -25133,7 +25152,7 @@ function welcomeItems() {
     { id: 'card', ic: '◗', label: 'Make it yours', done: !!(card.photo || (card.tagline || '').trim()) },
     { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: areas.length > 0 },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
-    { id: 'ai', ic: '✦', label: 'Turn on AI', done: !!(a.aiAnthropicSet || a.aiGeminiSet) },
+    { id: 'ai', ic: '✦', label: 'Add your AI', done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiOpenaiSet || a.aiGeminiSet) },
     { id: 'phone', ic: '📱', label: 'A backup way in', done: !!(a.phone || '').trim() },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
     { id: 'contacts', ic: '👥', label: 'Import contacts', done: contacts.length > 0 },
@@ -25232,15 +25251,21 @@ function onbAiProv(provider, name, why, host, url, ph, isSet) {
 }
 function onbAi() {
   const a = state.onb.account || {};
-  return `<h2 class="onb-h">Turn on AI <span class="onb-opt">optional</span></h2>
+  const connected = a.aiAnySet && a.aiProvider;
+  return `<h2 class="onb-h">Add your AI <span class="onb-opt">optional</span></h2>
     <p class="onb-p"><b>LifeFold works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
-    <p class="onb-p">AI just adds a few optional helpers on top. Turn them on if you'd like them, leave them off if you wouldn't - you can change your mind anytime in Settings.</p>
-    ${aiUsesHtml()}
-    <div class="onb-provs">
-      ${onbAiProv('anthropic', 'Claude (Anthropic)', 'Powers Reflection coaching and Email Scribe replies. Pay-as-you-go, usually a few pennies - there is no free tier, so add a little credit first.', 'console.anthropic.com', 'https://console.anthropic.com/settings/keys', 'sk-ant-…', a.aiAnthropicSet)}
-      ${onbAiProv('gemini', 'Gemini (Google)', 'Powers money-advice summaries and bank-statement import. Google gives a genuinely free tier - a free Google account is fine.', 'aistudio.google.com', 'https://aistudio.google.com/apikey', 'AIza…', a.aiGeminiSet)}
-    </div>
-    <div class="ai-managed">Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - no keys, nothing to set up. See Settings → Plan.</div>`;
+    <p class="onb-p">AI just adds a few optional helpers - Reflection coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
+    ${connected
+      ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`
+      : `<div class="onb-prov"><div class="onb-prov-in"><input class="sel" type="password" data-onb-ai-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-onb-ai-connect>Connect</button></div>
+        <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div></div>`}
+    <p class="onb-p onb-muted">A couple of tools (voice notes, bank-statement import) run on Gemini (free), so a Gemini key covers those too. Prefer not to deal with keys? <b>Premium Plus</b> runs the AI for you - see Settings → Plan.</p>`;
+}
+async function onbConnectAi() {
+  const el = document.querySelector('[data-onb-ai-any]'); const value = (el && el.value || '').trim();
+  if (!value) { toast('Paste a key first'); return; }
+  try { const acct = await api('/api/account/ai-key', { method: 'POST', body: JSON.stringify({ value }) }); state.onb.account = acct; state.account = acct; toast('Connected ✓'); renderOnboarding(); }
+  catch (e) { toast(e.message); }
 }
 function onbEmail() {
   if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>

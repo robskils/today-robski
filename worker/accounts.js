@@ -353,7 +353,7 @@ async function sendInviteMail(env, { to, code, message }) {
 // ── Account ───────────────────────────────────────────────────────────
 // Name, primary email, extra email aliases, phone, plan. All scoped to env.uid.
 export async function getAccount(env) {
-  const u = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_gemini_enc, totp_enabled FROM users WHERE id = ?').bind(env.uid).first();
+  const u = await env.DB.prepare('SELECT id, email, name, subdomain, plan, status, ai_anthropic_enc, ai_openai_enc, ai_gemini_enc, totp_enabled FROM users WHERE id = ?').bind(env.uid).first();
   const al = await env.DB.prepare('SELECT email, verified FROM user_emails WHERE user_id = ? ORDER BY email').bind(env.uid).all().catch(() => ({ results: [] }));
   const ph = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'phone'").bind(env.uid).first().catch(() => null);
   const sms = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'sms_block_alerts'").bind(env.uid).first().catch(() => null);
@@ -367,6 +367,14 @@ export async function getAccount(env) {
   const mpush = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'mail_push'").bind(env.uid).first().catch(() => null);
   const aiFeat = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_features'").bind(env.uid).first().catch(() => null);
   let aiFeatures = {}; try { aiFeatures = aiFeat && aiFeat.value ? (JSON.parse(aiFeat.value) || {}) : {}; } catch { aiFeatures = {}; }
+  const aiProv = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'ai_provider'").bind(env.uid).first().catch(() => null);
+  // The provider actually in force: the explicit pick if its key is set, else
+  // whichever key they have (OpenAI, then Claude, then Gemini). The client reads
+  // this to show "connected" and to pick the right get-a-key link.
+  const aiHas = { anthropic: !!(u && u.ai_anthropic_enc), openai: !!(u && u.ai_openai_enc), gemini: !!(u && u.ai_gemini_enc) };
+  const aiPick = aiProv && aiProv.value;
+  const aiProvider = (['anthropic', 'openai', 'gemini'].includes(aiPick) && aiHas[aiPick]) ? aiPick
+    : aiHas.openai ? 'openai' : aiHas.anthropic ? 'anthropic' : aiHas.gemini ? 'gemini' : (aiPick || '');
   return {
     aiFeatures,   // { featureKey: false } for any Claude use the user has switched off (absent = on)
     weekStart: (wkStart && /^[0-6]$/.test(wkStart.value)) ? Number(wkStart.value) : 1,   // 0=Sun..6=Sat; default Monday
@@ -382,7 +390,9 @@ export async function getAccount(env) {
     aiOff: !!(aiOff && aiOff.value === '1'),
     aliases: (al.results || []).map((r) => ({ email: r.email, verified: !!r.verified })),
     // Never return the keys themselves - only whether one is stored.
-    aiAnthropicSet: !!(u && u.ai_anthropic_enc), aiGeminiSet: !!(u && u.ai_gemini_enc),
+    aiAnthropicSet: aiHas.anthropic, aiOpenaiSet: aiHas.openai, aiGeminiSet: aiHas.gemini,
+    aiProvider,   // the connected provider actually in force ('' = none yet), drives the UI
+    aiAnySet: aiHas.anthropic || aiHas.openai || aiHas.gemini,
     totpEnabled: !!(u && u.totp_enabled),
     isOwner: env.uid === 1,
   };

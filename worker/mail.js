@@ -5,7 +5,7 @@
 // Accounts live in D1; the password is AES-256-GCM encrypted at rest with a key
 // derived from AUTH_SECRET. Robin types it once in the app; it's never logged.
 import PostalMime from 'postal-mime';
-import { aiKey, aiNeedsKey, logAiUsage } from './ai.js';
+import { aiKey, aiNeedsKey, logAiUsage, callAI } from './ai.js';
 import { signJWT } from './auth.js';
 
 // `connect` comes from `cloudflare:sockets`, a Workers-runtime-only module Node
@@ -1540,8 +1540,6 @@ export async function handleMail(request, env, url, json, err) {
 // sent here. Thinking is disabled for a fast, predictable short reply (no tools in
 // play), with an explicit no-internal-tags rule to keep stray markup out.
 async function claudiusDraft(env, acct, msg) {
-  const key = await aiKey(env, 'anthropic', 'mail');
-  if (!key) throw new Error(aiNeedsKey('anthropic'));
   const me = acct.name && acct.name !== acct.email ? acct.name : 'Robin Lumley-Savile';
   const from = String(msg.from || 'the sender').slice(0, 200);
   const subject = String(msg.subject || '(no subject)').slice(0, 300);
@@ -1556,22 +1554,9 @@ async function claudiusDraft(env, acct, msg) {
     `Do not include any internal or system XML tags in your response.`,
   ].join(' ');
   const user = `Draft ${me}'s reply to this email.\n\n<email>\nFrom: ${from}\nSubject: ${subject}\n\n${body}\n</email>${guidance ? `\n\nWhat ${me} wants this reply to say: ${guidance}` : ''}`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: env.CLAUDIUS_MODEL || 'claude-opus-5',
-      max_tokens: 1200,
-      thinking: { type: 'disabled' },
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
-  });
-  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`Email Scribe error ${res.status}: ${t.slice(0, 200)}`); }
-  const data = await res.json();
-  await logAiUsage(env, 'anthropic', 'mail-reply', data.model, data.usage && data.usage.input_tokens, data.usage && data.usage.output_tokens);
-  if (data.stop_reason === 'refusal') throw new Error('Email Scribe declined to draft this one.');
-  const text = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('').trim();
+  const out = await callAI(env, 'mail', { system, user, max_tokens: 1200 });
+  if (out == null) throw new Error(aiNeedsKey('anthropic'));
+  const text = (out || '').trim();
   if (!text) throw new Error('Email Scribe returned an empty draft.');
   return text;
 }

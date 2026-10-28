@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
   subdomain    TEXT UNIQUE,                     -- tara -> tara.daybook.fyi; NULL until chosen
   plan         TEXT NOT NULL DEFAULT 'free',    -- free | standard | premium | power
   status       TEXT NOT NULL DEFAULT 'active',  -- active | invited | suspended
-  ai_anthropic_enc TEXT,                        -- BYO Anthropic key, AES-256-GCM (as mail passwords)
+  ai_anthropic_enc TEXT,                        -- BYO Anthropic (Claude) key, AES-256-GCM (as mail passwords)
+  ai_openai_enc    TEXT,                        -- BYO OpenAI (ChatGPT) key, same encryption
   ai_gemini_enc    TEXT,                        -- BYO Gemini key, same encryption
   invited_by   INTEGER,                         -- users.id of the inviter
   voucher      TEXT,                            -- redeemed invite/discount code, if any
