@@ -3472,8 +3472,7 @@ function renderSettings() {
     const onByok = curKey === 'byok';
     const onTrial = !onManaged && !onByok;
     const heroName = onManaged ? 'Premium Plus' : onByok ? 'Premium' : 'Free trial';
-    const heroSub = a.isOwner ? 'Owner - the full works.'
-      : onManaged ? 'The whole of LifeFold, with the AI run for you.'
+    const heroSub = onManaged ? 'The whole of LifeFold, with the AI run for you.'
       : onByok ? 'The whole of LifeFold, powered by your own AI key.'
       : "You're exploring LifeFold. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
@@ -3491,13 +3490,13 @@ function renderSettings() {
         <div class="plan-card ${onByok ? 'on' : ''}">
           <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
           <div class="plan-price">€6<span class="plan-per">/mo</span></div>
-          <p class="plan-desc">The full app. Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the AI provider directly.</p>
+          <p class="plan-desc">Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the provider directly.</p>
           ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'LifeFold Premium plan')}
         </div>
         <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
           <div class="plan-price">€13<span class="plan-per">/mo</span></div>
-          <p class="plan-desc">The full app, and we run the AI for you - no keys, nothing to set up. The hands-off option.</p>
+          <p class="plan-desc">We run the AI for you - no keys, nothing to set up. The hands-off option.</p>
           ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'LifeFold Premium Plus plan')}
         </div>
       </div>
