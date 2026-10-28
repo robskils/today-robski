@@ -24842,11 +24842,23 @@ function applyFmt(cmd) {
     document.execCommand('unlink');
     const sel = window.getSelection();
     if (sel && sel.rangeCount) {
-      let bl = sel.getRangeAt(0).startContainer; bl = bl.nodeType === 1 ? bl : bl.parentElement;
-      bl = bl && bl.closest && bl.closest('h1,h2,h3,blockquote');
-      // Swap the element directly - formatBlock is unreliable when the heading
-      // carries our non-editable grip/chevron spans. Strip those first so they
-      // don't survive into the new paragraph.
+      let node = sel.getRangeAt(0).startContainer; node = node.nodeType === 1 ? node : node.parentElement;
+      // Also lift the text out of a collapsible (<details>) toggle, so "clear
+      // formatting" undoes the fold too - the summary becomes a plain paragraph and
+      // its contents come out alongside it. (Robin: clearing should remove the toggle.)
+      const det = node && node.closest && node.closest('details');
+      if (det && prose.contains(det)) {
+        const summary = det.querySelector(':scope > summary');
+        const frag = document.createDocumentFragment();
+        if (summary) { const p = document.createElement('p'); p.innerHTML = summary.innerHTML; frag.appendChild(p); }
+        [...det.childNodes].forEach((c) => { if (c !== summary) frag.appendChild(c); });
+        det.replaceWith(frag);
+        node = null;   // the block is gone; nothing left to turn into a paragraph below
+      }
+      // Turn a heading or quote back into a paragraph (this also drops its fold arrow).
+      // Swap the element directly - formatBlock is unreliable when the heading carries
+      // our non-editable grip/chevron spans, so strip those first.
+      let bl = node && node.closest && node.closest('h1,h2,h3,blockquote');
       if (bl && prose.contains(bl)) {
         bl.querySelectorAll('.head-grip, .fold-toggle').forEach((x) => x.remove());
         const p = document.createElement('p'); p.innerHTML = bl.innerHTML; bl.replaceWith(p);
