@@ -1023,8 +1023,8 @@ const HELP = {
       <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
-  'settings-ai': { title: 'Plan', tip: 'How the AI runs: bring your own key, or Premium Plus where we handle it.',
-    body: `<p><b>Use AI features</b> is a master switch - turn it off and every AI feature (Reflection coaching, Email Scribe replies, advice, statement import) is disabled across LifeFold.</p><p>There are two ways to power it. <b>Bring your own AI</b> (Free and Premium): paste one key from whatever AI you use - <b>Claude, ChatGPT or Gemini</b> - and it powers everything; you control the cost and we store nothing but whether a key is set. <b>Premium Plus</b>: we run the AI for you, no keys to manage.</p>` },
+  'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
+    body: `<p>Every plan is the whole of LifeFold - they differ only in how the AI is powered. <b>Premium</b> (€6/mo): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo): we run the AI for you, no keys to manage. Both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when LifeFold reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
@@ -3451,12 +3451,6 @@ function renderSettings() {
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
-        <div class="set-sec-title" style="margin-top:8px">Your AI</div>
-        <div class="set-row-s">Bring your own keys, or let us run it for you - set up in <button class="linkish" data-set-tab="ai">Plan</button>.</div>
-        <div class="yd-ai-links">
-          <a class="yd-ai-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"><b>Claude</b> · console.anthropic.com ↗</a>
-          <a class="yd-ai-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener"><b>Gemini</b> · aistudio.google.com ↗</a>
-        </div>
       </div>
       <div class="set-card set-closebox">
         <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your LifeFold and everything in it. This cannot be undone.</div></div>
@@ -3480,33 +3474,52 @@ function renderSettings() {
 
   const aiPane = state.account ? (() => {
     const a = state.account;
-    const plan = (a.plan || 'free').toLowerCase();
-    // The managed tier (Premium Plus): the owner and anyone on it run on our
-    // built-in keys. Everyone else brings their own.
-    const managed = a.isOwner || isManagedPlan(plan);
+    // Two paid plans, both the whole app; they differ only in how the AI is powered.
+    // The owner runs on built-in keys (treated as Premium Plus). A 'free'/unknown
+    // plan value means someone exploring on the 21-day trial. (Robin, 2026-10-28.)
+    const curKey = a.isOwner ? 'managed' : normPlan(a.plan);
+    const onManaged = curKey === 'managed';
+    const onByok = curKey === 'byok';
+    const onTrial = !onManaged && !onByok;
+    const heroName = onManaged ? 'Premium Plus' : onByok ? 'Premium' : 'Free trial';
+    const heroSub = a.isOwner ? 'Owner - the full works.'
+      : onManaged ? 'The whole of LifeFold, with the AI run for you.'
+      : onByok ? 'The whole of LifeFold, powered by your own AI key.'
+      : "You're exploring LifeFold. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
-    return `<div class="set-card">
-        <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across LifeFold.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
-        <div class="set-row-t" style="margin-top:16px">Where LifeFold uses AI</div>
-        <p class="set-row-s" style="margin:0 0 10px">Every place LifeFold calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
-        ${aiUsesTogglesHtml()}
+    const act = (isCurrent, label, subject) => isCurrent
+      ? '<div class="plan-active">✓ Your current plan</div>'
+      : `<a class="add-btn wide" href="mailto:contact@lifefold.co?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
+    return `<div class="set-card plan-hero">
+        <div class="plan-hero-eyebrow">Your plan</div>
+        <div class="plan-hero-name">${esc(heroName)}</div>
+        <div class="plan-hero-sub">${esc(heroSub)}</div>
       </div>
-      <div class="set-row-t" style="margin:22px 0 4px">Two ways to run it</div>
-      <div class="plan-cards ${a.aiOff ? 'ai-disabled' : ''}">
-        <div class="plan-card ${managed ? '' : 'on'}">
-          <div class="plan-h"><b>Bring your own AI</b>${badge(!managed)}</div>
-          <div class="plan-price">Free &amp; Premium</div>
-          ${aiConnectHtml(a)}
+      <div class="set-row-t" style="margin:22px 0 4px">${onTrial ? 'Choose your plan' : 'Plans'}</div>
+      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of LifeFold - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
+      <div class="plan-cards">
+        <div class="plan-card ${onByok ? 'on' : ''}">
+          <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
+          <div class="plan-price">€6<span class="plan-per">/mo</span></div>
+          <p class="plan-desc">The full app. Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the AI provider directly.</p>
+          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'LifeFold Premium plan')}
         </div>
-        <div class="plan-card plan-full ${managed ? 'on' : ''}">
-          <div class="plan-h"><b>Premium Plus</b>${badge(managed)}</div>
-          <div class="plan-price">€13/mo</div>
-          <p class="plan-desc">We run the AI for you - no keys, nothing to set up, it just works across every tool. The hands-off option.</p>
-          ${managed
-            ? '<div class="plan-active">✓ Active - the AI is handled for you, no keys needed.</div>'
-            : '<a class="add-btn wide" href="mailto:contact@lifefold.co?subject=LifeFold%20Premium%20Plus%20plan">Switch to Premium Plus →</a>'}
+        <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
+          <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
+          <div class="plan-price">€13<span class="plan-per">/mo</span></div>
+          <p class="plan-desc">The full app, and we run the AI for you - no keys, nothing to set up. The hands-off option.</p>
+          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'LifeFold Premium Plus plan')}
         </div>
-      </div>`;
+      </div>
+      <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.</div>
+      <div class="set-row-t" style="margin:26px 0 4px">Your AI</div>
+      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across LifeFold.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+      ${onManaged
+        ? '<p class="set-row-s" style="margin:10px 0 0">On Premium Plus the AI is handled for you - there’s no key to add.</p>'
+        : `<div class="plan-ai-connect ${a.aiOff ? 'ai-disabled' : ''}" style="margin-top:12px">${aiConnectHtml(a)}</div>`}
+      <div class="set-row-t" style="margin:22px 0 4px">Where LifeFold uses AI</div>
+      <p class="set-row-s" style="margin:0 0 10px">Every place LifeFold calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
+      ${aiUsesTogglesHtml()}`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
