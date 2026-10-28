@@ -19613,11 +19613,13 @@ async function addNoteTaskFromPane() {
   const inp = document.getElementById('nx-task-input');
   const title = ((inp && inp.value) || (state.note && state.note.taskQuery) || '').trim();
   if (!title) { if (inp) inp.focus(); return; }
-  const area = (n.props && n.props.area) || blockAreas(n)[0] || null;
+  const area = blockAreas(n)[0] || (n.props && n.props.area) || null;   // same Life Space as the note
+  const psel = document.getElementById('nx-task-prio');
+  const priority = (psel && psel.value) || null;
   const noteTitle = n.title || '';
   if (state.note) state.note.taskQuery = '';
   try {
-    const tk = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority: null, done: false, note: n.id, noteTitle } }) });
+    const tk = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area, priority, done: false, note: n.id, noteTitle } }) });
     state.allTasks = state.allTasks || []; state.allTasks.push(tk);
     toast('Task created');
   } catch (e) { toast(e.message); }
@@ -19637,9 +19639,12 @@ function noteConnectedPanel(n) {
   if (addTab === 'connect') ensureLinkPool();
   const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, goals, spaces, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-note-weblink><input class="sel" id="nx-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
-  // Make a task to come back to this note: type a title and Create, or search to
-  // link an existing one. Brings back the old right-column "+ New task". (Robin, 2026-10-28.)
-  const taskPane = `<form class="nx-weblink" data-note-taskadd><input class="sel" id="nx-task-input" data-nx-task-q placeholder="New task for this note, or search to link one…" value="${esc(tq)}" autocomplete="off"><button type="submit" class="nx-weblink-add">Create</button></form><div class="nx-sugg" id="nx-task-list">${noteTaskPaneRows(tq)}</div>`;
+  // Make a task to come back to this note: type a title, pick a priority and
+  // Create, or search to link an existing one. New task inherits the note's Life
+  // Space. Brings back the old right-column "+ New task". (Robin, 2026-10-28.)
+  const tprio = (state.note && state.note.taskPrio) || 'P3';
+  const prioOpts = ['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${tprio === p ? 'selected' : ''}>${p}</option>`).join('');
+  const taskPane = `<form class="nx-weblink nx-taskform" data-note-taskadd><input class="sel nx-task-big" id="nx-task-input" data-nx-task-q placeholder="New task for this note, or search to link one…" value="${esc(tq)}" autocomplete="off"><select class="sel nx-task-prio" id="nx-task-prio" data-nx-task-prio title="Priority"><option value="">—</option>${prioOpts}</select><button type="submit" class="nx-weblink-add">Create</button></form><div class="nx-sugg" id="nx-task-list">${noteTaskPaneRows(tq)}</div>`;
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
   return `<div class="nx-wrap">
     <div class="nx-lbl">Linked &amp; attached</div>
@@ -19648,11 +19653,11 @@ function noteConnectedPanel(n) {
       <div class="nx-attach">
         <div class="nx-addrow">
           <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 LifeFold Connect</button>
-          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">🌐 Add Web Link</button>
           <button type="button" class="nx-choose ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">✓ Add Task</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
           <button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button>
+          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">🌐 Add Web Link</button>
         </div>
         ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
       </div>
@@ -20977,6 +20982,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-conn-q]') && state.note) { state.note.connQuery = e.target.value; const el = document.getElementById('nconn-list'); if (el) el.innerHTML = noteConnListRows(); return; }
   if (e.target.matches('[data-note-link-q]') && state.note) { state.note.linkQuery = e.target.value; const el = document.getElementById('nx-link-list'); if (el) el.innerHTML = noteLinkSearchRows(e.target.value); return; }
   if (e.target.matches('[data-nx-task-q]') && state.note) { state.note.taskQuery = e.target.value; const el = document.getElementById('nx-task-list'); if (el) el.innerHTML = noteTaskPaneRows(e.target.value); return; }
+  if (e.target.matches('[data-nx-task-prio]') && state.note) { state.note.taskPrio = e.target.value; return; }
   if (e.target.matches('[data-card-link-url]') || e.target.matches('[data-card-link-label]')) {
     const i = Number(e.target.dataset.cardLinkUrl != null ? e.target.dataset.cardLinkUrl : e.target.dataset.cardLinkLabel);
     state.card = state.card || {}; state.card.links = state.card.links || [];
