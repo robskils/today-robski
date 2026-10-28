@@ -21881,6 +21881,7 @@ document.addEventListener('click', (e) => {
     const cmv = t.closest('[data-cm-move]'); if (cmv) { moveColumn(cmId, cmv.dataset.cmMove); return; }
     const ctp = t.closest('[data-cm-type]'); if (ctp) { setColType(cmId, ctp.dataset.cmType); return; }
     const ccu = t.closest('[data-cm-cur]'); if (ccu) { setColCurrency(cmId, ccu.dataset.cmCur); return; }
+    const eop = t.closest('[data-cm-editopt]'); if (eop) { editColOption(cmId, eop.dataset.cmEditopt); return; }
     const rmo = t.closest('[data-cm-rmopt]'); if (rmo) { removeColOption(cmId, rmo.dataset.cmRmopt); return; }
     const cms = t.closest('[data-cm-sort]'); if (cms) { state.tables_view.colMenu = null; setSorts([{ colId: cmId, dir: cms.dataset.cmSort }]); return; }
     if (t.closest('[data-cm-hide]')) { state.tables_view.colMenu = null; if (visibleCols().length <= 1) { toast('Keep at least one column visible'); renderTable(); return; } saveTableHidden([...hiddenCols(), cmId]); return; }
@@ -24555,6 +24556,29 @@ async function removeColOption(id, opt) {
   const cols = tcols().map((c) => c.id === id ? { ...c, options: (c.options || []).filter((o) => o !== opt) } : c);
   await saveTableColumns(cols); renderTable();
 }
+// Click an option's name to rename it in place (same feel as renaming a column).
+function editColOption(colId, opt) {
+  const btn = [...document.querySelectorAll('.cm-opt-name')].find((b) => b.dataset.cmEditopt === opt);
+  if (!btn) return;
+  const input = document.createElement('input'); input.className = 'cm-opt-edit'; input.value = opt; input.setAttribute('autocomplete', 'off');
+  btn.replaceWith(input); input.focus(); input.select(); let done = false;
+  const save = async () => { if (done) return; done = true; const v = input.value.trim(); if (v && v !== opt) await renameColOption(colId, opt, v); else renderTable(); };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } else if (e.key === 'Escape') { done = true; renderTable(); } });
+  input.addEventListener('blur', save);
+}
+// Rename an option, carrying the new name onto every row that used the old one, so
+// no cell is left holding a value that is no longer in the options list.
+async function renameColOption(colId, oldOpt, newOpt) {
+  newOpt = (newOpt || '').trim();
+  if (!newOpt || newOpt === oldOpt) { renderTable(); return; }
+  const cols = tcols().map((c) => c.id === colId
+    ? { ...c, options: (c.options || []).map((o) => (o === oldOpt ? newOpt : o)).filter((o, i, a) => a.indexOf(o) === i) }
+    : c);
+  const affected = (state.tables_rows || []).filter((r) => ((r.props && r.props.values) || {})[colId] === oldOpt);
+  try { await saveTableColumns(cols); await Promise.all(affected.map((r) => setCell(r.id, colId, newOpt))); }
+  catch (e) { toast(e.message); }
+  renderTable();
+}
 // Shift a column one place left or right in the table's column order. The menu
 // stays open on the moved column, so you can nudge it several places in a row.
 async function moveColumn(colId, dir) {
@@ -24582,7 +24606,7 @@ function colMenuHtml(cm) {
     <div class="cm-sep"></div><div class="cm-label">Type</div>
     ${TYPES.map(([v, l]) => `<button class="cm-item cm-type ${col.type === v ? 'on' : ''}" data-cm-type="${v}">${l}${col.type === v ? ' ✓' : ''}</button>`).join('')}
     ${col.type === 'select' ? `<div class="cm-sep"></div><div class="cm-label">Options</div>
-      ${(col.options || []).map((o) => `<div class="cm-opt"><span>${esc(o)}</span><button data-cm-rmopt="${esc(o)}" title="Remove">×</button></div>`).join('') || '<div class="cm-empty">None yet</div>'}
+      ${(col.options || []).map((o) => `<div class="cm-opt"><button class="cm-opt-name" data-cm-editopt="${esc(o)}" title="Click to rename">${esc(o)}</button><button class="cm-opt-x" data-cm-rmopt="${esc(o)}" title="Remove">×</button></div>`).join('') || '<div class="cm-empty">None yet</div>'}
       <form class="cm-addopt" data-cm-addopt><input id="cm-opt-input" placeholder="Add option…" autocomplete="off"><button type="submit">Add</button></form>` : ''}
     ${col.type === 'currency' ? `<div class="cm-sep"></div><div class="cm-label">Symbol</div>
       ${CURRENCIES.map(([s, l]) => `<button class="cm-item cm-cur ${curSym(col) === s ? 'on' : ''}" data-cm-cur="${esc(s)}">${esc(l)}${curSym(col) === s ? ' ✓' : ''}</button>`).join('')}` : ''}

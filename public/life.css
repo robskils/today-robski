@@ -1975,6 +1975,10 @@ table.recs td a.cell-urllink:hover { text-decoration:underline; }
 .cm-label { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); padding:4px 10px 2px; font-weight:600; }
 .cm-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 10px; font-size:14.5px; color:var(--ink-2); }
 .cm-opt button { color:var(--ink-3); font-size:16px; } .cm-opt button:hover { color:var(--accent); }
+.cm-opt .cm-opt-name { flex:1; min-width:0; text-align:left; background:none; border:0; font:inherit; color:var(--ink-2); cursor:text; padding:2px 5px; border-radius:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cm-opt .cm-opt-name:hover { background:color-mix(in srgb, var(--ink) 8%, transparent); color:var(--ink); }
+.cm-opt .cm-opt-x { flex:none; }
+.cm-opt-edit { flex:1; min-width:0; font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--accent); border-radius:6px; padding:2px 6px; }
 .cm-empty { padding:4px 10px; font-size:13.5px; color:var(--ink-3); font-style:italic; }
 .cm-addopt { display:flex; gap:6px; padding:5px 8px 3px; }
 .cm-addopt input { flex:1; min-width:0; padding:6px 8px; font-size:14px; border:1px solid var(--line-2); border-radius:8px; background:var(--paper); color:var(--ink); }
