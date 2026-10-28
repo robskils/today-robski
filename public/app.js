@@ -10497,7 +10497,7 @@ function renderCalendar() {
       <div class="cal-nav">
         <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
         <button class="cal-btn" data-cal-today>Today</button>
-        ${c.mode === 'agenda' ? '' : '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>'}
+        ${c.mode === 'week' ? '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>' : ''}
         <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
         <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
         ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
@@ -10517,7 +10517,9 @@ function renderCalendar() {
       <div id="cal-form"></div>
       <div class="cal-ag-list">${agendaRows}</div>
     </section>
-    <div class="cal-upcoming-h"><span class="cal-ag-eyebrow">${c.mode === 'week' ? 'Upcoming' : esc(MONTHS_LONG[c.m])}</span></div>
+    <div class="cal-upcoming-h${c.mode === 'month' ? ' cal-monthnav' : ''}">${c.mode === 'month'
+      ? `<button class="cal-btn ic cal-mn-btn" data-cal-prev title="Previous month" aria-label="Previous month">‹</button><span class="cal-ag-eyebrow cal-monthname">${esc(MONTHS_LONG[c.m])} <span class="cal-yr">${c.y}</span></span><button class="cal-btn ic cal-mn-btn" data-cal-next title="Next month" aria-label="Next month">›</button>`
+      : `<span class="cal-ag-eyebrow">${c.mode === 'week' ? 'Upcoming' : esc(MONTHS_LONG[c.m])}</span>`}</div>
     ${body}`)}`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);

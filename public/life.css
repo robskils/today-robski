@@ -8178,13 +8178,25 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
      agenda header (the day + "+ Event") pins, just under the breadcrumb, so the
      current day and the add button stay to hand while everything else scrolls.
      (Robin.) */
-  .cal-head { position:static; margin:0 0 12px; padding:0; background:none; backdrop-filter:none; border-bottom:0; }
+  /* display:contents lifts the toolbar out of .cal-head so it can pin against the
+     tall pane (sticky inside a short header box would scroll away with it). The
+     clock row stays and scrolls; only the toolbar pins. (Robin, 2026-10-28.) */
+  .cal-head { display:contents; }
+  .cal-head-l { margin:0 0 10px; }
   /* Today's date is the hero on mobile - the week/month range title is dropped so
      it doesn't upstage it. (Robin.) */
   .cal-head h1 { display:none; }
   /* ...but the page DOES name itself here, like the other tools do. (Robin.) */
   .cal-pagehead { display:block; margin:2px 0 8px; }
-  .cal-nav { width:100%; }
+  /* The toolbar row (Day/Month, settings, + Event, Add from file) pins just under
+     the breadcrumb, on day and month view, so those actions stay to hand while the
+     agenda or grid scrolls. (Robin, 2026-10-28.) */
+  .cal-nav {
+    position:sticky; top:calc(var(--navh,56px) - 1px + var(--cal-crumbh,44px)); z-index:21;
+    width:auto; background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(8px);
+    margin:0 calc(-1 * clamp(16px,4vw,52px)) 12px; padding:9px clamp(16px,4vw,52px) 10px;
+    border-bottom:1px solid var(--line);
+  }
   /* Mobile calendar keeps Discover and "show earlier days" hidden to reduce
      clutter, but the settings gear stays - it's the way to reach Calendar
      settings (holidays & fixtures) from here. (Robin, 2026-10-24.) */
@@ -8358,6 +8370,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* Week view: seven day columns */
 /* "Upcoming" eyebrow above the week strip, matching the "Today" label above the day. */
 .cal-upcoming-h { margin:18px 0 10px; }
+/* Month view: the month name carries its own ‹ › nav, sitting right above the grid
+   (desktop and mobile), so stepping months is where the month is. (Robin, 2026-10-28.) */
+.cal-monthnav { display:flex; align-items:center; gap:12px; }
+.cal-monthnav .cal-monthname { margin:0; }
+.cal-monthnav .cal-mn-btn { flex:none; padding:5px 13px; font-size:17px; line-height:1; border-radius:999px; }
+.cal-monthnav .cal-mn-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cal-monthnav .cal-mn-next { margin-left:0; }
 .cal-week { display:grid; grid-template-columns:repeat(var(--cwn,7),minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
 .cw-day { background:var(--card); min-height:230px; padding:8px 8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:7px; transition:background .12s; }
 .cw-day:hover { background:var(--paper-2); }
