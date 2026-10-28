@@ -7669,7 +7669,7 @@ function renderCompass() {
     const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Life Space <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
     body = `<div class="ic-intro cmp-form">
       <div class="ic-coin-row"><span class="ic-coin">⚖︎</span></div>
-      <h2 class="ic-h">Find your bearing</h2>
+      <h2 class="ic-h">Weigh a decision</h2>
       <p class="ic-lede">Name the choice, then make the honest case for each side. Compass weighs it through a few lenses from the world of decision-making and reflects back where the weight falls. The call stays yours.</p>
       <label class="cmp-l"><span class="cmp-l-t">The decision</span><input class="sel" id="cmp-decision" placeholder="What are you deciding?" maxlength="300" value="${esc(s.decision || '')}"></label>
       <div class="cmp-ab">
