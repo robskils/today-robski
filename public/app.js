@@ -20518,7 +20518,7 @@ function buildPalette() {
       const titleRank = (b) => { const t0 = (b.kind === 'row' ? rowLabel(b) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
       const ranked = merged.slice().sort((a, b) => titleRank(a) - titleRank(b) || (SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5));
       state.pal.loading = false;
-      state.pal.items = ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)'), run: b.run }));
+      state.pal.items = ranked.map((b) => ({ kind: b.kind, id: b.id, parent: b.parent_id || null, parentTitle: b.parentTitle || '', title: b.title || (b.kind === 'row' ? rowLabel(b) : '(untitled)'), date: (b.props && b.props.date) || null, run: b.run }));
       state.pal.sel = 0; renderPalItems();
     } catch (e) { state.pal.loading = false; toast(e.message); }
   }, 150);
@@ -20611,6 +20611,25 @@ function execItem(it) {
   if (it.kind === 'task') return openTaskCard(it.id).catch((e) => toast(e.message));
   if (it.kind === 'row') return openRowResult(it.parent, it.id).catch((e) => toast(e.message));
   if (it.kind === 'contact') return openContactCard(it.id).catch((e) => toast(e.message));
+  // These kinds are returned by /api/search and shown in the palette, so they must
+  // open too (they used to fall through and do nothing). (Robin, 2026-10-28.)
+  if (it.kind === 'goal') return openGoalCard(it.id).catch((e) => toast(e.message));
+  if (it.kind === 'bucket') return openBucketCard(it.id).catch((e) => toast(e.message));
+  if (it.kind === 'journal') return openJournalEntry(it.id).catch((e) => toast(e.message));
+  if (it.kind === 'bookmark') { openBookmarkCard(it.id); return; }
+  if (it.kind === 'event') return openEventHit(it).catch((e) => toast(e.message));
+}
+// Open a calendar event found in search: jump the calendar to its date and open
+// its editor. Matches a one-off by id and a recurring one by its base id.
+async function openEventHit(it) {
+  let date = it.date || (it.props && it.props.date);
+  if (!date) { try { const b = await api(`/api/blocks/${it.id}`); date = b && b.props && b.props.date; } catch {} }
+  date = date || todayISO();
+  await openCalendar(date);
+  const ev = (state.cal.events || []).find((e) => String(e.id) === String(it.id) || evBaseId(e) === String(it.id));
+  if (ev && !ev.feed) { state.cal.editing = ev; state.cal.adding = false; state.cal.viewing = null; state.cal.selected = ev.date || date; }
+  else { state.cal.selected = (ev && ev.date) || date; }
+  renderCalendar();
 }
 // A search hit's display label for a table row: its first filled cell value.
 function rowLabel(b) {
