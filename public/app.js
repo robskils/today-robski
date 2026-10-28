@@ -20794,6 +20794,32 @@ document.addEventListener('paste', (e) => {
   const text = cd.getData('text/plain');
   if (!html && !text) return;
   e.preventDefault();
+  // A single URL pasted onto an empty line becomes its card (or video) right away,
+  // instead of only once you click out of the note. Mid-text URLs stay inline. (Robin.)
+  {
+    const lone = (text || '').trim();
+    const blockyHtml = html && /<(p|div|h[1-6]|ul|ol|li|blockquote|table|pre)[\s>]/i.test(html);
+    if (lone && !blockyHtml && /^https?:\/\/\S+$/i.test(lone) && !/\s/.test(lone)) {
+      const sel = window.getSelection();
+      let B = sel && sel.anchorNode && prose.contains(sel.anchorNode) ? (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement) : null;
+      while (B && B !== prose && B.parentElement !== prose) B = B.parentElement;
+      if (B === prose) B = null;   // caret directly in an empty note (no block yet)
+      const blockEmpty = B && !B.textContent.trim() && !B.querySelector('img, .lc-inline, table');
+      if (!B || blockEmpty) {
+        const holder = document.createElement('div'); holder.innerHTML = decorateProse(`<p><a href="${esc(lone)}">${esc(lone)}</a></p>`);
+        const card = holder.firstElementChild;
+        if (card && card.classList.contains('lc-inline')) {
+          if (B) B.replaceWith(card); else prose.appendChild(card);
+          let after = card.nextElementSibling;
+          if (!after || after.classList.contains('lc-inline') || after.classList.contains('embed-yt')) { after = document.createElement('p'); after.innerHTML = '<br>'; card.after(after); }
+          try { const r = document.createRange(); r.setStart(after, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); } catch {}
+          hydrateEmbeds();   // fetch the title/image (or resolve the video) to fill the card
+          prose.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
+      }
+    }
+  }
   // Keep the formatting when you paste. Rich paste (from a doc, a web page or a
   // rendered note) is sanitised down to our allowed block tags, and any stray
   // inline run is wrapped in a paragraph - so bold, headings and lists survive
