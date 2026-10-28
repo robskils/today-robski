@@ -8695,7 +8695,7 @@ const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') ===
 // remembered per section label across areas).
 // Sections that start collapsed on a life-area overview (Vision is a quiet
 // backdrop, not the first thing you want to scroll past every visit).
-const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Notepad', 'Latest updates', 'Who has access']);
+const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Latest updates', 'Who has access']);
 // Stored explicitly (1 = collapsed, 0 = open) once you've toggled it; before
 // that, the per-key default decides. Old entries (presence = collapsed) still read.
 const areaSecOpen = (k) => {
@@ -9273,21 +9273,30 @@ function renderArea() {
   const emailsBody = () => (emails.length ? `<div class="email-list">${emails.map((n) => { const s = emailSnippet(n); return `<button class="email-card" data-open-note="${n.id}"><div class="ec-top"><span class="ec-ic">✉</span><span class="ec-subj">${esc(n.title || '(no subject)')}</span></div>${s ? `<div class="ec-snip">${esc(s)}</div>` : ''}</button>`; }).join('')}</div>` : '<div class="home-empty">No emails filed here.</div>');
   // Order: Notes leads, Tasks second (Robin, 2026-10-27); the glanceable feeds sit
   // in the middle, and Books & Films + Reflections close out the list. (Robin.)
+  // Section order (Robin, 2026-10-28): Notes, Tasks, Calendar, Emails, Files,
+  // Contacts, Web links, Reflections, Books & Films. Tables rides with Notes (same
+  // "Pages and tables" family); Recently viewed / Be ready are the non-content
+  // extras and sit at the end.
   const SECTIONS = [
     { id: 'pages', ic: '▤', label: 'Notes', show: toolShow('Pages and tables', !!pagesCount), count: pagesCount || null, acts: act('<button class="ovt-act" data-area-connect="note">🔗 Connect existing</button><button class="ovt-act" data-area-add-note>＋ New note</button>') + pgControls, body: () => pagesBody },
-    { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
     { id: 'tables', ic: '▦', label: 'Tables', show: !secHidden('Pages and tables') && !!tables.length, count: tables.length || null, body: () => tablesBody },
+    { id: 'tasks', ic: '✓', label: 'Tasks', show: toolShow('Tasks', true), count: openTs.length || null, acts: act('<button class="ovt-act" data-area-connect="task">🔗 Connect existing</button><button class="ovt-act" data-area-add-task>＋ New task</button>'), body: () => tasksBody },
+    { id: 'week', ic: '◑', label: 'Calendar', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
     { id: 'emails', ic: '✉', label: 'Emails', show: toolShow('Emails', !!emails.length), count: emails.length || null, acts: act('<button class="ovt-act" data-open-mail>Open Mail ↗</button>'), body: emailsBody },
     { id: 'files', ic: '📎', label: 'Files', show: !secHidden('Files'), count: attList.length || null, body: () => areaAttachHtml(area) },
-    { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
-    { id: 'week', ic: '◑', label: 'Calendar', show: !secHidden('Week'), count: weekCount, acts: act('<button class="ovt-act" data-area-add-event>＋ New event</button>'), body: buildWeekBody },
     { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>` : '<div class="home-empty">No contacts here yet.</div>') },
+    { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
+    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>` : '<div class="home-empty">No reflections here yet.</div>') },
+    { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>` : '<div class="home-empty">No books or films here yet.</div>') },
     { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
     { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
-    { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>` : '<div class="home-empty">No books or films here yet.</div>') },
-    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>` : '<div class="home-empty">No reflections here yet.</div>') },
   ].filter((s) => s.show);
   let openToolId = state.area_open.toolTile;
+  // Default on opening a Life Space: open the first section that actually has
+  // something in it, in the order above (Notes first, then Tasks, Calendar…). An
+  // explicit tap is kept - including closing the open tile, which sets null, not
+  // undefined - so the default only applies before you touch a tile. (Robin, 2026-10-28.)
+  if (openToolId === undefined) { const first = SECTIONS.find((s) => s.count); openToolId = first ? first.id : null; if (first) state.area_open.toolTile = openToolId; }
   if (!SECTIONS.some((s) => s.id === openToolId)) openToolId = null;
   const toolTiles = SECTIONS.map((s) => `<button class="ovt-tile${openToolId === s.id ? ' on' : ''}" data-area-tool="${s.id}" aria-expanded="${openToolId === s.id}"><span class="ovt-ic">${s.ic}</span><span class="ovt-l">${esc(s.label)}</span>${s.count ? `<span class="ovt-c">${s.count}</span>` : ''}</button>`).join('');
   const openSec = SECTIONS.find((s) => s.id === openToolId);
@@ -10777,7 +10786,7 @@ function showCalForm(ev) {
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
     ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2">${esc(notes)}</textarea></label>
+    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
       <summary class="ce-links-h">Connected<span class="ce-links-hint">a website, a contact, notes</span></summary>
@@ -14382,7 +14391,7 @@ function showQuickEvent() {
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
     <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
-    <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Anything worth remembering (optional)" rows="2"></textarea></label>
+    <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
       <option value="none">Does not repeat</option>
       <option value="daily">Daily</option>
@@ -21817,7 +21826,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a
   // select - so the chip both shows the value and edits it in one tap.
-  { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const el = document.querySelector(jmp.dataset.ceJump); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
+  { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const tgt = jmp.dataset.ceJump; if (tgt === '#ce-area') { const lab = document.querySelector('.ce-arealab'); if (lab) lab.classList.add('ce-area-reveal'); } const el = document.querySelector(tgt); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
