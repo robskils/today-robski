@@ -21579,7 +21579,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
-  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('security'); else if (d === 'contacts') openContacts(); else if (d === 'import') openSettings('import'); else if (d === 'calendar') openCalendar(); else if (d === 'invite') inviteToLifeFold(); return; } }
+  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('security'); else if (d === 'contacts') openContacts(); else if (d === 'import') openSettings('import'); else if (d === 'calendar') openCalendar(); else if (d === 'mail') openMailAccounts(); else if (d === 'invite') inviteToLifeFold(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   { if (t.closest('[data-onb-ai-connect]')) { onbConnectAi(); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
@@ -25486,10 +25486,10 @@ function welcomeItems() {
   const onManaged = a.isOwner || isManagedPlan(a.plan);
   const items = [
     { id: 'identity', ic: '◗', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
+    { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: (state.areas || []).length > 0 },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
-    { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 },
-    { id: 'import', ic: '⤓', label: 'Bring it all in', done: contacts.length > 0 },
-    { id: 'phone', ic: '📱', label: 'A backup way in', done: !!(a.phone || '').trim() },
+    { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 || !!a.isOwner },
+    { id: 'import', ic: '⤓', label: 'Import notes & contacts', done: contacts.length > 0 },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
   ];
   // AI is handled for Premium Plus, so there's nothing to set up - hide it there.
@@ -25607,17 +25607,13 @@ async function onbConnectAi() {
   catch (e) { toast(e.message); }
 }
 function onbEmail() {
-  if (state.onb.mailDone) return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
-    <div class="onb-ok">✓ Mailbox connected. Add more anytime in <b>Settings → Mail accounts</b>.</div>`;
-  return `<h2 class="onb-h">Connect your email <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Read and send your email inside LifeFold. Most people use Gmail.</p>
-    <div class="onb-gpw">${GMAIL_APP_PW}</div>
-    <div class="onb-mailform">
-      <input id="onb-mail-email" class="sel" type="email" placeholder="you@gmail.com" autocomplete="off" spellcheck="false">
-      <input id="onb-mail-pass" class="sel" type="password" placeholder="16-character app password" autocomplete="off" spellcheck="false">
-      <button class="add-btn wide" data-onb-mail-connect>Connect Gmail</button>
-    </div>
-    <p class="onb-p onb-muted">Not Gmail? You can set up Outlook, iCloud, Purelymail and others in <b>Settings → Mail accounts</b>.</p>`;
+  const n = (Array.isArray(state.onb.mailAccounts) ? state.onb.mailAccounts.length : 0) || (state.onb.mailDone ? 1 : 0);
+  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside LifeFold.</div>
+    <p class="onb-p">Add another, or manage them, in the full mail setup.</p>
+    <button class="add-btn wide" data-onb-nav="mail">Open mail setup →</button>`;
+  return `<p class="onb-p">Read and send your email right inside LifeFold - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
+    <p class="onb-p onb-muted">The setup walks you through your provider - some (Gmail included) need a one-time app password, and it shows you exactly how.</p>
+    <button class="add-btn wide" data-onb-nav="mail">Connect a mailbox →</button>`;
 }
 function onbPhone() {
   const a = state.onb.account || {};
@@ -25694,24 +25690,33 @@ function onbRemovePhoto() { if (state.card) { delete state.card.photo; saveCard(
 // - which the Calendar view's own connect strip handles in full.
 function onbCalendar() {
   const accts = state.gcalAccounts || [];
-  return `<p class="onb-p">Your LifeFold calendar already works - add events on the Calendar anytime, no account needed.</p>
-    <p class="onb-p">To see an <b>outside</b> calendar here too, connect it: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
-    ${accts.length ? `<div class="onb-ok">✓ ${accts.length} calendar${accts.length === 1 ? '' : 's'} connected. Manage them on the Calendar, or in Settings › Calendar.</div>` : ''}
-    <button class="add-btn wide" data-onb-nav="calendar">Open the Calendar to connect →</button>`;
+  const a = state.onb.account || state.account || {};
+  const connected = accts.length > 0 || !!a.isOwner;
+  const list = accts.length
+    ? `<div class="onb-ok">✓ Connected: ${accts.map((x) => esc(x.label || (x.provider === 'caldav' ? 'iCloud / CalDAV' : 'Google'))).join(', ')}. Manage them on the Calendar.</div>`
+    : (a.isOwner ? '<div class="onb-ok">✓ Your Google calendar is connected - you\'ll see it on the Calendar.</div>' : '');
+  return `<p class="onb-p">Your LifeFold calendar works from the off - add events anytime, no account needed.</p>
+    <p class="onb-p">Connect an <b>outside</b> calendar to see it here too: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
+    ${list}
+    <button class="add-btn wide" data-onb-nav="calendar">${connected ? 'Open the Calendar' : 'Open the Calendar to connect'} →</button>`;
 }
 // What you can bring in today. Notes and contacts have a home to send you to;
 // events and statements live on their own tools (mentioned, not linked).
 function onbImport() {
-  return `<p class="onb-p">Bring what you already have into LifeFold. A few things import today:</p>
+  return `<p class="onb-p">Bring your existing notes and contacts into LifeFold.</p>
     <ul class="onb-tips">
       <li><b>Notes</b> - Markdown or text files from Obsidian, Bear, Apple Notes, Notion and the like.</li>
       <li><b>Contacts</b> - a vCard (.vcf) from Google, Outlook, iCloud or your phone.</li>
-      <li><b>Events</b> - a flyer, photo, screenshot or link, read onto your Calendar.</li>
-      <li><b>Bank statements</b> - a CSV or PDF, sorted into tidy transactions in Money.</li>
     </ul>
     <div class="onb-btn-row"><button class="add-btn wide" data-onb-nav="import">Import notes →</button><button class="add-btn wide" data-onb-nav="contacts">Import contacts →</button></div>`;
 }
-function onbTwofaPanel() { return `<p class="onb-p">Add a second step at sign-in from an authenticator app, so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`; }
+function onbTwofaPanel() {
+  const a = state.onb.account || state.account || {};
+  if (a.totpEnabled) return `<div class="onb-ok">✓ Two-factor is on. At sign-in you enter a 6-digit code from your authenticator app <b>after</b> your emailed code - so your email alone can't get anyone in.</div>
+    <p class="onb-p onb-muted">Manage it, or turn it off and get fresh recovery codes, in Settings → Security.</p>
+    <button class="add-btn wide" data-onb-nav="twofa">Manage two-factor →</button>`;
+  return `<p class="onb-p">Add a second step at sign-in from an authenticator app (Google Authenticator, Authy, 1Password…), so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`;
+}
 // The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
 // in any order, whenever you like. Done bits carry a tick; a progress bar sums
 // them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
@@ -25726,19 +25731,20 @@ function renderOnboarding() {
   // import), then the safety steps (a backup way in, lock it down), then AI.
   // (Robin, 2026-10-28.)
   const onManaged = a.isOwner || isManagedPlan(a.plan);
+  const calConnected = (state.gcalAccounts || []).length > 0 || !!a.isOwner;
   const TILES = [
     { id: 'identity', ic: '◗', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
-    { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Read & send inside LifeFold', opt: true, done: mailConnected, body: onbEmail },
-    { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: (state.gcalAccounts || []).length > 0, body: onbCalendar },
-    { id: 'import', ic: '⤓', label: 'Bring it all in', hint: 'Notes, contacts, events…', opt: true, done: contacts.length > 0, body: onbImport },
-    { id: 'phone', ic: '📱', label: 'A backup way in', hint: 'Your sign-in code by text', opt: true, done: !!(a.phone || '').trim(), body: onbPhone },
+    { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The parts of your life', done: (state.areas || []).length > 0, body: onbAreas },
+    { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Gmail, Outlook, iCloud…', opt: true, done: mailConnected, body: onbEmail },
+    { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: calConnected, body: onbCalendar },
+    { id: 'import', ic: '⤓', label: 'Import', hint: 'Notes & contacts', opt: true, done: contacts.length > 0, body: onbImport },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
   ];
   // AI is handled for you on Premium Plus, so there's nothing to add there.
   if (!onManaged) TILES.push({ id: 'ai', ic: '✦', label: 'Add AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiGeminiSet || a.aiOpenaiSet), body: onbAi });
-  // Only "make it yours" counts toward "all set". Every connection and safety
-  // step is genuinely optional and must never make a new member look unfinished
-  // or imply it's required - AI especially. (Robin, 2026-10-16.)
+  // The two foundations - making it yours and your Life Spaces - count toward
+  // "all set". Every connection and safety step is genuinely optional and must
+  // never make a new member look unfinished or imply it's required. (Robin.)
   const countable = TILES.filter((x) => ('done' in x) && !x.opt);
   const doneN = countable.filter((x) => x.done).length;
   const allDone = doneN >= countable.length;
@@ -25767,8 +25773,8 @@ function renderOnboarding() {
   if (s.open && s._scrolledTo !== s.open) {
     s._scrolledTo = s.open;
     requestAnimationFrame(() => {
-      const sheet = document.querySelector('#onb .onb-sheet'), p = document.querySelector('#onb .onb-panel');
-      if (sheet && p) sheet.scrollTo({ top: Math.max(0, p.offsetTop - 14), behavior: 'smooth' });
+      const p = document.querySelector('#onb .onb-panel');
+      if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   } else if (!s.open) { s._scrolledTo = null; }
 }
