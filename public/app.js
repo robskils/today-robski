@@ -2193,6 +2193,28 @@ async function resendAlias(email) {
   try { await api('/api/account/alias/resend', { method: 'POST', body: JSON.stringify({ email }) }); state.aliasVerify = email; renderSettings(); toast('New code sent'); }
   catch (e) { toast(e.message); }
 }
+// Change the PRIMARY email: confirm the new address with a code (reusing the alias
+// machinery), then promote it. The old address stays a backup sign-in. (Robin.)
+async function emailChangeSend() {
+  const i = $('#email-change-input'); const email = (i && i.value || '').trim(); if (!email) { if (i) i.focus(); return; }
+  try {
+    state.account = await api('/api/account/alias', { method: 'POST', body: JSON.stringify({ email }) });
+    state.settings = state.settings || {}; state.settings.emailChange = { step: 'code', email: email.toLowerCase() };
+    renderSettings(); requestAnimationFrame(() => { const c = $('#email-change-code'); if (c) c.focus(); });
+    toast(`Code sent to ${email}.`);
+  } catch (e) { toast(e.message); }
+}
+async function emailChangeConfirm() {
+  const c = state.settings && state.settings.emailChange; if (!c || !c.email) return;
+  const codeEl = $('#email-change-code'); const code = (codeEl && codeEl.value || '').trim(); if (!code) { if (codeEl) codeEl.focus(); return; }
+  try {
+    await api('/api/account/alias/verify', { method: 'POST', body: JSON.stringify({ email: c.email, code }) });
+    state.account = await api('/api/account/primary-email', { method: 'POST', body: JSON.stringify({ email: c.email }) });
+    if (state.settings) state.settings.emailChange = null;
+    if (state.me) state.me.email = state.account.email;
+    renderSettings(); renderNav(); toast('Primary email changed ✓');
+  } catch (e) { toast(e.message); }
+}
 async function delAlias(email) {
   try { state.account = await api('/api/account/alias', { method: 'DELETE', body: JSON.stringify({ email }) }); if (state.aliasVerify === email) state.aliasVerify = null; renderSettings(); }
   catch (e) { toast(e.message); }
@@ -3381,19 +3403,34 @@ function renderSettings() {
     ? `<button class="crumb-back set-subback" data-set-tab="account">← Account settings</button>`
     : `<div class="seg">${TABS.map(([k, l]) => `<button class="seg-b ${tab === k ? 'on' : ''}" data-set-tab="${k}">${l}</button>`).join('')}</div>`;
 
+  const nameSet = !!(state.account && (state.account.name || '').trim());
+  const editingName = !!(state.settings && state.settings.editName);
+  const phoneSet = !!(state.account && (state.account.phone || '').trim());
+  const editingPhone = !!(state.settings && state.settings.editPhone);
+  const ec = (state.settings && state.settings.emailChange) || null;   // in-progress primary-email change
   const accountPane = state.account ? `${welcomeGuideHtml()}${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
       <div class="set-card set-account">
-        <label class="set-field"><span>Full name</span><input class="sel" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name"></label>
-        <label class="set-field"><span>Primary email</span><input class="sel" value="${esc(state.account.email || '')}" disabled></label>
+        <div class="set-pair${ec ? ' set-pair-stack' : ''}">
+        ${(nameSet && !editingName)
+          ? `<div class="set-field set-field-ro"><span>Full name</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.name)}">${esc(state.account.name)}</span><button type="button" class="ghost set-edit" data-edit-name>Edit</button></div></div>`
+          : `<label class="set-field"><span>Full name</span><span class="set-ro-row"><input class="sel" id="acct-name-input" data-account-name value="${esc(state.account.name || '')}" placeholder="Your full name">${nameSet ? '<button type="button" class="ghost set-edit" data-done-name>Done</button>' : ''}</span></label>`}
+        ${!ec
+          ? `<div class="set-field set-field-ro"><span>Primary email</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.email || '')}">${esc(state.account.email || '')}</span><button type="button" class="ghost set-edit" data-edit-email>Edit</button></div></div>`
+          : ec.step === 'code'
+            ? `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">We emailed a 6-digit code to <b>${esc(ec.email)}</b>. Enter it to make it your primary address - your current address stays as a backup sign-in and gets a heads-up.</p><div class="email-change-row"><input class="sel av-code" id="email-change-code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-confirm>Confirm &amp; switch</button><button type="button" class="ghost" data-email-change-resend>Resend</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`
+            : `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">Enter your new email. We'll send a 6-digit code to confirm it's yours; your current address stays on as a backup sign-in.</p><div class="email-change-row"><input class="sel" id="email-change-input" type="email" inputmode="email" placeholder="new@email.com" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-send>Send code</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`}
+        ${(phoneSet && !editingPhone)
+          ? `<div class="set-field set-field-ro"><span>Phone</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.phone)}">${esc(state.account.phone)}</span><button type="button" class="ghost set-edit" data-edit-phone>Edit</button></div></div>`
+          : (() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="set-ro-row"><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span>${phoneSet ? '<button type="button" class="ghost set-edit" data-done-phone>Done</button>' : ''}</span></label>${ccDatalist()}`; })()}
+        </div>
         <div class="set-field"><span>Also sign in with these addresses</span>
-          <div class="alias-list">${(state.account.aliases || []).map((a) => {
+          <div class="alias-list">${(state.account.aliases || []).filter((a) => { const em = typeof a === 'string' ? a : a.email; return !(ec && ec.email && String(em).toLowerCase() === String(ec.email).toLowerCase()); }).map((a) => {
             const em = typeof a === 'string' ? a : a.email; const ok = typeof a === 'object' && a.verified;
             return `<span class="alias-chip ${ok ? 'ok' : 'pending'}"><span class="alias-badge" title="${ok ? 'Confirmed' : 'Awaiting confirmation'}">${ok ? '✓' : '⏳'}</span>${esc(em)}<button class="alias-x" data-alias-del="${esc(em)}" title="Remove">×</button></span>`;
           }).join('') || '<span class="muted" style="font-size:14px">No extra addresses yet.</span>'}</div>
-          ${(state.account.aliases || []).filter((a) => typeof a === 'object' && !a.verified).map((a) => `<div class="alias-verify"><div class="av-head">📨 One more step - confirm this address</div><span class="av-note">We emailed a 6-digit code to <b>${esc(a.email)}</b>. Enter it here to finish adding it:</span><div class="alias-verify-row"><input class="sel av-code" data-alias-code="${esc(a.email)}" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button class="add-btn wide" data-alias-verify="${esc(a.email)}">Confirm</button><button class="ghost" data-alias-resend="${esc(a.email)}">Resend</button></div></div>`).join('')}
+          ${(state.account.aliases || []).filter((a) => typeof a === 'object' && !a.verified && !(ec && ec.email && String(a.email).toLowerCase() === String(ec.email).toLowerCase())).map((a) => `<div class="alias-verify"><div class="av-head">📨 One more step - confirm this address</div><span class="av-note">We emailed a 6-digit code to <b>${esc(a.email)}</b>. Enter it here to finish adding it:</span><div class="alias-verify-row"><input class="sel av-code" data-alias-code="${esc(a.email)}" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button class="add-btn wide" data-alias-verify="${esc(a.email)}">Confirm</button><button class="ghost" data-alias-resend="${esc(a.email)}">Resend</button></div></div>`).join('')}
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
-        ${(() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span></label>${ccDatalist()}`; })()}
         <div class="acct-actions"><button class="ghost" data-account-signout>↪ Sign out</button></div>
       </div>
       <div class="set-acct-cols">
@@ -21489,6 +21526,15 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-import-evclear]')) { const imp = importState(); imp.evEvents = []; imp.err = ''; renderSettings(); return; }
   if (t.closest('[data-import-evimg-clear]')) { const imp = importState(); const ta = $('#imp-evtext'); if (ta) imp.evText = ta.value; imp.evImage = null; imp.evMime = null; imp.evImgName = ''; imp.err = ''; const f = $('#imp-evimg'); if (f) f.value = ''; renderSettings(); return; }
   if (t.closest('[data-alias-add]')) { addAlias(); return; }
+  if (t.closest('[data-edit-name]')) { state.settings = state.settings || {}; state.settings.editName = true; renderSettings(); requestAnimationFrame(() => { const i = $('#acct-name-input'); if (i) { i.focus(); i.select(); } }); return; }
+  if (t.closest('[data-done-name]')) { const i = $('#acct-name-input'); const v = i ? i.value : ''; clearTimeout(window.__acctNT); state.settings = state.settings || {}; state.settings.editName = false; saveAccount({ name: v }).then(() => { if (state.me) state.me.name = state.account.name; renderNav(); }); renderSettings(); return; }
+  if (t.closest('[data-edit-phone]')) { state.settings = state.settings || {}; state.settings.editPhone = true; renderSettings(); requestAnimationFrame(() => { const i = document.querySelector('.acct-phone-num'); if (i) i.focus(); }); return; }
+  if (t.closest('[data-done-phone]')) { const cc = (document.querySelector('.acct-phone-cc') || {}).value || ''; const number = (document.querySelector('.acct-phone-num') || {}).value || ''; clearTimeout(window.__acctPT); state.settings = state.settings || {}; state.settings.editPhone = false; saveAccount({ phone: joinPhone({ cc, number }) }); renderSettings(); return; }
+  if (t.closest('[data-edit-email]')) { state.settings = state.settings || {}; state.settings.emailChange = { step: 'enter' }; renderSettings(); requestAnimationFrame(() => { const i = $('#email-change-input'); if (i) i.focus(); }); return; }
+  if (t.closest('[data-email-change-send]')) { emailChangeSend(); return; }
+  if (t.closest('[data-email-change-confirm]')) { emailChangeConfirm(); return; }
+  if (t.closest('[data-email-change-resend]')) { const c = state.settings && state.settings.emailChange; if (c && c.email) api('/api/account/alias/resend', { method: 'POST', body: JSON.stringify({ email: c.email }) }).then(() => toast('Code re-sent')).catch((e) => toast(e.message)); return; }
+  if (t.closest('[data-email-change-cancel]')) { const c = state.settings && state.settings.emailChange; if (c && c.step === 'code' && c.email) api('/api/account/alias', { method: 'DELETE', body: JSON.stringify({ email: c.email }) }).then((a) => { if (a) state.account = a; }).catch(() => {}); if (state.settings) state.settings.emailChange = null; renderSettings(); return; }
   { const aks = t.closest('[data-ai-key-save]'); if (aks) { saveAiKey(aks.dataset.aiKeySave); return; } }
   { const akc = t.closest('[data-ai-key-clear]'); if (akc) { clearAiKey(akc.dataset.aiKeyClear); return; } }
   { if (t.closest('[data-ai-connect]')) { connectAiKey(); return; } }

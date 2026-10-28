@@ -3539,6 +3539,21 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .set-field { display:flex; flex-direction:column; gap:6px; }
 .set-field > span { font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3); }
 .set-field input:disabled { opacity:.6; }
+/* Account: name / email / phone share one row, each a greyed value + Edit (or an
+   inline editor once you tap Edit). Stacks on a phone, or while email-change is open. */
+.set-pair { display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start; }
+.set-pair > .set-field { flex:1 1 200px; min-width:0; }
+.set-pair.set-pair-stack { flex-direction:column; }
+.set-pair.set-pair-stack > .set-field { flex:0 0 auto; width:100%; }
+.set-ro-row { display:flex; align-items:center; gap:10px; min-width:0; }
+.set-ro-row .sel { flex:1 1 auto; min-width:0; }
+.set-ro-val { flex:1 1 auto; min-width:0; color:var(--ink-2); font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.set-edit { flex:none; padding:6px 13px; font-size:13.5px; }
+.set-ro-row .acct-phone { flex:1 1 auto; min-width:0; }
+.email-change { display:flex; flex-direction:column; gap:8px; }
+.email-change-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.email-change-row .sel { flex:1 1 150px; min-width:0; }
+@media (max-width:560px){ .set-pair { flex-direction:column; } .set-pair > .set-field { flex:0 0 auto; width:100%; } }
 /* Username field: input + fixed .daybook.fyi suffix, with a live URL note. */
 .su-username-row { display:flex; align-items:stretch; border:1px solid var(--line-2); border-radius:10px; overflow:hidden; background:var(--card); max-width:420px; }
 .su-username-row:focus-within { border-color:var(--accent); }

@@ -488,6 +488,47 @@ export async function verifyAlias(env, email, code) {
   ]);
   return getAccount(env);
 }
+// Change the primary sign-in email to a CONFIRMED alias. The old address is kept
+// as a verified alias (so it still signs in - and so the person's current session,
+// whose token names the old address, keeps resolving: no surprise logout), and it
+// gets a heads-up email. (Robin, 2026-10-28.)
+export async function setPrimaryEmail(env, email) {
+  const e = String(email || '').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) throw new Error('That does not look like an email address.');
+  const u = await env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(env.uid).first().catch(() => null);
+  const old = u ? String(u.email || '').toLowerCase() : '';
+  if (!old) throw new Error('No account found.');
+  if (old === e) return getAccount(env);
+  const ver = await env.DB.prepare('SELECT 1 AS ok FROM user_emails WHERE email = ? AND user_id = ? AND verified = 1').bind(e, env.uid).first().catch(() => null);
+  if (!ver) throw new Error('Confirm the new address first.');
+  await env.DB.batch([
+    env.DB.prepare('UPDATE users SET email = ? WHERE id = ?').bind(e, env.uid),
+    env.DB.prepare('DELETE FROM user_emails WHERE email = ? AND user_id = ?').bind(e, env.uid),
+    env.DB.prepare('INSERT OR IGNORE INTO user_emails (email, user_id, verified) VALUES (?, ?, 1)').bind(old, env.uid),
+    env.DB.prepare('UPDATE user_emails SET verified = 1, user_id = ? WHERE email = ?').bind(env.uid, old),
+    env.DB.prepare('DELETE FROM alias_codes WHERE email = ?').bind(e),
+  ]);
+  try { await sendPrimaryChangedMail(env, { to: old, newEmail: e }); } catch (err) { console.error('primary-changed mail:', err && err.message); }
+  return getAccount(env);
+}
+// A security heads-up to the OLD address when the primary email changes.
+async function sendPrimaryChangedMail(env, { to, newEmail }) {
+  const esc = (s) => String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const subject = 'Your LifeFold sign-in email was changed';
+  const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1b1820">
+    <div style="font:600 22px/1.2 Georgia,serif;margin-bottom:14px">LifeFold</div>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 12px">The sign-in email on your LifeFold account was changed to <b>${esc(newEmail)}</b>.</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 12px">This address still works as a sign-in too, so you won't be locked out.</p>
+    <p style="font-size:14px;line-height:1.6;color:#6b6676;margin:0">If you didn't make this change, reply to this email right away and we'll help secure your account.</p>
+  </div>`;
+  const text = `The sign-in email on your LifeFold account was changed to ${newEmail}.\n\nThis address still works as a sign-in too, so you won't be locked out.\n\nIf you didn't make this change, reply to this email right away.`;
+  if (env.BRIEF_SMTP_PASS) {
+    const acct = { email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'LifeFold', username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi', smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS };
+    await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text }) });
+    return;
+  }
+  if (env.RESEND_API_KEY) await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html, text }) });
+}
 // Permanently delete this account and everything it owns. Irreversible; the
 // owner (user 1) is protected. Best-effort per table so a missing table/column
 // never blocks the rest. Portfolio data lives in a separate DB and is untouched.
