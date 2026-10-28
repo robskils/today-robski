@@ -19966,7 +19966,6 @@ function renderNote() {
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
           <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
-          ${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-tidy ghost note-hide-mobile" data-note-tidy data-tip="Tidy the spacing - even out blank lines" aria-label="Tidy the spacing">Tidy</button>`}
           ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
           <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-insert-image>🖼 Insert image</button><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
@@ -22033,7 +22032,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-insert-image]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineImage(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
-  if (t.closest('[data-note-tidy]')) { tidyNoteFormatting(); return; }
 
   // tasks
   const sh = t.closest('[data-sort]');
@@ -24602,14 +24600,12 @@ async function scanSave() {
 function closeScanner() { stopCam(); const el = document.getElementById('scanner'); if (el) el.remove(); scan.src = null; scan.pages = []; }
 
 // Tidy a note's spacing: the usual cause of "some lines double-spaced, some
-// single" is stray empty paragraphs (a double Enter, or a paste). This removes
-// blank block elements and collapses runs of <br>, so real paragraph breaks
-// stay but the extra blank lines go - evening the whole note out. One tap, and
-// it's editable/undoable like any change.
-// Remove empty block elements and collapse runs of <br> in a prose HTML string.
-// A block counts as empty only if it holds no text and no real content (an
-// image, list, table, quote, rule or a collapsible section is content). Shared
-// by the Tidy button and the silent tidy-on-paste.
+// single" is stray empty paragraphs (a double Enter, or a paste). Remove empty
+// block elements and collapse runs of <br> in a prose HTML string, so real
+// paragraph breaks stay but the extra blank lines go. A block counts as empty
+// only if it holds no text and no real content (an image, list, table, quote,
+// rule or a collapsible section is content). Runs silently on paste - the manual
+// "Tidy" button was dropped as redundant (paste already does it). (Robin.)
 function tidyProseHtml(html) {
   const tmp = document.createElement('div'); tmp.innerHTML = html;
   const hasContent = (el) => el.querySelector('img,table,ul,ol,blockquote,details,hr') || (el.textContent || '').replace(/\s/g, "") !== "";
@@ -24621,17 +24617,6 @@ function tidyProseHtml(html) {
 // paragraphs), so a pasted block lands evenly single-spaced instead of double.
 function tidyPasteText(text) {
   return String(text || '').replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{2,}/g, '\n').replace(/^\n+|\n+$/g, '');
-}
-function tidyNoteFormatting() {
-  const pr = document.querySelector('.note-main .prose[data-prose="note"]') || document.querySelector('.prose[data-prose="note"]');
-  if (!pr) { toast('Open a note first'); return; }
-  flushProse();
-  const before = pr.innerHTML;
-  const cleaned = tidyProseHtml(before);
-  if (cleaned === before) { toast('Already tidy - nothing to change'); return; }
-  pr.innerHTML = cleaned;
-  saveProse(pr.dataset.prose, pr.innerHTML, pr.dataset.blockId);
-  toast('Spacing tidied ✓');
 }
 // Save a rich-text region back to whichever block it belongs to.
 async function saveProse(key, rawHtml, blockId) {
