@@ -5751,27 +5751,22 @@ function practiceEditorHtml() {
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
   const areas = state.areas || [];
   const timed = a.timed == null ? true : !!a.timed;
-  const tracked = a.tracked == null ? true : !!a.tracked;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
   return `<div class="pe-bg" data-prc-close></div>
-    <div class="pe-panel ${timed ? 'timed-on' : ''} ${tracked ? 'tracked-on' : ''}" role="dialog" aria-label="Practice">
+    <div class="pe-panel ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">
         <section class="pe-sec">
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
-          <div class="pe-two">
-            <label class="pe-f pe-inline"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
-            <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="pe-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option value="${x}" ${a.priority === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-          </div>
+          <label class="pe-f"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
         </section>
 
         <section class="pe-sec">
-          <div class="pe-sec-h">Guide</div>
-          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice card.</div>
-          <label class="pe-f"><span>▶ Video or link</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube link to embed it, or any page" autocomplete="off"></label>
-          <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
+          <div class="pe-mini">
+            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
+          </div>
         </section>
 
         <section class="pe-sec">
@@ -5779,19 +5774,23 @@ function practiceEditorHtml() {
           <div class="pe-mini">
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
             <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" step="5" value="${a.duration || 30}"> min</span></div>
-            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Track it</b><small>builds a streak</small></span><input type="checkbox" id="pe-tracked" data-pe-tracked ${tracked ? 'checked' : ''}></label>
             <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
               const cur = a.cadence || '';
               const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
               return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
             })()}</div>
-            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
           </div>
         </section>
 
         <section class="pe-sec">
-          <div class="pe-sec-h">Connections</div>
           <div class="pe-attach">${peAttachHtml()}</div>
+        </section>
+
+        <section class="pe-sec">
+          <div class="pe-sec-h">Guide</div>
+          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice card.</div>
+          <label class="pe-f"><span>▶ Video or link</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube link to embed it, or any page" autocomplete="off"></label>
+          <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
         </section>
       </div>
       <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
@@ -5802,35 +5801,44 @@ function practiceEditorHtml() {
 function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
+  // Same "Linked & attached" look the note and task cards use: one list of what
+  // this practice connects to, then the ways to add. Storage is unchanged - the
+  // rows reuse the existing data-pe-* add/unlink handlers. (Robin, 2026-10-29.)
   const m = peMeta();
-  const noteChips = m.notes.map((n) => `<div class="ce-card"><button type="button" class="ce-open" data-pe-open-note="${esc(n.id)}"><span class="ce-ic">▤</span><span class="ce-t">${esc(n.title || 'Untitled')}</span></button><button type="button" class="ce-x" data-pe-unlink-note="${esc(n.id)}" title="Remove">×</button></div>`).join('');
   const q = (state.practiceEdit._noteQ || '').trim().toLowerCase();
   const linkedN = new Set(m.notes.map((n) => String(n.id)));
   const pool = Array.isArray(state.peNotePool) ? state.peNotePool : [];
   if (state.peNotePool === undefined) loadPeNotePool();
-  const nres = q ? pool.filter((n) => !linkedN.has(String(n.id)) && !isTableNote(n) && (n.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
-  const linkChips = m.links.map((l, i) => `<div class="ce-card"><a class="ce-open" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(l.title || prettyLinkLabel(l.url))}</span></a><button type="button" class="ce-x" data-pe-del-link="${i}" title="Remove">×</button></div>`).join('');
   if (state.contacts === undefined) loadContacts().then(() => { if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => {});
+  const nres = q ? pool.filter((n) => !linkedN.has(String(n.id)) && !isTableNote(n) && (n.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
   const linkedC = new Set(m.contacts.map(String));
-  const contactChips = m.contacts.map((id) => { const c = findContact(id); if (!c) return ''; return `<div class="ce-card"><button type="button" class="ce-open" data-pe-open-contact="${c.id}"><span class="contact-av ce-av">${esc(initial(c.title || '?'))}</span><span class="ce-t">${esc(c.title || 'Unnamed')}</span></button><button type="button" class="ce-x" data-pe-unlink-contact="${c.id}" title="Remove">×</button></div>`; }).filter(Boolean).join('');
   const others = (state.contacts || []).filter((c) => !linkedC.has(String(c.id))).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  return `<div class="pe-attach-sec">
-      <div class="sub-h">Notes${m.notes.length ? ` · ${m.notes.length}` : ''}</div>
-      <div class="ce-linked">${noteChips || '<div class="home-empty" style="padding:4px 0 2px">No notes linked yet.</div>'}</div>
-      <input class="sel nt-search" data-pe-note-q placeholder="Search a page to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off">
-      ${nres.length ? `<div class="nt-results">${nres.map((n) => `<button type="button" class="nt-result" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join('')}</div>` : ''}
-      <button type="button" class="ghost nt-new" data-pe-new-note>+ New note for this practice</button>
+
+  const rows = [];
+  for (const n of m.notes) rows.push(nxOpenRow('▤', n.title || 'Untitled', 'Note', '', `data-pe-open-note="${esc(n.id)}"`, `data-pe-unlink-note="${esc(n.id)}"`));
+  for (const id of m.contacts) { const c = findContact(id); if (!c) continue; rows.push(nxOpenRow('👤', c.title || 'Unnamed', 'Person', '', `data-pe-open-contact="${c.id}"`, `data-pe-unlink-contact="${c.id}"`)); }
+  m.links.forEach((l, i) => {
+    const url = /^https?:\/\//i.test(l.url) ? l.url : 'https://' + l.url;
+    let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(l.title || prettyLinkLabel(l.url))}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-pe-del-link="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+  });
+  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : '';
+  const noteResults = nres.length ? `<div class="nx-sugg">${nres.map((n) => `<button type="button" class="nx-sugg-row" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ic">▤</span>${esc(n.title || 'Untitled')}<span class="kind">Note</span></button>`).join('')}</div>` : '';
+  return `<div class="nx-wrap">
+    <div class="nx-lbl">Linked &amp; attached</div>
+    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}">
+      ${items}
+      <div class="nx-attach">
+        <div class="nx-field"><input class="sel" data-pe-note-q placeholder="Search a page to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off"></div>
+        ${noteResults}
+        <div class="nx-addrow">
+          <button type="button" class="nx-choose" data-pe-new-note>▤ New note</button>
+          <button type="button" class="nx-choose" data-pe-add-link>🌐 Add web link</button>
+        </div>
+        <select class="sel bc-add-sel" data-pe-add-contact><option value="">＋ Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
+      </div>
     </div>
-    <div class="pe-attach-sec">
-      <div class="sub-h">Contacts${m.contacts.length ? ` · ${m.contacts.length}` : ''}</div>
-      <div class="ce-linked">${contactChips || '<div class="home-empty" style="padding:4px 0 2px">No contacts linked yet.</div>'}</div>
-      <select class="sel bc-add-sel" data-pe-add-contact><option value="">＋ Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
-    </div>
-    <div class="pe-attach-sec">
-      <div class="sub-h">Links${m.links.length ? ` · ${m.links.length}` : ''}</div>
-      <div class="ce-linked">${linkChips || '<div class="home-empty" style="padding:4px 0 2px">No links yet.</div>'}</div>
-      <button type="button" class="ghost nt-new" data-pe-add-link>+ Add a link</button>
-    </div>`;
+  </div>`;
 }
 function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
 async function peNewNote() {
@@ -21570,7 +21578,6 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
-  { const pk = t.closest('[data-pe-tracked]'); if (pk) { const panel = pk.closest('.pe-panel'); if (panel) panel.classList.toggle('tracked-on', pk.checked); return; } }
   // Today (native) view
   { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
@@ -21637,7 +21644,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
   if (t.closest('[data-welcome-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.onbSeen = true; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {}); renderSettings(); return; }   // hide the Getting started card
   if (t.closest('[data-open-getstarted]')) { openSettings('account'); return; }   // Home banner -> Settings Getting started
-  { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openSettings('manage'); return; } }
+  { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openAreasList(); return; } }
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
@@ -22037,7 +22044,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
   // Reminder chips: toggle a lead, open the custom-lead row, or add a custom lead.
   { const tg = t.closest('[data-alarm-toggle]'); if (tg) { const f = tg.closest('#cal-ev-form'); const m = Number(tg.dataset.alarmToggle); const cur = remSelected(f); const i = cur.indexOf(m); if (i >= 0) cur.splice(i, 1); else cur.push(m); remSetSelected(f, cur); return; } }
-  if (t.closest('[data-alarm-addcustom]')) { const f = t.closest('#cal-ev-form'); const c = f && f.querySelector('.ce-rem-custom'); if (c) { c.hidden = !c.hidden; if (!c.hidden) { const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } return; }
+  if (t.closest('[data-alarm-addcustom]')) { const f = t.closest('#cal-ev-form'); const c = f && f.querySelector('.ce-rem-custom'); const chip = t.closest('[data-alarm-addcustom]'); if (c) { c.hidden = !c.hidden; if (chip) chip.classList.toggle('on', !c.hidden); if (!c.hidden) { const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } return; }
   if (t.closest('[data-alarm-customadd]')) { const f = t.closest('#cal-ev-form'); if (!f) return; const n = Math.max(1, Math.min(999, parseInt((f.querySelector('#ce-rem-n') || {}).value, 10) || 0)); const u = (f.querySelector('#ce-rem-u') || {}).value || 'm'; if (n) { const mins = n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1); const cur = remSelected(f); cur.push(mins); remSetSelected(f, cur); } const c = f.querySelector('.ce-rem-custom'); if (c) c.hidden = true; const ni = f.querySelector('#ce-rem-n'); if (ni) ni.value = ''; return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
   if (t.closest('[data-cal-agenda-more]')) { state.cal.agendaDays = (state.cal.agendaDays || 30) + 30; loadCalendar(); return; }
