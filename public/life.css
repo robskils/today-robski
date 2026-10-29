@@ -2231,8 +2231,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   box-shadow:inset 0 1px 0 var(--facet-a), 0 12px 32px -20px rgba(0,0,0,.4);
 }
 .note-body h2 { font-size:26px; margin:22px 0 8px; }
-.note-body h3 { font-size:22px; margin:20px 0 6px; }
-.note-body h4 { font-size:19px; margin:16px 0 4px; color:var(--ink-2); }
+/* A gentle step-in per heading level so a subheading reads as sitting inside the
+   one above - just enough to show the nesting, never a big indent. (Robin, 2026-10-29.) */
+.note-body h3 { font-size:22px; margin:20px 0 6px; padding-left:18px; }
+.note-body h4 { font-size:19px; margin:16px 0 4px; color:var(--ink-2); padding-left:36px; }
 .note-body p { margin:0 0 14px; }
 .note-body a { color:var(--accent); }
 /* Nothing in a note body should force horizontal scroll on a narrow screen. */
@@ -4697,8 +4699,10 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tabstrip .tab-util { position:relative; }
 .tabstrip .tab-util-msg .nav-ic-svg { width:16px; height:16px; vertical-align:0; }
 /* Messages leads the right-hand cluster, so the auto-margin that pushes the group
-   to the right lives on it (not on the i) - keeping messages, i, settings together. */
+   to the right lives on it; when it's present the i drops its own auto-margin so
+   the three sit together (two auto-margins would split the free space). */
 .tabstrip .tab-util-msg { margin-left:auto; }
+.tabstrip .tab-util-msg ~ .help-btn { margin-left:5px; }
 .tab-util-dot { position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#e5484d; color:#fff; font-size:10px; font-weight:800; line-height:16px; text-align:center; box-shadow:0 0 0 2px var(--paper); pointer-events:none; }
 #help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
 .help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
