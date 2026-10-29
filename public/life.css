@@ -8417,7 +8417,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cal-cell:hover .cal-add-day, .cw-day:hover .cal-add-day { opacity:.55; }
 .cal-add-day:hover { opacity:1; background:var(--accent); color:var(--accent-ink); }
 .cw-head .cw-add { margin-left:auto; }
-@media (hover:none){ .cal-add-day { opacity:.5; } }
+/* On a touch month grid, the per-cell + caught taps meant for the day, opening the
+   new-event sheet by mistake. Hide it there so a tap ANYWHERE in a day square just
+   opens that day (and scrolls to it); add from the "+ Event" button. (Robin, 2026-10-29.) */
+@media (hover:none){ .cal-add-day { opacity:.5; } .cal-cell .cal-add-day { display:none; } }
 .cal-cell.today .cal-daynum { color:var(--accent-ink); background:var(--accent); width:26px; height:26px; margin-left:auto; border-radius:50%; display:grid; place-items:center; font-weight:600; }
 .cal-evs { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .cal-chip { font-size:12px; line-height:1.3; padding:2px 6px; border-radius:6px; background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

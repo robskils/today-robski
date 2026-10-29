@@ -10968,7 +10968,7 @@ function showCalForm(ev) {
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
-      <summary class="ce-links-h">Connected<span class="ce-links-hint">a website, a contact, notes</span></summary>
+      <summary class="ce-links-h">${(ev && (ev.url || ev.contact)) ? 'Connected' : 'Connect'}<span class="ce-links-hint">a website, a contact, notes</span></summary>
       <div class="ce-links3">
         <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Website</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
         ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
