@@ -3642,12 +3642,24 @@ function importAreaOpts(imp) {
 }
 function importPane() {
   const imp = importState();
-  const kind = imp.kind || 'notes';
+  // Two things you bring in: Notes and Contacts. (Events have their own delightful
+  // "add from a flyer" importer on the Calendar - they don't belong here. Robin, 2026-10-29.)
+  const kind = imp.kind === 'contacts' ? 'contacts' : 'notes';
   const switcher = `<div class="imp-kinds">
-    <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">📄</span><span class="imp-kind-t">Notes</span><span class="imp-kind-s">Markdown &amp; text files</span></button>
-    <button class="imp-kind ${kind === 'events' ? 'on' : ''}" data-import-kind="events"><span class="imp-kind-ic">📅</span><span class="imp-kind-t">Events</span><span class="imp-kind-s">A file, flyer, photo or link</span></button>
+    <button class="imp-kind ${kind === 'notes' ? 'on' : ''}" data-import-kind="notes"><span class="imp-kind-ic">▤</span><span class="imp-kind-t">Notes</span><span class="imp-kind-s">Markdown, text or Evernote</span></button>
+    <button class="imp-kind ${kind === 'contacts' ? 'on' : ''}" data-import-kind="contacts"><span class="imp-kind-ic">☺</span><span class="imp-kind-t">Contacts</span><span class="imp-kind-s">A vCard from any address book</span></button>
   </div>`;
-  return `<div class="imp-card">${switcher}${kind === 'events' ? importEventsPaneHtml(imp) : importNotesPaneHtml(imp)}</div>`;
+  return `<div class="imp-card">${switcher}${kind === 'contacts' ? importContactsPaneHtml(imp) : importNotesPaneHtml(imp)}</div>`;
+}
+function importContactsPaneHtml() {
+  return `
+      <p class="imp-lead">Bring your address book into LifeFold - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
+      <p class="imp-hint">Export a <b>vCard</b> (<code>.vcf</code>) from <b>Google Contacts</b>, <b>Apple Contacts</b>, <b>Outlook</b> or your phone - one file can hold everyone - then choose it below.</p>
+      <div class="imp-field">
+        <label class="imp-label">Choose your vCard</label>
+        <label class="add-btn wide imp-pick">☺ Choose a vCard to import<input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></label>
+        <p class="imp-hint">We bring in everyone in the file at once. Anyone already saved is merged, never doubled.</p>
+      </div>`;
 }
 function importNotesPaneHtml(imp) {
   const parsed = imp.parsed || [];
@@ -16274,7 +16286,11 @@ async function importVcf(file) {
     if (r.updated) parts.push(`${r.updated} updated`);
     if (r.skipped) parts.push(`${r.skipped} unchanged`);
     toast(parts.length ? `Contacts: ${parts.join(' · ')}` : 'No changes to import');
-    await loadContacts(true); renderContacts();
+    await loadContacts(true);
+    // Re-render wherever the import was run from - the Contacts view, or leave the
+    // Settings > Import pane in place (don't yank the user over to Contacts).
+    if (state.view && state.view.type === 'contacts') renderContacts();
+    else if (state.view && state.view.type === 'settings') renderSettings();
   } catch (e) { toast(e.message); }
 }
 const contactsDatalist = () => `<datalist id="contacts-dl">${(state.contacts || []).filter((c) => c.props && c.props.email).map((c) => `<option value="${esc(c.props.email)}">${esc(c.title || '')}</option>`).join('')}</datalist>`;
