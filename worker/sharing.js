@@ -88,18 +88,31 @@ export async function listBlockViewers(env, blockId) {
 // view, which shows both directions. Newest-edited first. (Robin, 2026-10-29.)
 export async function sharedByMe(env) {
   const rows = (await env.DB.prepare(
-    `SELECT b.id, b.kind, b.title, b.props, b.updated_at,
-            (SELECT COUNT(*) FROM shares s WHERE s.block_id = b.id) AS nshares
+    `SELECT b.id, b.kind, b.title, b.props, b.updated_at
        FROM blocks b
       WHERE b.user_id = ? AND b.archived = 0 AND b.kind IN ('note','table')
         AND ( EXISTS (SELECT 1 FROM shares s WHERE s.block_id = b.id AND s.owner_id = ?)
               OR json_extract(b.props, '$.shareToken') IS NOT NULL )
       ORDER BY b.updated_at DESC`,
   ).bind(env.uid, env.uid).all().catch(() => ({ results: [] }))).results || [];
+  // Who each note is shared WITH, so the Notes "Shared" view can show faces and
+  // name them. One pass over all my share rows (bounded by my own share count,
+  // never a user-sized IN-list), grouped by block. (Robin, 2026-10-29.)
+  const byBlock = new Map();
+  const srows = (await env.DB.prepare(
+    `SELECT s.block_id, s.friend_id AS id, s.can_edit, u.name, u.subdomain
+       FROM shares s JOIN users u ON u.id = s.friend_id
+      WHERE s.owner_id = ? ORDER BY u.name`,
+  ).bind(env.uid).all().catch(() => ({ results: [] }))).results || [];
+  for (const r of srows) {
+    if (!byBlock.has(r.block_id)) byBlock.set(r.block_id, []);
+    byBlock.get(r.block_id).push({ id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, canEdit: !!r.can_edit });
+  }
   return {
     items: rows.map((r) => {
       let props = {}; try { props = r.props ? JSON.parse(r.props) : {}; } catch {}
-      return { id: r.id, kind: r.kind, title: r.title, updated_at: r.updated_at, nshares: r.nshares || 0, public: !!props.shareToken };
+      const shares = byBlock.get(r.id) || [];
+      return { id: r.id, kind: r.kind, title: r.title, updated_at: r.updated_at, nshares: shares.length, public: !!props.shareToken, shares };
     }),
   };
 }
@@ -108,7 +121,7 @@ export async function sharedByMe(env) {
 // carrying who shared it so the UI can label it.
 export async function sharedWithMe(env) {
   const rows = (await env.DB.prepare(
-    `SELECT b.*, s.can_edit, s.created_at AS shared_at, u.name AS owner_name, u.subdomain AS owner_sub
+    `SELECT b.*, s.can_edit, s.created_at AS shared_at, u.id AS owner_id, u.name AS owner_name, u.subdomain AS owner_sub
        FROM shares s
        JOIN blocks b ON b.id = s.block_id
        JOIN users u ON u.id = s.owner_id
@@ -120,7 +133,7 @@ export async function sharedWithMe(env) {
       let props = {}; try { props = r.props ? JSON.parse(r.props) : {}; } catch {}
       return {
         id: r.id, kind: r.kind, title: r.title, canEdit: !!r.can_edit,
-        owner: r.owner_name || r.owner_sub, ownerSub: r.owner_sub,
+        owner: r.owner_name || r.owner_sub, ownerSub: r.owner_sub, ownerId: r.owner_id,
         done: !!props.done, priority: props.priority || null, updated_at: r.updated_at,
         shared_at: r.shared_at || null,
       };

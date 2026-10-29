@@ -6292,8 +6292,25 @@ body[data-view='tasks'] .tasks-scroll table.ttable thead th { top:calc(44px + va
 .note-type-chips .ntype { padding:8px 14px; border-radius:9px; font-size:14.5px; color:var(--ink-2); white-space:nowrap; }
 .note-type-chips .ntype:hover { color:var(--ink); }
 .note-type-chips .ntype.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow); font-weight:500; }
-/* The "Shared" notes view: "shared with you" rows above your own shared cards. */
+/* The "Shared" notes view: "shared with you" rows above your own shared cards.
+   Readable on the dark paper (no more faint grey-on-black), with people's faces
+   on both halves - the sharer above, you + your recipients below. (Robin, 2026-10-29.) */
 .notes-shared-rows { display:flex; flex-direction:column; gap:8px; max-width:560px; }
+.notes-shared-view .home-sec-h { color:color-mix(in srgb,var(--accent) 55%,var(--ink)); }
+.notes-shared-view .sh-t { font-size:16px; }
+.notes-shared-view .sh-meta { color:var(--ink-2); font-size:13px; }
+.notes-shared-view .sh-meta b { color:var(--ink); font-weight:600; }
+.sww-row { gap:12px; padding:12px 14px; }
+.sww-row .fr-av { width:38px; height:38px; font-size:15px; flex:none; }
+.sww-row .sh-go { color:var(--ink-3); flex:none; font-size:17px; }
+/* "Shared by you" card: the note card plus a face stack and a who-with line. */
+.sby-card { cursor:pointer; }
+.sby-foot { display:flex; align-items:center; gap:10px; margin-top:3px; min-width:0; }
+.sby-card .area-faces { margin:0; flex:none; }
+.sby-card .area-faces .aface .fr-av { width:28px; height:28px; font-size:12px; box-shadow:0 0 0 2px var(--card); }
+.sby-card .area-faces .aface-me .fr-av { box-shadow:0 0 0 2px var(--accent); }
+.sby-card .area-faces .aface-more { width:28px; height:28px; font-size:11px; box-shadow:0 0 0 2px var(--card); }
+.sby-with { font-size:12.5px; color:var(--ink-2); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* The Note · Table type switch in a note/table header. */
 /* A quiet 'Turn into table/note' action, not a view slider. */
 .ntt-conv { font-size:13px; color:var(--ink-3); }

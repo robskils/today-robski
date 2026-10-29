@@ -2108,6 +2108,7 @@ function loadCards(ids) {
   api('/api/cards?ids=' + want.join(',')).then((m) => {
     want.forEach((id) => { state.cardCache[id] = (m && m[id]) || false; });
     const v = state.view && state.view.type; if (v === 'area' || v === 'contacts' || v === 'friends') rerenderCurrent();
+    else if (v === 'notes' && typeof renderNotesList === 'function') renderNotesList();
     if (document.getElementById('share') && state.share) renderShare();
   }).catch(() => { want.forEach((id) => { state.cardCache[id] = false; }); });
 }
@@ -6606,6 +6607,7 @@ function renderHome() {
       <div class="home-scroll">
       ${homeSetupCardHtml()}
       ${homeInvitesHtml()}
+      ${homeSharedAlertHtml()}
       ${homeMsgAlertHtml()}
       ${homeReqAlertHtml()}
       ${homeQuoteHtml()}
@@ -6801,6 +6803,12 @@ function loadNotesShared() {
     api('/api/shared/mine').then((r) => (r && r.items) || []).catch(() => []),
   ]).then(([withMe, byMe]) => {
     state.sharedWithMe = withMe; state.sharedByMe = byMe;
+    // Warm the avatar cache for every face we're about to draw: the people who
+    // shared with me, and the people I shared with. loadCards repaints Notes.
+    const ids = [];
+    withMe.forEach((s) => { if (s.ownerId) ids.push(s.ownerId); });
+    byMe.forEach((s) => (s.shares || []).forEach((r) => { if (r.id) ids.push(r.id); }));
+    if (ids.length) loadCards(ids);
     if (state.view && state.view.type === 'notes') renderNotesList();
   }).catch(() => {});
 }
@@ -6905,10 +6913,33 @@ function renderNotesList() {
     const withMe = (state.sharedWithMe || []).filter((s) => isNT(s.kind));
     const byMe = state.sharedByMe;   // undefined while loading
     const entries = noteEntries();
-    const wmRow = (s) => `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${s.kind === 'table' ? '▦' : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">from ${esc(s.owner || 'someone')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
-    const bmCard = (s) => { const n = entries.find((x) => x.id === s.id); if (n) return noteCard(n); return `<button class="shared-row" data-open-${s.kind === 'table' ? 'table' : 'note'}="${esc(s.id)}"><span class="sh-ic">${s.kind === 'table' ? '▦' : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.public ? '🔗 Public link' : ''}${s.public && s.nshares ? ' · ' : ''}${s.nshares ? `${s.nshares} ${s.nshares === 1 ? 'person' : 'people'}` : ''}</span></span></button>`; };
-    sharedBody = `<section class="home-sec"><div class="home-sec-h">Shared with you${withMe.length ? ` · ${withMe.length}` : ''}</div>${withMe.length ? `<div class="notes-shared-rows">${withMe.map(wmRow).join('')}</div>` : '<div class="empty">Nobody has shared a note with you yet.</div>'}</section>
-      <section class="home-sec"><div class="home-sec-h">Shared by you${(byMe && byMe.length) ? ` · ${byMe.length}` : ''}</div>${byMe === undefined ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(bmCard).join('')}</div>` : "<div class=\"empty\">You haven't shared any notes yet. Open a note, tap Share, then pick a friend or create a public link.</div>"}</section>`;
+    // Your own face, for the "shared by you" stacks (photo if you've set one).
+    const myFace = () => { const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You'; const photo = state.card && state.card.photo; return photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`; };
+    // Shared WITH me: lead with the sharer's face, then name them plainly.
+    const wmRow = (s) => `<button class="shared-row sww-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}">${personAvatar(s.ownerId, s.owner, '')}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">from <b>${esc(s.owner || 'someone')}</b> · ${s.kind === 'table' ? 'Table' : 'Note'}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+    // Shared BY me: a note card carrying a face stack (you + who you shared with)
+    // and a line naming them, so you can see at a glance who's on each one.
+    const bmCard = (s) => {
+      const n = entries.find((x) => x.id === s.id);
+      const areas = n ? blockAreas(n).map((id) => areaById(id)).filter(Boolean) : [];
+      const a0 = areas[0];
+      const sub = a0 ? `<span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${esc(a0.title)}${areas.length > 1 ? ` +${areas.length - 1}` : ''}</span></span>` : '';
+      const isTbl = s.kind === 'table';
+      const recips = s.shares || [];
+      const faces = [`<span class="aface aface-me" title="You">${myFace()}</span>`];
+      recips.slice(0, 5).forEach((r) => faces.push(`<span class="aface" title="${esc(r.name || 'Someone')}${r.canEdit === false ? ' · view only' : ''}">${personAvatar(r.id, r.name, '')}</span>`));
+      const moreN = recips.length - 5;
+      const more = moreN > 0 ? `<span class="aface aface-more">+${moreN}</span>` : '';
+      const nm = recips.map((r) => esc(r.name || r.subdomain || 'someone'));
+      let whom = '';
+      if (nm.length === 1) whom = `Shared with ${nm[0]}`;
+      else if (nm.length === 2) whom = `Shared with ${nm[0]} & ${nm[1]}`;
+      else if (nm.length > 2) whom = `Shared with ${nm[0]}, ${nm[1]} & ${nm.length - 2} more`;
+      const meta = [s.public ? '🔗 Public link' : '', whom].filter(Boolean).join(' · ');
+      return `<button class="tbl-card nt-card sby-card ${a0 ? 'has-area' : ''}" ${a0 ? `style="--h:${hueOf(a0)}"` : ''} data-open-${isTbl ? 'table' : 'note'}="${esc(s.id)}">${sub}<span class="nt-name">${isTbl ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc((n && n.title) || s.title || 'Untitled')}</span></span><span class="sby-foot"><span class="area-faces sby-faces">${faces.join('')}${more}</span>${meta ? `<span class="sby-with">${meta}</span>` : ''}</span></button>`;
+    };
+    sharedBody = `<div class="notes-shared-view"><section class="home-sec"><div class="home-sec-h">Shared with you${withMe.length ? ` · ${withMe.length}` : ''}</div>${withMe.length ? `<div class="notes-shared-rows">${withMe.map(wmRow).join('')}</div>` : '<div class="empty">Nobody has shared a note with you yet.</div>'}</section>
+      <section class="home-sec"><div class="home-sec-h">Shared by you${(byMe && byMe.length) ? ` · ${byMe.length}` : ''}</div>${byMe === undefined ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(bmCard).join('')}</div>` : "<div class=\"empty\">You haven't shared any notes yet. Open a note, tap Share, then pick a friend or create a public link.</div>"}</section></div>`;
   }
   const normalBody = `${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}${listHtml}`;
   // The controls bar is sticky (below the breadcrumb), so the search + filters + sort
@@ -8761,9 +8792,11 @@ function renderAreasList() {
   const S = (id) => sum[id] || {};
   const sortMode = areasSortMode();
   // Mine / Shared-with-me / All. Life Spaces others shared with me are loaded lazily.
-  const scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
+  let scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
+  // "Mine" retired in favour of "Shared by me"; anyone still on it lands on All.
+  if (scope === 'mine') { scope = state.areasScope = 'all'; try { localStorage.setItem('life.areas.scope', 'all'); } catch {} }
   if (state.sharedAreas === undefined) loadSharedAreas().then(() => { if (state.view && state.view.type === 'areas') renderAreasList(); });
-  const canDrag = sortMode === 'rank' && scope !== 'shared';
+  const canDrag = sortMode === 'rank' && scope === 'all';
   // A lifespace's recency for the "recently active" sort. My own come from the summary;
   // lifespaces shared with me aren't in my summary, so fall back to the block's own
   // last-updated - a just-shared or just-edited shared lifespace still sorts to the top.
@@ -8776,6 +8809,9 @@ function renderAreasList() {
   };
   const mineRanked = areasByRank();
   const received = (state.sharedAreas || []).slice();
+  // Life Spaces I own that I've given someone access to (members = people I've
+  // shared the space's block with, from the summary). Drives "Shared by me".
+  const mineShared = mineRanked.filter((a) => (S(a.id).members || 0) > 0);
   const favAreas = mineRanked.filter((a) => a.props && a.props.fav);
   const renderCard = (a) => (a.sharedBy ? sharedCard(a) : card(a));
   // A lifespace I own: the full card with live metrics, draggable in "My order".
@@ -8820,20 +8856,20 @@ function renderAreasList() {
       </button>
     </div>`;
   };
-  const scopeBtn = (v, l, tip) => `<button class="cg-chip areas-scope ${scope === v ? 'on' : ''}" data-areas-scope="${v}" title="${tip}">${l}${v === 'shared' && received.length ? ` <span class="cg-n">${received.length}</span>` : ''}</button>`;
+  const scopeBtn = (v, l, tip) => { const n = v === 'shared' ? received.length : v === 'sharedby' ? mineShared.length : 0; return `<button class="cg-chip areas-scope ${scope === v ? 'on' : ''}" data-areas-scope="${v}" title="${tip}">${l}${n ? ` <span class="cg-n">${n}</span>` : ''}</button>`; };
   const controls = `<div class="areas-controls">
-    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Life Spaces you own and lifespaces shared with you')}${scopeBtn('mine', 'Mine', 'Only lifespaces you own')}${scopeBtn('shared', 'Shared with me', 'Only lifespaces others have shared with you')}</div>
+    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Life Spaces you own and lifespaces shared with you')}${scopeBtn('shared', 'Shared with me', 'Only lifespaces others have shared with you')}${scopeBtn('sharedby', 'Shared by me', 'Life Spaces you have shared with others')}</div>
     <label class="areas-sortwrap">Sort <select class="sel areas-sort" data-areas-sort>${AREAS_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
   </div>`;
   const sections = [];
-  if (scope !== 'shared' && favAreas.length && canDrag) sections.push(`<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>`);
+  if (scope === 'all' && favAreas.length && canDrag) sections.push(`<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>`);
   // One unified, sorted grid for the chosen scope. In All, my own lifespaces and the
   // lifespaces shared with me sit together and sort together - so a recently-active
   // shared lifespace shows up top, not quarantined at the bottom - each still visually
   // marked as mine or shared. (Robin, 2026-10-14.)
-  const listForScope = scope === 'mine' ? applySort(mineRanked) : scope === 'shared' ? applySort(received) : applySort(mineRanked.concat(received));
-  const header = scope === 'mine' ? `Your lifespaces · ${listForScope.length}` : scope === 'shared' ? `Shared with you · ${listForScope.length}` : `All lifespaces · ${listForScope.length}`;
-  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Life Space with you, it turns up here.' : 'No lifespaces yet.'}</div>`;
+  const listForScope = scope === 'shared' ? applySort(received) : scope === 'sharedby' ? applySort(mineShared) : applySort(mineRanked.concat(received));
+  const header = scope === 'shared' ? `Shared with you · ${listForScope.length}` : scope === 'sharedby' ? `Shared by you · ${listForScope.length}` : `All lifespaces · ${listForScope.length}`;
+  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Life Space with you, it turns up here.' : scope === 'sharedby' ? "You haven't shared a Life Space yet. Open one, then give someone access and it turns up here." : 'No lifespaces yet.'}</div>`;
   sections.push(`<section class="home-sec"><div class="home-sec-h">${header}</div><div class="area-cards area-gcards">${grid}</div></section>`);
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
