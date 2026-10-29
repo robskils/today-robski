@@ -3449,7 +3449,6 @@ function renderSettings() {
           ${(state.account.aliases || []).filter((a) => typeof a === 'object' && !a.verified && !(ec && ec.email && String(a.email).toLowerCase() === String(ec.email).toLowerCase())).map((a) => `<div class="alias-verify"><div class="av-head">📨 One more step - confirm this address</div><span class="av-note">We emailed a 6-digit code to <b>${esc(a.email)}</b>. Enter it here to finish adding it:</span><div class="alias-verify-row"><input class="sel av-code" data-alias-code="${esc(a.email)}" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button class="add-btn wide" data-alias-verify="${esc(a.email)}">Confirm</button><button class="ghost" data-alias-resend="${esc(a.email)}">Resend</button></div></div>`).join('')}
           <div class="alias-add"><input class="sel" id="alias-input" placeholder="add another email…" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-alias-add>Add</button></div>
         </div>
-        <div class="acct-actions"><button class="ghost" data-account-signout>↪ Sign out</button></div>
       </div>
       <div class="set-acct-cols">
         <div class="set-card set-cardpreview">
@@ -3470,9 +3469,15 @@ function renderSettings() {
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
-      <div class="set-card set-closebox">
-        <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your LifeFold and everything in it. This cannot be undone.</div></div>
-        <button class="ghost acct-danger" data-account-close>Close my account…</button>
+      <div class="set-dangerrow">
+        <div class="set-card set-closebox">
+          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave LifeFold on this device. Anything not saved to your account is cleared from this browser.</div></div>
+          <button class="ghost" data-account-signout>↪ Sign out</button>
+        </div>
+        <div class="set-card set-closebox">
+          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your LifeFold and everything in it. This cannot be undone.</div></div>
+          <button class="ghost acct-danger" data-account-close>Close my account…</button>
+        </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">

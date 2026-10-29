@@ -3662,7 +3662,11 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .acct-danger { color:var(--rust,#c4412e); } .acct-danger:hover { border-color:var(--rust,#c4412e); }
 .set-closebox { display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
 .set-closebox-txt { min-width:0; }
-.set-closebox .acct-danger { flex:none; align-self:flex-start; }
+.set-closebox > .ghost { flex:none; align-self:flex-start; }
+/* Sign out + Close account sit side by side, equal height, buttons aligned. */
+.set-dangerrow { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-bottom:16px; }
+.set-dangerrow .set-closebox { margin:0; height:100%; justify-content:space-between; }
+@media (max-width:640px) { .set-dangerrow { grid-template-columns:1fr; } }
 /* Getting-started checklist (a collapsible card of icon tiles that tick off). */
 .set-welcome { display:block; padding:0; gap:0; margin-bottom:16px; overflow:hidden; }
 .set-welcome > summary { list-style:none; cursor:pointer; }
