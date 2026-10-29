@@ -194,7 +194,7 @@ export function briefEmail({ day, events = [], tasks = [], quote = null, siteUrl
         <!-- The LifeFold mark as a PNG: the favicon is an SVG and every major
              client strips those. Same file the sign-in and invitation emails use. -->
         <tr><td align="center" style="padding:40px 34px 0;background:${CARD};background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)">
-          <a href="${siteUrl}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png?v=2" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          <a href="${siteUrl}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png?v=3" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           <p style="margin:22px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${esc(longDate(day))}</p>
           <p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">Good morning</p>
         </td></tr>

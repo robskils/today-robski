@@ -6177,16 +6177,12 @@ function homeReqAlertHtml() {
 // The "Getting started" card on Home: the single, low-friction doorway into the
 // setup hub, shown until you finish or hide it. New accounts land on Home (no
 // forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
-// A folded-paper crane - the LifeFold motif - for the Getting Started banner.
-// One accent colour, faceted by opacity, with crease highlights in the card tone.
-const ORIGAMI_SVG = `<svg viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <polygon points="48,40 28,12 47,44" fill="currentColor" opacity=".42"/>
-  <polygon points="47,44 15,23 23,21 41,42" fill="currentColor" opacity=".68"/>
-  <polygon points="15,23 4,24 16,28" fill="currentColor" opacity=".9"/>
-  <polygon points="48,40 78,9 60,46" fill="currentColor" opacity=".82"/>
-  <polygon points="60,46 91,41 62,53" fill="currentColor" opacity=".5"/>
-  <polygon points="41,42 60,46 49,67" fill="currentColor"/>
-  <path d="M48 41 L49 67 M48 41 L60 46 M48 41 L41 42 M48 41 L47 44" stroke="var(--card)" stroke-width="1.2" opacity=".55" stroke-linecap="round"/>
+// The LifeFold mark - monoline octagram with an inner square - for the Getting
+// Started banner. Matches the app icon, favicon and emails (no more crane).
+const ORIGAMI_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M27 27H73V73H27Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M50 18L82 50L50 82L18 50Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M34 34H66V66H34Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
 </svg>`;
 // New accounts land on Home and set up from here. The banner is the doorway into
 // the Settings "Getting started" checklist, shown until finished or hidden.
@@ -11432,7 +11428,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png?v=2' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png?v=3' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}

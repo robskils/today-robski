@@ -2779,7 +2779,7 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
     <tr><td align="center" style="padding:0 12px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
         <tr><td align="center" style="padding:40px 34px 0;background:${CARD};background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)">
-          <a href="${home}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png?v=2" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          <a href="${home}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png?v=3" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           ${eyebrow ? `<p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">${escHtml(eyebrow)}</p>` : ''}
           <p style="margin:14px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${escHtml(headline)}</p>
         </td></tr>
@@ -4157,8 +4157,9 @@ export function publicNotePage({ title, bodyHtml, author, home, notFound }) {
   return `${head}<div class="pn-wrap"><article class="pn-card"><h1 class="pn-title">${escH(title)}</h1>${author ? `<p class="pn-by">Shared by ${escH(author)}</p>` : ''}<div class="pn-body">${bodyHtml || '<p style="color:' + MIST + '">This note is empty.</p>'}</div></article></div>
     <div class="pn-cta"><div class="pn-cta-card"><div class="pn-cta-t">Made with LifeFold</div><div class="pn-cta-s">A calm home for your whole life - notes, tasks, calendar and more.</div><a class="pn-cta-btn" href="${escH(home)}">Start yours, free →</a></div></div></body></html>`;
 }
-// The folded-paper crane, inline for the public page (no app CSS available).
-const CRANE_SVG = `<svg viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="48,40 28,12 47,44" fill="currentColor" opacity=".42"/><polygon points="47,44 15,23 23,21 41,42" fill="currentColor" opacity=".68"/><polygon points="15,23 4,24 16,28" fill="currentColor" opacity=".9"/><polygon points="48,40 78,9 60,46" fill="currentColor" opacity=".82"/><polygon points="60,46 91,41 62,53" fill="currentColor" opacity=".5"/><polygon points="41,42 60,46 49,67" fill="currentColor"/></svg>`;
+// The LifeFold mark - monoline octagram with an inner square - inline for the
+// public page (no app CSS available). Matches the app icon and favicon.
+const CRANE_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M27 27H73V73H27Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M50 18L82 50L50 82L18 50Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/><path d="M34 34H66V66H34Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/></svg>`;
 
 // ── Web Push: an icon badge when new mail arrives ────────────────────────
 // The public key is safe to ship; the private key is the VAPID_PRIVATE_JWK
