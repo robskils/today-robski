@@ -2910,15 +2910,15 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 /* Touch has no hover, so the button can't be reached - double-tap is the way. */
 @media (hover:none){ .cm-react { display:none; } }
 @media (prefers-reduced-motion:reduce){ .cm-heart { animation:none; } }
-.chat-form { position:relative; display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
+.chat-form { position:relative; display:flex; align-items:flex-end; gap:8px; padding:14px 16px; border-top:1px solid var(--line); padding-bottom:max(14px, env(safe-area-inset-bottom)); }
 /* 16px (not 15) so iOS WebKit doesn't auto-zoom the page when you focus to type,
    which was shoving the Send button and text off the right edge. (Robin, mobile.) */
-.chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:16px; outline:none; }
+.chat-input { flex:1; min-width:0; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); font-family:inherit; font-size:16px; outline:none; resize:none; display:block; line-height:1.35; max-height:132px; overflow-y:auto; }
 .chat-input:focus { border-color:var(--accent); }
-.chat-send { flex:none; padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:var(--accent-ink,#fff); font-family:inherit; font-weight:600; cursor:pointer; }
+.chat-send { flex:none; min-height:46px; padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:var(--accent-ink,#fff); font-family:inherit; font-weight:600; cursor:pointer; }
 /* Emoji picker: a quiet button in the composer, and a picker that floats just
    above it (handy on desktop, where there's no emoji key). (Robin, 2026-10-16.) */
-.chat-emoji { flex:none; width:44px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); font-size:20px; line-height:1; cursor:pointer; color:var(--ink); transition:border-color .12s, background .12s; }
+.chat-emoji { flex:none; width:44px; min-height:46px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); font-size:20px; line-height:1; cursor:pointer; color:var(--ink); transition:border-color .12s, background .12s; }
 .chat-emoji:hover { border-color:var(--accent); }
 .chat-emoji.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
 .chat-emojis { position:absolute; left:12px; right:12px; bottom:calc(100% + 6px); z-index:5; padding:12px 14px; max-height:min(300px,52vh); overflow-y:auto; background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:0 22px 50px -24px rgba(0,0,0,.5); -webkit-overflow-scrolling:touch; }
@@ -5275,11 +5275,14 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .home-invites .fr-intro { margin-top:0; }
 /* "Shared with you" - folios/pages someone invited me into, front and centre. */
 .home-shared > .home-sec-h { color:color-mix(in srgb,var(--accent) 70%,var(--ink)); }
-.home-shared-x { margin-left:auto; border:0; background:none; color:var(--ink-3); font-size:20px; line-height:1; cursor:pointer; padding:2px 6px; border-radius:8px; }
-.home-shared-x:hover { color:var(--ink); background:var(--paper-2); }
-.home-shared .shared-row .sh-go { margin-left:auto; color:var(--ink-3); flex:none; }
-.home-shared .shared-row:hover { border-color:var(--accent); }
-.sha-all { display:inline-flex; margin-top:2px; border:0; background:none; color:var(--accent); font-weight:600; font-size:14px; cursor:pointer; padding:6px 2px; }
+/* Each shared-with-you card: a big clickable body (opens the thing) and its own
+   × to dismiss. No section-level clear, no arrow - the card is the target. */
+.sha-card { display:flex; align-items:stretch; border:1px solid var(--line); border-radius:13px; background:var(--card); margin-bottom:8px; overflow:hidden; }
+.sha-card:hover { border-color:var(--accent); }
+.sha-card-open { flex:1; min-width:0; display:flex; align-items:center; gap:12px; text-align:left; padding:11px 14px; background:none; border:0; color:inherit; font:inherit; cursor:pointer; }
+.sha-card-x { flex:none; width:46px; border:0; border-left:1px solid var(--line); background:none; color:var(--ink-3); font-size:21px; line-height:1; cursor:pointer; transition:color .12s, background .12s; }
+.sha-card-x:hover { color:var(--ink); background:var(--paper-2); }
+.home-shared .sh-meta { color:var(--ink-2); }
 /* New-message alert pinned to the very top of Home - a message from a contact is
    usually time-sensitive, so it leads. Taps through to the chat. (Robin, 2026-10-14.) */
 .home-msgalert { display:flex; align-items:center; gap:13px; width:100%; text-align:left; padding:14px 18px; margin:0 0 16px; border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line)); border-radius:16px; background:linear-gradient(158deg, color-mix(in srgb,var(--accent) 13%,var(--card)), var(--card) 66%); box-shadow:var(--shadow); cursor:pointer; transition:transform .1s, box-shadow .12s, border-color .12s; }

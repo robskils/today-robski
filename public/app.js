@@ -3037,6 +3037,7 @@ function chatInsertEmoji(ch) {
   const pos = s + ch.length;
   try { inp.setSelectionRange(pos, pos); } catch {}
   inp.focus();
+  chatGrow(inp);
 }
 function renderChat() {
   let el = document.getElementById('chat'); if (!el) { el = document.createElement('div'); el.id = 'chat'; document.body.appendChild(el); }
@@ -3044,7 +3045,7 @@ function renderChat() {
   el.innerHTML = `<div class="chat-bg" data-chat-close></div><div class="chat-panel">
     <div class="chat-head"><span class="chat-title">${esc(c.name)}</span><button class="chat-x" data-chat-close title="Close">×</button></div>
     <div class="chat-msgs" id="chat-msgs"></div>
-    <form class="chat-form" id="chat-form"><div class="chat-emojis" id="chat-emojis" hidden>${chatEmojiPanelHtml()}</div><button class="chat-emoji" type="button" data-chat-emoji aria-label="Insert emoji" title="Emoji">🙂</button><input class="chat-input" id="chat-input" placeholder="Message ${esc(c.name)}…" autocomplete="off"><button class="chat-send" type="submit">Send</button></form>
+    <form class="chat-form" id="chat-form"><div class="chat-emojis" id="chat-emojis" hidden>${chatEmojiPanelHtml()}</div><button class="chat-emoji" type="button" data-chat-emoji aria-label="Insert emoji" title="Emoji">🙂</button><textarea class="chat-input" id="chat-input" rows="1" placeholder="Message ${esc(c.name)}…" autocomplete="off"></textarea><button class="chat-send" type="submit">Send</button></form>
   </div>`;
   renderChatMessages();
   const f = document.getElementById('chat-form'); if (f) f.addEventListener('submit', sendChat);
@@ -3070,10 +3071,29 @@ function renderChat() {
       else lastTap = { id, t: now };
     });
   }
+  // The box grows with what you type (wrapping onto new lines, like WhatsApp)
+  // instead of running off the side. Enter sends on a desktop (Shift+Enter makes
+  // a line); on a touch keyboard Enter makes a line and the Send button sends.
+  const inp = document.getElementById('chat-input');
+  if (inp) {
+    inp.addEventListener('input', () => chatGrow(inp));
+    inp.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && !ev.shiftKey && !window.matchMedia('(pointer: coarse)').matches) { ev.preventDefault(); sendChat(); }
+    });
+    chatGrow(inp);
+  }
   // Focus the box on a desktop, but never on a phone: focusing raises the keyboard
   // over the conversation before you've had a chance to read a word of it.
-  const inp = document.getElementById('chat-input');
   if (inp && !window.matchMedia('(max-width:820px)').matches) inp.focus();
+}
+// Size the chat box to its content, up to a few lines, then it scrolls. Adds the
+// border back (box-sizing is border-box, so scrollHeight leaves it out).
+function chatGrow(el) {
+  el = el || document.getElementById('chat-input'); if (!el) return;
+  el.style.height = 'auto';
+  const cs = getComputedStyle(el);
+  const border = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  el.style.height = Math.min(el.scrollHeight + border, 132) + 'px';
 }
 // One message's classes + inner HTML, shared by the full render and the in-place
 // reaction update below so the two markups can never drift apart.
@@ -3153,6 +3173,7 @@ async function sendChat(e) {
   const inp = document.getElementById('chat-input'); const body = (inp && inp.value || '').trim(); if (!body || !state.chat) return;
   const to = state.chat.with;
   inp.value = '';
+  chatGrow(inp);            // back to a single line now it's empty
   chatEmojiToggle(false);   // tuck the picker away once a message is on its way
   // Show it immediately. A phone on a weak signal takes seconds to round-trip,
   // and a message that vanishes on send reads as a broken app - people retype it
@@ -3171,7 +3192,7 @@ async function sendChat(e) {
       state.chat.messages = state.chat.messages.filter((m) => m !== pending);
       renderChatMessages();
       const box = document.getElementById('chat-input');
-      if (box && !box.value.trim()) { box.value = body; box.focus(); }
+      if (box && !box.value.trim()) { box.value = body; box.focus(); chatGrow(box); }
     }
     toast(err.message || 'Message not sent - it is back in the box.');
   }
@@ -5110,7 +5131,7 @@ async function openHome() {
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Life Spaces/pages shared WITH me surface front and centre - a share you shouldn't
   // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
-  api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; state.sharesDismissed = r.dismissed || []; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
   if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // What others have done in lifespaces you share - surfaced on the feed. Mark seen so
@@ -6283,18 +6304,23 @@ function homeInvitesHtml() {
 function homeSharedAlertHtml() {
   const items = (state.sharedItems || []);
   const seen = state.sharesSeen || '';
-  const fresh = items.filter((i) => i.shared_at && String(i.shared_at) > seen);
+  const dismissed = new Set((state.sharesDismissed || []).map(String));
+  // Each card carries its own ×. Dismissing drops just that one; when the last is
+  // cleared the whole section falls away on its own. (Robin, 2026-10-29.)
+  const fresh = items.filter((i) => i.shared_at && String(i.shared_at) > seen && !dismissed.has(String(i.id)));
   if (!fresh.length) return '';
-  const rows = fresh.slice(0, 6).map((s) => {
+  const rows = fresh.slice(0, 8).map((s) => {
     const who = esc(s.owner || 'Someone');
     const ic = s.kind === 'task' ? '✓' : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤';
     const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
-    return `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+    return `<div class="sha-card">
+      <button class="sha-card-open" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span></button>
+      <button class="sha-card-x" data-shared-dismiss="${esc(s.id)}" title="Dismiss - I've seen this" aria-label="Dismiss">×</button>
+    </div>`;
   }).join('');
-  const more = fresh.length > 6 ? `<button class="sha-all" data-open-daybook>See all ${fresh.length} on LifeFold →</button>` : '';
   return `<section class="home-sec home-sec-card home-shared">
-    <div class="home-sec-h">✦ Shared with you<span class="muted">${fresh.length}</span><button class="home-shared-x" data-shared-seen title="Clear - I've seen these">×</button></div>
-    ${rows}${more}
+    <div class="home-sec-h">✦ Shared with you<span class="muted">${fresh.length}</span></div>
+    ${rows}
   </section>`;
 }
 // What others have done in lifespaces you share - a feed on Home. Each row taps
@@ -21765,7 +21791,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-messages-page]')) { openMessagesPage().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
-  if (t.closest('[data-shared-seen]')) { state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST' }).catch(() => {}); return; }
+  { const dz = t.closest('[data-shared-dismiss]'); if (dz) { const id = dz.getAttribute('data-shared-dismiss'); const arr = state.sharesDismissed = (state.sharesDismissed || []); if (!arr.map(String).includes(String(id))) arr.push(id); renderHome(); api('/api/shared/dismiss', { method: 'POST', body: JSON.stringify({ id }) }).catch(() => {}); return; } }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }

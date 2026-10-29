@@ -5329,11 +5329,20 @@ export default {
       if (path === '/api/search' && request.method === 'GET') return searchBlocks(request, env, url);
       if (path === '/api/search/expand' && request.method === 'POST') return searchExpand(request, env, json, err);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
-      if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; return json(sw, request); }
+      if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; let dz = []; try { dz = JSON.parse((await getSetting(env, 'shares_dismissed')) || '[]'); } catch {} sw.dismissed = Array.isArray(dz) ? dz : []; return json(sw, request); }
       if (path === '/api/shared/mine' && request.method === 'GET') return json(await sharedByMe(env), request);
       // Mark folio/page shares seen, so Home's "shared with you" alert clears the
       // new flag once you've acknowledged them (mirrors the folio feed). (Robin.)
       if (path === '/api/shared/seen' && request.method === 'POST') { await setSetting(env, 'shares_seen', new Date().toISOString()); return json({ ok: true }, request); }
+      // Dismiss ONE shared-with-you card from Home's alert (per-card ×). The id is
+      // kept in a small list so it stays gone; the section empties as you clear
+      // them and then disappears on its own. (Robin, 2026-10-29.)
+      if (path === '/api/shared/dismiss' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const id = b && b.id != null ? String(b.id) : '';
+        if (id) { let arr = []; try { arr = JSON.parse((await getSetting(env, 'shares_dismissed')) || '[]'); } catch {} if (!Array.isArray(arr)) arr = []; if (!arr.map(String).includes(id)) arr.push(id); if (arr.length > 500) arr = arr.slice(-500); await setSetting(env, 'shares_dismissed', JSON.stringify(arr)); }
+        return json({ ok: true }, request);
+      }
       // Assigning a task to a friend (Friends phase 3b).
       if (path === '/api/assignments' && request.method === 'GET') return json(await myAssignments(env), request);
       if (path === '/api/assignments/accept' && request.method === 'POST') { const b = await request.json().catch(() => ({})); try { return json(await acceptAssignment(env, b.taskId), request); } catch (e) { return err(e.message, request, 400); } }
