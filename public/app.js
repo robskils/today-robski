@@ -9551,7 +9551,15 @@ function renderArea() {
   const hlQuotes = (visionHl && visionSnip) ? visionHighlights(visionSnip) : [];
   const hlHtml = hlQuotes.length ? `<div class="vision-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
   const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
-  const visionBodyHtml = `<div class="area-vg">${hlHtml}${visionText}${hlToggle}</div>`;
+  // Like the Goals tool: once there's a highlight to show, the full editable text
+  // collapses behind "Edit", so you just see the highlighted bits; expand to tweak
+  // the words. Only for the owner (a viewer always sees whatever text is there).
+  // (Robin, 2026-10-29.)
+  const hasHl = !!hlHtml;
+  const vExpanded = visionEditOpen(area.id);
+  const showText = !canEditArea || !hasHl || vExpanded;
+  const editTog = (hasHl && canEditArea && visionSnip) ? `<button class="gv-edit-tog" data-vision-edit="${area.id}">${vExpanded ? '▾ Hide the full text' : '✎ Edit the vision text'}</button>` : '';
+  const visionBodyHtml = `<div class="area-vg">${hlHtml}<div class="gv-togs">${hlToggle}${editTog}</div>${showText ? visionText : ''}</div>`;
   const goalsBody = (activeGoals.length ? `<div class="goal-grid">${activeGoals.map((g) => goalCardMini(g)).join('')}</div>` : (canEditArea ? '' : '<div class="home-empty">No goals yet.</div>'))
     + (canEditArea ? `<button class="adc-addgoal" data-area-add-goal>+ ${activeGoals.length ? 'Add another goal' : 'Add a goal'}</button>` : '');
   // The page has two parts. The TOP changes with the selected tab (Vision / Goals /
@@ -10344,26 +10352,36 @@ function openAreaColor() {
 // public image store, returning a permanent URL to persist on the lifespace. (Robin:
 // upload a cover from your computer.)
 async function coverUpload(file) {
-  // iPhone photos arrive as HEIC, which no browser canvas can decode - convert to
-  // JPEG via the shared decoder first, exactly like inline images do. Without this
-  // the upload silently failed on every iPhone photo. (Robin, 2026-10-29.)
+  // A photo chosen from the macOS/iOS Photos library is a LAZY handle the OS is
+  // still materialising - decoding it or streaming it to fetch directly fails
+  // opaquely ("Failed to fetch" / "Could not read"). So read the bytes up front to
+  // force materialisation (this is what the attachment path does too), work from a
+  // solid in-memory blob, and convert HEIC (iPhone photos) to JPEG. Without the
+  // up-front read, uploading a cover from Photos just didn't work. (Robin,
+  // 2026-10-29: add a cover photo from Photos on the MacBook.)
+  let buf;
+  try { buf = await file.arrayBuffer(); }
+  catch { throw new Error("Couldn't read that photo. In Photos, drag it to your desktop (or File › Export), then upload that copy."); }
+  if (!buf || !buf.byteLength) throw new Error('That photo came through empty. Export it from Photos first, then upload the copy.');
+  let srcBlob = new Blob([buf], { type: file.type || '' });
   if (isHeic(file)) {
     const heic2any = await loadHeicDecoder();
-    const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-    const jb = Array.isArray(out) ? out[0] : out;
-    file = new File([jb], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+    const out = await heic2any({ blob: srcBlob, toType: 'image/jpeg', quality: 0.85 });
+    srcBlob = Array.isArray(out) ? out[0] : out;
   }
-  if (!isImgType(file.type)) throw new Error('Please choose an image');
+  // Don't gate on MIME type here - a Photos pick can arrive with an empty type.
+  // We have the bytes; try to decode them. If it isn't a readable image, the
+  // decode fails below with a clear message.
   let objUrl, bmp;
   try {
-    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
-    if (!bmp) { objUrl = URL.createObjectURL(file); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Could not read that image')); im.src = objUrl; }); }
-    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error('Could not read that image');
+    bmp = await createImageBitmap(srcBlob, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { objUrl = URL.createObjectURL(srcBlob); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("Couldn't read that photo - try another, or export it from Photos first.")); im.src = objUrl; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error("Couldn't read that photo - try another, or export it from Photos first.");
     const MAX = 1600; const scale = Math.min(1, MAX / Math.max(w, h));
     const dw = Math.round(w * scale), dh = Math.round(h * scale);
     const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
     cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh); if (bmp.close) bmp.close();
-    const type = /png/i.test(file.type) ? 'image/png' : 'image/jpeg';
+    const type = /png/i.test(srcBlob.type || file.type || '') ? 'image/png' : 'image/jpeg';
     const blob = await new Promise((res) => cv.toBlob(res, type, 0.85));
     if (!blob) throw new Error('Could not process that image');
     const res = await fetch(`/api/mail/sig-img?type=${encodeURIComponent(type)}`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: blob });
@@ -10428,7 +10446,9 @@ function openAreaCover() {
   };
   const handleCoverFile = async (f) => {
     if (!f) return;
-    if (!isImgType(f.type) && !isHeic(f)) { toast('Please choose an image'); return; }
+    // Only reject when the type is present AND clearly not an image - a Photos pick
+    // can arrive with an empty type, and coverUpload decodes the bytes to confirm.
+    if (f.type && !isImgType(f.type) && !isHeic(f)) { toast('Please choose an image'); return; }
     results.innerHTML = `<div class="cv-hint">${isHeic(f) ? 'Preparing photo…' : 'Uploading…'}</div>`;
     try { const u = await coverUpload(f); apply({ src: 'upload', url: u }); }
     catch (err) { results.innerHTML = `<div class="cv-hint">${esc(err.message || 'Upload failed')}</div>`; }
@@ -17783,7 +17803,9 @@ function toggleGoalArea(id) {
 function visionEditOpen(id) { try { const c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); return Array.isArray(c) && c.includes(id); } catch { return false; } }
 function toggleVisionEdit(id) {
   try { let c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.vedit', JSON.stringify(c)); } catch {}
-  renderGoals();
+  // Shared by the Goals page and a Life Space's own Vision - re-render whichever
+  // is on screen. (Robin, 2026-10-29.)
+  if (state.view && state.view.type === 'area') renderArea(); else renderGoals();
 }
 // Any Life Space that doesn't need a vision + goals can be closed off the Goals
 // page (×), leaving only the ones that matter; restored from the strip at the
