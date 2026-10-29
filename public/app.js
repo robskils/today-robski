@@ -10495,9 +10495,12 @@ function gcalBarHtml(ctx) {
       : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your LifeFold ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
   } else if (acct && acct.isOwner) {
     // The owner's main calendar runs on the shared connection (env token), not a
-    // member link, so gcalStatus never flags it - name it as connected here so
-    // Settings > Calendar leads with what's already linked. (Robin, 2026-10-29.)
-    primary = `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected</span></div>`;
+    // member link. Name the address it reads, and offer to pause it (the token
+    // stays, so reconnecting is instant). (Robin, 2026-10-29.)
+    const em = s.ownerEmail ? ` · ${esc(s.ownerEmail)}` : '';
+    primary = s.ownerOff
+      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - LifeFold isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
+      : `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${em}</span><button class="ghost gcal-x" data-gcal-owner-pause>Disconnect</button></div>`;
   }
   // Additional connected calendars - for EVERYONE (owner included). Each is stored
   // as its own row (calendar_accounts), separate from the primary path above, so
@@ -10593,6 +10596,18 @@ async function gcalDisconnect() {
   if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in LifeFold.', { okLabel: 'Disconnect', danger: true }))) return;
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
+}
+// Owner pause/resume of the shared Workspace calendar (the env token stays, so a
+// resume is instant). Disconnecting asks first; resuming is a quiet one-tap.
+async function ownerGcalPause(off) {
+  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in LifeFold until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
+  try {
+    await api('/api/gcal/owner-pause', { method: 'POST', body: JSON.stringify({ off }) });
+    state.gcal = { ...(state.gcal || {}), ownerOff: off };
+    toast(off ? 'Google Calendar disconnected' : 'Google Calendar reconnected');
+    if (state.view && state.view.type === 'settings') renderSettings();
+    if (state.view && state.view.type === 'calendar') { renderCalendar(); loadCalendar(); }
+  } catch (e) { toast(e.message); }
 }
 function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
@@ -21664,7 +21679,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
   if (t.closest('[data-welcome-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.onbSeen = true; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {}); renderSettings(); return; }   // hide the Getting started card
   if (t.closest('[data-welcome-reinstate]')) { state.onbSeen = false; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {}); try { localStorage.setItem('lf_welcome_open', '1'); } catch {} renderSettings(); return; }   // bring the Getting started card back
-  if (t.closest('[data-open-getstarted]')) { openSettings('account'); return; }   // Home banner -> Settings Getting started
+  if (t.closest('[data-open-getstarted]')) { try { localStorage.setItem('lf_welcome_open', '1'); } catch {} openSettings('account'); return; }   // Home banner -> Settings, with Getting started open
   { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openAreasList(); return; } }
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
@@ -22052,6 +22067,8 @@ document.addEventListener('click', (e) => {
   }
   if (t.closest('[data-gcal-connect]')) { gcalConnect(); return; }
   if (t.closest('[data-gcal-disconnect]')) { gcalDisconnect(); return; }
+  if (t.closest('[data-gcal-owner-pause]')) { ownerGcalPause(true); return; }
+  if (t.closest('[data-gcal-owner-resume]')) { ownerGcalPause(false); return; }
   if (t.closest('[data-cals-hide]')) { try { localStorage.setItem('lf_cals_hidden', '1'); } catch {} toast('Tucked away - find it in Settings › Calendar'); renderCalendar(); return; }
   if (t.closest('[data-gcal-add]')) { gcalConnectAdd(); return; }
   if (t.closest('[data-caldav-open]')) { caldavOpenForm(); return; }

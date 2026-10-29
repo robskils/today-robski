@@ -20,6 +20,10 @@ export const gcalStatus = (env) => ({
   available: gcalAvailable(env),
   connected: !!(env.user && env.user.gcal_refresh_enc),
   email: (env.user && env.user.gcal_email) || null,
+  // The owner reads the shared Workspace calendar on the env token; surface which
+  // address that is, so Settings > Calendar can name it (and offer to pause it).
+  ownerConnected: Number(env.uid) === 1 && !!env.GOOGLE_REFRESH_TOKEN,
+  ownerEmail: (Number(env.uid) === 1 && env.GOOGLE_REFRESH_TOKEN) ? (env.GOOGLE_CALENDAR_ID || null) : null,
 });
 
 // The consent URL to send the member to. `prompt=consent` + `access_type=offline`

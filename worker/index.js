@@ -198,6 +198,8 @@ async function googleCtx(env, uid = env.uid) {
   // never shadow the working owner path - that swap is what made the owner's
   // events vanish behind a google_403.
   if (uid === 1 && env.GOOGLE_REFRESH_TOKEN) {
+    // The owner can pause the shared calendar from Settings - then read native only.
+    if ((await getSetting(env, 'gcal_owner_off', 1).catch(() => null)) === '1') return null;
     return { token: await googleAccessToken(env), calId: env.GOOGLE_CALENDAR_ID || 'primary' };
   }
   if (env.user && env.user.gcal_refresh_enc && gcalAvailable(env)) {
@@ -4805,12 +4807,23 @@ export default {
       env = { ...env, uid: currentUser.id, user: currentUser, tz: validTz(request.headers.get('X-Tz')) };
 
       // Per-member Google Calendar connect.
-      if (path === '/api/gcal/status' && request.method === 'GET') return json(gcalStatus(env), request);
+      if (path === '/api/gcal/status' && request.method === 'GET') {
+        const st = gcalStatus(env);
+        if (st.ownerConnected) st.ownerOff = (await getSetting(env, 'gcal_owner_off', 1).catch(() => null)) === '1';
+        return json(st, request);
+      }
       if (path === '/api/gcal/connect' && request.method === 'GET') {
         try { return json({ url: await gcalConnectUrl(env) }, request); } catch (e) { return err(e.message, request, 503); }
       }
       if (path === '/api/gcal/disconnect' && request.method === 'POST') {
         await gcalDisconnect(env); return json({ ok: true }, request);
+      }
+      // The owner pauses/resumes the shared Workspace calendar (a setting; the env
+      // token stays, so resuming is instant). Owner only. (Robin, 2026-10-29.)
+      if (path === '/api/gcal/owner-pause' && request.method === 'POST' && Number(env.uid) === 1) {
+        let b = {}; try { b = await request.json(); } catch {}
+        await setSetting(env, 'gcal_owner_off', b && b.off ? '1' : '0');
+        return json({ ok: true, off: !!(b && b.off) }, request);
       }
       // Additional connected calendars (extra Google accounts, phase 1).
       if (path === '/api/gcal/accounts' && request.method === 'GET') return json({ accounts: await listCalendarAccounts(env) }, request);
