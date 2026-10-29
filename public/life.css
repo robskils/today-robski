@@ -7006,12 +7006,11 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
    breadcrumb (--mail-crumbh), with a little padding so the icons stay put and never
    scroll up to touch the crumb bar. (Robin, 2026-10-29.) */
 @media (max-width:820px){
-  .mail-reader-head { top:calc(var(--navh,56px) + var(--mail-crumbh,46px)); padding-top:10px; }
-  /* The breadcrumb's own 16px margin-bottom stacked on the toolbar's padding-top
-     opened a big empty strip under the crumb. In the reader, drop that margin so
-     the toolbar buttons sit snug under the breadcrumb - just the 10px padding
-     above them, no gap. (Robin, 2026-10-29.) */
-  body.mail-reading .note-crumbs { margin-bottom:0; }
+  /* When reading on mobile the nav is hidden and the breadcrumb pins at top:0,
+     so the toolbar must stick directly BELOW the crumb - at just the crumb's own
+     height, NOT navh+crumbh. The stray navh pinned it a whole nav-height too low
+     and floated it below the crumb on scroll (the "big gap"). (Robin, 2026-10-29.) */
+  .mail-reader-head { top:var(--mail-crumbh,46px); }
 }
 /* Compact, consistent icon buttons for the reader toolbar. */
 .mail-act-ic { display:inline-flex; align-items:center; justify-content:center; padding:8px; min-width:38px; height:38px; color:var(--ink-2); }
@@ -7089,11 +7088,14 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
      Back lives in the breadcrumbs as it does everywhere else. (Robin, 2026-10-06.) */
   /* -20px top cancels the pane's 20px top padding so the bar is FLUSH to the top of
      the screen (the nav is hidden here), not floating with a gap above it. (Robin.) */
-  body.mail-reading .note-crumbs { position:sticky; top:0; z-index:33; margin:-20px -18px 12px; padding:9px 14px;
+  body.mail-reading .note-crumbs { position:sticky; top:0; z-index:33; margin:-20px -18px 0; padding:9px 14px;
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
   body.mail-reading .mail-reader-head .mail-back { display:none; }
+  /* 12px top padding is the "little bit of elegant padding" above the action icons
+     Robin asked for; the crumb above now has no bottom margin, so this is the ONLY
+     space between the breadcrumb and the buttons - snug, no gap. */
   .mail-reader-head { gap:6px 4px; flex-wrap:wrap;
-    margin:0 -18px; padding:9px 14px; background:var(--card); border-bottom:1px solid var(--line); }
+    margin:0 -18px; padding:12px 14px 10px; background:var(--card); border-bottom:1px solid var(--line); }
   /* The action bar drops to its own full-width row and WRAPS, so every action
      (reply, delete, file-in-a-life-area, make-task…) is visible - it used to
      scroll sideways with a hidden scrollbar, so the later icons vanished. */
