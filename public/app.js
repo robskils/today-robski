@@ -24354,6 +24354,28 @@ async function promptCustomDuration(curMin) {
 // reminder day is stored in props.snooze (due minus N), so the existing surfacing
 // and "hide until" machinery keeps working. No email, no text. (Robin, 2026-10-29.)
 function taskReminderDay(p) { return (p.due && p.remindDays != null) ? addDaysStr(p.due, -Math.max(0, Number(p.remindDays) || 0)) : null; }
+// The whole scheduling block. The Due Date leads; only once it's set do Repeat and
+// Reminder unfold beneath it, nested with a left rule so they clearly hang off the
+// date. No due date = nothing to schedule, so the task stays simple. (Robin, 2026-10-29.)
+function taskScheduleHtml(t) {
+  const p = t.props; const id = t.id;
+  const hasDue = !!p.due;
+  const remindOn = p.remindDays != null;
+  const days = remindOn ? p.remindDays : 1;
+  const remindDay = taskReminderDay(p);
+  const sub = hasDue ? `<div class="ts-sub">
+      <div class="ts-row"><span class="ts-row-l">Repeat</span><select class="sel ts-sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      ${p.repeat && !p.kit ? `<div class="ts-row ts-row-in"><span class="ts-row-l">How many times<small>${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done` : 'blank = forever'}</small></span><input type="number" min="1" max="999" inputmode="numeric" class="sel ts-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞"></div>` : ''}
+      <label class="ts-row ts-toggle"><span class="ts-row-l">Remind me</span><input type="checkbox" data-remind-toggle="${id}" ${remindOn ? 'checked' : ''}></label>
+      ${remindOn ? `<div class="ts-row ts-row-in"><span class="ts-row-l">Days before<small>0 = on the day</small></span><input type="number" min="0" max="365" inputmode="numeric" class="sel ts-num" data-remind-days="${id}" value="${days}"></div>
+      ${remindDay ? `<p class="ts-hint">A nudge in the app on <b>${esc(dpLabel(remindDay))}</b>, and in My LifeFold.</p>` : ''}
+      <label class="ts-check"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide from my Tasks until the reminder</span></label>` : ''}
+    </div>` : '<p class="ts-empty">Add a due date and you can set a repeat and a reminder.</p>';
+  return `<div class="task-sched ${hasDue ? 'has-due' : ''}">
+    <div class="ts-due"><span class="ts-due-ic" aria-hidden="true">📅</span><span class="ts-due-l">Due date</span><span class="ts-due-field">${dateFieldHtml('taskcard-due', p.due || '')}</span></div>
+    ${sub}
+  </div>`;
+}
 function taskSurfaceHtml(t) {
   const p = t.props; const id = t.id;
   const hasDue = !!p.due;
@@ -24413,15 +24435,14 @@ function renderTaskCard() {
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${durationOptionsHtml(t.props.duration)}</select></label>
-      <label class="tf-field"><span class="tf-label">Due Date</span>
-        ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
       <div class="tf-field"><span class="tf-label">Life Spaces</span>
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Status</span>
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
     </div>
     ${noteAliasesControl(t, 'task')}
-    <div class="tf-cardrow">${taskSurfaceHtml(t)}<div class="tf-cardcol">${t.sharedBy ? '' : blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}${taskRepeatHtml(t)}</div></div>
+    ${taskScheduleHtml(t)}
+    ${t.sharedBy ? '' : `<div class="tf-cardrow">${blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>`}
     <div class="task-lower">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
       ${taskEmailHtml(t)}

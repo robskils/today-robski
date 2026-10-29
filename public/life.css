@@ -3855,6 +3855,26 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .tf-cardrow { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; margin-top:18px; }
 .tf-cardrow > * { flex:1 1 300px; min-width:0; }
 .tf-cardrow .tf-surface { margin-top:0; }
+/* The scheduling block: Due Date leads, Repeat + Reminder nest beneath it with a
+   left rule so they read as hanging off the date. (Robin, 2026-10-29.) */
+.task-sched { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:15px 18px; }
+.task-sched.has-due { border-color:color-mix(in srgb,var(--accent) 32%,var(--line)); }
+.ts-due { display:flex; align-items:center; gap:11px; }
+.ts-due-ic { font-size:17px; line-height:1; }
+.ts-due-l { font-size:12.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.ts-due-field { margin-left:auto; }
+.ts-sub { margin:13px 0 2px; padding:4px 0 2px 16px; border-left:3px solid color-mix(in srgb,var(--accent) 40%,var(--line)); display:flex; flex-direction:column; gap:12px; }
+.ts-row { display:flex; align-items:center; gap:12px; }
+.ts-row-l { font-size:14.5px; color:var(--ink-2); display:flex; flex-direction:column; gap:1px; }
+.ts-row-l small { font-size:11.5px; color:var(--ink-3); }
+.ts-row .sel, .ts-row input[type=number], .ts-toggle input { margin-left:auto; }
+.ts-sel { flex:none; width:auto; max-width:210px; }
+.ts-num { flex:none; max-width:88px; }
+.ts-toggle { cursor:pointer; }
+.ts-hint { font-size:12.5px; color:var(--ink-3); margin:-2px 0 0; }
+.ts-hint b { color:var(--accent); font-weight:600; }
+.ts-check { display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--ink-2); cursor:pointer; }
+.ts-empty { font-size:13px; color:var(--ink-3); margin:12px 0 0; }
 .tf-cardcol { display:flex; flex-direction:column; gap:16px; min-width:0; }
 .tfs-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 6px; }
 /* Foldable card headers (Surface / Who can see this / Notes): click to collapse. */
