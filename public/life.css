@@ -898,6 +898,8 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .gc-prog .glist-bar { height:10px; border-radius:99px; }
 .gc-prog-done-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:16px; border-top:1px solid color-mix(in srgb,var(--c) 16%,var(--line)); }
 .goal-done-note { font-size:13px; color:var(--ink-3); }
+.gc-slide-hint { display:block; font-size:13px; color:var(--ink-3); margin-top:2px; }
+.gc-prog-slide .gc-pct { font-weight:700; color:var(--c); }
 /* The four connected panels (Tasks / Connected notes / Contacts / Links) as a
    tidy 2x2 of cards, each lifting a touch on hover and headed in the goal's hue. */
 .gc-conn-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; margin-top:20px; align-items:stretch; }

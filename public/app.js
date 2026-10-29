@@ -16750,12 +16750,12 @@ function horizonDateLabel(horizon, iso) {
 }
 function goalProgress(g) {
   const p = gp(g); if (p.status === 'done') return 1;
-  // A number goal computes its own progress from current/target. Everything else
-  // is "0% until done" UNLESS you've set a progress by hand (the slider on the
-  // goal card) - then your figure wins.
-  if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
+  // Goals are tracked by one 0-100% slider now (props.progress); your hand-set
+  // figure always wins. A legacy "number" goal with no slider figure yet still
+  // computes from current/target, so nothing jumps on migration. (Robin, 2026-10-29.)
   if (typeof p.progress === 'number' && !Number.isNaN(p.progress)) return Math.max(0, Math.min(1, p.progress / 100));
-  return 0;   // a "mark it done" goal is 0% until achieved
+  if (p.gtype === 'number') { const t = +p.target || 0, c = +p.current || 0; return t > 0 ? Math.max(0, Math.min(1, c / t)) : 0; }
+  return 0;
 }
 function goalMeasure(g) {
   const p = gp(g);
@@ -17604,19 +17604,11 @@ function reorderFocus(dragged, before) {
 function goalCardMini(g, drag) {
   const a = goalArea(g); const p = gp(g); const pct = Math.round(goalProgress(g) * 100);
   const active = (p.status || 'active') === 'active';
-  const isNumber = p.gtype === 'number';
-  // A number goal you set yourself (manual metric) is now grabbable too: drag the
-  // slider and the number fills in to match (round of pct × target). A number goal
-  // that COUNTS connected tasks/notes/events keeps a read-only bar - its figure is
-  // counted, not chosen. A "mark it done" (percent) goal slides as before.
-  const numManual = isNumber && (p.metric || 'manual') === 'manual';
-  const canSlide = active && !isNumber;
-  const barInner = (active && numManual)
-    ? `<div class="gc-bar"><i data-goalnum-fill="${g.id}" style="width:${pct}%"></i></div><input type="range" class="gc-slider" min="0" max="100" step="1" value="${pct}" data-goal-numslide="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set the number">`
-    : `<div class="gc-bar"><i style="width:${pct}%"></i></div>${canSlide ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set how far along this goal is">` : ''}`;
+  // One progress slider for every goal: drag along, all the way to 100% to achieve.
+  const barInner = `<div class="gc-bar"><i style="width:${pct}%"></i></div>${active ? `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag all the way to 100% to mark it achieved">` : ''}`;
   const bar = `<div class="gc-progress">
       <div class="gc-barwrap">${barInner}</div>
-      <span class="gc-pct"${(active && numManual) ? ` data-goalnum-pct="${g.id}"` : ''}>${pct}%</span>
+      <span class="gc-pct">${pct}%</span>
     </div>`;
   return `<div class="goal-card${privCls(g)}" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
     <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${privChip(g)}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
@@ -17636,11 +17628,14 @@ function findGoalById(id) {
 // and any list it sits in, persist to the block's props.
 function saveGoalProgress(id, pct) {
   const v = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
-  const apply = (g) => { if (g && g.id === id) { g.props = g.props || {}; g.props.progress = v; } };
+  // Dragging all the way to 100% marks it achieved; easing back below reopens it.
+  // The slider is the one control now, so it owns the status too. (Robin, 2026-10-29.)
+  const status = v >= 100 ? 'done' : 'active';
+  const apply = (g) => { if (g && g.id === id) { g.props = g.props || {}; g.props.progress = v; g.props.status = status; } };
   (state.goals || []).forEach(apply);
   if (state.area_open) (state.area_open.blocks || []).forEach(apply);
   if (state.goal_open) apply(state.goal_open.goal);
-  api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v } }) }).catch((e) => toast(e.message));
+  api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v, status } }) }).catch((e) => toast(e.message));
 }
 const goalsView = () => state.goalsView || (state.goalsView = (() => { try { return localStorage.getItem('life.goals.view') || 'areas'; } catch { return 'areas'; } })());
 function renderGoals() {
@@ -17698,15 +17693,10 @@ function goalsListBody() {
     const p = gp(g); const a = areaById(p.area); const pct = Math.round(goalProgress(g) * 100); const st = p.status || 'active';
     const measure = goalMeasure(g);
     const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
-    // Every row shows a slider circle so they read as one set. A "mark it done"
-    // active goal is grabbable (set progress without opening it); a number goal you
-    // set yourself is grabbable too (drag fills the number in); a COUNTED number
-    // goal and finished ones show the thumb at their computed spot, read-only.
-    const numManual = p.gtype === 'number' && (p.metric || 'manual') === 'manual';
-    const canSlide = st === 'active' && p.gtype !== 'number';
-    const slider = (st === 'active' && numManual)
-      ? `<input type="range" class="gc-slider glist-slider" min="0" max="100" step="1" value="${pct}" data-goal-numslide="${g.id}" aria-label="Progress: ${pct}%" title="Drag to set the number">`
-      : `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag to set how far along this goal is' : `${pct}% complete`}">`;
+    // Every row shows the one progress slider: active goals are grabbable (set how
+    // far along without opening), finished ones sit read-only at 100%. (Robin.)
+    const canSlide = st === 'active';
+    const slider = `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag all the way to 100% to mark it achieved' : `${pct}% complete`}">`;
     return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
       <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'Starred' : ''}">${p.focus ? '★' : ''}</span>
       <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure" data-goalnum-measure="${g.id}">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
@@ -17843,33 +17833,13 @@ function renderGoalCard() {
   const pctNum = Math.round(goalProgress(g) * 100);
   const dueLbl = p.targetDate ? dpLabel(p.targetDate) : ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)) : '');
   const doneN = gtasks.filter((t) => t.props && t.props.done).length;
-  // Progress front and centre: a number goal shows its bar + an inline "update"
-  // row; a simple goal shows the (liked) Mark-as-achieved button.
-  const unitLbl = metric === 'connected' ? ' connected' : (p.unit ? ` ${esc(p.unit)}` : '');
-  const metricEditRow = metric === 'manual'
-    ? `<div class="gc-prog-edit"><span class="gc-prog-l">${t('goal.update')}</span><input class="sel" id="gc-current" type="number" inputmode="decimal" value="${esc(p.current ?? '')}" placeholder="0"><span>of</span><input class="sel" id="gc-target" type="number" value="${esc(p.target ?? '')}" placeholder="100"><input class="sel gc-unit" id="gc-unit" value="${esc(p.unit || '')}" placeholder="unit"></div>`
-    : `<div class="gc-metric-auto">✓ Counts the tasks ticked off, notes and events connected to this goal.<span class="gc-metric-aim">Aiming for <input class="sel gc-mini-num" id="gc-target" type="number" min="1" value="${esc(p.target ?? '')}" placeholder="10">.</span></div>`;
-  // A "number I set" goal gets a draggable slider too: drag it and the number fills
-  // in to match its position (round of pct x target), so you needn't type it. Tasks/
-  // notes metrics stay a read-only bar - their number is counted, not chosen. (Robin.)
-  const numManual = metric === 'manual';
-  const numBar = numManual
-    ? `<span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i data-goalnum-fill="${g.id}" style="width:${pctNum}%"></i></span><input type="range" class="gc-slider" min="0" max="100" step="1" value="${pctNum}" data-goal-numslide="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along - the number fills in to match"></span>`
-    : `<div class="goal-bar gc-bar" style="--h:${hueOf(a)}"><i style="width:${pctNum}%"></i></div>`;
-  const trackbyRow = `<label class="gc-trackby"><span class="gc-trackby-l">How to track this</span><select class="sel gc-trackby-sel" id="goalcard-gtype">${GTYPES.map(([v, l]) => `<option value="${v}" ${gtype === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
-  const progressBlock = gtype === 'number'
-    ? `<div class="gc-prog">
-        <div class="gc-prog-nums"><span class="gc-prog-cur"><b data-goalnum-cur="${g.id}">${esc(p.current ?? 0)}</b> of ${esc(p.target ?? '—')}${unitLbl}</span><span class="gc-prog-pct" data-goalnum-pct="${g.id}">${pctNum}%</span></div>
-        ${numBar}
-        ${trackbyRow}
-        <div class="gc-metric-row"><span class="gc-metric-l">Measure by</span><select class="sel" id="gc-metric">${GMETRICS.map(([v, l]) => `<option value="${v}" ${metric === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-        ${metricEditRow}
-      </div>`
-    : `<div class="gc-prog gc-prog-slide gc-progress">
-        <div class="gc-prog-nums"><span class="gc-prog-cur">How far along</span><span class="gc-prog-pct gc-pct">${isDone ? '✓' : pctNum + '%'}</span></div>
-        <span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i style="width:${isDone ? 100 : pctNum}%"></i></span>${isDone ? '' : `<input type="range" class="gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag to set how far along this goal is">`}</span>
-        ${trackbyRow}
-        <div class="gc-prog-done-row"><button class="goal-donebtn ${isDone ? 'on' : ''}" data-goal-done="${g.id}">${isDone ? t('goal.achieved') : t('goal.markachieved')}</button><span class="goal-done-note">${isDone ? t('goal.nicelydone') : t('goal.tickwhen')}</span></div>
+  // One 0-100% slider is the whole of goal tracking now: drag it along, all the
+  // way to 100% to mark the goal achieved. No modes, no "mark as done" button, no
+  // number targets - the simplest thing that works. (Robin, 2026-10-29.)
+  const progressBlock = `<div class="gc-prog gc-prog-slide gc-progress">
+        <div class="gc-prog-nums"><span class="gc-prog-cur">How far along</span><span class="gc-prog-pct gc-pct">${isDone ? '✓ Achieved' : pctNum + '%'}</span></div>
+        <span class="glist-bar-wrap gc-slidebar" style="--h:${hueOf(a)}"><span class="glist-bar"><i style="width:${pctNum}%"></i></span><input type="range" class="gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%" title="Drag all the way to 100% to mark it achieved"></span>
+        <span class="gc-slide-hint">${isDone ? t('goal.nicelydone') : 'Drag to the end to mark it achieved.'}</span>
       </div>`;
   const focusMins = focusMinsFor('goal', g.id);
   // Preserve the title's focus + caret across a re-render (the viewers fetch, a
