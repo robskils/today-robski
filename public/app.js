@@ -6597,7 +6597,7 @@ function renderHome() {
           const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
           // drag to reorder how the sections stack on Home.
-          const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tap to show/hide · drag to reorder</span></summary><div class="hf-chips">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<button class="hf-chip ${on ? 'on' : ''}" data-home-feature="${s.k}" data-hf-id="${s.k}" aria-pressed="${on}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><span class="hf-state">${on ? '✓' : ''}</span></button>`; }).join('')}</div></details>` : '';
+          const featBar = order.length ? `<details class="home-features"${(state.home && state.home.featOpen) ? ' open' : ''}><summary class="hf-h" data-hf-toggle><span class="hf-chev">▸</span>Homepage sections<span class="hf-hint">tick the ones you want</span></summary><div class="hf-grid">${order.map((k) => { const s = avail.find((x) => x.k === k); const on = enabledSet.has(k); return `<label class="hf-item ${on ? 'on' : ''}"><span class="hf-ic">${s.ic}</span><span class="hf-t">${esc(s.label)}</span><input type="checkbox" class="hf-cb" data-home-feature="${s.k}" ${on ? 'checked' : ''}></label>`; }).join('')}</div></details>` : '';
           homeFeatBar = featBar;   // render it at the very bottom of Home, not here
           return `<section class="home-lead">${blocks || '<div class="home-empty" style="padding:20px 0">Nothing on your Home yet - turn a section on below.</div>'}</section>`;
         })()}</div>
@@ -21306,6 +21306,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-ai-feature]')) { const key = e.target.dataset.aiFeature; const on = e.target.checked; if (state.account) { state.account.aiFeatures = state.account.aiFeatures || {}; if (on) delete state.account.aiFeatures[key]; else state.account.aiFeatures[key] = false; saveAccount({ aiFeatures: state.account.aiFeatures }); } const lbl = (AI_USES.find((u) => u[0] === key) || [])[1] || 'That'; toast(on ? `${lbl} AI on` : `${lbl} AI off`); renderSettings(); return; }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
+  if (e.target.matches('[data-home-feature]')) { state.home = state.home || {}; state.home.featOpen = true; homeMainToggle(e.target.dataset.homeFeature); return; }   // tick a Home section on/off
   if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
   if (e.target.matches('[data-people-toggle]')) { const on = e.target.checked; try { localStorage.setItem('life.home.people', on ? '1' : '0'); } catch {} api('/api/kv/home_people', { method: 'PUT', body: JSON.stringify({ value: on ? '1' : '0' }) }).catch(() => {}); toast(on ? 'People shown on Home' : 'People hidden from Home'); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
@@ -21425,7 +21426,6 @@ document.addEventListener('click', (e) => {
   // The Homepage-sections panel is controlled: we manage its open state so a chip
   // toggle or a reorder (both re-render Home) doesn't snap it shut.
   { const hft = t.closest('[data-hf-toggle]'); if (hft) { e.preventDefault(); state.home = state.home || {}; state.home.featOpen = !state.home.featOpen; renderHome(); return; } }
-  { const hf = t.closest('[data-home-feature]'); if (hf) { if (Date.now() - hfSuppressClick < 400) return; state.home = state.home || {}; state.home.featOpen = true; homeMainToggle(hf.dataset.homeFeature); return; } }   // show/hide a Home section (a drag won't toggle); keep the panel open
   // Click a Home section header (not a button/link inside it) to fold/unfold it.
   { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day], [data-lead-pgrip]')) { if (Date.now() - suppressLeadClick < 400) return; toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }

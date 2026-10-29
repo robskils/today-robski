@@ -5257,16 +5257,17 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .hf-chev { font-size:10px; transition:transform .15s; }
 .home-features[open] .hf-chev { transform:rotate(90deg); }
 .hf-hint { text-transform:none; letter-spacing:0; font-weight:400; font-size:12.5px; color:var(--ink-3); opacity:.85; margin-left:auto; }
-.hf-chips { display:flex; flex-direction:column; gap:8px; padding:2px 15px 15px; }
-.hf-chip { display:flex; width:100%; align-items:center; gap:9px; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--paper-2); color:var(--ink-3); font-size:15px; font-weight:500; cursor:grab; touch-action:none; opacity:.75; transition:background .12s,border-color .12s,color .12s,opacity .12s; text-align:left; }
-.hf-chip::before { content:'⠿'; flex:none; color:var(--ink-3); opacity:.6; font-size:13px; }
-.hf-chip .hf-state { margin-left:auto; }
-.hf-chip.hf-dragging { cursor:grabbing; opacity:.97; box-shadow:0 10px 24px -10px rgba(0,0,0,.45); position:relative; z-index:5; }
-.hf-chip.hf-drop { box-shadow:0 -3px 0 -1px var(--accent); }
-.hf-chip .hf-ic { font-size:15px; line-height:1; }
-.hf-chip.on { background:color-mix(in srgb,var(--accent) 12%,var(--card)); border-color:color-mix(in srgb,var(--accent) 45%,transparent); color:var(--accent); opacity:1; }
-.hf-chip .hf-state { color:var(--accent); font-weight:700; margin-left:1px; }
-.hf-chip:hover { border-color:var(--accent); color:var(--accent); opacity:1; }
+/* Static tick-box cards, two per row: just switch a Home section on or off. No
+   reordering (it never really worked, and isn't wanted). (Robin, 2026-10-29.) */
+.hf-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:2px 15px 15px; }
+.hf-item { display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink-2); font-size:15px; font-weight:500; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
+.hf-item:hover { border-color:var(--line-2); }
+.hf-item.on { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); background:color-mix(in srgb,var(--accent) 8%,var(--card)); color:var(--ink); }
+.hf-item .hf-ic { font-size:15px; line-height:1; flex:none; color:var(--ink-3); }
+.hf-item.on .hf-ic { color:var(--accent); }
+.hf-item .hf-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hf-item .hf-cb { width:20px; height:20px; accent-color:var(--accent); flex:none; cursor:pointer; }
+@media (max-width:420px){ .hf-grid { grid-template-columns:1fr; } }
 .home-secondary { margin-top:4px; }
 
 
