@@ -5384,9 +5384,13 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
      everywhere by the base rule). */
   .home .home-mgrip { display:none; }
   .home .home-mdrag-h { cursor:grab; }
-  /* Collapsed cards are a FIXED identical height, whatever the title or icons. */
-  .lead-block.lead-collapsed, .home-sec-card.home-sec-shut { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
-  .lead-block.lead-collapsed .lead-h, .home-sec-card.home-sec-shut > .home-sec-h { width:100%; min-height:0; margin:0; }
+  /* Collapsed LEAD blocks are a FIXED identical height, whatever the title/icons. */
+  .lead-block.lead-collapsed { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
+  .lead-block.lead-collapsed .lead-h { width:100%; min-height:0; margin:0; }
+  /* Collapsed CARD sections (Notepad, People, Starred…) keep the header exactly
+     where it sits when open - base padding + margin-bottom:0 already apply when
+     shut - so a tap just folds the body away underneath and the header never
+     jumps up and down. (Robin, 2026-10-29.) */
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* The discover strip, keyboard-shortcuts link and the mark button are chrome
      that belongs at the very bottom - they now live inside .home-scroll, so
