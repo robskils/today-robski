@@ -26256,6 +26256,9 @@ function showRequired2fa() {
   // Ask the browser not to evict our storage - the session token lives there, and
   // eviction on close is what signed people out on reopen. Best-effort. (Robin.)
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
+  // Mirror an already-stored token into the cookie (and back) on every boot, so
+  // existing sessions - saved before the cookie backup existed - are protected too.
+  try { const _tk = token(); if (_tk) saveToken(_tk); } catch {}
   // Per-user subdomains are retired - everyone lives at lifebook.fyi now. If this is
   // an old <sub>.daybook.fyi address, hand the session straight over to the apex app,
   // carrying the token in the fragment (consumed just below) so existing bookmarks
