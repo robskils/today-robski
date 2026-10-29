@@ -6725,7 +6725,7 @@ function renderHome() {
           // Two single-tap capture tiles - take a photo / scan, or attach a file -
           // that drop straight into a note (new, or one you pick). Only where Notes
           // is on, since that's where they land. (Robin, popular demand, 2026-10-29.)
-          const cap = modOn('notes') ? `<span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="photo" title="Take a photo or scan a document"><span class="hqa-ic">📷</span><span class="hqa-l">Photo</span></button></span><span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="file" title="Attach a file"><span class="hqa-ic">📎</span><span class="hqa-l">Attach</span></button></span>` : '';
+          const cap = modOn('notes') ? `<span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="camera" title="Open the camera to take a photo or scan a document"><span class="hqa-ic">📷</span><span class="hqa-l">Camera</span></button></span><span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="file" title="Attach a file or photo"><span class="hqa-ic">📎</span><span class="hqa-l">Attach</span></button></span>` : '';
           return tiles + cap;
         })()}</div>
       </div>
@@ -25186,11 +25186,21 @@ function pickInlineImage() {
 // 2026-10-29.)
 function homeCapture(mode) {
   const inp = document.createElement('input');
-  inp.type = 'file'; inp.hidden = true; inp.multiple = true;
-  if (mode === 'photo') inp.accept = 'image/*';
+  inp.type = 'file'; inp.hidden = true;
+  if (mode === 'camera') {
+    // Open the camera straight away (rear-facing) to shoot a photo or a document -
+    // NOT the photo library; attaching an existing photo is the Attach tile's job.
+    // `capture` forces a single shot, so no `multiple` here. (Robin, 2026-10-29.)
+    inp.accept = 'image/*';
+    inp.setAttribute('capture', 'environment');
+  } else {
+    inp.multiple = true;   // Attach: any file(s) from the library/Files
+  }
   inp.addEventListener('change', () => {
     const files = Array.from(inp.files || []); inp.remove();
-    if (files.length) { state.capture = { files, mode, picking: false, q: '', notes: null }; renderCaptureSheet(); }
+    // A camera shot is still an image, so it rides the same 'photo' flow (inline in
+    // the note); 'file' keeps its own label and attachment handling.
+    if (files.length) { state.capture = { files, mode: mode === 'camera' ? 'photo' : mode, picking: false, q: '', notes: null }; renderCaptureSheet(); }
   });
   document.body.appendChild(inp); inp.click();
 }
