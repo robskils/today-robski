@@ -201,6 +201,7 @@ button { cursor:pointer; background:none; border:0; }
 .atf-surface { display:flex; flex-direction:column; gap:12px; padding:14px 15px; border:1px solid var(--line); border-radius:14px; background:var(--paper); }
 .atf-surface-row { display:flex; align-items:center; gap:11px; flex-wrap:wrap; }
 .atf-surface-lbl { flex:none; display:inline-flex; align-items:center; gap:7px; font-size:12.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
+.atf-days { flex:none; max-width:92px; }
 .atf-surface-ic { color:var(--accent); font-size:15px; }
 .atf-surface-row .date-field { max-width:none; }
 .atf-surface-note { font-size:13px; color:var(--ink-3); }

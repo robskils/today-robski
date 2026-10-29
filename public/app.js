@@ -15392,11 +15392,12 @@ function renderTasks() {
         <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
         <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${durationOptionsHtml((state.taskDraft && state.taskDraft.dur) || '')}</select></label>
         <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-        <label class="atf" id="task-repeatfrom-wrap" hidden><span>${t('task.nextdue')}</span><select id="task-repeatfrom" class="sel"><option value="due">${t('task.onschedule')}</option><option value="done">${t('task.aftertick')}</option></select></label>
+        <label class="atf"><span>Due Date</span>${dateFieldHtml('task-due', (state.taskDraft && state.taskDraft.due) || '')}</label>
       </div>
       <div class="atf-surface">
-        <div class="atf-surface-row"><span class="atf-surface-lbl"><span class="atf-surface-ic">⏳</span>${t('task.surfaceon')}</span>${dateFieldHtml('task-snooze', '')}<span class="atf-surface-note">it pops onto Today that morning</span></div>
-        <label class="atf-surface-hide"><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until then</span></label>
+        <label class="atf-surface-hide"><input type="checkbox" id="task-remind"><span>Remind me before it's due</span></label>
+        <div class="atf-surface-row" id="task-remind-row" hidden><span class="atf-surface-lbl"><span class="atf-surface-ic">⏳</span>Days before</span><input type="number" id="task-remind-days" class="sel atf-days" min="0" max="365" value="1" inputmode="numeric"><span class="atf-surface-note">a reminder in the app - nothing by email or text</span></div>
+        <label class="atf-surface-hide" id="task-hide-row" hidden><input type="checkbox" id="task-hideuntil"><span>Hide it from my lists until the reminder</span></label>
       </div>
       <label class="atf atf-full"><span>${t('field.notes')}</span><textarea id="task-notes" class="sel" rows="3" placeholder="${t('task.notesph')}" autocomplete="off"></textarea></label>
       ${connectAddSectionHtml()}
@@ -15426,9 +15427,10 @@ function renderTasks() {
     // back), and keep it saved on every keystroke so the entry is never lost.
     const dr = state.taskDraft || {};
     const setV = (id, v) => { const el = $('#' + id); if (el && v != null && v !== '') el.value = v; };
-    setV('task-title', dr.title); setV('task-area', dr.area); setV('task-prio', dr.prio); setV('task-dur', dr.dur); setV('task-snooze', dr.snooze); setV('task-repeat', dr.repeat); setV('task-repeatfrom', dr.repeatFrom); setV('task-notes', dr.notes);
+    setV('task-title', dr.title); setV('task-area', dr.area); setV('task-prio', dr.prio); setV('task-dur', dr.dur); setV('task-due', dr.due); setV('task-remind-days', dr.remindDays); setV('task-repeat', dr.repeat); setV('task-notes', dr.notes);
     { const hu = $('#task-hideuntil'); if (hu && dr.hideUntil) hu.checked = true; }
-    const rp = $('#task-repeat'); if (rp && dr.repeat) rp.dispatchEvent(new Event('change', { bubbles: true }));
+    // Restore the "Remind me" toggle and reveal its rows if it was on. (Robin.)
+    { const rm = $('#task-remind'); if (rm && dr.remind) { rm.checked = true; const rr = $('#task-remind-row'); if (rr) rr.hidden = false; const hr = $('#task-hide-row'); if (hr) hr.hidden = false; } }
     const tf = $('#task-form'); if (tf) tf.addEventListener('input', () => { state.taskDraft = readTaskForm(); });
     // "Custom…" on the new-task duration: ask for the minutes and slot the value in.
     { const ds = $('#task-dur'); if (ds) ds.addEventListener('change', () => { if (ds.value !== 'other') return; promptCustomDuration().then((min) => {
@@ -15447,7 +15449,8 @@ function renderTasks() {
 function readTaskForm() {
   const v = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
   const hu = document.getElementById('task-hideuntil');
-  return { title: v('task-title'), area: v('task-area'), prio: v('task-prio'), dur: v('task-dur'), snooze: v('task-snooze'), hideUntil: !!(hu && hu.checked), repeat: v('task-repeat'), repeatFrom: v('task-repeatfrom'), notes: v('task-notes') };
+  const rm = document.getElementById('task-remind');
+  return { title: v('task-title'), area: v('task-area'), prio: v('task-prio'), dur: v('task-dur'), due: v('task-due'), remind: !!(rm && rm.checked), remindDays: v('task-remind-days'), hideUntil: !!(hu && hu.checked), repeat: v('task-repeat'), notes: v('task-notes') };
 }
 
 // ── contacts ─────────────────────────────────────────
@@ -22961,9 +22964,9 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-refl-save]')) { const v = e.target.value; e.target.value = ''; if (v) saveReadingToLedger(e.target.dataset.reflSave, v); }
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.matches('[data-note-sort]')) { if (state.area_open) { state.area_open.noteSort = e.target.value; renderArea(); } return; }
-  if (e.target.id === 'taskcard-snooze' && state.task_open) patchTaskProps(state.task_open.task.id, { snooze: e.target.value || null });
-  if (e.target.id === 'taskcard-due' && state.task_open) patchTaskProps(state.task_open.task.id, { due: e.target.value || null });
-  if (e.target.matches('[data-surface-notify]')) patchTaskProps(e.target.dataset.surfaceNotify, { surfaceNotify: e.target.checked });
+  if (e.target.id === 'taskcard-due' && state.task_open) { const tk = state.task_open.task; const due = e.target.value || null; const rd = tk.props.remindDays; patchTaskProps(tk.id, { due, snooze: (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : null }); }
+  if (e.target.matches('[data-remind-toggle]')) { const id = e.target.dataset.remindToggle; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; if (e.target.checked) { const days = (tk && tk.props.remindDays != null) ? tk.props.remindDays : 1; patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -Number(days)) : null }); } else { patchTaskProps(id, { remindDays: null, snooze: null, hideUntil: false }); } return; }
+  if (e.target.matches('[data-remind-days]')) { const id = e.target.dataset.remindDays; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; const days = Math.max(0, Math.min(365, Math.round(Number(e.target.value) || 0))); patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -days) : null }); }
   if (e.target.matches('[data-rvg-done]')) { const id = e.target.dataset.rvgDone; patchGoal(id, { status: e.target.checked ? 'done' : 'active' }, true).then(() => { if (state.view.type === 'reviewcard') renderReviewCard(); }); return; }
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') { renderGoalCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {}); } else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
@@ -23004,6 +23007,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-repeat-task]')) patchTaskProps(e.target.dataset.repeatTask, { repeat: e.target.value || null });
   if (e.target.matches('[data-repeatfrom-task]')) patchTaskProps(e.target.dataset.repeatfromTask, { repeatFrom: e.target.value === 'done' ? 'done' : null });
   if (e.target.matches('[data-repeatcount-task]')) { const n = Math.max(0, Math.min(999, parseInt(e.target.value, 10) || 0)); patchTaskProps(e.target.dataset.repeatcountTask, { repeatCount: n || null }); }
+  if (e.target.id === 'task-remind') { const on = e.target.checked; const rr = $('#task-remind-row'); if (rr) rr.hidden = !on; const hr = $('#task-hide-row'); if (hr) hr.hidden = !on; state.taskDraft = readTaskForm(); return; }
   if (e.target.id === 'task-repeat') { const w = $('#task-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
   if (e.target.id === 'qt-repeat') { const w = $('#qt-repeatfrom-wrap'); if (w) w.hidden = !e.target.value; }
   if (e.target.id === 'contact-file' && e.target.files && e.target.files[0]) { importVcf(e.target.files[0]); e.target.value = ''; }
@@ -23123,7 +23127,14 @@ document.addEventListener('submit', (e) => {
   if (e.target.matches && e.target.matches('[data-note-weblink]')) { const i = $('#nx-weblink-input'); if (i && state.note) addNoteWebLink(i.value); return; }
   if (e.target.matches && e.target.matches('[data-note-taskadd]')) { addNoteTaskFromPane(); return; }
   if (e.target.matches && e.target.matches('[data-conn-weblink]')) { const i = $('#conn-weblink-input'); const ctx = connCtx(); if (i && ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, i.value); return; }
-  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) { addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, snooze: $('#task-snooze').value, hideUntil: !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, repeatFrom: ($('#task-repeatfrom') || {}).value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() }); state.taskDraft = null; } }
+  if (e.target.id === 'task-form') { const v = $('#task-title').value.trim(); if (v) {
+    const due = $('#task-due') ? $('#task-due').value : '';
+    const remindOn = !!($('#task-remind') && $('#task-remind').checked);
+    const rdays = Math.max(0, Math.min(365, Math.round(Number(($('#task-remind-days') || {}).value) || 0)));
+    const snooze = (due && remindOn) ? addDaysStr(due, -rdays) : '';   // the reminder day
+    addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, due, remindDays: remindOn ? rdays : null, snooze, hideUntil: remindOn && !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() });
+    state.taskDraft = null;
+  } }
   if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
@@ -23989,10 +24000,11 @@ function textToProse(text) {
 async function addTask(o) {
   const props = { area: o.area || null, priority: o.priority || null, done: false };
   if (o.duration) props.duration = Number(o.duration);
-  if (o.snooze) props.snooze = o.snooze;
-  if (o.snooze && o.hideUntil) props.hideUntil = true;   // hide from lists until it surfaces
+  if (o.due) props.due = o.due;
+  if (o.remindDays != null && o.remindDays !== '') props.remindDays = Number(o.remindDays);
+  if (o.snooze) props.snooze = o.snooze;   // the reminder day = due minus remindDays
+  if (o.snooze && o.hideUntil) props.hideUntil = true;   // hide from lists until the reminder
   if (o.repeat) props.repeat = o.repeat;
-  if (o.repeat && o.repeatFrom === 'done') props.repeatFrom = 'done';
   // Connections picked on the add form (denormalised {id,kind,title}). If no Life
   // Space was chosen, adopt the one of the first connected item that has an area -
   // a quiet "file it where it belongs" touch. (Robin, 2026-10-19.)
@@ -24342,37 +24354,30 @@ async function promptCustomDuration(curMin) {
 // whether to be alerted and on which channel (text, email or both), whether to
 // hide it until then, and how it repeats. Channels default to your account-wide
 // surface settings; picking here overrides them for this task.
+// A task's reminder: tied to its Due Date, not a separate "surface on" date. Tick
+// "Remind me" and say how many days before - it then nudges you IN THE APP (a push
+// on desktop + mobile, and a row in My LifeFold) on that day. Under the hood the
+// reminder day is stored in props.snooze (due minus N), so the existing surfacing
+// and "hide until" machinery keeps working. No email, no text. (Robin, 2026-10-29.)
+function taskReminderDay(p) { return (p.due && p.remindDays != null) ? addDaysStr(p.due, -Math.max(0, Number(p.remindDays) || 0)) : null; }
 function taskSurfaceHtml(t) {
   const p = t.props; const id = t.id;
-  const acctEmail = !(state.account && state.account.surfaceEmail === false);
-  const acctSms = !!(state.account && state.account.surfaceSms);
-  const hasPhone = !!(state.account && state.account.phone);
-  const email = p.surfaceEmail == null ? acctEmail : !!p.surfaceEmail;
-  const sms = p.surfaceSms == null ? acctSms : !!p.surfaceSms;
-  const app = p.surfaceApp == null ? true : !!p.surfaceApp;   // in-app notification; default on (Robin)
-  const notify = p.surfaceNotify !== false;
-  const clear = p.snooze ? `<button type="button" class="tf-clear tfs-clear" data-clear-snooze="${id}">clear</button>` : '';
-  let chanHint = '';
-  if (notify && p.snooze) {
-    const bits = [];
-    if (app) bits.push('in the app');
-    if (email) bits.push('by email');
-    if (sms) bits.push(hasPhone ? 'by text' : 'by text (add a phone number in Settings first)');
-    const joinList = (arr) => (arr.length <= 1 ? (arr[0] || '') : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`);
-    chanHint = bits.length ? `A nudge ${joinList(bits)} on the morning it surfaces.` : 'No channel picked above, so nothing will reach you - pick at least one.';
-  }
+  const hasDue = !!p.due;
+  const remindOn = p.remindDays != null;
+  const days = remindOn ? p.remindDays : 1;
+  const remindDay = taskReminderDay(p);
   const open = tfCardOpen('surface');
   const body = `<div class="tfs-cardbody">
-    <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
-    ${p.snooze ? `<div class="tfs-block">
-      <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
-      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${app ? 'on' : ''}" data-surface-ch="app:${id}"><span class="tfs-chip-ic">📲</span> In app</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
-      <p class="tfs-note">${esc(chanHint)}</p>` : ''}
-      <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until then</span></label>
+    ${hasDue ? '' : '<p class="tfs-note">Set a Due Date above, then you can add a reminder.</p>'}
+    <label class="tfs-toggle"><input type="checkbox" data-remind-toggle="${id}" ${remindOn ? 'checked' : ''} ${hasDue ? '' : 'disabled'}><span>Remind me</span></label>
+    ${remindOn && hasDue ? `<div class="tfs-block">
+      <label class="tfs-row"><span class="tfs-l">How many days before<small class="tf-hint">0 = on the day it's due</small></span><span class="tfs-ctrl"><input type="number" min="0" max="365" inputmode="numeric" class="sel tfs-num" data-remind-days="${id}" value="${days}"></span></label>
+      ${remindDay ? `<p class="tfs-note">You'll be reminded in the app on <b>${esc(dpLabel(remindDay))}</b>, and it'll show in My LifeFold.</p>` : ''}
+      <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until the reminder</span></label>
     </div>` : ''}
   </div>`;
   return `<section class="tf-surface ${open ? '' : 'folded'}">
-    ${tfCardHead('surface', 'Surface')}
+    ${tfCardHead('surface', 'Reminder')}
     ${open ? body : ''}
   </section>`;
 }
@@ -24383,8 +24388,7 @@ function taskRepeatHtml(t) {
   const open = tfCardOpen('repeat');
   const body = `<div class="tfs-cardbody">
     <label class="tfs-row"><span class="tfs-l">Repeat</span><span class="tfs-ctrl"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${(p.repeat || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></label>
-    ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">Next one is due<small class="tf-hint">keep to the calendar, or space it from when you do it</small></span><span class="tfs-ctrl"><select class="sel" data-repeatfrom-task="${id}"><option value="due" ${(p.repeatFrom || 'due') !== 'done' ? 'selected' : ''}>On its schedule (a fixed date)</option><option value="done" ${p.repeatFrom === 'done' ? 'selected' : ''}>${repeatFromDoneLabel(p.repeat)}</option></select></span></label>
-    <label class="tfs-row"><span class="tfs-l">How many times<small class="tf-hint">${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done so far` : 'leave blank to repeat forever'}</small></span><span class="tfs-ctrl"><input type="number" min="1" max="999" inputmode="numeric" class="sel tfs-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞ forever"></span></label>` : ''}
+    ${p.repeat && !p.kit ? `<label class="tfs-row"><span class="tfs-l">How many times<small class="tf-hint">${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done so far` : 'leave blank to repeat forever'}</small></span><span class="tfs-ctrl"><input type="number" min="1" max="999" inputmode="numeric" class="sel tfs-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞ forever"></span></label>` : ''}
   </div>`;
   return `<section class="tf-surface tf-repeat ${open ? '' : 'folded'}">
     ${tfCardHead('repeat', 'Repeat')}
@@ -24415,7 +24419,7 @@ function renderTaskCard() {
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${durationOptionsHtml(t.props.duration)}</select></label>
-      <label class="tf-field"><span class="tf-label">Due by</span>
+      <label class="tf-field"><span class="tf-label">Due Date</span>
         ${dateFieldHtml('taskcard-due', t.props.due || '')}</label>
       <div class="tf-field"><span class="tf-label">Life Spaces</span>
         ${blockAreasControl('task', t)}</div>
