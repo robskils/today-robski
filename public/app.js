@@ -2816,7 +2816,17 @@ async function resendInvitation(code) {
   try { const r = await api('/api/invites/resend', { method: 'POST', body: JSON.stringify({ code }) }); toast(`Invitation re-sent to ${r.email}`); }
   catch (e) { toast(e.message); }
 }
-function startPresence() { const beat = () => api('/api/presence', { method: 'POST' }).catch(() => {}); beat(); setInterval(beat, 60000); }
+function startPresence() {
+  // Beat ONLY while the tab is visible - every other interval in the app already
+  // does this, but presence didn't, so a backgrounded/installed app kept pinging
+  // "I'm here" and stayed "online", which made the server suppress incoming-message
+  // pushes. A hidden app goes quiet, ages out of the active window, and starts
+  // getting notified. On return to the app, beat at once so you show online again.
+  const beat = () => { if (document.hidden) return; api('/api/presence', { method: 'POST' }).catch(() => {}); };
+  beat();
+  setInterval(beat, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+}
 // The Contacts badge is a genuine notification: the number of people waiting for
 // you to accept their invitation to connect. It is NOT a running total of your
 // contacts (that just looked like an unread count sitting on the button). Unread

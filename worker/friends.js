@@ -8,6 +8,13 @@
 
 const ONLINE_MS = 3 * 60 * 1000;
 export const isOnline = (lastSeen) => !!lastSeen && (Date.now() - new Date(lastSeen).getTime()) < ONLINE_MS;
+// "Looking at the screen right now" - a much tighter window than the 3-min online
+// dot, used to decide whether to SUPPRESS a message push. The client beats
+// presence every 60s only while the tab is visible, so a foreground user is
+// always within this window (they'll see the message live); a backgrounded or
+// closed app ages out within ~75s and starts getting pushes. (Robin, 2026-10-29.)
+const ACTIVE_MS = 75 * 1000;
+export const isActivelyPresent = (lastSeen) => !!lastSeen && (Date.now() - new Date(lastSeen).getTime()) < ACTIVE_MS;
 
 export async function touchPresence(env) {
   await env.DB.prepare('UPDATE users SET last_seen = ? WHERE id = ?').bind(new Date().toISOString(), env.uid).run().catch(() => {});

@@ -1,7 +1,7 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
-import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline } from './friends.js';
+import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { aiKey, aiIsOff, aiNeedsKey, logAiUsage, setAiKey, setAiProvider, detectProvider, callAI, encryptSecret, decryptSecret } from './ai.js';
@@ -4230,7 +4230,10 @@ async function pushAll(env, payload, uid = env.uid) {
 async function maybePushMessage(env, toUid, fromName, body) {
   try {
     const u = await env.DB.prepare('SELECT last_seen FROM users WHERE id = ?').bind(toUid).first();
-    if (u && isOnline(u.last_seen)) return;
+    // Only suppress the push if they're ACTIVELY on the app right now (would see it
+    // live). The old check used the 3-min online dot, so a just-backgrounded or
+    // recently-active app swallowed the notification. (Robin: I must get notified.)
+    if (u && isActivelyPresent(u.last_seen)) return;
     const r = await env.DB.prepare(
       'SELECT COUNT(*) AS n FROM messages WHERE to_id = ? AND from_id = ? AND read_at IS NULL',
     ).bind(toUid, env.uid).first();
