@@ -2579,7 +2579,13 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-topsec-t .nts-c { font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; background:var(--paper-2); border-radius:999px; padding:1px 6px; }
 .nav-topsec-t.on { border-color:var(--accent); color:var(--ink); background:color-mix(in srgb,var(--accent) 12%,var(--card)); }
 @media (hover:hover){ .nav-topsec-t:hover { border-color:var(--accent); } }
-.nav-topsec-body { margin-top:8px; display:flex; flex-direction:column; gap:3px; max-height:46vh; overflow-y:auto; overflow-x:hidden; padding:1px; }
+/* Show more Starred/Recent before scrolling, and keep the inner scroll to itself
+   so it doesn't chain into the sidebar. A thin, always-there scrollbar signals
+   there's more below. (Robin, 2026-10-29: scroll to see more recent notes.) */
+.nav-topsec-body { margin-top:8px; display:flex; flex-direction:column; gap:3px; max-height:62vh; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:1px; scrollbar-width:thin; scrollbar-color:color-mix(in srgb,var(--ink) 22%,transparent) transparent; }
+.nav-topsec-body::-webkit-scrollbar { width:7px; }
+.nav-topsec-body::-webkit-scrollbar-thumb { background:color-mix(in srgb,var(--ink) 20%,transparent); border-radius:999px; }
+.nav-topsec-body::-webkit-scrollbar-thumb:hover { background:color-mix(in srgb,var(--ink) 34%,transparent); }
 /* Starred and Recent rows read identically: one explicit text size for both (16px,
    easier on the eye), same icon size, label filling the row next to its icon. The
    .nav-topsecs scope + both-class selector makes this win over any other nav rule,
@@ -5000,8 +5006,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .plan-card.plan-full { background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
 .plan-h { display:flex; align-items:center; gap:9px; font-size:17px; }
 .plan-badge { flex:none; font-size:11px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent); padding:2px 9px; border-radius:999px; }
-.plan-price { margin:4px 0 10px; font-size:27px; font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1; }
+.plan-price { margin:4px 0 2px; font-size:27px; font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1; }
 .plan-per { font-size:14px; font-weight:500; color:var(--ink-3); margin-left:3px; letter-spacing:0; }
+/* Monthly / Annual billing switch, and the saving line under each annual price. */
+.plan-cycle { display:inline-flex; gap:3px; margin:0 0 16px; padding:4px; border:1px solid var(--line-2); border-radius:999px; background:var(--paper-2); }
+.plan-cycle-b { display:inline-flex; align-items:center; gap:7px; border:0; background:none; color:var(--ink-2); font-size:14px; font-weight:600; padding:8px 16px; border-radius:999px; cursor:pointer; transition:background .12s, color .12s; }
+.plan-cycle-b.on { background:var(--card); color:var(--ink); box-shadow:var(--shadow); }
+.plan-cycle-tag { font-size:11px; font-weight:700; color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,transparent); border-radius:999px; padding:2px 8px; letter-spacing:.01em; }
+.plan-save { margin:0 0 12px; font-size:12.5px; font-weight:600; color:var(--accent); }
+.plan-save-ph { color:var(--ink-3); font-weight:500; }
 .plan-desc { font-size:14px; color:var(--ink-2); line-height:1.55; margin:0 0 14px; }
 .plan-active { padding:11px 13px; border-radius:11px; font-size:14px; font-weight:500; color:#3f9e5f; background:color-mix(in srgb,#3f9e5f 10%,transparent); border:1px solid color-mix(in srgb,#3f9e5f 28%,transparent); }
 /* Plan page: a "Your plan" hero over the tier cards, and the trial note. (Robin.) */

@@ -1121,7 +1121,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
-    body: `<p>Every plan is the whole of LifeFold - they differ only in how the AI is powered. <b>Premium</b> (€6/mo): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo): we run the AI for you, no keys to manage. Both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
+    body: `<p>Every plan is the whole of LifeFold - they differ only in how the AI is powered. <b>Premium</b> (€6/mo, or <b>€60/yr</b> - two months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when LifeFold reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
@@ -3790,6 +3790,19 @@ function renderSettings() {
       : onByok ? 'The whole of LifeFold, powered by your own AI key.'
       : "You're exploring LifeFold. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
+    // Monthly or annual. Annual is two months free on each paid plan. The buttons
+    // still open an email for now; real checkout is coming. (Robin, 2026-10-29.)
+    const cycle = state.planCycle === 'annual' ? 'annual' : 'monthly';
+    const PRICES = {
+      byok: { monthly: { amt: '€6', per: '/mo' }, annual: { amt: '€60', per: '/yr', save: '2 months free · save €12' } },
+      managed: { monthly: { amt: '€13', per: '/mo' }, annual: { amt: '€130', per: '/yr', save: '2 months free · save €26' } },
+    };
+    const priceBlock = (key) => { const p = PRICES[key][cycle]; return `<div class="plan-price">${p.amt}<span class="plan-per">${p.per}</span></div>${cycle === 'annual' && p.save ? `<div class="plan-save">✦ ${p.save}</div>` : '<div class="plan-save plan-save-ph">billed monthly</div>'}`; };
+    const cycleToggle = `<div class="plan-cycle" role="tablist" aria-label="Billing period">
+        <button type="button" class="plan-cycle-b ${cycle === 'monthly' ? 'on' : ''}" data-plan-cycle="monthly" role="tab" aria-selected="${cycle === 'monthly'}">Monthly</button>
+        <button type="button" class="plan-cycle-b ${cycle === 'annual' ? 'on' : ''}" data-plan-cycle="annual" role="tab" aria-selected="${cycle === 'annual'}">Annual<span class="plan-cycle-tag">save 2 months</span></button>
+      </div>`;
+    const cycLabel = cycle === 'annual' ? ' (annual)' : ' (monthly)';
     const act = (isCurrent, label, subject) => isCurrent
       ? '<div class="plan-active">✓ Your current plan</div>'
       : `<a class="add-btn wide" href="mailto:contact@lifefold.co?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
@@ -3800,21 +3813,22 @@ function renderSettings() {
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">${onTrial ? 'Choose your plan' : 'Plans'}</div>
       <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of LifeFold - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
+      ${cycleToggle}
       <div class="plan-cards">
         <div class="plan-card ${onByok ? 'on' : ''}">
           <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
-          <div class="plan-price">€6<span class="plan-per">/mo</span></div>
+          ${priceBlock('byok')}
           <p class="plan-desc">Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the provider directly.</p>
-          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'LifeFold Premium plan')}
+          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'LifeFold Premium plan' + cycLabel)}
         </div>
         <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
-          <div class="plan-price">€13<span class="plan-per">/mo</span></div>
+          ${priceBlock('managed')}
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up. The hands-off option.</p>
-          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'LifeFold Premium Plus plan')}
+          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'LifeFold Premium Plus plan' + cycLabel)}
         </div>
       </div>
-      <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.</div>
+      <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.${cycle === 'annual' ? ' Annual billing saves you two months.' : ''}</div>
       <div class="set-row-t" style="margin:26px 0 4px">Your AI</div>
       <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across LifeFold.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
       ${onManaged
@@ -22784,6 +22798,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-capture-pick]')) { captureStartPick(); return; }
   if (t.closest('[data-capture-unpick]')) { if (state.capture) { state.capture.picking = false; renderCaptureSheet(); } return; }
   { const ct = t.closest('[data-capture-to]'); if (ct) { captureCommit(ct.dataset.captureTo); return; } }
+  { const pc = t.closest('[data-plan-cycle]'); if (pc) { state.planCycle = pc.dataset.planCycle; renderSettings(); return; } }
   { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
