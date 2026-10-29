@@ -105,8 +105,13 @@ const T_IT = {
   'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su LifeFold', 'ct.self.show': 'Mostra la mia scheda LifeFold', 'ct.self.sub': 'La tua finestra su LifeFold', 'ct.selfcard.tag': 'Scheda LifeFold ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Life Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
 };
 function locale() {
-  try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en' || s === 'it') return s; } catch {}
-  try { const n = (navigator.language || 'en').toLowerCase(); return n.startsWith('pt') ? 'pt' : n.startsWith('it') ? 'it' : 'en'; } catch { return 'en'; }
+  // Multi-language is PAUSED until the app is fully translated - English only for
+  // now, so nothing ever mixes Portuguese and English. The t()/T_PT/T_IT machinery
+  // stays in place; to switch it back on, restore the stored-locale + navigator
+  // logic below and un-hide the language switcher in Settings > Appearance. (Robin, 2026-10-29.)
+  return 'en';
+  // try { const s = localStorage.getItem('life.locale'); if (s === 'pt' || s === 'en' || s === 'it') return s; } catch {}
+  // try { const n = (navigator.language || 'en').toLowerCase(); return n.startsWith('pt') ? 'pt' : n.startsWith('it') ? 'it' : 'en'; } catch { return 'en'; }
 }
 function t(key, params) {
   const M = locale() === 'pt' ? T_PT : locale() === 'it' ? T_IT : null;   // null => English
@@ -3496,7 +3501,6 @@ function renderSettings() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-row"><div><div class="set-row-t">${t('set.language')}</div><div class="set-row-s">${t('set.language.hint')}</div></div><select class="sel" data-set-locale style="max-width:170px">${LANGS.map(([v, l]) => `<option value="${v}" ${locale() === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Auto follows your local sunrise &amp; sunset.'}</div></div>${themeLocked() ? `<span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span>` : `<button class="add-btn wide" data-theme-toggle>${themeLabel()}</button>`}</div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
@@ -6559,7 +6563,6 @@ function renderHome() {
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
             { k: 'favareas', ic: '◈', label: 'Life Spaces', count: sortedAreas.length, on: modOn('areas') },
-            { k: 'favs', ic: '★', label: 'Starred', count: favs.length, on: modOn('notes') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
