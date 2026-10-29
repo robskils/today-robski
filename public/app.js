@@ -26,7 +26,11 @@ const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Today'], ['notes', 'Notes'], ['reflect', 'Reflection'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Saved'], ['areas', 'Life Spaces'], ['timer', 'Toolbox'], ['notepad', 'Notepad']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Life Spaces']];
+// The Reflection page's own tools, each switchable on its own. reflectOn() is true
+// while any one is on, so the Reflection hub and its Home pins stay put until the
+// last is switched off. (Robin, 2026-10-29: "add the Reflection tools individually".)
+const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['meditation', 'Meditation'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -121,6 +125,8 @@ async function setLocale(l) {
 // start off and only appear once switched on in Settings.
 const MOD_DEFAULT_OFF = new Set(['timer']);
 const modOn = (k) => { const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
+// True while any Reflection tool is on - gates the Reflection hub and its Home pins.
+const reflectOn = () => REFLECT_MODULES.some(([k]) => modOn(k));
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -1351,8 +1357,8 @@ function addNewMenuHtml() {
     modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Life Space</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
-    modOn('reflect') ? item('journal', '✎', 'Journal') : '',
-    modOn('reflect') ? item('dream', '☾', 'Dream') : '',
+    modOn('journal') ? item('journal', '✎', 'Journal') : '',
+    modOn('dreams') ? item('dream', '☾', 'Dream') : '',
     modOn('saved') ? item('save', '▷', 'Read or watch') : '',
     modOn('goals') ? item('bucket', '✦', 'Bucket list') : '',
   ].filter(Boolean).join('');
@@ -3401,13 +3407,18 @@ function renderSettings() {
   // The Getting-started checklist on the Account tab needs the setup signals
   // (areas, contacts, mail accounts) loaded once so its ticks are accurate - state
   // starts them empty, so a flag, not an undefined check, gates the one-time load.
-  if (state.settings.tab === 'account' && !state._setupLoaded) {
+  // The checklist shows above every tab, so load its signals whenever an account
+  // is present - not only on the Account tab, or the mail/contacts ticks read
+  // wrong on Tools, Appearance and the rest. (Robin, 2026-10-29.)
+  if (state.account && !state._setupLoaded) {
     state._setupLoaded = true;
-    const rr = () => { if (state.view && state.view.type === 'settings' && state.settings.tab === 'account') renderSettings(); };
+    const rr = () => { if (state.view && state.view.type === 'settings') renderSettings(); };
     api('/api/blocks?kind=area').then((r) => { state.areas = r || []; rr(); }).catch(() => {});
     loadContacts().then(rr).catch(() => {});
     state.mail = state.mail || {};
     try { mailApi('/accounts').then((r) => { state.mail.accounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); }).catch(() => {}); } catch {}
+    if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; rr(); }).catch(() => {}); }
+    if (state.onbSeen === undefined) api('/api/kv/onboarded').then((r) => { state.onbSeen = !!(r && r.value); rr(); }).catch(() => {});
   }
   // The Card tab (and the Account tab's card preview) need the card data loaded.
   if (state.card === undefined) {
@@ -3541,7 +3552,15 @@ function renderSettings() {
       ${aiUsesTogglesHtml()}`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
-  const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(([k, l]) => `<label class="set-mod"><span>${l}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`).join('')}</div></div>`;
+  // Tools that have a setup page of their own carry a quiet link to it. (Robin, 2026-10-29.)
+  const MOD_SETTINGS = { mail: 'Mail accounts', calendar: 'Calendar setup', areas: 'Manage Life Spaces' };
+  const modRow = ([k, l]) => `<label class="set-mod"><span><span class="set-mod-l">${l}</span>${MOD_SETTINGS[k] ? `<button type="button" class="set-modlink" data-modlink="${k}">${MOD_SETTINGS[k]} ›</button>` : ''}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`;
+  const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(modRow).join('')}</div></div>
+      <div class="set-card">
+        <div class="set-sec-title">Reflection tools</div>
+        <div class="set-row-s">The tools on your Reflection page. Switch off any you don't use and it leaves the page and the menu.</div>
+        <div class="set-mods">${REFLECT_MODULES.map(modRow).join('')}</div>
+      </div>`;
 
   const notificationsPane = state.account ? `<div class="set-card set-notifs">
         <div class="set-notif-group"><div class="set-notif-h">By email</div>
@@ -3601,7 +3620,7 @@ function renderSettings() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
     <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
-    ${state.account && !setupDone ? welcomeGuideHtml() : ''}
+    ${state.account && !setupDone && !state.onbSeen ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
@@ -4242,25 +4261,25 @@ function navItems(v) {
     // one tap (both land in the Well-being hub, where the rest - meditation, I
     // Ching, horoscope - lives). "＋" stays visible so they read as actions.
     // The Well-being hub itself - the landing page with every tool as a tile.
-    wellbeing: modOn('reflect') ? `<button class="nav-item ${v.type === 'wellbeing' ? 'on' : ''}" data-open-wellbeing><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
-    reflect: modOn('reflect') ? `<button class="nav-item ${(v.type === 'journal' && !v.mode) || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
+    wellbeing: reflectOn() ? `<button class="nav-item ${v.type === 'wellbeing' ? 'on' : ''}" data-open-wellbeing><span class="nav-ic">❀</span><span class="nav-lbl">${t('nav.reflect')}</span></button>` : '',
+    reflect: modOn('journal') ? `<button class="nav-item ${(v.type === 'journal' && !v.mode) || v.type === 'journalentry' ? 'on' : ''}" data-open-journal><span class="nav-ic">✎</span><span class="nav-lbl">${t('wb.journal')}</span><span class="nav-quick" data-quick-add="journal" title="New journal entry">+</span></button>` : '',
     // The Well-being tools, each its own button (the single "Well-being" button is
     // gone). They fire the same actions as the hub tiles, so they work from anywhere.
-    coaching: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'coaching' ? 'on' : ''}" data-open-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
-    dreams: modOn('reflect') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'dreams' ? 'on' : ''}" data-open-dreams><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
-    meditation: modOn('reflect') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
-    spirit: modOn('reflect') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
-    iching: modOn('reflect') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
-    compass: modOn('reflect') ? `<button class="nav-item ${v.type === 'compass' ? 'on' : ''}" data-open-compass><span class="nav-ic">⚖</span><span class="nav-lbl">${t('wb.compass')}</span></button>` : '',
-    horoscope: modOn('reflect') ? `<button class="nav-item" data-open-horo><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.horoscope')}</span></button>` : '',
-    insights: modOn('reflect') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
+    coaching: modOn('coaching') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'coaching' ? 'on' : ''}" data-open-coaching><span class="nav-ic">⚑</span><span class="nav-lbl">${t('wb.coaching')}</span></button>` : '',
+    dreams: modOn('dreams') ? `<button class="nav-item ${v.type === 'journal' && v.mode === 'dreams' ? 'on' : ''}" data-open-dreams><span class="nav-ic">☾</span><span class="nav-lbl">${t('wb.dreams')}</span></button>` : '',
+    meditation: modOn('meditation') ? `<button class="nav-item ${v.type === 'meditation' ? 'on' : ''}" data-open-medi><span class="nav-ic">☸</span><span class="nav-lbl">${t('wb.meditation')}</span></button>` : '',
+    spirit: modOn('spirit') ? `<button class="nav-item ${v.type === 'spirit' ? 'on' : ''}" data-spirit-open><span class="nav-ic">✦</span><span class="nav-lbl">${t('wb.spirit')}</span></button>` : '',
+    iching: modOn('iching') ? `<button class="nav-item ${v.type === 'iching' ? 'on' : ''}" data-open-iching><span class="nav-ic">☰</span><span class="nav-lbl">${t('wb.iching')}</span></button>` : '',
+    compass: modOn('compass') ? `<button class="nav-item ${v.type === 'compass' ? 'on' : ''}" data-open-compass><span class="nav-ic">⚖</span><span class="nav-lbl">${t('wb.compass')}</span></button>` : '',
+    horoscope: modOn('horoscope') ? `<button class="nav-item" data-open-horo><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.horoscope')}</span></button>` : '',
+    insights: modOn('insights') ? `<button class="nav-item ${v.type === 'insights' ? 'on' : ''}" data-open-insights><span class="nav-ic">✶</span><span class="nav-lbl">${t('wb.insights')}</span></button>` : '',
     mail: modOn('mail') ? `<button class="nav-item nav-lead ${v.type === 'mail' || v.type === 'mailaccounts' ? 'on' : ''}" data-open-mail><span class="nav-ic">✉</span><span class="nav-lbl">${t('nav.mail')}</span>${state.mailUnreadTotal ? '<span class="nav-dot" title="New mail" aria-label="New mail"></span>' : ''}<span class="nav-quick" data-quick-add="mail" title="New email">+</span></button>` : '',
     contacts: modOn('contacts') ? `<button class="nav-item ${v.type === 'contacts' || v.type === 'contactcard' ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     connect: modOn('contacts') ? `<button class="nav-item ${v.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : '',
     areas: modOn('areas') ? `<button class="nav-item ${v.type === 'areas' || v.type === 'area' ? 'on' : ''}" data-open-areas><span class="nav-ic">◈</span><span class="nav-lbl">${t('nav.areas')}</span></button>` : '',
     goals: modOn('goals') ? `<button class="nav-item ${['goals', 'goalcard', 'bucketcard'].includes(v.type) ? 'on' : ''}" data-open-goals><span class="nav-ic">◎</span><span class="nav-lbl">${t('nav.goals')}</span><span class="nav-quick" data-quick-add="goal" title="New goal">+</span></button>` : '',
     reviews: modOn('goals') ? `<button class="nav-item ${(v.type === 'reviews' && !v.rtype) || v.type === 'reviewcard' ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
-    rvDaily: modOn('reflect') ? `<button class="nav-item" data-journal-dailyreview><span class="nav-ic">☀</span><span class="nav-lbl">Daily</span></button>` : '',
+    rvDaily: modOn('journal') ? `<button class="nav-item" data-journal-dailyreview><span class="nav-ic">☀</span><span class="nav-lbl">Daily</span></button>` : '',
     rvAll: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && !v.rtype ? 'on' : ''}" data-open-reviews-tool><span class="nav-ic">↻</span><span class="nav-lbl">${t('nav.reviews')}</span></button>` : '',
     rvWeekly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'weekly' ? 'on' : ''}" data-open-reviewtype="weekly"><span class="nav-ic">↻</span><span class="nav-lbl">Weekly</span></button>` : '',
     rvMonthly: modOn('goals') ? `<button class="nav-item ${v.type === 'reviews' && v.rtype === 'monthly' ? 'on' : ''}" data-open-reviewtype="monthly"><span class="nav-ic">↻</span><span class="nav-lbl">Monthly</span></button>` : '',
@@ -5911,16 +5930,29 @@ function homeReqAlertHtml() {
 // The "Getting started" card on Home: the single, low-friction doorway into the
 // setup hub, shown until you finish or hide it. New accounts land on Home (no
 // forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
+// A folded-paper crane - the LifeFold motif - for the Getting Started banner.
+// One accent colour, faceted by opacity, with crease highlights in the card tone.
+const ORIGAMI_SVG = `<svg viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <polygon points="48,40 28,12 47,44" fill="currentColor" opacity=".42"/>
+  <polygon points="47,44 15,23 23,21 41,42" fill="currentColor" opacity=".68"/>
+  <polygon points="15,23 4,24 16,28" fill="currentColor" opacity=".9"/>
+  <polygon points="48,40 78,9 60,46" fill="currentColor" opacity=".82"/>
+  <polygon points="60,46 91,41 62,53" fill="currentColor" opacity=".5"/>
+  <polygon points="41,42 60,46 49,67" fill="currentColor"/>
+  <path d="M48 41 L49 67 M48 41 L60 46 M48 41 L41 42 M48 41 L47 44" stroke="var(--card)" stroke-width="1.2" opacity=".55" stroke-linecap="round"/>
+</svg>`;
+// New accounts land on Home and set up from here. The banner is the doorway into
+// the Settings "Getting started" checklist, shown until finished or hidden.
 function homeSetupCardHtml() {
   if (state.onbSeen === undefined) { api('/api/kv/onboarded').then((r) => { state.onbSeen = !!(r && r.value); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.onbSeen = true; }); return ''; }
   if (state.onbSeen) return '';
   return `<section class="home-setup">
-    <button class="home-setup-main" data-onb-open-hub>
-      <span class="hsu-ic">${MARK}</span>
-      <span class="hsu-body"><span class="hsu-t">Finish setting up LifeFold</span><span class="hsu-s">Make it yours, connect your email and calendar, bring it all in - at your own pace.</span></span>
-      <span class="hsu-go" aria-hidden="true">→</span>
+    <button class="gs-banner" data-open-getstarted>
+      <span class="gs-art">${ORIGAMI_SVG}</span>
+      <span class="gs-body"><span class="gs-t">Welcome to the Fold</span><span class="gs-s">Let's set LifeFold up to fit you. Tap here to begin.</span></span>
+      <span class="gs-go" aria-hidden="true">→</span>
     </button>
-    <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide setup">✕</button>
+    <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide getting started">✕</button>
   </section>`;
 }
 function homeQuoteHtml() {
@@ -6275,7 +6307,7 @@ function homeDiscoverHtml() {
     modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
     modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
     modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
-    modOn('reflect') ? ['✎', 'Reflection', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
+    reflectOn() ? ['✎', 'Reflection', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
   ].filter(Boolean);
   if (!feats.length) return '';
   let hidden = false, open = true;
@@ -6433,7 +6465,7 @@ function renderHome() {
       ${homeMsgAlertHtml()}
       ${homeReqAlertHtml()}
       ${homeQuoteHtml()}
-      ${modOn('reflect') ? spiritPinnedHtml() + reflectPinsHtml() : ''}
+      ${reflectOn() ? spiritPinnedHtml() + reflectPinsHtml() : ''}
       <div id="qt-wrap"></div>
         <div class="home-main">${(() => {
           const favAreas = (state.areas || []).filter((a) => a.props && a.props.fav);
@@ -7610,15 +7642,15 @@ function wbToolTilesHtml(opts) {
     return `<button class="${cls}" ${attr} title="${esc(title)}"${o.on ? ' aria-current="page"' : ''}><span class="wb-tile-ic">${ic}</span><span class="wb-tile-t">${t(key)}</span>${o.live ? dot : ''}</button>`;
   };
   return `<div class="wb-tiles">
-      ${tile('data-open-journal', '📓', 'wb.journal', 'Write freely, or from a prompt', { on: sel === 'journal' })}
-      ${tile('data-open-coaching', '🧭', 'wb.coaching', 'A running coaching conversation', { on: sel === 'coaching' })}
-      ${tile('data-open-dreams', '💭', 'wb.dreams', 'Write a dream and get a gentle interpretation', { on: sel === 'dreams' })}
-      ${tile('data-open-compass', '⚖️', 'wb.compass', 'Weigh a decision and find your bearing', { on: sel === 'compass' })}
-      ${tile('data-open-medi', '🧘', 'wb.meditation', 'A calm sit, with real bells', { on: sel === 'meditation' })}
-      ${tile('data-spirit-open', '🃏', 'wb.spirit', liveSpirit ? 'Reopen your spirit card' : 'Draw a card for a moment of reflection', { live: liveSpirit, on: sel === 'spirit' })}
-      ${tile(liveIch ? 'data-iching-reopen' : 'data-open-iching', '☯', 'wb.iching', liveIch ? 'Reopen your live reading' : 'Cast an I Ching reading', { live: liveIch, on: sel === 'iching' })}
-      ${tile('data-open-horo', '✶', 'wb.horoscope', liveHoro ? 'Reopen today’s horoscope' : 'Your daily horoscope', { live: liveHoro, on: sel === 'horo' })}
-      ${tile('data-open-insights', '✶', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' })}
+      ${modOn('journal') ? tile('data-open-journal', '📓', 'wb.journal', 'Write freely, or from a prompt', { on: sel === 'journal' }) : ''}
+      ${modOn('coaching') ? tile('data-open-coaching', '🧭', 'wb.coaching', 'A running coaching conversation', { on: sel === 'coaching' }) : ''}
+      ${modOn('dreams') ? tile('data-open-dreams', '💭', 'wb.dreams', 'Write a dream and get a gentle interpretation', { on: sel === 'dreams' }) : ''}
+      ${modOn('compass') ? tile('data-open-compass', '⚖️', 'wb.compass', 'Weigh a decision and find your bearing', { on: sel === 'compass' }) : ''}
+      ${modOn('meditation') ? tile('data-open-medi', '🧘', 'wb.meditation', 'A calm sit, with real bells', { on: sel === 'meditation' }) : ''}
+      ${modOn('spirit') ? tile('data-spirit-open', '🃏', 'wb.spirit', liveSpirit ? 'Reopen your spirit card' : 'Draw a card for a moment of reflection', { live: liveSpirit, on: sel === 'spirit' }) : ''}
+      ${modOn('iching') ? tile(liveIch ? 'data-iching-reopen' : 'data-open-iching', '☯', 'wb.iching', liveIch ? 'Reopen your live reading' : 'Cast an I Ching reading', { live: liveIch, on: sel === 'iching' }) : ''}
+      ${modOn('horoscope') ? tile('data-open-horo', '✶', 'wb.horoscope', liveHoro ? 'Reopen today’s horoscope' : 'Your daily horoscope', { live: liveHoro, on: sel === 'horo' }) : ''}
+      ${modOn('insights') ? tile('data-open-insights', '✶', 'wb.insights', 'What your entries reveal - themes, lifts and drains', { on: sel === 'insights' }) : ''}
     </div>`;
 }
 // ── Compass: a decision companion ──────────────────────────────────────
@@ -8751,7 +8783,7 @@ function areaWheelPanel(area) {
   if (area.props && area.props.reviewOff) {
     return `<div class="awheel awheel-off">
       <div class="awheel-off-ic">◍</div>
-      <p><b>${esc(area.title)}</b> isn't tracked on the Wheel of Life. It stays here as normal, just out of the wheel and the weekly review.</p>
+      <p><b>${esc(area.title)}</b> isn't tracked on the Wheel of Life. It stays here as normal, just out of the Wheel of Life and the weekly review.</p>
       ${trackTog(false)}
     </div>`;
   }
@@ -9594,7 +9626,7 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-h"><span>In your reviews</span></div>
       <label class="ov-revtog"><input type="checkbox" data-area-reviewstar ${(area.props && area.props.reviewStar) ? 'checked' : ''}><span><b>★ A key area</b> - one you really care about. It's starred in your Wheel of Life so it stands out.</span></label>
       <label class="ov-revtog"><input type="checkbox" data-area-reviewon ${!(area.props && area.props.reviewOff) ? 'checked' : ''}><span>Track it in the <b>weekly review</b> &amp; Wheel of Life</span></label>
-      <div class="ov-muted" style="margin-top:6px">Turn tracking off for an area you don't review (like Tools) - it stays here as normal, just out of the wheel.</div>
+      <div class="ov-muted" style="margin-top:6px">Turn tracking off for an area you don't review (like Tools) - it stays here as normal, just out of the Wheel of Life.</div>
     </div>`;
   // A quiet lead that frames the area: where it's headed (vision), how it's
   // tracking (goals, sentiment) and who's here (access). Settings, understated.
@@ -10441,6 +10473,11 @@ function gcalBarHtml(ctx) {
     primary = s.connected
       ? `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`
       : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your LifeFold ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+  } else if (acct && acct.isOwner) {
+    // The owner's main calendar runs on the shared connection (env token), not a
+    // member link, so gcalStatus never flags it - name it as connected here so
+    // Settings > Calendar leads with what's already linked. (Robin, 2026-10-29.)
+    primary = `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected</span></div>`;
   }
   // Additional connected calendars - for EVERYONE (owner included). Each is stored
   // as its own row (calendar_accounts), separate from the primary path above, so
@@ -17012,7 +17049,7 @@ async function openReviews(rtype) {
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
   // Reviews page lists them, newest first.
-  if (modOn('reflect')) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !journalBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
+  if (reflectOn()) api('/api/blocks?kind=journal&parent_id=').then((entries) => { if (state.view.type === 'reviews') { state.dailyReviews = (entries || []).filter((e) => e.props && e.props.mode === 'dailyreview' && !journalBlank(e)).sort((a, b) => String((b.props && b.props.date) || b.created_at || '').localeCompare(String((a.props && a.props.date) || a.created_at || ''))); renderReviews(); } }).catch(() => {});
 }
 // A plain-language snapshot of where life stands, for the AI overview. Built
 // only from data we hold or fetch here, every field guarded. (Robin.)
@@ -17055,7 +17092,7 @@ function reviewOverviewHtml() {
   return `<section class="home-sec rv-overview"><div class="rvo-head"><span class="rvo-t">How am I doing?</span><button class="rvo-btn" data-review-overview ${o && o.loading ? 'disabled' : ''}>${o && o.loading ? '…' : (o && o.text ? '↻ Refresh' : '✦ Give me an overview')}</button></div>${body}</section>`;
 }
 function renderReviews() {
-  const daily = modOn('reflect') ? (() => {
+  const daily = reflectOn() ? (() => {
     const list = state.dailyReviews || [];
     const todayKey = new Date().toISOString().slice(0, 10);
     const todays = list.find((n) => String((n.props && n.props.date) || '').slice(0, 10) === todayKey);
@@ -18864,7 +18901,7 @@ function renderReviewReport() {
   const sBits = [];
   if (doneN) sBits.push(`<b>${doneN}</b> ticked off${nAreas > 1 ? ` across <b>${nAreas}</b> areas` : ''}`); else sBits.push('a quiet one on the record');
   if (topAName) sBits.push(`led by ${esc(topAName)}`);
-  if (wAvg) sBits.push(`the wheel at <b>${wAvg}</b>/5`);
+  if (wAvg) sBits.push(`The Wheel of Life at <b>${wAvg}</b>/5`);
   const standfirst = sBits.join(' · ') + '.';
   const sent = reviewSentiment(p, r);
   // Featured win: the week's standout, as a magazine feature line.
@@ -18875,9 +18912,22 @@ function renderReviewReport() {
   const spanWords = { weekly: '1 week', monthly: '1 month', quarterly: '3 months', yearly: '1 year' }[p.rtype] || '';
   const shortDR = (iso) => new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
   const rangeLine = (p.from && p.to) ? `${shortDR(p.from)} - ${shortDR(p.to)}` : (pt.range || '');
+  // A weekly review's headline is the week itself (start - end), not one date - the
+  // span is what matters; the submit date is demoted below. (Robin, 2026-10-29.)
+  const weekHeadline = (from, to) => {
+    const f = new Date(from + 'T00:00'), tt = new Date(to + 'T00:00');
+    const mL = (iso) => new Date(iso + 'T00:00').toLocaleDateString(dloc(), { month: 'long' });
+    const full = (iso) => new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'long', year: 'numeric' });
+    if (f.getMonth() === tt.getMonth() && f.getFullYear() === tt.getFullYear()) {
+      return dateStyle() === 'us' ? `${mL(to)} ${f.getDate()} - ${tt.getDate()}, ${tt.getFullYear()}` : `${f.getDate()} - ${tt.getDate()} ${mL(to)} ${tt.getFullYear()}`;
+    }
+    return `${full(from)} - ${full(to)}`;
+  };
+  const headline = (p.rtype === 'weekly' && p.from && p.to) ? weekHeadline(p.from, p.to) : pt.main;
   // Which week of the year - a small sense of where you are in the run.
   const weekNo = (p.rtype === 'weekly' && p.to) ? (() => { const w = isoWeekInfo(p.to); return `Week ${w.week} / ${w.total}`; })() : '';
-  const periodLine = [spanWords, rangeLine, weekNo].filter(Boolean).join(' · ');
+  // Weekly carries its span in the headline, so the kicker drops the range there.
+  const periodLine = [spanWords, (p.rtype === 'weekly' ? '' : rangeLine), weekNo].filter(Boolean).join(' · ');
   // A pull-quote from your own words, if you wrote any.
   const quote = reviewPullQuote(p, r);
   // The previous review of this type, for figure deltas (▲/▼ vs last time).
@@ -18910,9 +18960,10 @@ function renderReviewReport() {
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
     <article class="rr" style="--h:${hue}">
-      <div class="rr-eyebrow"><span>${esc(cfg.label)} review${p.doneAt ? ` · submitted ${esc(prettyDate(p.doneAt))}` : ''}</span>${navHtml}</div>
-      <h1 class="rr-headline">${esc(pt.main)}</h1>
+      <div class="rr-eyebrow"><span>${esc(cfg.label)} review</span>${navHtml}</div>
+      <h1 class="rr-headline">${esc(headline)}</h1>
       ${periodLine ? `<div class="rr-kicker">${esc(periodLine)}</div>` : ''}
+      ${p.doneAt ? `<div class="rr-submitted">Submitted ${esc(prettyDate(p.doneAt))}</div>` : ''}
       <p class="rr-standfirst">${standfirst}</p>
       ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
       ${figsHtml}
@@ -20589,13 +20640,14 @@ function palNavTargets() {
   const T = [];
   const add = (title, run, kw) => T.push({ kind: 'nav', title, run, kw: `${title} ${kw || ''}`.toLowerCase() });
   add('Home', () => openHome(), 'start');
-  if (modOn('today')) add('Today', () => openToday(), 'flow day plan');
+  if (modOn('today')) add('Flow', () => openToday(), 'flow day plan today');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
   if (modOn('notes')) { add('Notes', () => openNotesList(), 'note write'); add('Tables', () => openNotesList(), 'table spreadsheet'); }
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
-  if (modOn('reflect')) { add('Reflection', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching'); add('Journal', () => openJournal(), 'diary write morning pages free write'); }
+  if (reflectOn()) add('Reflection', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching');
+  if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
   if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
   if (modOn('saved')) add('Read & Watch', () => openReadwatch(), 'bookmarks reading list watchlist saved');
@@ -21583,6 +21635,9 @@ document.addEventListener('click', (e) => {
   { const adc = t.closest('[data-ai-disconnect]'); if (adc) { clearAiKey(adc.dataset.aiDisconnect); return; } }
   // The setup hub (icon-tile + expand). Open from the Home "Getting started" card.
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
+  if (t.closest('[data-welcome-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.onbSeen = true; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {}); renderSettings(); return; }   // hide the Getting started card
+  if (t.closest('[data-open-getstarted]')) { openSettings('account'); return; }   // Home banner -> Settings Getting started
+  { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openSettings('manage'); return; } }
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
@@ -21595,6 +21650,7 @@ document.addEventListener('click', (e) => {
   { const oac = t.closest('[data-onb-accent]'); if (oac) { onbPickAccent(oac.dataset.onbAccent); return; } }
   if (t.closest('[data-onb-photo-x]')) { onbRemovePhoto(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
+  { const osg = t.closest('[data-onb-area-suggest]'); if (osg) { onbAddArea(osg.dataset.onbAreaSuggest); return; } }
   { const oh = t.closest('[data-onb-open-hub]'); if (oh) { showOnboarding(oh.dataset.onbOpenHub || null); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
@@ -25488,15 +25544,15 @@ async function finishOnboarding() {
 function welcomeItems() {
   const a = state.account || {};
   const card = state.card || {};
-  const contacts = state.contacts || [];
   const mailConnected = !!(state.mail && Array.isArray(state.mail.accounts) && state.mail.accounts.length > 0);
   const onManaged = a.isOwner || isManagedPlan(a.plan);
+  // Import isn't a checklist step - it's two buttons under the grid (you may have
+  // nothing to bring in). (Robin, 2026-10-29.)
   const items = [
-    { id: 'identity', ic: '◗', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
+    { id: 'identity', ic: '🎨', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
     { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: (state.areas || []).length > 0 },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 || !!a.isOwner },
-    { id: 'import', ic: '⤓', label: 'Import notes & contacts', done: contacts.length > 0 },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
   ];
   // AI is handled for Premium Plus, so there's nothing to set up - hide it there.
@@ -25520,6 +25576,7 @@ function welcomeGuideHtml() {
       <span class="set-welcome-tt"><span class="set-welcome-t">Getting started</span><span class="set-welcome-sub">${allDone ? 'All set - nicely done' : `${doneN} of ${items.length} done`}</span></span>
       <span class="set-welcome-prog" aria-hidden="true"><span style="width:${pct}%"></span></span>
       <span class="set-welcome-chev" aria-hidden="true">▾</span>
+      <button class="set-welcome-x" data-welcome-dismiss title="Hide getting started" aria-label="Hide getting started">✕</button>
     </summary>
     <div class="set-welcome-body">
       <p class="set-welcome-lede">Set LifeFold up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
@@ -25529,6 +25586,10 @@ function welcomeGuideHtml() {
           <span class="wg-item-ic">${x.ic}</span>
           <span class="wg-item-l">${esc(x.label)}</span>
         </button>`).join('')}
+      </div>
+      <div class="wg-actions">
+        <button class="add-btn wide" data-onb-nav="import">⤓ Import Notes</button>
+        <button class="add-btn wide" data-onb-nav="contacts">⤓ Import Contacts</button>
       </div>
     </div>
   </details>`;
@@ -25545,6 +25606,20 @@ function showOnboarding(openId) {
   try { mailApi('/accounts').then((r) => { if (state.onb) { state.onb.mailAccounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); } }).catch(() => {}); } catch {}
   renderOnboarding();
 }
+// A starter set to spark ideas - the classic life areas, plus one to show a Life
+// Space can be anything you like. Tap one to add it; already-added ones drop out.
+const AREA_EXAMPLES = [
+  ['Career & Business', 'Fulfilment, progress and daily work energy'],
+  ['Money & Finances', 'Earning, saving and peace of mind'],
+  ['Health & Fitness', 'Your body, energy and how you feel'],
+  ['Family & Friends', 'The people closest to you'],
+  ['Romance & Love', 'Your relationship, or finding one'],
+  ['Personal Growth', 'Learning, character and becoming'],
+  ['Fun & Recreation', 'Play, hobbies and real time off'],
+  ['Physical Environment', 'Home and the spaces you live in'],
+  ['Spirituality', 'Meaning, contribution and inner life'],
+  ['The Dog', 'Because some things just matter'],
+];
 function onbAreas() {
   const areas = state.onb.areas;
   const chips = areas === null
@@ -25552,11 +25627,18 @@ function onbAreas() {
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
       : '<p class="onb-p onb-muted">No Life Spaces yet - add the ones that matter to you below.</p>';
+  const have = new Set((areas || []).map((a) => (a.title || '').trim().toLowerCase()));
+  const sugg = AREA_EXAMPLES.filter(([n]) => !have.has(n.toLowerCase()));
+  const suggHtml = sugg.length
+    ? `<div class="onb-sugg-wrap"><div class="onb-sugg-h">Not sure where to start? Tap to add any of these:</div>
+       <div class="onb-sugg">${sugg.map(([n, h]) => `<button class="onb-sugg-btn" data-onb-area-suggest="${esc(n)}"><span class="onb-sugg-n">+ ${esc(n)}</span>${h ? `<span class="onb-sugg-s">${esc(h)}</span>` : ''}</button>`).join('')}</div></div>`
+    : '';
   return `<h2 class="onb-h">Your Life Spaces</h2>
-    <p class="onb-p">Life Spaces are the few parts of your life LifeFold is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
+    <p class="onb-p">Life Spaces are the parts of your life LifeFold is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
-    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a lifespace…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>`;
+    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a lifespace…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>
+    ${suggHtml}`;
 }
 async function onbDelArea(id) {
   if (!state.onb) return;
@@ -25740,7 +25822,7 @@ function renderOnboarding() {
   const onManaged = a.isOwner || isManagedPlan(a.plan);
   const calConnected = (state.gcalAccounts || []).length > 0 || !!a.isOwner;
   const TILES = [
-    { id: 'identity', ic: '◗', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
+    { id: 'identity', ic: '🎨', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
     { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The parts of your life', done: (state.areas || []).length > 0, body: onbAreas },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Gmail, Outlook, iCloud…', opt: true, done: mailConnected, body: onbEmail },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: calConnected, body: onbCalendar },

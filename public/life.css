@@ -1243,6 +1243,7 @@ button { cursor:pointer; background:none; border:0; }
 .rr-eyebrow { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--c); }
 .rr-headline { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(28px,4.2vw,36px); font-weight:600; line-height:1.08; letter-spacing:-.01em; color:var(--ink); margin:8px 0 2px; text-wrap:balance; }
 .rr-kicker { font-size:15px; font-weight:600; color:var(--ink-2); margin-top:2px; }
+.rr-submitted { font-size:12.5px; color:var(--ink-3); margin-top:5px; }
 .rr-standfirst { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; line-height:1.45; color:var(--ink-2); margin:12px 0 0; }
 .rr-standfirst b { color:var(--ink); font-weight:600; }
 .rr-byline { margin-top:12px; font-size:13.5px; color:var(--ink-3); } .rr-byline b { color:var(--ink-2); }
@@ -3698,6 +3699,8 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .set-mod input { width:20px; height:20px; accent-color:var(--accent); flex:none; }
 .set-mod > span { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .set-mod small { font-size:12.5px; color:var(--ink-3); font-weight:400; line-height:1.35; }
+.set-modlink { align-self:flex-start; background:none; border:0; padding:0; margin-top:2px; font-size:12.5px; color:var(--accent); cursor:pointer; font-weight:500; text-align:left; }
+.set-modlink:hover { text-decoration:underline; }
 .set-notifs { gap:22px; }
 /* Settings → Mobile: drag-reorder + show/hide list for the mobile Home sections. */
 .msec-list { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
@@ -4912,16 +4915,25 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .onb-done:hover { border-color:var(--accent); color:var(--ink); background:var(--card); }
 @media (max-width:560px){ .onb-sheet { padding:40px 16px 32px; gap:18px; } .onb-title { font-size:27px; } .onb-grid { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:10px; } }
 /* The Home "Getting started" doorway into the hub. */
-.home-setup { display:flex; align-items:stretch; gap:8px; margin-bottom:16px; }
-.home-setup-main { flex:1; display:flex; align-items:center; gap:14px; text-align:left; padding:15px 18px; border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); border-radius:16px; background:color-mix(in srgb,var(--accent) 7%,var(--card)); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; min-width:0; }
-.home-setup-main:hover { border-color:var(--accent); transform:translateY(-1px); }
-.hsu-ic { color:var(--accent); flex:none; line-height:0; } .hsu-ic .brand-mark { width:30px; height:30px; margin:0; }
-.hsu-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
-.hsu-t { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); }
-.hsu-s { font-size:13.5px; color:var(--ink-2); line-height:1.4; }
-.hsu-go { margin-left:auto; color:var(--accent); font-size:20px; flex:none; }
+.home-setup { display:flex; align-items:stretch; gap:8px; margin-bottom:18px; }
+/* "Welcome to the Fold" banner: a calm, warm doorway with the origami crane. */
+.gs-banner { flex:1; display:flex; align-items:center; gap:18px; text-align:left; padding:20px 24px; border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); border-radius:20px; background:
+    radial-gradient(120% 140% at 12% 50%, color-mix(in srgb,var(--accent) 16%,var(--card)), transparent 60%),
+    linear-gradient(120deg, color-mix(in srgb,var(--accent) 9%,var(--card)), color-mix(in srgb,var(--accent) 3%,var(--card)));
+  box-shadow:var(--shadow-sm); cursor:pointer; transition:border-color .14s, transform .09s, box-shadow .14s; min-width:0; position:relative; overflow:hidden; }
+.gs-banner::after { content:''; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(60% 80% at 10% 50%, color-mix(in srgb,var(--accent) 12%,transparent), transparent 70%); opacity:0; transition:opacity .2s; pointer-events:none; }
+.gs-banner:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:var(--shadow); }
+.gs-banner:hover::after { opacity:1; }
+.gs-art { flex:none; width:60px; height:60px; color:var(--accent); display:grid; place-items:center; filter:drop-shadow(0 2px 5px color-mix(in srgb,var(--accent) 30%,transparent)); }
+.gs-art svg { width:100%; height:100%; display:block; }
+.gs-body { display:flex; flex-direction:column; gap:4px; min-width:0; z-index:1; }
+.gs-t { font-family:'Cormorant Garamond',Georgia,serif; font-size:26px; font-weight:600; letter-spacing:-.01em; color:var(--ink); line-height:1.05; }
+.gs-s { font-size:14px; color:var(--ink-2); line-height:1.45; }
+.gs-go { margin-left:auto; color:var(--accent); font-size:22px; flex:none; z-index:1; transition:transform .14s; }
+.gs-banner:hover .gs-go { transform:translateX(3px); }
 .home-setup-x { flex:none; width:34px; align-self:center; background:none; border:0; color:var(--ink-3); font-size:16px; cursor:pointer; border-radius:8px; }
 .home-setup-x:hover { color:var(--ink); background:var(--paper-2); }
+@media (max-width:560px){ .gs-banner { padding:16px 18px; gap:14px; } .gs-art { width:48px; height:48px; } .gs-t { font-size:22px; } }
 .onb-card { position:relative; width:100%; max-width:520px; max-height:90vh; overflow-y:auto;
   background:var(--card); border:1px solid var(--line-2); border-radius:20px; padding:26px 26px 20px;
   box-shadow:0 30px 80px -30px rgba(0,0,0,.5); display:flex; flex-direction:column; gap:14px; }
@@ -4970,6 +4982,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .onb-area-add { display:flex; gap:9px; margin-top:2px; }
 .onb-area-add .sel { flex:1; min-width:0; }
 .onb-area-add .add-btn.wide { flex:none; }
+/* Example Life Spaces: tap-to-add cards that spark ideas, dropping out once added. */
+.onb-sugg-wrap { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+.onb-sugg-h { font-size:13.5px; color:var(--ink-3); margin-bottom:10px; }
+.onb-sugg { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.onb-sugg-btn { display:flex; flex-direction:column; gap:3px; align-items:flex-start; text-align:left; padding:11px 13px; border:1px solid var(--line-2); border-radius:12px; background:var(--paper); cursor:pointer; transition:border-color .12s, background .12s; }
+.onb-sugg-btn:hover { border-color:var(--accent); background:var(--card); }
+.onb-sugg-n { font-size:14.5px; font-weight:600; color:var(--ink); }
+.onb-sugg-s { font-size:12.5px; color:var(--ink-3); line-height:1.35; }
+@media (max-width:560px){ .onb-sugg { grid-template-columns:1fr; } }
 .onb-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
 .onb-foot .add-btn.wide { flex:none; min-width:150px; }
 @media (max-width:560px){ .onb-card { padding:22px 18px 16px; border-radius:16px; } .onb-h { font-size:26px; } .onb-foot .add-btn.wide { min-width:130px; } }
