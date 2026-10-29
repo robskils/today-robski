@@ -3442,7 +3442,6 @@ function renderSettings() {
   const editingPhone = !!(state.settings && state.settings.editPhone);
   const ec = (state.settings && state.settings.emailChange) || null;   // in-progress primary-email change
   const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
-      ${state.onbSeen ? `<div class="set-card set-reinstate"><div class="set-closebox-txt"><div class="set-row-t">✦ Getting started</div><div class="set-row-s">You've hidden the setup guide. Bring it back any time to run through it again.</div></div><button class="add-btn wide" data-welcome-reinstate>Show Getting started</button></div>` : ''}
       <div class="set-card set-account">
         <div class="set-pair${ec ? ' set-pair-stack' : ''}">
         ${(nameSet && !editingName)
@@ -3485,6 +3484,7 @@ function renderSettings() {
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
+      ${state.onbSeen ? `<div class="set-reinstate-row"><button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Show the Getting started guide</button></div>` : ''}
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
           <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave LifeFold on this device. Anything not saved to your account is cleared from this browser.</div></div>
