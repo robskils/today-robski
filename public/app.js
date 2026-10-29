@@ -4524,6 +4524,7 @@ function navItems(v) {
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
+    shared: modOn('contacts') ? `<button class="nav-item ${v.type === 'shared' ? 'on' : ''}" data-open-shared-hub><span class="nav-ic">⇄</span><span class="nav-lbl">Shared</span></button>` : '',
   };
 }
 // A flat, importance-ordered single column of clear tool buttons - the mobile
@@ -4531,7 +4532,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'practices', 'wellbeing', 'areas', 'insights', 'goals', 'reviews', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'shared', 'practices', 'wellbeing', 'areas', 'insights', 'goals', 'reviews', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -4627,6 +4628,7 @@ function peopleBox() {
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'shared' ? 'on' : ''}" data-open-shared-hub><span class="nav-ic">⇄</span><span class="nav-lbl">Shared</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live LifeFold people, names and all, under a collapsible header so it can
