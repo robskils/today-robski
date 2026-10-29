@@ -2593,10 +2593,8 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .nav-people-h .np-chev { flex:none; width:12px; font-size:10px; color:var(--ink-3); }
 .nav-people-h .np-count { margin-left:auto; letter-spacing:0; font-size:11px; font-weight:700; color:var(--ink-3); background:var(--paper-2); border-radius:999px; padding:0 7px; }
 /* A bright green dot when a contact is online - visible even with the list folded;
-   tapping the header opens it so you can see who. (Robin, 2026-10-29.) */
-.nav-people-h .np-online-dot { flex:none; width:9px; height:9px; border-radius:50%; background:#36d576; box-shadow:0 0 0 3px color-mix(in srgb,#36d576 20%,transparent); margin-left:3px; animation:npPulse 2.4s ease-in-out infinite; }
-@keyframes npPulse { 0%,100% { box-shadow:0 0 0 2px color-mix(in srgb,#36d576 26%,transparent); } 50% { box-shadow:0 0 0 5px color-mix(in srgb,#36d576 5%,transparent); } }
-@media (prefers-reduced-motion:reduce){ .nav-people-h .np-online-dot { animation:none; } }
+   tapping the header opens it so you can see who. Steady, no pulse. (Robin, 2026-10-29.) */
+.nav-people-h .np-online-dot { flex:none; width:9px; height:9px; border-radius:50%; background:#36d576; box-shadow:0 0 0 3px color-mix(in srgb,#36d576 18%,transparent); margin-left:3px; }
 .nav-box-people { display:flex; flex-direction:column; gap:1px; margin-top:2px; }
 .nav-sec-items .nav-full { grid-column:1 / -1; }
 .nav-grp { font-size:11px; text-transform:uppercase; letter-spacing:.13em; color:var(--accent);
