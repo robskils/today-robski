@@ -928,21 +928,21 @@ const MSG_ICO = '<svg class="nav-ic-svg" viewBox="0 0 24 24" fill="none" stroke=
 // you're on; clicking pins the full guide in its own tab. Content is plain and
 // task-focused - what the tool is for and how to drive it, not a feature list.
 const HELP = {
-  home: { title: 'Home', tip: 'Your whole day on one screen: today’s schedule, your top tasks, a scratchpad and everything you’ve starred.',
+  home: { title: 'Home', tip: 'Start here. Your day, your top tasks, a scratchpad and everything you’ve starred - the things that matter right now, on one calm screen, so nothing slips.',
     body: `<p>Home is the first thing you see and the place to start your day. It pulls the pieces that matter <em>right now</em> into one screen so you don’t have to go looking.</p>
       <ul><li><b>Today</b> - your calendar events and time blocks for the day.</li>
       <li><b>Priority Tasks</b> - your open P1s, each on its own card, in the order you drag them. “See all” opens the full board.</li>
       <li><b>Notepad</b> - a scratchpad that saves as you type, waiting for you next time.</li>
       <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the pages, tables and areas you keep returning to.</li></ul>
       <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
-  tasks: { title: 'Tasks', tip: 'A board of everything to do. Filter it your way, sort by any column, and tick things off.',
+  tasks: { title: 'Tasks', tip: 'Everything you have to do, in one place you can bend to your own way of thinking. Filter it, sort it, tick it off anywhere - and it’s done everywhere at once.',
     body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional page and an optional due date.</p>
       <ul><li><b>Add</b> one with <b>+ New</b> or the + by Tasks in the sidebar - it’s usable the instant you type it.</li>
       <li><b>Filter</b> builds your own view: add conditions (priority is P1, area is Work, due this week…) and stack as many as you like.</li>
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Notes', tip: 'Free writing with headings and links. Connect notes to one another, and tag them to your lifespaces.',
+  notes: { title: 'Notes', tip: 'Write freely, then weave it together: headings that fold, notes linked to one another, images and files dropped right in the page - and anything tagged to the parts of your life it belongs to.',
     body: `<p>A page is for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse a long page), lists and links.</p>
       <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
       <li><b>Related pages</b> appear on their own - any page sharing a lifespace with this one is a tap away, so they find each other.</li>
@@ -950,7 +950,7 @@ const HELP = {
       <li><b>Life Spaces</b> - tag a page to one or several lifespaces (the chips up top); it then shows on each of those lifespaces, in that lifespace's colour.</li>
       <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
-  calendar: { title: 'Calendar', tip: 'Your month, week and agenda. Add events; a start date pulls the end along so it never ends before it starts.',
+  calendar: { title: 'Calendar', tip: 'Your whole calendar - and it works with no outside account at all, syncs with Google if you want it to, and can pull in your country’s holidays and your team’s fixtures.',
     body: `<p>The calendar shows your events by month, with an agenda and search. It works on its own, and can also sync with your <b>Google Calendar</b> if you connect it.</p>
       <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
       <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
@@ -995,14 +995,14 @@ const HELP = {
       </ul>
       <h4>Your mail, your business</h4>
       <p>Your account passwords are <b>encrypted</b> so not even we can read them, your mail stays on your provider's own servers, and anything that <b>leaves</b> your account - a reply, a forward - always waits for you to press the button. Scribe drafts; it never sends on its own.</p>` },
-  contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from pages - and a nudge when it has been too long.',
+  contacts: { title: 'Contacts', tip: 'The people in your life, kept close - with a gentle nudge when it has been too long since you spoke, measured from when you last actually did.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
       <p>Contacts with an email are checked against LifeFold, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'A dashboard across spending, portfolio and advice - your lifespaces double as spending categories.',
+  financial: { title: 'Money', tip: 'Spending, portfolio and a read on the markets in one glance - and your money lines up with your life, because your Life Spaces double as the spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
       <h4>Portfolio</h4>
       <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and LifeFold keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
@@ -1014,7 +1014,7 @@ const HELP = {
       </ul>
       <h4>Advice</h4>
       <p>Market <b>trends</b> and a <b>watchlist</b> of things you are following (as opposed to own), read by Claude for a plain-language take. This part uses AI, so it waits on your key or a Premium Plus plan - and it is general reading, never personal financial advice.</p>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each lifespace into goals with deadlines, and review your progress weekly to yearly.',
+  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each part of your life into goals you can actually track, then look back honestly - weekly, monthly, quarterly, yearly - and watch the shape of your life change over time.',
     body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
       <ul>
       <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
@@ -1024,7 +1024,7 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Life Spaces', tip: 'The lifespaces of your life - an area, a project, a person. Each gathers everything that belongs to it into one place.',
+  areas: { title: 'Life Spaces', tip: 'A home for every part of your life - an area, a project, even a person. Everything to do with it in one place, so you stop hunting across a dozen apps for the pieces.',
     body: `<p>LifeFold keeps a <b>lifespace for each part of your life</b> - the way a book of accounts keeps a separate lifespace for each domain. A lifespace can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
       <p><b>One lifespace gathers that whole corner of your life:</b></p>
       <ul>
@@ -1040,7 +1040,7 @@ const HELP = {
       <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
       </ul>
       <p>Make a page or table straight from a lifespace, or tag an existing one to it. Rename, recolour, share or add lifespaces whenever you like - the whole app follows.</p>` },
-  reflect: { title: 'Reflection', tip: 'A quiet corner: journal, coaching, dreams, meditation, spirit cards, I Ching, horoscope - each its own page.',
+  reflect: { title: 'Reflection', tip: 'A quiet corner of the app for the inner life - journal, coaching, dreams, meditation, and a few reflection tools for when you want a different lens. Each its own page, nothing on show.',
     body: `<p><b>Reflection</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
       <ul>
       <li><b>Journal</b> - free-write (stream of consciousness, morning-pages style) or start from a prompt. <b>Dig deeper</b> asks one thoughtful follow-up question; <b>Empathy</b> offers a warm reflection; and you can <b>dictate</b> an entry by voice.</li>
@@ -1053,7 +1053,7 @@ const HELP = {
       <li><b>Insights</b> - reads back across your journal entries for the themes, what lifts you and what drains you. (Insights belong to the Journal.)</li>
       </ul>
       <p>A tool holding a live reading - I Ching, horoscope, spirit card - shows a dot on its tile; tap to reopen it.</p>` },
-  saved: { title: 'Read & Watch', tip: 'One list for everything you mean to read or watch later - articles, videos, books, films and useful sites.',
+  saved: { title: 'Read & Watch', tip: 'One calm list for everything you mean to get to - articles, videos, books, films, sites worth keeping - so it is off your mind until you have the time for it.',
     body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
       <h4>Adding something</h4>
       <ul>
@@ -1071,13 +1071,13 @@ const HELP = {
       <li><b>File it to a Life Space</b> and it sits with that part of your life, in that lifespace's colour - your watercolour reading filed under Art, say.</li>
       </ul>
       <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening LifeFold.</p>` },
-  timer: { title: 'Toolbox', tip: 'A focus timer, a plain timer, and your practices - the small tools for doing the work.',
+  timer: { title: 'Toolbox', tip: 'The small tools for doing the work: a focus timer that logs your deep-work sessions, a plain countdown for anything, and your practices.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on LifeFold', tip: 'Connect with the people you know who are on LifeFold - then share lifespaces, pages and tasks, and keep in touch.',
+  friends: { title: 'Contacts on LifeFold', tip: 'Connect with the people you know who are on LifeFold - then share Life Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
     body: `<p>Some of the people in your Contacts are on LifeFold too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
       <h4>Connecting</h4>
       <ul>
@@ -1093,7 +1093,7 @@ const HELP = {
       <li>Keep <b>shared notes</b>, <b>chat</b>, and <b>start a call</b> when it is quicker to talk.</li>
       </ul>
       <p>Your data stays yours: a person only ever sees the exact lifespace, page or task you share with them, and you can stop sharing at any time.</p>` },
-  today: { title: 'Flow', tip: 'The hub for planning and tracking your day - drag practices and tasks onto a timed day, tick them off, keep your streaks.',
+  today: { title: 'Flow', tip: 'Plan your day by feel, not by force: drag your practices and tasks onto a timed day, tick off what you did, and let your streaks build. Practices are a palette, never a timetable.',
     body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by page and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
       <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
@@ -1102,7 +1102,7 @@ const HELP = {
       <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
       <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
-  tabs: { title: 'Tabs & getting around', tip: 'Keep several places open at once, pin the ones you always want to hand, and jump anywhere with ⌘K.',
+  tabs: { title: 'Tabs & getting around', tip: 'Keep a few places open at once like browser tabs, pin the ones you always want to hand, and jump anywhere in a couple of keystrokes with ⌘K.',
     body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in LifeFold - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
       <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
