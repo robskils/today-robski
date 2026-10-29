@@ -957,33 +957,44 @@ const HELP = {
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
       <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
       <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
-  mail: { title: 'Mail', tip: 'All your inboxes in one place, triaged into a few buckets so the inbox reaches zero.',
-    body: `<p>Mail merges your real mailboxes (IMAP/SMTP) into one inbox. Add an account with <b>Accounts</b> at the top of Mail.</p>
-      <p><b>Triage to zero.</b> New mail lands in the <b>Inbox</b> queue. File each email into one of three priority buckets - and it leaves the inbox:</p>
+  mail: { title: 'Mail', tip: 'Every inbox in one place - Gmail, Yahoo, iCloud, Outlook. Your mail stays where it is; you just get to do far more with it: triage to zero, turn email into tasks and notes, file it under a Life Space, and search your whole archive.',
+    body: `<p><b>Here's the deal.</b> Connect your email accounts and LifeFold becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into LifeFold; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. LifeFold is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
+      <h4>What's in it for you</h4>
+      <ul>
+      <li><b>One inbox for every account.</b> Gmail for work, iCloud for the family, that old Yahoo you still get the good stuff on - they pour into a single stream, so you check mail once, not five times.</li>
+      <li><b>Email becomes action.</b> An email is rarely just an email - it's a thing to do, a thing to remember, a thing that belongs to one corner of your life. Turn it into a <b>task</b>, make it a <b>note</b>, or file it under a <b>Life Space</b> in a tap, and it joins the rest of your world instead of rotting in a thread.</li>
+      <li><b>Reach zero, and stay there.</b> Every new email gets sorted into a few honest buckets and leaves the inbox. The point isn't a tidy inbox for its own sake - it's the quiet of knowing nothing's slipping through.</li>
+      <li><b>Find anything, ever.</b> Search reaches your <b>whole mailbox</b> on the server - your entire Gmail history, not just what's on screen - using Gmail's own search index under the hood. The past is all still there; you just don't have to carry it around.</li>
+      </ul>
+      <h4>Going forward, not hoarding backward</h4>
+      <p>LifeFold works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and LifeFold just gives you better things to do with it.</p>
+      <h4>One inbox, triaged to zero</h4>
+      <p>New mail lands in the <b>Inbox</b> queue. File each email into one of three honest buckets - and it leaves the inbox:</p>
       <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
       <li><b>Important</b> - matters, but not a rush; plan it.</li>
-      <li><b>Read Later</b> - worth a read when you have space.</li></ul>
-      <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent</b> · <b>Important</b> · <b>Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the Inbox queue. When the Inbox count hits zero, you're done.</p>
-      <p><b>Filing an email.</b> Open it and use <b>File into ▾</b> to drop it in a bucket, tap the colour dot on any row, or drag a row onto a pot. The moment you file it, it's <b>archived off your inbox</b> - out of your face - while the bucket keeps hold of it, on any account (Gmail or IMAP alike). Change your mind? <b>File into ▾ → Back to Inbox</b> puts it back in the queue.</p>
-      <p><b>Working a bucket.</b> Open a pot like Urgent, deal with each email, then <b>Archive</b> it (the archive button in the open email, or on the row) - it's already out of the inbox, so that just clears it from the bucket; it stays safe in your Archive folder. Trashing or moving an email clears its bucket too, so nothing lingers once you've actioned it.</p>
-      <p><b>The open-email bar</b> is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life Space</b> (file the email under a part of your life), <b>Transform ▾</b> (turn it into a task or a note), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block).</p>
-      <h4>Which email accounts can I add?</h4>
-      <p>Any mailbox that speaks <b>IMAP + SMTP</b> - which is nearly all of them. There are one-tap presets for <b>Gmail / Google Workspace</b>, <b>iCloud</b>, <b>Outlook / Office 365</b> and <b>Purelymail</b>, and you can add <b>any other provider</b> by typing its IMAP and SMTP host and port yourself. Add as many as you like - they all merge into the one inbox, and adding one never removes another.</p>
+      <li><b>Read Later</b> - worth a read when you have the space.</li></ul>
+      <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent · Important · Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the queue. When the Inbox count hits zero, you're done. To file an email, open it and use <b>File into ▾</b>, tap the colour dot on its row, or drag the row onto a pot - the moment you do, it's <b>archived off your inbox</b>, out of your face, while the bucket keeps hold of it (Gmail or any IMAP account alike). Changed your mind? <b>File into ▾ → Back to Inbox</b>.</p>
+      <h4>Make something of it</h4>
+      <p>Open any email and the bar is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life Space</b> (file it under a part of your life), <b>Transform ▾</b> (turn it into a <b>task</b> or a <b>note</b>, carrying the email's text with it), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block). That's the whole idea - email stops being a dead end and becomes the start of something.</p>
+      <h4>Which accounts can I connect?</h4>
+      <p>Almost any mailbox - anything that speaks <b>IMAP</b>, which is <b>Gmail</b>, Google Workspace, <b>Yahoo</b>, <b>iCloud</b>, <b>Outlook / Office 365</b>, Purelymail and nearly every other provider. There are one-tap presets for the big ones, and you can add anything else by typing its IMAP and SMTP host and port. Add as many as you like; they all merge into the one inbox, and adding one never touches another.</p>
       <h4>How to add one</h4>
       <ol>
         <li>Open Mail and tap <b>Accounts</b> (top right), then <b>Add mailbox</b>.</li>
-        <li>Pick your <b>provider</b> - it fills in the IMAP/SMTP hosts and ports for you (or leave it custom and type your own).</li>
-        <li>Enter your <b>email address</b> and <b>password</b>. For Google and iCloud that's an <b>App Password</b> (see below), not your normal one.</li>
-        <li>Save. It connects and your mail starts flowing in.</li>
+        <li>Pick your <b>provider</b> - it fills in the hosts and ports for you (or stay custom and type your own).</li>
+        <li>Enter your <b>email address</b> and <b>password</b>. For Google, Yahoo and iCloud that's an <b>App Password</b> (below), not your everyday one.</li>
+        <li>Save. It connects, and your mail starts flowing in.</li>
       </ol>
       <h4>Passwords by provider</h4>
       <ul>
-        <li><b>Gmail / Google Workspace</b> - needs a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "LifeFold", press Create), and paste the 16-character code. On <b>Workspace</b>, your admin must also have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your account password or toggle 2-Step Verification - then just make a new one.</li>
-        <li><b>iCloud</b> - needs an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
-        <li><b>Outlook / Office 365</b> - your normal password usually works; if the account has MFA, generate an app password in your Microsoft security settings.</li>
+        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "LifeFold", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
+        <li><b>iCloud</b> - an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
+        <li><b>Yahoo</b> - an <b>app password</b> from your Yahoo Account Security settings (your normal password won't work for a mail app).</li>
+        <li><b>Outlook / Office 365</b> - your normal password usually works; with MFA, generate an app password in your Microsoft security settings.</li>
         <li><b>Purelymail &amp; most others</b> - your normal mailbox password (or an app password if the provider uses two-factor).</li>
       </ul>
-      <p>Sending, and anything that leaves your account, always waits for you to press the button.</p>` },
+      <h4>Your mail, your business</h4>
+      <p>Your account passwords are <b>encrypted</b> so not even we can read them, your mail stays on your provider's own servers, and anything that <b>leaves</b> your account - a reply, a forward - always waits for you to press the button. Scribe drafts; it never sends on its own.</p>` },
   contacts: { title: 'Contacts', tip: 'Your people, with groups you can build from pages - and a nudge when it has been too long.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
       <p>Contacts with an email are checked against LifeFold, so you can see which of your people are here and connect with them.</p>
@@ -10369,42 +10380,26 @@ function openAreaColor() {
 // public image store, returning a permanent URL to persist on the lifespace. (Robin:
 // upload a cover from your computer.)
 async function coverUpload(file) {
-  // A photo chosen from the macOS/iOS Photos library is a LAZY handle the OS is
-  // still materialising - decoding it or streaming it to fetch directly fails
-  // opaquely ("Failed to fetch" / "Could not read"). So read the bytes up front to
-  // force materialisation (this is what the attachment path does too), work from a
-  // solid in-memory blob, and convert HEIC (iPhone photos) to JPEG. Without the
-  // up-front read, uploading a cover from Photos just didn't work. (Robin,
-  // 2026-10-29: add a cover photo from Photos on the MacBook.)
+  // Use the EXACT path that note attachments use and that already works for Robin's
+  // Photos pics: shrinkImage() does the HEIC->JPEG decode on the ORIGINAL File (the
+  // bespoke cover decoder kept failing on real Photos files - a reconstructed blob
+  // and a hand-rolled createImageBitmap that the proven path sidesteps). shrinkImage
+  // never throws for an ordinary photo (it falls back to the original), so a cover
+  // from Photos finally lands. Then read the bytes up front (forces a lazy macOS
+  // Photos handle to materialise) and POST them. (Robin, 2026-10-29.)
+  if (isHeic(file)) toast('Preparing photo…');
+  let f;
+  try { f = await shrinkImage(file); }
+  catch (e) { if (isHeic(file)) throw e; f = file; }   // HEIC must convert; any other image falls back to the original bytes
   let buf;
-  try { buf = await file.arrayBuffer(); }
+  try { buf = await f.arrayBuffer(); }
   catch { throw new Error("Couldn't read that photo. In Photos, drag it to your desktop (or File › Export), then upload that copy."); }
   if (!buf || !buf.byteLength) throw new Error('That photo came through empty. Export it from Photos first, then upload the copy.');
-  let srcBlob = new Blob([buf], { type: file.type || '' });
-  if (isHeic(file)) {
-    const heic2any = await loadHeicDecoder();
-    const out = await heic2any({ blob: srcBlob, toType: 'image/jpeg', quality: 0.85 });
-    srcBlob = Array.isArray(out) ? out[0] : out;
-  }
-  // Don't gate on MIME type here - a Photos pick can arrive with an empty type.
-  // We have the bytes; try to decode them. If it isn't a readable image, the
-  // decode fails below with a clear message.
-  let objUrl, bmp;
-  try {
-    bmp = await createImageBitmap(srcBlob, { imageOrientation: 'from-image' }).catch(() => null);
-    if (!bmp) { objUrl = URL.createObjectURL(srcBlob); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("Couldn't read that photo - try another, or export it from Photos first.")); im.src = objUrl; }); }
-    const w = bmp.width, h = bmp.height; if (!w || !h) throw new Error("Couldn't read that photo - try another, or export it from Photos first.");
-    const MAX = 1600; const scale = Math.min(1, MAX / Math.max(w, h));
-    const dw = Math.round(w * scale), dh = Math.round(h * scale);
-    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
-    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh); if (bmp.close) bmp.close();
-    const type = /png/i.test(srcBlob.type || file.type || '') ? 'image/png' : 'image/jpeg';
-    const blob = await new Promise((res) => cv.toBlob(res, type, 0.85));
-    if (!blob) throw new Error('Could not process that image');
-    const res = await fetch(`/api/mail/sig-img?type=${encodeURIComponent(type)}`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: blob });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
-    return (await res.json()).url;
-  } finally { if (objUrl) URL.revokeObjectURL(objUrl); }
+  if (buf.byteLength > 6 * 1024 * 1024) throw new Error(`That photo is ${Math.round(buf.byteLength / 1048576)}MB - a bit big for a cover. Try a smaller one.`);
+  const type = /^image\//.test(f.type || '') ? f.type : 'image/jpeg';
+  const res = await fetch(`/api/mail/sig-img?type=${encodeURIComponent(type)}`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: buf });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
+  return (await res.json()).url;
 }
 // Hide or show the cover band. A hidden cover keeps whatever photo was set
 // (so Show brings it back untouched); with no photo, Hide just folds the
@@ -10463,12 +10458,17 @@ function openAreaCover() {
   };
   const handleCoverFile = async (f) => {
     if (!f) return;
+    try { console.log('[cover] picked', { name: f.name, type: f.type, size: f.size }); } catch {}
     // Only reject when the type is present AND clearly not an image - a Photos pick
     // can arrive with an empty type, and coverUpload decodes the bytes to confirm.
-    if (f.type && !isImgType(f.type) && !isHeic(f)) { toast('Please choose an image'); return; }
+    if (f.type && !isImgType(f.type) && !isHeic(f)) { results.innerHTML = `<div class="cv-hint">That's a ${esc(f.type)} file, not an image - pick a photo.</div>`; return; }
     results.innerHTML = `<div class="cv-hint">${isHeic(f) ? 'Preparing photo…' : 'Uploading…'}</div>`;
-    try { const u = await coverUpload(f); apply({ src: 'upload', url: u }); }
-    catch (err) { results.innerHTML = `<div class="cv-hint">${esc(err.message || 'Upload failed')}</div>`; }
+    try { const u = await coverUpload(f); if (!u) throw new Error('no url came back'); apply({ src: 'upload', url: u }); }
+    catch (err) {
+      try { console.error('[cover] upload failed', err, { name: f.name, type: f.type, size: f.size }); } catch {}
+      // Show the real reason plus what was picked, so a stuck case is diagnosable.
+      results.innerHTML = `<div class="cv-hint">Couldn't add that photo: ${esc((err && err.message) || 'upload failed')}.<br><small>(${esc(f.name || 'photo')} · ${esc(f.type || 'no type')} · ${Math.round((f.size || 0) / 1024)}KB)</small></div>`;
+    }
   };
   el.querySelector('[data-cv-file]').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; handleCoverFile(f); });
   const drop = el.querySelector('.cv-drop');
