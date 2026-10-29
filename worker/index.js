@@ -2670,12 +2670,12 @@ async function runSurfaceAlertsForUser(env, user) {
   ).bind(uid, now.date).run();
   if (!claim.meta?.changes) return 0;
 
-  // Email default on; text default off (a text costs money and needs a saved
-  // number). Both are switchable "generally" in Settings.
-  // Account-wide defaults; a task can override its channels (props.surfaceEmail /
-  // props.surfaceSms) so someone can pick text, email or both per task.
-  const emailOn = (await getSetting(env, 'surface_email', uid)) !== '0';
-  const smsOn = (await getSetting(env, 'surface_sms', uid)) !== '0';   // default on (matches the account default; only sends where a phone is on file)
+  // Surface alerts go in-app (default on) and, if the account asks, by text.
+  // LifeFold does NOT email a "task surfaced" notice - the morning brief and the
+  // review reminders are the only things we ever put in someone's inbox. (Robin,
+  // 2026-10-29: "we don't send emails like this.") A task can still override its
+  // own channels via props.surfaceSms / surfaceApp.
+  const smsOn = (await getSetting(env, 'surface_sms', uid)) !== '0';   // only sends where a phone is on file
 
   const today = now.date;
   const { results } = await env.DB.prepare(
@@ -2697,7 +2697,6 @@ async function runSurfaceAlertsForUser(env, user) {
   // Resolve each task's channels: an explicit per-task choice wins, else the
   // account default.
   const smsDue = due.filter((d) => (d.props.surfaceSms == null ? smsOn : !!d.props.surfaceSms));
-  const emailDue = due.filter((d) => (d.props.surfaceEmail == null ? emailOn : !!d.props.surfaceEmail));
 
   if (smsDue.length) {
     const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
@@ -2709,10 +2708,6 @@ async function runSurfaceAlertsForUser(env, user) {
         : `${smsDue.length} tasks surfaced to your Today feed - you asked to be told: ${titles.slice(0, 5).join('; ')}${smsDue.length > 5 ? '…' : ''}. ${home}/today`;
       await sendSms(env, body, phone).catch(() => {});
     }
-  }
-  if (emailDue.length) {
-    const to = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
-    if (to) await sendSurfaceMail(env, { to, tasks: emailDue.map((d) => ({ id: d.id, title: d.title })), home }).catch(() => {});
   }
   // In-app push to the person's installed devices (default on per task). Fires
   // alongside email/text; no-op when they have no push subscriptions. (Robin.)

@@ -3438,6 +3438,7 @@ function renderSettings() {
   const editingPhone = !!(state.settings && state.settings.editPhone);
   const ec = (state.settings && state.settings.emailChange) || null;   // in-progress primary-email change
   const accountPane = state.account ? `${installRowHtml() ? `<div class="set-card">${installRowHtml()}</div>` : ''}
+      ${state.onbSeen ? `<div class="set-card set-reinstate"><div class="set-closebox-txt"><div class="set-row-t">✦ Getting started</div><div class="set-row-s">You've hidden the setup guide. Bring it back any time to run through it again.</div></div><button class="add-btn wide" data-welcome-reinstate>Show Getting started</button></div>` : ''}
       <div class="set-card set-account">
         <div class="set-pair${ec ? ' set-pair-stack' : ''}">
         ${(nameSet && !editingName)
@@ -3566,7 +3567,6 @@ function renderSettings() {
         <div class="set-notif-group"><div class="set-notif-h">By email</div>
           <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
           <div class="set-notif-act"><button class="ghost" data-brief-test>✉ Send me one now</button><span class="set-notif-hint">A test brief, right now - doesn't affect tomorrow's.</span></div>
-          <label class="set-mod"><span>When something surfaces<small>An email the morning a "surface on" task comes back to your Home</small></span><input type="checkbox" data-account-surface-email ${state.account.surfaceEmail !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">By text</div>
           <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
@@ -3615,12 +3615,12 @@ function renderSettings() {
   const panes = { account: accountPane, card: cardEditorHtml(), appearance: appearancePane, mobile: mobileSettingsHtml(), feeds: feedsPane, ai: aiPane, notifications: notificationsPane, sections: sectionsPane, invites: invitesPane, import: importPane(), manage: managePane };
   const subs = { account: t('set.sub.account'), card: t('set.sub.card'), appearance: t('set.sub.appearance'), mobile: t('set.sub.mobile'), feeds: t('set.sub.feeds'), ai: t('set.sub.ai'), notifications: t('set.sub.notifications'), sections: t('set.sub.sections'), invites: t('set.sub.invites'), import: t('set.sub.import'), manage: t('set.sub.manage') };
 
-  const setupItems = state.account ? welcomeItems() : [];
-  const setupDone = setupItems.length > 0 && setupItems.every((x) => x.done);
+  // Dismissing (the ✕) is now the only thing that hides the guide, so the Account
+  // tab's "Show Getting started" button can always bring it back. (Robin, 2026-10-29.)
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
     <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
-    ${state.account && !setupDone && !state.onbSeen ? welcomeGuideHtml() : ''}
+    ${state.account && !state.onbSeen ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
@@ -21277,7 +21277,6 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-weekstart]')) { const w = Number(e.target.value); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   if (e.target.matches('[data-account-currency]')) { const code = e.target.value; if (state.account) state.account.currency = code; saveAccount({ currency: code }); const c = (CURRENCIES_APP.find((x) => x[0] === code) || [])[3] || code; toast(`Money shown in ${c}`); }
   if (e.target.matches('[data-datestyle]')) { setDateStyle(e.target.value); toast(e.target.value === 'us' ? 'Dates: October 23' : 'Dates: 23 October'); }
-  if (e.target.matches('[data-account-surface-email]')) { saveAccount({ surfaceEmail: e.target.checked }); toast(e.target.checked ? 'Surface emails on' : 'Surface emails off'); }
   if (e.target.matches('[data-account-surface-sms]')) { saveAccount({ surfaceSms: e.target.checked }); toast(e.target.checked ? 'Surface texts on' : 'Surface texts off'); }
   if (e.target.matches('[data-account-quote]')) { saveAccount({ dailyQuote: e.target.checked }); toast(e.target.checked ? 'Daily quote on' : 'Daily quote off'); }
   if (e.target.matches('[data-account-mailpush]')) { saveAccount({ mailPush: e.target.checked }); toast(e.target.checked ? 'New-mail alerts on' : 'New-mail alerts off'); }
@@ -21643,6 +21642,7 @@ document.addEventListener('click', (e) => {
   // The setup hub (icon-tile + expand). Open from the Home "Getting started" card.
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
   if (t.closest('[data-welcome-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.onbSeen = true; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {}); renderSettings(); return; }   // hide the Getting started card
+  if (t.closest('[data-welcome-reinstate]')) { state.onbSeen = false; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {}); try { localStorage.setItem('lf_welcome_open', '1'); } catch {} renderSettings(); return; }   // bring the Getting started card back
   if (t.closest('[data-open-getstarted]')) { openSettings('account'); return; }   // Home banner -> Settings Getting started
   { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openAreasList(); return; } }
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
@@ -23928,7 +23928,7 @@ function taskSurfaceHtml(t) {
     <label class="tfs-row"><span class="tfs-l">Surface on<small class="tf-hint">pops onto your Today that day</small></span><span class="tfs-ctrl">${clear}${dateFieldHtml('taskcard-snooze', p.snooze || '')}</span></label>
     ${p.snooze ? `<div class="tfs-block">
       <label class="tfs-toggle"><input type="checkbox" data-surface-notify="${id}" ${notify ? 'checked' : ''}><span>Alert me when it surfaces</span></label>
-      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${app ? 'on' : ''}" data-surface-ch="app:${id}"><span class="tfs-chip-ic">📲</span> In app</button><button type="button" class="tfs-chip ${email ? 'on' : ''}" data-surface-ch="email:${id}"><span class="tfs-chip-ic">✉</span> Email</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
+      ${notify ? `<div class="tfs-chan"><button type="button" class="tfs-chip ${app ? 'on' : ''}" data-surface-ch="app:${id}"><span class="tfs-chip-ic">📲</span> In app</button><button type="button" class="tfs-chip ${sms ? 'on' : ''}" data-surface-ch="sms:${id}"><span class="tfs-chip-ic">✆</span> Text</button></div>
       <p class="tfs-note">${esc(chanHint)}</p>` : ''}
       <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until then</span></label>
     </div>` : ''}
