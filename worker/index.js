@@ -3975,6 +3975,11 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
+  // The HEIC->JPEG decoder (heic2any, for iPhone photos on a cover or an
+  // attachment) spins up a Web Worker from a blob URL. Without this it was blocked
+  // and fell back to a slower, flakier main-thread decode. Same-origin + blob only,
+  // so it adds nothing an inline script couldn't already do. (Robin, 2026-10-29.)
+  "worker-src 'self' blob:",
   "connect-src 'self'",
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
