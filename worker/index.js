@@ -3,7 +3,7 @@ import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, 
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe } from './sharing.js';
-import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
+import { assignTask, listTaskAssignees, unassign, myAssignments, assignedByMe, acceptAssignment, declineAssignment } from './assignments.js';
 import { aiKey, aiIsOff, aiNeedsKey, logAiUsage, setAiKey, setAiProvider, detectProvider, callAI, encryptSecret, decryptSecret } from './ai.js';
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
 import { adminOverview, adminUsers, updateUser, adminAiUsage, adminCosts, getAdminSettings, setAdminSettings, isPublicSignup } from './admin.js';
@@ -5331,6 +5331,22 @@ export default {
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
       if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; let dz = []; try { dz = JSON.parse((await getSetting(env, 'shares_dismissed')) || '[]'); } catch {} sw.dismissed = Array.isArray(dz) ? dz : []; return json(sw, request); }
       if (path === '/api/shared/mine' && request.method === 'GET') return json(await sharedByMe(env), request);
+      // The unified Shared hub: everything shared in both directions, all types.
+      // Notes/tables/Life Spaces come from the shares table; tasks come from
+      // assignments (kept apart so an accepted task isn't counted twice). (Robin.)
+      if (path === '/api/shared/hub' && request.method === 'GET') {
+        const [sw, bm, mine, byTasks] = await Promise.all([sharedWithMe(env), sharedByMe(env), myAssignments(env), assignedByMe(env)]);
+        const withMeTasks = [
+          ...(mine.pending || []).map((t) => ({ ...t, kind: 'task', status: 'pending' })),
+          ...(mine.accepted || []).map((t) => ({ ...t, kind: 'task', status: 'accepted' })),
+        ];
+        return json({
+          withMe: (sw.items || []).filter((x) => x.kind !== 'task'),
+          withMeTasks,
+          byMe: bm.items || [],
+          byMeTasks: byTasks.items || [],
+        }, request);
+      }
       // Mark folio/page shares seen, so Home's "shared with you" alert clears the
       // new flag once you've acknowledged them (mirrors the folio feed). (Robin.)
       if (path === '/api/shared/seen' && request.method === 'POST') { await setSetting(env, 'shares_seen', new Date().toISOString()); return json({ ok: true }, request); }

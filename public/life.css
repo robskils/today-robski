@@ -6318,6 +6318,15 @@ body[data-view='tasks'] .tasks-scroll table.ttable thead th { top:calc(44px + va
 .sby-card .area-faces .aface-me .fr-av { box-shadow:0 0 0 2px var(--accent); }
 .sby-card .area-faces .aface-more { width:28px; height:28px; font-size:11px; box-shadow:0 0 0 2px var(--card); }
 .sby-with { font-size:12.5px; color:var(--ink-2); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Shared hub: Accept/Decline on a pending assigned-task row, and the "see all"
+   link on Home's alert that opens the hub. */
+.hub-row-acts { display:flex; gap:6px; flex:none; align-items:center; }
+.hub-row-acts .add-btn.wide { padding:8px 13px; min-height:0; }
+.sha-seeall { display:inline-flex; margin-top:5px; border:0; background:none; color:var(--accent); font-weight:600; font-size:13.5px; cursor:pointer; padding:9px 2px 2px; }
+.sha-seeall:hover { text-decoration:underline; }
+/* Hub "shared by you" cards get a faint kind-tinted dot even without an area hue. */
+.sby-card-task .nt-sub-dot { background:#8a7bd8; } .sby-card-task .nt-sub-t { color:#8a7bd8; }
+.sby-card-area .nt-sub-dot { background:#3fae8f; } .sby-card-area .nt-sub-t { color:#3fae8f; }
 /* The Note · Table type switch in a note/table header. */
 /* A quiet 'Turn into table/note' action, not a view slider. */
 .ntt-conv { font-size:13px; color:var(--ink-3); }
@@ -6555,9 +6564,13 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 
 /* Tabs: a strip above the pane; each tab is a saved view. */
 .main { min-width:0; display:flex; flex-direction:column; }
-.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 14px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+/* overflow is visible (not a scroll box) so the util icons' hover tips can drop
+   below the strip without being clipped; tabs shrink with an ellipsis instead of
+   forcing a horizontal scroll. (Robin flagged obscured header tooltips, 2026-10-29.) */
+.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 14px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow:visible; }
 .tabstrip::-webkit-scrollbar { display:none; }
-.tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; padding:6px 11px 6px 12px; border-radius:10px; border:1px solid var(--line); background:color-mix(in srgb,var(--card) 45%,transparent); color:var(--ink-3); font-size:14px; white-space:nowrap; flex:none; transition:background .12s,color .12s,border-color .12s,box-shadow .12s; }
+.tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; min-width:0; padding:6px 11px 6px 12px; border-radius:10px; border:1px solid var(--line); background:color-mix(in srgb,var(--card) 45%,transparent); color:var(--ink-3); font-size:14px; white-space:nowrap; flex:0 1 auto; transition:background .12s,color .12s,border-color .12s,box-shadow .12s; }
+.tabstrip .tab .tab-t { overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .tabstrip .tab:hover { border-color:var(--line-2); background:var(--card); color:var(--ink-2); }
 .tabstrip .tab:hover { background:var(--paper-2); color:var(--ink-2); }
 .tabstrip .tab.on { background:var(--card); color:var(--ink); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); box-shadow:var(--shadow); font-weight:500; }

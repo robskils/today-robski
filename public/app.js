@@ -1294,6 +1294,7 @@ function openView(v) {
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'connect': return openConnect(); case 'daybookpeople': return openLifeFoldPeople();
     case 'messages': return openMessagesPage();
+    case 'shared': return openSharedHub();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
     case 'reviews': return openReviews(v.rtype); case 'reviewcard': return openReviewCard(v.id);
     case 'wheel': return openWheel();
@@ -1547,10 +1548,11 @@ function renderTabs() {
     <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
     <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
     + `<button class="tab-new" data-tab-new title="New tab  ${PK('⌥⌘T')}">+</button>`
-    + helpIconHtml()   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
-    // Messages (with a clear new-message alert) + Settings, small round icons in
-    // keeping with the i. Sign out lives in Settings and the sidebar, not up here.
+    // The right-hand cluster, desktop only (the strip is hidden on mobile): Messages
+    // first (it carries the new-message alert), then the guide i, then Settings.
+    // Sign out lives in Settings and the sidebar, not up here. (Robin, 2026-10-29.)
     + (state.me ? `<button class="tab-util tab-util-msg ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page data-tip="Messages" aria-label="Messages${navUnread() ? ` - ${navUnread()} new` : ''}">${MSG_ICO}${navUnread() ? `<span class="tab-util-dot">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '')
+    + helpIconHtml()
     + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`;
 }
 function newTab() {
@@ -3203,6 +3205,84 @@ function closeChat() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null;
 // A chat used to exist only as a per-person slide-in; this page lists them all,
 // newest first, with a preview and unread count, and opens the same slide-in on
 // tap. Reached from the People box in the sidebar. (Robin, 2026-10-27.)
+// Your own face for the shared stacks (photo if you've set one). Shared helper.
+function myFaceHtml() {
+  const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
+  const photo = state.card && state.card.photo;
+  return photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
+}
+// The unified Shared hub: one place for everything shared in both directions -
+// notes, tables, Life Spaces (via the shares model) and tasks (via assignments,
+// labelled "assigned" so the difference stays legible). (Robin, 2026-10-29.)
+async function openSharedHub() {
+  const gen = bumpNav();
+  state.view = { type: 'shared' };
+  renderNav();
+  renderSharedHub();
+  try {
+    const r = await api('/api/shared/hub');
+    if (gen !== navGen) return;
+    state.sharedHub = { ...r, loading: false };
+    const ids = [];
+    (r.withMe || []).forEach((s) => { if (s.ownerId) ids.push(s.ownerId); });
+    (r.byMe || []).forEach((s) => (s.shares || []).forEach((x) => { if (x.id) ids.push(x.id); }));
+    (r.byMeTasks || []).forEach((s) => (s.shares || []).forEach((x) => { if (x.id) ids.push(x.id); }));
+    if (ids.length) loadCards(ids);
+    renderSharedHub();
+  } catch (e) { if (gen === navGen) { state.sharedHub = { loading: false, error: e.message }; renderSharedHub(); } }
+}
+const SHARE_KIND_META = { area: { ic: '◈', lbl: 'Life Space' }, table: { ic: '▦', lbl: 'Table' }, task: { ic: '✓', lbl: 'Task' }, note: { ic: '▤', lbl: 'Note' } };
+function renderSharedHub() {
+  if (!(state.view && state.view.type === 'shared')) return;
+  const h = state.sharedHub || { loading: true };
+  const ord = { area: 0, note: 1, table: 2, task: 3 };
+  const withMe = [...(h.withMe || []), ...(h.withMeTasks || [])].sort((a, b) => (ord[a.kind] ?? 1) - (ord[b.kind] ?? 1));
+  const byMe = [...(h.byMe || []), ...(h.byMeTasks || [])].sort((a, b) => (ord[a.kind] ?? 1) - (ord[b.kind] ?? 1));
+  // One row per thing shared WITH me: the sharer's face, what it is, who from.
+  const hubRow = (s) => {
+    const km = SHARE_KIND_META[s.kind] || SHARE_KIND_META.note;
+    const who = esc(s.owner || s.from || 'someone');
+    const face = personAvatar(s.ownerId, s.owner || s.from, '');
+    const sub = s.kind === 'task'
+      ? `assigned by <b>${who}</b>${s.status === 'pending' ? ' · awaiting you' : ''}`
+      : `from <b>${who}</b> · ${km.lbl}${s.canEdit === false ? ' · view only' : ''}`;
+    if (s.kind === 'task' && s.status === 'pending') {
+      return `<div class="shared-row sww-row">${face}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${sub}</span></span><span class="hub-row-acts"><button class="add-btn wide" data-assign-accept="${esc(s.id)}">Accept</button><button class="ghost" data-assign-decline="${esc(s.id)}">Decline</button></span></div>`;
+    }
+    const open = s.kind === 'task' ? `data-open-task="${esc(s.id)}"` : `data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"`;
+    return `<button class="shared-row sww-row" ${open}>${face}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${sub}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+  };
+  // One card per thing I've shared OUT: a face stack (me + who with) and a line.
+  const hubCard = (s) => {
+    const km = SHARE_KIND_META[s.kind] || SHARE_KIND_META.note;
+    const recips = s.shares || [];
+    const faces = [`<span class="aface aface-me" title="You">${myFaceHtml()}</span>`];
+    recips.slice(0, 5).forEach((r) => faces.push(`<span class="aface" title="${esc(r.name || 'Someone')}${r.status ? ` · ${r.status}` : ''}">${personAvatar(r.id, r.name, '')}</span>`));
+    const moreN = recips.length - 5;
+    const more = moreN > 0 ? `<span class="aface aface-more">+${moreN}</span>` : '';
+    const nm = recips.map((r) => esc(r.name || r.subdomain || 'someone'));
+    const verb = s.kind === 'task' ? 'Assigned to' : 'Shared with';
+    let whom = '';
+    if (nm.length === 1) whom = `${verb} ${nm[0]}`;
+    else if (nm.length === 2) whom = `${verb} ${nm[0]} & ${nm[1]}`;
+    else if (nm.length > 2) whom = `${verb} ${nm[0]}, ${nm[1]} & ${nm.length - 2} more`;
+    const pend = s.kind === 'task' ? recips.filter((r) => r.status === 'pending').length : 0;
+    const meta = [s.public ? '🔗 Public link' : '', whom, pend ? `${pend} pending` : ''].filter(Boolean).join(' · ');
+    const open = s.kind === 'task' ? `data-open-task="${esc(s.id)}"` : s.kind === 'area' ? `data-open-area="${esc(s.id)}"` : s.kind === 'table' ? `data-open-table="${esc(s.id)}"` : `data-open-note="${esc(s.id)}"`;
+    return `<button class="tbl-card nt-card sby-card sby-card-${s.kind}" ${open}><span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${km.lbl}</span></span><span class="nt-name"><span class="tc-ic">${km.ic}</span><span class="tc-t">${esc(s.title || 'Untitled')}</span></span><span class="sby-foot"><span class="area-faces sby-faces">${faces.join('')}${more}</span>${meta ? `<span class="sby-with">${meta}</span>` : ''}</span></button>`;
+  };
+  const loadingW = h.loading && !withMe.length;
+  const loadingB = h.loading && !byMe.length;
+  const withBody = loadingW ? '<div class="empty">Loading…</div>' : withMe.length ? `<div class="notes-shared-rows">${withMe.map(hubRow).join('')}</div>` : '<div class="empty">Nothing shared with you yet. When someone shares a note, table, task or Life Space, it turns up here.</div>';
+  const byBody = loadingB ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(hubCard).join('')}</div>` : "<div class=\"empty\">You haven't shared anything yet. Open a note, task or Life Space and give someone access.</div>";
+  $('#pane').innerHTML = `
+    ${pageCrumb('Shared')}
+    <div class="pane-head home-head"><h1>Shared</h1></div>
+    <div class="notes-shared-view">
+      <section class="home-sec"><div class="home-sec-h">Shared with you${withMe.length ? ` · ${withMe.length}` : ''}</div>${withBody}</section>
+      <section class="home-sec"><div class="home-sec-h">Shared by you${byMe.length ? ` · ${byMe.length}` : ''}</div>${byBody}</section>
+    </div>`;
+}
 async function openMessagesPage() {
   const gen = bumpNav();
   state.view = { type: 'messages' };
@@ -6322,6 +6402,7 @@ function homeSharedAlertHtml() {
   return `<section class="home-sec home-sec-card home-shared">
     <div class="home-sec-h">✦ Shared with you<span class="muted">${fresh.length}</span></div>
     ${rows}
+    <button class="sha-seeall" data-open-shared-hub>See everything shared, both ways →</button>
   </section>`;
 }
 // What others have done in lifespaces you share - a feed on Home. Each row taps
@@ -20992,6 +21073,7 @@ function palNavTargets() {
   if (modOn('notes')) { add('Notes', () => openNotesList(), 'note write'); add('Tables', () => openNotesList(), 'table spreadsheet'); }
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
+  if (modOn('contacts')) add('Shared', () => openSharedHub(), 'shared with me by me notes tasks life spaces assigned');
   if (reflectOn()) add('Reflection', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching');
   if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
   if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
@@ -22552,6 +22634,7 @@ document.addEventListener('click', (e) => {
   { const adc = t.closest('[data-assign-decline]'); if (adc) { declineAssign(adc.dataset.assignDecline); return; } }
   { const atk = t.closest('[data-assign-tick]'); if (atk) { sharedToggleDone(atk.dataset.assignTick, atk.dataset.done !== '1'); return; } }
   { const sc = t.closest('[data-shared-check]'); if (sc) { sharedToggleDone(sc.dataset.sharedCheck, sc.dataset.done !== '1'); return; } }
+  if (t.closest('[data-open-shared-hub]')) { openSharedHub(); return; }
   { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }

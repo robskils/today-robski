@@ -67,6 +67,29 @@ export async function myAssignments(env) {
   return { pending: rows.filter((r) => r.status === 'pending').map(map), accepted: rows.filter((r) => r.status === 'accepted').map(map) };
 }
 
+// The tasks I've assigned OUT, grouped by task, each carrying who it's assigned
+// to and whether they've accepted. The task half of the Shared hub's "shared by
+// me", kept separate from the shares table so an accepted task (which also has a
+// shares row) isn't counted twice. (Robin, 2026-10-29.)
+export async function assignedByMe(env) {
+  const rows = (await env.DB.prepare(
+    `SELECT a.task_id, a.status, a.to_id, u.name, u.subdomain, b.title, b.props, b.updated_at
+       FROM assignments a
+       JOIN blocks b ON b.id = a.task_id AND b.archived = 0 AND b.user_id = ?
+       JOIN users u ON u.id = a.to_id
+      WHERE a.from_id = ? ORDER BY b.updated_at DESC, u.name`,
+  ).bind(env.uid, env.uid).all().catch(() => ({ results: [] }))).results || [];
+  const byTask = new Map();
+  for (const r of rows) {
+    if (!byTask.has(r.task_id)) {
+      let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {}
+      byTask.set(r.task_id, { id: r.task_id, kind: 'task', title: r.title, done: !!p.done, priority: p.priority || null, updated_at: r.updated_at, shares: [] });
+    }
+    byTask.get(r.task_id).shares.push({ id: r.to_id, name: r.name || r.subdomain, subdomain: r.subdomain, status: r.status });
+  }
+  return { items: [...byTask.values()] };
+}
+
 // Assignee accepts: flip to accepted and grant edit access via a share row.
 export async function acceptAssignment(env, taskId) {
   const a = await env.DB.prepare('SELECT from_id FROM assignments WHERE task_id = ? AND to_id = ?').bind(taskId, env.uid).first().catch(() => null);
