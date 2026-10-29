@@ -5258,6 +5258,29 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .home-qa-open:hover { background:var(--paper-2); }
 .home-qa-add { flex:none; width:44px; border:0; border-left:1px solid var(--line); background:none; color:var(--accent); font-size:23px; line-height:1; cursor:pointer; }
 .home-qa-add:hover { background:color-mix(in srgb,var(--accent) 13%,transparent); }
+/* Capture tiles (Photo / Attach): one whole-tile button, no +add split. */
+.home-qa-solo { padding-right:17px; }
+/* Capture sheet: new-note / pick-a-note after a photo or file. Rides the chat
+   overlay (right-hand drawer). (Robin, popular demand, 2026-10-29.) */
+#capture .chat-bg { position:fixed; inset:0; z-index:230; background:color-mix(in srgb,var(--ink) 30%,transparent); }
+.cap-sub { padding:12px 18px 0; color:var(--ink-2); font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cap-choose { display:flex; flex-direction:column; gap:10px; padding:16px 18px; }
+.cap-opt { display:flex; align-items:center; gap:13px; text-align:left; padding:15px; border:1px solid var(--line-2); border-radius:14px; background:var(--card); box-shadow:var(--shadow); cursor:pointer; transition:border-color .12s, background .12s; }
+.cap-opt:hover { border-color:var(--accent); background:var(--paper-2); }
+.cap-opt-new { border-color:color-mix(in srgb,var(--accent) 45%,var(--line-2)); }
+.cap-opt-ic { flex:none; width:40px; height:40px; border-radius:11px; display:grid; place-items:center; font-size:20px; background:color-mix(in srgb,var(--accent) 13%,transparent); color:var(--accent); }
+.cap-opt-body { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.cap-opt-t { font-weight:650; font-size:15.5px; color:var(--ink); }
+.cap-opt-s { font-size:12.5px; color:var(--ink-3); }
+.cap-pick { display:flex; flex-direction:column; min-height:0; flex:1; padding:14px 18px 0; }
+.cap-q { width:100%; margin-bottom:10px; }
+.cap-notes { display:flex; flex-direction:column; gap:3px; overflow-y:auto; padding-bottom:16px; }
+.cap-note { display:flex; align-items:center; gap:10px; text-align:left; padding:11px 12px; border:0; border-radius:11px; background:none; color:var(--ink); font-size:14.5px; cursor:pointer; }
+.cap-note:hover { background:var(--paper-2); }
+.cap-note-ic { flex:none; color:var(--accent); font-size:15px; }
+.cap-note-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cap-empty { padding:18px 4px; color:var(--ink-3); font-size:14px; }
+.cap-back { font-size:21px; }
 /* Mobile: stack the three controls full-width so each is easy to see and read,
    rather than cramming them into thirds. */
 @media (max-width:640px){
@@ -6387,6 +6410,14 @@ body[data-view='tasks'] .tasks-scroll table.ttable thead th { top:calc(44px + va
 /* Hub "shared by you" cards get a faint kind-tinted dot even without an area hue. */
 .sby-card-task .nt-sub-dot { background:#8a7bd8; } .sby-card-task .nt-sub-t { color:#8a7bd8; }
 .sby-card-area .nt-sub-dot { background:#3fae8f; } .sby-card-area .nt-sub-t { color:#3fae8f; }
+.sby-card-note .nt-sub-dot { background:#5b8def; } .sby-card-note .nt-sub-t { color:#5b8def; }
+.sby-card-table .nt-sub-dot { background:#d2922f; } .sby-card-table .nt-sub-t { color:#d2922f; }
+/* "Shared with me" cards lead with the sharer's single face (ringed, not the
+   accent-ringed "me" face). Pending assigned tasks carry an Accept/Decline row. */
+.sww-card .sby-faces .aface-owner .fr-av { box-shadow:0 0 0 2px color-mix(in srgb,var(--ink-3) 55%,var(--card)); }
+.sww-acts { display:flex; gap:8px; margin-top:10px; }
+.sww-acts .add-btn.wide { flex:1 1 auto; min-height:0; padding:9px 13px; }
+.sww-acts .sww-decline { flex:none; padding:9px 13px; }
 /* The Note · Table type switch in a note/table header. */
 /* A quiet 'Turn into table/note' action, not a view slider. */
 .ntt-conv { font-size:13px; color:var(--ink-3); }
@@ -9063,14 +9094,23 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    subtitle given room to breathe before the controls. (Robin, 2026-10-21.) */
 .cover-dialog .recur-h { font-size:21px; letter-spacing:-.01em; margin-bottom:12px; }
 .cover-dialog .recur-p { margin:0 0 20px; color:var(--ink-2); line-height:1.5; }
-.cv-actions { display:flex; gap:8px; align-items:stretch; margin:2px 0 12px; flex-wrap:wrap; }
-.cv-upload { flex:none; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
-.cv-up-ic { font-size:15px; }
-.cv-search { display:flex; gap:8px; margin:2px 0 12px; }
-.cover-dialog input { font:inherit; font-size:15px; padding:10px 13px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink); }
+/* Upload is a proper drop-zone now: a tall, inviting tappable card (dashed, faint
+   accent wash) that reads as the primary way in, with drag-and-drop. Search sits
+   below a quiet "or" divider. (Robin, 2026-10-29: less fugly.) */
+.cv-drop { display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; padding:26px 18px; border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line-2)); border-radius:16px; background:color-mix(in srgb,var(--accent) 6%,transparent); cursor:pointer; transition:border-color .14s, background .14s, transform .1s; }
+.cv-drop:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 11%,transparent); }
+.cv-drop.drag { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 16%,transparent); transform:scale(1.01); }
+.cv-drop-ic { width:46px; height:46px; margin-bottom:5px; border-radius:50%; display:grid; place-items:center; font-size:21px; background:color-mix(in srgb,var(--accent) 15%,transparent); color:var(--accent); }
+.cv-drop-t { font-size:16px; font-weight:650; color:var(--ink); }
+.cv-drop-s { font-size:12.5px; color:var(--ink-3); }
+.cv-or { display:flex; align-items:center; gap:12px; margin:18px 2px; color:var(--ink-3); font-size:12.5px; }
+.cv-or::before, .cv-or::after { content:''; flex:1; height:1px; background:var(--line); }
+.cv-search { display:flex; gap:8px; margin:0 0 12px; }
+.cover-dialog input { font:inherit; font-size:15px; padding:11px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink); }
 .cover-dialog input:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent); }
 .cv-q { flex:1 1 auto; min-width:0; }
-.cv-results { min-height:72px; margin-bottom:14px; }
+.cv-go { flex:none; padding:11px 20px; }
+.cv-results { min-height:0; margin-bottom:2px; }
 .cv-results:empty { display:none; }
 .cv-hint { color:var(--ink-3); font-size:14px; padding:16px 2px; }
 .cv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(102px,1fr)); gap:8px; }

@@ -3243,19 +3243,31 @@ function renderSharedHub() {
   const ord = { area: 0, note: 1, table: 2, task: 3 };
   const withMe = [...(h.withMe || []), ...(h.withMeTasks || [])].sort((a, b) => (ord[a.kind] ?? 1) - (ord[b.kind] ?? 1));
   const byMe = [...(h.byMe || []), ...(h.byMeTasks || [])].sort((a, b) => (ord[a.kind] ?? 1) - (ord[b.kind] ?? 1));
-  // One row per thing shared WITH me: the sharer's face, what it is, who from.
+  // One card per thing shared WITH me - the same colourful, kind-tinted card as
+  // "shared by me", but leading with the sharer's face and "from <them>". The
+  // type (Note / Table / Life Space / Task) reads large and in its own colour.
+  // (Robin, 2026-10-29.)
   const hubRow = (s) => {
     const km = SHARE_KIND_META[s.kind] || SHARE_KIND_META.note;
     const who = esc(s.owner || s.from || 'someone');
-    const face = personAvatar(s.ownerId, s.owner || s.from, '');
-    const sub = s.kind === 'task'
-      ? `assigned by <b>${who}</b>${s.status === 'pending' ? ' · awaiting you' : ''}`
-      : `from <b>${who}</b> · ${km.lbl}${s.canEdit === false ? ' · view only' : ''}`;
+    const face = `<span class="aface aface-owner" title="${who}">${personAvatar(s.ownerId, s.owner || s.from, '')}</span>`;
+    // A pending assigned task needs Accept / Decline, so it's a div-card with its
+    // own action row rather than a single tap-to-open button.
     if (s.kind === 'task' && s.status === 'pending') {
-      return `<div class="shared-row sww-row">${face}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${sub}</span></span><span class="hub-row-acts"><button class="add-btn wide" data-assign-accept="${esc(s.id)}">Accept</button><button class="ghost" data-assign-decline="${esc(s.id)}">Decline</button></span></div>`;
+      return `<div class="tbl-card nt-card sby-card sby-card-task sww-card sww-card-pending">
+        <span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${km.lbl} · awaiting you</span></span>
+        <span class="nt-name"><span class="tc-ic">${km.ic}</span><span class="tc-t">${esc(s.title || 'Untitled')}</span></span>
+        <span class="sby-foot"><span class="area-faces sby-faces">${face}</span><span class="sby-with">from ${who}</span></span>
+        <span class="sww-acts"><button class="add-btn wide" data-assign-accept="${esc(s.id)}">Accept</button><button class="ghost sww-decline" data-assign-decline="${esc(s.id)}">Decline</button></span>
+      </div>`;
     }
+    const foot = s.kind === 'task' ? `from ${who}` : `from ${who}${s.canEdit === false ? ' · view only' : ''}`;
     const open = s.kind === 'task' ? `data-open-task="${esc(s.id)}"` : `data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"`;
-    return `<button class="shared-row sww-row" ${open}>${face}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${sub}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+    return `<button class="tbl-card nt-card sby-card sby-card-${s.kind} sww-card" ${open}>
+      <span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${km.lbl}</span></span>
+      <span class="nt-name"><span class="tc-ic">${km.ic}</span><span class="tc-t">${esc(s.title || 'Untitled')}</span></span>
+      <span class="sby-foot"><span class="area-faces sby-faces">${face}</span><span class="sby-with">${foot}</span></span>
+    </button>`;
   };
   // One card per thing I've shared OUT: a face stack (me + who with) and a line.
   const hubCard = (s) => {
@@ -3278,7 +3290,7 @@ function renderSharedHub() {
   };
   const loadingW = h.loading && !withMe.length;
   const loadingB = h.loading && !byMe.length;
-  const withBody = loadingW ? '<div class="empty">Loading…</div>' : withMe.length ? `<div class="notes-shared-rows">${withMe.map(hubRow).join('')}</div>` : '<div class="empty">Nothing shared with you yet. When someone shares a note, table, task or Life Space, it turns up here.</div>';
+  const withBody = loadingW ? '<div class="empty">Loading…</div>' : withMe.length ? `<div class="tbl-cards">${withMe.map(hubRow).join('')}</div>` : '<div class="empty">Nothing shared with you yet. When someone shares a note, table, task or Life Space, it turns up here.</div>';
   const byBody = loadingB ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(hubCard).join('')}</div>` : "<div class=\"empty\">You haven't shared anything yet. Open a note, task or Life Space and give someone access.</div>";
   $('#pane').innerHTML = `
     ${pageCrumb('Shared')}
@@ -6701,7 +6713,7 @@ function renderHome() {
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span><span class="home-time">${homeTimeStr()}</span>${weatherChipHtml()}</div>
         <div class="home-actions">${(() => {
           const mailN = state.mailUnreadTotal || 0;
-          return [
+          const tiles = [
             // [icon, label, open-attr, add-kind, add-label, n, dot?] - only Mail gets a
             // dot, and only for new mail. The rest always have something going on, so a
             // dot says nothing - no badge at all. (Robin, 2026-09-27.)
@@ -6710,6 +6722,11 @@ function renderHome() {
             modOn('calendar') ? ['▦', t('nav.calendar'), 'data-open-calendar', 'event', 'New event', 0, false] : null,
             modOn('tasks') ? ['✓', t('nav.tasks'), 'data-view-tasks', 'task', 'New task', 0, false] : null,
           ].filter(Boolean).map(([ic, label, openAttr, kind, addLbl, n, dot]) => `<span class="home-qa"><button class="home-qa-open" ${openAttr} title="Open ${esc(label)}"><span class="hqa-ic">${ic}</span><span class="hqa-l">${esc(label)}</span>${n ? (dot ? '<span class="hqa-dot" title="You have open tasks" aria-label="You have open tasks"></span>' : `<span class="hqa-n">${n > 99 ? '99+' : n}</span>`) : ''}</button><button class="home-qa-add" data-quick-add="${kind}" title="${esc(addLbl)}" aria-label="${esc(addLbl)}">+</button></span>`).join('');
+          // Two single-tap capture tiles - take a photo / scan, or attach a file -
+          // that drop straight into a note (new, or one you pick). Only where Notes
+          // is on, since that's where they land. (Robin, popular demand, 2026-10-29.)
+          const cap = modOn('notes') ? `<span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="photo" title="Take a photo or scan a document"><span class="hqa-ic">📷</span><span class="hqa-l">Photo</span></button></span><span class="home-qa home-qa-cap"><button class="home-qa-open home-qa-solo" data-home-capture="file" title="Attach a file"><span class="hqa-ic">📎</span><span class="hqa-l">Attach</span></button></span>` : '';
+          return tiles + cap;
         })()}</div>
       </div>
       ${alertsHtml()}
@@ -10327,6 +10344,15 @@ function openAreaColor() {
 // public image store, returning a permanent URL to persist on the lifespace. (Robin:
 // upload a cover from your computer.)
 async function coverUpload(file) {
+  // iPhone photos arrive as HEIC, which no browser canvas can decode - convert to
+  // JPEG via the shared decoder first, exactly like inline images do. Without this
+  // the upload silently failed on every iPhone photo. (Robin, 2026-10-29.)
+  if (isHeic(file)) {
+    const heic2any = await loadHeicDecoder();
+    const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    const jb = Array.isArray(out) ? out[0] : out;
+    file = new File([jb], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  }
   if (!isImgType(file.type)) throw new Error('Please choose an image');
   let objUrl, bmp;
   try {
@@ -10361,11 +10387,15 @@ function openAreaCover() {
   const cur = (area.props && area.props.cover) || null;
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog" style="--h:${hueOf(area)}">
     <div class="recur-h">Cover image</div>
-    <p class="recur-p">Upload an image from your computer, or search free photos.</p>
-    <div class="cv-actions">
-      <label class="ui-btn primary cv-upload"><input type="file" accept="image/*" hidden data-cv-file><span class="cv-up-ic">⬆</span>Upload an image</label>
-    </div>
-    <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="Search free photos…" value="${esc(area.title || '')}"><button class="ui-btn cv-go" type="submit">Search</button></form>
+    <p class="recur-p">Give this Life Space a photo - upload your own, or search free ones.</p>
+    <label class="cv-drop" title="Upload a photo">
+      <input type="file" accept="image/*" hidden data-cv-file>
+      <span class="cv-drop-ic">⬆</span>
+      <span class="cv-drop-t">Upload a photo</span>
+      <span class="cv-drop-s">Tap to choose, or drag one in · JPG, PNG or HEIC</span>
+    </label>
+    <div class="cv-or"><span>or search free photos</span></div>
+    <form class="cv-search" data-cv-search><input class="cv-q" data-cv-q placeholder="Try a place, a mood, a colour…" value="${esc(area.title || '')}"><button class="ui-btn cv-go" type="submit">Search</button></form>
     <div class="cv-results" data-cv-results></div>
     <div class="ui-dialog-btns">${cur ? '<button class="ui-btn cv-remove" data-cv-remove>Remove cover</button>' : '<span></span>'}<button class="ui-btn cancel" data-cv-cancel>Close</button></div>
   </div></div>`;
@@ -10396,13 +10426,20 @@ function openAreaCover() {
       }));
     } catch (e) { results.innerHTML = `<div class="cv-hint">${esc(e.message || 'Search failed')}</div>`; }
   };
-  el.querySelector('[data-cv-file]').addEventListener('change', async (e) => {
-    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (!isImgType(f.type)) { toast('Please choose an image'); return; }
-    results.innerHTML = '<div class="cv-hint">Uploading…</div>';
+  const handleCoverFile = async (f) => {
+    if (!f) return;
+    if (!isImgType(f.type) && !isHeic(f)) { toast('Please choose an image'); return; }
+    results.innerHTML = `<div class="cv-hint">${isHeic(f) ? 'Preparing photo…' : 'Uploading…'}</div>`;
     try { const u = await coverUpload(f); apply({ src: 'upload', url: u }); }
     catch (err) { results.innerHTML = `<div class="cv-hint">${esc(err.message || 'Upload failed')}</div>`; }
-  });
+  };
+  el.querySelector('[data-cv-file]').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; handleCoverFile(f); });
+  const drop = el.querySelector('.cv-drop');
+  if (drop) {
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('drag'); handleCoverFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+  }
   el.querySelector('[data-cv-search]').addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
   el.querySelector('[data-cv-cancel]').addEventListener('click', close);
   const rm = el.querySelector('[data-cv-remove]'); if (rm) rm.addEventListener('click', () => apply(null));
@@ -21696,6 +21733,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-task-q]') && state.note) { state.note.taskQuery = e.target.value; const el = document.getElementById('ntask-list'); if (el) el.innerHTML = noteTaskConnRows(); return; }
   if (e.target.matches('[data-note-event-q]') && state.note) { state.note.eventQuery = e.target.value; const el = document.getElementById('nevent-list'); if (el) el.innerHTML = noteEventConnRows(); return; }
   if (e.target.matches('[data-note-contact-q]') && state.note) { state.note.contactQuery = e.target.value; const el = document.getElementById('ncontact-list'); if (el) el.innerHTML = noteContactConnRows(); return; }
+  if (e.target.matches('[data-capture-q]') && state.capture) { state.capture.q = e.target.value; const el = document.querySelector('.cap-notes'); if (el) el.innerHTML = captureNoteListHtml(); return; }
   if (e.target.matches('[data-pe-note-q]') && state.practiceEdit) { const pos = e.target.selectionStart; state.practiceEdit._noteQ = e.target.value; renderPeAttach(); const i = document.querySelector('[data-pe-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-cx-q]') && state.contact_open) { state.contact_open.cxQ = e.target.value; renderContactBoxes('[data-cx-q]'); return; }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
@@ -22662,7 +22700,13 @@ document.addEventListener('click', (e) => {
   { const adc = t.closest('[data-assign-decline]'); if (adc) { declineAssign(adc.dataset.assignDecline); return; } }
   { const atk = t.closest('[data-assign-tick]'); if (atk) { sharedToggleDone(atk.dataset.assignTick, atk.dataset.done !== '1'); return; } }
   { const sc = t.closest('[data-shared-check]'); if (sc) { sharedToggleDone(sc.dataset.sharedCheck, sc.dataset.done !== '1'); return; } }
-  if (t.closest('[data-open-shared-hub]')) { openSharedHub(); return; }
+  if (t.closest('[data-open-shared-hub]')) { if (state.view && state.view.type === 'shared') openHome(); else openSharedHub(); return; }
+  { const hc = t.closest('[data-home-capture]'); if (hc) { homeCapture(hc.dataset.homeCapture); return; } }
+  if (t.closest('[data-capture-close]')) { closeCaptureSheet(); return; }
+  if (t.closest('[data-capture-new]')) { captureCommit(null); return; }
+  if (t.closest('[data-capture-pick]')) { captureStartPick(); return; }
+  if (t.closest('[data-capture-unpick]')) { if (state.capture) { state.capture.picking = false; renderCaptureSheet(); } return; }
+  { const ct = t.closest('[data-capture-to]'); if (ct) { captureCommit(ct.dataset.captureTo); return; } }
   { const sw = t.closest('[data-open-shared]'); if (sw) { openView({ type: sw.dataset.sharedKind, id: sw.dataset.openShared }); return; } }
   if (t.closest('[data-quote-add]')) { addQuote(); return; }
   { const qd = t.closest('[data-quote-del]'); if (qd) { delQuote(qd.dataset.quoteDel); return; } }
@@ -25084,6 +25128,90 @@ function pickInlineImage() {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.hidden = true;
   inp.addEventListener('change', async () => { for (const f of Array.from(inp.files || [])) await insertInlineImage(prose, f, range); inp.remove(); });
   document.body.appendChild(inp); inp.click();
+}
+// ── Home quick-capture: photo/scan or file → a note ────────────────────────
+// Two Home tiles. Shoot or pick an image (the native picker offers Camera /
+// Library / Files-which-can-Scan), or attach any file - then choose a brand-new
+// note (auto-titled with the date) or an existing one. Images land inline in the
+// note's body; other files become attachments. By popular demand. (Robin,
+// 2026-10-29.)
+function homeCapture(mode) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.hidden = true; inp.multiple = true;
+  if (mode === 'photo') inp.accept = 'image/*';
+  inp.addEventListener('change', () => {
+    const files = Array.from(inp.files || []); inp.remove();
+    if (files.length) { state.capture = { files, mode, picking: false, q: '', notes: null }; renderCaptureSheet(); }
+  });
+  document.body.appendChild(inp); inp.click();
+}
+function closeCaptureSheet() { const el = document.getElementById('capture'); if (el) el.remove(); state.capture = null; }
+function captureNoteListHtml() {
+  const c = state.capture; if (!c) return '';
+  if (c.notes == null) return '<div class="cap-empty">Loading…</div>';
+  const ql = (c.q || '').toLowerCase();
+  const rows = c.notes.filter((x) => !x.sharedBy || x.canEdit).filter((x) => (x.title || '').toLowerCase().includes(ql)).slice(0, 40);
+  return rows.length ? rows.map((x) => `<button class="cap-note" data-capture-to="${esc(x.id)}"><span class="cap-note-ic">${isTableNote(x) ? '▦' : '▤'}</span><span class="cap-note-t">${esc(x.title || 'Untitled')}</span></button>`).join('')
+    : `<div class="cap-empty">${ql ? 'No notes match.' : 'No notes yet - make a new one.'}</div>`;
+}
+function renderCaptureSheet() {
+  const c = state.capture; if (!c) return;
+  let el = document.getElementById('capture'); if (!el) { el = document.createElement('div'); el.id = 'capture'; document.body.appendChild(el); }
+  const n = c.files.length;
+  const what = c.mode === 'photo' ? (n === 1 ? 'photo' : `${n} photos`) : (n === 1 ? 'file' : `${n} files`);
+  const names = esc(c.files.map((f) => f.name || 'file').slice(0, 3).join(', ') + (n > 3 ? ` +${n - 3}` : ''));
+  let body;
+  if (!c.picking) {
+    body = `<div class="cap-choose">
+      <button class="cap-opt cap-opt-new" data-capture-new><span class="cap-opt-ic">＋</span><span class="cap-opt-body"><span class="cap-opt-t">New note</span><span class="cap-opt-s">Starts a note titled with today's date</span></span></button>
+      <button class="cap-opt" data-capture-pick><span class="cap-opt-ic">▤</span><span class="cap-opt-body"><span class="cap-opt-t">Add to an existing note</span><span class="cap-opt-s">Pick one of your notes</span></span></button>
+    </div>`;
+  } else {
+    body = `<div class="cap-pick">
+      <input class="sel cap-q" data-capture-q placeholder="Search your notes…" value="${esc(c.q || '')}" autocomplete="off">
+      <div class="cap-notes">${captureNoteListHtml()}</div>
+    </div>`;
+  }
+  el.innerHTML = `<div class="chat-bg" data-capture-close></div><div class="chat-panel cap-panel">
+    <div class="chat-head">${c.picking ? '<button class="chat-x cap-back" data-capture-unpick title="Back" aria-label="Back">←</button>' : ''}<span class="chat-title">${c.picking ? 'Add to a note' : `Add ${esc(what)}`}</span><button class="chat-x" data-capture-close title="Close">×</button></div>
+    <div class="cap-sub">${c.mode === 'photo' ? '📷' : '📎'} ${names}</div>
+    ${body}
+  </div>`;
+}
+// Go to the "pick an existing note" step, loading the note list once.
+function captureStartPick() {
+  const c = state.capture; if (!c) return;
+  c.picking = true; renderCaptureSheet();
+  if (c.notes == null) {
+    api('/api/blocks?kind=note').then((r) => { if (state.capture) { state.capture.notes = (r || []).filter((x) => x && x.id); renderCaptureSheet(); } })
+      .catch(() => { if (state.capture) { state.capture.notes = []; renderCaptureSheet(); } });
+  }
+}
+// Commit: into an existing note (id given), or a fresh date-titled note (no id).
+async function captureCommit(noteId) {
+  const c = state.capture; if (!c) return;
+  const files = c.files, mode = c.mode;
+  closeCaptureSheet();
+  try {
+    let id = noteId;
+    if (!id) {
+      const d = new Date();
+      const date = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const title = `${mode === 'photo' ? 'Photos' : 'Files'} · ${date}, ${time}`;
+      const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: '' }) });
+      state.noteTops = state.noteTops || []; state.noteTops.push(note);
+      id = note.id;
+    }
+    await openNote(id);
+    const prose = document.querySelector('.note-body .prose[contenteditable="true"][data-block-id]');
+    const imgs = files.filter((f) => isImgType(f.type) || isHeic(f));
+    const others = files.filter((f) => !(isImgType(f.type) || isHeic(f)));
+    if (prose && imgs.length) { for (const f of imgs) await insertInlineImage(prose, f, null); }
+    else if (imgs.length) await uploadFiles(id, imgs);
+    if (others.length) await uploadFiles(id, others);
+    toast(files.length === 1 ? 'Added to your note' : `${files.length} added to your note`);
+  } catch (e) { toastError('Could not add that: ' + ((e && e.message) || 'failed')); }
 }
 // Table-cell attachments: bytes stored in R2 under the row block, metadata in the
 // cell's value list (props.values[colId]) via the ?col= param.
