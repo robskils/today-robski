@@ -6786,7 +6786,7 @@ function renderHome() {
               : (todayRows ? `<div class="today-cal">${todayRows}</div>`
                 : `<div class="home-empty">${off === 0 ? 'Nothing in your calendar today.' : 'Nothing on this day.'}</div>`),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
-            focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
+            focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, !!gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
             favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No lifespaces yet. Create one from Life Spaces.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
@@ -17669,7 +17669,12 @@ function goalCardMini(g, drag) {
       <div class="gc-barwrap">${barInner}</div>
       <span class="gc-pct">${pct}%</span>
     </div>`;
-  return `<div class="goal-card${privCls(g)}" data-open-goal="${g.id}" role="button" tabindex="0" ${drag ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
+  // drag MUST be an explicit boolean true. A bare `.map(goalCardMini)` passes the
+  // array index as the 2nd arg, so every card after the first used to come out
+  // draggable="true" - and dragging its slider dragged the whole card. Only the
+  // Home starred strip, which has a real drop target, asks for draggable. (Robin,
+  // 2026-10-29: right-hand goal slider dragged the card.)
+  return `<div class="goal-card${privCls(g)}" data-open-goal="${g.id}" role="button" tabindex="0" ${drag === true ? `draggable="true" data-focus-id="${g.id}"` : ''} style="--h:${hueOf(a)}">
     <div class="gc-top">${p.focus ? '<span class="gc-focus">★</span>' : ''}<span class="gc-title">${esc(g.title || 'Untitled goal')}</span>${privChip(g)}<span class="gc-status s-${p.status || 'active'}">${gStatusLabel(p.status)}</span></div>
     <div class="gc-meta">${a ? `<span class="gc-area">${esc(a.title)}</span>` : ''}${p.horizon ? `<span class="gc-h">${esc(horizonLabel(p.horizon))}</span>` : ''}<span class="gc-measure">${esc(goalMeasure(g))}</span></div>
     ${bar}</div>`;
@@ -17772,6 +17777,22 @@ function toggleGoalArea(id) {
   try { let c = JSON.parse(localStorage.getItem('life.goals.acollapse') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.acollapse', JSON.stringify(c)); } catch {}
   renderGoals();
 }
+// The vision's full editable text collapses by default, leaving just the pulled-out
+// highlight; a toggle expands it to read/edit. Remembered per area. (Robin,
+// 2026-10-29.) Default collapsed, so an id present here means expanded.
+function visionEditOpen(id) { try { const c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); return Array.isArray(c) && c.includes(id); } catch { return false; } }
+function toggleVisionEdit(id) {
+  try { let c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.vedit', JSON.stringify(c)); } catch {}
+  renderGoals();
+}
+// Any Life Space that doesn't need a vision + goals can be closed off the Goals
+// page (×), leaving only the ones that matter; restored from the strip at the
+// foot. Remembered per area. (Robin, 2026-10-29.)
+function goalAreaHiddenSet() { try { const c = JSON.parse(localStorage.getItem('life.goals.ahidden') || '[]'); return new Set(Array.isArray(c) ? c : []); } catch { return new Set(); } }
+function setGoalAreaHidden(id, hidden) {
+  try { const s = goalAreaHiddenSet(); if (hidden) s.add(id); else s.delete(id); localStorage.setItem('life.goals.ahidden', JSON.stringify([...s])); } catch {}
+  renderGoals();
+}
 // Goals organised the way Robin thinks: for each Page, its Vision then its
 // Goals. ("This quarter's focus" is its own tab now, not the lead here.) A sort
 // control (mirroring the Goals-list tab) orders the goals within each Space.
@@ -17788,33 +17809,45 @@ function goalsByAreaBody() {
     due: (x, y) => String(gp(x).targetDate || '9999').localeCompare(String(gp(y).targetDate || '9999')),
     updated: (x, y) => String(y.updated_at || '').localeCompare(String(x.updated_at || '')),
   }[sortMode] || (() => 0);
-  const areaSections = state.areas.map((a) => {
+  const hidden = goalAreaHiddenSet();
+  const areaSections = state.areas.filter((a) => !hidden.has(a.id)).map((a) => {
     const p = a.props || {};
     const goals = active.filter((g) => gp(g).area === a.id).sort(gcmp);
     const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
-    // Vision gets the same treatment as on a Life Space: the standout lines pulled
-    // out as highlights above the full text, with the "Highlight the best bits"
-    // tick on by default. The same visionHighlight prop, so the two views agree.
+    // Vision leads (its standout lines pulled out as a highlight, "Highlight the
+    // best bits" on by default); the full editable text collapses beneath behind a
+    // toggle, so the highlight is all you see until you want to edit. Goals follow.
+    // (Robin, 2026-10-29.)
     const visionTxt = (p.vision || '').trim();
     const visionHl = !(p.visionHighlight === false);
     const hlQuotes = (visionHl && visionTxt) ? visionHighlights(visionTxt) : [];
     const hlHtml = hlQuotes.length ? `<div class="vision-hl gv-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
     const hlTog = visionTxt ? `<label class="vision-hl-tog gv-hl-tog"><input type="checkbox" data-area-vision-hl="${a.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
     const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${visionTxt ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
+    // With a highlight showing, hide the full text behind "Edit"; with no highlight
+    // (toggle off, or nothing to pull out) show the card so there's always a way in.
+    const hasHl = !!hlHtml;
+    const vExpanded = visionEditOpen(a.id);
+    const showCard = !hasHl || vExpanded;
+    const editTog = (hasHl && visionTxt) ? `<button class="gv-edit-tog" data-vision-edit="${a.id}">${vExpanded ? '▾ Hide the full text' : '✎ Edit the vision text'}</button>` : '';
+    const gvInner = `${hlHtml}<div class="gv-togs">${hlTog}${editTog}</div>${showCard ? vision : ''}`;
     const open = goalAreaOpen(a.id);
     return `<section class="goal-area ${open ? '' : 'collapsed'}" style="--h:${hueOf(a)}">
-      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
-      ${open ? `<div class="ga-flow"><span class="ga-flow-l">Goals</span>${goals.length ? `<span class="ga-flow-n">${goals.length}</span>` : ''}</div>
-      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>
-      <div class="ga-step ga-step-vision"><span class="ga-step-l">Vision</span><div class="gv-vision">${hlHtml}${vision}${hlTog}</div></div>` : ''}
+      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button><button class="ghost goal-area-x" data-goal-area-hide="${a.id}" title="Hide ${esc(a.title)} from Goals" aria-label="Hide this Life Space from Goals">×</button></div>
+      ${open ? `<div class="ga-step ga-step-vision"><span class="ga-step-l">Vision</span><div class="gv-vision">${gvInner}</div></div>
+      <div class="ga-flow"><span class="ga-flow-l">Goals</span>${goals.length ? `<span class="ga-flow-n">${goals.length}</span>` : ''}</div>
+      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map((g) => goalCardMini(g)).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>` : ''}
     </section>`;
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
-  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map(goalCardMini).join('')}</div></section>` : '';
+  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map((g) => goalCardMini(g)).join('')}</div></section>` : '';
+  // Hidden Life Spaces sit in a quiet strip at the foot; tap one to bring it back.
+  const hiddenAreas = [...hidden].map((id) => areaById(id)).filter(Boolean);
+  const hiddenStrip = hiddenAreas.length ? `<div class="goal-hidden-strip"><span class="ghs-l">Hidden</span>${hiddenAreas.map((a) => `<button class="ghs-chip" data-goal-area-show="${a.id}" title="Show ${esc(a.title)} on Goals again"><span class="cd" style="--h:${hueOf(a)}"></span>${esc(a.title)}<span class="ghs-plus">+</span></button>`).join('')}</div>` : '';
   // The "this quarter's focus" strip lives on its own tab now, not at the top here.
   const controls = `<div class="glist-controls glist-controls-area"><select class="sel" data-garea-sort title="Sort goals within each Life Space">${GOAL_AREA_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>Sort: ${esc(l)}</option>`).join('')}</select></div>`;
-  return `${controls}${areaSections}${noAreaSec}
-    ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map(goalCardMini).join('')}</div></details>` : ''}`;
+  return `${controls}${areaSections}${noAreaSec}${hiddenStrip}
+    ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map((g) => goalCardMini(g)).join('')}</div></details>` : ''}`;
 }
 // Bucket list: its own box, off to the side of Goals - collapsed by default so
 // those someday-ideas aren't front and centre every time (Robin's call).
@@ -22219,6 +22252,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
+  { const gah = t.closest('[data-goal-area-hide]'); if (gah) { setGoalAreaHidden(gah.dataset.goalAreaHide, true); return; } }
+  { const gas = t.closest('[data-goal-area-show]'); if (gas) { setGoalAreaHidden(gas.dataset.goalAreaShow, false); return; } }
+  { const vet = t.closest('[data-vision-edit]'); if (vet) { toggleVisionEdit(vet.dataset.visionEdit); return; } }
   { const gat = t.closest('[data-goal-area-toggle]'); if (gat) { toggleGoalArea(gat.dataset.goalAreaToggle); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
@@ -23890,6 +23926,19 @@ function favDrop(container, x, y, draggedId) {
   for (let j = list.indexOf(best.dataset.favId) + 1; j < list.length; j++) if (list[j] !== draggedId) return list[j];
   return null;
 }
+// A goal card can be draggable (Home's starred-goal reorder), but its progress
+// slider must always slide, never start a card drag - a draggable parent otherwise
+// swallows the range thumb's pointer and the whole card drags. The dragstart guard
+// below is too late (its target is the card, not the slider), so while a pointer is
+// held on the slider we turn the card's draggable off and restore it on release.
+// (Robin, 2026-10-29: right-hand goal slider dragged the card.)
+document.addEventListener('pointerdown', (e) => {
+  const sl = e.target.closest && e.target.closest('[data-goal-progress]'); if (!sl) return;
+  const card = sl.closest('[data-focus-id]'); if (card && card.getAttribute('draggable') === 'true') { card.setAttribute('draggable', 'false'); card.dataset.dragOff = '1'; }
+}, true);
+document.addEventListener('pointerup', () => {
+  document.querySelectorAll('[data-focus-id][data-drag-off="1"]').forEach((c) => { c.setAttribute('draggable', 'true'); delete c.dataset.dragOff; });
+}, true);
 document.addEventListener('dragstart', (e) => {
   if (e.target.closest('[data-goal-progress]')) { e.preventDefault(); return; }   // dragging the progress slider must not drag the card
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }

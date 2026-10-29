@@ -507,12 +507,30 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .ga-flow::before, .ga-flow::after { content:''; height:1px; flex:1; background:linear-gradient(to right,transparent,color-mix(in srgb,hsl(var(--h,220) 55% 55%) 40%,transparent),transparent); }
 .ga-flow-l { flex:none; font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:hsl(var(--h,220) 42% 46%); }
 .ga-flow-n { flex:none; font-size:12px; font-weight:700; color:hsl(var(--h,220) 40% 50%); background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 15%,transparent); border-radius:999px; padding:1px 9px; }
-/* Vision now sits below the goals as the context behind them, the standout lines
-   pulled out as highlights (like a Life Space), the full text a tap away. */
-.ga-step-vision { margin-top:24px; }
+/* Vision leads (the context the goals serve), the standout lines pulled out as a
+   highlight; the full editable text collapses behind "Edit". Goals follow. */
+.ga-step-vision { margin-top:2px; margin-bottom:22px; }
 .gv-vision { display:block; }
-.gv-hl { margin-bottom:12px; }
+.gv-hl { margin-bottom:10px; }
+/* The row of small vision controls under the highlight: the Highlight toggle and
+   the Edit-the-text toggle, side by side. */
+.gv-togs { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin:2px 0; }
+.gv-togs .vision-hl-tog { margin:0; }
+.gv-edit-tog { border:0; background:none; padding:4px 2px; font-size:13px; font-weight:600; color:hsl(var(--h,220) 42% 52%); cursor:pointer; }
+.gv-edit-tog:hover { color:var(--accent); text-decoration:underline; }
+.gv-togs + .gv-card { margin-top:10px; }
 .goal-area-empty { color:var(--ink-3); font-size:14px; padding:2px 0; }
+/* Hide this Life Space off the Goals page: a quiet × at the end of the header. */
+.goal-area-x { flex:none; width:28px; height:28px; padding:0; border-radius:8px; font-size:17px; line-height:1; color:var(--ink-3); }
+.goal-area-x:hover { color:var(--danger,#c4412e); border-color:color-mix(in srgb,var(--danger,#c4412e) 45%,var(--line)); }
+/* The restore strip: hidden Life Spaces as small chips, tap to bring one back. */
+.goal-hidden-strip { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:22px 2px 8px; padding-top:16px; border-top:1px solid var(--line); }
+.ghs-l { font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:var(--ink-3); }
+.ghs-chip { display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border:1px solid var(--line-2); border-radius:999px; background:var(--card); color:var(--ink-2); font-size:13.5px; cursor:pointer; transition:border-color .12s, color .12s; }
+.ghs-chip:hover { border-color:var(--accent); color:var(--ink); }
+.ghs-chip .cd { width:10px; height:10px; border-radius:50%; background:hsl(var(--h,220) 55% 55%); flex:none; }
+.ghs-plus { font-size:15px; color:var(--ink-3); margin-left:1px; }
+.ghs-chip:hover .ghs-plus { color:var(--accent); }
 .goals-side { position:sticky; top:96px; }
 .goals-side-box { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:14px 16px; }
 .goals-side-box.collapsed { padding:12px 16px; }
