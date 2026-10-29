@@ -144,7 +144,30 @@ const reflectOn = () => REFLECT_MODULES.some(([k]) => modOn(k));
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
-const token = () => localStorage.getItem(KEY) || '';
+// The session token lives in localStorage, but an installed PWA (especially Brave)
+// can evict or clear site storage when it's closed - which signed people out on the
+// very next open. So we ALSO mirror it into a 7-day cookie and, when reading, restore
+// localStorage from the cookie if it was wiped. (Robin, 2026-10-29: he and a new user
+// kept getting logged out on reopen.) navigator.storage.persist() at boot also asks
+// the browser not to evict us.
+const COOKIE = 'lf_sess';
+function readTokenCookie() { try { const m = document.cookie.match(/(?:^|; )lf_sess=([^;]+)/); return m ? decodeURIComponent(m[1]) : ''; } catch { return ''; } }
+const token = () => {
+  let t = ''; try { t = localStorage.getItem(KEY) || ''; } catch {}
+  if (t) return t;
+  const c = readTokenCookie();
+  if (c) { try { localStorage.setItem(KEY, c); } catch {} }
+  return c;
+};
+function saveToken(tok) {
+  if (!tok) return;
+  try { localStorage.setItem(KEY, tok); } catch {}
+  try { document.cookie = `${COOKIE}=${encodeURIComponent(tok)}; path=/; max-age=${60 * 60 * 24 * 7}; secure; samesite=lax`; } catch {}
+}
+function clearToken() {
+  try { localStorage.removeItem(KEY); } catch {}
+  try { document.cookie = `${COOKIE}=; path=/; max-age=0; secure; samesite=lax`; } catch {}
+}
 // Is the stored JWT past its exp? We only DECODE it (the server verifies) to tell
 // a real "signed out" from a stray, transient 401 that must NOT wipe a valid
 // session. (Robin, 2026-10-29: a user got signed out on reopen - never log anyone
@@ -170,7 +193,7 @@ async function api(path, opts = {}) {
     // never wipe a valid session and strand the user at the gate. (Robin.)
     if (tokenExpired() || ++_auth401 >= 4) {
       _auth401 = 0;
-      localStorage.removeItem(KEY);
+      clearToken();
       if (!$('#gate2')) showGate('Your session expired. Sign in again.');
     }
     throw new Error('unauthorized');
@@ -25592,7 +25615,7 @@ function showSignup(email, inviteRequired, invited) {
       <p class="gate2-alt su-foot">${t('signup.signedinas', { email: esc(email) })} · <button type="button" class="su-signout" id="su-signout">${t('signup.signout')}</button></p>
     </form></div>`);
   $('#signup-form').addEventListener('submit', signupSubmit);
-  $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); });
+  $('#su-signout').addEventListener('click', () => { clearToken(); location.reload(); });
   $('#su-name').focus();
 }
 // Their LifeFold lives on its own subdomain - a different origin, with its own
@@ -25660,7 +25683,7 @@ async function gateSubmit(e) {
       const r = await fetch('/auth/verify-totp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mfaToken: gateMfaToken, code: $('#gate-code').value.trim() }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.token) throw new Error(d.error || t('gate.badcode'));
-      localStorage.setItem(KEY, d.token); location.reload(); return;
+      saveToken(d.token); location.reload(); return;
     }
     const r = await fetch('/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: gateEmail, code: $('#gate-code').value.trim() }) });
     const d = await r.json().catch(() => ({}));
@@ -25678,7 +25701,7 @@ async function gateSubmit(e) {
       btn.textContent = t('gate.verify'); btn.disabled = false; gateBusy = false; return;
     }
     if (!r.ok || !d.token) throw new Error(d.error || t('gate.badcode'));
-    localStorage.setItem(KEY, d.token); location.reload();
+    saveToken(d.token); location.reload();
   } catch (e2) { err.textContent = e2.message; err.hidden = false; }
   btn.disabled = false; gateBusy = false;
 }
@@ -26189,7 +26212,7 @@ function showRequired2fa() {
   const mark = '<div class="gate2-mark"><em>Life<i class="wm-bk">Fold</i></em></div>';
   const head = (txt) => `<div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
-  const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { try { localStorage.removeItem(KEY); } catch {} location.reload(); }; };
+  const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
   if (st.recovery) {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
@@ -26230,6 +26253,9 @@ function showRequired2fa() {
   initTheme();
   applyBgPattern(savedBgPattern());
   applyMarkRing(markRingOn());
+  // Ask the browser not to evict our storage - the session token lives there, and
+  // eviction on close is what signed people out on reopen. Best-effort. (Robin.)
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
   // Per-user subdomains are retired - everyone lives at lifebook.fyi now. If this is
   // an old <sub>.daybook.fyi address, hand the session straight over to the apex app,
   // carrying the token in the fragment (consumed just below) so existing bookmarks
@@ -26247,7 +26273,7 @@ function showRequired2fa() {
   let preEmail = '', preChannel = '';
   try {
     const h = location.hash.match(/^#t=([A-Za-z0-9._~%-]+)$/);
-    if (h) { localStorage.setItem(KEY, decodeURIComponent(h[1])); history.replaceState(null, '', location.pathname + location.search); }
+    if (h) { saveToken(decodeURIComponent(h[1])); history.replaceState(null, '', location.pathname + location.search); }
     // Arriving from the marketing page's sign-in box, which asks for an email and
     // nothing else. Consumed once and wiped from the URL, so a reload lands on a
     // plain gate rather than re-sending a code into the resend cooldown.
