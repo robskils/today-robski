@@ -8363,7 +8363,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
    first and full width. (Robin, 2026-10-28.) */
 .task-lower { display:flex; flex-direction:column; gap:18px; margin-top:18px; }
 .task-lower > .focus-notes { min-height:168px; box-sizing:border-box; }
-@media (min-width:721px) { .task-lower > .focus-notes { order:3; } }
+/* Notes sit at the top of the lower block (above the email and the Linked &
+   attached panel), on desktop as well as mobile - its natural DOM order, no
+   longer pushed below with order:3. (Robin, 2026-10-29.) */
 .fn-h { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:var(--ink); padding:12px 0 8px; margin:0; }
 .focus-notes .prose { min-height:96px; }
 /* A task made from an email shows the email in its own section. */
