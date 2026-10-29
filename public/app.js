@@ -24,7 +24,7 @@ const isManagedPlan = (p) => normPlan(p) === 'managed';
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
-const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle class="brand-ring" cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>';
+const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle class="brand-ring" cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -3560,8 +3560,8 @@ function renderSettings() {
         </div>
         <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The LifeFold symbol - the clean octagram, or held in its ring.</div>
           <div class="mark-opts">
-            <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
-            <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
+            <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
+            <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
           </div>
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
@@ -13754,6 +13754,9 @@ const MAIL_PRESETS = {
   purelymail: { label: 'Purelymail', imap: 'imap.purelymail.com', imapPort: 993, smtp: 'smtp.purelymail.com', smtpPort: 465 },
   google: { label: 'Google / Workspace', imap: 'imap.gmail.com', imapPort: 993, smtp: 'smtp.gmail.com', smtpPort: 465, note: GMAIL_APP_PW + ' <span class="gpw-admin">On a Workspace account, your admin must also allow IMAP.</span>' },
   icloud: { label: 'iCloud', imap: 'imap.mail.me.com', imapPort: 993, smtp: 'smtp.mail.me.com', smtpPort: 587, note: 'iCloud needs an app-specific password from appleid.apple.com.' },
+  // All Yahoo regional domains (yahoo.com, yahoo.it, ymail.com, rocketmail...) use
+  // the same servers; Yahoo requires an app password for third-party access.
+  yahoo: { label: 'Yahoo', imap: 'imap.mail.yahoo.com', imapPort: 993, smtp: 'smtp.mail.yahoo.com', smtpPort: 465, note: 'Yahoo needs an app password from account.yahoo.com → Account security → Generate app password (your normal password will not work).' },
   outlook: { label: 'Outlook / 365', imap: 'outlook.office365.com', imapPort: 993, smtp: 'smtp.office365.com', smtpPort: 587 },
 };
 // Adding a mailbox is a two-app job: you type the address here, then switch to
