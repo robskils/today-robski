@@ -21694,6 +21694,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-photo-x]')) { onbRemovePhoto(); return; }
   { const oad = t.closest('[data-onb-area-del]'); if (oad) { onbDelArea(oad.dataset.onbAreaDel); return; } }
   { const osg = t.closest('[data-onb-area-suggest]'); if (osg) { onbAddArea(osg.dataset.onbAreaSuggest); return; } }
+  { const od = t.closest('[data-onb-deskos]'); if (od) { if (state.onb) state.onb.appDeskOS = od.dataset.onbDeskos; renderOnboarding(); return; } }
+  { const op = t.closest('[data-onb-phoneos]'); if (op) { if (state.onb) state.onb.appPhoneOS = op.dataset.onbPhoneos; renderOnboarding(); return; } }
+  { const oa = t.closest('[data-onb-app-added]'); if (oa) { markAppInstalled(oa.dataset.onbAppAdded); renderOnboarding(); return; } }
   { const oh = t.closest('[data-onb-open-hub]'); if (oh) { showOnboarding(oh.dataset.onbOpenHub || null); return; } }
   { const av = t.closest('[data-alias-verify]'); if (av) { verifyAlias(av.dataset.aliasVerify); return; } }
   { const ar = t.closest('[data-alias-resend]'); if (ar) { resendAlias(ar.dataset.aliasResend); return; } }
@@ -25586,6 +25589,18 @@ async function finishOnboarding() {
 // collapsible, tick-as-you-go checklist at the top of the Account page. Reads
 // global state; tapping an item opens the hub at that step. Completion detectors
 // mirror the hub's TILES - keep them in step. (Robin, 2026-10-26.)
+// Has LifeFold been added as an app on this kind of device? We can't see another
+// device, so we remember a manual "I've added it" per kind, and also count the
+// CURRENT device as done when LifeFold is running as an installed (standalone) app.
+function appInstalled(which) {
+  try { if (localStorage.getItem('lf_app_' + which) === '1') return true; } catch {}
+  let standalone = false;
+  try { standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch {}
+  if (!standalone) return false;
+  let phone = false; try { phone = window.matchMedia('(max-width:820px)').matches; } catch {}
+  return which === 'phone' ? phone : !phone;
+}
+function markAppInstalled(which) { try { localStorage.setItem('lf_app_' + which, '1'); } catch {} }
 function welcomeItems() {
   const a = state.account || {};
   const card = state.card || {};
@@ -25599,6 +25614,8 @@ function welcomeItems() {
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 || !!a.isOwner },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
+    { id: 'appdesktop', ic: '💻', label: 'App on your computer', done: appInstalled('computer') },
+    { id: 'appphone', ic: '📱', label: 'App on your phone', done: appInstalled('phone') },
   ];
   // AI is handled for Premium Plus, so there's nothing to set up - hide it there.
   if (!onManaged) items.push({ id: 'ai', ic: '✦', label: 'Add your AI', done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiOpenaiSet || a.aiGeminiSet) });
@@ -25851,6 +25868,48 @@ function onbTwofaPanel() {
     <button class="add-btn wide" data-onb-nav="twofa">Manage two-factor →</button>`;
   return `<p class="onb-p">Add a second step at sign-in from an authenticator app (Google Authenticator, Authy, 1Password…), so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`;
 }
+// "Add the web app" - LifeFold is a proper app you install straight from the
+// browser, no app store. Pick your device, follow three plain steps. (Robin, 2026-10-29.)
+function onbAppDesktop() {
+  const os = (state.onb && state.onb.appDeskOS) || (/(Mac|iPhone|iPad)/.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'win');
+  const done = appInstalled('computer');
+  const steps = os === 'mac' ? [
+    ['In Safari', 'Click <b>Share</b> (the square with an arrow ↑) in the toolbar, then <b>Add to Dock</b>.'],
+    ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
+    ['That’s it', 'LifeFold now lives in your Dock and opens in its own window.'],
+  ] : [
+    ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
+    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install LifeFold…</b>'],
+    ['That’s it', 'LifeFold now lives on your taskbar and opens in its own window.'],
+  ];
+  return `<p class="onb-p">Add LifeFold to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just LifeFold.</p>
+    <div class="onb-ostabs">
+      <button type="button" class="onb-ostab ${os === 'mac' ? 'on' : ''}" data-onb-deskos="mac">Mac</button>
+      <button type="button" class="onb-ostab ${os === 'win' ? 'on' : ''}" data-onb-deskos="win">Windows</button>
+    </div>
+    <ol class="onb-steps">${steps.map(([h, s]) => `<li><span class="onb-step-h">${h}</span><span class="onb-step-s">${s}</span></li>`).join('')}</ol>
+    ${done ? '<div class="onb-ok">✓ Added to your computer.</div>' : '<button type="button" class="add-btn wide" data-onb-app-added="computer">I’ve added it ✓</button>'}`;
+}
+function onbAppPhone() {
+  const os = (state.onb && state.onb.appPhoneOS) || (/(iPhone|iPad|iPod)/.test(navigator.userAgent || '') ? 'ios' : 'android');
+  const done = appInstalled('phone');
+  const steps = os === 'ios' ? [
+    ['Open LifeFold in Safari', 'It has to be Safari for this step - not Chrome.'],
+    ['Tap Share', 'The square with an arrow ↑, at the bottom of the screen.'],
+    ['Add to Home Screen', 'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.'],
+  ] : [
+    ['Open LifeFold in Chrome', 'On your Android phone.'],
+    ['Tap the ⋮ menu', 'Top-right of the screen.'],
+    ['Install app', 'Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.'],
+  ];
+  return `<p class="onb-p">Add LifeFold to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
+    <div class="onb-ostabs">
+      <button type="button" class="onb-ostab ${os === 'ios' ? 'on' : ''}" data-onb-phoneos="ios">iPhone</button>
+      <button type="button" class="onb-ostab ${os === 'android' ? 'on' : ''}" data-onb-phoneos="android">Android</button>
+    </div>
+    <ol class="onb-steps">${steps.map(([h, s]) => `<li><span class="onb-step-h">${h}</span><span class="onb-step-s">${s}</span></li>`).join('')}</ol>
+    ${done ? '<div class="onb-ok">✓ Added to your phone.</div>' : '<button type="button" class="add-btn wide" data-onb-app-added="phone">I’ve added it ✓</button>'}`;
+}
 // The setup HUB: a calm grid of icon tiles, each opening a panel to do that bit,
 // in any order, whenever you like. Done bits carry a tick; a progress bar sums
 // them up. The pattern Robin loves - icon tile + expand panel. (Robin, 2026-10-15.)
@@ -25873,6 +25932,8 @@ function renderOnboarding() {
     { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: calConnected, body: onbCalendar },
     { id: 'import', ic: '⤓', label: 'Import', hint: 'Notes & contacts', opt: true, done: contacts.length > 0, body: onbImport },
     { id: 'twofa', ic: '🔒', label: 'Lock it down', hint: 'Two-factor at sign-in', opt: true, done: !!a.totpEnabled, body: onbTwofaPanel },
+    { id: 'appdesktop', ic: '💻', label: 'App on your computer', hint: 'Mac or Windows', opt: true, done: appInstalled('computer'), body: onbAppDesktop },
+    { id: 'appphone', ic: '📱', label: 'App on your phone', hint: 'iPhone or Android', opt: true, done: appInstalled('phone'), body: onbAppPhone },
   ];
   // AI is handled for you on Premium Plus, so there's nothing to add there.
   if (!onManaged) TILES.push({ id: 'ai', ic: '✦', label: 'Add AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiGeminiSet || a.aiOpenaiSet), body: onbAi });
