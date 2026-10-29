@@ -5873,7 +5873,15 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .area-tabs .at-ic { font-size:18px; }
 .area-tabs .at-l { font-size:15px; }
 .area-tabs .at-c { position:static; top:auto; right:auto; margin-left:1px; }
-@media (max-width:560px){ .area-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:560px){
+  .area-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  /* On a phone the little emoji tiles read as lame: drop them for 4 clean, elegant
+     text buttons with a serif label, highlighting the one you're on. (Robin, 2026-10-29.) */
+  .area-tabs .at-ic { display:none; }
+  .area-tabs .area-tile { flex-direction:row; justify-content:center; gap:7px; padding:14px 12px; border-radius:12px; }
+  .area-tabs .at-l { font-family:'Cormorant Garamond',Georgia,serif; font-size:17.5px; font-weight:600; letter-spacing:.005em; }
+  .area-tabs .at-c { font-size:12px; }
+}
 /* The tab-controlled top card sits a touch prouder than the cards below it. */
 .area-top-card { border-color:color-mix(in srgb,var(--accent) 40%,var(--line)); }
 /* The tab panel is a centered flex row (inherited from .area-card), so the goals
