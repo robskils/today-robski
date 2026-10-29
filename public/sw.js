@@ -79,7 +79,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       const cached = await caches.match(req);
       const net = fetch(req).then((res) => {
-        if (res && res.ok && res.type === 'basic') { caches.open(CACHE).then((c) => c.put(req, res.clone())); }
+        // Clone SYNCHRONOUSLY, before `return res` lets the page consume the body.
+        // Cloning inside the async caches.open().then() ran after the body was
+        // already read -> "Response body is already used" on every asset. (Robin.)
+        if (res && res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {}); }
         return res;
       }).catch(() => null);
       return cached || (await net) || Response.error();
