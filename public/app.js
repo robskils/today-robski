@@ -15390,7 +15390,7 @@ function renderTasks() {
       <div class="atf-grid">
         <label class="atf"><span>${t('field.area')}</span><select id="task-area" class="sel">${opts}</select></label>
         <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
-        <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+        <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${durationOptionsHtml((state.taskDraft && state.taskDraft.dur) || '')}</select></label>
         <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
         <label class="atf" id="task-repeatfrom-wrap" hidden><span>${t('task.nextdue')}</span><select id="task-repeatfrom" class="sel"><option value="due">${t('task.onschedule')}</option><option value="done">${t('task.aftertick')}</option></select></label>
       </div>
@@ -15430,6 +15430,12 @@ function renderTasks() {
     { const hu = $('#task-hideuntil'); if (hu && dr.hideUntil) hu.checked = true; }
     const rp = $('#task-repeat'); if (rp && dr.repeat) rp.dispatchEvent(new Event('change', { bubbles: true }));
     const tf = $('#task-form'); if (tf) tf.addEventListener('input', () => { state.taskDraft = readTaskForm(); });
+    // "Custom…" on the new-task duration: ask for the minutes and slot the value in.
+    { const ds = $('#task-dur'); if (ds) ds.addEventListener('change', () => { if (ds.value !== 'other') return; promptCustomDuration().then((min) => {
+      if (min === undefined) { ds.value = ''; }
+      else { let o = ds.querySelector('option[data-dur-custom]'); if (!o) { o = document.createElement('option'); o.setAttribute('data-dur-custom', ''); ds.insertBefore(o, ds.querySelector('option[value="other"]')); } o.value = String(min); o.textContent = durExactLabel(min); ds.value = String(min); }
+      state.taskDraft = readTaskForm();
+    }); }); }
     if (state.taskFocusArm && Date.now() - state.taskFocusArm < 4000) {
       const focusIt = () => { const i = $('#task-title'); if (i && document.activeElement !== i && !i.value) i.focus(); };
       focusIt(); requestAnimationFrame(focusIt);
@@ -24309,7 +24315,7 @@ async function openTaskCard(id) {
 }
 // Duration presets (minutes) for the task card. Free-form isn't needed - these
 // cover the useful range; '—' clears it.
-const DURATION_OPTS = [['', '—'], [15, '15 min'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1 hr 30 min'], [120, '2 hours'], [180, '3 hours'], [240, '4 hours'], [480, '8 hours']];
+const DURATION_OPTS = [['', '—'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours'], [240, '4 hours'], [480, '8 hours']];
 // A precise label for N minutes, using the preset wording where it matches.
 function durExactLabel(min) {
   min = Number(min); if (!min) return '—';
@@ -24323,7 +24329,7 @@ function durationOptionsHtml(cur) {
   const curStr = String(cur || '');
   const isPreset = DURATION_OPTS.some(([v]) => String(v) === curStr);
   const custom = (curStr && !isPreset) ? `<option value="${esc(curStr)}" selected>${esc(durExactLabel(cur))}</option>` : '';
-  return DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${curStr === String(v) ? 'selected' : ''}>${l}</option>`).join('') + custom + '<option value="other">Other…</option>';
+  return DURATION_OPTS.map(([v, l]) => `<option value="${v}" ${curStr === String(v) ? 'selected' : ''}>${l}</option>`).join('') + custom + '<option value="other">Custom…</option>';
 }
 async function promptCustomDuration(curMin) {
   const raw = await uiPrompt('How long will it take, in minutes?', { title: 'Custom duration', okLabel: 'Set', value: curMin ? String(curMin) : '', placeholder: 'e.g. 25' });
