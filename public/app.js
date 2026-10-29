@@ -4643,14 +4643,22 @@ function peopleBox() {
   if (modOn('contacts') && peopleOn()) {
     if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
     const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
+    const onlineN = navOnlineCount();
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
   const gcol = !!state.nav.collapsed['grp.people'];
   return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
+}
+// How many LifeFold contacts are online right now - drives the green dot on the
+// "LifeFold Contacts" header so you see someone's about even with the list folded.
+function navOnlineCount() {
+  const friends = (state.friends && state.friends.friends) || [];
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  return friends.filter((f) => onSet.has(f.id) || !!f.online).length;
 }
 // The live LifeFold-friends list (online first), reused inside the People box.
 function navPeopleRows() {
@@ -4672,9 +4680,10 @@ function navPeopleMobileHtml() {
   if (!(modOn('contacts') && peopleOn())) return '';
   if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
   const count = (state.friends && state.friends.friends) ? state.friends.friends.length : 0;
+  const onlineN = navOnlineCount();
   const open = navPeopleOpen();
   return `<div class="nav-mpeople">
-    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${count ? `<span class="np-count">${count}</span>` : ''}</button>
+    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">LifeFold Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
     ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
   </div>`;
 }
