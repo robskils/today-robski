@@ -3679,9 +3679,11 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .set-dangerrow .set-closebox { margin:0; height:100%; justify-content:space-between; }
 @media (max-width:640px) { .set-dangerrow { grid-template-columns:1fr; } }
 /* "Show Getting started": the spiel on the left, a normal-width button on the right. */
-/* A quiet way back to the setup guide - a discreet link, tucked above the danger row. */
-.set-reinstate-row { display:flex; justify-content:center; margin:4px 0 14px; }
-.set-reinstate-link { display:inline-flex; align-items:center; gap:7px; background:none; border:0; padding:6px 10px; color:var(--ink-3); font:inherit; font-size:13.5px; cursor:pointer; border-radius:8px; transition:color .12s, background .12s; }
+/* A quiet way back to the setup guide - a discreet link on the right of the Account
+   header row, beside the i. (Robin, 2026-10-29.) */
+.set-sec-h-r { margin-left:auto; display:inline-flex; align-items:center; gap:10px; }
+.set-sec-h-r .set-help-btn { margin-left:0; }
+.set-reinstate-link { display:inline-flex; align-items:center; gap:6px; background:none; border:0; padding:5px 9px; color:var(--ink-3); font:inherit; font-size:13px; cursor:pointer; border-radius:8px; white-space:nowrap; transition:color .12s, background .12s; }
 .set-reinstate-link:hover { color:var(--accent); background:var(--paper-2); }
 /* Getting-started checklist (a collapsible card of icon tiles that tick off). */
 .set-welcome { display:block; padding:0; gap:0; margin-bottom:16px; overflow:hidden; }

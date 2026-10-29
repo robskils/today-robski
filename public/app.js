@@ -3484,7 +3484,6 @@ function renderSettings() {
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
-      ${state.onbSeen ? `<div class="set-reinstate-row"><button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Show the Getting started guide</button></div>` : ''}
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
           <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave LifeFold on this device. Anything not saved to your account is cleared from this browser.</div></div>
@@ -3627,7 +3626,7 @@ function renderSettings() {
     ${state.account && !state.onbSeen ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
-      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span>${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</div>
+      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span><span class="set-sec-h-r">${tab === 'account' && state.onbSeen ? `<button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Getting started</button>` : ''}${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</span></div>
       ${panes[tab] || ''}
     </section>
     ${state.me ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || state.me.email || '')}</b> · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
