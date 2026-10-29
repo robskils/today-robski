@@ -13758,9 +13758,6 @@ function renderMailAccounts(note) {
     <div class="mail-acct-list">${rows}</div>
     <div id="mail-acct-form"></div>
     ${(state.mail.accounts || []).length ? `<button class="mail-add-more" data-mail-add-acct>+ Add another mailbox</button>` : ''}
-    <details class="gpw-details" open><summary>Adding a Gmail / Google Workspace account (App Password)</summary>
-      <div class="gpw-help">${GMAIL_APP_PW}<p class="gpw-expiry">App Passwords don't expire on a timer, but Google revokes them if you change your account password, toggle 2-Step Verification, or after a security review - then create a fresh one and paste it into that mailbox's <b>Edit → Password</b>.</p></div>
-    </details>
     ${pushSectionHtml()}
     <section class="push-sec"><div class="home-sec-h">After you deal with an email</div>
       <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
@@ -13771,7 +13768,7 @@ function renderMailAccounts(note) {
       <button class="add-btn wide" data-mail-handler>Set LifeFold as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
-  if (mailAddDraft()) showMailAccountForm();
+  if (mailAddDraft()) { state.mail.addProvider = (mailAddDraft() || {}).provider || null; showMailAccountForm(); }
 }
 async function saveSignature(id) {
   const a0 = (state.mail.accounts || []).find((x) => x.id === id); if (!a0) return;
@@ -13804,31 +13801,73 @@ const MAIL_ADD_KEY = 'life.mail.addDraft';
 function mailAddDraft() { try { return JSON.parse(localStorage.getItem(MAIL_ADD_KEY) || 'null'); } catch { return null; } }
 function clearMailAddDraft() { try { localStorage.removeItem(MAIL_ADD_KEY); } catch {} }
 function saveMailAddDraft() {
-  const f = document.getElementById('mail-acct-form-el'); if (!f) return;
+  const prov = (state.mail && state.mail.addProvider) || null;
+  const f = document.getElementById('mail-acct-form-el');
+  if (!f) { if (prov) { try { localStorage.setItem(MAIL_ADD_KEY, JSON.stringify({ provider: prov })); } catch {} } return; }
   const g = (id) => { const el = f.querySelector(id); return el ? el.value : ''; };
-  try { localStorage.setItem(MAIL_ADD_KEY, JSON.stringify({ email: g('#ma-email'), imapHost: g('#ma-imaphost'), imapPort: g('#ma-imapport'), smtpHost: g('#ma-smtphost'), smtpPort: g('#ma-smtpport'), username: g('#ma-user') })); } catch {}
+  try { localStorage.setItem(MAIL_ADD_KEY, JSON.stringify({ provider: prov, email: g('#ma-email'), imapHost: g('#ma-imaphost'), imapPort: g('#ma-imapport'), smtpHost: g('#ma-smtphost'), smtpPort: g('#ma-smtpport'), username: g('#ma-user') })); } catch {}
 }
+// Bring the add-mailbox card to the top so you actually land on it, not the account
+// list above it - it opens below the fold on a phone. (Robin, 2026-10-29.)
+function scrollMailAddIntoView() {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const el = document.querySelector('#mail-acct-form .mail-add-card');
+    if (el) { try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} }
+  }));
+}
+// Add a mailbox in two calm steps: FIRST ask which service (a clean tile picker),
+// THEN ask only what we actually need. For a known provider we already hold the
+// IMAP/SMTP settings, so we never make people type server names - just email + app
+// password. "Other" shows the full manual form. (Robin, 2026-10-29: beautiful even
+// on mobile, don't dump the raw Purelymail fields on everyone.)
+const MAIL_PROV_ORDER = ['google', 'icloud', 'yahoo', 'outlook', 'purelymail', 'other'];
+const MAIL_PROV_SUB = { google: 'Gmail & Workspace', icloud: 'Apple Mail', yahoo: 'incl. yahoo.it & ymail', outlook: 'Hotmail, Live, 365', purelymail: 'Your custom domain', other: 'Any IMAP mailbox' };
+const MAIL_PROV_HINT = { google: 'you@gmail.com', icloud: 'you@icloud.com', yahoo: 'you@yahoo.com', outlook: 'you@outlook.com', purelymail: 'you@yourdomain.com', other: 'you@example.com' };
 function showMailAccountForm() {
-  const chips = Object.entries(MAIL_PRESETS).map(([k, p]) => `<button type="button" class="mail-preset" data-mail-preset="${k}">${esc(p.label)}</button>`).join('');
+  const host = $('#mail-acct-form'); if (!host) return;
+  state.mail = state.mail || {};
   const d = mailAddDraft() || {};
+  const prov = state.mail.addProvider || null;
   const val = (x, fb) => esc((x != null && x !== '') ? x : fb);
-  $('#mail-acct-form').innerHTML = `<form id="mail-acct-form-el" class="add-task" style="flex-direction:column;align-items:stretch;gap:10px;max-width:520px;margin-top:16px">
-    <div class="mail-presets"><span class="mail-presets-l">Provider:</span>${chips}</div>
-    <div id="ma-note" class="mail-sig-note" hidden></div>
-    <input id="ma-email" type="email" placeholder="Email address" required value="${val(d.email, '')}">
-    <div style="display:flex;gap:8px"><input id="ma-imaphost" placeholder="IMAP host" value="${val(d.imapHost, 'imap.purelymail.com')}" required style="flex:1"><input id="ma-imapport" value="${val(d.imapPort, '993')}" style="width:80px"></div>
-    <div style="display:flex;gap:8px"><input id="ma-smtphost" placeholder="SMTP host" value="${val(d.smtpHost, 'smtp.purelymail.com')}" required style="flex:1"><input id="ma-smtpport" value="${val(d.smtpPort, '465')}" style="width:80px"></div>
-    <input id="ma-user" placeholder="Username (usually your email)" value="${val(d.username, '')}">
-    <input id="ma-pass" type="password" placeholder="Password / app password" required>
-    <div class="ae-act" style="margin-top:4px"><button class="add-btn" type="submit">Add account</button><button type="button" class="ghost" data-mail-add-cancel>Cancel</button></div></form>`;
+  // STEP 1 - which service?
+  if (!prov) {
+    const labelOf = (k) => k === 'other' ? 'Other (IMAP)' : (MAIL_PRESETS[k] ? MAIL_PRESETS[k].label : k);
+    const tiles = MAIL_PROV_ORDER.map((k) => `<button type="button" class="mail-prov" data-mail-provider="${k}"><span class="mail-prov-l">${esc(labelOf(k))}</span><span class="mail-prov-s">${esc(MAIL_PROV_SUB[k] || '')}</span></button>`).join('');
+    host.innerHTML = `<div class="mail-add-card">
+      <div class="mail-add-h">Which email service?</div>
+      <p class="mail-add-sub">Pick your provider - we fill in the technical bits and only ask for what we actually need.</p>
+      <div class="mail-prov-grid">${tiles}</div>
+      <div class="mail-add-act"><button type="button" class="ghost" data-mail-add-cancel>Cancel</button></div>
+    </div>`;
+    scrollMailAddIntoView();
+    return;
+  }
+  // STEP 2 - details for the chosen service
+  const p = MAIL_PRESETS[prov];
+  const isOther = prov === 'other';
+  const title = isOther ? 'Other mailbox (IMAP)' : (p ? p.label : prov);
+  const note = isOther ? '' : (p && p.note ? p.note : '');
+  const hint = MAIL_PROV_HINT[prov] || 'you@example.com';
+  host.innerHTML = `<form id="mail-acct-form-el" class="mail-add-card mail-add-form">
+    <button type="button" class="mail-prov-back" data-mail-provider-back>‹ Different service</button>
+    <div class="mail-add-h2">${esc(title)}</div>
+    ${note ? `<div class="mail-add-note">${note}</div>` : ''}
+    <label class="mail-f"><span class="mail-f-l">Email address</span><input id="ma-email" type="email" placeholder="${hint}" required value="${val(d.email, '')}" autocomplete="username"></label>
+    ${isOther ? `
+      <div class="mail-f-row"><label class="mail-f mail-f-grow"><span class="mail-f-l">IMAP host</span><input id="ma-imaphost" placeholder="imap.example.com" value="${val(d.imapHost, '')}" required></label><label class="mail-f mail-f-port"><span class="mail-f-l">Port</span><input id="ma-imapport" inputmode="numeric" value="${val(d.imapPort, '993')}"></label></div>
+      <div class="mail-f-row"><label class="mail-f mail-f-grow"><span class="mail-f-l">SMTP host</span><input id="ma-smtphost" placeholder="smtp.example.com" value="${val(d.smtpHost, '')}" required></label><label class="mail-f mail-f-port"><span class="mail-f-l">Port</span><input id="ma-smtpport" inputmode="numeric" value="${val(d.smtpPort, '465')}"></label></div>
+      <label class="mail-f"><span class="mail-f-l">Username <small>- only if different from your email</small></span><input id="ma-user" placeholder="Usually your email" value="${val(d.username, '')}"></label>`
+    : `<input type="hidden" id="ma-imaphost" value="${esc(p.imap)}"><input type="hidden" id="ma-imapport" value="${esc(String(p.imapPort))}"><input type="hidden" id="ma-smtphost" value="${esc(p.smtp)}"><input type="hidden" id="ma-smtpport" value="${esc(String(p.smtpPort))}"><input type="hidden" id="ma-user" value="">`}
+    <label class="mail-f"><span class="mail-f-l">${isOther ? 'Password' : 'App password'}</span><input id="ma-pass" type="password" placeholder="${isOther ? 'Your password' : 'Paste the app password'}" required autocomplete="current-password"></label>
+    <div class="mail-add-act"><button class="add-btn mail-add-go" type="submit">Add mailbox</button><button type="button" class="ghost" data-mail-add-cancel>Cancel</button></div>
+  </form>`;
   const f = document.getElementById('mail-acct-form-el');
   if (f) f.addEventListener('input', saveMailAddDraft);
   saveMailAddDraft();   // mark the form in-progress so a resume/redraw reopens it
-  // Coming back with the password copied? Land on the password box ready to paste.
-  // A fresh, empty form starts at the email box.
-  const restoring = !!(d.email || d.username || d.imapHost);
+  const restoring = !!(d.email || d.imapHost);
   const focusEl = restoring ? $('#ma-pass') : $('#ma-email');
-  if (focusEl) focusEl.focus();
+  if (focusEl) focusEl.focus({ preventScroll: true });
+  scrollMailAddIntoView();
 }
 function applyMailPreset(key) {
   const p = MAIL_PRESETS[key]; if (!p) return;
@@ -22140,8 +22179,10 @@ document.addEventListener('click', (e) => {
   { const tpm = t.closest('[data-tp-m]'); if (tpm) { tpSet('m', +tpm.dataset.tpM); return; } }
   if (t.closest('[data-tp-done]')) { closeTimePicker(); return; }
   if (t.closest('[data-tp-close]') && !t.closest('.tp-card')) { closeTimePicker(); return; }
-  if (t.closest('[data-mail-add-acct]')) { showMailAccountForm(); return; }
-  if (t.closest('[data-mail-add-cancel]')) { clearMailAddDraft(); const h = $('#mail-acct-form'); if (h) h.innerHTML = ''; return; }
+  if (t.closest('[data-mail-add-acct]')) { state.mail = state.mail || {}; state.mail.addProvider = (mailAddDraft() || {}).provider || null; showMailAccountForm(); return; }
+  if (t.closest('[data-mail-add-cancel]')) { if (state.mail) state.mail.addProvider = null; clearMailAddDraft(); const h = $('#mail-acct-form'); if (h) h.innerHTML = ''; return; }
+  { const mp = t.closest('[data-mail-provider]'); if (mp) { state.mail = state.mail || {}; state.mail.addProvider = mp.dataset.mailProvider; showMailAccountForm(); return; } }
+  if (t.closest('[data-mail-provider-back]')) { if (state.mail) state.mail.addProvider = null; clearMailAddDraft(); showMailAccountForm(); return; }
   const mpre = t.closest('[data-mail-preset]'); if (mpre) { applyMailPreset(mpre.dataset.mailPreset); return; }
   const mda = t.closest('[data-mail-del-acct]'); if (mda) { delMailAccount(mda.dataset.mailDelAcct); return; }
   if (t.closest('[data-sig-close-all]')) { document.querySelectorAll('[data-sig-panel]').forEach((p) => { p.hidden = true; }); refreshAcctCrumb(); return; }
@@ -22864,7 +22905,7 @@ document.addEventListener('submit', (e) => {
     const alarmsVal = remSelected(e.target);
     const alarmChVal = (() => { if (!alarmsVal.length) return ['app']; const cs = [...e.target.querySelectorAll('.ce-chan-cb')].filter((c) => c.checked).map((c) => c.value); return cs.length ? cs : ['app']; })();
     if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmsVal, alarmChVal); }
-  if (e.target.id === 'mail-acct-form-el') { addMailAccount({ email: $('#ma-email').value.trim(), imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: $('#ma-user').value.trim(), pass: $('#ma-pass').value }); }
+  if (e.target.id === 'mail-acct-form-el') { const em = $('#ma-email').value.trim(); addMailAccount({ email: em, imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: ($('#ma-user') && $('#ma-user').value.trim()) || em, pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
     saveMailAccount(f.dataset.acctEditForm, { email: g('.ae-email').trim(), imapHost: g('.ae-imaphost').trim(), imapPort: g('.ae-imapport').trim(), smtpHost: g('.ae-smtphost').trim(), smtpPort: g('.ae-smtpport').trim(), username: g('.ae-user').trim(), pass: g('.ae-pass') });

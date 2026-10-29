@@ -6934,6 +6934,32 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-presets-l { color:var(--ink-3); font-size:13px; }
 .mail-preset { padding:6px 12px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:13.5px; background:var(--card); }
 .mail-preset:hover { border-color:var(--accent); color:var(--accent); }
+/* ── Add-mailbox: service-first picker + progressive form (Robin, 2026-10-29) ── */
+.mail-add-card { max-width:540px; margin:18px 0 6px; padding:22px; background:var(--card); border:1px solid var(--line); border-radius:18px; scroll-margin-top:78px; box-shadow:0 18px 44px -36px rgba(60,46,20,.42); }
+.mail-add-h { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:23px; color:var(--ink); margin:0 0 4px; }
+.mail-add-sub { color:var(--ink-2); font-size:14px; line-height:1.5; margin:0 0 18px; }
+.mail-prov-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:11px; }
+.mail-prov { display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:15px 16px; border:1px solid var(--line); border-radius:14px; background:var(--paper); cursor:pointer; text-align:left; transition:border-color .12s, background .12s, transform .06s; }
+.mail-prov:hover { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.mail-prov:active { transform:scale(.985); }
+.mail-prov-l { font-weight:600; font-size:15.5px; color:var(--ink); }
+.mail-prov-s { font-size:12.5px; color:var(--ink-3); }
+.mail-prov-back { align-self:flex-start; background:none; border:0; color:var(--accent); font-size:14px; font-weight:600; padding:0 0 12px; cursor:pointer; }
+.mail-add-h2 { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:22px; color:var(--ink); margin:0 0 12px; }
+.mail-add-note { font-size:13.5px; line-height:1.55; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 6%,var(--card)); border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line)); border-radius:12px; padding:12px 14px; margin:0 0 16px; }
+.mail-add-note ol, .mail-add-note ul { margin:6px 0 0; padding-left:20px; }
+.mail-add-note a { color:var(--accent); }
+.mail-add-form { display:flex; flex-direction:column; }
+.mail-f { display:flex; flex-direction:column; gap:5px; margin-bottom:13px; }
+.mail-f-l { font-size:12.5px; font-weight:600; color:var(--ink-2); }
+.mail-f-l small { font-weight:400; color:var(--ink-3); }
+.mail-f input { width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:11px; background:var(--paper); color:var(--ink); font-size:15px; }
+.mail-f input:focus { border-color:var(--accent); outline:none; }
+.mail-f-row { display:flex; gap:10px; }
+.mail-f-grow { flex:1; min-width:0; }
+.mail-f-port { width:92px; flex:none; }
+.mail-add-act { display:flex; align-items:center; gap:10px; margin-top:6px; }
+.mail-add-go { flex:none; }
 .mail-discard { margin-left:auto; color:var(--ink-3); }
 /* Which account a message belongs to, shown in the All-accounts view. */
 .mail-acct-chip { display:inline-block; vertical-align:middle; margin-right:7px; padding:1px 8px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); color:var(--ink-2); font-size:12px; font-weight:500; white-space:nowrap; }
