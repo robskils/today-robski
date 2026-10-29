@@ -2213,6 +2213,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-share-ic:hover { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
 .note-share-ic svg { width:19px; height:19px; display:block; }
 .note-share-ic.on { color:var(--accent); }
+/* Note header faces: the Life Space face-row, sized down a touch to sit in the
+   crumb toolbar beside the lock/trash icons. (Robin, 2026-10-29.) */
+.note-faces-wrap { display:inline-flex; align-items:center; }
+.area-faces.note-faces .aface .fr-av,
+.area-faces.note-faces .aface-more,
+.area-faces.note-faces .aface-add { width:30px; height:30px; box-shadow:0 0 0 2px var(--paper); }
+.area-faces.note-faces .aface-more { font-size:11px; }
+.area-faces.note-faces .aface-add { font-size:17px; }
 .note-share-ic .ic-n { font-size:13px; font-weight:600; line-height:1; }
 
 .note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
@@ -2311,8 +2319,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .nx-sugg-row .kind { margin-left:auto; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); }
 .nx-sugg-hint { color:var(--ink-3); font-size:13.5px; padding:8px 2px; line-height:1.5; }
 .nx-filebar { display:flex; gap:9px; flex-wrap:wrap; }
-.nx-choose { display:inline-flex; align-items:center; gap:7px; padding:10px 15px; border:1px dashed var(--line-2); border-radius:12px; background:none; color:var(--ink-2); font:inherit; font-size:14.5px; cursor:pointer; }
-.nx-choose:hover { border-color:var(--accent); color:var(--accent); }
+.nx-choose { display:inline-flex; align-items:center; gap:7px; padding:10px 15px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); color:var(--ink-2); font:inherit; font-size:14.5px; cursor:pointer; transition:border-color .13s,color .13s,background .13s; }
+.nx-choose:hover { border-color:var(--accent); color:var(--accent); background:var(--paper); }
+.nx-choose-sel { max-width:none; width:auto; padding-right:32px; }
 /* One flat row of entry points: Connect / Web link / Attach / Camera / Scan. */
 .nx-addrow { display:flex; gap:9px; flex-wrap:wrap; }
 .nx-choose.on { border-style:solid; background:color-mix(in srgb,var(--accent) 15%,var(--card)); border-color:color-mix(in srgb,var(--accent) 48%,var(--line)); color:var(--ink); }
@@ -2519,8 +2528,12 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .home-mark:hover .brand-mark { opacity:1; }
 .home-mark:active { transform:translateY(0); }
 .nav-brand .brand-mark { width:1.4em; height:1.4em; margin:0 .14em 0 .18em; vertical-align:-.32em; color:var(--accent); }
-/* Dark theme keeps the gold lockup - it reads beautifully on the night-sky navy. */
-:root[data-theme='dark'] .nav-brand em, :root[data-theme='dark'] .nav-brand .brand-mark { color:var(--gold); }
+/* Dark theme: the lockup wears the highlight (accent), the same as light - the
+   coral reads clean and bright on the night-sky navy and matches the active nav
+   item and mail dot. Drawer brand (mobile sidebar) rides along. (Robin,
+   2026-10-29: highlight colour, not gold.) */
+:root[data-theme='dark'] .nav-brand em, :root[data-theme='dark'] .nav-brand .brand-mark,
+:root[data-theme='dark'] .nav-drawer-brand em, :root[data-theme='dark'] .nav-drawer-brand .brand-mark { color:var(--accent); }
 /* Firm the sidebar monogram a touch - the fine Cormorant strokes read a little
    light at this size, so give the letters + dot a hairline of their own colour
    (the ring, a separate circle, is untouched). (Robin, 2026-10-15.) */
@@ -2530,6 +2543,8 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    click one to open its list below (and close the other). (Robin, 2026-10-15.) */
 .nav-topsecs { margin:2px 2px 6px; }
 .nav-topsec-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.nav-topsec-tabs.three { grid-template-columns:repeat(3,1fr); gap:6px; }
+.nav-topsec-tabs.three .nav-topsec-t { padding:10px 6px; }
 .nav-topsec-t { display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 8px; border:1px solid var(--line); border-radius:11px; background:var(--card); color:var(--ink-2); font-size:14.5px; font-weight:600; cursor:pointer; transition:border-color .12s, background .12s, color .12s; }
 .nav-topsec-t .nts-ic { font-size:13px; color:var(--gold); }
 .nav-topsec-t .nts-c { font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; background:var(--paper-2); border-radius:999px; padding:1px 6px; }
@@ -3855,6 +3870,12 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .tf-cardrow { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; margin-top:18px; }
 .tf-cardrow > * { flex:1 1 300px; min-width:0; }
 .tf-cardrow .tf-surface { margin-top:0; }
+/* Task card: Due date (left half) sits beside Who can see this (right half); the
+   two cards share one row and keep their own natural height. Notes stays full
+   width below. Stacks on a narrow pane. (Robin, 2026-10-29.) */
+.tf-splitrow { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; margin-top:18px; }
+.tf-splitrow > .task-sched, .tf-splitrow > .tf-surface { margin-top:0; }
+@media (max-width:760px){ .tf-splitrow { grid-template-columns:1fr; gap:14px; } }
 /* The scheduling block: Due Date leads, Repeat + Reminder nest beneath it with a
    left rule so they read as hanging off the date. (Robin, 2026-10-29.) */
 .task-sched { margin-top:18px; border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:15px 18px; }

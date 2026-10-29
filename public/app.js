@@ -1248,7 +1248,7 @@ function labelForView(v) {
     case 'admin': return 'Admin';
     case 'friends': return 'Contacts on LifeFold';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
-    case 'area': return (state.area_open && state.area_open.area.title) || 'Area'; case 'areas': return t('nav.areas');
+    case 'area': return (state.area_open && state.area_open.area.title) || 'Life Space'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
     case 'connect': return t('nav.connect'); case 'daybookpeople': return 'LifeFold';
@@ -1692,10 +1692,15 @@ function navTopSecs(v) {
   const open = navTopOpen();
   const favN = (state.favs || []).length;
   const recN = recentItems().filter((r) => r && r.id && r.kind).length;
-  const tab = (key, ic, label, n) => `<button type="button" class="nav-topsec-t${open === key ? ' on' : ''}" data-navtop="${key}" aria-expanded="${open === key ? 'true' : 'false'}"><span class="nts-ic">${ic}</span><span class="nts-l">${label}</span>${n ? `<span class="nts-c">${n}</span>` : ''}</button>`;
+  // Shared joins Starred and Recent as a third chip. It opens the Shared hub rather
+  // than expanding a list, so it never carries the "on" expander state. Three chips
+  // leave no room for the counts, so they drop. (Robin, 2026-10-29.)
+  const sharedOn = modOn('contacts');
+  const tab = (key, ic, label, n) => `<button type="button" class="nav-topsec-t${open === key ? ' on' : ''}" data-navtop="${key}" aria-expanded="${open === key ? 'true' : 'false'}"><span class="nts-ic">${ic}</span><span class="nts-l">${label}</span>${(!sharedOn && n) ? `<span class="nts-c">${n}</span>` : ''}</button>`;
+  const sharedChip = sharedOn ? `<button type="button" class="nav-topsec-t${v && v.type === 'shared' ? ' on' : ''}" data-open-shared-hub title="Everything shared, both ways"><span class="nts-ic">⇄</span><span class="nts-l">Shared</span></button>` : '';
   const body = open === 'favs' ? `<div class="nav-topsec-body">${favRows()}</div>`
     : open === 'recent' ? `<div class="nav-topsec-body">${recentRows(v)}</div>` : '';
-  return `<div class="nav-topsecs"><div class="nav-topsec-tabs">${tab('favs', '★', 'Starred', favN)}${tab('recent', '🕘', 'Recent', recN)}</div>${body}</div>`;
+  return `<div class="nav-topsecs"><div class="nav-topsec-tabs${sharedOn ? ' three' : ''}">${tab('favs', '★', 'Starred', favN)}${tab('recent', '🕘', 'Recent', recN)}${sharedChip}</div>${body}</div>`;
 }
 // ── theme: automatic by local sunrise/sunset, overridable by the button ──
 // Mode lives in life.theme.mode ('auto'|'light'|'dark'); the resolved light/dark
@@ -4524,7 +4529,6 @@ function navItems(v) {
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
-    shared: modOn('contacts') ? `<button class="nav-item ${v.type === 'shared' ? 'on' : ''}" data-open-shared-hub><span class="nav-ic">⇄</span><span class="nav-lbl">Shared</span></button>` : '',
   };
 }
 // A flat, importance-ordered single column of clear tool buttons - the mobile
@@ -4532,7 +4536,7 @@ function navItems(v) {
 // sidebar keeps the grouped grid.)
 // Today is deliberately NOT in the mobile drawer - the day planner doesn't work
 // well on a phone, so it's left off the mobile menu. (Robin.)
-const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'shared', 'practices', 'wellbeing', 'areas', 'insights', 'goals', 'reviews', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
+const MNAV_DEFAULT = ['mail', 'notes', 'calendar', 'tasks', 'contacts', 'messages', 'practices', 'wellbeing', 'areas', 'insights', 'goals', 'reviews', 'connect', 'daybook', 'financial', 'finSpending', 'finPortfolio', 'finTracker', 'finAdvice', 'saved'];
 // The user's saved drawer order, with any new tools appended in the default spot.
 function mobileNavOrder() {
   let saved = [];
@@ -4628,7 +4632,6 @@ function peopleBox() {
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'shared' ? 'on' : ''}" data-open-shared-hub><span class="nav-ic">⇄</span><span class="nav-lbl">Shared</span></button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
   // The live LifeFold people, names and all, under a collapsible header so it can
@@ -6076,8 +6079,8 @@ function peAttachHtml() {
         <div class="nx-addrow">
           <button type="button" class="nx-choose" data-pe-new-note>▤ New note</button>
           <button type="button" class="nx-choose" data-pe-add-link>🌐 Add web link</button>
+          <select class="nx-choose nx-choose-sel" data-pe-add-contact><option value="">👤 Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
         </div>
-        <select class="sel bc-add-sel" data-pe-add-contact><option value="">＋ Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
       </div>
     </div>
   </div>`;
@@ -15196,7 +15199,7 @@ function taskTableHtml(list, emptyMsg) {
     </tr>`;
   }).join('');
   return `<div class="tbl-scroll tasks-scroll"><table class="ttable">
-      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Area', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
+      <thead><tr><th class="tc-done"></th>${th('title', 'Task', 'tc-title')}${th('priority', 'Priority', 'tc-prio')}${th('area', 'Space', 'tc-area')}${th('created', 'Added', 'tc-date')}<th class="tc-act"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6" class="empty" style="padding:40px">${emptyMsg || t('task.empty.here')}</td></tr>`}</tbody>
     </table></div>`;
 }
@@ -20407,6 +20410,38 @@ function shareBtn(block, kind, opts) {
   }
   return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" data-tip="Share with a friend" aria-label="Share with a friend">Share${n ? ` · ${n}` : ''}</button>`;
 }
+// The note header's share control, matched to a Life Space masthead: a row of
+// round faces (you, then everyone you've shared with) and a ＋ to add someone,
+// in place of the bare "Share · N" pill. A face opens that person's LifeFold
+// card; the ＋ opens the same Share surface. Owner-only - a borrowed note shows
+// the "shared with you" banner instead. (Robin, 2026-10-29: notes share like
+// Life Spaces, same little round face thingies.)
+function noteFacesRow(n) {
+  if (n.sharedBy) return '';
+  const shares = state.note && state.note.shares;
+  // Still fetching a note we know is shared: hold the old pill until the faces
+  // land, so they don't pop in from an empty row.
+  if (shares == null && n.sharedWith) return shareBtn(n, 'note');
+  const list = shares || [];
+  if (list.length) loadCards(list.map((s) => s.id));
+  const friends = (state.friends && state.friends.friends) || [];
+  const faces = [];
+  {
+    const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
+    const photo = state.card && state.card.photo;
+    const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your LifeFold card">${av}</button>`);
+  }
+  const LIM = 6;
+  for (const s of list.slice(0, LIM)) {
+    const f = friends.find((x) => x.id === s.id) || {};
+    const name = f.name || s.name || 'Someone';
+    faces.push(`<button class="aface" data-open-personcard="${s.id}" title="${esc(name)}${s.canEdit === false ? ' · view only' : ''}">${personAvatar(s.id, name, '')}</button>`);
+  }
+  const more = list.length > LIM ? `<span class="aface aface-more" title="${list.length - LIM} more with access">+${list.length - LIM}</span>` : '';
+  const add = `<button class="aface aface-add" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}" title="${list.length ? 'Share with more people' : 'Share this note'}" aria-label="Share this note">＋</button>`;
+  return `<div class="area-faces note-faces">${faces.join('')}${more}${add}</div>`;
+}
 // A banner on a block someone shared with me, noting who and whether I can edit.
 function sharedBanner(block) {
   if (!block.sharedBy) return '';
@@ -20570,7 +20605,7 @@ function renderNote() {
       <div class="nc-actions">
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
-          <span class="note-hide-mobile">${shareBtn(n, 'note')}</span>
+          <span class="note-hide-mobile note-faces-wrap">${noteFacesRow(n)}</span>
           ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
           <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-insert-image>🖼 Insert image</button><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
@@ -24441,8 +24476,9 @@ function renderTaskCard() {
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
     </div>
     ${noteAliasesControl(t, 'task')}
-    ${taskScheduleHtml(t)}
-    ${t.sharedBy ? '' : `<div class="tf-cardrow">${blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>`}
+    ${t.sharedBy
+      ? taskScheduleHtml(t)
+      : `<div class="tf-splitrow">${taskScheduleHtml(t)}${blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>`}
     <div class="task-lower">
       ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
       ${taskEmailHtml(t)}
