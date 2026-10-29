@@ -2489,6 +2489,33 @@ async function deleteBlock(env, request, id) {
   return json({ ok: true }, request);
 }
 
+// Publish a note to a public, read-only link. We stamp an unguessable token into
+// the note's own props (props.shareToken); the public route looks a note up by it.
+// Idempotent: re-publishing an already-public note returns its existing link.
+// Owner-only and note-only - never a task, area or someone else's block.
+async function publishNote(env, id) {
+  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note'").bind(id, env.uid).first();
+  if (!row) throw new Error('note not found');
+  let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
+  if (!props.shareToken) {
+    props.shareToken = newShareToken();
+    await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
+  }
+  return { ok: true, token: props.shareToken, url: `https://lifefold.co/n/${props.shareToken}` };
+}
+// Revoke a note's public link. The token is dropped, so the public route stops
+// resolving it at once (and a future publish mints a fresh, different token).
+async function unpublishNote(env, id) {
+  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note'").bind(id, env.uid).first();
+  if (!row) throw new Error('note not found');
+  let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
+  delete props.shareToken;
+  await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+    .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
+  return { ok: true };
+}
+
 // One box to find anything. Searches every block by title and body, so tasks,
 // notes, table rows and areas all come back from the same query. LIKE for now;
 // swap to SQLite FTS if it ever feels slow.
@@ -4015,6 +4042,124 @@ function noStore(res) {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+// ── Public shared notes ──────────────────────────────────────────────────
+// A note can be published to an unguessable link (lifefold.co/n/<token>) that
+// anyone can open, no account - read-only, on-brand, with a quiet "join" CTA.
+// Off by default, revocable; only ever that one note, never the account. (Robin.)
+const escH = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function newShareToken() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+// Sanitise a stored note body for public serving, using the real HTML parser
+// (HTMLRewriter) rather than regexes: drop scripts/styles/frames and any inline
+// handler, neutralise javascript:/data: URLs (bar inline images), and make every
+// link safe. The body is the sharer's own content, but it is still served to
+// strangers, so it is treated as untrusted.
+export async function sanitizeNoteHtml(html) {
+  if (!html) return '';
+  const DROP = ['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'form', 'input', 'textarea', 'select', 'button', 'noscript', 'base', 'svg', 'math'];
+  let rw = new HTMLRewriter();
+  for (const tag of DROP) rw = rw.on(tag, { element(e) { e.remove(); } });
+  rw = rw.on('*', {
+    element(e) {
+      const drop = [];
+      for (const [name, value] of e.attributes) {
+        const n = name.toLowerCase();
+        if (n.startsWith('on') || n === 'style' || n === 'srcset') { drop.push(name); continue; }
+        if (n === 'href' || n === 'src') {
+          // Strip whitespace/control chars before reading the scheme - browsers
+          // ignore a tab or newline inside "java\tscript:", so we must too.
+          const v = (value || '').replace(/[\u0000- ]+/g, '').toLowerCase();
+          const okImg = e.tagName === 'img' && v.startsWith('data:image/');
+          if (!okImg && /^(javascript|vbscript|data):/.test(v)) drop.push(name);
+        }
+      }
+      for (const n of drop) e.removeAttribute(n);
+      if (e.tagName === 'a') { e.setAttribute('rel', 'noopener noreferrer nofollow'); e.setAttribute('target', '_blank'); }
+      if (e.tagName === 'img') e.setAttribute('loading', 'lazy');
+    },
+  });
+  try { return await rw.transform(new Response(html)).text(); } catch { return ''; }
+}
+// A minimal, safe Markdown render for imported (non-HTML) note bodies - escape
+// first, so nothing injects; then headings, bold/italic, links and bullet lists.
+export function basicMd(src) {
+  const inl = (s) => escH(s)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer nofollow">$1</a>');
+  let out = '', inList = false;
+  for (const ln of String(src || '').split(/\r?\n/)) {
+    const h = ln.match(/^(#{1,3})\s+(.*)$/); const li = ln.match(/^[-*]\s+(.*)$/);
+    if (h) { if (inList) { out += '</ul>'; inList = false; } out += `<h${h[1].length}>${inl(h[2])}</h${h[1].length}>`; }
+    else if (li) { if (!inList) { out += '<ul>'; inList = true; } out += `<li>${inl(li[1])}</li>`; }
+    else if (!ln.trim()) { if (inList) { out += '</ul>'; inList = false; } }
+    else { if (inList) { out += '</ul>'; inList = false; } out += `<p>${inl(ln)}</p>`; }
+  }
+  if (inList) out += '</ul>';
+  return out;
+}
+async function servePublicNote(env, token, url) {
+  const home = `${url.protocol}//lifefold.co`;
+  const row = await env.DB.prepare(
+    "SELECT title, body, user_id FROM blocks WHERE kind='note' AND archived=0 AND json_extract(props,'$.shareToken')=? LIMIT 1",
+  ).bind(token).first().catch(() => null);
+  if (!row) return new Response(publicNotePage({ notFound: true, home }), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } });
+  let author = '';
+  try { const u = await env.DB.prepare('SELECT name FROM users WHERE id=?').bind(row.user_id).first(); author = (u && u.name) || ''; } catch {}
+  const body = row.body || '';
+  const isHtml = /<(p|h[1-3]|blockquote|div|ul|ol|details)[\s>]/i.test(body);
+  const bodyHtml = isHtml ? await sanitizeNoteHtml(body) : basicMd(body);
+  return new Response(publicNotePage({ title: row.title || 'A note', bodyHtml, author, home }), { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
+}
+export function publicNotePage({ title, bodyHtml, author, home, notFound }) {
+  const INK = '#1c1812', PAPER = '#f4efe3', CARD = '#faf6ec', ACCENT = '#a8844a', MIST = '#7a7266', LINE = '#e5ddcd';
+  const head = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escH(notFound ? 'Not found' : title)} · LifeFold</title>
+  <meta name="robots" content="noindex">
+  <meta property="og:title" content="${escH(notFound ? 'LifeFold' : title)}"><meta property="og:site_name" content="LifeFold"><meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:light}
+    *{box-sizing:border-box}
+    body{margin:0;background:${PAPER};color:${INK};font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+    .pn-brand{display:flex;align-items:center;justify-content:center;gap:9px;padding:22px 16px 0}
+    .pn-brand a{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:${INK};font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:600}
+    .pn-brand svg{width:26px;height:26px;color:${ACCENT}}
+    .pn-wrap{max-width:680px;margin:0 auto;padding:26px 24px 60px}
+    .pn-card{background:${CARD};border:1px solid ${LINE};border-radius:20px;box-shadow:0 20px 50px -34px rgba(60,46,20,.5);padding:40px clamp(22px,5vw,52px) 44px}
+    h1.pn-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(30px,6vw,44px);line-height:1.1;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+    .pn-by{color:${MIST};font-size:15px;font-style:italic;margin:0 0 26px;border-bottom:1px solid ${LINE};padding-bottom:22px}
+    .pn-body{font-size:18px}
+    .pn-body h1,.pn-body h2,.pn-body h3{font-family:'Cormorant Garamond',serif;font-weight:600;line-height:1.15;margin:1.4em 0 .4em}
+    .pn-body h1{font-size:1.7em}.pn-body h2{font-size:1.4em}.pn-body h3{font-size:1.2em}
+    .pn-body p{margin:0 0 1em}
+    .pn-body a{color:${ACCENT};text-decoration:underline;text-underline-offset:2px}
+    .pn-body ul,.pn-body ol{padding-left:1.4em;margin:0 0 1em}
+    .pn-body li{margin:.25em 0}
+    .pn-body blockquote{margin:1em 0;padding:4px 0 4px 18px;border-left:3px solid ${ACCENT};color:${MIST};font-style:italic}
+    .pn-body img{max-width:100%;height:auto;border-radius:12px;margin:.5em 0}
+    .pn-body hr{border:0;border-top:1px solid ${LINE};margin:1.6em 0}
+    .pn-body code,.pn-body pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:${PAPER};border:1px solid ${LINE};border-radius:6px}
+    .pn-body code{padding:1px 5px}.pn-body pre{padding:14px 16px;overflow-x:auto;border-radius:12px}
+    .pn-cta{margin:34px auto 0;max-width:680px;text-align:center}
+    .pn-cta-card{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:22px 30px;background:${CARD};border:1px solid ${LINE};border-radius:18px}
+    .pn-cta-t{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600}
+    .pn-cta-s{color:${MIST};font-size:14.5px;margin-bottom:12px}
+    .pn-cta-btn{display:inline-block;background:${ACCENT};color:${CARD};text-decoration:none;font-weight:600;font-size:15px;letter-spacing:.02em;padding:11px 26px;border-radius:999px}
+    .pn-empty{text-align:center;color:${MIST};padding:60px 20px;font-size:19px}
+  </style></head><body>
+  <div class="pn-brand"><a href="${escH(home)}">${CRANE_SVG}<span>LifeFold</span></a></div>`;
+  if (notFound) return `${head}<div class="pn-wrap"><div class="pn-empty">This note isn't shared any more, or the link is wrong.</div></div>
+    <div class="pn-cta"><div class="pn-cta-card"><div class="pn-cta-t">A calm home for your whole life</div><div class="pn-cta-s">Notes, tasks, calendar and more - gathered in one place.</div><a class="pn-cta-btn" href="${escH(home)}">Start yours, free →</a></div></div></body></html>`;
+  return `${head}<div class="pn-wrap"><article class="pn-card"><h1 class="pn-title">${escH(title)}</h1>${author ? `<p class="pn-by">Shared by ${escH(author)}</p>` : ''}<div class="pn-body">${bodyHtml || '<p style="color:' + MIST + '">This note is empty.</p>'}</div></article></div>
+    <div class="pn-cta"><div class="pn-cta-card"><div class="pn-cta-t">Made with LifeFold</div><div class="pn-cta-s">A calm home for your whole life - notes, tasks, calendar and more.</div><a class="pn-cta-btn" href="${escH(home)}">Start yours, free →</a></div></div></body></html>`;
+}
+// The folded-paper crane, inline for the public page (no app CSS available).
+const CRANE_SVG = `<svg viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="48,40 28,12 47,44" fill="currentColor" opacity=".42"/><polygon points="47,44 15,23 23,21 41,42" fill="currentColor" opacity=".68"/><polygon points="15,23 4,24 16,28" fill="currentColor" opacity=".9"/><polygon points="48,40 78,9 60,46" fill="currentColor" opacity=".82"/><polygon points="60,46 91,41 62,53" fill="currentColor" opacity=".5"/><polygon points="41,42 60,46 49,67" fill="currentColor"/></svg>`;
+
 // ── Web Push: an icon badge when new mail arrives ────────────────────────
 // The public key is safe to ship; the private key is the VAPID_PRIVATE_JWK
 // secret. Regenerating the pair invalidates every existing subscription.
@@ -4514,6 +4659,15 @@ export default {
       return new Response(null, { status: 301, headers: { Location: url.toString(), 'Strict-Transport-Security': HSTS } });
     }
     const path = url.pathname;
+
+    // A publicly shared note: lifefold.co/n/<token>. Served by the Worker before
+    // the assets fallback, with no auth - the unguessable token is the only key,
+    // and only that one note is ever exposed (see servePublicNote). Read-only.
+    const pubNote = path.match(/^\/n\/([a-f0-9]{16,64})$/);
+    if (pubNote) {
+      try { return noStore(await servePublicNote(env, pubNote[1], url)); }
+      catch { return new Response('Not available', { status: 500, headers: { 'content-type': 'text/plain' } }); }
+    }
 
     // Static assets (the Worker runs first). The root serves a different app per
     // hostname: the daybook.fyi apex is the marketing site, a per-user subdomain
@@ -5202,6 +5356,17 @@ export default {
           const b = await request.json().catch(() => ({}));
           if (request.method === 'POST') return json(await shareBlock(env, bid, b.friendId, b.canEdit), request, 201);
           if (request.method === 'DELETE') return json(await unshareBlock(env, bid, b.friendId), request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
+      // Publish a note to a public link (POST -> mints/returns a token) or revoke
+      // it (DELETE). Owner-scoped to the signed-in user's own note; never touches
+      // sharing with friends - this is the open-to-anyone link.
+      const publishMatch = path.match(/^\/api\/blocks\/([\w-]+)\/publish$/);
+      if (publishMatch) {
+        const bid = publishMatch[1];
+        try {
+          if (request.method === 'POST') return json(await publishNote(env, bid), request, 201);
+          if (request.method === 'DELETE') return json(await unpublishNote(env, bid), request);
         } catch (e) { return err(e.message, request, 400); }
       }
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);

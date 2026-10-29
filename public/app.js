@@ -3159,14 +3159,23 @@ function renderMessagesPage() {
 }
 // ── Sharing a note/task with friends (Friends phase 3a) ───────────────
 async function openShare(id, title, kind) {
-  state.share = { id, title, kind, friends: (state.friends && state.friends.friends) || [], shares: [], loading: true };
+  state.share = { id, title, kind, friends: (state.friends && state.friends.friends) || [], shares: [], loading: true, webToken: '' };
+  // A note already has its public link's token to hand if its card is open; show
+  // the right state at once rather than flicking from off to on after the fetch.
+  if (kind === 'note' && state.note && state.note.current && state.note.current.id === id) {
+    state.share.webToken = (state.note.current.props && state.note.current.props.shareToken) || '';
+  }
   renderShare();
   try {
-    const [fr, sh] = await Promise.all([api('/api/friends'), api(`/api/blocks/${id}/shares`)]);
+    const calls = [api('/api/friends'), api(`/api/blocks/${id}/shares`)];
+    if (kind === 'note') calls.push(api(`/api/blocks/${id}`).catch(() => null));
+    const [fr, sh, blk] = await Promise.all(calls);
     state.friends = fr; state.share.friends = fr.friends || []; state.share.shares = sh.shares || [];
+    if (blk && blk.props) state.share.webToken = blk.props.shareToken || '';
   } catch (e) { toast(e.message); }
   state.share.loading = false; renderShare();
 }
+function shareWebUrl() { return state.share && state.share.webToken ? `https://lifefold.co/n/${state.share.webToken}` : ''; }
 function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.id === fid); return s ? (s.canEdit ? 'edit' : 'view') : ''; }
 function renderShare() {
   let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
@@ -3184,11 +3193,45 @@ function renderShare() {
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
+  // A public link: notes only, for sharing with someone who isn't on LifeFold.
+  // Off by default; a quiet, revocable read-only page at lifefold.co/n/<token>.
+  const webUrl = shareWebUrl();
+  const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
+    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no LifeFold account needed. Read-only.</small></span></div>
+    ${webUrl ? `<div class="sw-live">
+        <input class="sw-url" type="text" readonly value="${esc(webUrl)}" data-share-web-url aria-label="Public link">
+        <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop sharing</button></div>
+        <p class="sw-note">Anyone with the link can read this note. Stop sharing and the link dies at once.</p>
+      </div>`
+      : `<div class="sw-off-row"><button class="add-btn wide" data-share-web-on${s.webBusy ? ' disabled' : ''}>${s.webBusy ? 'Creating…' : 'Create a public link'}</button></div>`}
+  </div>` : '';
   el.innerHTML = `<div class="chat-bg" data-share-close></div><div class="chat-panel share-panel">
     <div class="chat-head"><span class="chat-title">Share this ${kindLabel}</span><button class="chat-x" data-share-close title="Close">×</button></div>
     <div class="share-note">People you share with can open and edit it. Switch anyone to view-only, or stop sharing anytime.</div>
     <div class="share-list">${rows}</div>
+    ${webSec}
   </div>`;
+}
+async function shareWebOn() {
+  if (!state.share) return; state.share.webBusy = true; renderShare();
+  try {
+    const r = await api(`/api/blocks/${state.share.id}/publish`, { method: 'POST' });
+    state.share.webToken = r.token || '';
+    // Keep the open note's own props in step, so reopening the panel reads right.
+    if (state.note && state.note.current && state.note.current.id === state.share.id) { state.note.current.props = state.note.current.props || {}; state.note.current.props.shareToken = r.token; }
+    toast('🔗 Public link created');
+  } catch (e) { toast(e.message); }
+  state.share.webBusy = false; renderShare();
+}
+async function shareWebOff() {
+  if (!state.share) return;
+  try {
+    await api(`/api/blocks/${state.share.id}/publish`, { method: 'DELETE' });
+    state.share.webToken = '';
+    if (state.note && state.note.current && state.note.current.id === state.share.id && state.note.current.props) delete state.note.current.props.shareToken;
+    toast('Link stopped - it no longer opens');
+  } catch (e) { toast(e.message); }
+  renderShare();
 }
 async function shareSet(fid, canEdit) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'POST', body: JSON.stringify({ friendId: fid, canEdit }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
 async function shareOff(fid) { try { const r = await api(`/api/blocks/${state.share.id}/share`, { method: 'DELETE', body: JSON.stringify({ friendId: fid }) }); state.share.shares = r.shares; renderShare(); } catch (e) { toast(e.message); } }
@@ -22235,6 +22278,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToLifeFold()).catch(() => {}); return; }
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
+  if (t.closest('[data-share-web-on]')) { shareWebOn(); return; }
+  if (t.closest('[data-share-web-off]')) { shareWebOff(); return; }
+  if (t.closest('[data-share-web-copy]')) { const u = shareWebUrl(); if (u) { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch { toast(u); } } return; }
+  if (t.closest('[data-share-web-open]')) { const u = shareWebUrl(); if (u) window.open(u, '_blank', 'noopener'); return; }
   { const ao = t.closest('[data-assign-open]'); if (ao) { openAssign(ao.dataset.assignOpen, ao.dataset.assignTitle || ''); return; } }
   if (t.closest('[data-assign-close]')) { closeAssign(); return; }
   { const aon = t.closest('[data-assign-on]'); if (aon) { assignTo(Number(aon.dataset.assignOn)); return; } }

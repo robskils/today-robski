@@ -3014,6 +3014,23 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .share-off:hover { color:var(--accent); }
 .note-share { flex:none; }
 .note-share.on { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); }
+/* Public link ("Share a public link") - notes only, in the share panel. */
+.share-web { margin:4px 16px 20px; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+.share-web.on { border-color:color-mix(in srgb,var(--accent) 32%,var(--line)); background:color-mix(in srgb,var(--accent) 5%,var(--card)); }
+.share-web-h { display:flex; align-items:flex-start; gap:11px; }
+.share-web .sw-ic { flex:none; font-size:19px; line-height:1.3; }
+.share-web .sw-tt { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.share-web .sw-tt b { font-size:15px; color:var(--ink); }
+.share-web .sw-tt small { font-size:12.5px; color:var(--ink-2); line-height:1.45; }
+.sw-off-row { margin-top:13px; }
+.sw-live { margin-top:13px; display:flex; flex-direction:column; gap:10px; }
+.sw-url { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font-size:13.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.sw-acts { display:flex; flex-wrap:wrap; gap:8px; }
+.sw-acts .sw-copy { flex:none; }
+.sw-acts .ghost { font-size:13.5px; padding:8px 14px; }
+.sw-acts .sw-off { margin-left:auto; color:var(--ink-3); }
+.sw-acts .sw-off:hover { color:var(--accent); }
+.sw-note { margin:0; font-size:12.5px; color:var(--ink-3); line-height:1.5; }
 .shared-banner { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); background:color-mix(in srgb,var(--accent) 8%,transparent); border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); border-radius:10px; padding:8px 13px; margin:0 0 12px; } .shared-banner b { color:var(--ink); }
 .note-remote-pill { font-size:13px; color:#9a7b2e; background:color-mix(in srgb,#c99a2e 12%,transparent); border:1px solid color-mix(in srgb,#c99a2e 30%,transparent); border-radius:9px; padding:7px 12px; margin:0 0 12px; animation:pill-in .2s ease; }
 @keyframes pill-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
