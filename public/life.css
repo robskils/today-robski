@@ -6935,7 +6935,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-preset { padding:6px 12px; border-radius:999px; border:1px solid var(--line); color:var(--ink-2); font-size:13.5px; background:var(--card); }
 .mail-preset:hover { border-color:var(--accent); color:var(--accent); }
 /* ── Add-mailbox: service-first picker + progressive form (Robin, 2026-10-29) ── */
-.mail-add-card { max-width:540px; margin:18px 0 6px; padding:22px; background:var(--card); border:1px solid var(--line); border-radius:18px; scroll-margin-top:78px; box-shadow:0 18px 44px -36px rgba(60,46,20,.42); }
+.mail-add-card { max-width:540px; margin:18px 0 6px; padding:22px; background:var(--card); border:1px solid var(--line); border-radius:18px; scroll-margin-top:84px; box-shadow:0 18px 44px -36px rgba(60,46,20,.42); }
+@media(max-width:820px){ .mail-add-card { scroll-margin-top:118px; } }
 .mail-add-h { font-family:'Cormorant Garamond',Georgia,serif; font-weight:600; font-size:23px; color:var(--ink); margin:0 0 4px; }
 .mail-add-sub { color:var(--ink-2); font-size:14px; line-height:1.5; margin:0 0 18px; }
 .mail-prov-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:11px; }
@@ -6958,8 +6959,12 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-f-row { display:flex; gap:10px; }
 .mail-f-grow { flex:1; min-width:0; }
 .mail-f-port { width:92px; flex:none; }
-.mail-add-act { display:flex; align-items:center; gap:10px; margin-top:6px; }
-.mail-add-go { flex:none; }
+.mail-add-act { display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
+/* A proper inline gold button - bare .add-btn is a 44px icon slot, so text wraps
+   and collides; width:auto + nowrap (the app's own inline-button pattern). */
+.mail-add-go { width:auto; flex:none; white-space:nowrap; min-height:44px; padding:12px 26px; font-size:15.5px; }
+.mail-add-cancel-b { flex:none; padding:11px 18px; }
+.mail-add-act .ghost { font-size:15px; }
 .mail-discard { margin-left:auto; color:var(--ink-3); }
 /* Which account a message belongs to, shown in the All-accounts view. */
 .mail-acct-chip { display:inline-block; vertical-align:middle; margin-right:7px; padding:1px 8px; border-radius:999px; background:var(--paper-2); border:1px solid var(--line); color:var(--ink-2); font-size:12px; font-weight:500; white-space:nowrap; }

@@ -13859,7 +13859,7 @@ function showMailAccountForm() {
       <label class="mail-f"><span class="mail-f-l">Username <small>- only if different from your email</small></span><input id="ma-user" placeholder="Usually your email" value="${val(d.username, '')}"></label>`
     : `<input type="hidden" id="ma-imaphost" value="${esc(p.imap)}"><input type="hidden" id="ma-imapport" value="${esc(String(p.imapPort))}"><input type="hidden" id="ma-smtphost" value="${esc(p.smtp)}"><input type="hidden" id="ma-smtpport" value="${esc(String(p.smtpPort))}"><input type="hidden" id="ma-user" value="">`}
     <label class="mail-f"><span class="mail-f-l">${isOther ? 'Password' : 'App password'}</span><input id="ma-pass" type="password" placeholder="${isOther ? 'Your password' : 'Paste the app password'}" required autocomplete="current-password"></label>
-    <div class="mail-add-act"><button class="add-btn mail-add-go" type="submit">Add mailbox</button><button type="button" class="ghost" data-mail-add-cancel>Cancel</button></div>
+    <div class="mail-add-act"><button class="add-btn wide mail-add-go" type="submit">Add mailbox</button><button type="button" class="ghost mail-add-cancel-b" data-mail-add-cancel>Cancel</button></div>
   </form>`;
   const f = document.getElementById('mail-acct-form-el');
   if (f) f.addEventListener('input', saveMailAddDraft);
