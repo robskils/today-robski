@@ -2497,6 +2497,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    right on its own). The mark carries the colour. (Brand, 2026-10-15.) */
 .wm-bk { font-style:normal; margin-left:0; }
 .brand-mark { width:1.08em; height:1.08em; color:var(--accent); vertical-align:-.16em; margin:0 .22em; }
+/* The mark's enclosing ring is off by default (plain octagram); Settings >
+   Appearance flips :root[data-mark-ring="1"] to wear it ("starred ring"). */
+.brand-ring { display:none; }
+:root[data-mark-ring="1"] .brand-ring { display:inline; }
 /* A quiet Lifebook mark closing the Home main column, in the chosen accent. */
 .home-mark { display:flex; justify-content:center; margin:36px auto 6px; padding:8px; background:none; border:0; border-radius:50%; cursor:pointer; transition:transform .16s cubic-bezier(.2,.8,.2,1), background .16s; }
 .home-mark .brand-mark { width:46px; height:46px; margin:0; color:var(--accent); opacity:.9; }
@@ -4765,6 +4769,15 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .acc-swatch.on .acc-dot { box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--sw); }
 .acc-swatch .acc-name { font-size:11.5px; color:var(--ink-3); }
 .acc-swatch.on .acc-name { color:var(--ink); font-weight:600; }
+/* App-mark chooser (Appearance): two tappable mark previews, octagram vs ring. */
+.mark-opts { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+.mark-opt { display:inline-flex; flex-direction:column; align-items:center; gap:9px; padding:16px 22px; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--ink-3); cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
+.mark-opt:hover { border-color:var(--line-2); }
+.mark-opt.on { border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 6%,var(--card)); color:var(--accent); }
+.mark-opt .mark-prev { width:40px; height:40px; color:var(--accent); opacity:.85; }
+.mark-opt.on .mark-prev { opacity:1; }
+.mark-opt span { font-size:12.5px; color:var(--ink-3); }
+.mark-opt.on span { color:var(--ink); font-weight:600; }
 .acc-custom { display:flex; align-items:center; gap:14px; margin-top:18px; flex-wrap:wrap; }
 .acc-custom-l { display:inline-flex; align-items:center; gap:9px; font-size:14px; color:var(--ink-2); }
 .acc-color { width:44px; height:30px; border:1px solid var(--line-2); border-radius:8px; background:var(--card); cursor:pointer; padding:2px; }

@@ -20,10 +20,19 @@ const isManagedPlan = (p) => normPlan(p) === 'managed';
 // The LifeFold mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
 // name and "LifeFold" in the wordmark.
-const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// The LifeFold mark: a monoline eight-fold star (an octagram of two folded
+// squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
+// The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
+// via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
+const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle class="brand-ring" cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
+// Whether the mark wears its enclosing ring. A per-device display preference, so
+// localStorage (no account round-trip); applied as a <html> attribute at boot and
+// toggled live from Settings > Appearance. Default: plain octagram, no ring.
+function markRingOn() { try { return localStorage.getItem('life.markring') === '1'; } catch { return false; } }
+function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
 const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Life Spaces']];
@@ -3548,6 +3557,12 @@ function renderSettings() {
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
+        </div>
+        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The LifeFold symbol - the clean octagram, or held in its ring.</div>
+          <div class="mark-opts">
+            <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
+            <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
+          </div>
         </div>
         ${state.account ? `<label class="set-mod"><span>Week starts on<small>Sets your weekly review's Mon-Sun (or your choice of) window</small></span><select class="sel" data-account-weekstart style="max-width:150px">${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => `<option value="${i}" ${weekStart() === i ? 'selected' : ''}>${d}</option>`).join('')}</select></label>` : ''}
         ${state.account ? `<label class="set-mod"><span>Default currency<small>The symbol your money, spending and portfolio are shown in</small></span><select class="sel" data-account-currency style="max-width:180px">${CURRENCIES_APP.map(([code, sym, , name]) => `<option value="${code}" ${appCurrencyCode() === code ? 'selected' : ''}>${sym} ${name} (${code})</option>`).join('')}</select></label>` : ''}
@@ -21777,6 +21792,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   { const bp = t.closest('[data-bgpat]'); if (bp) { setBgPattern(bp.dataset.bgpat); return; } }
+  { const mr = t.closest('[data-mark-ring]'); if (mr) { applyMarkRing(mr.dataset.markRing === '1'); if (state.view && state.view.type === 'settings') openSettings('appearance'); return; } }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-spendcats]')) { state.financial = state.financial || {}; state.financial.spendCatsOpen = true; openFinancial('spending').catch((x) => toast(x.message)); return; }
   const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
@@ -26117,6 +26133,7 @@ function showRequired2fa() {
 (async function boot() {
   initTheme();
   applyBgPattern(savedBgPattern());
+  applyMarkRing(markRingOn());
   // Per-user subdomains are retired - everyone lives at lifebook.fyi now. If this is
   // an old <sub>.daybook.fyi address, hand the session straight over to the apex app,
   // carrying the token in the fragment (consumed just below) so existing bookmarks
