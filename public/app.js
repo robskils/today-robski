@@ -6378,7 +6378,7 @@ function renderHome() {
   // colour, the same at-a-glance sorting the Priority Task cards carry.
   // One starred item per line (icon + title), like the Do-next rows. A note/table
   // tagged to a page gets a left edge in that area's colour.
-  const favLine = (f) => { const a = areaById(blockAreas(f)[0]); return `<div class="fav-line${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-line-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-line-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
+  const favLine = (f) => { const own = f.kind === 'area' ? (areaById(f.id) || f) : null; const a = own || areaById(blockAreas(f)[0]); return `<div class="fav-line${a ? ' has-area' : ''}"${a ? ` style="--h:${hueOf(a)}"` : ''} draggable="true" data-fav-id="${f.id}"><button class="fav-line-open" data-fav-open="${f.kind}:${f.id}"><span class="fav-ic">${favIc(f.kind)}</span><span class="fav-line-t">${esc(f.title || 'Untitled')}</span></button><button class="fav-x" data-unfav="${f.id}" title="Remove">×</button></div>`; };
   // Starred, most-recent first, one per line, capped at 12 with a "see more".
   const favListHtml = () => { if (!favs.length) return '<div class="home-empty">Star a note or table (the ☆ on it) to pin it here.</div>'; const shown = favs.slice(0, 12); return `<div class="fav-lines">${shown.map(favLine).join('')}</div><button class="p1-all" data-open-notes>${favs.length > 12 ? `See all ${favs.length} starred` : 'See all notes'} →</button>`; };
   const evRows = todayItems.map((it) => {

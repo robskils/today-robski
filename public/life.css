@@ -1145,6 +1145,9 @@ button { cursor:pointer; background:none; border:0; }
 .area-sentiment .as-x { margin:-2px -6px -2px 0; width:22px; height:22px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; font-size:15px; line-height:1; color:var(--as-c,var(--ink-3)); opacity:.5; background:transparent; transition:opacity .12s, background .12s; }
 .area-sentiment .as-x:hover { opacity:1; background:color-mix(in srgb,var(--as-c,var(--ink-3)) 18%,transparent); }
 @media (hover:none){ .area-sentiment .as-x { opacity:.7; } }
+/* On a phone the Life Space card leads with the space itself, not its last Wheel
+   of Life score - keep that score off the mobile card by default. (Robin, 2026-10-29.) */
+@media (max-width:820px){ .area-sentiment { display:none; } }
 .rv-cardhead { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .rv-cardnav { display:inline-flex; align-items:center; gap:6px; margin-left:auto; }
 .rv-navbtn { flex:none; width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink-2); font-size:18px; line-height:1; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
@@ -5388,13 +5391,13 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
      everywhere by the base rule). */
   .home .home-mgrip { display:none; }
   .home .home-mdrag-h { cursor:grab; }
-  /* Collapsed LEAD blocks are a FIXED identical height, whatever the title/icons. */
-  .lead-block.lead-collapsed { height:56px; min-height:56px; padding-top:0; padding-bottom:0; display:flex; align-items:center; }
-  .lead-block.lead-collapsed .lead-h { width:100%; min-height:0; margin:0; }
-  /* Collapsed CARD sections (Notepad, People, Starred…) keep the header exactly
-     where it sits when open - base padding + margin-bottom:0 already apply when
-     shut - so a tap just folds the body away underneath and the header never
-     jumps up and down. (Robin, 2026-10-29.) */
+  /* Every collapsed Home block - a lead block OR a card (Notepad, Starred, People) -
+     is the SAME 56px height with its title at the SAME spot: the top, 16px down,
+     exactly where that title sits when the block is open. So a tap just folds the
+     body away underneath - nothing jumps - and every closed block matches the next.
+     (Robin, 2026-10-29.) */
+  .lead-block.lead-collapsed, .home-sec-card.home-sec-shut { height:56px; min-height:56px; padding-top:16px; padding-bottom:0; overflow:hidden; display:block; }
+  .lead-block.lead-collapsed .lead-h, .home-sec-card.home-sec-shut > .home-sec-h { width:100%; min-height:0; margin:0; }
   .home-sec-favareas { order:7; } .home-sec-recent { order:8; } .home-toolbox { order:20; }
   /* The discover strip, keyboard-shortcuts link and the mark button are chrome
      that belongs at the very bottom - they now live inside .home-scroll, so
