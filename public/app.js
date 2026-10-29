@@ -17733,13 +17733,21 @@ function goalsByAreaBody() {
     const p = a.props || {};
     const goals = active.filter((g) => gp(g).area === a.id).sort(gcmp);
     const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
-    const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${(p.vision || '').trim() ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
+    // Vision gets the same treatment as on a Life Space: the standout lines pulled
+    // out as highlights above the full text, with the "Highlight the best bits"
+    // tick on by default. The same visionHighlight prop, so the two views agree.
+    const visionTxt = (p.vision || '').trim();
+    const visionHl = !(p.visionHighlight === false);
+    const hlQuotes = (visionHl && visionTxt) ? visionHighlights(visionTxt) : [];
+    const hlHtml = hlQuotes.length ? `<div class="vision-hl gv-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
+    const hlTog = visionTxt ? `<label class="vision-hl-tog gv-hl-tog"><input type="checkbox" data-area-vision-hl="${a.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
+    const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${visionTxt ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
     const open = goalAreaOpen(a.id);
     return `<section class="goal-area ${open ? '' : 'collapsed'}" style="--h:${hueOf(a)}">
       <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button></div>
-      ${open ? `<div class="ga-step"><span class="ga-step-l">Vision</span>${vision}</div>
-      <div class="ga-flow"><span class="ga-flow-l">${goals.length ? 'Working towards it' : 'Goals'}</span></div>
-      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>` : ''}
+      ${open ? `<div class="ga-flow"><span class="ga-flow-l">Goals</span>${goals.length ? `<span class="ga-flow-n">${goals.length}</span>` : ''}</div>
+      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map(goalCardMini).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>
+      <div class="ga-step ga-step-vision"><span class="ga-step-l">Vision</span><div class="gv-vision">${hlHtml}${vision}${hlTog}</div></div>` : ''}
     </section>`;
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
@@ -22950,11 +22958,14 @@ document.addEventListener('change', (e) => {
     renderArea(); return;
   }
   if (e.target.matches('[data-area-vision-hl]')) {
-    const a = state.area_open && state.area_open.area; if (!a) return; a.props = a.props || {};
+    const id = e.target.getAttribute('data-area-vision-hl');
     const patch = { visionHighlight: e.target.checked };
-    Object.assign(a.props, patch); const al = (state.areas || []).find((x) => x.id === a.id); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
-    api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
-    renderArea(); return;
+    const al = (state.areas || []).find((x) => String(x.id) === String(id)); if (al) { al.props = al.props || {}; Object.assign(al.props, patch); }
+    if (state.area_open && state.area_open.area && String(state.area_open.area.id) === String(id)) { const a = state.area_open.area; a.props = a.props || {}; Object.assign(a.props, patch); }
+    api('/api/blocks/' + id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((err) => toast(err.message));
+    const v = state.view && state.view.type;
+    if (v === 'goals') renderGoals(); else if (v === 'area') renderArea(); else rerenderCurrent();
+    return;
   }
   if (e.target.matches('[data-area-reviewstar]') || e.target.matches('[data-area-reviewon]')) {
     const a = state.area_open && state.area_open.area; if (!a) return; a.props = a.props || {};

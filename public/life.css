@@ -502,9 +502,15 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .gv-card { padding:16px 18px; }
 .gv-card .vc-text { font-size:15px; display:block; overflow:visible; -webkit-line-clamp:unset; white-space:pre-wrap; }
 /* The connector between vision and goals - a hairline with a small centred label. */
-.ga-flow { display:flex; align-items:center; gap:12px; margin:14px 2px 12px; }
+.ga-flow { display:flex; align-items:center; gap:10px; margin:2px 2px 12px; }
 .ga-flow::before, .ga-flow::after { content:''; height:1px; flex:1; background:linear-gradient(to right,transparent,color-mix(in srgb,hsl(var(--h,220) 55% 55%) 40%,transparent),transparent); }
-.ga-flow-l { flex:none; font-size:11.5px; font-style:italic; color:hsl(var(--h,220) 40% 48%); }
+.ga-flow-l { flex:none; font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:700; color:hsl(var(--h,220) 42% 46%); }
+.ga-flow-n { flex:none; font-size:12px; font-weight:700; color:hsl(var(--h,220) 40% 50%); background:color-mix(in srgb,hsl(var(--h,220) 55% 55%) 15%,transparent); border-radius:999px; padding:1px 9px; }
+/* Vision now sits below the goals as the context behind them, the standout lines
+   pulled out as highlights (like a Life Space), the full text a tap away. */
+.ga-step-vision { margin-top:24px; }
+.gv-vision { display:block; }
+.gv-hl { margin-bottom:12px; }
 .goal-area-empty { color:var(--ink-3); font-size:14px; padding:2px 0; }
 .goals-side { position:sticky; top:96px; }
 .goals-side-box { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:14px 16px; }
