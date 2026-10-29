@@ -6006,11 +6006,11 @@ function secH(key, title, extra, drag, ic) {
   // On mobile the sections are draggable in place too, but only the ones the mobile
   // arrangement actually orders (Today stays pinned). Touch drag uses pointer
   // events (data-hsec-mgrip), not HTML5 drag, which doesn't fire on a phone.
-  const mobDrag = drag && mobile && MOBILE_KEYS.includes(key);
-  // Both desktop and mobile drag now use a pointer-based grip handle (smooth, and
-  // it doesn't fight the header's tap-to-collapse the way HTML5 drag did).
-  const grip = deskDrag ? `<span class="home-grip" data-hsec-pgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>`
-    : mobDrag ? `<span class="home-mgrip" data-hsec-mgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>` : '';
+  // Mobile reordering is gone (it swallowed taps and made cards "reluctant" to
+  // open): on a phone a card header just toggles, exactly like a lead block, so
+  // every Home block looks and behaves the same. Desktop keeps its grip. (Robin, 2026-10-29.)
+  const mobDrag = false;
+  const grip = deskDrag ? `<span class="home-grip" data-hsec-pgrip="${key}" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>` : '';
   return `<div class="home-sec-h home-sec-toggle${deskDrag ? ' home-drag-h' : ''}${mobDrag ? ' home-mdrag-h' : ''}" data-sec-collapse="${key}">${grip}<span class="hs-chev">${secOpen(key) ? '▾' : '▸'}</span>${ic ? `<span class="hs-ic">${ic}</span>` : ''}<span class="hs-name">${title}</span>${extra || ''}</div>`;
 }
 // The Priority Tasks list, in whatever order you've dragged it into. A custom

@@ -5376,6 +5376,10 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
      bigger vertical padding (a ~44px touch target) is what makes the tap land
      every time instead of only sometimes on a thin header. */
   .home-sec-toggle { padding:13px 2px; margin-bottom:3px; min-height:22px; }
+  /* A card header now sits like a lead header - no extra vertical padding - so its
+     title is at the card's own 16px whether open or closed, matching every other
+     Home block and never jumping on toggle. (Robin, 2026-10-29.) */
+  .home-sec-card > .home-sec-h { padding-top:0; padding-bottom:0; }
   .home-grip { display:none; }
   /* Drag a section up or down in place. The grip is a real touch target; while
      one section is lifted a coloured line marks where it will drop. */
