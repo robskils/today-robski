@@ -2240,6 +2240,17 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .area-faces.note-faces .aface-more { font-size:11px; }
 .area-faces.note-faces .aface-add { font-size:17px; }
 .note-share-ic .ic-n { font-size:13px; font-weight:600; line-height:1; }
+/* Insert image / insert file: icon buttons in the note header, before the ⋯. */
+.note-ins-ic { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; font-size:16px; line-height:1; color:var(--ink-3); }
+.note-ins-ic:hover { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
+/* Inline file chip in a note's prose: a tap-to-open card for a PDF or any file,
+   sitting in the text like an inline image does. (Robin, 2026-10-29.) */
+.prose-file { display:inline-flex; align-items:center; gap:7px; max-width:100%; padding:6px 10px; margin:2px 0; border:1px solid var(--line-2); border-radius:10px; background:var(--card); color:var(--ink); text-decoration:none; cursor:pointer; vertical-align:middle; box-shadow:var(--shadow); transition:border-color .12s, background .12s; }
+.prose-file:hover { border-color:var(--accent); background:var(--paper-2); }
+.prose-file .pf-ic { flex:none; font-size:16px; line-height:1; }
+.prose-file .pf-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; max-width:42ch; }
+.prose-file .pf-x { flex:none; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:0 1px; margin-left:3px; }
+.prose-file .pf-x:hover { color:var(--danger,#c4412e); }
 
 .note-title { display:block; width:100%; font-family:'Cormorant Garamond',serif; font-size:clamp(30px,5vw,44px); font-weight:500; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
@@ -7939,9 +7950,10 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* The fold arrow: a clear little chip, not a faint glyph. The grip, the chip and
    the title all sit centred on the heading's first line: `top` is half the line
    height (--hsize carries the font-size per level, line-height 1.75, so ×0.875 is
-   the line's middle) and translateY(-50%) centres the chip on it. The ▼ glyph is
-   sized near the chip for a bold, obvious arrow. (Robin.) */
-.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:22px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
+   the line's middle) and translateY(-50%) centres the chip on it. The ▼ glyph sits
+   a touch smaller than the chip so the triangle reads clean and Notion-like, not
+   edge-to-edge. (Robin, 2026-10-29: the triangle was a touch too big.) */
+.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:13px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
 .fold-toggle:hover { filter:brightness(1.08); transform:translateY(-50%) scale(1.06); }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it

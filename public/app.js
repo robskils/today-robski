@@ -572,6 +572,16 @@ function decorateProse(html) {
     emb.innerHTML = `<img class="yt-poster" src="https://i.ytimg.com/vi/${yid}/hqdefault.jpg" alt="" loading="lazy"><span class="yt-play">▶</span><button class="lc-x embed-x" data-card-del title="Remove">×</button>`;
     p.replaceWith(emb);
   });
+  // Inline file chips: rebuild the icon + name (+ remove ×) from the stored
+  // data-att-* attributes, and make the chip non-editable so it behaves as one
+  // unit. The bytes open on tap via a delegated handler. (Robin, 2026-10-29.)
+  d.querySelectorAll('a.prose-file[data-att-file]').forEach((a) => {
+    a.setAttribute('contenteditable', 'false');
+    a.removeAttribute('href');
+    const type = a.getAttribute('data-att-type') || '';
+    const name = a.getAttribute('data-att-name') || 'file';
+    a.innerHTML = `<span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name)}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
+  });
   // Wrap pasted tables so a wide one scrolls sideways instead of stretching the
   // page. sanitizeProse strips the wrapper back off when saving.
   d.querySelectorAll('table').forEach((t) => {
@@ -872,6 +882,12 @@ function sanitizeProse(html) {
       const imgSrc = el.tagName === 'IMG' ? (el.getAttribute('src') || '') : null;
       const imgAlt = el.tagName === 'IMG' ? (el.getAttribute('alt') || '') : null;
       const imgInline = el.tagName === 'IMG' ? el.getAttribute('data-att-inline') : null;   // an R2-backed inline image: store just its id, src is re-fetched on render
+      // An inline FILE chip (a PDF or other attachment shown in the text): store just
+      // its attachment id + name + type on an empty <a>; decorateProse rebuilds the
+      // chip's icon/name on render. (Robin, 2026-10-29.)
+      const fileAtt = el.tagName === 'A' ? el.getAttribute('data-att-file') : null;
+      const fileName = fileAtt ? (el.getAttribute('data-att-name') || '') : '';
+      const fileType = fileAtt ? (el.getAttribute('data-att-type') || '') : '';
       const keepOpen = el.tagName === 'DETAILS' && el.hasAttribute('open');   // remember collapse state
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
@@ -892,6 +908,7 @@ function sanitizeProse(html) {
         else if (imgSrc && /^(https?:|data:image\/)/i.test(imgSrc)) { el.setAttribute('src', imgSrc); el.setAttribute('loading', 'lazy'); if (imgAlt) el.setAttribute('alt', imgAlt); }
         else { const p = el.parentNode; if (p) p.removeChild(el); return; }
       }
+      if (fileAtt) { el.setAttribute('class', 'prose-file'); el.setAttribute('data-att-file', fileAtt); if (fileName) el.setAttribute('data-att-name', fileName); if (fileType) el.setAttribute('data-att-type', fileType); el.removeAttribute('href'); el.textContent = ''; }
     });
   };
   walk(doc.body);
@@ -20699,7 +20716,7 @@ function renderNote() {
         <span class="nab-right">
           <span class="note-hide-mobile note-faces-wrap">${noteFacesRow(n)}</span>
           ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-insert-image>🖼 Insert image</button><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
+          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">🖼</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">📎</button><details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
       </div>
     </div>
@@ -22422,6 +22439,8 @@ document.addEventListener('click', (e) => {
   const cup = t.closest('[data-card-spaceabove]'); if (cup) { e.preventDefault(); e.stopPropagation(); addSpaceAboveCard(cup.closest('.lc-inline')); return; }
   const cgrip = t.closest('[data-card-grip]'); if (cgrip) { e.preventDefault(); e.stopPropagation(); return; }   // the grip is for dragging, never opens the link
   const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { if (lcard.dataset.justDragged) return; e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
+  // Tap an inline file chip to open/download it (the × above already handled removal).
+  const pfile = t.closest('.prose-file[data-att-file]'); if (pfile && pfile.closest('.prose[data-block-id]')) { e.preventDefault(); const prose = pfile.closest('.prose[data-block-id]'); openAttachment(prose.dataset.blockId, pfile.getAttribute('data-att-file')); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
@@ -22810,6 +22829,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-card-photo-x]')) { if (state.card) { delete state.card.photo; saveCard(); rerenderCard(); } return; }
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-insert-image]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineImage(); return; }
+  if (t.closest('[data-note-insert-file]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineFile(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
   // tasks
@@ -24966,7 +24986,7 @@ function attHost() {
 }
 // Remove an inline link card: drop its node and save the surrounding prose.
 function removeCardEl(btn) {
-  const card = btn.closest('.link-card, .embed-yt'); if (!card) return;
+  const card = btn.closest('.link-card, .embed-yt, .prose-file'); if (!card) return;
   const prose = card.closest('.prose'); if (!prose) { card.remove(); return; }
   card.remove();
   if (prose.dataset.prose) saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
@@ -25146,10 +25166,14 @@ async function uploadFiles(blockId, files) {
 // are re-fetched into a blob: URL on render (loadInlineImages), exactly like the
 // attachment thumbnails. Inline-placed images are hidden from the attachments
 // list so they don't show twice. (Robin, 2026-10-27.)
+// Attachment ids referenced inside the prose body - inline images (data-att-inline)
+// AND inline file chips (data-att-file). Both are hidden from the "Linked &
+// attached" list so an inline thing isn't also shown as a loose attachment.
 function inlineAttIds(block) {
   const ids = new Set(); const body = (block && block.body) || '';
-  const re = /data-att-inline="([\w-]+)"/g; let m;
-  while ((m = re.exec(body))) ids.add(m[1]);
+  let m;
+  const reImg = /data-att-inline="([\w-]+)"/g; while ((m = reImg.exec(body))) ids.add(m[1]);
+  const reFile = /data-att-file="([\w-]+)"/g; while ((m = reFile.exec(body))) ids.add(m[1]);
   return ids;
 }
 async function loadInlineImages() {
@@ -25198,6 +25222,50 @@ function pickInlineImage() {
   const range = (lastProseRange && prose.contains(lastProseRange.startContainer)) ? lastProseRange : null;
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.hidden = true;
   inp.addEventListener('change', async () => { for (const f of Array.from(inp.files || [])) await insertInlineImage(prose, f, range); inp.remove(); });
+  document.body.appendChild(inp); inp.click();
+}
+// The inner of an inline file chip - an icon for the type + the filename + an × to
+// pull it out. Rebuilt by decorateProse on every render from the stored data-att-*
+// attributes, so the body stays a light, empty <a>. (Robin, 2026-10-29.)
+const fileChipInner = (type, name) => `<span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name || 'file')}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
+// Upload any file (a PDF for reference, a doc, whatever) and drop a chip for it
+// inline in the prose - the same R2 attachment path as an inline image, but shown
+// as a tap-to-open file chip rather than a picture. Images picked here are still
+// shrunk; everything else uploads as-is. (Robin, 2026-10-29.)
+async function insertInlineFile(prose, file, range) {
+  if (!prose || !file) return;
+  const blockId = prose.dataset.blockId; if (!blockId) return;
+  const host = attHost();
+  try {
+    if (isHeic(file)) toast('Preparing photo…');
+    const f = (isImgType(file.type) || isHeic(file)) ? await shrinkImage(file) : file;
+    const nm = f.name || file.name || 'file';
+    const att = await postAttachment(`/api/blocks/${blockId}/attachments?name=${encodeURIComponent(nm)}&type=${encodeURIComponent(f.type || file.type || 'application/octet-stream')}`, f);
+    if (host && host.id === blockId) { host.props = host.props || {}; host.props.attachments = [...(host.props.attachments || []), att]; }
+    const chip = document.createElement('a');
+    chip.className = 'prose-file'; chip.contentEditable = 'false';
+    chip.setAttribute('data-att-file', att.id);
+    chip.setAttribute('data-att-name', att.name || nm);
+    chip.setAttribute('data-att-type', att.type || f.type || '');
+    chip.innerHTML = fileChipInner(att.type || f.type, att.name || nm);
+    const para = document.createElement('p'); para.appendChild(chip);
+    // Place it on its own line after the caret's block (same as an inline image).
+    let r = (range && prose.contains(range.startContainer)) ? range : null;
+    if (!r) { const sel = window.getSelection(); if (sel && sel.rangeCount && prose.contains(sel.anchorNode)) r = sel.getRangeAt(0); }
+    let block = r ? (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement) : null;
+    block = block && block.closest && block.closest('.prose[data-block-id] > *');
+    if (block && block.parentElement === prose) block.after(para); else prose.appendChild(para);
+    if (!para.nextElementSibling) { const after = document.createElement('p'); after.innerHTML = '<br>'; para.after(after); }
+    const nx = para.nextElementSibling;
+    if (nx) { const sel = window.getSelection(); const nr = document.createRange(); nr.setStart(nx, 0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); }
+    saveProse(prose.dataset.prose, prose.innerHTML, blockId);
+  } catch (e) { toastError('Could not add file: ' + ((e && e.message) || 'upload failed')); }
+}
+function pickInlineFile() {
+  const prose = document.querySelector('.note-body .prose[contenteditable="true"][data-block-id]'); if (!prose) return;
+  const range = (lastProseRange && prose.contains(lastProseRange.startContainer)) ? lastProseRange : null;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.hidden = true;
+  inp.addEventListener('change', async () => { for (const f of Array.from(inp.files || [])) await insertInlineFile(prose, f, range); inp.remove(); });
   document.body.appendChild(inp); inp.click();
 }
 // ── Home quick-capture: photo/scan or file → a note ────────────────────────
