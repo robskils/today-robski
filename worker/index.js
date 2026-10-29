@@ -2901,10 +2901,10 @@ async function runEventRemindersForUser(env, user) {
       const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));
       ok = ok || !!(r && r.ok);
     }
-    // Email is sent for 'email' and ALSO as a backup whenever a text was asked for:
-    // a text can be silently dropped at the carrier (we only ever learn the gateway
-    // accepted it), so a text reminder still lands as an email if the SMS never does.
-    if ((chs.includes('email') || chs.includes('sms')) && email) {
+    // Email ONLY when the reminder explicitly asks for it. No silent email backup
+    // for a text reminder - a text that was asked for should arrive as a text, and
+    // LifeFold doesn't send those "just in case" emails. (Robin, 2026-10-29.)
+    if (chs.includes('email') && email) {
       await sendEventReminderMail(env, { to: email, title: e.title || 'Event', when: hh, whenPhrase, location: e.location, home }).catch(() => {});
       ok = true;
     }

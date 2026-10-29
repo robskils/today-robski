@@ -10802,7 +10802,12 @@ function eventAlarmChSet(ev) {
   else if (typeof ch === 'string' && ch) arr = [ch];
   else arr = [];
   arr = arr.filter((c) => c === 'app' || c === 'sms' || c === 'email');
-  return new Set(arr.length ? arr : ['app']);
+  if (arr.length) return new Set(arr);
+  // No channel chosen yet: in-app, plus TEXT when a phone is on file - so a reminder
+  // actually reaches the phone of someone set up for texts, instead of silently
+  // defaulting to in-app only and never arriving. (Robin, 2026-10-29.)
+  const hasPhone = !!(state.account && (state.account.phone || '').trim());
+  return new Set(hasPhone ? ['app', 'sms'] : ['app']);
 }
 // The reminder-lead chips shown in the event editor (minutes-before + label).
 const REM_PRESETS = [[0, 'At the time'], [5, '5 min'], [30, '30 min'], [60, '1 hour'], [120, '2 hours'], [1440, '1 day'], [10080, '1 week'], [43200, '1 month']];
