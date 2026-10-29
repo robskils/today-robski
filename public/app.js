@@ -6813,14 +6813,13 @@ function notesControlsHtml(full) {
   const typeChips = `<div class="note-type-chips">${NOTE_TYPES.map(([v, l]) => `<button class="ntype ${type === v ? 'on' : ''}" data-notes-type="${v}">${l}</button>`).join('')}</div>`;
   const areaSel = `<select class="sel notes-area" data-notes-area title="Filter by page"><option value="">${t('filter.allareas')}</option>${(state.areas || []).map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const sortSel = `<select class="sel notes-sort" data-notes-sort title="Sort">${NOTE_SORTS.map(([v, l]) => `<option value="${v}" ${mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  const makeBtns = full ? `<button class="add-btn wide notes-new" data-new-note>${t('notes.newnote')}</button><button class="add-btn wide notes-new-table" data-new-table>${t('btn.newtable')}</button>` : '';
-  // The make buttons ride inline on desktop (right of the search bar), but on
-  // mobile they live in a separate row OUTSIDE the sticky toolbar so they scroll
-  // away with the page instead of staying pinned. (Robin.)
+  // The make buttons used to ride here (inline on desktop, a separate row on
+  // mobile). Creating a note or table is already one tap away in the "+ New"
+  // menu that sits in the breadcrumb above every page, so they were redundant -
+  // and crowding the toolbar onto two rows. Dropped. (Robin, 2026-10-29.)
   // On mobile the area + sort dropdowns ride in their own sticky bar (they stay
-  // handy while the list scrolls); search, the type chips and the make buttons
-  // all scroll. On desktop it's one row and the sticky bar / makebar are hidden.
-  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}${makeBtns ? `<span class="notes-make-inline">${makeBtns}</span>` : ''}</div>${full ? `<div class="notes-filters-sticky">${areaSel}${sortSel}</div>` : ''}${makeBtns ? `<div class="notes-makebar">${makeBtns}</div>` : ''}`;
+  // handy while the list scrolls); search and the type chips scroll with the page.
+  return `<div class="notes-toolbar${full ? ' notes-toolbar-sticky' : ' notes-toolbar-rep'}">${full ? `<input class="list-search sel" data-notes-q placeholder="${t('notes.search')}" value="${esc(state.notesQuery || '')}" autocomplete="off">` : ''}${typeChips}${areaSel}${sortSel}</div>${full ? `<div class="notes-filters-sticky">${areaSel}${sortSel}</div>` : ''}`;
 }
 function noteCard(n) {
   const t = isTableNote(n);
