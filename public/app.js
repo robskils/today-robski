@@ -145,6 +145,16 @@ async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const token = () => localStorage.getItem(KEY) || '';
+// Is the stored JWT past its exp? We only DECODE it (the server verifies) to tell
+// a real "signed out" from a stray, transient 401 that must NOT wipe a valid
+// session. (Robin, 2026-10-29: a user got signed out on reopen - never log anyone
+// out over one bad response. The session JWT is good for 7 days.)
+function tokenExpired() {
+  const t = token(); if (!t) return true;
+  try { const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return !p.exp || (Date.now() > p.exp * 1000); }
+  catch { return false; }   // unparseable: assume live and let the server be the judge
+}
+let _auth401 = 0;   // consecutive 401s against a live (non-expired) token
 // The device's IANA timezone, resolved once. Sent on every request (X-Tz) so the
 // server runs the calendar, reminders and morning brief on the wall clock you're
 // actually on - Rome when you're in Italy, not always Lisbon. (Robin, 2026-10-24.)
@@ -153,7 +163,19 @@ function deviceTz() { if (_deviceTz === undefined) { try { _deviceTz = Intl.Date
 
 async function api(path, opts = {}) {
   const res = await fetch(path, { ...opts, headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json', 'X-Tz': deviceTz(), ...opts.headers } });
-  if (res.status === 401) { localStorage.removeItem(KEY); if (!$('#gate2')) showGate('Your session expired. Sign in again.'); throw new Error('unauthorized'); }
+  if (res.status === 401) {
+    // Sign out ONLY if the token is really gone/expired, or we've seen several
+    // 401s in a row against a live token (the session is genuinely being rejected).
+    // One stray 401 - a server hiccup, an endpoint quirk, a race on open - must
+    // never wipe a valid session and strand the user at the gate. (Robin.)
+    if (tokenExpired() || ++_auth401 >= 4) {
+      _auth401 = 0;
+      localStorage.removeItem(KEY);
+      if (!$('#gate2')) showGate('Your session expired. Sign in again.');
+    }
+    throw new Error('unauthorized');
+  }
+  _auth401 = 0;   // any non-401 response proves the token still works
   if (!res.ok) {
     const b = await res.json().catch(() => ({}));
     let msg = b.error || `HTTP ${res.status}`;
