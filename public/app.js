@@ -26026,6 +26026,8 @@ function renderOnboarding() {
   const openTile = TILES.find((x) => x.id === s.open);
   const panel = openTile ? `<div class="onb-panel"><div class="onb-panel-h"><span class="onb-panel-ic">${openTile.ic}</span>${esc(openTile.label)}</div><div class="onb-panel-in">${openTile.body()}</div></div>` : '';
   const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
+  // Hold the overlay's scroll steady while background data re-renders it below.
+  const prevScroll = (document.querySelector('#onb .onb-bg') || {}).scrollTop || 0;
   document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up LifeFold">
     <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
     <div class="onb-head">
@@ -26038,20 +26040,30 @@ function renderOnboarding() {
     ${panel}
     <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open LifeFold' : 'Done for now'}</button>
   </div></div>`;
-  // When a step opens (especially arriving from the Account checklist), bring its
-  // panel into view so you land on the actual content, not the tile grid above it.
+  // When a step opens, bring its panel to the top so you land on the actual content,
+  // not the tile grid above it. The overlay re-renders repeatedly as background data
+  // (account, areas, calendar...) loads - each rebuild resets the scroll - so on a
+  // fresh open we re-assert the scroll a few times, and on every other re-render we
+  // restore the previous position instead of snapping to the top. scrollIntoView is
+  // unreliable with this nested full-screen scroller, so we scroll it by hand.
+  // (Robin, 2026-10-29: take me to the content, and keep me there.)
+  const onbScrollToPanel = (smooth) => {
+    const bg = document.querySelector('#onb .onb-bg');
+    const p = document.querySelector('#onb .onb-panel');
+    if (!bg || !p) return;
+    const top = p.getBoundingClientRect().top - bg.getBoundingClientRect().top + bg.scrollTop - 14;
+    bg.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+  };
   if (s.open && s._scrolledTo !== s.open) {
     s._scrolledTo = s.open;
-    // Explicitly scroll the overlay's own scroller to the panel - scrollIntoView is
-    // unreliable with the nested full-screen scroller on a phone. Double rAF so the
-    // panel has laid out first. (Robin, 2026-10-29: take me to the content.)
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const bg = document.querySelector('#onb .onb-bg');
-      const p = document.querySelector('#onb .onb-panel');
-      if (bg && p) { const top = p.getBoundingClientRect().top - bg.getBoundingClientRect().top + bg.scrollTop - 14; bg.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
-      else if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }));
-  } else if (!s.open) { s._scrolledTo = null; }
+    requestAnimationFrame(() => requestAnimationFrame(() => onbScrollToPanel(true)));
+    // Re-assert through the burst of background re-renders that follow a fresh open.
+    [140, 360, 650, 1000].forEach((ms) => setTimeout(() => { if (state.onb && state.onb.open === s.open) onbScrollToPanel(false); }, ms));
+  } else {
+    const bg = document.querySelector('#onb .onb-bg');
+    if (bg && prevScroll) bg.scrollTop = prevScroll;
+    if (!s.open) s._scrolledTo = null;
+  }
 }
 async function onbSaveAi(provider) {
   const el = document.querySelector(`[data-onb-ai="${provider}"]`); const value = (el && el.value || '').trim();
