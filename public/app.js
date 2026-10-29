@@ -21792,7 +21792,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
   const accBtn = t.closest('[data-accent]'); if (accBtn) { setAccent(accBtn.dataset.accent); return; }
   { const bp = t.closest('[data-bgpat]'); if (bp) { setBgPattern(bp.dataset.bgpat); return; } }
-  { const mr = t.closest('[data-mark-ring]'); if (mr) { applyMarkRing(mr.dataset.markRing === '1'); if (state.view && state.view.type === 'settings') openSettings('appearance'); return; } }
+  // MUST be button[data-mark-ring], not [data-mark-ring]: the <html> element also
+  // carries data-mark-ring (the CSS ring flag), so a bare selector matched EVERY
+  // click via closest() -> <html>, firing this handler and returning before any
+  // nav handler below ran. That silently killed Tasks/Calendar/etc. (2026-10-29.)
+  { const mr = t.closest('button[data-mark-ring]'); if (mr) { applyMarkRing(mr.dataset.markRing === '1'); if (state.view && state.view.type === 'settings') openSettings('appearance'); return; } }
   const sgoto = t.closest('[data-settings-goto]'); if (sgoto) { if (sgoto.dataset.settingsGoto === 'spending') openFinancial('spending').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-spendcats]')) { state.financial = state.financial || {}; state.financial.spendCatsOpen = true; openFinancial('spending').catch((x) => toast(x.message)); return; }
   const fseg = t.closest('[data-fin-tab]'); if (fseg) { openFinancial(fseg.dataset.finTab).catch((x) => toast(x.message)); return; }
