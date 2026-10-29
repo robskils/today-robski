@@ -16024,41 +16024,64 @@ function kitWhen(iso) {
 // The three companion boxes - Notes, Tasks, Links - sitting equal in a row: the
 // connected notes and tasks for this person, and their external links. Each box
 // lists its items as chips and carries its own add control.
+// Everything tied to this person - notes, tasks, events and web links - in ONE
+// list, the same "Linked & attached" panel the note and task cards use (rows with
+// an open button and an ×, then a flat row of add actions). Unified so a person,
+// a note and a task all handle their connections the same way. (Robin, 2026-10-29.)
+function contactLinkedRows(c) {
+  const co = state.contact_open || {};
+  const rows = [];
+  for (const n of (co.linkedNotes || [])) rows.push(nxOpenRow('▤', n.title, 'Note', '', `data-open-note="${n.id}"`, `data-cb-unlink-note="${n.id}"`));
+  for (const tk of (co.linkedTasks || [])) rows.push(nxOpenRow('✓', tk.title, 'Task', '', `data-open-task="${tk.id}"`, `data-cb-unlink-task="${tk.id}"`));
+  for (const e of (co.linkedEvents || [])) rows.push(nxOpenRow('📅', e.title || 'Event', 'Event', e.date ? esc(evShortDate(e.date)) : '', `data-open-event-date="${esc(String(e.date || '').slice(0, 10))}"`, `data-cb-unlink-event="${esc(String(e.id || '').split('::')[0])}"`));
+  blockLinks(c).forEach((l, i) => {
+    const raw = linkUrlOf(l);
+    const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(raw);
+    let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+  });
+  return rows;
+}
+// The Connect search for a person: notes, tasks and events you can tie to them,
+// reusing the same cbLink* actions the old per-box search used.
+function contactLinkSearchRows(q) {
+  const co = state.contact_open; if (!co) return '';
+  const ql = (q || '').trim().toLowerCase();
+  if (ql.length < 1) return '<div class="nx-sugg-hint">Search your notes, tasks and events to connect them to this person.</div>';
+  const linkedN = new Set((co.linkedNotes || []).map((n) => String(n.id)));
+  const linkedT = new Set((co.linkedTasks || []).map((t) => String(t.id)));
+  const linkedE = new Set((co.linkedEvents || []).map((e) => String(e.id || '').split('::')[0]));
+  const out = []; let count = 0;
+  for (const n of (co.notePool || [])) { if (count >= 18) break; if (linkedN.has(String(n.id)) || !(n.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-cb-link-note="${n.id}"><span class="ic">▤</span>${esc(n.title || 'Untitled')}<span class="kind">Note</span></button>`); count++; }
+  for (const tk of (co.taskPool || [])) { if (count >= 18) break; if (linkedT.has(String(tk.id)) || !(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-cb-link-task="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
+  const seenE = new Set();
+  for (const e of (co.eventPool || [])) { if (count >= 18) break; const base = String(e.id || '').split('::')[0]; if (linkedE.has(base) || seenE.has(base) || !(e.title || '').toLowerCase().includes(ql)) continue; seenE.add(base); out.push(`<button class="nx-sugg-row" data-cb-link-event="${base}"><span class="ic">📅</span>${esc(e.title || 'Event')}${e.date ? ` <span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}<span class="kind">Event</span></button>`); count++; }
+  return out.join('') || '<div class="nx-sugg-hint">No matches - make a new one with the buttons above.</div>';
+}
 function contactBoxesHtml(c) {
   const co = state.contact_open || {};
-  const notes = co.linkedNotes || []; const tasks = co.linkedTasks || []; const links = blockLinks(c); const events = co.linkedEvents || [];
-  const chip = (inner, extra) => `<div class="ce-card">${inner}${extra || ''}</div>`;
-  const noteChips = notes.map((n) => chip(`<button class="ce-open" data-open-note="${n.id}"><span class="ce-ic">▤</span><span class="ce-t">${esc(n.title || 'Untitled')}</span></button>`)).join('');
-  const taskChips = tasks.map((tk) => chip(`<button class="ce-open" data-open-task="${tk.id}"><span class="ce-ic">✓</span><span class="ce-t">${esc(tk.title || 'Untitled')}</span></button>`)).join('');
-  const linkChips = links.map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return chip(`<a class="ce-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}"><span class="ce-ic">🔗</span><span class="ce-t">${esc(label)}</span></a>`, `<button class="ce-x" data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}" title="Remove link">×</button>`); }).join('');
-  const eventChips = events.map((e) => chip(`<button class="ce-open" data-open-event-date="${esc(String(e.date || '').slice(0, 10))}" title="Show in calendar"><span class="ce-ic">◑</span><span class="ce-t">${esc(e.title || 'Event')}</span>${e.date ? `<span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</button>`)).join('');
-  // A search box in each that has existing items to connect, plus a results list
-  // and, beneath, a New button. Search first, create if it isn't there yet.
-  const linkedNoteIds = new Set(notes.map((n) => String(n.id)));
-  const linkedTaskIds = new Set(tasks.map((t) => String(t.id)));
-  const linkedEvIds = new Set(events.map((e) => String(e.id || '').split('::')[0]));
-  const nq = (co.cbNoteQ || '').trim().toLowerCase();
-  const tq = (co.cbTaskQ || '').trim().toLowerCase();
-  const eq = (co.cbEventQ || '').trim().toLowerCase();
-  const nRes = nq ? (co.notePool || []).filter((n) => !linkedNoteIds.has(String(n.id)) && (n.title || '').toLowerCase().includes(nq)).slice(0, 6) : [];
-  const tRes = tq ? (co.taskPool || []).filter((t) => !linkedTaskIds.has(String(t.id)) && (t.title || '').toLowerCase().includes(tq)).slice(0, 6) : [];
-  const eRes = eq ? (co.eventPool || []).filter((e) => !linkedEvIds.has(String(e.id || '').split('::')[0]) && (e.title || '').toLowerCase().includes(eq)).slice(0, 6) : [];
-  const resList = (rows) => rows.length ? `<div class="nt-results">${rows}</div>` : '';
-  const searchBox = (q, attr, ph) => `<input class="sel nt-search cc-box-search" ${attr} placeholder="${ph}" value="${esc(q)}" autocomplete="off">`;
-  const box = (title, n, chips, search, addBtn) => `<section class="cc-box">
-    <div class="cc-box-h">${title}${n ? ` · ${n}` : ''}</div>
-    <div class="cc-box-body">${chips || `<p class="cc-box-empty">Nothing yet.</p>`}</div>
-    ${search || ''}
-    ${addBtn}
-  </section>`;
-  const notesSearch = searchBox(co.cbNoteQ || '', 'data-cb-note-q', 'Search notes to connect…') + resList(nRes.map((n) => `<button type="button" class="nt-result" data-cb-link-note="${n.id}"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
-  const tasksSearch = searchBox(co.cbTaskQ || '', 'data-cb-task-q', 'Search tasks to connect…') + resList(tRes.map((t) => `<button type="button" class="nt-result" data-cb-link-task="${t.id}"><span class="ga-t">✓ ${esc(t.title || 'Untitled')}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
-  const eventsSearch = searchBox(co.cbEventQ || '', 'data-cb-event-q', 'Search events to connect…') + resList(eRes.map((e) => `<button type="button" class="nt-result" data-cb-link-event="${esc(String(e.id || '').split('::')[0])}"><span class="ga-t">◑ ${esc(e.title || 'Event')}${e.date ? ` <span class="ce-d">${esc(evShortDate(e.date))}</span>` : ''}</span><span class="nt-link-ic">＋ Link</span></button>`).join(''));
-  return `<div class="cc-boxes">
-    ${box('Notes', notes.length, noteChips, notesSearch, `<button type="button" class="cc-box-add" data-contact-new-note="${c.id}">＋ New note</button>`)}
-    ${box('Tasks', tasks.length, taskChips, tasksSearch, `<button type="button" class="cc-box-add" data-contact-new-task="${c.id}">＋ New task</button>`)}
-    ${box('Links', links.length, linkChips, '', `<button type="button" class="cc-box-add" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">＋ Add link</button>`)}
-    ${box('Events', events.length, eventChips, eventsSearch, `<button type="button" class="cc-box-add" data-contact-new-event="${c.id}">＋ New event</button>`)}
+  const rows = contactLinkedRows(c);
+  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : '';
+  const tab = co.cxTab || 'none';
+  const q = co.cxQ || '';
+  const connectPane = `<div class="nx-field"><input class="sel" data-cx-q placeholder="Search your notes, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="cx-link-list">${contactLinkSearchRows(q)}</div>`;
+  const pane = tab === 'connect' ? connectPane : '';
+  return `<div class="nx-wrap cc-boxes">
+    <div class="nx-lbl">Linked &amp; attached</div>
+    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}">
+      ${items}
+      <div class="nx-attach">
+        <div class="nx-addrow">
+          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 LifeFold Connect</button>
+          <button type="button" class="nx-choose" data-contact-new-note="${c.id}">▤ New Note</button>
+          <button type="button" class="nx-choose" data-contact-new-task="${c.id}">✓ New Task</button>
+          <button type="button" class="nx-choose" data-contact-new-event="${c.id}">📅 New Event</button>
+          <button type="button" class="nx-choose" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">🌐 Add Web Link</button>
+        </div>
+        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
+      </div>
+    </div>
   </div>`;
 }
 // Re-render just the Connect boxes (keeps the search box's focus + caret on a
@@ -16076,7 +16099,7 @@ async function cbLinkNote(noteId) {
   const co = state.contact_open; if (!co) return; const n = (co.notePool || []).find((x) => String(x.id) === String(noteId)); if (!n) return;
   const ids = [...new Set([...((n.props && Array.isArray(n.props.contacts)) ? n.props.contacts.map(String) : []), String(co.contact.id)])];
   n.props = n.props || {}; n.props.contacts = ids;
-  co.linkedNotes = [n, ...(co.linkedNotes || []).filter((x) => String(x.id) !== String(noteId))]; co.cbNoteQ = '';
+  co.linkedNotes = [n, ...(co.linkedNotes || []).filter((x) => String(x.id) !== String(noteId))]; co.cbNoteQ = ''; co.cxQ = '';
   renderContactCard();
   try { await api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); toast('Note connected'); } catch (e) { toast(e.message); }
 }
@@ -16084,16 +16107,43 @@ async function cbLinkTask(taskId) {
   const co = state.contact_open; if (!co) return; const t = (co.taskPool || []).find((x) => String(x.id) === String(taskId)); if (!t) return;
   const ids = [...new Set([...((t.props && Array.isArray(t.props.contacts)) ? t.props.contacts.map(String) : []), String(co.contact.id)])];
   t.props = t.props || {}; t.props.contacts = ids;
-  co.linkedTasks = [t, ...(co.linkedTasks || []).filter((x) => String(x.id) !== String(taskId))]; co.cbTaskQ = '';
+  co.linkedTasks = [t, ...(co.linkedTasks || []).filter((x) => String(x.id) !== String(taskId))]; co.cbTaskQ = ''; co.cxQ = '';
   renderContactCard();
   try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); toast('Task connected'); } catch (e) { toast(e.message); }
 }
 async function cbLinkEvent(baseId) {
   const co = state.contact_open; if (!co) return; const ev = (co.eventPool || []).find((x) => String(x.id || '').split('::')[0] === String(baseId)); if (!ev) return;
   ev.contact = co.contact.id;
-  co.linkedEvents = [ev, ...(co.linkedEvents || []).filter((x) => String(x.id || '').split('::')[0] !== String(baseId))].sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))); co.cbEventQ = '';
+  co.linkedEvents = [ev, ...(co.linkedEvents || []).filter((x) => String(x.id || '').split('::')[0] !== String(baseId))].sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))); co.cbEventQ = ''; co.cxQ = '';
   renderContactCard();
   try { await api('/api/event-contact', { method: 'POST', body: JSON.stringify({ eventId: baseId, contact: co.contact.id }) }); toast('Event connected'); } catch (e) { toast(e.message); }
+}
+// Unlinking from a person: the reverse of cbLink*. A note/task just loses this
+// person's id from its props.contacts; an event clears its contact. (Robin.)
+async function cbUnlinkNote(noteId) {
+  const co = state.contact_open; if (!co) return;
+  const n = (co.linkedNotes || []).concat(co.notePool || []).find((x) => String(x.id) === String(noteId));
+  const ids = ((n && n.props && Array.isArray(n.props.contacts)) ? n.props.contacts.map(String) : []).filter((x) => x !== String(co.contact.id));
+  if (n) { n.props = n.props || {}; n.props.contacts = ids; }
+  co.linkedNotes = (co.linkedNotes || []).filter((x) => String(x.id) !== String(noteId));
+  renderContactCard();
+  try { await api(`/api/blocks/${noteId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); } catch (e) { toast(e.message); }
+}
+async function cbUnlinkTask(taskId) {
+  const co = state.contact_open; if (!co) return;
+  const tk = (co.linkedTasks || []).concat(co.taskPool || [], state.allTasks || []).find((x) => String(x.id) === String(taskId));
+  const ids = ((tk && tk.props && Array.isArray(tk.props.contacts)) ? tk.props.contacts.map(String) : []).filter((x) => x !== String(co.contact.id));
+  if (tk) { tk.props = tk.props || {}; tk.props.contacts = ids; }
+  co.linkedTasks = (co.linkedTasks || []).filter((x) => String(x.id) !== String(taskId));
+  renderContactCard();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { contacts: ids } }) }); } catch (e) { toast(e.message); }
+}
+async function cbUnlinkEvent(baseId) {
+  const co = state.contact_open; if (!co) return;
+  co.linkedEvents = (co.linkedEvents || []).filter((x) => String(x.id || '').split('::')[0] !== String(baseId));
+  const ev = (co.eventPool || []).find((x) => String(x.id || '').split('::')[0] === String(baseId)); if (ev) ev.contact = null;
+  renderContactCard();
+  try { await api('/api/event-contact', { method: 'POST', body: JSON.stringify({ eventId: baseId, contact: '' }) }); } catch (e) { toast(e.message); }
 }
 async function contactNewNote(id) {
   const c = state.contact_open && state.contact_open.contact; if (!c || String(c.id) !== String(id)) return;
@@ -21535,9 +21585,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-note-event-q]') && state.note) { state.note.eventQuery = e.target.value; const el = document.getElementById('nevent-list'); if (el) el.innerHTML = noteEventConnRows(); return; }
   if (e.target.matches('[data-note-contact-q]') && state.note) { state.note.contactQuery = e.target.value; const el = document.getElementById('ncontact-list'); if (el) el.innerHTML = noteContactConnRows(); return; }
   if (e.target.matches('[data-pe-note-q]') && state.practiceEdit) { const pos = e.target.selectionStart; state.practiceEdit._noteQ = e.target.value; renderPeAttach(); const i = document.querySelector('[data-pe-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
-  if (e.target.matches('[data-cb-note-q]') && state.contact_open) { state.contact_open.cbNoteQ = e.target.value; renderContactBoxes('[data-cb-note-q]'); return; }
-  if (e.target.matches('[data-cb-task-q]') && state.contact_open) { state.contact_open.cbTaskQ = e.target.value; renderContactBoxes('[data-cb-task-q]'); return; }
-  if (e.target.matches('[data-cb-event-q]') && state.contact_open) { state.contact_open.cbEventQ = e.target.value; renderContactBoxes('[data-cb-event-q]'); return; }
+  if (e.target.matches('[data-cx-q]') && state.contact_open) { state.contact_open.cxQ = e.target.value; renderContactBoxes('[data-cx-q]'); return; }
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
@@ -22117,6 +22165,10 @@ document.addEventListener('click', (e) => {
   { const cln = t.closest('[data-cb-link-note]'); if (cln) { cbLinkNote(cln.dataset.cbLinkNote); return; } }
   { const clt = t.closest('[data-cb-link-task]'); if (clt) { cbLinkTask(clt.dataset.cbLinkTask); return; } }
   { const cle = t.closest('[data-cb-link-event]'); if (cle) { cbLinkEvent(cle.dataset.cbLinkEvent); return; } }
+  { const cun = t.closest('[data-cb-unlink-note]'); if (cun) { cbUnlinkNote(cun.dataset.cbUnlinkNote); return; } }
+  { const cut = t.closest('[data-cb-unlink-task]'); if (cut) { cbUnlinkTask(cut.dataset.cbUnlinkTask); return; } }
+  { const cue = t.closest('[data-cb-unlink-event]'); if (cue) { cbUnlinkEvent(cue.dataset.cbUnlinkEvent); return; } }
+  { const cxt = t.closest('[data-cx-tab]'); if (cxt && state.contact_open) { const tab = cxt.dataset.cxTab; state.contact_open.cxTab = (state.contact_open.cxTab === tab) ? 'none' : tab; renderContactBoxes(state.contact_open.cxTab === 'connect' ? '[data-cx-q]' : null); return; } }
   { const cnn = t.closest('[data-contact-new-note]'); if (cnn) { contactNewNote(cnn.dataset.contactNewNote); return; } }
   { const cnt = t.closest('[data-contact-new-task]'); if (cnt) { contactNewTask(cnt.dataset.contactNewTask); return; } }
   { const cne = t.closest('[data-contact-new-event]'); if (cne) { contactNewEvent(cne.dataset.contactNewEvent); return; } }
