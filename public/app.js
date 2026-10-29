@@ -1266,6 +1266,9 @@ function recordHistory() {
   try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {}
 }
 function navBack() {
+  // An open email (or compose): Back returns to the inbox list, not out to Home -
+  // the most recent screen is the inbox you came from. (Robin, 2026-10-29.)
+  if (state.view && state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) { state.mail.open = null; state.mail.composing = false; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); scrollToMailList(); return; }
   // Within Mail, Back first steps back through the boxes you opened (Inbox ->
   // Important -> Back = Inbox), leaving Mail only once you're back at the start.
   if (mailBoxCanBack()) { mailBoxBack(); return; }
@@ -1299,6 +1302,7 @@ function appHandleBack() {
   const mv = document.getElementById('move-overlay'); if (mv && mv.innerHTML) { closeMove(); return true; }
   if (document.getElementById('prac-editor-host')) { closePracticeEditor(); return true; }
   if (state.cal && (state.cal.adding || state.cal.editing || state.cal.viewing)) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; state.cal.viewing = null; renderCalendar(); return true; }
+  if (state.view && state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) { state.mail.open = null; state.mail.composing = false; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); scrollToMailList(); return true; }
   if (mailBoxCanBack()) { mailBoxBack(); return true; }
   if (navHist.length) { navBack(); return true; }
   return false;
@@ -4304,7 +4308,7 @@ function navItems(v) {
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
     daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">LifeFold</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
-    messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">🗨</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
+    messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">🗨︎</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
   };
 }
 // A flat, importance-ordered single column of clear tool buttons - the mobile
@@ -25582,7 +25586,9 @@ async function finishOnboarding() {
   try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
   state.onbSeen = true;
   closeOnbHub();
-  if (state.view && state.view.type === 'home') renderHome();
+  // "Open LifeFold" lands you on Home - the place to start - not back on whatever
+  // Settings tab the setup hub was opened from. (Robin, 2026-10-29.)
+  Promise.resolve(openHome()).catch(() => {});
 }
 // ── Getting-started checklist (Settings › Account) ───────────────────────────
 // The same setup steps as the onboarding hub (showOnboarding/TILES), shown as a
@@ -25967,10 +25973,15 @@ function renderOnboarding() {
   // panel into view so you land on the actual content, not the tile grid above it.
   if (s.open && s._scrolledTo !== s.open) {
     s._scrolledTo = s.open;
-    requestAnimationFrame(() => {
+    // Explicitly scroll the overlay's own scroller to the panel - scrollIntoView is
+    // unreliable with the nested full-screen scroller on a phone. Double rAF so the
+    // panel has laid out first. (Robin, 2026-10-29: take me to the content.)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const bg = document.querySelector('#onb .onb-bg');
       const p = document.querySelector('#onb .onb-panel');
-      if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+      if (bg && p) { const top = p.getBoundingClientRect().top - bg.getBoundingClientRect().top + bg.scrollTop - 14; bg.scrollTo({ top: Math.max(0, top), behavior: 'smooth' }); }
+      else if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
   } else if (!s.open) { s._scrolledTo = null; }
 }
 async function onbSaveAi(provider) {
