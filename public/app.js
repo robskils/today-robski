@@ -9156,17 +9156,24 @@ const areaOvOpen = () => { try { return localStorage.getItem('life.area.ov') ===
 const AREA_SEC_CLOSED_DEFAULT = new Set(['Vision', 'Who has access']);
 // Stored explicitly (1 = collapsed, 0 = open) once you've toggled it; before
 // that, the per-key default decides. Old entries (presence = collapsed) still read.
+// Open/closed is remembered PER LIFE SPACE now (keyed by area id + section), so
+// leaving Goals open on one Space, or the notepad, holds when you come back to it
+// and never reaches across to another Space. The defaults just get you started;
+// your own choice per Space wins from then on. (Robin, 2026-10-29.)
+const areaSecKey = (k) => { const aid = state.area_open && state.area_open.area && state.area_open.area.id; return aid ? aid + '⁣' + k : k; };
 const areaSecOpen = (k) => {
   try {
     const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}');
-    if (Object.prototype.hasOwnProperty.call(c, k)) return !c[k];
+    const key = areaSecKey(k);
+    if (Object.prototype.hasOwnProperty.call(c, key)) return !c[key];
+    if (Object.prototype.hasOwnProperty.call(c, k)) return !c[k];   // legacy global choice, still honoured
     return !AREA_SEC_CLOSED_DEFAULT.has(k);
   } catch { return !AREA_SEC_CLOSED_DEFAULT.has(k); }
 };
 // Tracker area sections: collapsible, remembered per area.
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
 function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} rerenderCurrent(); }
-function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[k] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
+function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[areaSecKey(k)] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
 // Jump from the area header's count line to that section: open it if collapsed,
 // then scroll it into view. (Robin: the counts should be clickable.)
 function areaGoto(key) {
