@@ -29,7 +29,7 @@ import { decryptSecret } from './ai.js';
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-const CODE_TTL = 600;          // 10 minutes
+const CODE_TTL = 1800;         // 30 minutes - email can be slow to arrive (SMTP queues, first-send greylisting); the code is protected by MAX_ATTEMPTS, not the clock, so a generous window is safe and stops people being locked out by slow mail. (Robin, 2026-10-29.)
 const RESEND_COOLDOWN = 45;    // seconds between sends to one address
 const MAX_ATTEMPTS = 5;
 const SESSION_DAYS = 7;
@@ -184,7 +184,7 @@ export async function requestCode(request, env, json, err) {
       toPhone = (phRow && phRow.value) || (acct.id === 1 ? env.ALERT_PHONE : '');
     }
     if (toPhone) {
-      const sms = await sendSms(env, `${code} is your LifeFold sign-in code. It expires in 10 minutes.`, toPhone);
+      const sms = await sendSms(env, `${code} is your LifeFold sign-in code. It expires in 30 minutes.`, toPhone);
       // Only report SMS if it actually left: a not-configured or rejected send
       // silently falls through to email, so the user is never stranded without a
       // code just because SMS credit ran out.
@@ -232,7 +232,7 @@ export async function verifyCode(request, env, json, err) {
     return err('That code has expired. Request a new one.', 400);
   }
 
-  // Burn the code after a few wrong guesses, or 10 minutes is plenty of time
+  // Burn the code after a few wrong guesses, or 30 minutes is plenty of time
   // to walk the whole six-digit space.
   if (row.attempts >= MAX_ATTEMPTS) {
     await env.DB.prepare('DELETE FROM otp_codes WHERE email = ?').bind(email).run();
@@ -311,8 +311,8 @@ export async function sendCodeMail(env, email, code, kind) {
   const subject = alias ? `${code} - confirm your email for LifeFold` : `${code} - your LifeFold sign-in code`;
   const html = codeEmail(code, kind);
   const text = alias
-    ? `Enter ${code} in LifeFold to add this address to your account. It expires in 10 minutes.`
-    : `Your LifeFold sign-in code is ${code}. It expires in 10 minutes.`;
+    ? `Enter ${code} in LifeFold to add this address to your account. It expires in 30 minutes.`
+    : `Your LifeFold sign-in code is ${code}. It expires in 30 minutes.`;
 
   // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
   // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
@@ -356,9 +356,9 @@ export function codeEmail(code, kind) {
   const alias = kind === 'alias';
   const eyebrow = alias ? 'Confirm email' : 'Sign in';
   const line = alias
-    ? `Enter this code in LifeFold to add this address to your account. It expires in <strong style="color:#211c17">10 minutes</strong>.`
-    : `Your sign-in code. It expires in <strong style="color:#211c17">10 minutes</strong>.`;
-  const pre = alias ? `${code} confirms this email for your LifeFold account.` : `${code} is your LifeFold sign-in code. It expires in 10 minutes.`;
+    ? `Enter this code in LifeFold to add this address to your account. It expires in <strong style="color:#211c17">30 minutes</strong>.`
+    : `Your sign-in code. It expires in <strong style="color:#211c17">30 minutes</strong>.`;
+  const pre = alias ? `${code} confirms this email for your LifeFold account.` : `${code} is your LifeFold sign-in code. It expires in 30 minutes.`;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">

@@ -2601,6 +2601,9 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    colour, not as full-colour emoji that ignore CSS colour - keeps every nav icon
    in one style, especially in dark mode. (Robin.) */
 .nav-ic { flex:none; width:18px; text-align:center; font-size:14px; color:var(--ink-3); line-height:1; font-variant-emoji:text; }
+/* The Messages icon is an inline SVG; size it to the glyph font-size and let it
+   inherit the nav-ic colour (currentColor) so it highlights like the others. */
+.nav-ic-svg { width:1.12em; height:1.12em; display:inline-block; vertical-align:-0.17em; }
 .nav-lbl { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .nav-item:hover { background:var(--paper); color:var(--ink); }
 .nav-item:hover .nav-ic { color:var(--ink-2); }
