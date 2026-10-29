@@ -83,6 +83,27 @@ export async function listBlockViewers(env, blockId) {
   return { viewers: [...map.values()], private: false };
 }
 
+// My OWN notes & tables that I've shared out - either with a friend (a row in
+// `shares`) or publicly via a link (props.shareToken). For the Notes "Shared"
+// view, which shows both directions. Newest-edited first. (Robin, 2026-10-29.)
+export async function sharedByMe(env) {
+  const rows = (await env.DB.prepare(
+    `SELECT b.id, b.kind, b.title, b.props, b.updated_at,
+            (SELECT COUNT(*) FROM shares s WHERE s.block_id = b.id) AS nshares
+       FROM blocks b
+      WHERE b.user_id = ? AND b.archived = 0 AND b.kind IN ('note','table')
+        AND ( EXISTS (SELECT 1 FROM shares s WHERE s.block_id = b.id AND s.owner_id = ?)
+              OR json_extract(b.props, '$.shareToken') IS NOT NULL )
+      ORDER BY b.updated_at DESC`,
+  ).bind(env.uid, env.uid).all().catch(() => ({ results: [] }))).results || [];
+  return {
+    items: rows.map((r) => {
+      let props = {}; try { props = r.props ? JSON.parse(r.props) : {}; } catch {}
+      return { id: r.id, kind: r.kind, title: r.title, updated_at: r.updated_at, nshares: r.nshares || 0, public: !!props.shareToken };
+    }),
+  };
+}
+
 // Notes & tasks other people have shared with me, newest share first, each
 // carrying who shared it so the UI can label it.
 export async function sharedWithMe(env) {

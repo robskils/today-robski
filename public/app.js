@@ -6766,6 +6766,7 @@ function openNotesList() {
   state.noteMenu = null;
   renderNav();
   renderNotesList();
+  loadNotesShared();
   // Areas power the right-click "file under pages" menu and the area filter.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'notes') renderNotesList(); } }).catch(() => {});
 }
@@ -6791,7 +6792,18 @@ function sortNotes(list) {
 function noteEntries() { return [...(state.noteTops || []), ...(state.tables || [])]; }
 const isTableNote = (n) => (n && n.kind) === 'table';
 function notesTypeMode() { return state.notesType || (state.notesType = localStorage.getItem('life.notesType') || 'all'); }
-const NOTE_TYPES = [['all', t('notes.type.all')], ['note', t('notes.type.note')], ['table', t('notes.type.table')]];
+const NOTE_TYPES = [['all', t('notes.type.all')], ['note', t('notes.type.note')], ['table', t('notes.type.table')], ['shared', 'Shared']];
+// Notes shared in either direction: WITH me (/api/shared) and BY me
+// (/api/shared/mine). Loaded lazily when the Notes page opens. (Robin, 2026-10-29.)
+function loadNotesShared() {
+  Promise.all([
+    api('/api/shared').then((r) => (r && r.items) || []).catch(() => []),
+    api('/api/shared/mine').then((r) => (r && r.items) || []).catch(() => []),
+  ]).then(([withMe, byMe]) => {
+    state.sharedWithMe = withMe; state.sharedByMe = byMe;
+    if (state.view && state.view.type === 'notes') renderNotesList();
+  }).catch(() => {});
+}
 function notesAreaMode() { return state.notesArea || (state.notesArea = ''); }
 // The Notes controls - type, life-area filter, sort - reused at the top (with the
 // search + New note) and repeated just above the main list so they're never out
@@ -6886,15 +6898,27 @@ function renderNotesList() {
   } else {
     listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
+  // The "Shared" view replaces the normal body with two groups: notes shared WITH
+  // you, and notes you've shared out (with a friend, or via a public link).
+  let sharedBody = '';
+  if (type === 'shared') {
+    const isNT = (k) => k === 'note' || k === 'table';
+    const withMe = (state.sharedWithMe || []).filter((s) => isNT(s.kind));
+    const byMe = state.sharedByMe;   // undefined while loading
+    const entries = noteEntries();
+    const wmRow = (s) => `<button class="shared-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${s.kind === 'table' ? '▦' : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">from ${esc(s.owner || 'someone')}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
+    const bmCard = (s) => { const n = entries.find((x) => x.id === s.id); if (n) return noteCard(n); return `<button class="shared-row" data-open-${s.kind === 'table' ? 'table' : 'note'}="${esc(s.id)}"><span class="sh-ic">${s.kind === 'table' ? '▦' : '▤'}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${s.public ? '🔗 Public link' : ''}${s.public && s.nshares ? ' · ' : ''}${s.nshares ? `${s.nshares} ${s.nshares === 1 ? 'person' : 'people'}` : ''}</span></span></button>`; };
+    sharedBody = `<section class="home-sec"><div class="home-sec-h">Shared with you${withMe.length ? ` · ${withMe.length}` : ''}</div>${withMe.length ? `<div class="notes-shared-rows">${withMe.map(wmRow).join('')}</div>` : '<div class="empty">Nobody has shared a note with you yet.</div>'}</section>
+      <section class="home-sec"><div class="home-sec-h">Shared by you${(byMe && byMe.length) ? ` · ${byMe.length}` : ''}</div>${byMe === undefined ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(bmCard).join('')}</div>` : "<div class=\"empty\">You haven't shared any notes yet. Open a note, tap Share, then pick a friend or create a public link.</div>"}</section>`;
+  }
+  const normalBody = `${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}${listHtml}`;
   // The controls bar is sticky (below the breadcrumb), so the search + filters + sort
   // stay in reach however far you scroll the list. Everything below scrolls under it.
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.notes'))}
     <div class="pane-head home-head"><h1>${t('nav.notes')} &amp; ${t('notes.type.table')}</h1></div>
     ${notesControlsHtml(true)}
-    ${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}
-    ${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}
-    ${listHtml}
+    ${type === 'shared' ? sharedBody : normalBody}
     ${noteMenuHtml()}`;
   // Measure the sticky breadcrumb so the toolbar pins just beneath it.
   requestAnimationFrame(() => { try { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--notes-crumbh', cb.offsetHeight + 'px'); } catch {} });
@@ -21653,7 +21677,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
-  const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} renderNotesList(); return; }
+  const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
   const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
   if (t.closest('[data-open-wellbeing]')) { openWellbeing().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }

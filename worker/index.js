@@ -2,7 +2,7 @@ import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
-import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe } from './sharing.js';
+import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, acceptAssignment, declineAssignment } from './assignments.js';
 import { aiKey, aiIsOff, aiNeedsKey, logAiUsage, setAiKey, setAiProvider, detectProvider, callAI, encryptSecret, decryptSecret } from './ai.js';
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
@@ -5330,6 +5330,7 @@ export default {
       if (path === '/api/search/expand' && request.method === 'POST') return searchExpand(request, env, json, err);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
       if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; return json(sw, request); }
+      if (path === '/api/shared/mine' && request.method === 'GET') return json(await sharedByMe(env), request);
       // Mark folio/page shares seen, so Home's "shared with you" alert clears the
       // new flag once you've acknowledged them (mirrors the folio feed). (Robin.)
       if (path === '/api/shared/seen' && request.method === 'POST') { await setSetting(env, 'shares_seen', new Date().toISOString()); return json({ ok: true }, request); }
