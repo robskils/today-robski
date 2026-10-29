@@ -1548,9 +1548,10 @@ function renderTabs() {
     <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
     + `<button class="tab-new" data-tab-new title="New tab  ${PK('⌥⌘T')}">+</button>`
     + helpIconHtml()   // the guide i, pushed to the right; desktop only (the strip is hidden on mobile)
-    // Settings + Sign out, small round icons in keeping with the i, right of it.
-    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`
-    + (state.me ? `<button class="tab-util" data-account-signout data-tip="Sign out" aria-label="Sign out">↪</button>` : '');
+    // Messages (with a clear new-message alert) + Settings, small round icons in
+    // keeping with the i. Sign out lives in Settings and the sidebar, not up here.
+    + (state.me ? `<button class="tab-util tab-util-msg ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page data-tip="Messages" aria-label="Messages${navUnread() ? ` - ${navUnread()} new` : ''}">${MSG_ICO}${navUnread() ? `<span class="tab-util-dot">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '')
+    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`;
 }
 function newTab() {
   const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome();
@@ -2945,7 +2946,7 @@ async function refreshFriendStatus() {
         }
       });
     }
-    if (changed) renderNav();   // only when the badge actually changes - a needless rebuild can steal a nav tap
+    if (changed) { renderNav(); renderTabs(); }   // only when the badge actually changes - a needless rebuild can steal a nav tap. renderTabs keeps the header message alert live.
     // Refresh Home's People section on a real change - but never while the user is
     // typing (e.g. in the notepad), which a full re-render would interrupt.
     const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
@@ -6937,7 +6938,9 @@ function renderNotesList() {
   if (type === 'shared') {
     const isNT = (k) => k === 'note' || k === 'table';
     const withMe = (state.sharedWithMe || []).filter((s) => isNT(s.kind));
-    const byMe = state.sharedByMe;   // undefined while loading
+    // sharedByMe now also carries Life Spaces (for the Shared hub); the Notes
+    // view only wants notes & tables. undefined while still loading.
+    const byMe = state.sharedByMe === undefined ? undefined : (state.sharedByMe || []).filter((s) => s.kind === 'note' || s.kind === 'table');
     const entries = noteEntries();
     // Your own face, for the "shared by you" stacks (photo if you've set one).
     const myFace = () => { const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You'; const photo = state.card && state.card.photo; return photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`; };

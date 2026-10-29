@@ -87,10 +87,13 @@ export async function listBlockViewers(env, blockId) {
 // `shares`) or publicly via a link (props.shareToken). For the Notes "Shared"
 // view, which shows both directions. Newest-edited first. (Robin, 2026-10-29.)
 export async function sharedByMe(env) {
+  // Notes, tables and Life Spaces I've shared out. Tasks are NOT here - they go
+  // through assignments (assignedByMe), to avoid double-counting an accepted task
+  // that also carries a shares row. (Robin, 2026-10-29.)
   const rows = (await env.DB.prepare(
     `SELECT b.id, b.kind, b.title, b.props, b.updated_at
        FROM blocks b
-      WHERE b.user_id = ? AND b.archived = 0 AND b.kind IN ('note','table')
+      WHERE b.user_id = ? AND b.archived = 0 AND b.kind IN ('note','table','area')
         AND ( EXISTS (SELECT 1 FROM shares s WHERE s.block_id = b.id AND s.owner_id = ?)
               OR json_extract(b.props, '$.shareToken') IS NOT NULL )
       ORDER BY b.updated_at DESC`,
