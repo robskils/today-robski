@@ -2634,11 +2634,7 @@ async function runAlertsForUser(env, user) {
   const uid = user.id;
   const pref = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='sms_block_alerts'").bind(uid).first().catch(() => null);
   if (pref && pref.value === '0') return 0;         // default on; only '0' silences
-  const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
-  const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
-  if (!phone) return 0;
-  // Now that we know this user gets texts, read their zone so "now" (and the
-  // 5-min window) are on their wall clock wherever they are. (Robin.)
+  // "Now" (and the 5-min window) are on the user's own wall clock wherever they are.
   const now = localParts(new Date(), await tzForUser(env, uid));
   const target = now.min + 5;
 
@@ -2654,13 +2650,10 @@ async function runAlertsForUser(env, user) {
   for (const s of rows) {
     const when = `${String((s.start_min / 60) | 0).padStart(2, '0')}:${String(s.start_min % 60).padStart(2, '0')}`;
     const mins = s.start_min - now.min;
-    const r = await sendSms(env, `You have ${s.title} starting in ${mins} minutes (${when}).`, phone);
-    // Only mark it sent if it actually sent. A GatewayAPI hiccup should let the
-    // next tick try again while the block is still inside the window.
-    if (r.ok) {
-      await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ? AND user_id = ?')
-        .bind(s.start_min, s.id, uid).run();
-    }
+    // In-app push to their devices (desktop + mobile). Best-effort: a no-op if they
+    // have no push subscriptions. No text any more. (Robin, 2026-10-29.)
+    await pushAll(env, { type: 'reminder', title: s.title || 'Reminder', body: `Starting in ${mins} min (${when})`, url: '/today' }, uid).catch(() => {});
+    await env.DB.prepare('UPDATE slots SET alerted_min = ? WHERE id = ? AND user_id = ?').bind(s.start_min, s.id, uid).run();
   }
   return rows.length;
 }
@@ -2699,13 +2692,9 @@ async function runSurfaceAlertsForUser(env, user) {
   ).bind(uid, now.date).run();
   if (!claim.meta?.changes) return 0;
 
-  // Surface alerts go in-app (default on) and, if the account asks, by text.
-  // LifeFold does NOT email a "task surfaced" notice - the morning brief and the
-  // review reminders are the only things we ever put in someone's inbox. (Robin,
-  // 2026-10-29: "we don't send emails like this.") A task can still override its
-  // own channels via props.surfaceSms / surfaceApp.
-  const smsOn = (await getSetting(env, 'surface_sms', uid)) !== '0';   // only sends where a phone is on file
-
+  // Reminders are IN-APP ONLY now: a web push to the person's devices (desktop +
+  // mobile) and the row on their Today / My LifeFold. No email, no text - the
+  // simplest thing. (Robin, 2026-10-29: "all notifications will be in app.")
   const today = now.date;
   const { results } = await env.DB.prepare(
     "SELECT id, title, props FROM blocks WHERE kind='task' AND archived=0 AND user_id=?",
@@ -2722,24 +2711,8 @@ async function runSurfaceAlertsForUser(env, user) {
   }
   if (!due.length) return 0;
 
-  const home = `https://${user.subdomain || 'robski'}.daybook.fyi`;
-  // Resolve each task's channels: an explicit per-task choice wins, else the
-  // account default.
-  const smsDue = due.filter((d) => (d.props.surfaceSms == null ? smsOn : !!d.props.surfaceSms));
-
-  if (smsDue.length) {
-    const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
-    const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
-    if (phone) {
-      const titles = smsDue.map((d) => d.title);
-      const body = smsDue.length === 1
-        ? `A task surfaced to your Today feed - you asked to be told: ${titles[0]}. ${home}/task/${smsDue[0].id}`
-        : `${smsDue.length} tasks surfaced to your Today feed - you asked to be told: ${titles.slice(0, 5).join('; ')}${smsDue.length > 5 ? '…' : ''}. ${home}/today`;
-      await sendSms(env, body, phone).catch(() => {});
-    }
-  }
-  // In-app push to the person's installed devices (default on per task). Fires
-  // alongside email/text; no-op when they have no push subscriptions. (Robin.)
+  // In-app push to the person's installed devices; a no-op when they have no push
+  // subscriptions (they'll still see the task on Today / My LifeFold). (Robin.)
   const appDue = due.filter((d) => (d.props.surfaceApp == null ? true : !!d.props.surfaceApp));
   if (appDue.length) {
     const titles = appDue.map((d) => d.title);
@@ -2920,23 +2893,11 @@ async function runEventRemindersForUser(env, user) {
     let ok = false;
     // 'In the app' = a Web Push to the user's installed LifeFold(s). Fires with the
     // app closed, unlike the client-side toast (which only runs while open).
-    if (chs.includes('app')) {
-      const r = await pushAll(env, { type: 'event', title: `⏰ ${e.title || 'Event'}`, body: `${hh}${e.location ? ` · ${e.location}` : ''} - ${whenPhrase}`, url: '/calendar' }, uid).catch(() => null);
-      ok = !!(r && r.sent);
-      if (r && r.total === 0) ok = true;   // no devices subscribed → nothing to retry, don't re-attempt every tick
-    }
-    if (chs.includes('sms') && phone) {
-      const body = `⏰ ${e.title || 'Event'} at ${hh}${e.location ? `, ${e.location}` : ''} - ${whenPhrase}. ${home}/calendar`;
-      const r = await sendSms(env, body, phone).catch(() => ({ ok: false }));
-      ok = ok || !!(r && r.ok);
-    }
-    // Email ONLY when the reminder explicitly asks for it. No silent email backup
-    // for a text reminder - a text that was asked for should arrive as a text, and
-    // LifeFold doesn't send those "just in case" emails. (Robin, 2026-10-29.)
-    if (chs.includes('email') && email) {
-      await sendEventReminderMail(env, { to: email, title: e.title || 'Event', when: hh, whenPhrase, location: e.location, home }).catch(() => {});
-      ok = true;
-    }
+    // In-app push only now - no text, no email. Best-effort: with no push
+    // subscriptions there's nothing to retry, so don't re-attempt every tick. The
+    // event is on the calendar regardless. (Robin, 2026-10-29.)
+    const r = await pushAll(env, { type: 'event', title: `⏰ ${e.title || 'Event'}`, body: `${hh}${e.location ? ` · ${e.location}` : ''} - ${whenPhrase}`, url: '/calendar' }, uid).catch(() => null);
+    ok = !!(r && r.sent) || !!(r && r.total === 0);
     if (ok) { sentMap[f.key] = 1; changed = true; count++; }
   }
   if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {});
@@ -4444,16 +4405,11 @@ async function reviewRemindersForUser(env, uid) {
     }
   }
   if (due.length) {
-    const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
-    const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
-    const user = await env.DB.prepare('SELECT email, subdomain FROM users WHERE id=?').bind(uid).first().catch(() => null);
-    const to = uid === 1 ? (env.BRIEF_EMAIL || (user && user.email)) : (user && user.email);
-    const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
+    // Review reminders are in-app only now (push + the review surfaces on Today the
+    // day it's due). No text, no email. (Robin, 2026-10-29.)
     for (const rt of due) {
       const label = REVIEW_LABELS[rt] || 'review';
       await pushAll(env, { title: `Your ${label} review is due`, body: 'Open LifeFold → Reviews to do it.', type: 'review', tag: `daybook-review-${rt}` }, uid).catch(() => {});
-      if (phone) await sendSms(env, `Your ${label} review is due. Open it: ${home}/reviews`, phone).catch(() => {});
-      if (to) await sendReviewMail(env, { to, label, home }).catch(() => {});
     }
   }
   if (changed) await setSetting(env, 'kv_review_reminders', JSON.stringify(cfg), uid);
@@ -4595,9 +4551,8 @@ export default {
   // keeps the isolate alive until the sends finish.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runAlerts(env).catch((e) => console.error('runAlerts:', e.message)));
-    // Both run off the same every-minute tick. The brief returns immediately on
-    // all but one tick a day, so this costs a single indexed D1 read a minute.
-    ctx.waitUntil(runDailyBriefAll(env).catch((e) => console.error('runDailyBrief:', e.message)));
+    // The morning brief EMAIL is retired - everything is in-app now, and the day's
+    // calendar + open P1s already live on Home / My LifeFold. (Robin, 2026-10-29.)
     // Tell members a "surface on" task has come due, once, the morning it does.
     // Self-gates to one pass a day per member, like the brief.
     ctx.waitUntil(runSurfaceAlertsAll(env).catch((e) => console.error('surfaceAlerts:', e.message)));

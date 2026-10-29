@@ -3791,20 +3791,12 @@ function renderSettings() {
       </div>`;
 
   const notificationsPane = state.account ? `<div class="set-card set-notifs">
-        <div class="set-notif-group"><div class="set-notif-h">By email</div>
-          <label class="set-mod"><span>Morning brief<small>Your day's calendar, open P1 tasks and the quote, emailed at 08:45</small></span><input type="checkbox" data-account-brief ${state.account.briefEmail !== false ? 'checked' : ''}></label>
-          <div class="set-notif-act"><button class="ghost" data-brief-test>✉ Send me one now</button><span class="set-notif-hint">A test brief, right now - doesn't affect tomorrow's.</span></div>
-        </div>
-        <div class="set-notif-group"><div class="set-notif-h">By text</div>
-          <label class="set-mod"><span>Reminders you set on your day<small>A text 5 minutes before an item you've asked about - turn the bell on for any task or practice in the Today planner${state.account.phone ? '' : '. Add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-sms ${state.account.smsAlerts ? 'checked' : ''}></label>
-          <label class="set-mod"><span>When something surfaces<small>A text the morning a "surface on" task comes back${state.account.phone ? '' : ' - add a phone number in the Account tab first'}</small></span><input type="checkbox" data-account-surface-sms ${state.account.surfaceSms ? 'checked' : ''}></label>
-          ${state.account.phone ? '<div class="set-notif-act"><button class="ghost" data-sms-test>💬 Send me a test text</button><span class="set-notif-hint">Fires one text to your number now, to check they reach you.</span></div>' : ''}
-        </div>
-        <div class="set-notif-group"><div class="set-notif-h">On your phone</div>
+        <p class="inv-hint" style="margin:0 0 16px">Notifications all stay in the app now - a push to your devices (desktop and mobile) and a row in My LifeFold. Nothing goes to email or text; only your sign-in codes and invitations ever reach an inbox.</p>
+        <div class="set-notif-group"><div class="set-notif-h">On your devices</div>
           <label class="set-mod"><span>New-mail alerts<small>A push when new mail arrives - at most one every 30 minutes, never a buzz per email. Turn off for quiet.</small></span><input type="checkbox" data-account-mailpush ${state.account.mailPush !== false ? 'checked' : ''}></label>
         </div>
         <div class="set-notif-group"><div class="set-notif-h">Around the app</div>
-          <label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home, Today and the morning email</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>
+          <label class="set-mod"><span>Daily inspirational quote<small>One quote a day on Home and Today</small></span><input type="checkbox" data-account-quote ${state.account.dailyQuote !== false ? 'checked' : ''}></label>
           ${modOn('contacts') ? `<label class="set-mod"><span>See online contacts<small>Show which of your contacts are online in the Home sidebar, and a nudge when someone wants to connect. Switch off to hide and pause it.</small></span><input type="checkbox" data-people-toggle ${peopleOn() ? 'checked' : ''}></label>` : ''}
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
