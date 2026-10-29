@@ -4696,6 +4696,9 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* Messages icon up top, with a clear new-message alert badge. */
 .tabstrip .tab-util { position:relative; }
 .tabstrip .tab-util-msg .nav-ic-svg { width:16px; height:16px; vertical-align:0; }
+/* Messages leads the right-hand cluster, so the auto-margin that pushes the group
+   to the right lives on it (not on the i) - keeping messages, i, settings together. */
+.tabstrip .tab-util-msg { margin-left:auto; }
 .tab-util-dot { position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:#e5484d; color:#fff; font-size:10px; font-weight:800; line-height:16px; text-align:center; box-shadow:0 0 0 2px var(--paper); pointer-events:none; }
 #help-pop.help-pop { position:fixed; z-index:60; background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 36px -14px rgba(0,0,0,.42); padding:13px 15px; display:none; }
 .help-pop-t { font-size:14px; font-weight:650; color:var(--ink); margin-bottom:5px; }
