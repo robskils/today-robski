@@ -4711,7 +4711,14 @@ export default {
       // sitemap - to lifefold.co, path preserved. /api + /auth are excluded above, and
       // the legacy per-user subdomains keep serving the app for their own client
       // hand-off. lifefold.co itself is never matched. (Robin, 2026-10-19.)
-      if (['daybook.fyi', 'lifebook.fyi', 'lifefold.co'].some((d) => host === d || host === 'www.' + d)) {
+      // ...EXCEPT static assets (files with an asset extension): the installed PWA on
+      // the old host fetches /app.js, /life.css, /sw.js, /manifest.webmanifest, icons
+      // and fonts SAME-ORIGIN, and a cross-origin 301 to shizu.fyi trips its CSP
+      // (script-src 'self') - which white-screened the lifefold.co app. Assets fall
+      // through to the versioned-asset serving below; only extensionless marketing
+      // pages (and robots/sitemap) redirect. (Robin, 2026-10-30.)
+      if (!/\.(?:js|mjs|css|svg|png|jpe?g|webp|gif|ico|webmanifest|json|woff2?|ttf|map)$/i.test(path)
+          && ['daybook.fyi', 'lifebook.fyi', 'lifefold.co'].some((d) => host === d || host === 'www.' + d)) {
         return Response.redirect('https://shizu.fyi' + url.pathname + url.search, 301);
       }
       // Only the marketing apex may be indexed; the private apps and per-user
