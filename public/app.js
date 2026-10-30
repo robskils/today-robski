@@ -13,7 +13,7 @@ const BRAND = { app: 'Shizu' };
 //   free -> Free · byok -> Premium (your own AI keys) · managed -> Premium Plus (we supply the AI)
 const PLAN_KEYS = ['free', 'byok', 'managed'];
 const PLAN_LABEL = { free: 'Free', byok: 'Premium', managed: 'Premium Plus' };
-const PLAN_PRICE = { free: '', byok: '€6/mo', managed: '€13/mo' };
+const PLAN_PRICE = { free: '', byok: '€9/mo', managed: '€13/mo' };
 const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
 const planLabel = (p) => PLAN_LABEL[normPlan(p)];
 const isManagedPlan = (p) => normPlan(p) === 'managed';
@@ -1172,7 +1172,7 @@ const HELP = {
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
-    body: `<p>Every plan is the whole of Shizu - they differ only in how the AI is powered. <b>Premium</b> (€6/mo, or <b>€60/yr</b> - two months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
+    body: `<p>Every plan is the whole of Shizu - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
   'settings-notifications': { title: 'Notifications', tip: 'How and when Shizu reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
@@ -3866,17 +3866,18 @@ function renderSettings() {
       : onByok ? 'The whole of Shizu, powered by your own AI key.'
       : "You're exploring Shizu. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
-    // Monthly or annual. Annual is two months free on each paid plan. The buttons
-    // still open an email for now; real checkout is coming. (Robin, 2026-10-29.)
+    // Monthly or annual. Annual holds at the old yearly price, so it's a bigger
+    // saving now the monthly has gone up - most on Premium. The buttons still open
+    // an email for now; real checkout is coming. (Robin, 2026-10-30: Premium €9/mo.)
     const cycle = state.planCycle === 'annual' ? 'annual' : 'monthly';
     const PRICES = {
-      byok: { monthly: { amt: '€6', per: '/mo' }, annual: { amt: '€60', per: '/yr', save: '2 months free · save €12' } },
+      byok: { monthly: { amt: '€9', per: '/mo' }, annual: { amt: '€60', per: '/yr', save: '5 months free · save €48' } },
       managed: { monthly: { amt: '€13', per: '/mo' }, annual: { amt: '€130', per: '/yr', save: '2 months free · save €26' } },
     };
     const priceBlock = (key) => { const p = PRICES[key][cycle]; return `<div class="plan-price">${p.amt}<span class="plan-per">${p.per}</span></div>${cycle === 'annual' && p.save ? `<div class="plan-save">✦ ${p.save}</div>` : '<div class="plan-save plan-save-ph">billed monthly</div>'}`; };
     const cycleToggle = `<div class="plan-cycle" role="tablist" aria-label="Billing period">
         <button type="button" class="plan-cycle-b ${cycle === 'monthly' ? 'on' : ''}" data-plan-cycle="monthly" role="tab" aria-selected="${cycle === 'monthly'}">Monthly</button>
-        <button type="button" class="plan-cycle-b ${cycle === 'annual' ? 'on' : ''}" data-plan-cycle="annual" role="tab" aria-selected="${cycle === 'annual'}">Annual<span class="plan-cycle-tag">save 2 months</span></button>
+        <button type="button" class="plan-cycle-b ${cycle === 'annual' ? 'on' : ''}" data-plan-cycle="annual" role="tab" aria-selected="${cycle === 'annual'}">Annual<span class="plan-cycle-tag">best value</span></button>
       </div>`;
     const cycLabel = cycle === 'annual' ? ' (annual)' : ' (monthly)';
     const act = (isCurrent, label, subject) => isCurrent
