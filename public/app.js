@@ -9966,7 +9966,7 @@ function areaOverviewHtml(area, c, blocks) {
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Life Space Access', Sentiment: 'Well-being score', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
+  const SEC_LABELS = { 'Shared with': 'Life Space Access', Sentiment: 'Wheel of Life', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
@@ -9980,22 +9980,24 @@ function areaOverviewHtml(area, c, blocks) {
   // `acts` are add buttons, `file`/`members` are their special cases - all reusing
   // the handlers the old Connections tiles used.
   const aid = area.id;
+  // Order: the big picture leads (Vision, Goals, Wheel of Life), then the day-to-day
+  // content and tools, then reflections, then access. (Robin, 2026-10-30.)
   const PIECES = [
+    { k: 'Vision', ic: '❖' },
+    { k: 'Goals', ic: '🎯', conn: 'goal', acts: [['data-area-add-goal', '＋ New goal']] },
+    { k: 'Sentiment', ic: '📊' },
     { k: 'Pages and tables', ic: '▤', conn: 'note', acts: [['data-area-add-note', '＋ New note']] },
     { k: 'Tasks', ic: '✓', conn: 'task', acts: [['data-area-add-task', '＋ New task']] },
-    { k: 'Goals', ic: '🎯', conn: 'goal', acts: [['data-area-add-goal', '＋ New goal']] },
     { k: 'Contacts', ic: '👤', conn: 'contact', acts: [['data-area-add-contact', '＋ New contact']] },
-    { k: 'Reflections', ic: '✎', acts: [['data-area-add-journal', '＋ Journal'], ['data-area-add-dream', '＋ Dream']] },
-    { k: 'Saved links', ic: '🔖', acts: [['data-area-add-book', '＋ Book'], ['data-area-add-film', '＋ Film']] },
-    { k: 'Bucket list', ic: '✦', acts: [['data-area-add-bucket', '＋ Bucket-list item']] },
     { k: 'Week', ic: '◑', conn: 'event', acts: [['data-area-add-event', '＋ New event']] },
     { k: 'Emails', ic: '✉', acts: [['data-open-mail', 'Open Mail ↗']] },
     { k: 'Files', ic: '📎', file: true },
     { k: 'Web links', ic: '🔗', acts: [[`data-xlink-add data-xlink-kind="area" data-xlink-id="${aid}"`, '＋ Add a link']] },
+    { k: 'Reflections', ic: '✎', acts: [['data-area-add-journal', '＋ Journal'], ['data-area-add-dream', '＋ Dream']] },
+    { k: 'Saved links', ic: '🔖', acts: [['data-area-add-book', '＋ Book'], ['data-area-add-film', '＋ Film']] },
+    { k: 'Bucket list', ic: '✦', acts: [['data-area-add-bucket', '＋ Bucket-list item']] },
     { k: 'Wall', ic: '📝' },
-    { k: 'Vision', ic: '❖' },
     { k: 'Shared with', ic: '👥', members: true },
-    { k: 'Sentiment', ic: '📊' },
   ];
   const kc = {}; (blocks || []).forEach((b) => { kc[b.kind] = (kc[b.kind] || 0) + 1; });
   const pieceCount = {
