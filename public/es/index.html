@@ -16,8 +16,8 @@
 <link rel="alternate" hreflang="x-default" href="https://shizu.fyi/">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="icon" href="/favicon.svg?v=8">
-<meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#d7dde6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111327" media="(prefers-color-scheme: dark)">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Shizu">
@@ -63,19 +63,19 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Shippori+Mincho:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --paper: #f4f1ea;
-  --paper-2: #ece7db;
-  --card: #fbf9f4;
-  --ink: #211c17;
-  --ink-2: #574e44;
-  --ink-3: #8b8073;
-  --line: rgba(33, 28, 23, 0.12);
-  --line-2: rgba(33, 28, 23, 0.22);
+  --paper: #d7dde6;
+  --paper-2: #c7cfda;
+  --card: #eef2f7;
+  --ink: #1a2130;
+  --ink-2: #4c586c;
+  --ink-3: #828da0;
+  --line: rgba(26, 33, 48, 0.12);
+  --line-2: rgba(26, 33, 48, 0.22);
   /* Brand gold (ochre) - kept in the --rust var names so every rule follows. */
   --rust: #a8844a;
   --rust-deep: #8c6d39;
@@ -83,34 +83,34 @@
   --rust-ink: #fff;
   --pine: #2f5d57;
   --pine-soft: rgba(47, 93, 87, 0.10);
-  --dawn-1: rgba(168, 132, 74, 0.18);
-  --dawn-2: rgba(217, 138, 91, 0.14);
-  --crease: rgba(120, 92, 45, 0.07);
-  --facet-a: rgba(255, 251, 240, 0.6);
-  --facet-b: rgba(120, 92, 45, 0.065);
-  --shadow: 0 22px 50px -28px rgba(33, 28, 23, 0.42);
-  --shadow-sm: 0 8px 22px -14px rgba(33, 28, 23, 0.32);
+  --dawn-1: rgba(140, 170, 214, 0.22);
+  --dawn-2: rgba(168, 132, 74, 0.12);
+  --crease: rgba(42, 64, 98, 0.055);
+  --facet-a: rgba(255, 255, 255, 0.55);
+  --facet-b: rgba(42, 64, 98, 0.055);
+  --shadow: 0 22px 50px -28px rgba(26, 36, 56, 0.4);
+  --shadow-sm: 0 8px 22px -14px rgba(26, 36, 56, 0.3);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #17130e;
-    --paper-2: #1e1810;
-    --card: #221b12;
-    --ink: #f1ece3;
-    --ink-2: #bcb1a1;
-    --ink-3: #8b8070;
-    --line: rgba(241, 236, 227, 0.12);
-    --line-2: rgba(241, 236, 227, 0.22);
+    --paper: #111327;
+    --paper-2: #1a1c31;
+    --card: #1a1c31;
+    --ink: #ece7f2;
+    --ink-2: #b4afc4;
+    --ink-3: #8882a0;
+    --line: rgba(236, 231, 242, 0.12);
+    --line-2: rgba(236, 231, 242, 0.22);
     --rust: #c2a05f;
     --rust-deep: #a8844a;
     --rust-soft: rgba(194, 160, 95, 0.16);
     --rust-ink: #15120c;
     --pine: #7fbdb0;
     --pine-soft: rgba(127, 189, 176, 0.12);
-    --dawn-1: rgba(194, 160, 95, 0.16);
-    --dawn-2: rgba(217, 138, 91, 0.12);
-    --crease: rgba(194, 160, 95, 0.085);
-    --facet-a: rgba(255, 247, 228, 0.04);
+    --dawn-1: rgba(132, 142, 214, 0.16);
+    --dawn-2: rgba(194, 160, 95, 0.12);
+    --crease: rgba(180, 175, 196, 0.07);
+    --facet-a: rgba(236, 231, 242, 0.04);
     --facet-b: rgba(0, 0, 0, 0.17);
     --shadow: 0 22px 55px -26px rgba(0, 0, 0, 0.7);
     --shadow-sm: 0 8px 24px -14px rgba(0, 0, 0, 0.6);
@@ -159,7 +159,7 @@ nav {
 }
 .nav-in { display: flex; align-items: center; justify-content: space-between; height: 70px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; font-family: 'Fraunces', serif; font-size: 23px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
-.brand-mark { width: 34px; height: 34px; color: var(--rust); flex: none; }
+.brand-mark { font-family: 'Shippori Mincho', serif; font-weight: 700; font-size: 29px; line-height: 1; color: var(--rust); flex: none; }
 /* Shizu is one word; "book" just leans into italic. No space, same colour -
    and nudged left a touch so the roman "y" meets the italic "b" cleanly. */
 .brand .wm-bk { font-style: italic; margin-left: 0; }
@@ -176,7 +176,7 @@ nav {
   .wrap { padding: 0 20px; }
   .nav-in { position: relative; flex-direction: column; align-items: center; height: auto; gap: 13px; padding: 14px 0 16px; }
   .brand { font-size: 22px; gap: 9px; }
-  .brand-mark { width: 30px; height: 30px; }
+  .brand-mark { font-size: 25px; }
   /* Language chip tucked into the top-right corner so the wordmark stays centred.
      Selector beats .lang-switch.lang-dd (0,2,0), which otherwise forces relative. */
   .nav-cta .lang-switch.nav-lang { position: absolute; top: 16px; right: 0; margin: 0; }
@@ -211,9 +211,9 @@ nav {
     radial-gradient(60% 60% at 30% 0%, var(--dawn-1), transparent 70%),
     radial-gradient(50% 50% at 85% 8%, var(--dawn-2), transparent 72%); }
 /* A large, faint fold-mark behind the hero - the origami motif as a watermark. */
-.hero-fold { position: absolute; z-index: 0; pointer-events: none; color: var(--rust); opacity: .05;
-  width: min(62vh, 560px); height: auto; left: -11%; bottom: -16%; }
-@media (max-width: 860px) { .hero-fold { width: 300px; left: -17%; bottom: -6%; opacity: .045; } }
+.hero-fold { position: absolute; z-index: 0; pointer-events: none; color: var(--rust); opacity: .06;
+  font-family: 'Shippori Mincho', serif; font-weight: 800; font-size: min(70vh, 620px); line-height: .8; left: -7%; bottom: -26%; }
+@media (max-width: 860px) { .hero-fold { font-size: 330px; left: -14%; bottom: -12%; opacity: .05; } }
 /* The hero's gradient fold, carried to a few statement bands below - two mirrored
    angles so adjacent folds don't read as a repeat. Kept subtle. */
 .foldface { position: relative; isolation: isolate; }
@@ -558,7 +558,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/es"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/es"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
     <ul class="nav-links">
       <li><a href="#idea">Tu Shizu</a></li>
       <li><a href="#tools">Herramientas</a></li>
@@ -575,7 +575,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <header class="hero">
   <div class="hero-glow"></div>
-  <svg class="hero-fold" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="hero-fold" aria-hidden="true">静</div>
   <div class="wrap hero-in">
     <div class="hero-copy">
       <div class="hero-badge reveal"><span class="pulse"></span>Solo con invitación, en acceso anticipado</div>
@@ -857,7 +857,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0; }
 
 <footer id="signin">
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/es"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">Para una vida bien vivida</span></div>
+    <div class="foot-brand"><a class="brand" href="/es"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">Para una vida bien vivida</span></div>
     <ul class="foot-links">
       <li><a href="#idea">Tu Shizu</a></li>
       <li><a href="#tools">Herramientas</a></li>
