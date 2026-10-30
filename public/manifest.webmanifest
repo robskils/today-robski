@@ -1,12 +1,12 @@
 {
-  "name": "LifeFold",
-  "short_name": "LifeFold",
+  "name": "Shizu",
+  "short_name": "Shizu",
   "description": "For a life well lived. Your calendar, tasks, notes, reflections and money in one calm, private place.",
   "start_url": "/app",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f1ea",
-  "theme_color": "#f4f1ea",
+  "background_color": "#d7dde6",
+  "theme_color": "#d7dde6",
   "categories": ["productivity", "lifestyle"],
   "icons": [
     { "src": "/icon-192.v12.png", "sizes": "192x192", "type": "image/png" },

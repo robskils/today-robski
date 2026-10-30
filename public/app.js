@@ -2041,7 +2041,7 @@ function cardHtml(d, full) {
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Life<i class="wm-bk">Fold</i></span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on LifeFold">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Shizu</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on LifeFold">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -2625,7 +2625,7 @@ function renderAdmin() {
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Life<i class="wm-bk">Fold</i></span></span>
+        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Shizu</span></span>
         <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
       </div>
       <div class="home-sec-h" style="margin-top:6px">Logo files</div>
@@ -4800,13 +4800,13 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em></button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Shizu</em></button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Life<i class="wm-bk">Fold</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -26243,7 +26243,7 @@ const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(loc
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Life<i class="wm-bk">Fold</i></em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Shizu</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -26278,7 +26278,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Life<i class="wm-bk">Fold</i></em></div>
+      <div class="gate2-mark"><em>Shizu</em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -26883,7 +26883,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Life<i class="wm-bk">Fold</i></em></div>';
+  const mark = '<div class="gate2-mark"><em>Shizu</em></div>';
   const head = (txt) => `<div style="font-family:'Shippori Mincho',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
