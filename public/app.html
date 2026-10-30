@@ -11,7 +11,7 @@
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Shizu</title>
-<link rel="icon" href="/favicon.svg?v=202610301555">
+<link rel="icon" href="/favicon.svg?v=202610301603">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v13.png">
@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/life.css?v=202610301555">
+<link rel="stylesheet" href="/life.css?v=202610301603">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
@@ -45,24 +45,10 @@
 </script>
 </head>
 <body>
-  <!-- The Shizu world: a soft sumi-e ground the app floats on. Fixed, subtle,
-       non-interactive; theme-aware fills in life.css. -->
-  <svg class="zen-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <defs>
-      <linearGradient id="zmist" x1="0" y1="0" x2="0" y2="1">
-        <stop class="zs-mist" offset="0" stop-opacity="0"/>
-        <stop class="zs-mist" offset="0.5" stop-opacity="0.85"/>
-        <stop class="zs-mist" offset="1" stop-opacity="0"/>
-      </linearGradient>
-      <filter id="zsoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
-      <filter id="zsofter" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
-    </defs>
-    <path class="zm-far" d="M0 640 C 240 596, 470 630, 700 586 C 940 542, 1180 604, 1440 570 L1440 900 L0 900 Z" filter="url(#zsofter)"/>
-    <rect x="0" y="570" width="1440" height="150" fill="url(#zmist)"/>
-    <path class="zm-mid" d="M0 742 C 320 680, 600 730, 940 668 C 1180 626, 1320 698, 1440 676 L1440 900 L0 900 Z" filter="url(#zsoft)"/>
-    <rect x="0" y="690" width="1440" height="150" fill="url(#zmist)"/>
-    <path class="zm-near" d="M706 900 C 812 720, 940 626, 1086 678 C 1210 722, 1332 808, 1440 772 L1440 900 Z" filter="url(#zsoft)"/>
-  </svg>
+  <!-- The Shizu world: a real sumi-e ink painting (Sesshu Toyo, "Autumn and Winter
+       Landscape", 1470s, public domain) as the ground the app floats on - desaturated,
+       blurred and low-opacity in life.css so it reads as atmosphere. Fixed, non-interactive. -->
+  <div class="zen-bg" aria-hidden="true"></div>
   <div class="app-shell">
     <button class="nav-toggle" data-nav-toggle type="button" aria-label="Hide or show the sidebar" title="Hide / show sidebar"><span class="ntg-c">«</span><span class="ntg-o">»</span></button>
     <aside class="nav" id="nav"></aside>
@@ -74,7 +60,7 @@
   <button class="undo-fab" id="undo-fab" data-undo type="button" aria-label="Undo the last change" title="Undo"><span class="uf-ic" aria-hidden="true">↶</span><span class="uf-l">Undo</span></button>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202610301555"></script>
-  <script src="/app.js?v=202610301555"></script>
+  <script src="/qrcode.min.js?v=202610301603"></script>
+  <script src="/app.js?v=202610301603"></script>
 </body>
 </html>

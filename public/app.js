@@ -15579,8 +15579,8 @@ function renderTasks() {
         <label class="atf"><span>${t('field.area')}</span><select id="task-area" class="sel">${opts}</select></label>
         <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
         <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${durationOptionsHtml((state.taskDraft && state.taskDraft.dur) || '')}</select></label>
-        <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
         <label class="atf"><span>Due Date</span>${dateFieldHtml('task-due', (state.taskDraft && state.taskDraft.due) || '')}</label>
+        <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       </div>
       <div class="atf-surface">
         <label class="atf-surface-hide"><input type="checkbox" id="task-remind"><span>Remind me before it's due</span></label>
