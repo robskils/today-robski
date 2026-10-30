@@ -660,19 +660,33 @@ function reapplyFolds(prose) {
   run(prose);
   prose.querySelectorAll(':scope > .ncols > .ncol').forEach(run);
 }
-// Content used to step in under each heading to show it belonged there. With the
-// fold / drag / column system the hierarchy already reads from the headings and
-// the folding, so that extra indent just ate width - we keep everything flush now.
-// We only reserve the left gutter (for the fold arrow + drag grip) when the note
-// actually has headings. (Robin, 2026-10-27.) Any old live margin is cleared here;
-// nothing indent-related was ever saved into the body.
+// A heading and the blocks beneath it step in one gentle notch per level, so a
+// note's outline reads its own hierarchy: content under an H2 lines up with the
+// H2, content under an H3 with the H3. The indent is LIVE inline margin only -
+// sanitizeProse strips every style on save, so nothing indent-related is ever
+// written into the body. The notch is a small, responsive CSS var (--pd-step):
+// enough to convey the structure, not enough to eat the width that made the old
+// full indent too costly. The left gutter (fold arrow + drag grip) is reserved
+// only when the note actually has headings. (Robin, 2026-10-30.)
 const hasHead = (kids) => kids.some((k) => HLVL[k.tagName]);
-const clearMargins = (kids) => kids.forEach((k) => { if (k.style && k.style.marginLeft) k.style.marginLeft = ''; });
+function indentFlow(flow) {
+  let curLvl = 0;
+  for (const el of flow.children) {
+    if (el.classList && el.classList.contains('ncols')) { el.style.marginLeft = ''; continue; }   // the columns row stays flush; its columns indent on their own pass
+    const lvl = HLVL[el.tagName];
+    if (lvl) curLvl = lvl;                     // a heading sets the depth for itself and the content that follows it
+    const depth = lvl || curLvl;               // the governing heading level (0 before any heading)
+    const steps = depth > 1 ? depth - 1 : 0;   // H1 / pre-heading flush, H2 one notch, H3 two
+    el.style.marginLeft = steps ? `calc(var(--pd-step, 13px) * ${steps})` : '';
+  }
+}
 function applyProseIndent(prose) {
-  clearMargins([...prose.children]);
   let anyHead = hasHead([...prose.children]);
-  prose.querySelectorAll(':scope > .ncols > .ncol').forEach((col) => { clearMargins([...col.children]); if (hasHead([...col.children])) anyHead = true; });
+  const cols = [...prose.querySelectorAll(':scope > .ncols > .ncol')];
+  cols.forEach((col) => { if (hasHead([...col.children])) anyHead = true; });
   prose.classList.toggle('prose-heads', anyHead);
+  indentFlow(prose);
+  cols.forEach(indentFlow);
 }
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {

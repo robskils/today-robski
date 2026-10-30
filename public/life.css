@@ -7981,7 +7981,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 }
 
 /* ── inline rich-text editor ─────────────────────────── */
-.prose { font-size:18.5px; line-height:1.75; color:var(--ink); outline:none; cursor:text; }
+.prose { font-size:18.5px; line-height:1.75; color:var(--ink); outline:none; cursor:text; --pd-step:13px; }
 /* No left gutter: the fold chevron and grip are absolute and hang into the
    pane's own left padding, so the note text stays flush-left - a single stray
    heading no longer indents the whole note. (Robin.) */
@@ -8003,7 +8003,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    note actually has headings; a plain note isn't pushed in. Tighter on a phone,
    where the grip is hidden and only the arrow needs room. */
 .prose.prose-heads { padding-left:48px; }
-@media (max-width:760px){ .prose.prose-heads { padding-left:28px; } }
+@media (max-width:760px){ .prose.prose-heads { padding-left:28px; --pd-step:10px; } }
 /* The fold arrow: just the triangle now, no chip - in the highlight colour. It
    keeps a 22px hit area (invisible) so it's still easy to tap, and sits centred on
    the heading's first line (`top` is half the line height - --hsize per level,
@@ -8036,11 +8036,8 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose .ncol > :first-child { margin-top:0; }
 @media (max-width:760px){ .prose .ncols { grid-template-columns:1fr; gap:0; margin:0; } }
 .prose h1 { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; margin:20px 0 8px; --hsize:30px; }
-/* A gentle step-in per level (headings only, content stays flush) so the outline
-   of a note reads its own hierarchy at a glance. (Robin, 2026-10-30.) */
-.prose h2 { font-size:26px; margin:14px 0 6px 14px; --hsize:26px; }
-.prose h3 { font-size:22px; margin:12px 0 5px 28px; --hsize:22px; }
-@media (max-width:760px){ .prose h2 { margin-left:10px; } .prose h3 { margin-left:20px; } }
+.prose h2 { font-size:26px; margin:14px 0 6px; --hsize:26px; }
+.prose h3 { font-size:22px; margin:12px 0 5px; --hsize:22px; }
 /* A sub-heading sitting directly under a heading shouldn't leave a gap at all -
    the parent heading's bottom margin already separates them. */
 .prose :is(h1,h2,h3) + :is(h1,h2,h3) { margin-top:2px; }
