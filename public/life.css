@@ -2955,6 +2955,10 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .ce-loc-nm { font-size:14.5px; font-weight:600; color:var(--ink); }
 .ce-loc-ad { font-size:12.5px; color:var(--ink-3); }
 .ce-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:11px 12px; }
+/* Location and Repeat share the top row; Remind me spans the full width beneath. (Robin.) */
+.ce-grid .ce-loc-wrap { order:1; }
+.ce-grid .ce-repeat-field { order:2; }
+.ce-grid .ce-rem-field { order:3; grid-column:1 / -1; }
 @media (max-width:460px){ .ce-grid { grid-template-columns:minmax(0,1fr); } }
 /* "With": a quiet, optional person link - a small search box, not a labelled
    dropdown, since linking a person to an event is the exception, not the rule. */
