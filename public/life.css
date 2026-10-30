@@ -143,7 +143,21 @@ body::before {
   background:url('/zen-ink.jpg?v=1') center 64% / cover no-repeat;
   filter:grayscale(.92) contrast(1.03) blur(6px); opacity:.16; }
 :root[data-theme='dark'] .zen-bg { filter:grayscale(.92) invert(.9) contrast(1.04) blur(6px); opacity:.2; }
-:root[data-theme='calm'] .zen-bg { filter:sepia(.4) saturate(.8) contrast(1.02) blur(6px); opacity:.14; }
+/* Calm's ground IS a real Japanese ink painting - warm, crisp - that the frosted
+   panes above blur into shoji screens (the mockup, finally). It shows at ~0.6 over
+   the warm washi paper beneath, so it reads as atmosphere; the hero sits on its
+   lighter upper water. Only Calm shows it (slate + night stay plain). (Robin, 2026-10-30.) */
+:root[data-theme='calm'] .zen-bg {
+  display:block;
+  /* A warm wash layered OVER the painting (top layer first): lifts the top so the
+     hero's ink text stays legible, settles the foot so content doesn't fight the
+     darker rocks. Then the whole ground sits at ~0.7 over the washi paper. */
+  background:
+    linear-gradient(180deg, rgba(240,233,219,.58) 0%, rgba(240,233,219,.10) 28%, rgba(233,224,206,.08) 62%, rgba(233,224,206,.5) 100%),
+    url('/calm-ink.webp?v=1') center 36% / cover no-repeat;
+  filter:saturate(1.04) contrast(1.02);
+  opacity:.7;
+}
 /* Robin, 2026-10-30: plain background reads better behind the dense content - the
    glass overlay sits on clean slate. Painting + 静 watermark retired (kept in the
    codebase, just hidden), easy to bring back. */
