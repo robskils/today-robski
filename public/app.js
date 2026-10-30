@@ -5258,7 +5258,7 @@ function homeEyebrow() {
   const phrase = wx ? `${/^[aeiou]/i.test(wx) ? 'an' : 'a'} ${wx} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
   return `${esc(wd)} · ${esc(phrase)}`;
 }
-function homeSubClause() { return ({ night: 'The day has folded away.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'Your day is nearly folded away.' })[homePartOfDay()]; }
+function homeSubClause() { return ({ night: 'The day has come to rest.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'The day is drawing in.' })[homePartOfDay()]; }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so
 // it stays right without re-rendering the page.
 function homeTimeStr() { return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
