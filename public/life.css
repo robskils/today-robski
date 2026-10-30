@@ -205,8 +205,11 @@ button { cursor:pointer; background:none; border:0; }
 .atf-surface-ic { color:var(--accent); font-size:15px; }
 .atf-surface-row .date-field { max-width:none; }
 .atf-surface-note { font-size:13px; color:var(--ink-3); }
-.atf-surface-hide { display:flex; align-items:center; gap:10px; font-size:14.5px; color:var(--ink); cursor:pointer; border-top:1px solid var(--line); padding-top:12px; }
+.atf-surface-hide { display:flex; align-items:center; gap:10px; font-size:14.5px; color:var(--ink); cursor:pointer; }
 .atf-surface-hide input { flex:none; width:18px; height:18px; accent-color:var(--accent); }
+/* The "hide until" toggle keeps a quiet divider above it (it follows the days
+   row); the main "Remind me" toggle sits flush at the top, no stray line. */
+#task-hide-row.atf-surface-hide { border-top:1px solid var(--line); padding-top:12px; }
 .atf-full textarea.sel { width:100%; min-height:76px; resize:vertical; font-size:16px; line-height:1.5; padding:11px 14px; font-family:inherit; }
 .tbadges { display:inline-flex; gap:6px; margin-left:8px; vertical-align:middle; }
 .tbadge { display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:600; padding:2px 8px; border-radius:999px; white-space:nowrap; }
@@ -2254,7 +2257,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .area-faces.note-faces .aface-add { font-size:17px; }
 .note-share-ic .ic-n { font-size:13px; font-weight:600; line-height:1; }
 /* Insert image / insert file: icon buttons in the note header, before the ⋯. */
-.note-ins-ic { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; font-size:16px; line-height:1; color:var(--ink-3); }
+.note-ins-ic { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; line-height:1; color:var(--ink-2); }
+.note-ins-ic svg { width:19px; height:19px; display:block; }
 .note-ins-ic:hover { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
 /* Inline file chip in a note's prose: a tap-to-open card for a PDF or any file,
    sitting in the text like an inline image does. (Robin, 2026-10-29.) */
