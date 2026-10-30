@@ -669,14 +669,22 @@ function reapplyFolds(prose) {
 // full indent too costly. The left gutter (fold arrow + drag grip) is reserved
 // only when the note actually has headings. (Robin, 2026-10-30.)
 const hasHead = (kids) => kids.some((k) => HLVL[k.tagName]);
-function indentFlow(flow) {
+// The shallowest heading a note actually uses is the flush baseline, so a note
+// built from H2/H3 doesn't waste a notch on every line - only the levels BELOW
+// the top one step in. (Robin: show hierarchy, don't waste width.)
+function proseBaseLevel(prose) {
+  let min = 0;
+  prose.querySelectorAll('h1, h2, h3').forEach((h) => { const l = HLVL[h.tagName]; if (l && (!min || l < min)) min = l; });
+  return min || 1;
+}
+function indentFlow(flow, base) {
   let curLvl = 0;
   for (const el of flow.children) {
     if (el.classList && el.classList.contains('ncols')) { el.style.marginLeft = ''; continue; }   // the columns row stays flush; its columns indent on their own pass
     const lvl = HLVL[el.tagName];
     if (lvl) curLvl = lvl;                     // a heading sets the depth for itself and the content that follows it
     const depth = lvl || curLvl;               // the governing heading level (0 before any heading)
-    const steps = depth > 1 ? depth - 1 : 0;   // H1 / pre-heading flush, H2 one notch, H3 two
+    const steps = depth ? Math.max(0, depth - base) : 0;   // top level flush, each deeper level one notch more
     el.style.marginLeft = steps ? `calc(var(--pd-step, 13px) * ${steps})` : '';
   }
 }
@@ -685,8 +693,9 @@ function applyProseIndent(prose) {
   const cols = [...prose.querySelectorAll(':scope > .ncols > .ncol')];
   cols.forEach((col) => { if (hasHead([...col.children])) anyHead = true; });
   prose.classList.toggle('prose-heads', anyHead);
-  indentFlow(prose);
-  cols.forEach(indentFlow);
+  const base = proseBaseLevel(prose);
+  indentFlow(prose, base);
+  cols.forEach((col) => indentFlow(col, base));
 }
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
