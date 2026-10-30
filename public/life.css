@@ -11,7 +11,7 @@
   --note-surface:rgba(250,252,255,.60); --note-edge:rgba(26,33,48,.10);
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
-  --shadow:0 1px 2px rgba(26,36,56,.06),0 5px 12px -4px rgba(26,36,56,.11),0 18px 34px -16px rgba(26,36,56,.22);
+  --shadow:0 1px 2px rgba(26,36,56,.04),0 8px 22px -8px rgba(26,36,56,.10),0 30px 56px -24px rgba(26,36,56,.18);
   /* Frosted glass for the big panels - cool, translucent, a bright top edge.
      Applied to container surfaces only (not the 373 --card controls). (Robin, 2026-10-30.) */
   --glass-bg:linear-gradient(158deg, rgba(253,254,255,.70), rgba(244,248,253,.52));
@@ -26,7 +26,7 @@
   --note-surface:rgba(9,10,22,.52); --note-edge:rgba(236,231,242,.11);
   --tbl-pink:#e888b4;
   --lane-s:48%; --lane-l:66%;
-  --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 16px -5px rgba(0,0,0,.5),0 22px 44px -18px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.045);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 26px -8px rgba(0,0,0,.46),0 34px 60px -24px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,255,255,.05);
   --glass-bg:linear-gradient(158deg, rgba(255,250,240,.10), rgba(255,246,232,.05));
   --glass-edge:rgba(255,255,255,.14);
   --glass-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 2px 8px rgba(0,0,0,.4), 0 26px 50px -20px rgba(0,0,0,.62);
@@ -92,10 +92,11 @@ body {
    this depth stays. (Robin, 2026-10-21: more like the homepage's dynamic fold.) */
 body::before {
   content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  /* Calm, even ground: a soft top sheen and one quiet corner shadow, no hard
+     facet wedges. Premium apps keep the ground still. (Robin, 2026-10-30.) */
   background:
-    linear-gradient(118deg, var(--facet-a) 0 39%, transparent 39.5%),
-    linear-gradient(-124deg, var(--facet-b) 0 29%, transparent 29.5%),
-    linear-gradient(34deg, var(--facet-a) 0 19%, transparent 19.5%);
+    radial-gradient(150% 110% at 50% -24%, var(--facet-a), transparent 58%),
+    radial-gradient(85% 65% at 88% 116%, var(--facet-b), transparent 62%);
 }
 h1,h2 { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; letter-spacing:-.01em; }
 button,input,select { font:inherit; color:inherit; }
@@ -5442,7 +5443,8 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 /* Rail sections (Recently viewed, People, Starred, Notepad) as the same elegant
    collapsible card as the lead blocks: card shell, serif title, collapses to just
    the title. */
-.home-sec-card { border:1px solid var(--line); border-radius:16px; background:var(--card); box-shadow:var(--shadow); padding:16px 18px; margin:0 0 16px; }
+.home-sec-card { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:var(--shadow); padding:22px 24px; margin:0 0 18px; transition:transform .18s ease, box-shadow .18s ease; }
+@media (hover:hover){ .home-sec-card:hover { transform:translateY(-2px); box-shadow:0 2px 4px rgba(26,36,56,.05),0 14px 32px -10px rgba(26,36,56,.16),0 40px 70px -28px rgba(26,36,56,.22); } }
 .home-sec-card > .home-sec-h { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink); align-items:center; gap:9px; margin-bottom:12px; }
 .home-sec-card.home-sec-shut > .home-sec-h { margin-bottom:0; }
 .home-sec-card > .home-sec-h .hs-chev { color:var(--ink-3); font-size:12px; }
@@ -8405,7 +8407,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* Contact header: name grows, the Email button sits right beside it. */
 /* Contact header: avatar + name + a subline of life-area links + quick actions,
    on a soft wash of the contact's life-area colour so the card has a face. */
-.cc-focus { display:flex; align-items:flex-start; gap:18px; flex-wrap:nowrap; padding:20px; border:1px solid var(--glass-edge); border-radius:18px; background:var(--glass-bg); -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3); box-shadow:var(--glass-shadow); }
+.cc-focus { display:flex; align-items:flex-start; gap:20px; flex-wrap:nowrap; padding:26px; border:1px solid var(--glass-edge); border-radius:18px; background:var(--glass-bg); -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3); box-shadow:var(--glass-shadow); }
 .cc-focus.has-area { background:linear-gradient(135deg,hsl(var(--h,220) 60% 52% / .12),hsl(var(--h,220) 60% 52% / .03) 60%,var(--card)); border-color:hsl(var(--h,220) 50% 55% / .3); }
 .cc-focus .contact-av.big { flex:none; box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 15%,transparent); }
 .cc-focus.has-area .contact-av.big { box-shadow:0 0 0 4px hsl(var(--h,220) 55% 52% / .2); }
@@ -8426,7 +8428,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .cc-qbtn-wa:hover { border-color:#25d366; color:#128c3e; background:color-mix(in srgb,#25d366 10%,var(--card)); }
 @media (max-width:560px){ .cc-focus { padding:16px; gap:13px; } .cc-focus .contact-av.big { width:52px; height:52px; font-size:21px; } }
 /* Tidy the card into labelled sections. */
-.cc-sec { margin-top:22px; }
+.cc-sec { margin-top:30px; }
 /* Native clear "X" on every search box (they're marked type=search in JS). */
 input[type=search]::-webkit-search-cancel-button {
   -webkit-appearance:none; appearance:none; height:15px; width:15px; margin-left:8px; cursor:pointer;
@@ -8530,7 +8532,7 @@ input[type=search]::-webkit-search-cancel-button:hover { opacity:1; background-c
    phone are tappable links, the address carries its own Maps buttons. */
 /* Details read as a soft panel (same rounding + shadow as the header), each
    fact a roomy row: a circular icon-chip, the value, and a quiet copy. */
-.cc-facts { display:flex; flex-direction:column; gap:0; margin-top:6px; padding:3px 18px; border:1px solid var(--glass-edge); border-radius:16px; background:var(--glass-bg); -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3); box-shadow:var(--glass-shadow); }
+.cc-facts { display:flex; flex-direction:column; gap:0; margin-top:8px; padding:6px 22px; border:1px solid var(--glass-edge); border-radius:16px; background:var(--glass-bg); -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3); box-shadow:var(--glass-shadow); }
 .cc-fact { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); color:var(--ink); font-size:16px; text-decoration:none; }
 .cc-fact:last-child { border-bottom:0; }
 a.cc-fact:hover { color:var(--accent); }
