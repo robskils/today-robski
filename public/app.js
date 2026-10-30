@@ -11384,12 +11384,12 @@ function ceQuickBar(ev) {
   const area = hasArea ? areaById(ev.area) : null;
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
-  // Life Space, Reminder and Repeat each have their own field below now, so the
-  // quick bar only carries the two that open the collapsed Connect panel. (Robin.)
-  out.push(chip('#ce-url', '🔗', hasUrl ? 'Website' : 'Add website', hasUrl));
-  out.push(chip('#ce-contact-search', '👤', hasContact ? ((findContact(ev.contact) || {}).title || 'Contact') : 'Contact', hasContact));
+  // Every attribute has its own field now (Life Space, Reminder, Repeat, and
+  // website/contact in the Connect panel below), so the quick bar is just the note
+  // link and delete on an EXISTING event - and nothing at all on a new one. (Robin.)
   if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
   if (ev && ev.id) out.push('<button type="button" class="ce-q ce-q-del" data-cal-del aria-label="Delete event" title="Delete event"><span class="ce-q-ic">🗑</span><span class="ce-q-l">Delete</span></button>');
+  if (!out.length) return '';
   return `<div class="ce-quick">${out.join('')}</div>`;
 }
 // A calm date/time line for the read-only event card.

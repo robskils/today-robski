@@ -2932,7 +2932,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .add-event .ce-title { flex:none; width:100%; min-width:0; font-size:18px; font-weight:500; }
 .add-event .ce-when { gap:9px 11px; background:var(--paper-2); border-radius:12px; padding:11px 13px; }
 .add-event .ce-when-row { padding:2px 0; }
-.ce-allday { align-self:flex-start; }
+.ce-allday { align-self:center; }
 .ce-allday-hint { color:var(--ink-3); font-size:13.5px; font-weight:400; }
 /* A labelled field (Location, Notes, Repeat) - label above a full-width control. */
 .ce-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
