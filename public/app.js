@@ -1267,11 +1267,11 @@ function renderGuideIndex() {
       <div class="guide-sec-h">Privacy &amp; terms</div>
       <p class="guide-start-p"><b>Your data belongs to you.</b> Shizu is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Shizu is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
-        <a class="guide-legal-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
-        <a class="guide-legal-link" href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
-        <a class="guide-legal-link" href="mailto:contact@lifefold.co">Contact us ✉</a>
+        <a class="guide-legal-link" href="https://shizu.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
+        <a class="guide-legal-link" href="https://shizu.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
+        <a class="guide-legal-link" href="mailto:contact@shizu.fyi">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@lifefold.co">contact@lifefold.co</a>.<br>© ${new Date().getFullYear()} Shizu · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a>.<br>© ${new Date().getFullYear()} Shizu · daybook.fyi</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -2035,7 +2035,7 @@ function cardHtml(d, full) {
   const accent = d.accent || '#c4412e';
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
-  const qr = d.subdomain ? qrSvg('https://lifefold.co/u/' + d.subdomain, 74) : '';
+  const qr = d.subdomain ? qrSvg('https://shizu.fyi/u/' + d.subdomain, 74) : '';
   return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
     <div class="dbc-band"></div>
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
@@ -2179,7 +2179,7 @@ function cardEditorHtml() {
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
         ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Shizu</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://lifefold.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
+          <div class="dbc-qrwrap">${qrSvg('https://shizu.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
@@ -2315,7 +2315,7 @@ async function closeMyAccount() {
     await api('/api/account/close', { method: 'POST' });
     try { localStorage.clear(); } catch {}
     toast('Your account has been closed.');
-    setTimeout(() => { location.href = 'https://lifefold.co'; }, 900);
+    setTimeout(() => { location.href = 'https://shizu.fyi'; }, 900);
   } catch (e) { toast(e.message); }
 }
 async function clearAiKey(provider) {
@@ -3442,7 +3442,7 @@ async function openShare(id, title, kind) {
   } catch (e) { toast(e.message); }
   state.share.loading = false; renderShare();
 }
-function shareWebUrl() { return state.share && state.share.webToken ? `https://lifefold.co/n/${state.share.webToken}` : ''; }
+function shareWebUrl() { return state.share && state.share.webToken ? `https://shizu.fyi/n/${state.share.webToken}` : ''; }
 function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.id === fid); return s ? (s.canEdit ? 'edit' : 'view') : ''; }
 function renderShare() {
   let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
@@ -3461,7 +3461,7 @@ function renderShare() {
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
   // A public link: notes only, for sharing with someone who isn't on Shizu.
-  // Off by default; a quiet, revocable read-only page at lifefold.co/n/<token>.
+  // Off by default; a quiet, revocable read-only page at shizu.fyi/n/<token>.
   const webUrl = shareWebUrl();
   const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
     <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Shizu account needed. Read-only.</small></span></div>
@@ -3797,7 +3797,7 @@ function renderSettings() {
           <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Shizu</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
-        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://lifefold.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
+        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://shizu.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
@@ -3856,7 +3856,7 @@ function renderSettings() {
     const cycLabel = cycle === 'annual' ? ' (annual)' : ' (monthly)';
     const act = (isCurrent, label, subject) => isCurrent
       ? '<div class="plan-active">✓ Your current plan</div>'
-      : `<a class="add-btn wide" href="mailto:contact@lifefold.co?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
+      : `<a class="add-btn wide" href="mailto:contact@shizu.fyi?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
     return `<div class="set-card plan-hero">
         <div class="plan-hero-eyebrow">Your plan</div>
         <div class="plan-hero-name">${esc(heroName)}</div>
@@ -4824,7 +4824,7 @@ function renderNav() {
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
         ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Shizu on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://lifefold.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://lifefold.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@lifefold.co">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Shizu</span></div>
+        <div class="nav-legal"><a href="https://shizu.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://shizu.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@shizu.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Shizu</span></div>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
@@ -5230,7 +5230,7 @@ function homeEyebrow() {
   const p = homePartOfDay();
   let wx = ''; try { const w = state.weather; if (w && w.code != null) { const m = WMO_WX(w.code); if (m && m[1]) wx = m[1].toLowerCase(); } } catch {}
   const noun = p === 'night' ? 'night' : p;
-  const phrase = wx ? `a ${wx} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
+  const phrase = wx ? `${/^[aeiou]/i.test(wx) ? 'an' : 'a'} ${wx} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
   return `${esc(wd)} · ${esc(phrase)}`;
 }
 function homeSubClause() { return ({ night: 'The day has folded away.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'Your day is nearly folded away.' })[homePartOfDay()]; }
@@ -11617,7 +11617,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://lifefold.co/email-mark.png?v=3' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://shizu.fyi/email-mark.png?v=3' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
@@ -14141,7 +14141,7 @@ function renderMailAccounts(note) {
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
       <p class="scope" style="margin:0 0 10px">Make Shizu open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://lifefold.co/mail" target="_blank" rel="noopener"><b>lifefold.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Shizu. Safari / iOS can't do this.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://shizu.fyi/mail" target="_blank" rel="noopener"><b>shizu.fyi/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Shizu. Safari / iOS can't do this.</p>
       <button class="add-btn wide" data-mail-handler>Set Shizu as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
@@ -22376,7 +22376,7 @@ document.addEventListener('click', (e) => {
   { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
-  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://lifefold.co/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://shizu.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   { const cv = t.closest('[data-copy-val]'); if (cv) { const v = cv.dataset.copyVal || ''; try { navigator.clipboard.writeText(v); toast('Copied'); } catch { toast(v); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -22681,7 +22681,7 @@ document.addEventListener('click', (e) => {
     // In the installed app there's no address bar, so Brave's "allow handler" icon
     // has nowhere to appear - it must be done in a normal Brave tab.
     if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-      toast('Do this in a normal Brave tab, not the installed app - open lifefold.co/mail in Brave and tap this there.');
+      toast('Do this in a normal Brave tab, not the installed app - open shizu.fyi/mail in Brave and tap this there.');
       return;
     }
     const r = registerMailHandler();
@@ -26954,9 +26954,9 @@ function showRequired2fa() {
   // and home-screen installs migrate without a re-login. (Robin, 2026-10-15.)
   try {
     const _h = location.hostname;
-    if (_h !== 'lifefold.co' && _h !== 'www.lifefold.co' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
+    if (_h !== 'shizu.fyi' && _h !== 'www.shizu.fyi' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
       const tk = token();
-      location.replace('https://lifefold.co/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
+      location.replace('https://shizu.fyi/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
       return;
     }
   } catch {}

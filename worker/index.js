@@ -445,7 +445,7 @@ async function createCaldavEvent(request, env, b, row) {
   if (!creds) return err('That calendar is not connected.', request, 400);
   const payload = caldavPayloadFromBody(env, b, title);
   if (payload.error) return err(payload.error, request);
-  const uid = `lf-${(crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.floor(Math.random() * 1e9))}@lifefold.co`;
+  const uid = `lf-${(crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.floor(Math.random() * 1e9))}@shizu.fyi`;
   try {
     const ok = await caldavPut(creds.url, creds.user, creds.pass, uid, payload);
     if (!ok) return err('That calendar would not take the event.', request, 502);
@@ -871,7 +871,7 @@ function isPublicHttpUrl(u) {
 async function fetchEventPage(url) {
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 9000);
   try {
-    const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; ShizuBot/1.0; +https://lifefold.co)', accept: 'text/html,application/xhtml+xml' } });
+    const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal, headers: { 'user-agent': 'Mozilla/5.0 (compatible; ShizuBot/1.0; +https://shizu.fyi)', accept: 'text/html,application/xhtml+xml' } });
     if (!res.ok) throw new Error(`fetch ${res.status}`);
     const ct = res.headers.get('content-type') || '';
     if (!/html|xml|json|text/.test(ct)) throw new Error('not a page');
@@ -2502,7 +2502,7 @@ async function publishNote(env, id) {
     await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
       .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
   }
-  return { ok: true, token: props.shareToken, url: `https://lifefold.co/n/${props.shareToken}` };
+  return { ok: true, token: props.shareToken, url: `https://shizu.fyi/n/${props.shareToken}` };
 }
 // Revoke a note's public link. The token is dropped, so the public route stops
 // resolving it at once (and a future publish mints a fresh, different token).
@@ -2752,7 +2752,7 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
     <tr><td align="center" style="padding:0 12px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
         <tr><td align="center" style="padding:40px 34px 0;background:${CARD};background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)">
-          <a href="${home}" style="text-decoration:none"><img src="https://lifefold.co/email-mark.png?v=3" width="46" height="46" alt="Shizu" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
+          <a href="${home}" style="text-decoration:none"><img src="https://shizu.fyi/email-mark.png?v=3" width="46" height="46" alt="Shizu" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none"></a>
           ${eyebrow ? `<p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">${escHtml(eyebrow)}</p>` : ''}
           <p style="margin:14px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${escHtml(headline)}</p>
         </td></tr>
@@ -4537,7 +4537,7 @@ async function maybeHealthCheck(env) {
 async function sendHealthAlert(env, down, up) {
   const to = await ownerEmail(env);
   if (!to) return;
-  const home = 'https://lifefold.co';
+  const home = 'https://shizu.fyi';
   const row = (s) => `<tr><td style="padding:5px 0;border-bottom:1px solid #eadfce;"><b>${escHtml(s.label)}</b><br><span style="color:#6b6459;font-size:14px;">${escHtml(s.detail || '')}</span></td></tr>`;
   const downHtml = down.length ? `<p style="margin:0 0 6px;">${down.length === 1 ? 'This service just stopped responding properly:' : 'These services just stopped responding properly:'}</p><table style="width:100%;border-collapse:collapse;margin-bottom:16px;">${down.map(row).join('')}</table>` : '';
   const upHtml = up.length ? `<p style="margin:0 0 6px;">Back up again:</p><table style="width:100%;border-collapse:collapse;">${up.map(row).join('')}</table>` : '';
@@ -4711,14 +4711,14 @@ export default {
       // sitemap - to lifefold.co, path preserved. /api + /auth are excluded above, and
       // the legacy per-user subdomains keep serving the app for their own client
       // hand-off. lifefold.co itself is never matched. (Robin, 2026-10-19.)
-      if (['daybook.fyi', 'lifebook.fyi'].some((d) => host === d || host === 'www.' + d)) {
-        return Response.redirect('https://lifefold.co' + url.pathname + url.search, 301);
+      if (['daybook.fyi', 'lifebook.fyi', 'lifefold.co'].some((d) => host === d || host === 'www.' + d)) {
+        return Response.redirect('https://shizu.fyi' + url.pathname + url.search, 301);
       }
       // Only the marketing apex may be indexed; the private apps and per-user
       // tenant subdomains must not be.
       if (path === '/robots.txt') {
         const body = isApex
-          ? '# Search-engine indexing of our public pages is welcome. Automated scraping,\n# crawling or bulk extraction of Shizu, its data, content or code is prohibited,\n# as is any automated access beyond normal indexing. See https://lifefold.co/terms\nUser-agent: *\nDisallow: /api/\nAllow: /\nSitemap: https://lifefold.co/sitemap.xml\n'
+          ? '# Search-engine indexing of our public pages is welcome. Automated scraping,\n# crawling or bulk extraction of Shizu, its data, content or code is prohibited,\n# as is any automated access beyond normal indexing. See https://shizu.fyi/terms\nUser-agent: *\nDisallow: /api/\nAllow: /\nSitemap: https://shizu.fyi/sitemap.xml\n'
           : 'User-agent: *\nDisallow: /\n';
         return withHsts(new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
@@ -4727,7 +4727,7 @@ export default {
         const lastmod = new Date().toISOString().slice(0, 10);
         const pri = (p) => (p === '/' ? '1.0' : /^\/(pt|fr|es)$/.test(p) ? '0.9' : /\/(blog|jornal|journal|diario)$/.test(p) ? '0.7' : '0.6');
         const freq = (p) => (/\/(blog|jornal|journal|diario)$/.test(p) || p === '/' ? 'weekly' : 'monthly');
-        const urls = all.map((p) => `<url><loc>https://lifefold.co${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq(p)}</changefreq><priority>${pri(p)}</priority></url>`).join('\n');
+        const urls = all.map((p) => `<url><loc>https://shizu.fyi${p === '/' ? '/' : p}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq(p)}</changefreq><priority>${pri(p)}</priority></url>`).join('\n');
         const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
         return withHsts(new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } }));
       }
