@@ -6305,7 +6305,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .ov-block { min-width:0; }
 .ov-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin-bottom:9px; }
 /* Colour block: a collapsible header showing the current colour; options hidden. */
-.ov-colour-h { width:100%; font-family:inherit; background:none; border:0; cursor:pointer; transition:color .12s; }
+.ov-colour-h { width:100%; background:none; border:0; cursor:pointer; transition:color .12s; }
 .ov-colour-h[aria-expanded="false"] { margin-bottom:0; }
 .ov-colour-h:hover { color:var(--ink-2); }
 .ov-colour-right { display:inline-flex; align-items:center; gap:10px; }

@@ -10141,8 +10141,8 @@ function areaOverviewHtml(area, c, blocks) {
       <div class="ov-muted" style="margin-top:6px">For an area that’s a project with an end date. It shows on Home and in your reviews as the date nears.</div>
     </div>`;
   return `<section class="area-ov">
-    ${deadlineBlock}
     ${sectionsBlock}
+    ${deadlineBlock}
     ${reviewsBlock}
     ${colourBlock}
   </section>`;
