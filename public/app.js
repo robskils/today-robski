@@ -137,7 +137,13 @@ async function setLocale(l) {
 }
 // Most modules are on unless explicitly turned off; a few (the Focus timer)
 // start off and only appear once switched on in Settings.
-const MOD_DEFAULT_OFF = new Set(['timer']);
+const MOD_DEFAULT_OFF = new Set(['timer', 'meditation']);
+// Features deliberately hidden for now - the running record shown in Admin › Hidden,
+// so we remember what to bring back. Hiding one usually means turning its module off
+// (MOD_DEFAULT_OFF above) or pulling its UI. (Robin, 2026-10-30.)
+const HIDDEN_FEATURES = [
+  { label: 'Meditation', where: 'Reflection', note: 'Timer, bells and logged sits', since: '30 Oct 2026' },
+];
 const modOn = (k) => { const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
 // True while any Reflection tool is on - gates the Reflection hub and its Home pins.
 const reflectOn = () => REFLECT_MODULES.some(([k]) => modOn(k));
@@ -223,11 +229,15 @@ function toast(m, undoFn, opts) {
   t.className = 'toast' + (err ? ' toast-err' : '') + (undoFn ? ' toast-wide' : '');
   t.innerHTML = `${err ? '<span class="toast-ic">⚠</span>' : ''}<span class="toast-msg"></span>${undoFn ? `<button class="toast-undo" type="button">${esc(opts.actionLabel || 'Undo')}</button>` : ''}<button class="toast-x" type="button" aria-label="Dismiss">✕</button>`;
   t.querySelector('.toast-msg').textContent = m;
-  t.querySelector('.toast-x').onclick = hide;
-  if (undoFn) t.querySelector('.toast-undo').onclick = () => { hide(); try { undoFn(); } catch {} };
+  t.querySelector('.toast-x').onclick = (e) => { e.stopPropagation(); hide(); };
+  if (undoFn) t.querySelector('.toast-undo').onclick = (e) => { e.stopPropagation(); hide(); try { undoFn(); } catch {} };
+  // A tappable toast (e.g. a new-message alert): click anywhere but the × to act,
+  // or ignore it and let it fade. (Robin, 2026-10-30.)
+  t.style.cursor = opts.onClick ? 'pointer' : '';
+  t.onclick = opts.onClick ? (() => { hide(); try { opts.onClick(); } catch {} }) : null;
   t.hidden = false; clearTimeout(toastT);
   // Length-aware timing so a longer message is readable; errors never auto-dismiss.
-  const dur = undoFn ? 7000 : Math.min(7000, Math.max(3200, String(m || '').length * 55));
+  const dur = opts.duration || (undoFn ? 7000 : Math.min(7000, Math.max(3200, String(m || '').length * 55)));
   if (!sticky) toastT = setTimeout(hide, dur);
   // Pause the countdown while the pointer rests on it (desktop), so it won't vanish
   // mid-read; the × is always there to close it on touch.
@@ -696,6 +706,18 @@ function applyProseIndent(prose) {
   const base = proseBaseLevel(prose);
   indentFlow(prose, base);
   cols.forEach((col) => indentFlow(col, base));
+}
+// Remove any fold chevron or drag grip that editing has carried onto a NON-heading
+// (a paragraph, a list item) - only a real heading may wear one. Runs on every
+// keystroke so a stray arrow never lingers (it used to sit there until the next
+// re-render). Caret-safe: the glyphs are contentEditable=false and sit outside the
+// text being typed. (Robin, 2026-10-30: a dropdown appeared on a non-header.)
+function stripStrayFoldGlyphs(prose) {
+  if (!prose) return;
+  prose.querySelectorAll('.fold-toggle, .head-grip').forEach((g) => {
+    const p = g.parentElement;
+    if (!p || !HLVL[p.tagName]) g.remove();
+  });
 }
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
@@ -2637,6 +2659,11 @@ function renderAdmin() {
       <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
       <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no lifespaces.</span>'}</div>
       <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a lifespace…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+    </div>
+    <div class="set-card" style="margin-top:14px">
+      <div class="set-row-t">Hidden for now</div>
+      <p class="home-empty" style="margin:6px 0 14px">Parts of Shizu switched off for the moment - a running note so we remember what to bring back.</p>
+      <div class="adm-hidden">${HIDDEN_FEATURES.length ? HIDDEN_FEATURES.map((h) => `<div class="admin-row"><span><b>${esc(h.label)}</b> <span class="scope">${esc(h.where || '')}${h.note ? ' · ' + esc(h.note) : ''}</span></span><span class="aq-author">${h.since ? 'hidden ' + esc(h.since) : ''}</span></div>`).join('') : '<span class="sp-cat-empty">Nothing hidden right now.</span>'}</div>
     </div>`;
 
   const quotesPane = `<div class="set-card">
@@ -3051,7 +3078,8 @@ async function refreshFriendStatus() {
       const openWith = state.chat && state.chat.with;
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
-          toast(`💬 ${friendName(id) || 'A Shizu contact'} messaged you`);
+          const nm = friendName(id);
+          toast(`💬 ${nm || 'A Shizu contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
         }
       });
     }
@@ -3069,7 +3097,7 @@ async function refreshFriendStatus() {
 function startFriendStatusPoll() {
   if (window.__friendStatusT) return;
   refreshFriendStatus();
-  window.__friendStatusT = setInterval(() => { if (!document.hidden) refreshFriendStatus(); }, 90000);
+  window.__friendStatusT = setInterval(() => { if (!document.hidden) refreshFriendStatus(); }, 30000);
 }
 // Home "People" section: whether it shows, and its contents (who's online + a
 // nudge when someone wants to connect). Toggle lives in Settings → Appearance.
@@ -21811,7 +21839,7 @@ document.addEventListener('input', (e) => {
 // a left margin, never restructures the DOM.
 document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[data-block-id][contenteditable="true"]');
-  if (ed) applyProseIndent(ed);
+  if (ed) { stripStrayFoldGlyphs(ed); applyProseIndent(ed); }
 });
 document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-area-q]')) { if (state.area_open) { state.area_open.q = e.target.value; if ((e.target.value || '').trim()) state.area_open.toolTile = 'pages'; renderAreaKeepQ(); } return; }
