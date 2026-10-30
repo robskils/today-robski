@@ -19332,7 +19332,7 @@ function reviewWheelHtml(p) {
   }
   const legend = havePrev ? `<div class="rr-wheel-legend"><span class="rr-wheel-key now">This ${period}</span><span class="rr-wheel-key was">Last ${period}</span></div>` : '';
   return `<div class="rr-wheel">
-    <div class="rr-wheel-chart">${svg}${legend}</div>
+    <div class="rr-wheel-chart">${svg}${legend}<p class="rr-caption">Your life in the round this ${period} - each spoke a part of it, scored out of five.</p></div>
     <div class="rr-wheel-read"><p class="rr-wheel-comm">${comm}</p>${moversHtml}<div class="rr-wheel-spokes">${spokeRows}</div></div>
   </div>`;
 }
