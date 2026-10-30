@@ -10007,21 +10007,23 @@ function areaOverviewHtml(area, c, blocks) {
   const setTile = (state.area_open && state.area_open.setTile) || null;
   const pieceTile = (p) => {
     const n = pieceCount[p.k]; const openT = setTile === p.k; const off = hidden.includes(p.k);
-    // An activated (not hidden) section wears a border in the Life Space's colour so
-    // it's obvious which tools are on; a hidden one stays faint. (Robin, 2026-10-28.)
-    return `<button class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${esc(SEC_LABELS[p.k] || p.k)} settings"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>`;
+    // Each piece is a clear ON / OFF: the switch (top-right) turns it on or off -
+    // OFF greys the tile and hides the section from the Life Space; the body opens
+    // its settings (sharing, add actions) when it's on. (Robin, 2026-10-30.)
+    return `<div class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" role="group" aria-label="${esc(SEC_LABELS[p.k] || p.k)}">
+      <button class="ovt-main" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${off ? 'Off' : 'Open settings'}"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>
+      <button class="ovt-switch${off ? '' : ' on'}" data-area-sec-toggle="${esc(p.k)}" role="switch" aria-checked="${off ? 'false' : 'true'}" title="${off ? 'Off - tap to show it on this Life Space' : 'On - tap to turn it off'}"><span class="ovt-sw-knob"></span></button>
+    </div>`;
   };
   const pieceShareCtl = (k) => {
-    const hiddenK = hidden.includes(k);
-    if (!SHARE_KEYS.includes(k)) {
-      return `<label class="ovt-onoff"><input type="checkbox" data-area-sec-vis="${esc(k)}" ${hiddenK ? '' : 'checked'}><span>${hiddenK ? 'Off - hidden from this Life Space' : 'On - showing on this Life Space'}</span></label>`;
-    }
+    // On/off is the tile's switch now, so the panel only carries the sharing choice.
+    if (hidden.includes(k)) return `<div class="ovt-offnote">Switched <b>off</b> - hidden from this Life Space. Flip the switch to use it.</div>`;
+    if (!SHARE_KEYS.includes(k) || !hasMembers) return '';   // nothing to share, or nobody to share with
     const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
-    // The Notepad defaults to Shared and only goes private on an explicit 'me', so
-    // an existing shared pad never silently disappears (mirrors wallShared).
-    const stt = hiddenK ? 'off' : (k === 'Wall' ? (st === 'me' ? 'me' : 'shared') : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared'));
-    const who = stt === 'shared' ? (hasMembers ? memChips(k, optin ? st : 'all') : '<span class="ovs-sharenote">with whoever you invite</span>') : '';
-    return `<div class="ovt-ctl"><span class="ovt-ctl-l">Who sees it</span><div class="ovs-seg">${seg(k, stt, 'off', 'Off')}${seg(k, stt, 'me', 'Only me')}${seg(k, stt, 'shared', 'Shared')}</div>${who}</div>`;
+    // The Notepad defaults to Shared and only goes private on an explicit 'me'.
+    const stt = k === 'Wall' ? (st === 'me' ? 'me' : 'shared') : (optin ? (sharedCfg ? 'shared' : 'me') : 'shared');
+    const who = stt === 'shared' ? memChips(k, optin ? st : 'all') : '';
+    return `<div class="ovt-ctl"><span class="ovt-ctl-l">Who sees it</span><div class="ovs-seg">${seg(k, stt, 'me', 'Only me')}${seg(k, stt, 'shared', 'Shared')}</div>${who}</div>`;
   };
   const pieceActs = (p) => {
     const bits = [];
@@ -10031,7 +10033,7 @@ function areaOverviewHtml(area, c, blocks) {
     return (bits.length ? `<div class="ovt-acts">${bits.join('')}</div>` : '') + (p.members ? `<div class="ovt-members">${areaMembersBody(area)}</div>` : '');
   };
   const openP = PIECES.find((p) => p.k === setTile);
-  const panel = openP ? `<div class="ovt-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openP.ic}</span>${esc(SEC_LABELS[openP.k] || openP.k)}</div>${pieceShareCtl(openP.k)}${pieceActs(openP)}</div>` : '';
+  const panel = openP ? `<div class="ovt-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openP.ic}</span>${esc(SEC_LABELS[openP.k] || openP.k)}</div>${pieceShareCtl(openP.k)}${hidden.includes(openP.k) ? '' : pieceActs(openP)}</div>` : '';
   const shareSwitch = optin ? `<button class="ghost ovs-shareall" data-area-share-open>Reset - share everything</button>` : '';
   const sectionsBlock = area.sharedBy ? '' : `<div class="ov-block ov-sections">
       <div class="ov-h"><span>Sections &amp; sharing</span></div>
@@ -10199,6 +10201,20 @@ function areaSecState(k, stateVal) {
   a.props.hiddenSecs = hs; a.props.shareSections = cfg;
   patch.hiddenSecs = hs; patch.shareSections = cfg;
   api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((e) => toast(e.message));
+  renderArea();
+}
+// The tile switch: flip a whole piece ON or OFF (hidden). OFF greys the tile, hides
+// the section from the Life Space, forgets its share config and closes its panel.
+// (Robin, 2026-10-30: clear on/off buttons.)
+function toggleAreaSec(k) {
+  const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
+  a.props = a.props || {};
+  let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
+  const cfg = { ...(a.props.shareSections || {}) };
+  if (hs.includes(k)) { hs = hs.filter((x) => x !== k); }   // turn ON
+  else { hs.push(k); delete cfg[k]; if (state.area_open.setTile === k) state.area_open.setTile = null; }   // turn OFF
+  a.props.hiddenSecs = hs; a.props.shareSections = cfg;
+  api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: { hiddenSecs: hs, shareSections: cfg } }) }).catch((e) => toast(e.message));
   renderArea();
 }
 function areaSecShareToggle(name) {
@@ -22733,6 +22749,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-area-share-optin]')) { areaShareStartOptin(); return; }
   if (t.closest('[data-area-share-open]')) { patchAreaShare({ shareMode: 'open', shareSections: {} }); return; }
   { const ss = t.closest('[data-area-sec-share]'); if (ss) { areaSecShareToggle(ss.dataset.areaSecShare); return; } }
+  { const stg = t.closest('[data-area-sec-toggle]'); if (stg) { toggleAreaSec(stg.dataset.areaSecToggle); return; } }
   { const ovt = t.closest('[data-ov-tile]'); if (ovt) { const k = ovt.dataset.ovTile; if (state.area_open) state.area_open.setTile = (state.area_open.setTile === k) ? null : k; renderArea(); return; } }
   { const sst = t.closest('[data-area-sec-state]'); if (sst) { const [nm, stv] = sst.dataset.areaSecState.split('::'); areaSecState(nm, stv); return; } }
   { const sm = t.closest('[data-area-sec-mem]'); if (sm) { const [nm, who] = sm.dataset.areaSecMem.split('::'); areaSecMember(nm, who); return; } }
