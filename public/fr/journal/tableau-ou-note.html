@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Un tableau, ou une note ?</title>
-<meta name="description" content="Quand utiliser un tableau et quand utiliser une note dans Shizu - pourquoi ils diffèrent, quand choisir l'un ou l'autre, et comment passer de l'un à l'autre sans rien perdre.">
-<link rel="canonical" href="https://shizu.fyi/fr/journal/tableau-ou-note">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/tables-or-notes">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/tabela-ou-nota">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/tableau-ou-note">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/tabla-o-nota">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/tables-or-notes">
+<meta name="description" content="Quand utiliser un tableau et quand utiliser une note dans Koyeba - pourquoi ils diffèrent, quand choisir l'un ou l'autre, et comment passer de l'un à l'autre sans rien perdre.">
+<link rel="canonical" href="https://koyeba.co/fr/journal/tableau-ou-note">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/tables-or-notes">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/tabela-ou-nota">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/tableau-ou-note">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/tabla-o-nota">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/tables-or-notes">
 <meta property="og:title" content="Un tableau, ou une note ?">
-<meta property="og:description" content="Quand utiliser un tableau et quand une note dans Shizu - pourquoi, quand et comment.">
+<meta property="og:description" content="Quand utiliser un tableau et quand une note dans Koyeba - pourquoi, quand et comment.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/fr/journal/tableau-ou-note">
+<meta property="og:url" content="https://koyeba.co/fr/journal/tableau-ou-note">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/fr#idea">Votre Shizu</a></li>
+      <li><a href="/fr#idea">Votre Koyeba</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr#private">Confidentialité</a></li>
       <li><a href="/fr/journal" class="on">Journal</a></li>
@@ -83,7 +83,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/fr/journal">← Le Journal de Shizu</a>
+      <a class="back-link" href="/fr/journal">← Le Journal de Koyeba</a>
       <div class="eyebrow">Façons de travailler</div>
       <h1>Un tableau, ou une note ?</h1>
       <div class="article-meta">
@@ -97,7 +97,7 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">Dans Shizu, une note et un tableau sont deux formes d'une même idée : un endroit où poser une information et la retrouver. Une note est faite pour les mots qui s'enchaînent. Un tableau est fait pour les faits qui se répètent. Choisissez la bonne forme et votre Shizu reste clair ; choisissez la mauvaise et vous passez votre temps à lutter contre le format au lieu de vous en servir.</p>
+      <p class="lede">Dans Koyeba, une note et un tableau sont deux formes d'une même idée : un endroit où poser une information et la retrouver. Une note est faite pour les mots qui s'enchaînent. Un tableau est fait pour les faits qui se répètent. Choisissez la bonne forme et votre Koyeba reste clair ; choisissez la mauvaise et vous passez votre temps à lutter contre le format au lieu de vous en servir.</p>
 
       <h2>Le grain de chacun</h2>
       <p>Une note n'a aucune structure à respecter. Vous l'ouvrez et vous écrivez - une pensée, un plan, un brouillon, une entrée de journal, une fiche de référence que vous lisez de haut en bas. Elle épouse ce que vous y apportez.</p>
@@ -124,12 +124,12 @@
       </ul>
       <p>Le test : si vous alliez la <em>parcourir</em>, la trier ou la compter, elle veut être un tableau.</p>
 
-      <h2>Comment ça marche dans Shizu</h2>
+      <h2>Comment ça marche dans Koyeba</h2>
       <ul>
         <li><b>Commencez une note</b> - choisissez Nouvelle note et écrivez. C'est tout.</li>
         <li><b>Transformez une note en tableau, et inversement.</b> Toute note peut devenir un tableau puis redevenir une note, donc rien n'est une impasse. Quand une note se remplit peu à peu du même type de fait, encore et encore, passez-la en tableau. Si le tableau s'avère excessif, revenez en arrière. Votre contenu vous suit.</li>
         <li><b>Gardez la carte et le territoire à part, puis reliez-les.</b> Le tableau, c'est la vue d'ensemble ; la note, c'est la profondeur. Reliez une ligne chargée à la note qui en contient le détail, et chacune ouvre sur l'autre - un tableau de clients en haut, une note entière derrière chaque nom.</li>
-        <li><b>Classez l'un ou l'autre dans un Life Space</b>, pour qu'il se range avec la partie de votre vie à laquelle il appartient et apparaisse là où vous l'attendez.</li>
+        <li><b>Classez l'un ou l'autre dans un Space</b>, pour qu'il se range avec la partie de votre vie à laquelle il appartient et apparaisse là où vous l'attendez.</li>
       </ul>
 
       <blockquote>Une règle simple : si vous alliez la lire, écrivez une note ; si vous alliez la parcourir, créez un tableau. Et le jour où une note devient une liste du même type d'élément encore et encore, c'est le moment d'en faire un tableau.</blockquote>
@@ -139,7 +139,7 @@
 
     <div class="article-end">
       <h3>Gardez votre vie dans un endroit clair</h3>
-      <p>Shizu est sur invitation le temps de bien faire les choses. Les notes, les tableaux, et tout ce qui les relie - venez jeter un œil.</p>
+      <p>Koyeba est sur invitation le temps de bien faire les choses. Les notes, les tableaux, et tout ce qui les relie - venez jeter un œil.</p>
       <a class="btn btn-primary" href="/fr#invite">Demander une invitation →</a>
     </div>
   </article>
@@ -147,18 +147,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">Pour une vie bien vécue</span></div>
+    <div class="foot-brand"><a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">Pour une vie bien vécue</span></div>
     <ul class="foot-links">
-      <li><a href="/fr#idea">Votre Shizu</a></li>
+      <li><a href="/fr#idea">Votre Koyeba</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr/journal">Journal</a></li>
       <li><a href="/fr#invite">Demander une invitation</a></li>
       <li><a href="/fr/confidentialite">Confidentialité</a></li>
       <li><a href="/fr/conditions">Conditions</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Des questions ? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Des questions ? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

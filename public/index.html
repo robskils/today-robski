@@ -61,7 +61,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -75,7 +75,7 @@
 </head>
 <body>
 
-<!-- The Shizu world: a soft sumi-e ground the app floats on. Mountains rise from
+<!-- The Koyeba world: a soft sumi-e ground the app floats on. Mountains rise from
      the foot of the screen into mist; theme-aware fills live in life.css. Fixed,
      subtle, non-interactive. (2026-10-30: new calm look & feel.) -->
 <svg class="zen-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -99,7 +99,7 @@
 <div id="gate" class="gate" hidden>
   <!-- The door is Robski. The room, once you're in, is not. -->
   <div class="gate-card">
-    <div class="gate-mark gate-wordmark">Shizu</div>
+    <div class="gate-mark gate-wordmark">Koyeba</div>
     <div class="gate-stripe" aria-hidden="true"></div>
 
     <div class="gate-body">
@@ -130,7 +130,7 @@
   <header class="bar">
     <div class="bar-left">
       <!-- On-brand wordmark. -->
-      <a class="wordmark" href="/" title="Shizu"><em>Day</em>book</a>
+      <a class="wordmark" href="/" title="Koyeba"><em>Day</em>book</a>
       <div class="bar-date">
         <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
         <div class="bar-title">
@@ -269,11 +269,11 @@
   </form>
 </div>
 
-<!-- New task. Creates a native task block in Shizu. -->
+<!-- New task. Creates a native task block in Koyeba. -->
 <div class="sheet-bg" id="new-bg" hidden>
   <form class="sheet" id="new-form">
     <h3>New task</h3>
-    <p class="sheet-sub">Added to your Shizu tasks.</p>
+    <p class="sheet-sub">Added to your Koyeba tasks.</p>
 
     <label class="field">
       <span>Task</span>

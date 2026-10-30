@@ -1,6 +1,6 @@
 // Integration health monitor. Robin: "we don't like silent breakages."
 //
-// Shizu leans on a handful of free external services. When one dies - as
+// Koyeba leans on a handful of free external services. When one dies - as
 // TheSportsDB's old free key did, returning a 200 with a plain-text "key
 // disabled" error that the code swallowed as an empty list - every call just
 // quietly returns nothing, and the only way anyone finds out is by trying to use
@@ -14,7 +14,7 @@ async function ping(url, { ms = 8000, headers = {} } = {}) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'Shizu/1.0', ...headers }, signal: ctl.signal });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Koyeba/1.0', ...headers }, signal: ctl.signal });
     return { status: r.status, ok: r.ok, body: await r.text() };
   } finally { clearTimeout(timer); }
 }

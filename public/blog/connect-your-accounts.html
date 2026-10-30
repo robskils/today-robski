@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Connect your mail and calendar</title>
-<meta name="description" content="Shizu is a real email client. Connect Gmail, Google Workspace, Yahoo or any IMAP mailbox, and your calendar, so everything lives in one calm place and stays in sync.">
-<link rel="canonical" href="https://shizu.fyi/blog/connect-your-accounts">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/connect-your-accounts">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/ligar-contas">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/connecter-vos-comptes">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/conectar-cuentas">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/connect-your-accounts">
+<meta name="description" content="Koyeba is a real email client. Connect Gmail, Google Workspace, Yahoo or any IMAP mailbox, and your calendar, so everything lives in one calm place and stays in sync.">
+<link rel="canonical" href="https://koyeba.co/blog/connect-your-accounts">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/connect-your-accounts">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/ligar-contas">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/connecter-vos-comptes">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/conectar-cuentas">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/connect-your-accounts">
 <meta property="og:title" content="Connect your mail and calendar">
-<meta property="og:description" content="Shizu is a real email client. Connect Gmail, Google Workspace, Yahoo or any IMAP mailbox, and your calendar, so everything stays in sync.">
+<meta property="og:description" content="Koyeba is a real email client. Connect Gmail, Google Workspace, Yahoo or any IMAP mailbox, and your calendar, so everything stays in sync.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/blog/connect-your-accounts">
+<meta property="og:url" content="https://koyeba.co/blog/connect-your-accounts">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/#private">Privacy First</a></li>
       <li><a href="/blog" class="on">Journal</a></li>
@@ -83,7 +83,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/blog">← The Shizu Journal</a>
+      <a class="back-link" href="/blog">← The Koyeba Journal</a>
       <div class="eyebrow">Getting started</div>
       <h1>Connect your mail and calendar</h1>
       <div class="article-meta">
@@ -97,32 +97,32 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">Shizu is a real email client and a real calendar - not a copy of your accounts, but your actual inboxes and events, brought into one calm place and kept in sync. Here is how to connect them.</p>
+      <p class="lede">Koyeba is a real email client and a real calendar - not a copy of your accounts, but your actual inboxes and events, brought into one calm place and kept in sync. Here is how to connect them.</p>
 
-      <p>You do not move to Shizu; you point Shizu at what you already have. Your mail stays where it lives, your calendar keeps its home, and Shizu simply gives you one quiet surface to work from - with your life areas joining the dots between them.</p>
+      <p>You do not move to Koyeba; you point Koyeba at what you already have. Your mail stays where it lives, your calendar keeps its home, and Koyeba simply gives you one quiet surface to work from - with your life areas joining the dots between them.</p>
 
       <h2>Your mail, every account</h2>
       <p>Add as many mailboxes as you like and triage them all in one Inbox:</p>
       <ul>
         <li><strong>Gmail and Google Workspace</strong> - your everyday Google mail.</li>
         <li><strong>Yahoo, iCloud, Fastmail, Outlook</strong> and the rest.</li>
-        <li><strong>Any IMAP mailbox</strong> - if your provider speaks IMAP and SMTP (nearly all do), Shizu can send and receive through it.</li>
+        <li><strong>Any IMAP mailbox</strong> - if your provider speaks IMAP and SMTP (nearly all do), Koyeba can send and receive through it.</li>
       </ul>
-      <p>Go to <strong>Settings › Mail</strong> and add an account. If your mailbox uses two-factor security - most Google and Yahoo accounts do - you will create a one-time <strong>app password</strong> rather than hand over your real one, and we walk you through exactly where to get it. Shizu stores those credentials <strong>encrypted at rest</strong>, so not even we can read them.</p>
+      <p>Go to <strong>Settings › Mail</strong> and add an account. If your mailbox uses two-factor security - most Google and Yahoo accounts do - you will create a one-time <strong>app password</strong> rather than hand over your real one, and we walk you through exactly where to get it. Koyeba stores those credentials <strong>encrypted at rest</strong>, so not even we can read them.</p>
 
-      <blockquote>Point Shizu at the accounts you already have. Nothing moves; everything gathers.</blockquote>
+      <blockquote>Point Koyeba at the accounts you already have. Nothing moves; everything gathers.</blockquote>
 
       <h2>Your calendar, always in sync</h2>
-      <p>Shizu has a calendar of its own that works for everyone with no account at all - add an event and it is simply there. And you can <strong>connect Google Calendar</strong> so your existing events flow in alongside it and stay in sync, rather than living in a separate tab you forget to check.</p>
+      <p>Koyeba has a calendar of its own that works for everyone with no account at all - add an event and it is simply there. And you can <strong>connect Google Calendar</strong> so your existing events flow in alongside it and stay in sync, rather than living in a separate tab you forget to check.</p>
       <p>You can also subscribe to read-only overlays - your country's <strong>public holidays</strong>, or your team's <strong>fixtures</strong> - from <strong>Settings › Calendar</strong>, so the days you care about are always in view.</p>
 
       <h2>Why bring it together</h2>
-      <p>On their own, mail and calendar are just two more apps to check. Together, under your life areas, they start to help each other: the email about a trip, the event it created, the task it left you and the note you made all sit in one place. That is the quiet point of Shizu - less scattered, more in hand.</p>
+      <p>On their own, mail and calendar are just two more apps to check. Together, under your life areas, they start to help each other: the email about a trip, the event it created, the task it left you and the note you made all sit in one place. That is the quiet point of Koyeba - less scattered, more in hand.</p>
     </div>
 
     <div class="article-end">
       <h3>Bring it all together</h3>
-      <p>Shizu is in invite-only early access. Request an invite and we will be in touch soon.</p>
+      <p>Koyeba is in invite-only early access. Request an invite and we will be in touch soon.</p>
       <a class="btn btn-primary" href="/#invite">Request an invite →</a>
     </div>
   </article>
@@ -130,18 +130,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">For a life well lived</span></div>
+    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">For a life well lived</span></div>
     <ul class="foot-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/blog">Journal</a></li>
       <li><a href="/#invite">Request an invite</a></li>
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

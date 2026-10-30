@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Des rythmes, pas des listes de tâches</title>
-<meta name="description" content="La plupart des outils de productivité ajoutent encore des listes. Shizu travaille plutôt avec vos rythmes - et laisse une petite mécanique discrète œuvrer en arrière-plan, pour que vous gardiez la main sans être harcelé.">
-<link rel="canonical" href="https://shizu.fyi/fr/journal/rythmes">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/rhythms">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/ritmos">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/rythmes">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/ritmos">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/rhythms">
+<meta name="description" content="La plupart des outils de productivité ajoutent encore des listes. Koyeba travaille plutôt avec vos rythmes - et laisse une petite mécanique discrète œuvrer en arrière-plan, pour que vous gardiez la main sans être harcelé.">
+<link rel="canonical" href="https://koyeba.co/fr/journal/rythmes">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/rhythms">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/ritmos">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/rythmes">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/ritmos">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/rhythms">
 <meta property="og:title" content="Des rythmes, pas des listes de tâches">
 <meta property="og:description" content="Travaillez avec vos rythmes, et laissez une petite mécanique discrète faire tourner les assiettes - pour garder la main sans être harcelé.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/fr/journal/rythmes">
+<meta property="og:url" content="https://koyeba.co/fr/journal/rythmes">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/fr#idea">Votre Shizu</a></li>
+      <li><a href="/fr#idea">Votre Koyeba</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr#private">Confidentialité</a></li>
       <li><a href="/fr/journal" class="on">Journal</a></li>
@@ -83,7 +83,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/fr/journal">← Le Journal de Shizu</a>
+      <a class="back-link" href="/fr/journal">← Le Journal de Koyeba</a>
       <div class="eyebrow">Façons de travailler</div>
       <h1>Des rythmes, pas des listes de tâches</h1>
       <div class="article-meta">
@@ -97,13 +97,13 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">La plupart des outils de productivité répondent à une vie chargée par davantage de listes. Shizu tente l'inverse - travailler avec vos rythmes, et laisser une petite mécanique discrète faire tourner les assiettes, pour que vous gardiez la main sans être harcelé.</p>
+      <p class="lede">La plupart des outils de productivité répondent à une vie chargée par davantage de listes. Koyeba tente l'inverse - travailler avec vos rythmes, et laisser une petite mécanique discrète faire tourner les assiettes, pour que vous gardiez la main sans être harcelé.</p>
 
       <p>Nous avons tous connu le tapis roulant de la productivité : une liste plus longue, une nouvelle application, un élan d'ordre, puis le lent retour au chaos quinze jours plus tard. La liste n'a jamais été le problème. La vie n'arrive pas sous la forme d'une liste plate - elle arrive par cycles.</p>
 
       <h2>La vie va par cycles</h2>
       <p>Vos journées ont une forme. Vos semaines aussi, vos saisons, les personnes dont vous voulez rester proche, les habitudes que vous cherchez à tenir. Un bon outil devrait s'adapter à ces rythmes plutôt que de les aplatir en un tas indistinct de tâches qui seraient toutes, on ne sait comment, à faire maintenant.</p>
-      <p>C'est pourquoi Shizu n'est volontairement pas un emploi du temps rigide. Si vous êtes dans votre élan, restez-y - un bloc peut flotter jusqu'à ce que la journée décide où il se pose. Rien ici ne vous reproche une après-midi sautée ni ne rompt une série pour vous punir. Des repères, pas une dette.</p>
+      <p>C'est pourquoi Koyeba n'est volontairement pas un emploi du temps rigide. Si vous êtes dans votre élan, restez-y - un bloc peut flotter jusqu'à ce que la journée décide où il se pose. Rien ici ne vous reproche une après-midi sautée ni ne rompt une série pour vous punir. Des repères, pas une dette.</p>
 
       <blockquote>Réglez-le une fois, et laissez-le œuvrer discrètement en arrière-plan.</blockquote>
 
@@ -113,7 +113,7 @@
         <li><strong>Des tâches récurrentes qui comprennent la cadence.</strong> « Parler à cette personne tous les trois mois » repart du jour où vous avez réellement parlé, et non du jour où c'était dû - cocher en retard vous offre donc trois vrais mois, et non quatre jours.</li>
         <li><strong>Des bilans qui reviennent d'eux-mêmes.</strong> Un bilan hebdomadaire ou mensuel arrive comme un rythme, et non comme une date que vous devez penser à fixer.</li>
         <li><strong>Un point du matin</strong> qui rassemble discrètement votre journée - agenda, ce qui compte le plus, une phrase à méditer - et arrive une seule fois, tôt, plutôt que cent notifications.</li>
-        <li><strong>Faire apparaître, pas crier.</strong> Shizu montre ce qui a vraiment besoin de vous aujourd'hui et laisse le reste patienter, à l'écart, jusqu'à son échéance réelle.</li>
+        <li><strong>Faire apparaître, pas crier.</strong> Koyeba montre ce qui a vraiment besoin de vous aujourd'hui et laisse le reste patienter, à l'écart, jusqu'à son échéance réelle.</li>
       </ul>
 
       <h2>Pour garder la main</h2>
@@ -123,7 +123,7 @@
 
     <div class="article-end">
       <h3>Voyez par vous-même</h3>
-      <p>Shizu est en accès anticipé, sur invitation. Demandez une invitation et nous vous répondrons très vite.</p>
+      <p>Koyeba est en accès anticipé, sur invitation. Demandez une invitation et nous vous répondrons très vite.</p>
       <a class="btn btn-primary" href="/fr#invite">Demander une invitation →</a>
     </div>
   </article>
@@ -131,18 +131,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">Pour une vie bien vécue</span></div>
+    <div class="foot-brand"><a class="brand" href="/fr"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">Pour une vie bien vécue</span></div>
     <ul class="foot-links">
-      <li><a href="/fr#idea">Votre Shizu</a></li>
+      <li><a href="/fr#idea">Votre Koyeba</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr/journal">Journal</a></li>
       <li><a href="/fr#invite">Demander une invitation</a></li>
       <li><a href="/fr/confidentialite">Confidentialité</a></li>
       <li><a href="/fr/conditions">Conditions</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Des questions ? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Des questions ? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

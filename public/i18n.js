@@ -1,4 +1,4 @@
-/* Shizu public-site language switcher.
+/* Koyeba public-site language switcher.
    Each page declares window.__lang (its language) and window.__alts (a map of
    lang -> the equivalent page's URL). In the nav it renders as a compact
    dropdown (saves space with the longer Latin labels); elsewhere (the footer)

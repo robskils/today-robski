@@ -320,7 +320,7 @@ function renderTally() {
 }
 
 function renderQuote() {
-  if (!$('quote')) return;   // quote lives on the Shizu home now, not here
+  if (!$('quote')) return;   // quote lives on the Koyeba home now, not here
   const q = state.data.quote;
   $('quote').hidden = !q;
   if (!q) return;
@@ -1512,7 +1512,7 @@ $('task-search').addEventListener('input', (e) => {
 
 // ── new task ──────────────────────────────────────────────────────────
 
-// Tasks are native Shizu blocks now: the area picker lists real Life Areas
+// Tasks are native Koyeba blocks now: the area picker lists real Life Areas
 // (each area feeds a Today lane via the lane settings), and priority is P1-P4.
 async function loadLifeAreas() {
   if (state.lifeAreas) return state.lifeAreas;

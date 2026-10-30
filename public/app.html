@@ -10,26 +10,27 @@
      details would otherwise open the Phone/Mail app when a finger brushes one
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-<title>Shizu</title>
+<title>Koyeba</title>
 <link rel="icon" href="/favicon.svg?v=202610302101">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/apple-touch-icon.v13.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.v14.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Shizu">
-<meta name="theme-color" content="#d7dde6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#131019" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="Koyeba">
+<meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e2b23" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/koyeba.css?v=202610302101">
 <link rel="stylesheet" href="/life.css?v=202610302101">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
-    const theme = t === 'calm' ? 'calm' : t === 'dark' ? 'dark' : t === 'light' ? 'light'
-      : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    // Navy 'dark' theme retired in the Koyeba redesign; night returns as body.night (step 2 of the redesign).
+    const theme = t === 'calm' ? 'calm' : 'light';
     document.documentElement.dataset.theme = theme;
     // Custom accent colour, applied before first paint so there's no red flash.
     const ac = localStorage.getItem('life.accent');
@@ -46,7 +47,7 @@
 </script>
 </head>
 <body>
-  <!-- The Shizu world: a real sumi-e ink painting (Sesshu Toyo, "Autumn and Winter
+  <!-- The Koyeba world: a real sumi-e ink painting (Sesshu Toyo, "Autumn and Winter
        Landscape", 1470s, public domain) as the ground the app floats on - desaturated,
        blurred and low-opacity in life.css so it reads as atmosphere. Fixed, non-interactive. -->
   <div class="zen-bg" aria-hidden="true"></div>

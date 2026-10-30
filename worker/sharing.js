@@ -1,4 +1,4 @@
-// Cross-account sharing of individual notes & tasks with friends (Shizu
+// Cross-account sharing of individual notes & tasks with friends (Koyeba
 // Friends, phase 3a). One `shares` row grants one friend access to one block.
 // can_edit = 1 means collaborative (the default Robin chose); 0 is view-only.
 //
@@ -26,7 +26,7 @@ export async function shareBlock(env, blockId, friendId, canEdit) {
   friendId = Number(friendId);
   const kind = await ownsBlock(env, blockId);
   if (!kind) throw new Error('That is not yours to share.');
-  if (!SHAREABLE.has(kind)) throw new Error('Only notes, tables, Life Spaces and tasks can be shared.');
+  if (!SHAREABLE.has(kind)) throw new Error('Only notes, tables, Spaces and tasks can be shared.');
   if (!friendId || friendId === env.uid) throw new Error('Pick a friend to share with.');
   if (!(await areFriends(env, friendId))) throw new Error('You can only share with people you are connected to.');
   const ce = canEdit === false || canEdit === 0 ? 0 : 1;
@@ -87,7 +87,7 @@ export async function listBlockViewers(env, blockId) {
 // `shares`) or publicly via a link (props.shareToken). For the Notes "Shared"
 // view, which shows both directions. Newest-edited first. (Robin, 2026-10-29.)
 export async function sharedByMe(env) {
-  // Notes, tables and Life Spaces I've shared out. Tasks are NOT here - they go
+  // Notes, tables and Spaces I've shared out. Tasks are NOT here - they go
   // through assignments (assignedByMe), to avoid double-counting an accepted task
   // that also carries a shares row. (Robin, 2026-10-29.)
   const rows = (await env.DB.prepare(

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.19 0.02 160);--k-panel:oklch(0.22 0.022 160);--k-soft:oklch(0.25 0.024 160);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.33 0.02 160);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.14 0.02 160);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink)}a:hover{color:var(--k-goldt)}
+input,textarea{font:inherit;color:inherit}input::placeholder,textarea::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="position:relative;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease">
+
+<sc-if value="{{ isIndex }}">
+<div style="flex:none;border-bottom:1px solid var(--k-line);background:var(--k-bg);position:relative;z-index:5">
+<div style="display:flex;align-items:center;gap:36px;height:72px;padding:0 40px">
+<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:28px;height:100%">
+<sc-for list="{{ indexTabs }}" as="t" hint-placeholder-count="7">
+<div onClick="{{ t.toggle }}" style="display:flex;align-items:center;gap:6px;height:100%;box-sizing:border-box;border-bottom:1px solid {{ t.line }};margin-bottom:-1px;cursor:pointer;font:400 16px Jost;color:{{ t.color }};transition:color .4s ease">{{ t.label }}<span style="font-size:12px;color:var(--k-goldt)">{{ t.badge }}</span></div>
+</sc-for>
+</div>
+<div onClick="{{ openSearch }}" style="margin-left:auto;display:flex;align-items:center;gap:14px;width:300px;padding:9px 0;border-bottom:1px solid var(--k-line);cursor:text"><span style="font:400 15px Jost;color:var(--k-mute)">Find anything</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">⌘K</span></div>
+<span onClick="{{ toggleNight }}" style="font:400 14px Jost;color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span>
+</div>
+<sc-if value="{{ sheetOpen }}">
+<div style="padding:28px 40px 36px;border-top:1px solid var(--k-line);background:var(--k-soft);animation:kfade .5s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:baseline;gap:16px;margin-bottom:20px"><span style="font:300 36px/1 'Cormorant Garamond',serif">{{ sheet.label }}</span><span style="font:400 15px Jost;color:var(--k-mute)">{{ sheet.hint }}</span><span onClick="{{ closeSheet }}" style="margin-left:auto;font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);cursor:pointer">Fold away ✕</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 28px">
+<sc-for list="{{ sheet.items }}" as="it">
+<div onClick="{{ it.go }}" style="padding:14px 0;border-top:1px solid var(--k-line);cursor:pointer" style-hover="color:var(--k-goldt)">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:italic 300 17px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ it.num }}</span><span style="font:300 25px/1.15 'Cormorant Garamond',serif">{{ it.label }}</span><span style="margin-left:auto;font:500 13px Jost;color:var(--k-goldt)">{{ it.badge }}</span></div>
+<div style="font:400 13.5px/1.45 Jost;color:var(--k-mute);margin-top:3px">{{ it.desc }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<div style="flex:1;min-height:0;display:flex">
+
+<sc-if value="{{ isFolds }}">
+<div style="width:clamp(210px,21vw,280px);flex:none;border-right:1px solid var(--k-line);overflow:auto;padding:30px clamp(18px,2vw,30px) 120px;box-sizing:border-box;display:flex;flex-direction:column">
+<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><span style="font:500 32px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div onClick="{{ openSearch }}" style="display:flex;align-items:center;gap:12px;margin:26px 0 22px;padding:10px 0;border-bottom:1px solid var(--k-line);cursor:text"><span style="font:400 15px Jost;color:var(--k-mute);white-space:nowrap">Find…</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">⌘K</span></div>
+<sc-for list="{{ folds }}" as="f" hint-placeholder-count="7">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:baseline;gap:10px;padding:13px 0;cursor:pointer">
+<div style="flex:1;min-width:0"><div style="font:300 23px/1.15 'Cormorant Garamond',serif;color:{{ f.color }}">{{ f.label }}</div>
+<sc-if value="{{ f.closed }}"><div style="font:400 13px/1.4 Jost;color:var(--k-mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.hint }}</div></sc-if></div>
+<span style="font:300 18px Jost;color:var(--k-mute)">{{ f.sign }}</span>
+</div>
+<sc-if value="{{ f.open }}">
+<div style="display:grid;padding:0 0 14px;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+<sc-for list="{{ f.items }}" as="it">
+<div onClick="{{ it.go }}" style="display:flex;align-items:baseline;gap:10px;padding:6px 0 6px 2px;cursor:pointer;font:400 16px Jost;color:{{ it.color }}" style-hover="color:var(--k-goldt)">
+<span style="width:14px;font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ it.num }}</span><span style="flex:1">{{ it.label }}</span><span style="font:500 12.5px Jost;color:var(--k-goldt)">{{ it.badge }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line);margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px 18px;font:400 13.5px Jost;color:var(--k-mute)">
+<span onClick="{{ toggleNight }}" style="cursor:pointer">{{ nightLabel }}</span><span>Settings</span><span>Guide</span><span onClick="{{ startOnb }}" style="cursor:pointer">Welcome</span>
+</div>
+</div>
+</sc-if>
+
+<div data-k-main="1" style="flex:1;min-width:0;overflow:auto;position:relative">
+
+<sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;min-height:100%;overflow:hidden">
+<div style="position:relative;padding:52px clamp(24px,4vw,64px) 160px;max-width:1220px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Friday · an overcast evening</span></div>
+<div style="font:300 70px/1.02 'Cormorant Garamond',serif;margin-top:18px;letter-spacing:-.005em">Good evening, <i style="color:var(--k-gold)">Robin.</i></div>
+<div style="font:300 70px/1.02 'Cormorant Garamond',serif;color:var(--k-mute);letter-spacing:-.005em">The day is drawing in.</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:44px;border-top:1px solid var(--k-line)">
+<sc-for list="{{ ledger }}" as="l" hint-placeholder-count="4">
+<div onClick="{{ l.toggle }}" style="padding:18px 20px 18px 0;cursor:pointer;box-sizing:border-box;border-bottom:1px solid {{ l.line }};transition:border-color .4s ease">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:300 46px/1 'Cormorant Garamond',serif">{{ l.value }}</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ l.sign }}</span></div>
+<div style="font:400 14.5px Jost;color:var(--k-mute);margin-top:6px">{{ l.label }}</div>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{ ledgerOpen }}">
+<div style="padding:8px 0 10px;border-bottom:1px solid var(--k-line);animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+<sc-for list="{{ ledgerRows }}" as="r">
+<div onClick="{{ r.go }}" style="display:grid;grid-template-columns:minmax(0,1fr) 160px 120px;gap:18px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--k-soft);cursor:pointer">
+<span style="font:400 16px/1.4 Jost">{{ r.a }}</span>
+<span style="font:400 13.5px Jost;color:var(--k-mute)"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ r.num }}</span> {{ r.b }}</span>
+<span style="font:400 13.5px Jost;color:var(--k-mute);text-align:right">{{ r.c }}</span>
+</div>
+</sc-for>
+<div onClick="{{ ledgerGo }}" style="font:500 13px Jost;color:var(--k-goldt);padding-top:12px;cursor:pointer">{{ ledgerMore }} →</div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:48px clamp(32px,5vw,72px);margin-top:48px">
+<div>
+<div onClick="{{ sec.day.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding-bottom:14px;border-bottom:1px solid var(--k-line)"><span style="font:300 30px 'Cormorant Garamond',serif">Today</span><span style="font:400 14px Jost;color:var(--k-mute)">Events and plans · ‹ ›</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ sec.day.sign }}</span></div>
+<sc-if value="{{ sec.day.open }}">
+<div style="padding-top:22px">
+<sc-for list="{{ agenda }}" as="a" hint-placeholder-count="7">
+<div style="display:grid;grid-template-columns:70px 16px minmax(0,1fr) auto;gap:16px;align-items:start">
+<span style="font:500 13px Jost;letter-spacing:.04em;color:var(--k-mute);padding-top:3px">{{ a.time }}</span>
+<div style="display:flex;flex-direction:column;align-items:center;align-self:stretch"><span style="width:7px;height:7px;margin-top:8px;box-sizing:border-box;border:1px solid var(--k-gold);background:{{ a.dot }}"></span><span style="flex:1;width:1px;background:var(--k-line)"></span></div>
+<div style="padding-bottom:22px;opacity:{{ a.opacity }}">
+<div style="font:400 17px/1.4 Jost">{{ a.title }}</div>
+<div style="font:400 13.5px/1.5 Jost;color:var(--k-mute);margin-top:2px"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ a.num }}</span> {{ a.sp }}{{ a.meta }}</div>
+</div>
+<span onClick="{{ a.tick }}" style="margin-top:4px;width:18px;height:18px;box-sizing:border-box;border:1px solid {{ a.box }};background:{{ a.fill }};display:flex;align-items:center;justify-content:center;font:600 11px Jost;color:var(--k-bg);cursor:pointer">{{ a.mark }}</span>
+</div>
+</sc-for>
+<div style="display:grid;grid-template-columns:70px 16px minmax(0,1fr);gap:16px;align-items:baseline">
+<span style="font:500 13px Jost;color:var(--k-goldt)">22:04</span><span style="width:16px;height:1px;background:var(--k-gold);transform:translateY(-4px)"></span>
+<span style="font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-mute)">Now. The rest of the evening is yours.</span>
+</div>
+</div>
+</sc-if>
+
+<div onClick="{{ sec.spaces.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding:44px 0 14px;border-bottom:1px solid var(--k-line)"><span style="font:300 30px 'Cormorant Garamond',serif">Your spaces</span><span style="font:400 14px Jost;color:var(--k-mute)">One shared · one counting down</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ sec.spaces.sign }}</span></div>
+<sc-if value="{{ sec.spaces.open }}">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 28px">
+<sc-for list="{{ spaceTiles }}" as="s" hint-placeholder-count="5">
+<div onClick="{{ s.go }}" style="padding:18px 0;border-bottom:1px solid var(--k-line);cursor:pointer" style-hover="color:var(--k-goldt)">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ s.num }}</span><span style="font:300 25px/1.1 'Cormorant Garamond',serif">{{ s.name }}</span></div>
+<div style="font:400 13.5px/1.45 Jost;color:var(--k-mute);margin-top:4px">{{ s.line }}</div>
+<div style="height:2px;background:var(--k-soft);margin-top:12px"><div style="height:2px;width:{{ s.pct }};background:var(--k-gold)"></div></div>
+<div style="font:400 12px Jost;color:var(--k-mute);margin-top:6px">{{ s.foot }}</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+
+<div>
+<div onClick="{{ sec.surf.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding-bottom:14px;border-bottom:1px solid var(--k-line)"><span style="font:300 30px 'Cormorant Garamond',serif;white-space:nowrap">Coming into view</span><span style="font:400 14px Jost;color:var(--k-mute)">As it comes due</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ sec.surf.sign }}</span></div>
+<sc-if value="{{ sec.surf.open }}">
+<sc-for list="{{ koGroups }}" as="g">
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:10px;padding:16px 0 10px;cursor:pointer"><span style="font:500 11px Jost;letter-spacing:.26em;text-transform:uppercase;color:var(--k-goldt)">{{ g.label }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="margin-left:auto;font:300 16px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<div style="padding-bottom:10px">
+<sc-for list="{{ g.items }}" as="it">
+<div onClick="{{ it.go }}" style="display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:10px 0;border-top:1px solid var(--k-soft);cursor:pointer" style-hover="color:var(--k-goldt)">
+<span style="width:7px;height:7px;box-sizing:border-box;border:1px solid {{ it.mk }};background:{{ it.fill }};transform:translateY(-1px)"></span>
+<div style="min-width:0"><div style="font:400 16.5px/1.35 Jost;text-wrap:pretty">{{ it.t }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ it.num }}</span> {{ it.sp }}</div></div>
+<span style="font:500 13px Jost;white-space:nowrap;color:{{ it.dueColor }}">{{ it.due }}</span>
+</div>
+</sc-for>
+<sc-if value="{{ g.hasMore }}"><div onClick="{{ g.goMore }}" style="font:500 13px Jost;color:var(--k-goldt);padding:8px 0 4px 22px;cursor:pointer">{{ g.more }} →</div></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</sc-if>
+<div onClick="{{ sec.line.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding:36px 0 10px;border-bottom:1px solid var(--k-line)"><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">A line for the evening</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ sec.line.sign }}</span></div>
+<sc-if value="{{ sec.line.open }}">
+<div style="display:grid;grid-template-columns:auto 1fr;gap:18px;padding:20px 0;border-bottom:1px solid var(--k-line);align-items:start">
+<span style="font:500 40px/1 serif;color:var(--k-ink)">噬嗑</span>
+<div><div style="font:italic 300 24px/1.1 'Cormorant Garamond',serif">Biting Through</div><div style="font:500 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt);margin-top:4px">I Ching · changing</div><div style="font:400 14.5px/1.55 Jost;color:var(--k-mute);margin-top:8px;text-wrap:pretty">Something stands in the way. Name it plainly, then deal with it — and rest.</div></div>
+</div>
+</sc-if>
+<div onClick="{{ sec.pad.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding:36px 0 10px;border-bottom:1px solid var(--k-line)"><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">Notepad</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ sec.pad.sign }}</span></div>
+<sc-if value="{{ sec.pad.open }}">
+<textarea defaultValue="Write up watercolour notes&#10;See how much money I have&#10;The Frog: sort out cancelled bookings. Refund proposal. Reply to Geeza." style="width:100%;box-sizing:border-box;min-height:150px;border:none;outline:none;resize:vertical;background:transparent;padding:16px 0;font:400 16px/1.75 Jost"></textarea>
+</sc-if>
+</div>
+</div>
+<div style="display:flex;justify-content:center;margin-top:96px">
+<div onClick="{{ toTop }}" title="Back to the top" style="display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;opacity:.55;transition:opacity .6s ease" style-hover="opacity:1">
+<sc-if value="{{ dayOn }}"><img src="assets/mandombe-koyeba-ink.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></img></sc-if>
+<sc-if value="{{ nightOn }}"><img src="assets/mandombe-koyeba-ivory.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></img></sc-if>
+<span style="font:500 10.5px Jost;letter-spacing:.32em;text-transform:uppercase;color:var(--k-mute)">Koyeba · to know</span>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSpace }}">
+<div style="padding:52px clamp(24px,4vw,64px) 160px;max-width:1220px;box-sizing:border-box">
+<div onClick="{{ goHome }}" style="font:400 14px Jost;color:var(--k-mute);cursor:pointer;margin-bottom:22px">← Today</div>
+<div style="display:flex;align-items:baseline;gap:20px"><span style="font:italic 300 36px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ space.num }}</span><span style="font:300 84px/1 'Cormorant Garamond',serif">{{ space.name }}</span></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px;margin:18px 0 0 56px;font:400 15px Jost;color:var(--k-mute)">
+<span>{{ space.line }}</span>
+<sc-if value="{{ space.isShared }}"><span style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--k-deep);color:var(--k-ondeep);font:500 12px Jost">RL</span><span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 12px Jost;margin-left:-8px">JM</span><span style="color:var(--k-ink)">{{ space.shared }}</span></span></sc-if>
+<span style="margin-left:auto;display:flex;gap:22px;white-space:nowrap;font:500 13px Jost;color:var(--k-goldt)"><span>Share</span><span>Give it a deadline</span></span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:40px 0 36px;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ space.stats }}" as="st"><div style="padding:20px 20px 20px 0"><div style="font:300 40px/1 'Cormorant Garamond',serif">{{ st.v }}</div><div style="font:400 14px Jost;color:var(--k-mute);margin-top:6px">{{ st.k }}</div></div></sc-for>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px;align-items:start">
+<sc-for list="{{ space.cards }}" as="c" hint-placeholder-count="6">
+<div style="background:var(--k-panel);border:1px solid var(--k-line);padding:22px 26px 14px">
+<div onClick="{{ c.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer;padding-bottom:12px;border-bottom:1px solid var(--k-gold)"><span style="font:300 26px/1 'Cormorant Garamond',serif">{{ c.label }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ c.count }}</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ c.sign }}</span></div>
+<sc-if value="{{ c.open }}">
+<div style="padding-top:4px">
+<sc-for list="{{ c.items }}" as="it"><div onClick="{{ c.go }}" style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-soft);cursor:pointer"><span style="flex:1;font:400 15.5px/1.4 Jost">{{ it.a }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ it.b }}</span></div></sc-for>
+<div style="font:400 13.5px Jost;color:var(--k-mute);padding:12px 0 6px">+ Add</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMail }}">
+<div style="display:flex;min-height:100%">
+<div style="width:clamp(280px,34%,420px);flex:none;border-right:1px solid var(--k-line);padding:40px 0 140px">
+<div style="padding:0 30px 20px"><div style="display:flex;align-items:baseline;gap:14px"><span style="font:300 44px/1 'Cormorant Garamond',serif">Mail</span><span style="margin-left:auto;font:500 13px Jost;color:var(--k-goldt);white-space:nowrap">+ Compose</span></div><div style="font:400 14px Jost;color:var(--k-mute);margin-top:10px">All accounts · {{ mailUnread }} unread ⌄</div></div>
+<sc-for list="{{ piles }}" as="g" hint-placeholder-count="5">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ g.toggle }}" style="display:grid;grid-template-columns:14px minmax(0,1fr) auto 16px;gap:12px;align-items:baseline;padding:15px 30px 13px;cursor:pointer">
+<span style="width:8px;height:8px;box-sizing:border-box;border:1px solid {{ g.mk }};background:{{ g.fill }};transform:translateY(-1px)"></span>
+<div style="min-width:0"><div style="font:300 25px/1.1 'Cormorant Garamond',serif;white-space:nowrap">{{ g.label }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px">{{ g.hint }}</div></div>
+<span style="font:500 14px Jost;color:{{ g.countColor }}">{{ g.count }}</span>
+<span style="font:300 18px Jost;color:var(--k-mute);text-align:right">{{ g.sign }}</span>
+</div>
+<sc-if value="{{ g.open }}">
+<sc-for list="{{ g.items }}" as="m">
+<div onClick="{{ m.open }}" style="display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:12px;padding:12px 30px;cursor:pointer;background:{{ m.bg }};border-top:1px solid var(--k-soft)">
+<span style="width:6px;height:6px;margin-top:8px;background:{{ m.dot }}"></span>
+<div style="min-width:0"><div style="font:500 14px Jost">{{ m.from }}</div><div style="font:400 15px/1.35 Jost;margin-top:2px">{{ m.subj }}</div><div style="font:400 13px/1.4 Jost;color:var(--k-mute);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.snip }}</div></div>
+<div style="text-align:right"><div style="font:400 12.5px Jost;color:var(--k-mute)">{{ m.time }}</div><div style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt);margin-top:4px">{{ m.num }}</div></div>
+</div>
+</sc-for>
+<sc-if value="{{ g.empty }}"><div style="padding:6px 30px 18px 56px;font:italic 300 19px 'Cormorant Garamond',serif;color:var(--k-mute)">{{ g.emptyText }}</div></sc-if>
+<sc-if value="{{ g.more }}"><div style="padding:10px 30px 14px 56px;font:400 13px Jost;color:var(--k-mute)">and {{ g.moreN }} earlier</div></sc-if>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ toggleFolders }}" style="display:flex;align-items:baseline;gap:12px;padding:15px 30px;cursor:pointer"><span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute)">Folders</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ foldersSign }}</span></div>
+<sc-if value="{{ foldersOpen }}"><div style="display:flex;flex-wrap:wrap;gap:8px 22px;padding:0 30px 18px;font:400 15px Jost"><span>Drafts <span style="color:var(--k-goldt)">1</span></span><span>Sent</span><span>Spam</span><span>Trash</span></div></sc-if>
+</div>
+</div>
+<div style="flex:1;min-width:0;padding:48px clamp(24px,4vw,64px) 160px">
+<div style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute)"><span style="color:var(--k-goldt)">{{ mail.num }}</span>&nbsp; {{ mail.sp }} · {{ mail.time }} · {{ mail.pileLabel }}</div>
+<div style="font:300 44px/1.1 'Cormorant Garamond',serif;margin:14px 0 12px;max-width:720px;text-wrap:pretty">{{ mail.subj }}</div>
+<div style="font:400 15px Jost;color:var(--k-mute)">From <span style="color:var(--k-ink)">{{ mail.from }}</span> · {{ mail.addr }}</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 30px;margin:28px 0 0;padding:14px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line);max-width:720px">
+<span style="white-space:nowrap;font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Sort</span>
+<sc-for list="{{ triage }}" as="t"><span onClick="{{ t.pick }}" style="display:flex;align-items:baseline;gap:7px;white-space:nowrap;cursor:pointer;font:400 16px Jost;padding-bottom:3px;border-bottom:1px solid {{ t.line }};color:{{ t.color }}" style-hover="color:var(--k-goldt)"><span style="width:7px;height:7px;box-sizing:border-box;border:1px solid {{ t.mk }};background:{{ t.fill }};transform:translateY(-1px)"></span>{{ t.label }}<span style="font:500 10.5px Jost;color:var(--k-mute)">{{ t.key }}</span></span></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 30px;padding:14px 0;border-bottom:1px solid var(--k-line);max-width:720px">
+<span style="white-space:nowrap;font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Turn into</span>
+<sc-for list="{{ turnInto }}" as="t"><span onClick="{{ t.go }}" style="white-space:nowrap;cursor:pointer;font:400 16px Jost" style-hover="color:var(--k-goldt)">{{ t.label }}</span></sc-for>
+</div>
+<sc-if value="{{ mail.hasFound }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 18px;align-items:end;max-width:720px;margin-top:20px;padding:16px 20px;border:1px solid var(--k-line);border-left:1px solid var(--k-gold);background:var(--k-panel)">
+<span style="grid-column:1 / -1;white-space:nowrap;font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-goldt)">Dates found</span>
+<div><div style="font:300 23px/1.2 'Cormorant Garamond',serif">{{ mail.found.t }}</div><div style="font:400 14px Jost;color:var(--k-mute);margin-top:3px">{{ mail.found.d }}</div></div>
+<span onClick="{{ addFound }}" style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">{{ foundCta }}</span>
+</div>
+</sc-if>
+<div style="display:grid;gap:16px;max-width:640px;margin-top:32px"><sc-for list="{{ mail.body }}" as="p"><div style="font:400 16.5px/1.7 Jost;text-wrap:pretty">{{ p.t }}</div></sc-for></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:36px">
+<span style="padding:11px 22px;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer">Reply</span>
+<span style="padding:10px 20px;border:1px solid var(--k-line);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer" style-hover="background:var(--k-panel)">Forward</span>
+</div>
+<sc-if value="{{ mail.hasRel }}"><div style="margin-top:44px;padding-top:16px;border-top:1px solid var(--k-line);max-width:640px;font:italic 300 19px/1.45 'Cormorant Garamond',serif;color:var(--k-mute)">{{ mail.rel }}</div></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCal }}">
+<div style="padding:44px clamp(24px,4vw,64px) 160px;max-width:1220px;box-sizing:border-box">
+<div style="display:flex;align-items:center;flex-wrap:nowrap;gap:28px">
+<span style="flex:none;font:300 52px/1 'Cormorant Garamond',serif">Calendar</span>
+<div style="flex:none;display:flex;gap:20px;white-space:nowrap;font:400 16px Jost">
+<span onClick="{{ calDay }}" style="cursor:pointer;padding-bottom:4px;border-bottom:1px solid {{ calDayLine }}">Day by day</span>
+<span onClick="{{ calMonth }}" style="cursor:pointer;padding-bottom:4px;border-bottom:1px solid {{ calMonthLine }}">Month</span>
+</div>
+<span style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font:400 15px Jost;color:var(--k-mute);white-space:nowrap">Search · From a file</span>
+<span onClick="{{ toggleNewEvt }}" style="flex:none;white-space:nowrap;margin-left:auto;padding:11px 22px;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer">{{ newEvtLabel }}</span>
+</div>
+
+<sc-if value="{{ newEvt }}">
+<div style="margin-top:28px;background:var(--k-panel);border:1px solid var(--k-line);padding:30px clamp(20px,3vw,36px) 28px;animation:kfade .5s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px 32px;align-items:end">
+<input placeholder="What’s happening?" style="border:none;border-bottom:1px solid var(--k-ink);outline:none;background:transparent;padding:4px 0 10px;font:300 36px/1.2 'Cormorant Garamond',serif"></input>
+<div><div style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);margin-bottom:8px">Space</div><div style="display:flex;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--k-line);font:400 16px Jost"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-goldt)">I</span> The kids<span style="margin-left:auto;color:var(--k-mute)">⌄</span></div></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px 26px;margin-top:26px;font:400 16px Jost">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">From</span><span style="border-bottom:1px solid var(--k-line);padding-bottom:4px;white-space:nowrap">Fri 30 October</span><span style="border-bottom:1px solid var(--k-line);padding-bottom:4px">09:00</span>
+<span style="color:var(--k-mute)">→</span><span style="border-bottom:1px solid var(--k-line);padding-bottom:4px">10:00</span>
+<span onClick="{{ toggleAllDay }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--k-mute)"><span style="width:14px;height:14px;box-sizing:border-box;border:1px solid var(--k-mute);background:{{ allDayFill }}"></span>All day</span>
+<span style="display:flex;align-items:baseline;gap:14px;white-space:nowrap"><span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Repeat</span><span style="border-bottom:1px solid var(--k-line);padding-bottom:4px">Does not repeat ⌄</span></span>
+</div>
+<div style="display:grid;grid-template-columns:110px 1fr;gap:18px 18px;margin-top:26px;align-items:baseline">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Where</span>
+<span style="font:400 16px Jost;color:var(--k-mute);border-bottom:1px solid var(--k-line);padding-bottom:6px">Search a contact or a place…</span>
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Remind me</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px 18px">
+<sc-for list="{{ reminders }}" as="r"><span onClick="{{ r.toggle }}" style="display:flex;align-items:center;gap:7px;white-space:nowrap;font:400 15px Jost;cursor:pointer;color:{{ r.color }}"><span style="width:6px;height:6px;background:{{ r.dot }};border:1px solid var(--k-gold)"></span>{{ r.label }}</span></sc-for>
+<span style="font:400 15px Jost;color:var(--k-mute);white-space:nowrap">+ Custom</span>
+</div>
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">Note</span>
+<span style="font:400 16px Jost;color:var(--k-mute);border-bottom:1px solid var(--k-line);padding-bottom:6px">Add a note, if it helps</span>
+<span onClick="{{ toggleConnect }}" style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);cursor:pointer">Connect {{ connectSign }}</span>
+<sc-if value="{{ connectOpen }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:22px;font:400 15px Jost;color:var(--k-goldt)"><span>A website</span><span>A contact</span><span>A note</span><span>An email</span></div></sc-if>
+</div>
+<div style="display:flex;gap:16px;align-items:center;margin-top:28px">
+<span onClick="{{ addEvt }}" style="padding:12px 24px;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer">Add to calendar</span>
+<span onClick="{{ toggleNewEvt }}" style="font:400 15px Jost;color:var(--k-mute);cursor:pointer">Close</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ calIsDay }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:36px">
+<sc-for list="{{ calDays }}" as="d" hint-placeholder-count="5">
+<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:28px;padding:22px 0;border-top:1px solid {{ d.line }}">
+<div><div style="font:300 48px/1 'Cormorant Garamond',serif;color:{{ d.color }}">{{ d.date }}</div><div style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:{{ d.color }};margin-top:6px">{{ d.label }}</div></div>
+<div>
+<sc-for list="{{ d.events }}" as="e">
+<div style="display:grid;grid-template-columns:110px minmax(0,1fr) 150px;gap:18px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--k-soft)">
+<span style="font:500 13.5px Jost;color:var(--k-mute)">{{ e.time }}</span>
+<div><div style="font:400 17px/1.4 Jost">{{ e.title }}</div><sc-if value="{{ e.hasWhere }}"><div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px">{{ e.where }}</div></sc-if></div>
+<span style="font:400 13.5px Jost;color:var(--k-mute);text-align:right"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ e.num }}</span> {{ e.sp }}</span>
+</div>
+</sc-for>
+<sc-if value="{{ d.empty }}"><div style="font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-mute);padding:6px 0">Nothing yet. Just this.</div></sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ calIsMonth }}">
+<div style="margin-top:36px">
+<div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px"><span style="font:300 32px 'Cormorant Garamond',serif">November 2026</span><span style="font:400 18px Jost;color:var(--k-mute)">‹ ›</span></div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--k-line);border-left:1px solid var(--k-line)">
+<sc-for list="{{ weekdays }}" as="w"><div style="padding:10px 12px;font:500 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute);border-right:1px solid var(--k-line);border-bottom:1px solid var(--k-line)">{{ w.l }}</div></sc-for>
+<sc-for list="{{ monthCells }}" as="c">
+<div style="min-height:104px;padding:8px 10px;border-right:1px solid var(--k-line);border-bottom:1px solid var(--k-line);background:{{ c.bg }};box-sizing:border-box">
+<div style="font:300 22px/1 'Cormorant Garamond',serif;color:{{ c.color }}">{{ c.d }}</div>
+<sc-for list="{{ c.ev }}" as="e"><div style="display:flex;gap:6px;align-items:baseline;margin-top:6px;font:400 12.5px/1.3 Jost"><span style="width:5px;height:5px;flex:none;background:var(--k-gold);transform:translateY(-2px)"></span>{{ e.t }}</div></sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTasks }}">
+<div style="padding:52px clamp(24px,4vw,64px) 160px;max-width:960px;box-sizing:border-box">
+<div style="font:300 56px/1 'Cormorant Garamond',serif">Things to do</div>
+<div style="font:400 16px Jost;color:var(--k-mute);margin:12px 0 32px">{{ taskLine }}</div>
+<sc-for list="{{ taskGroups }}" as="g" hint-placeholder-count="4">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:12px;padding:18px 0;cursor:pointer"><span style="font:300 28px 'Cormorant Garamond',serif">{{ g.label }}</span><span style="font:400 14px Jost;color:var(--k-mute)">{{ g.hint }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<div style="padding-bottom:16px">
+<sc-for list="{{ g.items }}" as="t">
+<div style="border-top:1px solid var(--k-soft)">
+<div style="display:grid;grid-template-columns:22px minmax(0,1fr) auto 150px;gap:16px;align-items:center;padding:13px 0">
+<span onClick="{{ t.tick }}" style="width:18px;height:18px;box-sizing:border-box;border:1px solid {{ t.box }};background:{{ t.fill }};display:flex;align-items:center;justify-content:center;font:600 11px Jost;color:var(--k-bg);cursor:pointer">{{ t.mark }}</span>
+<span onClick="{{ t.toggle }}" style="font:400 17px/1.4 Jost;cursor:pointer;color:{{ t.color }};text-decoration:{{ t.strike }}">{{ t.title }}</span>
+<span style="font:400 13.5px Jost;color:var(--k-mute)">{{ t.meta }}</span>
+<span style="font:400 13.5px Jost;color:var(--k-mute);text-align:right"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ t.num }}</span> {{ t.sp }}</span>
+</div>
+<sc-if value="{{ t.open }}">
+<div style="display:flex;flex-wrap:wrap;gap:10px 26px;padding:0 0 16px 38px;font:400 14.5px Jost;color:var(--k-mute);animation:kfade .4s ease">
+<span><span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase">Set aside&nbsp;&nbsp;</span><span style="color:var(--k-goldt)">Tomorrow · Next week · Pick a day</span></span>
+<span><span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase">Priority&nbsp;&nbsp;</span><span style="color:var(--k-ink)">{{ t.prio }}</span></span>
+<sc-if value="{{ t.hasRel }}"><span style="font:italic 300 17px 'Cormorant Garamond',serif">{{ t.rel }}</span></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNotes }}">
+<div style="display:flex;min-height:100%">
+<div style="width:clamp(230px,28%,320px);flex:none;border-right:1px solid var(--k-line);padding:40px 0 140px">
+<div style="padding:0 28px 18px;display:flex;align-items:baseline;gap:12px"><span style="font:300 44px/1 'Cormorant Garamond',serif">Notes</span><span style="margin-left:auto;font:500 13px Jost;color:var(--k-goldt)">+ New</span></div>
+<sc-for list="{{ noteGroups }}" as="g" hint-placeholder-count="5">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:10px;padding:13px 28px;cursor:pointer"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ g.num }}</span><span style="font:300 23px 'Cormorant Garamond',serif">{{ g.label }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<div style="padding-bottom:8px"><sc-for list="{{ g.items }}" as="n"><div onClick="{{ n.open }}" style="padding:9px 28px 9px 54px;cursor:pointer;background:{{ n.bg }}"><div style="display:flex;gap:8px;align-items:baseline;font:400 15.5px/1.35 Jost"><span style="flex:1;min-width:0">{{ n.title }}</span><span style="flex:none;font:500 10px Jost;letter-spacing:.18em;text-transform:uppercase;color:var(--k-goldt)">{{ n.kind }}</span></div><div style="font:400 12.5px Jost;color:var(--k-mute);margin-top:2px">{{ n.edited }}</div></div></sc-for></div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="flex:1;min-width:0;padding:56px clamp(24px,4vw,72px) 160px;max-width:860px">
+<div style="display:flex;align-items:baseline;gap:16px"><span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute)"><span style="color:var(--k-goldt)">{{ note.num }}</span>&nbsp; {{ note.sp }} · {{ note.edited }}</span>
+<span style="margin-left:auto;display:flex;gap:16px;font:400 14.5px Jost"><span onClick="{{ asNote }}" style="cursor:pointer;padding-bottom:3px;border-bottom:1px solid {{ noteLine }}">Note</span><span onClick="{{ asTable }}" style="cursor:pointer;padding-bottom:3px;border-bottom:1px solid {{ tableLine }}">Table</span></span></div>
+<div style="font:300 52px/1.05 'Cormorant Garamond',serif;margin:16px 0 30px">{{ note.title }}</div>
+<sc-if value="{{ showNoteBody }}">
+<sc-for list="{{ note.blocks }}" as="b">
+<div style="margin-bottom:18px">
+<sc-if value="{{ b.isToggle }}">
+<div onClick="{{ b.toggle }}" style="display:flex;align-items:baseline;gap:12px;cursor:pointer"><span style="font:400 12px Jost;color:var(--k-gold);width:14px;transform:translateY(-2px)">{{ b.tri }}</span><span style="font:300 30px/1.2 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ b.h }}</span></div>
+<sc-if value="{{ b.open }}"><div style="padding:6px 0 4px 26px;display:grid;gap:8px"><sc-for list="{{ b.lines }}" as="ln"><div style="font:400 17px/1.6 Jost">{{ ln.t }}</div></sc-for></div></sc-if>
+</sc-if>
+<sc-if value="{{ b.isPara }}"><div style="font:400 17px/1.7 Jost;text-wrap:pretty">{{ b.t }}</div></sc-if>
+<sc-if value="{{ b.isTable }}">
+<div style="font:600 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);margin:18px 0 10px">{{ b.h }}</div>
+<div style="display:grid;grid-template-columns:{{ b.cols }};border-top:1px solid var(--k-ink)">
+<sc-for list="{{ b.head }}" as="hd"><div style="padding:10px 12px 10px 0;font:600 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);border-bottom:1px solid var(--k-line)">{{ hd.t }}</div></sc-for>
+<sc-for list="{{ b.cells }}" as="cl"><div style="padding:11px 12px 11px 0;font:400 15.5px/1.4 Jost;border-bottom:1px solid var(--k-soft)">{{ cl.t }}</div></sc-for>
+</div>
+<div style="font:400 14px Jost;color:var(--k-mute);padding-top:10px">+ Row · Sort · Total</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="font:400 16px Jost;color:var(--k-mute);padding-top:8px">Type, or press / for a toggle, a table, a link…</div>
+</sc-if>
+<sc-if value="{{ showNoteTable }}">
+<div style="font:italic 300 19px 'Cormorant Garamond',serif;color:var(--k-mute);margin-bottom:16px">The same content, as a table. Flip back any time — nothing is lost.</div>
+<div style="display:grid;grid-template-columns:200px minmax(0,1fr) 120px;border-top:1px solid var(--k-ink)">
+<div style="padding:10px 0;font:600 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);border-bottom:1px solid var(--k-line)">Heading</div><div style="padding:10px 0;font:600 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);border-bottom:1px solid var(--k-line)">Line</div><div style="padding:10px 0;font:600 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);border-bottom:1px solid var(--k-line)">Kind</div>
+<sc-for list="{{ noteAsRows }}" as="r"><div style="padding:11px 12px 11px 0;font:400 15px Jost;border-bottom:1px solid var(--k-soft)">{{ r.a }}</div><div style="padding:11px 12px 11px 0;font:400 15px/1.4 Jost;border-bottom:1px solid var(--k-soft)">{{ r.b }}</div><div style="padding:11px 0;font:400 14px Jost;color:var(--k-mute);border-bottom:1px solid var(--k-soft)">{{ r.c }}</div></sc-for>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isReflect }}">
+<div style="padding:52px clamp(24px,4vw,64px) 160px;max-width:1120px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">Inner life · Friday evening</span></div>
+<div style="font:italic 300 58px/1.1 'Cormorant Garamond',serif;margin:20px 0 10px;max-width:880px;text-wrap:pretty">“What did today ask of me, and what did I give it?”</div>
+<div style="font:400 15px Jost;color:var(--k-mute)">Today’s question · another one tomorrow</div>
+<textarea placeholder="Write a line, or a page…" style="display:block;width:100%;box-sizing:border-box;min-height:170px;margin:30px 0 0;padding:22px 26px;border:1px solid var(--k-line);background:var(--k-panel);outline:none;resize:vertical;font:400 17px/1.7 Jost"></textarea>
+<div style="display:flex;gap:22px;margin-top:12px;font:400 14px Jost;color:var(--k-mute)"><span>Saved to Journal</span><span>File to a space</span><span style="color:var(--k-goldt)">Ask Coaching about this →</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:40px;margin-top:56px">
+<sc-for list="{{ innerCols }}" as="c">
+<div>
+<div onClick="{{ c.toggle }}" style="display:flex;align-items:baseline;gap:10px;cursor:pointer;padding-bottom:10px;border-bottom:1px solid var(--k-gold)"><span style="font:300 26px 'Cormorant Garamond',serif">{{ c.label }}</span><span style="margin-left:auto;font:300 18px Jost;color:var(--k-mute)">{{ c.sign }}</span></div>
+<sc-if value="{{ c.open }}">
+<sc-if value="{{ c.isWeek }}"><div style="display:flex;gap:10px;align-items:flex-end;height:110px;padding-top:18px"><sc-for list="{{ week }}" as="w"><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;height:{{ w.h }};background:{{ w.bg }}"></div><span style="font:500 10.5px Jost;letter-spacing:.1em;color:var(--k-mute)">{{ w.d }}</span></div></sc-for></div><div style="font:400 14px/1.5 Jost;color:var(--k-mute);margin-top:12px">Steady this week. Zazen five mornings of seven.</div></sc-if>
+<sc-for list="{{ c.items }}" as="it"><div style="display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--k-soft)"><span style="flex:1;font:400 16px/1.4 Jost">{{ it.a }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ it.b }}</span></div></sc-for>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMoney }}">
+<div style="padding:52px clamp(24px,4vw,64px) 160px;max-width:1120px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">Spending · October</span></div>
+<div style="display:flex;align-items:baseline;gap:24px;margin-top:16px"><span style="font:300 92px/1 'Cormorant Garamond',serif">€1,240</span><span style="font:400 16px/1.5 Jost;color:var(--k-mute);max-width:360px">About €110 under September. Most of it went to the move, as you’d expect.</span></div>
+<div style="display:grid;gap:0;margin-top:44px;border-top:1px solid var(--k-line)">
+<sc-for list="{{ spendBars }}" as="b">
+<div onClick="{{ b.go }}" style="display:grid;grid-template-columns:220px minmax(0,1fr) 90px;gap:24px;align-items:center;padding:16px 0;border-bottom:1px solid var(--k-line);cursor:pointer">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ b.num }}</span><span style="font:300 24px 'Cormorant Garamond',serif">{{ b.name }}</span></div>
+<div style="height:10px;background:var(--k-soft)"><div style="height:10px;width:{{ b.pct }};background:{{ b.bg }}"></div></div>
+<span style="font:400 16px Jost;text-align:right">{{ b.v }}</span>
+</div>
+</sc-for>
+</div>
+<div style="font:300 30px 'Cormorant Garamond',serif;margin:52px 0 10px">Filed themselves this week</div>
+<sc-for list="{{ payments }}" as="p"><div style="display:grid;grid-template-columns:90px minmax(0,1fr) 170px 90px;gap:18px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--k-soft)"><span style="font:400 13.5px Jost;color:var(--k-mute)">{{ p.d }}</span><span style="font:400 16px Jost">{{ p.t }}</span><span style="font:400 13.5px Jost;color:var(--k-mute)"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ p.num }}</span> {{ p.sp }}</span><span style="font:400 16px Jost;text-align:right">{{ p.v }}</span></div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMsgs }}">
+<div style="display:flex;min-height:100%">
+<div style="width:clamp(240px,30%,360px);flex:none;border-right:1px solid var(--k-line);padding:40px 0 140px">
+<div style="padding:0 28px 18px"><div style="font:300 44px/1 'Cormorant Garamond',serif">Messages</div><div style="font:400 14px Jost;color:var(--k-mute);margin-top:8px">{{ msgUnreadLine }}</div></div>
+<sc-for list="{{ threads }}" as="t">
+<div onClick="{{ t.open }}" style="display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 28px;border-top:1px solid var(--k-line);cursor:pointer;background:{{ t.bg }}">
+<span style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--k-deep);color:var(--k-ondeep);font:500 13px Jost">{{ t.ini }}</span>
+<div style="min-width:0"><div style="display:flex;gap:8px;align-items:baseline"><span style="font:500 15px Jost">{{ t.name }}</span><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ t.num }}</span></div><div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.last }}</div></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span style="font:400 12px Jost;color:var(--k-mute);white-space:nowrap">{{ t.when }}</span><span style="width:7px;height:7px;background:{{ t.dot }}"></span></div>
+</div>
+</sc-for>
+</div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:40px clamp(24px,4vw,64px) 140px">
+<div style="display:flex;align-items:baseline;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--k-line)"><span style="font:300 36px/1 'Cormorant Garamond',serif">{{ thread.name }}</span><span style="font:400 14px Jost;color:var(--k-mute)"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ thread.num }}</span> {{ thread.sp }}</span></div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:24px 0;max-width:680px">
+<sc-for list="{{ thread.msgs }}" as="m">
+<div style="align-self:{{ m.side }};max-width:78%;padding:12px 16px;border:1px solid var(--k-line);background:{{ m.bg }}"><div style="font:400 16px/1.5 Jost;text-wrap:pretty">{{ m.t }}</div><div style="font:400 11.5px Jost;color:var(--k-mute);margin-top:4px;text-align:right">{{ m.when }}</div></div>
+</sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:16px;max-width:680px;border-bottom:1px solid var(--k-ink);padding-bottom:10px">
+<input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onDraftKey }}" placeholder="{{ thread.ph }}" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:300 24px 'Cormorant Garamond',serif"></input>
+<span onClick="{{ sendDraft }}" style="font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt);cursor:pointer">Send ↵</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:12px;font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap"><span>Make it a task</span><span>Add to calendar</span><span>File to a space</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPlaceholder }}">
+<div style="padding:52px 64px;max-width:900px">
+<div style="font:300 64px/1 'Cormorant Garamond',serif">{{ placeholderName }}</div>
+<div style="font:400 16px/1.6 Jost;color:var(--k-mute);margin-top:16px;max-width:520px">Not mocked in this pass. It would follow the same patterns: folding sections, a quiet ledger of numbers at the top, and gold for anything that needs you.</div>
+<div onClick="{{ goHome }}" style="font:500 13px Jost;color:var(--k-goldt);margin-top:22px;cursor:pointer">Back to Today →</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+
+<sc-if value="{{ capClosed }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ openCap }}" style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:15px 22px 15px 20px;width:460px;box-sizing:border-box;background:var(--k-deep);color:var(--k-ondeep);cursor:pointer;z-index:10">
+<span style="font:300 24px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 21px 'Cormorant Garamond',serif;white-space:nowrap">Set something down…</span><span onClick="{{ startRecBar }}" style="margin-left:auto;display:flex;align-items:center;gap:7px;font:500 10px Jost;letter-spacing:.22em;text-transform:uppercase;padding:6px 10px;border:1px solid rgba(255,255,255,.2)"><span style="width:6px;height:6px;background:var(--k-gold)"></span>Speak</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.7">⌘ .</span>
+</div>
+</sc-if>
+
+<div style="position:absolute;left:50%;bottom:0;width:800px;max-width:calc(100% - 40px);transform:{{ drawerT }};transition:transform .6s cubic-bezier(0.2,0.7,0.2,1);background:var(--k-panel);border:1px solid var(--k-line);border-bottom:none;box-shadow:0 -18px 50px rgba(30,25,10,.10);z-index:20;padding:26px 40px 30px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">Set it down</span><span onClick="{{ closeCap }}" style="margin-left:auto;font:500 10.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);cursor:pointer;white-space:nowrap">Esc · fold away</span></div>
+<sc-if value="{{ notRec }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:flex-end;gap:18px;border-bottom:1px solid var(--k-ink)">
+<input ref="{{ capRef }}" value="{{ capText }}" onChange="{{ onCapText }}" onKeyDown="{{ onCapKey }}" placeholder="I’ve got the dentist on Tuesday at 9am" style="flex:1;min-width:0;box-sizing:border-box;border:none;outline:none;background:transparent;padding:4px 0 12px;font:300 38px/1.2 'Cormorant Garamond',serif"></input>
+<span onClick="{{ startRec }}" title="Speak it instead" style="flex:none;display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:8px 14px;border:1px solid var(--k-line);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--k-gold)"><span style="width:7px;height:7px;background:var(--k-gold)"></span>Speak</span>
+</div>
+</sc-if>
+<sc-if value="{{ isRec }}">
+<div style="display:flex;align-items:center;gap:22px;border-bottom:1px solid var(--k-gold);padding:4px 0 12px;min-height:58px">
+<span style="font:italic 300 34px 'Cormorant Garamond',serif;color:var(--k-mute);white-space:nowrap">{{ recLabel }}</span>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:3px;height:36px;overflow:hidden">
+<sc-for list="{{ recLevels }}" as="l"><span style="flex:none;width:3px;height:{{ l.h }};background:var(--k-gold);opacity:{{ l.o }};transition:height .12s linear"></span></sc-for>
+</div>
+<span style="font:500 13px Jost;color:var(--k-mute);font-variant-numeric:tabular-nums">{{ recTime }}</span>
+<span onClick="{{ stopRec }}" style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--k-deep);color:var(--k-ondeep);font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;white-space:nowrap"><span style="width:7px;height:7px;background:var(--k-gold)"></span>Done</span>
+</div>
+<sc-if value="{{ hasInterim }}"><div style="margin-top:12px;font:300 24px/1.3 'Cormorant Garamond',serif;color:var(--k-ink)">{{ capText }}</div></sc-if>
+</sc-if>
+<sc-if value="{{ capEmpty }}"><div style="display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:16px;font:400 14.5px Jost;color:var(--k-mute)"><span>Write it, or press Speak and say it. Try</span><sc-for list="{{ capExamples }}" as="x"><span onClick="{{ x.use }}" style="color:var(--k-goldt);cursor:pointer;white-space:nowrap">“{{ x.t }}”</span></sc-for></div></sc-if>
+<sc-if value="{{ capHas }}">
+<div style="margin-top:16px;font:italic 300 18px 'Cormorant Garamond',serif;color:var(--k-mute)">Koyeba reads this as — tap a line to change it</div>
+<div style="display:grid;grid-template-columns:76px minmax(0,1fr);margin-top:8px;border-top:1px solid var(--k-line)">
+<sc-for list="{{ capRows }}" as="r">
+<span style="padding:11px 0;border-bottom:1px solid var(--k-soft);font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);align-self:stretch;display:flex;align-items:center">{{ r.k }}</span>
+<div onClick="{{ r.tap }}" style="padding:9px 0;border-bottom:1px solid var(--k-soft);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;cursor:{{ r.cursor }}"><span style="font:400 16.5px Jost"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ r.num }}</span> {{ r.v }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ r.note }}</span></div>
+</sc-for>
+</div>
+</sc-if>
+<div style="display:flex;align-items:center;gap:18px;margin-top:20px">
+<span style="font:400 13.5px Jost;color:var(--k-mute)">{{ capFoot }}</span>
+<span onClick="{{ submitCap }}" style="margin-left:auto;padding:12px 24px;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Set down ↵</span>
+</div>
+</div>
+
+<sc-if value="{{ hasToast }}"><div style="position:absolute;left:50%;bottom:96px;transform:translateX(-50%);padding:13px 22px;background:var(--k-ink);color:var(--k-bg);font:400 14.5px Jost;z-index:30;white-space:nowrap;animation:kfade .4s ease">{{ toast }}</div></sc-if>
+
+<sc-if value="{{ showIncoming }}">
+<div style="position:absolute;right:28px;top:88px;width:360px;max-width:calc(100% - 56px);background:var(--k-deep);color:var(--k-ondeep);padding:18px 22px 16px;z-index:35;animation:kfade .6s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="width:7px;height:7px;background:var(--k-gold);transform:translateY(-1px)"></span><span style="font:500 14px Jost">Joana</span><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-gold)">I</span><span style="font:400 13px Jost;opacity:.7;white-space:nowrap">The kids · just now</span></div>
+<div style="font:300 22px/1.3 'Cormorant Garamond',serif;margin-top:8px">Can you grab Tom at five? Running late.</div>
+<div style="display:flex;gap:22px;margin-top:12px;font:500 13px Jost"><span onClick="{{ replyIncoming }}" style="color:var(--k-gold);cursor:pointer">Reply →</span><span onClick="{{ laterIncoming }}" style="opacity:.75;cursor:pointer">Later</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ searchOpen }}">
+<div onClick="{{ closeSearch }}" style="position:absolute;inset:0;background:oklch(0.22 0.018 60 / .35);z-index:40"></div>
+<div style="position:absolute;left:50%;top:9%;transform:translateX(-50%);width:760px;max-width:calc(100% - 40px);max-height:78%;overflow:auto;background:var(--k-panel);border:1px solid var(--k-line);z-index:41;padding:30px 40px 30px;box-sizing:border-box;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<input ref="{{ searchRef }}" value="{{ q }}" onChange="{{ onQ }}" placeholder="What are you looking for?" style="width:100%;box-sizing:border-box;border:none;border-bottom:1px solid var(--k-ink);outline:none;background:transparent;padding:4px 0 12px;font:300 38px/1.2 'Cormorant Garamond',serif"></input>
+<div style="display:flex;gap:18px;margin:14px 0 6px;font:400 14px Jost;color:var(--k-mute)"><span>Try “Ada”, “boiler”, “vet”, “Sintra”</span><span style="margin-left:auto">Esc to close</span></div>
+<sc-for list="{{ results }}" as="g">
+<div style="margin-top:20px"><div style="font:600 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);padding-bottom:8px;border-bottom:1px solid var(--k-line)">{{ g.label }}</div>
+<sc-for list="{{ g.items }}" as="r"><div onClick="{{ r.go }}" style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-soft);cursor:pointer" style-hover="color:var(--k-goldt)"><span style="flex:1;font:400 16.5px Jost">{{ r.t }}</span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">{{ r.m }}</span><span style="flex:none;text-align:right;white-space:nowrap;font:400 13.5px Jost;color:var(--k-mute)"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ r.num }}</span> {{ r.sp }}</span></div></sc-for>
+</div>
+</sc-for>
+<sc-if value="{{ noResults }}"><div style="font:italic 300 22px 'Cormorant Garamond',serif;color:var(--k-mute);padding-top:24px">Nothing by that name yet.</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ onbOpen }}">
+<div style="position:absolute;inset:0;z-index:50;background:var(--k-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px">
+<div style="width:680px;max-width:100%">
+<sc-if value="{{ onb.isName }}"><div style="margin-bottom:44px"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-koyeba-ink.svg" alt="" style="width:200px;height:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-koyeba-ivory.svg" alt="" style="width:200px;height:auto;display:block"></img></sc-if></div></sc-if>
+<div style="display:flex;gap:8px;margin-bottom:56px"><sc-for list="{{ onbDots }}" as="d"><span style="flex:1;height:1px;background:{{ d.bg }}"></span></sc-for></div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">{{ onb.eyebrow }}</span></div>
+<div style="font:300 64px/1.05 'Cormorant Garamond',serif;margin:18px 0 16px;text-wrap:pretty">{{ onb.title }}</div>
+<div style="font:400 17px/1.65 Jost;color:var(--k-mute);max-width:560px;text-wrap:pretty">{{ onb.lead }}</div>
+<sc-if value="{{ onb.isName }}"><input defaultValue="Robin" style="margin-top:34px;width:100%;box-sizing:border-box;border:none;border-bottom:1px solid var(--k-ink);outline:none;background:transparent;padding:4px 0 12px;font:300 40px 'Cormorant Garamond',serif"></input></sc-if>
+<sc-if value="{{ onb.isSpaces }}"><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:32px"><sc-for list="{{ onbStarters }}" as="s"><span onClick="{{ s.toggle }}" style="padding:10px 18px;border:1px solid {{ s.line }};background:{{ s.bg }};font:400 16px Jost;cursor:pointer;transition:all .4s ease">{{ s.name }}</span></sc-for><span style="padding:10px 18px;border:1px dashed var(--k-line);font:400 16px Jost;color:var(--k-mute)">+ Your own</span></div></sc-if>
+<sc-if value="{{ onb.isTools }}"><div style="margin-top:28px;border-top:1px solid var(--k-line)"><sc-for list="{{ onbTools }}" as="t"><div style="display:flex;align-items:baseline;gap:16px;padding:16px 0;border-bottom:1px solid var(--k-line)"><span style="font:300 25px 'Cormorant Garamond',serif">{{ t.a }}</span><span style="font:400 14px Jost;color:var(--k-mute)">{{ t.b }}</span><span style="margin-left:auto;font:500 13px Jost;color:var(--k-goldt)">Connect →</span></div></sc-for></div></sc-if>
+<sc-if value="{{ onb.isShare }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:34px"><div><div style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);margin-bottom:8px">Space</div><div style="font:400 17px Jost;padding-bottom:10px;border-bottom:1px solid var(--k-line)">Family ⌄</div></div><div><div style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);margin-bottom:8px">Their email</div><div style="font:400 17px Jost;color:var(--k-mute);padding-bottom:10px;border-bottom:1px solid var(--k-line)">name@example.com</div></div></div></sc-if>
+<div style="display:flex;align-items:center;gap:22px;margin-top:48px">
+<span onClick="{{ onbNext }}" style="padding:13px 26px;background:var(--k-gold);color:oklch(0.22 0.018 60);font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;cursor:pointer">{{ onb.cta }}</span>
+<span onClick="{{ onbSkip }}" style="font:400 15px Jost;color:var(--k-mute);cursor:pointer">{{ onb.skip }}</span>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;navigation&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Folds&quot;,&quot;Index&quot;],&quot;default&quot;:&quot;Folds&quot;,&quot;tsType&quot;:&quot;'Folds'|'Index'&quot;},&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const SP=[
+ {id:'kids',num:'I',name:'The kids',line:'Ada’s trip form due Monday',shared:'Shared with Joana — she sees only this space',pct:'40%',foot:'Term · week 8 of 14',
+  stats:[['4','Open tasks'],['5','Events this week'],['€310','October'],['8 / 14','Weeks of term']],
+  cards:{Tasks:[['Sign Ada’s trip form','Mon'],['Tom: costume for Friday','Next week'],['Book half-term childcare','Nov']],Calendar:[['Ada — swimming','Today 16:00'],['Parents’ evening','Wed 18:30'],['Tom — football','Sat 10:00']],Mail:[['Mrs Okafor — Year 4 trip to Mafra','Thu'],['Swim club — new times','Tue']],Notes:[['Swimming kit list','Tue'],['Half-term ideas','12 Oct']],Money:[['Swim club, autumn term','€140'],['School lunches','€86'],['Costume fabric','€22']],People:[['Joana','Co-parent'],['Mrs Okafor','Ada’s teacher']]}},
+ {id:'move',num:'II',name:'The move',line:'12 days to go · 68% packed',pct:'68%',foot:'Counting down to 11 Nov',
+  stats:[['12','Days to go'],['68%','Packed'],['€540','October'],['3','Quotes in']],
+  cards:{Tasks:[['Order more boxes','Today'],['Book the movers','Sun'],['Redirect post','Next week']],Calendar:[['Drop things at Dona Ajuda','Today'],['Keys handover','Thu 12:00']],Mail:[['Remax — keys handover','Wed'],['EDP — final reading','Mon']],Notes:[['Movers — quotes','Table'],['What goes where','Sun']],Money:[['Deposit, Rua da Rosa','€380'],['Boxes and tape','€64']],People:[['Inês at Remax','Agent']]}},
+ {id:'dog',num:'III',name:'Biscuit',line:'Booster jab on Tuesday',pct:'20%',foot:'Insurance renews in Jan',
+  stats:[['2','Open tasks'],['1','Vet visit'],['€96','October'],['4 yrs','Age']],
+  cards:{Tasks:[['Book booster jab','Today'],['Order kibble','Sat']],Calendar:[['Vet — booster','Tue 10:00'],['Walk with Sam','Weekdays 12:30']],Mail:[['Greenway Vets — booster','9:12']],Notes:[['Insurance PF-28841','Pinned']],Money:[['Kibble, 12kg','€58'],['Walker, October','€38']],People:[['Sam','Walker']]}},
+ {id:'work',num:'IV',name:'Work',line:'Sintra proposal in draft',pct:'55%',foot:'Proposal due Wed',
+  stats:[['6','Open tasks'],['3','Meetings'],['€120','October'],['2','Waiting on']],
+  cards:{Tasks:[['Reply to Geeza — The Frog','Today'],['Finish the Sintra proposal','Wed']],Calendar:[['Studio check-in','Mon 09:30'],['Call with Priya','Tue 15:00']],Mail:[['Geeza — cancelled bookings','11:40'],['Priya — proposal notes','Thu']],Notes:[['Koyeba — principles','Today'],['Sintra proposal','Yesterday']],Money:[['Software','€48'],['Train to Porto','€72']],People:[['Priya','Client'],['Geeza','The Frog']]}},
+ {id:'me',num:'V',name:'Body & mind',line:'Zazen five mornings of seven',pct:'71%',foot:'Steady this week',
+  stats:[['5 / 7','Mornings sat'],['2','Classes'],['€84','October'],['3','Journal entries']],
+  cards:{Tasks:[['Call Mum','Every 3 weeks'],['Renew passport','Nov']],Calendar:[['Zazen, Ryumonji','Daily 07:15'],['Dentist','Thu 14:20']],Mail:[['Practice — appointment','Tue']],Notes:[['Watercolour notes','Draft'],['Books to read','Table']],Money:[['Yoga Download','€14'],['Ryumonji, dana','€70']],People:[['Mum','Every 3 weeks']]}}
+];
+const S=Object.fromEntries(SP.map(s=>[s.id,s]));
+const tag=id=>S[id]?{num:S[id].num,sp:S[id].name}:{num:'',sp:'Unfiled'};
+const AGENDA=[
+ {id:'a1',time:'All day',title:'Drop things at Dona Ajuda',s:'move',meta:''},
+ {id:'a2',time:'07:15',title:'Zazen',s:'me',meta:' · Ryumonji, Rua Luciano Cordeiro',done:true},
+ {id:'a3',time:'09:00',title:'Draft the Sintra proposal',s:'work',meta:' · task',done:true},
+ {id:'a4',time:'13:00',title:'Lunch with Marta',s:'',meta:' · Cervejaria Ramiro',done:true},
+ {id:'a5',time:'16:00',title:'Ada — swimming',s:'kids',meta:' · the kit list is in Notes',done:true},
+ {id:'a6',time:'17:00',title:'City Jamz — UK Garage',s:'me',meta:' · Miradouro de Baixo',done:true},
+ {id:'a7',time:'18:00',title:'Walk before the light goes',s:'dog',meta:''}
+];
+const PILES=[
+ {id:'inbox',label:'Inbox',hint:'To sort',mk:'var(--k-mute)',fill:'transparent',extra:0},
+ {id:'urgent',label:'Urgent',hint:'Important and timely',mk:'var(--k-gold)',fill:'var(--k-gold)',extra:18},
+ {id:'important',label:'Important',hint:'Important, not rushed',mk:'var(--k-gold)',fill:'transparent',extra:62},
+ {id:'later',label:'Read later',hint:'Worth a read, no rush',mk:'var(--k-mute)',fill:'var(--k-line)',extra:68},
+ {id:'archive',label:'Archive',hint:'Done',mk:'var(--k-line)',fill:'transparent',extra:0}];
+const ALLMAIL=[
+ {id:'m1',pile:'inbox',from:'Mrs Okafor',addr:'okafor@escola-belem.pt',subj:'Year 4 trip to Mafra — form by Monday',snip:'Dear parents, the Year 4 trip to the palace at Mafra is on…',time:'Thu',s:'kids',unread:true,
+  body:['Dear parents,','The Year 4 trip to the palace at Mafra is on Thursday 12 November. Please return the signed form, and €12 for the coach, by Monday.','Children will need a packed lunch and a coat. We expect to be back by half past three.','With thanks, Ruth Okafor'],found:{t:'Year 4 trip to Mafra',d:'Thursday 12 November · back by 15:30'},rel:'The signed form you scanned last week is already in The kids.'},
+ {id:'m9',pile:'inbox',from:'Festival Músicas do Mundo',addr:'info@fmm.com.pt',subj:'The 2027 line-up is here',snip:'Sines, 17 to 25 July. Forty artists from twenty-six countries…',time:'21:43',s:'',
+  body:['The twenty-seventh Festival Músicas do Mundo returns to Sines from 17 to 25 July 2027.','Forty artists from twenty-six countries, the castle stage and the beach at Porto Covo. Passes go on sale on 1 December.'],found:{t:'FMM Sines',d:'17–25 July 2027 · Sines and Porto Covo'},rel:''},
+ {id:'m2',pile:'inbox',from:'Greenway Vets',addr:'hello@greenwayvets.pt',subj:'Biscuit’s booster is due',snip:'Just a reminder that Biscuit is due his annual booster…',time:'9:12',s:'dog',unread:true,body:['Hello Robin,','Just a reminder that Biscuit is due his annual booster. We have Tuesday at 10:00 or Wednesday at 16:30 free.','Greenway Vets'],found:{t:'Vet — booster',d:'Tuesday 3 November, 10:00 · or Wed 16:30'},rel:'Already a task: Book booster jab · due today.'},
+ {id:'m3',pile:'inbox',from:'Geeza',addr:'geeza@thefrog.pt',subj:'The Frog — cancelled bookings',snip:'Three tables cancelled on Saturday. Can we talk refunds?',time:'11:40',s:'work',unread:true,body:['Robin —','Three tables cancelled for Saturday. Can we talk refunds before Monday? I’d rather we sorted a proposal than went back and forth.','G.'],rel:'Your notepad mentions this: “Refund proposal. Reply to Geeza.”'},
+ {id:'m10',pile:'inbox',from:'Vishal from Rocket',addr:'vishal@rocket.new',subj:'Describe it. Rocket handles the rest.',snip:'Hello Robin, welcome to Rocket. You just got a strategy team…',time:'21:43',s:'',body:['Hello Robin,','Welcome to Rocket. You just got a strategy team for your decisions and a design and dev team for your product.'],rel:''},
+ {id:'m4',pile:'urgent',from:'Inês at Remax',addr:'ines@remax.pt',subj:'Keys handover — Thursday?',snip:'I’ll confirm Thursday at twelve with the owner…',time:'Wed',s:'move',body:['Hi Robin, I’ll confirm Thursday at twelve with the owner and come back to you tomorrow.','Inês'],found:{t:'Keys handover',d:'Thursday 5 November, 12:00'},rel:''},
+ {id:'m12',pile:'urgent',from:'Portal das Finanças',addr:'noreply@at.gov.pt',subj:'A notice is waiting for you',snip:'Please read by 6 November.',time:'Tue',s:'',body:['A new notice is waiting in your area of the Portal das Finanças. Please read it by 6 November.'],rel:''},
+ {id:'m5',pile:'important',from:'Priya',addr:'priya@harlow.co',subj:'Sintra proposal — notes',snip:'Lovely start. Two thoughts on the second day…',time:'Thu',s:'work',body:['Lovely start. Two thoughts on the second day — I’ll send them properly once I’ve read it again.','P.'],rel:'Linked to the note “Sintra proposal”.'},
+ {id:'m13',pile:'important',from:'Joana',addr:'joana@sapo.pt',subj:'Christmas — who has the kids when',snip:'Shall we settle it before half-term?',time:'Mon',s:'kids',body:['Shall we settle Christmas before half-term? I could do the 24th to the 27th if you take New Year.','J.'],rel:''},
+ {id:'m8',pile:'later',from:'The Browser',addr:'editors@thebrowser.com',subj:'Five pieces worth your time',snip:'On attention, on walking, on…',time:'Fri',s:'',body:['Five pieces worth your time this week.'],rel:''},
+ {id:'m14',pile:'later',from:'Dojo Zen de Lisboa',addr:'info@dojozen.pt',subj:'Spring sesshin dates',snip:'Three days at the end of March…',time:'Sun',s:'me',body:['Our spring sesshin will run from 27 to 29 March. Places are limited; we will open bookings in January.'],found:{t:'Spring sesshin',d:'27–29 March 2027'},rel:''},
+ {id:'m6',pile:'archive',from:'EDP',addr:'faturas@edp.pt',subj:'October bill — €62.40',snip:'Your bill for Rua da Rosa is ready.',time:'Mon',s:'move',body:['Your October bill is €62.40, taken on 4 November.'],rel:'Filed under The move · Money.'},
+ {id:'m7',pile:'archive',from:'TAP',addr:'booking@flytap.com',subj:'Your booking LIS–LHR, 19 December',snip:'Booking reference K7Q2PL.',time:'Sun',s:'',body:['Booking reference K7Q2PL. Lisbon to London Heathrow, 19 December, 08:35.'],rel:'Added to your calendar.'}];
+const DAYS=[
+ {date:'30',label:'Today, Friday',ev:[['All day','Drop things at Dona Ajuda','','move'],['07:15','Zazen','Ryumonji','me'],['16:00','Ada — swimming','Piscina do Areeiro','kids'],['18:00','Walk before the light goes','','dog']],today:true},
+ {date:'31',label:'Saturday',ev:[['09:00','Parkrun','Monsanto','me'],['10:00','Tom — football','','kids']]},
+ {date:'1',label:'Sunday, Nov',ev:[['17:00','Weekly review','','me']]},
+ {date:'2',label:'Monday',ev:[['08:00','Boiler service','Dalton Heating','move'],['09:30','Studio check-in','','work']]},
+ {date:'3',label:'Tuesday',ev:[['10:00','Vet — booster','Greenway Vets','dog'],['15:00','Call with Priya','','work']]},
+ {date:'4',label:'Wednesday',ev:[]}
+];
+const MONTH_EV={1:['Weekly review'],2:['Boiler service','Studio'],3:['Vet — booster'],4:['Parents’ evening'],5:['Dentist'],8:['Weekly review'],11:['Moving day'],12:['Mafra trip'],15:['Weekly review'],19:['Mum’s birthday'],22:['Weekly review'],26:['Keys returned'],29:['Weekly review']};
+const TASKS=[
+ {id:'today',label:'Today',hint:'Four things — two of them first',items:[
+  {id:'t1',title:'Book Biscuit’s booster jab',s:'dog',meta:'P1',prio:'P1',rel:'From Greenway Vets’ email this morning.'},
+  {id:'t2',title:'Reply to Geeza about the cancelled bookings',s:'work',meta:'P1',prio:'P1',rel:'Your notepad has the outline.'},
+  {id:'t3',title:'Sign Ada’s trip form',s:'kids',meta:'Due Mon',prio:'P2',rel:'Joana can see this one too.'},
+  {id:'t4',title:'Order more boxes',s:'move',meta:'',prio:'P3',rel:''}]},
+ {id:'back',label:'Back today',hint:'You set these aside — today is their day',items:[
+  {id:'t5',title:'Renew the car insurance',s:'',meta:'Set aside 12 Oct',prio:'P2',rel:''}]},
+ {id:'keep',label:'Keep in touch',hint:'People on a rhythm you chose',items:[
+  {id:'t6',title:'Call Mum',s:'me',meta:'Every 3 weeks · last 2 Oct',prio:'—',rel:'Ticking it rolls the next call three weeks from today.'},
+  {id:'t7',title:'Coffee with Tiago',s:'',meta:'Every 2 months',prio:'—',rel:''}]},
+ {id:'later',label:'Resting',hint:'23 things, out of the way until their day',items:[
+  {id:'t8',title:'Renew passport',s:'me',meta:'Back 15 Nov',prio:'P3',rel:''},
+  {id:'t9',title:'Book half-term childcare',s:'kids',meta:'Back 1 Dec',prio:'P2',rel:''},
+  {id:'t10',title:'Redirect the post',s:'move',meta:'Back 4 Nov',prio:'P3',rel:''}]}
+];
+const NOTES=[
+ {id:'n1',s:'work',title:'Koyeba — principles',edited:'Edited today',blocks:[
+  {k:'toggle',id:'p',h:'Principles',lines:['Capture it quick, make it easy to process.','Set it down, and trust it to come back.','Show what you need to know, when you need to know it.']},
+  {k:'toggle',id:'d',h:'Design',lines:['Avoid the standard look and feel.','Be true to the word Koyeba — to know. Things come into view; they don’t shout.','Every titled section folds away. Large, legible type.']},
+  {k:'table',h:'Names we’ve had',cols:['Name','Meaning','When'],rows:[['Lifebook','A book of a life','2025'],['Daybook','The day, kept','Oct 2026'],['Shizu','静 — quiet','Oct 2026'],['Koyeba','Lingala — to know','Now']]}]},
+ {id:'n2',s:'work',title:'Sintra proposal',edited:'Yesterday',blocks:[{k:'para',t:'Two days. The first in the hills — Pena early, before the coaches; Regaleira after lunch. The second by the sea at Cabo da Roca, with time to do nothing at all.'}]},
+ {id:'n3',s:'move',title:'Movers — quotes',edited:'Sunday',blocks:[{k:'table',h:'Quotes',cols:['Firm','Price','Date','Notes'],rows:[['Mudanças Tejo','€820','11 Nov','Includes packing'],['Lisboa Leve','€640','11 Nov','No piano'],['Two men & a van','€390','12 Nov','Cash only']]}]},
+ {id:'n4',s:'kids',title:'Swimming kit list',edited:'Tuesday',blocks:[{k:'para',t:'Goggles, cap, the blue towel, flip-flops, €2 for the locker. Snack for after — they’re always starving.'}]},
+ {id:'n5',s:'me',title:'Watercolour notes',edited:'Draft',blocks:[{k:'para',t:'Wet into wet for skies. Let the paper do more of the work. Stop sooner than feels right.'}]}
+];
+const FOLDS=[
+ {id:'today',label:'Today',hint:'Friday · two still to tick',items:[['Home','today'],['Flow','Flow'],['Practices','Practices']]},
+ {id:'spaces',label:'Spaces',hint:'Five · one shared',spaces:true},
+ {id:'tools',label:'Tools',hint:'',items:[['Mail','mail','5'],['Calendar','calendar'],['Tasks','tasks','4'],['Notes','notes'],['Tables','Tables'],['Goals','Goals'],['Saved','Saved'],['Discover','Discover']]},
+ {id:'people',label:'People',hint:'Mum is due a call',items:[['Contacts','Contacts'],['Messages','messages'],['Connect','Connect']]},
+ {id:'money',label:'Money',hint:'€1,240 in October',items:[['Spending','money'],['Money','money'],['Portfolio','Portfolio'],['Advice','Advice']]},
+ {id:'inner',label:'Inner life',hint:'Biting Through · changing',items:[['Reflection','reflect'],['Journal','reflect'],['Coaching','Coaching'],['Dreams','Dreams'],['Compass','Compass'],['I Ching','reflect'],['Spirit Cards','Spirit Cards'],['Horoscope','Horoscope'],['Insights','Insights']]},
+ {id:'reviews',label:'Reviews',hint:'Weekly, on Sunday',items:[['Daily','Daily review'],['Weekly','Weekly review'],['Monthly','Monthly review'],['Quarterly','Quarterly review'],['Yearly','Yearly review']]}
+];
+const DESC={Home:'The day, laid out',Mail:'Inbox, then urgent, important, later',Calendar:'Day by day, or the month',Tasks:'What’s due, and what’s resting',Notes:'Words, toggles and tables',Tables:'For facts that repeat',Goals:'What you’re working towards',Saved:'Read and watch, later',Discover:'Things to do nearby',Reflection:'A question a day',Journal:'Everything you’ve written',Spending:'Where it went, by space'};
+const SCREENS=['messages','today','space','mail','calendar','tasks','notes','reflect','money'];
+const FOLD_OF={today:'today',space:'spaces',mail:'tools',calendar:'tools',tasks:'tools',notes:'tools',reflect:'inner',money:'money',messages:'people'};
+const WD=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const DAYINFO=[{k:'friday',lbl:'Today, Fri 30 Oct',i:0},{k:'saturday',lbl:'Sat 31 Oct',i:1},{k:'sunday',lbl:'Sun 1 Nov',i:2},{k:'monday',lbl:'Mon 2 Nov',i:3},{k:'tuesday',lbl:'Tue 3 Nov',i:4},{k:'wednesday',lbl:'Wed 4 Nov',i:5},{k:'thursday',lbl:'Thu 5 Nov',i:-1}];
+const SPACE_WORDS=[['dog',/vet|biscuit|kibble|walk(er)? |sam\b/],['kids',/ada|tom\b|school|swim|joana|parents|costume|trip form/],['move',/move|movers|boxes|keys|remax|edp|boiler/],['work',/work|priya|geeza|frog|proposal|client|studio|invoice|meeting/],['me',/dentist|doctor|gp\b|zazen|yoga|mum|haircut|passport|gym|parkrun/]];
+function parseCap(raw0){const raw=raw0.replace(/[‘’]/g,"'");const t=raw.toLowerCase();let day=null,next=/next\s+(mon|tue|wed|thu|fri|sat|sun)/.test(t);
+  if(/\btoday|tonight\b/.test(t))day=DAYINFO[0];else if(/\btomorrow\b/.test(t))day=DAYINFO[1];
+  else for(const d of DAYINFO){if(new RegExp('\\b'+d.k.slice(0,3)+'(\\w*)?\\b').test(t)){day=d;break;}}
+  let time=null,m=t.match(/\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/)||t.match(/\bat\s+(\d{1,2})(?:[:.](\d{2}))?\b/)||t.match(/\b(\d{1,2})[:.](\d{2})\b/);
+  if(m){let h=+m[1];const mi=m[2]||'00';if(m[3]==='pm'&&h<12)h+=12;if(m[3]==='am'&&h===12)h=0;if(!m[3]&&h<8)h+=12;time=String(h).padStart(2,'0')+':'+mi;}
+  else if(/\bnoon|midday\b/.test(t))time='12:00';else{const w=t.match(/\bat (one|two|three|four|five|six|seven|eight|nine|ten|eleven)\b/);if(w){let h=['one','two','three','four','five','six','seven','eight','nine','ten','eleven'].indexOf(w[1])+1;if(h<8)h+=12;time=String(h).padStart(2,'0')+':00';}}
+  let type='Note';if(/€|£|\bspent|\bpaid\b/.test(t))type='Spend';else if(/remind me|need to|must|don'?t forget|\bbuy\b|\bcall\b|\bbook\b|\bpay\b|\bsend\b|\border\b/.test(t)&&!time)type='Task';else if(day||time)type='Event';
+  let space='',hit='';for(const [s,re] of SPACE_WORDS){const mm=re.exec(t);if(mm){space=s;hit=mm[0].trim();break;}}
+  let title=raw.replace(/^\s*(i'?ve got|i have got|i have|i've|ive got|got|remind me to|i need to|need to|don'?t forget to)\s+/i,'').replace(/\s*\b(next\s+)?(on\s+)?(today|tonight|tomorrow|mon(day)?|tue(s|sday)?|wed(nesday)?|thu(rs|rsday)?|fri(day)?|sat(urday)?|sun(day)?)\b/ig,'').replace(/\s*\bat\s+(\d{1,2}([:.]\d{2})?\s*(am|pm)?|noon|midday|one|two|three|four|five|six|seven|eight|nine|ten|eleven)\b/ig,'').replace(/\s*\b\d{1,2}([:.]\d{2})?\s*(am|pm)\b/ig,'').replace(/^the\s+/i,'').trim();
+  title=title?title[0].toUpperCase()+title.slice(1):'';
+  const appt=/dentist|doctor|gp\b|vet|hospital|appointment|interview|flight|train|haircut/.test(t);
+  let rem=[],why='';
+  if(type==='Event'){if(appt&&time){rem=['The evening before, 20:00','1 hour before'];why='An appointment — a nudge the night before, and one in time to leave.';}
+    else if(time){rem=['30 minutes before'];why='Half an hour’s notice.';}else{rem=['09:00 on the day'];why='All day, so a morning nudge.';}}
+  else if(type==='Task'){rem=day?['09:00 on the day']:[];why=day?'It comes back on the day.':'It rests in Tasks until you need it.';}
+  if(appt&&!/\bdentist\b/.test(title.toLowerCase())&&/dentist/.test(t))title='Dentist';
+  if(next&&day){const NEXT={monday:'Mon 9 Nov',tuesday:'Tue 10 Nov',wednesday:'Wed 11 Nov',thursday:'Thu 12 Nov',friday:'Fri 6 Nov',saturday:'Sat 7 Nov',sunday:'Sun 8 Nov'};day={k:day.k,lbl:NEXT[day.k],i:-1};}
+  return {title,day,time,type,space,hit,rem,why,next};}
+const THREADS=[
+ {id:'joana',name:'Joana',ini:'JM',s:'kids',msgs:[['them','Did Ada take her swimming bag?','Yesterday'],['me','She did — and the goggles this time.','Yesterday']],incoming:['them','Can you grab Tom at five? Running late.','Just now']},
+ {id:'sam',name:'Sam',ini:'SB',s:'dog',msgs:[['them','Biscuit was a star today. Long one round Monsanto.','14:10']],unread:true},
+ {id:'mum',name:'Mum',ini:'M',s:'me',msgs:[['them','Call me when you’re free x','Yesterday'],['me','Will do — Sunday?','Yesterday']]},
+ {id:'priya',name:'Priya',ini:'PK',s:'work',msgs:[['them','Got the proposal. Reading tonight.','Thu']]}];
+const REMINDERS=['At the time','5 min','30 min','1 hour','1 day','1 week'];
+const STARTERS=['Body / Health','Family','Hobbies','Money','People','Personal','Reflect','Work'];
+const ONB=[
+ {eyebrow:'Nasepeli koyeba yo',title:'Pleased to know you.',lead:'Koyeba is Lingala for “to know”, written above in Mandombe. Set things down here and you’ll always know where they are — and they’ll come back to you when it matters. First, what should we call you?',cta:'Continue',skip:'',isName:true},
+ {eyebrow:'Your Spaces',title:'The parts of your life.',lead:'Pick a few to start. Mail, events, tasks and notes will gather in whichever space they belong to. You can rename or add more any time.',cta:'Continue',skip:'Back',isSpaces:true},
+ {eyebrow:'Your tools',title:'Bring your tools in.',lead:'Connect what you already use. Nothing is read by anyone but you, and nothing is sent without you.',cta:'Continue',skip:'Later',isTools:true},
+ {eyebrow:'Better together',title:'Share a space, if you like.',lead:'Open one part of your life to the people who live it with you — and only that part.',cta:'Begin',skip:'Not now',isShare:true}
+];
+class Component extends DCLogic {
+  state={screen:'today',fold:'today',sheet:null,spaceId:'kids',ledger:null,closed:{},done:{a2:true,a3:true,a4:true,a5:true,a6:true},
+    mailSel:'m1',mailPile:{},pileClosed:{important:true,later:true,archive:true},mailRead:{},foundAdded:{},foldersOpen:false,calView:'day',newEvt:false,allDay:false,connect:false,rem:{'30 min':true},
+    taskOpen:null,taskClosed:{later:true},noteSel:'n1',noteClosed:{},tog:{},noteMode:'note',cardClosed:{},innerClosed:{},
+    cap:false,capText:'',capOv:{},rec:false,recT:0,recLv:[],recVia:'',added:[],thread:'joana',msgsExtra:{},draft:'',incoming:false,incomingSeen:false,threadRead:{},koClosed:{next:true},toast:null,search:false,q:'',onb:0,onbPick:{Family:true,Work:true,Money:true,Reflect:true},night:null};
+  capRef=React.createRef(); searchRef=React.createRef();
+  componentDidMount(){
+    this.key=e=>{const k=e.key.toLowerCase();
+      if((e.metaKey||e.ctrlKey)&&k==='k'){e.preventDefault();this.setState({search:true,q:''});}
+      else if((e.metaKey||e.ctrlKey)&&k==='.'){e.preventDefault();this.setState({cap:true});}
+      else if(k==='escape'){this.endRec();this.setState({search:false,cap:false,rec:false,sheet:null});}
+      else if('1234'.includes(k)&&k.length===1&&this.state.screen==='mail'&&!this.state.search&&!this.state.cap&&!/INPUT|TEXTAREA/.test((e.target.tagName||''))&&this.triage)this.triage(['urgent','important','later','archive'][+k-1]);};
+    window.addEventListener('keydown',this.key);this.applyNight();
+    this.inT=setTimeout(()=>{if(!this.state.incomingSeen)this.setState({incoming:true,msgsExtra:{...this.state.msgsExtra,joana:[THREADS[0].incoming]}});},7000);
+  }
+  componentWillUnmount(){clearTimeout(this.inT);this.endRec&&this.endRec();window.removeEventListener('keydown',this.key);document.body.classList.remove('night');}
+  componentDidUpdate(pp,ps){this.applyNight();
+    if(this.state.cap&&!ps.cap)setTimeout(()=>this.capRef.current&&this.capRef.current.focus(),250);
+    if(this.state.search&&!ps.search)setTimeout(()=>this.searchRef.current&&this.searchRef.current.focus(),50);}
+  isNight(){return this.state.night??(this.props.night??false);}
+  applyNight(){document.body.classList.toggle('night',!!this.isNight());}
+  go(target){const set={sheet:null,search:false};
+    if(SCREENS.includes(target)){set.screen=target;set.fold=FOLD_OF[target];}
+    else if(S[target]){set.screen='space';set.spaceId=target;set.fold='spaces';}
+    else{set.screen='placeholder';set.ph=target;}
+    this.setState(set);const el=document.querySelector('[data-k-main]');if(el)el.scrollTo({top:0,behavior:target==='today'&&this.state.screen==='today'?'smooth':'auto'});}
+  startRec(){if(this.state.rec)return;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    this.setState({cap:true,rec:true,recT:0,capText:'',capOv:{},recVia:SR?'live':'demo'});
+    const t0=Date.now();this.recI=setInterval(()=>this.setState({recT:Math.floor((Date.now()-t0)/1000),recLv:Array.from({length:48},(_,i)=>0.15+Math.random()*(0.5+0.5*Math.sin(Date.now()/300+i/4)**2))}),120);
+    const sample='I’ve got the dentist on Tuesday at 9am';
+    if(SR){try{const r=new SR();r.lang='en-GB';r.interimResults=true;r.continuous=false;this.sr=r;
+        r.onresult=e=>{let s='';for(const x of e.results)s+=x[0].transcript;this.setState({capText:s});};
+        r.onerror=()=>this.demoRec(sample);r.onend=()=>{if(this.state.rec&&this.state.recVia==='live')this.stopRec();};r.start();return;}catch(e){}}
+    this.demoRec(sample);}
+  demoRec(sample){this.setState({recVia:'demo'});let i=0;clearInterval(this.demoI);setTimeout(()=>{this.demoI=setInterval(()=>{i+=2;this.setState({capText:sample.slice(0,i)});if(i>=sample.length){clearInterval(this.demoI);setTimeout(()=>this.stopRec(),700);}},70);},900);}
+  stopRec(){this.endRec();this.setState({rec:false});setTimeout(()=>this.capRef.current&&this.capRef.current.focus(),100);}
+  endRec(){clearInterval(this.recI);clearInterval(this.demoI);try{this.sr&&this.sr.stop();}catch(e){}this.sr=null;}
+  flash(t){this.setState({toast:t});clearTimeout(this.tt);this.tt=setTimeout(()=>this.setState({toast:null}),2600);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),sign=o=>o?'−':'+';
+    const nav=this.props.navigation??'Folds';
+    const active=t=>(st.screen===t)||(st.screen==='space'&&st.spaceId===t)||(st.screen==='placeholder'&&st.ph===t);
+    const foldItems=f=>f.spaces?SP.map(s=>({label:s.name,num:s.num,badge:'',desc:s.line,go:()=>this.go(s.id),color:active(s.id)?'var(--k-goldt)':'var(--k-ink)'}))
+      :f.items.map(([label,t,badge])=>({label,num:'',badge:badge||'',desc:DESC[label]||'',go:()=>this.go(t),color:active(t)?'var(--k-goldt)':'var(--k-ink)'}));
+    const msgUnreadN=THREADS.filter(th=>(th.id==='joana'&&st.incoming&&!st.threadRead.joana)||(th.unread&&!st.threadRead[th.id])).length;
+    const inboxN=ALLMAIL.filter(m=>(st.mailPile[m.id]||m.pile)==='inbox').length;
+    const live0=f=>f.id!=='people'?f:{...f,hint:msgUnreadN?(msgUnreadN+' new message'+(msgUnreadN>1?'s':'')):'Mum is due a call',items:f.items.map(x=>x[0]==='Messages'?['Messages','messages',msgUnreadN?String(msgUnreadN):'']:x)};
+    const live=f=>f.id!=='tools'?live0(f):{...f,hint:`Mail ${inboxN} to sort · Tasks 4`,items:f.items.map(x=>x[0]==='Mail'?['Mail','mail',inboxN?String(inboxN):'']:x)};
+    const folds=FOLDS.map(live).map(f=>{const open=st.fold===f.id;return {...f,open,closed:!open,sign:sign(open),color:FOLD_OF[st.screen]===f.id?'var(--k-goldt)':'var(--k-ink)',toggle:()=>set({fold:open?null:f.id}),items:foldItems(f)};});
+    const indexTabs=FOLDS.map(f=>{const open=st.sheet===f.id,cur=FOLD_OF[st.screen]===f.id;return {label:f.label,badge:f.id==='tools'?String(inboxN||''):'',line:open||cur?'var(--k-gold)':'transparent',color:open||cur?'var(--k-ink)':'var(--k-mute)',toggle:()=>set({sheet:open?null:f.id})};});
+    const sf=FOLDS.map(live).find(f=>f.id===st.sheet);
+    const sec=k=>{const open=!st.closed[k];return {open,sign:sign(open),toggle:()=>set({closed:{...st.closed,[k]:open}})};};
+    const agenda=AGENDA.map(a=>{const d=!!st.done[a.id],t=tag(a.s);return {...a,...t,dot:d?'var(--k-gold)':'transparent',opacity:d?.55:1,box:d?'var(--k-gold)':'var(--k-mute)',fill:d?'var(--k-gold)':'transparent',mark:d?'✓':'',tick:()=>set({done:{...st.done,[a.id]:!d}})};});
+    const left=agenda.filter(a=>!st.done[a.id]).length;
+    const LED={
+      mail:{value:String(ALLMAIL.filter(m=>(st.mailPile[m.id]||m.pile)==='inbox').length),label:'emails to sort',rows:ALLMAIL.filter(m=>(st.mailPile[m.id]||m.pile)==='inbox').slice(0,4).map(m=>({a:m.subj,...tag(m.s),b:tag(m.s).sp,c:m.time,go:()=>{set({mailSel:m.id});this.go('mail');}})),more:'Open Mail',to:'mail'},
+      tasks:{value:'4',label:'things to do today',rows:TASKS[0].items.map(t=>({a:t.title,...tag(t.s),b:tag(t.s).sp,c:t.meta,go:()=>this.go('tasks')})),more:'Open Tasks',to:'tasks'},
+      tom:{value:'2',label:'events tomorrow',rows:DAYS[1].ev.map(e=>({a:e[1],...tag(e[3]),b:tag(e[3]).sp,c:e[0],go:()=>this.go('calendar')})),more:'Open Calendar',to:'calendar'},
+      spend:{value:'€1.2k',label:'spent in October',rows:[['The move','€540','move'],['The kids','€310','kids'],['Work','€120','work']].map(([a,c,s])=>({a,num:S[s].num,b:'',c,go:()=>this.go('money')})),more:'Open Spending',to:'money'}};
+    const ledger=Object.entries(LED).map(([k,l])=>{const open=st.ledger===k;return {...l,sign:sign(open),line:open?'var(--k-gold)':'var(--k-line)',toggle:()=>set({ledger:open?null:k})};});
+    const lo=LED[st.ledger];
+    const surfacing=[
+      {title:'Ada’s trip form is due on Monday.',why:'Found in Mrs Okafor’s email. The scanned form is already in The kids.',action:'Open the email',go:()=>{set({mailSel:'m1'});this.go('mail');}},
+      {title:'Mum is due a call.',why:'Every three weeks, you said. Last spoke on 2 October.',action:'Done — roll it on',go:()=>this.flash('Next call with Mum: 20 November')},
+      {title:'Back today: renew the car insurance.',why:'You set this aside on 12 October.',action:'See it in Tasks',go:()=>this.go('tasks')}];
+    const G=(id,label,items,more,to)=>{const open=!st.koClosed[id];return {label,count:id==='next'?12:items.length,open,sign:sign(open),toggle:()=>set({koClosed:{...st.koClosed,[id]:open}}),items,hasMore:!!more,more,goMore:()=>this.go(to)};};
+    const it=(t,s,due,lvl,go,spName)=>({t,...(s?tag(s):{num:'',sp:spName||''}),due,mk:lvl>0?'var(--k-gold)':'var(--k-mute)',fill:lvl>1?'var(--k-gold)':'transparent',dueColor:lvl>1?'var(--k-goldt)':(lvl>0?'var(--k-ink)':'var(--k-mute)'),go});
+    const koGroups=[
+      ...(msgUnreadN?[G('msgs','Messages',THREADS.filter(th=>(th.id==='joana'&&st.incoming&&!st.threadRead.joana)||(th.unread&&!st.threadRead[th.id])).map(th=>{const l=[...th.msgs,...(st.msgsExtra[th.id]||[])].slice(-1)[0];return it(th.name+': '+l[1],th.s,l[2],2,()=>{set({thread:th.id,threadRead:{...st.threadRead,[th.id]:true}});this.go('messages');});}),'','')]:[]),
+      G('dead','Deadlines',[it('Sue Insolvency & Law','', '12 days past',2,()=>this.go('work'),'Work · a space with a deadline'),it('Get Stone Grinder going','', 'Tomorrow',1,()=>this.go('work'),'Stone Grinder'),it('Get the new LST running','', 'In 7 days',0,()=>this.go('work'),'Lisbon Sintra Tours'),it('The move','move','In 12 days',0,()=>this.go('move'))],'',''),
+      G('next','Do next',[it('Book Biscuit’s booster jab','dog','P1',1,()=>this.go('tasks')),it('Reply to Geeza about the cancelled bookings','work','P1',1,()=>this.go('tasks')),it('Sign Ada’s trip form','kids','Mon',0,()=>this.go('tasks'))],'And 9 more in Tasks','tasks'),
+      G('back','Back today',[it('Renew the car insurance','','Set aside 12 Oct',0,()=>this.go('tasks'),'Unfiled')],'',''),
+      G('touch','Keep in touch',[it('Call Mum','me','Every 3 weeks',1,()=>this.flash('Next call with Mum: 20 November'))],'','')];
+    const sp=S[st.spaceId]||SP[0];
+    const space={...sp,isShared:!!sp.shared,stats:sp.stats.map(([v,k])=>({v,k})),
+      cards:Object.entries(sp.cards).map(([label,arr])=>{const k=sp.id+label,open=!st.cardClosed[k];const map={Tasks:'tasks',Calendar:'calendar',Mail:'mail',Notes:'notes',Money:'money',People:'Contacts'};
+        return {label,count:arr.length,open,sign:sign(open),toggle:()=>set({cardClosed:{...st.cardClosed,[k]:open}}),go:()=>this.go(map[label]),items:arr.map(([a,b])=>({a,b}))};})};
+    const spaceTiles=SP.map(s=>({...s,go:()=>this.go(s.id)}));
+    const pileOf=m=>st.mailPile[m.id]||m.pile;
+    const piles=PILES.map(p=>{const open=!st.pileClosed[p.id];const items=ALLMAIL.filter(m=>pileOf(m)===p.id);const n=items.length+p.extra;
+      return {...p,open,sign:sign(open),count:p.id==='archive'?'':n,countColor:p.id==='urgent'?'var(--k-goldt)':'var(--k-mute)',toggle:()=>set({pileClosed:{...st.pileClosed,[p.id]:open}}),
+        empty:!items.length,emptyText:p.id==='inbox'?'Inbox clear. Nothing left to sort.':'Nothing here.',more:p.extra>0,moreN:p.extra,
+        items:items.map(m=>({...m,...tag(m.s),bg:st.mailSel===m.id?'var(--k-soft)':'transparent',dot:m.unread&&!st.mailRead[m.id]?'var(--k-gold)':'transparent',open:()=>set({mailSel:m.id,mailRead:{...st.mailRead,[m.id]:true}})}))};});
+    const ms=ALLMAIL.find(m=>m.id===st.mailSel)||ALLMAIL[0];
+    const msPile=pileOf(ms);
+    this.triage=pid=>{const cur=ALLMAIL.find(m=>m.id===this.state.mailSel);if(!cur)return;const was=this.state.mailPile[cur.id]||cur.pile;
+      const mp={...this.state.mailPile,[cur.id]:pid};const left=ALLMAIL.filter(m=>(mp[m.id]||m.pile)==='inbox');
+      const next=was==='inbox'&&left.length?left[0].id:cur.id;const P=PILES.find(p=>p.id===pid);
+      this.setState({mailPile:mp,mailSel:next});this.flash(was==='inbox'?(left.length?`Moved to ${P.label}. ${left.length} left to sort.`:`Moved to ${P.label}. Inbox clear.`):`Moved to ${P.label}.`);};
+    const triage=PILES.filter(p=>p.id!=='inbox').map((p,i)=>{const on=msPile===p.id;return {label:p.label,key:String(i+1),mk:p.mk,fill:p.fill,line:on?'var(--k-gold)':'transparent',color:on?'var(--k-ink)':'var(--k-ink)',pick:()=>this.triage(p.id)};});
+    const where=S[ms.s]?S[ms.s].name:'your inbox';
+    const turnInto=[['Note',`Made a note in ${where}, linked to this email.`],['Task',`Made a task in ${where}. It’ll come back when it’s due.`],['Event',ms.found?`Added ${ms.found.t} to your calendar — ${ms.found.d.split(' · ')[0]}.`:'Opened a new event from this email.']].map(([label,msg])=>({label,go:()=>this.flash(msg)}));
+    const mail={...ms,...tag(ms.s),pileLabel:PILES.find(p=>p.id===msPile).label,body:ms.body.map(t=>({t})),hasRel:!!ms.rel,hasFound:!!ms.found,found:ms.found||{t:'',d:''}};
+    const calDays=DAYS.map((d0,di)=>({...d0,ev:[...d0.ev,...st.added.filter(x=>x.i===di).map(x=>[x.time,x.title,'',x.s])].sort((p,q)=>p[0].localeCompare(q[0]))})).map(d=>({...d,line:d.today?'var(--k-gold)':'var(--k-line)',color:d.today?'var(--k-goldt)':'var(--k-ink)',empty:!d.ev.length,
+      events:d.ev.map(([time,title,where,s])=>({time,title,where,hasWhere:!!where,...tag(s)}))}));
+    const monthCells=[];for(let i=0;i<42;i++){const d=i-5;const inM=d>=1&&d<=30;const dd=inM?d:(d<1?31+d:d-30);
+      monthCells.push({d:dd,color:inM?'var(--k-ink)':'var(--k-line)',bg:'transparent',ev:inM&&MONTH_EV[d]?MONTH_EV[d].map(t=>({t})):[]});}
+    const reminders=REMINDERS.map(r=>{const on=!!st.rem[r];return {label:r,dot:on?'var(--k-gold)':'transparent',color:on?'var(--k-ink)':'var(--k-mute)',toggle:()=>set({rem:{...st.rem,[r]:!on}})};});
+    const taskGroups=TASKS.map(g=>{const open=!st.taskClosed[g.id];return {...g,open,sign:sign(open),toggle:()=>set({taskClosed:{...st.taskClosed,[g.id]:open}}),
+      items:g.items.map(t=>{const d=!!st.done[t.id],o=st.taskOpen===t.id;return {...t,...tag(t.s),open:o,hasRel:!!t.rel,box:d?'var(--k-gold)':'var(--k-mute)',fill:d?'var(--k-gold)':'transparent',mark:d?'✓':'',color:d?'var(--k-mute)':'var(--k-ink)',strike:d?'line-through':'none',
+        tick:()=>{set({done:{...st.done,[t.id]:!d}});if(!d&&t.id==='t6')this.flash('Next call with Mum: 20 November');},toggle:()=>set({taskOpen:o?null:t.id})};})};});
+    const doneCount=TASKS[0].items.filter(t=>st.done[t.id]).length;
+    const noteGroups=SP.filter(s=>NOTES.some(n=>n.s===s.id)).map(s=>{const open=!st.noteClosed[s.id];const items=NOTES.filter(n=>n.s===s.id);
+      return {num:s.num,label:s.name,count:items.length,open,sign:sign(open),toggle:()=>set({noteClosed:{...st.noteClosed,[s.id]:open}}),
+        items:items.map(n=>({...n,kind:n.blocks.some(b=>b.k==='table')?'Table':'',bg:st.noteSel===n.id?'var(--k-soft)':'transparent',open:()=>set({noteSel:n.id,noteMode:'note'})}))};});
+    const ns=NOTES.find(n=>n.id===st.noteSel)||NOTES[0];
+    const note={...ns,...tag(ns.s),blocks:ns.blocks.map((b,i)=>{const k=ns.id+i,open=!st.tog[k];return {...b,isToggle:b.k==='toggle',isPara:b.k==='para',isTable:b.k==='table',open,tri:open?'▼':'▶',toggle:()=>set({tog:{...st.tog,[k]:open}}),
+      lines:(b.lines||[]).map(t=>({t})),cols:b.cols?b.cols.map((c,j)=>j===0?'minmax(0,1.3fr)':'minmax(0,1fr)').join(' '):'',head:(b.cols||[]).map(t=>({t})),cells:(b.rows||[]).flat().map(t=>({t}))};})};
+    const noteAsRows=ns.blocks.flatMap(b=>b.k==='toggle'?b.lines.map(l=>({a:b.h,b:l,c:'Line'})):b.k==='table'?b.rows.map(r=>({a:b.h,b:r.join(' · '),c:'Row'})):[{a:'—',b:b.t,c:'Paragraph'}]);
+    const innerCols=[{id:'week',label:'This week',isWeek:true,items:[]},{id:'ching',label:'I Ching',items:[{a:'Biting Through, changing to Arousing',b:'Today'},{a:'The Well',b:'Monday'},{a:'Patience',b:'Last week'}]},{id:'rev',label:'Reviews',items:[{a:'Weekly review',b:'Sunday'},{a:'Monthly review',b:'1 Nov'},{a:'Quarterly review',b:'January'}]}]
+      .map(c=>{const open=!st.innerClosed[c.id];return {...c,open,sign:sign(open),toggle:()=>set({innerClosed:{...st.innerClosed,[c.id]:open}})};});
+    const week=[60,72,40,80,66,74,0].map((h,i)=>({h:(h||8)+'%',d:'MTWTFSS'[i],bg:i===4?'var(--k-gold)':(h?'var(--k-line)':'var(--k-soft)')}));
+    const spendData=[['move',540],['kids',310],['work',120],['dog',96],['me',84],['',90]];
+    const spendBars=spendData.map(([s,v])=>({...tag(s),name:tag(s).sp,v:'€'+v,pct:Math.round(v/540*100)+'%',bg:s?'var(--k-gold)':'var(--k-mute)',go:()=>s&&this.go(s)}));
+    const payments=[['Thu','Mudanças Tejo — deposit','move','€120'],['Wed','Swim club, autumn term','kids','€140'],['Tue','Kibble, 12kg','dog','€58'],['Mon','EDP — October','move','€62.40']].map(([d,t,s,v])=>({d,t,v,...tag(s)}));
+    const P=parseCap(st.capText);const ov=st.capOv;const capTypeV=ov.type||P.type;const capSpaceV=ov.space!==undefined?ov.space:P.space;
+    const TYPES=['Event','Task','Note','Spend'];const SPC=['',...SP.map(s=>s.id)];
+    const whenTxt=P.day?(P.day.lbl.replace('Today, ','Today · ')+(P.time?' · '+P.time+'–'+String(+P.time.slice(0,2)+1).padStart(2,'0')+P.time.slice(2):' · all day')):(P.time?'Today · '+P.time:'No date — it rests until you need it');
+    const capRows=[
+      {k:'What',v:P.title||'…',note:'',num:'',tap:()=>{},cursor:'text'},
+      {k:'As',v:capTypeV,note:ov.type?'your choice':'',num:'',tap:()=>set({capOv:{...ov,type:TYPES[(TYPES.indexOf(capTypeV)+1)%TYPES.length]}}),cursor:'pointer'},
+      ...(capTypeV==='Event'||capTypeV==='Task'?[{k:'When',v:whenTxt,note:'',num:'',tap:()=>{},cursor:'default'}]:[]),
+      {k:'Into',v:capSpaceV?S[capSpaceV].name:'Unfiled',num:capSpaceV?S[capSpaceV].num:'',note:capSpaceV&&!ov.space&&P.hit?'guessed from “'+P.hit+'”':'',tap:()=>set({capOv:{...ov,space:SPC[(SPC.indexOf(capSpaceV)+1)%SPC.length]}}),cursor:'pointer'},
+      ...(P.rem.length&&(capTypeV==='Event'||capTypeV==='Task')?[{k:'Remind',v:P.rem.join(' · '),note:P.why,num:'',tap:()=>{},cursor:'default'}]:[])];
+    const submitCap=()=>{if(!st.capText.trim()){this.setState({cap:false});return;}
+      const added=[...st.added];if(capTypeV==='Event'&&P.day&&P.day.i>=0)added.push({i:P.day.i,time:P.time||'All day',title:P.title,s:capSpaceV});
+      const when=P.day?P.day.lbl.replace('Today, ','today, '):'';const msg=capTypeV==='Event'?`${P.title} — ${when}${P.time?' at '+P.time:''}. ${P.rem.length?'I’ll remind you '+P.rem.map(r=>r.toLowerCase()).join(' and ')+'.':''}`:
+        capTypeV==='Task'?`Task set down${capSpaceV?' in '+S[capSpaceV].name:''}. ${P.why}`:`Set down${capSpaceV?' in '+S[capSpaceV].name:''}. Find it again with ⌘K.`;
+      this.setState({cap:false,capText:'',capOv:{},rec:false,recT:0,recLv:[],recVia:'',added});this.flash(msg);};
+    const capExamples=['Dentist on Tuesday at 9am','Remind me to call Mum tomorrow','Movers quote €640'].map(t=>({t,use:()=>set({capText:t,capOv:{}})}));
+    const tUnread=th=>(th.id==='joana'&&st.incoming&&!st.threadRead.joana)||(th.unread&&!st.threadRead[th.id]);
+    const threads=THREADS.map(th=>{const ms2=[...th.msgs,...(st.msgsExtra[th.id]||[])];const lastM=ms2[ms2.length-1];return {...th,...tag(th.s),last:lastM[1],when:lastM[2],dot:tUnread(th)?'var(--k-gold)':'transparent',bg:st.thread===th.id?'var(--k-soft)':'transparent',open:()=>set({thread:th.id,threadRead:{...st.threadRead,[th.id]:true}})};});
+    const msgUnread=THREADS.filter(tUnread).length;
+    const thr=THREADS.find(x=>x.id===st.thread)||THREADS[0];
+    const thread={...thr,...tag(thr.s),ph:'Write to '+thr.name+'…',msgs:[...thr.msgs,...(st.msgsExtra[thr.id]||[])].map(([w,t,when])=>({t,when,side:w==='me'?'flex-end':'flex-start',bg:w==='me'?'var(--k-soft)':'var(--k-panel)'}))};
+    const sendDraft=()=>{if(!st.draft.trim())return;set({draft:'',msgsExtra:{...st.msgsExtra,[thr.id]:[...(st.msgsExtra[thr.id]||[]),['me',st.draft.trim(),'Just now']]}});};
+    const INDEX=[...ALLMAIL.map(m=>({kind:'Mail',t:m.subj,m:m.from,s:m.s,go:()=>{set({mailSel:m.id});this.go('mail');}})),
+      ...TASKS.flatMap(g=>g.items).map(t=>({kind:'Tasks',t:t.title,m:t.meta,s:t.s,go:()=>this.go('tasks')})),
+      ...NOTES.map(n=>({kind:'Notes',t:n.title,m:n.edited,s:n.s,go:()=>{set({noteSel:n.id});this.go('notes');}})),
+      ...DAYS.flatMap(d=>d.ev.map(e=>({kind:'Calendar',t:e[1],m:d.label+' '+e[0],s:e[3],go:()=>this.go('calendar')}))),
+      ...SP.map(s=>({kind:'Spaces',t:s.name,m:s.line,s:s.id,go:()=>this.go(s.id)}))];
+    const q=st.q.trim().toLowerCase();
+    const hits=q?INDEX.filter(r=>(r.t+' '+r.m+' '+tag(r.s).sp).toLowerCase().includes(q)):INDEX.filter(r=>['m1','m2'].length&&(r.kind==='Spaces'||r.t.includes('Ada')||r.t.includes('booster')));
+    const results=['Spaces','Mail','Tasks','Calendar','Notes'].map(k=>({label:q?k:(k==='Spaces'?'Your spaces':'Recently'),items:hits.filter(h=>h.kind===k).slice(0,5).map(h=>({...h,...tag(h.s)}))})).filter(g=>g.items.length);
+    const ob=ONB[Math.max(0,st.onb-1)];
+    return {
+      isFolds:nav==='Folds',isIndex:nav==='Index',folds,indexTabs,sheetOpen:!!sf,sheet:sf?{label:sf.label,hint:sf.hint,items:foldItems(sf)}:{items:[]},closeSheet:()=>set({sheet:null}),
+      goHome:()=>this.go('today'),toTop:()=>this.go('today'),dayOn:!this.isNight(),nightOn:!!this.isNight(),nightLabel:this.isNight()?'Day':'Night',toggleNight:()=>set({night:!this.isNight()}),
+      isToday:st.screen==='today',isSpace:st.screen==='space',isMail:st.screen==='mail',isCal:st.screen==='calendar',isTasks:st.screen==='tasks',isNotes:st.screen==='notes',isReflect:st.screen==='reflect',isMoney:st.screen==='money',isPlaceholder:st.screen==='placeholder',placeholderName:st.ph,
+      koGroups,ledger,ledgerOpen:!!lo,ledgerRows:lo?lo.rows:[],ledgerMore:lo?lo.more:'',ledgerGo:()=>lo&&this.go(lo.to),
+      sec:{day:sec('day'),spaces:sec('spaces'),surf:sec('surf'),line:sec('line'),pad:sec('pad')},agenda,surfacing,spaceTiles,space,
+      piles,mail,triage,turnInto,mailUnread:ALLMAIL.filter(m=>m.unread&&!st.mailRead[m.id]).length,foundCta:st.foundAdded[st.mailSel]?'Added ✓':'Add to calendar →',addFound:()=>{set({foundAdded:{...st.foundAdded,[st.mailSel]:true}});this.flash(`Added ${ms.found.t} to your calendar.`);},
+      foldersOpen:!!st.foldersOpen,foldersSign:sign(!!st.foldersOpen),toggleFolders:()=>set({foldersOpen:!st.foldersOpen}),
+      calIsDay:st.calView==='day',calIsMonth:st.calView==='month',calDay:()=>set({calView:'day'}),calMonth:()=>set({calView:'month'}),
+      calDayLine:st.calView==='day'?'var(--k-gold)':'transparent',calMonthLine:st.calView==='month'?'var(--k-gold)':'transparent',
+      calDays,monthCells,weekdays:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(l=>({l})),
+      newEvt:st.newEvt,newEvtLabel:st.newEvt?'Close':'+ Event',toggleNewEvt:()=>set({newEvt:!st.newEvt}),addEvt:()=>{set({newEvt:false});this.flash('Added to your calendar, in The kids.');},
+      allDayFill:st.allDay?'var(--k-gold)':'transparent',toggleAllDay:()=>set({allDay:!st.allDay}),reminders,connectOpen:st.connect,connectSign:st.connect?'−':'+',toggleConnect:()=>set({connect:!st.connect}),
+      taskGroups,taskLine:`${4-doneCount} for today · 1 came back · 2 people on a rhythm · 23 resting until their day`,
+      noteGroups,note,noteAsRows,showNoteBody:st.noteMode==='note',showNoteTable:st.noteMode==='table',asNote:()=>set({noteMode:'note'}),asTable:()=>set({noteMode:'table'}),
+      noteLine:st.noteMode==='note'?'var(--k-gold)':'transparent',tableLine:st.noteMode==='table'?'var(--k-gold)':'transparent',
+      innerCols,week,spendBars,payments,
+      capClosed:!st.cap,openCap:()=>set({cap:true}),closeCap:()=>{this.endRec();set({cap:false,rec:false});},drawerT:st.cap?'translate(-50%,0)':'translate(-50%,110%)',
+      capRef:this.capRef,capText:st.capText,onCapText:e=>set({capText:e.target.value,capOv:{}}),onCapKey:e=>{if(e.key==='Enter')submitCap();},capRows,submitCap,capEmpty:!st.capText.trim()&&!st.rec,notRec:!st.rec,isRec:st.rec,startRec:()=>this.startRec(),startRecBar:e=>{e.stopPropagation();this.startRec();},stopRec:()=>this.stopRec(),recLabel:st.capText?'Heard':'Listening…',hasInterim:st.rec&&!!st.capText,recTime:'0:'+String(st.recT).padStart(2,'0'),recLevels:(st.recLv.length?st.recLv:Array(48).fill(0.15)).map(v=>({h:Math.round(v*100)+'%',o:0.35+v*0.65})),capFoot:st.recVia?'Your voice is transcribed, then the recording is discarded.':'Nothing is sent anywhere. It stays in your Koyeba.',capHas:!!st.capText.trim()&&!st.rec,capExamples,
+      isMsgs:st.screen==='messages',threads,thread,msgUnreadLine:msgUnread?msgUnread+' unread':'All read',draft:st.draft,onDraft:e=>set({draft:e.target.value}),onDraftKey:e=>{if(e.key==='Enter')sendDraft();},sendDraft,
+      showIncoming:st.incoming&&!st.incomingSeen&&!st.threadRead.joana&&!(st.screen==='messages'&&st.thread==='joana'),replyIncoming:()=>{set({incomingSeen:true,thread:'joana',threadRead:{...st.threadRead,joana:true}});this.go('messages');},laterIncoming:()=>set({incomingSeen:true}),
+      hasToast:!!st.toast,toast:st.toast,
+      searchOpen:st.search,openSearch:()=>set({search:true,q:''}),closeSearch:()=>set({search:false}),searchRef:this.searchRef,q:st.q,onQ:e=>set({q:e.target.value}),results,noResults:!results.length,
+      onbOpen:st.onb>0,onb:ob,onbDots:ONB.map((_,i)=>({bg:i<st.onb?'var(--k-gold)':'var(--k-line)'})),startOnb:()=>set({onb:1}),
+      onbNext:()=>set({onb:st.onb>=ONB.length?0:st.onb+1}),onbSkip:()=>set({onb:st.onb===2?1:(st.onb>=ONB.length?0:st.onb+1)}),
+      onbStarters:STARTERS.map(n=>{const on=!!st.onbPick[n];return {name:n,line:on?'var(--k-gold)':'var(--k-line)',bg:on?'var(--k-soft)':'transparent',toggle:()=>set({onbPick:{...st.onbPick,[n]:!on}})};}),
+      onbTools:[{a:'Google',b:'Mail and calendar'},{a:'Another mailbox',b:'Any IMAP address'},{a:'iCloud or Fastmail',b:'Calendars, over CalDAV'},{a:'Notion or Tana',b:'Import notes and tables'}]
+    };
+  }
+}
+</script>
+</body>
+</html>

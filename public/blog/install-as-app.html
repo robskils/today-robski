@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Install Shizu as an app</title>
-<meta name="description" content="Shizu runs in your browser but installs like a real app - its own icon, its own window, offline-ready and with notifications. Here is how, on Chrome, Brave, Edge, Safari, Windows, Mac, iPhone and Android.">
-<link rel="canonical" href="https://shizu.fyi/blog/install-as-app">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/install-as-app">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/instalar-como-app">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/installer-comme-app">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/instalar-como-app">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/install-as-app">
-<meta property="og:title" content="Install Shizu as an app">
-<meta property="og:description" content="Shizu runs in your browser but installs like a real app - its own icon, its own window, offline-ready. Here is how, on every device.">
+<title>Install Koyeba as an app</title>
+<meta name="description" content="Koyeba runs in your browser but installs like a real app - its own icon, its own window, offline-ready and with notifications. Here is how, on Chrome, Brave, Edge, Safari, Windows, Mac, iPhone and Android.">
+<link rel="canonical" href="https://koyeba.co/blog/install-as-app">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/install-as-app">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/instalar-como-app">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/installer-comme-app">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/instalar-como-app">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/install-as-app">
+<meta property="og:title" content="Install Koyeba as an app">
+<meta property="og:description" content="Koyeba runs in your browser but installs like a real app - its own icon, its own window, offline-ready. Here is how, on every device.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/blog/install-as-app">
+<meta property="og:url" content="https://koyeba.co/blog/install-as-app">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/#private">Privacy First</a></li>
       <li><a href="/blog" class="on">Journal</a></li>
@@ -83,9 +83,9 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/blog">← The Shizu Journal</a>
+      <a class="back-link" href="/blog">← The Koyeba Journal</a>
       <div class="eyebrow">Getting started</div>
-      <h1>Install Shizu as an app</h1>
+      <h1>Install Koyeba as an app</h1>
       <div class="article-meta">
         <span>October 2026</span>
         <span class="dot">·</span>
@@ -97,17 +97,17 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">Shizu lives in your browser, but it does not have to feel like a browser tab. In a couple of clicks you can install it as an app - its own icon, its own clean window, ready offline and able to send you notifications.</p>
+      <p class="lede">Koyeba lives in your browser, but it does not have to feel like a browser tab. In a couple of clicks you can install it as an app - its own icon, its own clean window, ready offline and able to send you notifications.</p>
 
-      <p>Shizu is a progressive web app, which is a plain way of saying it installs straight from the web with nothing to download from a store. Same Shizu, same sign-in - just in proper app clothing. Here is how, wherever you are.</p>
+      <p>Koyeba is a progressive web app, which is a plain way of saying it installs straight from the web with nothing to download from a store. Same Koyeba, same sign-in - just in proper app clothing. Here is how, wherever you are.</p>
 
       <h2>On a computer</h2>
       <ul>
-        <li><strong>Chrome or Brave</strong> (Windows, Mac, Linux) - open <strong>daybook.fyi</strong> and look for the small <strong>install icon</strong> at the right of the address bar (a screen with a downward arrow). Click it, then <strong>Install</strong>. No install icon? Use the <strong>⋮</strong> menu → <strong>Cast, save and share</strong> → <strong>Install page as app</strong> (Brave: <strong>⋮</strong> → <strong>Install Shizu…</strong>).</li>
+        <li><strong>Chrome or Brave</strong> (Windows, Mac, Linux) - open <strong>daybook.fyi</strong> and look for the small <strong>install icon</strong> at the right of the address bar (a screen with a downward arrow). Click it, then <strong>Install</strong>. No install icon? Use the <strong>⋮</strong> menu → <strong>Cast, save and share</strong> → <strong>Install page as app</strong> (Brave: <strong>⋮</strong> → <strong>Install Koyeba…</strong>).</li>
         <li><strong>Microsoft Edge</strong> - the <strong>⋯</strong> menu → <strong>Apps</strong> → <strong>Install this site as an app</strong>.</li>
-        <li><strong>Safari on Mac</strong> (Sonoma or newer) - with Shizu open, the <strong>File</strong> menu → <strong>Add to Dock</strong>.</li>
+        <li><strong>Safari on Mac</strong> (Sonoma or newer) - with Koyeba open, the <strong>File</strong> menu → <strong>Add to Dock</strong>.</li>
       </ul>
-      <p>Shizu then opens in its own window and sits in your Dock, Taskbar or Start menu like any other app.</p>
+      <p>Koyeba then opens in its own window and sits in your Dock, Taskbar or Start menu like any other app.</p>
 
       <blockquote>Nothing to download from a store. It installs straight from the web.</blockquote>
 
@@ -116,22 +116,22 @@
         <li><strong>iPhone and iPad</strong> - open daybook.fyi in <strong>Safari</strong>, tap the <strong>Share</strong> button (the square with an upward arrow), then <strong>Add to Home Screen</strong>.</li>
         <li><strong>Android</strong> - open daybook.fyi in <strong>Chrome</strong>, tap the <strong>⋮</strong> menu, then <strong>Install app</strong> (or <strong>Add to home screen</strong>).</li>
       </ul>
-      <p>You will get a Shizu icon on your home screen that opens full-screen, with no address bar in the way.</p>
+      <p>You will get a Koyeba icon on your home screen that opens full-screen, with no address bar in the way.</p>
 
       <h2>Why bother</h2>
       <ul>
         <li><strong>One tap in.</strong> A real icon beats hunting for the right tab.</li>
         <li><strong>A calmer window.</strong> Full screen, no browser clutter around your day.</li>
         <li><strong>Works when the signal does not.</strong> The app keeps its shell ready, so a patchy connection does not leave you staring at a blank page.</li>
-        <li><strong>Notifications.</strong> Once installed, you can let Shizu nudge you about what matters - on your terms, and off by default.</li>
+        <li><strong>Notifications.</strong> Once installed, you can let Koyeba nudge you about what matters - on your terms, and off by default.</li>
       </ul>
 
-      <p>That is all there is to it. Install it once, and Shizu is there on the Dock or home screen whenever you need it - the same quiet, private home for your day, now a tap away.</p>
+      <p>That is all there is to it. Install it once, and Koyeba is there on the Dock or home screen whenever you need it - the same quiet, private home for your day, now a tap away.</p>
     </div>
 
     <div class="article-end">
       <h3>Not a member yet?</h3>
-      <p>Shizu is in invite-only early access. Request an invite and we will be in touch soon.</p>
+      <p>Koyeba is in invite-only early access. Request an invite and we will be in touch soon.</p>
       <a class="btn btn-primary" href="/#invite">Request an invite →</a>
     </div>
   </article>
@@ -139,18 +139,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">For a life well lived</span></div>
+    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">For a life well lived</span></div>
     <ul class="foot-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/blog">Journal</a></li>
       <li><a href="/#invite">Request an invite</a></li>
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

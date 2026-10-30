@@ -1,4 +1,4 @@
-// Assigning a task to a friend (Shizu Friends, phase 3b). Robin's chosen flow:
+// Assigning a task to a friend (Koyeba Friends, phase 3b). Robin's chosen flow:
 // send -> they accept -> it becomes a shared live task whose status syncs both
 // ways.
 //

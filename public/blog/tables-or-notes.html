@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A table, or a note?</title>
-<meta name="description" content="When to use a table and when to use a note in Shizu - why they are different, when to reach for each, and how to switch between them without losing anything.">
-<link rel="canonical" href="https://shizu.fyi/blog/tables-or-notes">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/tables-or-notes">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/tabela-ou-nota">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/tableau-ou-note">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/tabla-o-nota">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/tables-or-notes">
+<meta name="description" content="When to use a table and when to use a note in Koyeba - why they are different, when to reach for each, and how to switch between them without losing anything.">
+<link rel="canonical" href="https://koyeba.co/blog/tables-or-notes">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/tables-or-notes">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/tabela-ou-nota">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/tableau-ou-note">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/tabla-o-nota">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/tables-or-notes">
 <meta property="og:title" content="A table, or a note?">
-<meta property="og:description" content="When to use a table and when to use a note in Shizu - why, when and how.">
+<meta property="og:description" content="When to use a table and when to use a note in Koyeba - why, when and how.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/blog/tables-or-notes">
+<meta property="og:url" content="https://koyeba.co/blog/tables-or-notes">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/#private">Privacy First</a></li>
       <li><a href="/blog" class="on">Journal</a></li>
@@ -83,7 +83,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/blog">← The Shizu Journal</a>
+      <a class="back-link" href="/blog">← The Koyeba Journal</a>
       <div class="eyebrow">Ways of working</div>
       <h1>A table, or a note?</h1>
       <div class="article-meta">
@@ -97,7 +97,7 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">In Shizu, a note and a table are two shapes of the same idea: somewhere to set information down and find it again. A note is for words that run on. A table is for facts that repeat. Reach for the right shape and your Shizu stays clear; reach for the wrong one and you spend your time fighting the format instead of using it.</p>
+      <p class="lede">In Koyeba, a note and a table are two shapes of the same idea: somewhere to set information down and find it again. A note is for words that run on. A table is for facts that repeat. Reach for the right shape and your Koyeba stays clear; reach for the wrong one and you spend your time fighting the format instead of using it.</p>
 
       <h2>The grain of each</h2>
       <p>A note has no structure to keep. You open it and write - a thought, a plan, a draft, a journal entry, a sheet of reference you will read from top to bottom. It bends to whatever you bring.</p>
@@ -124,12 +124,12 @@
       </ul>
       <p>The test: if you would <em>scan</em> it, sort it, or count it, it wants to be a table.</p>
 
-      <h2>How it works in Shizu</h2>
+      <h2>How it works in Koyeba</h2>
       <ul>
         <li><b>Start a note</b> - choose New note and write. That is the whole of it.</li>
         <li><b>Turn a note into a table, or back.</b> Every note can flip to a table and back again, so nothing is a dead end. When a note quietly fills with the same shape of fact over and over, switch it to a table. If a table turned out to be more than you needed, switch it back. Your content comes with it.</li>
         <li><b>Keep the map and the territory apart, then join them.</b> A table is the overview; a note is the depth. Link a busy row to the note that holds its detail, and each opens into the other - a table of clients up top, a full note behind each name.</li>
-        <li><b>File either into a Life Space</b>, so it sits with the part of your life it belongs to and turns up where you expect it.</li>
+        <li><b>File either into a Space</b>, so it sits with the part of your life it belongs to and turns up where you expect it.</li>
       </ul>
 
       <blockquote>A rule of thumb: if you would read it, write a note; if you would scan it, build a table. And the day a note becomes a list of the same kind of item again and again, that is the moment to make it a table.</blockquote>
@@ -139,7 +139,7 @@
 
     <div class="article-end">
       <h3>Keep your life somewhere clear</h3>
-      <p>Shizu is invite-only while we get it right. Notes, tables, and everything that joins them up - come and have a look.</p>
+      <p>Koyeba is invite-only while we get it right. Notes, tables, and everything that joins them up - come and have a look.</p>
       <a class="btn btn-primary" href="/#invite">Request an invite →</a>
     </div>
   </article>
@@ -147,18 +147,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">For a life well lived</span></div>
+    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">For a life well lived</span></div>
     <ul class="foot-links">
-      <li><a href="/#idea">Your Shizu</a></li>
+      <li><a href="/#idea">Your Koyeba</a></li>
       <li><a href="/#tools">Tools</a></li>
       <li><a href="/blog">Journal</a></li>
       <li><a href="/#invite">Request an invite</a></li>
       <li><a href="/privacy">Privacy</a></li>
       <li><a href="/terms">Terms</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

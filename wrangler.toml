@@ -74,6 +74,19 @@ custom_domain = true
 pattern = "www.shizu.fyi"
 custom_domain = true
 
+# koyeba.co: the new primary brand domain (registered on Cloudflare, 2026-10-30).
+# custom_domain so wrangler provisions the proxied record + cert on deploy. Served in
+# parallel; shizu.fyi (and the older domains) now 301 here - see APP_DOMAINS and the
+# redirect block in worker/index.js. The app sender flips to contact@koyeba.co at the
+# prod cutover (BRIEF_FROM/BRIEF_SMTP_USER + the secret), deployed in one go.
+[[routes]]
+pattern = "koyeba.co"
+custom_domain = true
+
+[[routes]]
+pattern = "www.koyeba.co"
+custom_domain = true
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
@@ -96,7 +109,7 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "Shizu <today@incremento.co>"
+FROM_EMAIL = "Koyeba <today@incremento.co>"
 
 # Shizu sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
 # from contact@shizu.fyi through Purelymail SMTP: a real mailbox on a fully
@@ -158,7 +171,7 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only Robin to start; invite-only test users get added here (or, once the users
 # table drives access, this list stops being the gate).
 ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
-FROM_EMAIL = "Shizu <today@incremento.co>"
+FROM_EMAIL = "Koyeba <today@incremento.co>"
 BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the

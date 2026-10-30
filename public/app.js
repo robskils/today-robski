@@ -1,12 +1,12 @@
-// Shizu — one surface. Sidebar + a single pane that renders any block,
+// Koyeba — one surface. Sidebar + a single pane that renders any block,
 // and a ⌘K palette to jump anywhere. No page reloads.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
-// The wordmark: <first name> Shizu. The name comes from the signed-in account
+// The wordmark: <first name> Koyeba. The name comes from the signed-in account
 // (see firstName), never from a constant - a hard-coded owner is how every member
-// ended up looking at somebody else's name on their own Shizu.
-const BRAND = { app: 'Shizu' };
+// ended up looking at somebody else's name on their own Koyeba.
+const BRAND = { app: 'Koyeba' };
 // The tiers. Stored keys describe the arrangement, labels are the marketing name -
 // which has changed three times while the arrangement hasn't. Mirrors
 // worker/plans.js; change both together.
@@ -17,14 +17,14 @@ const PLAN_PRICE = { free: '', byok: '€9/mo', managed: '€13/mo' };
 const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
 const planLabel = (p) => PLAN_LABEL[normPlan(p)];
 const isManagedPlan = (p) => normPlan(p) === 'managed';
-// The Shizu mark: a sun rising over two page-lines (a book of days). Uses
+// The Koyeba mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
-// name and "Shizu" in the wordmark.
-// The Shizu mark: a monoline eight-fold star (an octagram of two folded
+// name and "Koyeba" in the wordmark.
+// The Koyeba mark: a monoline eight-fold star (an octagram of two folded
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
-const MARK = '<span class="brand-mark" aria-hidden="true">静</span>';
+const MARK = '<span class="brand-mark" aria-hidden="true"></span>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -35,7 +35,7 @@ function markRingOn() { try { return localStorage.getItem('life.markring') === '
 function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Life Spaces']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
 // The Reflection page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Reflection hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Reflection tools individually".)
@@ -48,70 +48,70 @@ const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dre
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português'], ['it', 'Italiano']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Reflection', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Shizu card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Shizu reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Life Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Koyeba card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Koyeba reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'More languages are rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
-  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
+  'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Shizu.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Shizu will live at', 'signup.create': 'Create my Shizu', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'signup.welcome': "Welcome - let's set up your Koyeba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyeba will live at', 'signup.create': 'Create my Koyeba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
-  'btn.newarea': '+ New Life Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
-  'field.area': 'Life Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
+  'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
+  'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Shizu friends', 'ct.self.show': 'Show your Shizu card', 'ct.self.sub': 'Your window on Shizu', 'ct.selfcard.tag': 'Shizu card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Life Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Koyeba friends', 'ct.self.show': 'Show your Koyeba card', 'ct.self.sub': 'Your window on Koyeba', 'ct.selfcard.tag': 'Koyeba card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Reflexão', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Shizu - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Shizu te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Life Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Koyeba - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Koyeba te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
+  'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Shizu.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Shizu ficará em', 'signup.create': 'Criar o meu Shizu', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyeba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyeba ficará em', 'signup.create': 'Criar o meu Koyeba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
-  'btn.newarea': '+ Novo Life Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
-  'field.area': 'Life Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
+  'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
+  'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Shizu', 'ct.self.show': 'Mostrar o meu cartão Shizu', 'ct.self.sub': 'A tua janela no Shizu', 'ct.selfcard.tag': 'Cartão Shizu ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Life Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Koyeba', 'ct.self.show': 'Mostrar o meu cartão Koyeba', 'ct.self.sub': 'A tua janela no Koyeba', 'ct.selfcard.tag': 'Cartão Koyeba ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 const T_IT = {
-  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Life Spaces', 'nav.reflect': 'Riflessione', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
+  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Riflessione', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
   'nav.grp.daily': 'Oggi', 'nav.planner': 'Flusso', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Riflessione', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
   'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Progressi', 'nav.practices': 'Pratiche', 'nav.connect': 'Legami',
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
   'set.title': 'Impostazioni',
   'set.tab.account': 'Account', 'set.tab.card': 'Scheda', 'set.tab.ai': 'Piano', 'set.tab.appearance': 'Aspetto', 'set.tab.mobile': 'Telefono', 'set.tab.notifications': 'Notifiche', 'set.tab.sections': 'Strumenti', 'set.tab.invites': 'Inviti', 'set.tab.manage': 'Gestisci', 'set.tab.feeds': 'Calendario', 'set.tab.security': 'Sicurezza', 'set.tab.import': 'Importa',
-  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Shizu - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Shizu ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Life Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
+  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Koyeba - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Koyeba ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
   'set.language': 'Lingua', 'set.language.hint': "L'italiano viene introdotto sezione per sezione",
   'home.greeting.morning': 'Buongiorno', 'home.greeting.afternoon': 'Buon pomeriggio', 'home.greeting.evening': 'Buonasera',
   'home.newnote': '+ Nota', 'home.newtask': '+ Attività', 'home.newevent': '+ Evento',
-  'home.sec.priority': 'Attività prioritarie', 'home.sec.focus': 'Obiettivi in evidenza', 'home.sec.recent': 'Visti di recente', 'home.sec.keepintouch': 'Tieniti in contatto', 'home.sec.favareas': 'Life Spaces', 'home.sec.favs': 'In evidenza', 'home.sec.people': 'Persone online', 'home.sec.notepad': 'Blocco note', 'home.sec.toolbox': 'Strumenti',
+  'home.sec.priority': 'Attività prioritarie', 'home.sec.focus': 'Obiettivi in evidenza', 'home.sec.recent': 'Visti di recente', 'home.sec.keepintouch': 'Tieniti in contatto', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'In evidenza', 'home.sec.people': 'Persone online', 'home.sec.notepad': 'Blocco note', 'home.sec.toolbox': 'Strumenti',
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
-  'signup.welcome': 'Benvenuto - prepariamo il tuo Shizu.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Shizu vivrà su', 'signup.create': 'Crea il mio Shizu', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': "Il codice nell'email che ti ha invitato.", 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
+  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyeba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyeba vivrà su', 'signup.create': 'Crea il mio Koyeba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': "Il codice nell'email che ti ha invitato.", 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
   'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
-  'btn.newarea': '+ Nuovo Life Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
-  'field.area': 'Life Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
+  'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
+  'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
   'task.search': 'Cerca attività…', 'task.add': '+ Aggiungi attività', 'task.whatneeds': "Cosa c'è da fare?", 'task.surfaceon': 'Riappare il', 'task.notesph': 'Dettagli, contesto o link…', 'task.addtask': 'Aggiungi attività', 'task.done': 'Fatto', 'task.showcompleted': 'Mostra completate', 'task.empty.filters': 'Nessuna attività corrisponde a questi filtri.', 'task.empty.open': 'Nessuna attività aperta qui.', 'task.empty.here': 'Ancora nessuna attività qui.', 'task.nextdue': 'La prossima scade', 'task.onschedule': 'Secondo programma', 'task.aftertick': 'Dopo averla segnata',
-  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Shizu', 'ct.self.show': 'Mostra la mia scheda Shizu', 'ct.self.sub': 'La tua finestra su Shizu', 'ct.selfcard.tag': 'Scheda Shizu ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Life Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Life Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
+  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Koyeba', 'ct.self.show': 'Mostra la mia scheda Koyeba', 'ct.self.sub': 'La tua finestra su Koyeba', 'ct.selfcard.tag': 'Scheda Koyeba ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
 };
 function locale() {
   // Multi-language is PAUSED until the app is fully translated - English only for
@@ -212,7 +212,7 @@ async function api(path, opts = {}) {
     // us, not the member) - show something calm and human instead.
     if (/D1_ERROR|row write limit|SQLITE|no such (table|column)/i.test(msg)) {
       msg = /write limit/i.test(msg)
-        ? "Couldn't save just now - Shizu is briefly at capacity. Please try again in a little while."
+        ? "Couldn't save just now - Koyeba is briefly at capacity. Please try again in a little while."
         : "Couldn't save that just now. Please try again.";
     }
     throw new Error(msg);
@@ -965,7 +965,7 @@ function sanitizeProse(html) {
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
-      // Internal links to other Shizu pages FIRST: an internal link the
+      // Internal links to other Koyeba pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
@@ -1018,9 +1018,9 @@ const HELP = {
   notes: { title: 'Notes', tip: 'Write freely, then weave it together: headings that fold, notes linked to one another, images and files dropped right in the page - and anything tagged to the parts of your life it belongs to.',
     body: `<p>A page is for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse a long page), lists and links.</p>
       <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
-      <li><b>Related pages</b> appear on their own - any page sharing a lifespace with this one is a tap away, so they find each other.</li>
+      <li><b>Related pages</b> appear on their own - any page sharing a space with this one is a tap away, so they find each other.</li>
       <li><b>Link</b> highlighted text to another page or even a table row, to weave your writing together.</li>
-      <li><b>Life Spaces</b> - tag a page to one or several lifespaces (the chips up top); it then shows on each of those lifespaces, in that lifespace's colour.</li>
+      <li><b>Spaces</b> - tag a page to one or several spaces (the chips up top); it then shows on each of those spaces, in that space's colour.</li>
       <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
       <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
   calendar: { title: 'Calendar', tip: 'Your whole calendar - and it works with no outside account at all, syncs with Google if you want it to, and can pull in your country’s holidays and your team’s fixtures.',
@@ -1030,17 +1030,17 @@ const HELP = {
       <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
       <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
       <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
-  mail: { title: 'Mail', tip: 'Every inbox in one place - Gmail, Yahoo, iCloud, Outlook. Your mail stays where it is; you just get to do far more with it: triage to zero, turn email into tasks and notes, file it under a Life Space, and search your whole archive.',
-    body: `<p><b>Here's the deal.</b> Connect your email accounts and Shizu becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into Shizu; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. Shizu is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
+  mail: { title: 'Mail', tip: 'Every inbox in one place - Gmail, Yahoo, iCloud, Outlook. Your mail stays where it is; you just get to do far more with it: triage to zero, turn email into tasks and notes, file it under a Space, and search your whole archive.',
+    body: `<p><b>Here's the deal.</b> Connect your email accounts and Koyeba becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into Koyeba; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. Koyeba is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
       <h4>What's in it for you</h4>
       <ul>
       <li><b>One inbox for every account.</b> Gmail for work, iCloud for the family, that old Yahoo you still get the good stuff on - they pour into a single stream, so you check mail once, not five times.</li>
-      <li><b>Email becomes action.</b> An email is rarely just an email - it's a thing to do, a thing to remember, a thing that belongs to one corner of your life. Turn it into a <b>task</b>, make it a <b>note</b>, or file it under a <b>Life Space</b> in a tap, and it joins the rest of your world instead of rotting in a thread.</li>
+      <li><b>Email becomes action.</b> An email is rarely just an email - it's a thing to do, a thing to remember, a thing that belongs to one corner of your life. Turn it into a <b>task</b>, make it a <b>note</b>, or file it under a <b>Space</b> in a tap, and it joins the rest of your world instead of rotting in a thread.</li>
       <li><b>Reach zero, and stay there.</b> Every new email gets sorted into a few honest buckets and leaves the inbox. The point isn't a tidy inbox for its own sake - it's the quiet of knowing nothing's slipping through.</li>
       <li><b>Find anything, ever.</b> Search reaches your <b>whole mailbox</b> on the server - your entire Gmail history, not just what's on screen - using Gmail's own search index under the hood. The past is all still there; you just don't have to carry it around.</li>
       </ul>
       <h4>Going forward, not hoarding backward</h4>
-      <p>Shizu works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and Shizu just gives you better things to do with it.</p>
+      <p>Koyeba works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and Koyeba just gives you better things to do with it.</p>
       <h4>One inbox, triaged to zero</h4>
       <p>New mail lands in the <b>Inbox</b> queue. File each email into one of three honest buckets - and it leaves the inbox:</p>
       <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
@@ -1048,7 +1048,7 @@ const HELP = {
       <li><b>Read Later</b> - worth a read when you have the space.</li></ul>
       <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent · Important · Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the queue. When the Inbox count hits zero, you're done. To file an email, open it and use <b>File into ▾</b>, tap the colour dot on its row, or drag the row onto a pot - the moment you do, it's <b>archived off your inbox</b>, out of your face, while the bucket keeps hold of it (Gmail or any IMAP account alike). Changed your mind? <b>File into ▾ → Back to Inbox</b>.</p>
       <h4>Make something of it</h4>
-      <p>Open any email and the bar is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Life Space</b> (file it under a part of your life), <b>Transform ▾</b> (turn it into a <b>task</b> or a <b>note</b>, carrying the email's text with it), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block). That's the whole idea - email stops being a dead end and becomes the start of something.</p>
+      <p>Open any email and the bar is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Space</b> (file it under a part of your life), <b>Transform ▾</b> (turn it into a <b>task</b> or a <b>note</b>, carrying the email's text with it), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block). That's the whole idea - email stops being a dead end and becomes the start of something.</p>
       <h4>Which accounts can I connect?</h4>
       <p>Almost any mailbox - anything that speaks <b>IMAP</b>, which is <b>Gmail</b>, Google Workspace, <b>Yahoo</b>, <b>iCloud</b>, <b>Outlook / Office 365</b>, Purelymail and nearly every other provider. There are one-tap presets for the big ones, and you can add anything else by typing its IMAP and SMTP host and port. Add as many as you like; they all merge into the one inbox, and adding one never touches another.</p>
       <h4>How to add one</h4>
@@ -1060,7 +1060,7 @@ const HELP = {
       </ol>
       <h4>Passwords by provider</h4>
       <ul>
-        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Shizu", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
+        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Koyeba", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
         <li><b>iCloud</b> - an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
         <li><b>Yahoo</b> - an <b>app password</b> from your Yahoo Account Security settings (your normal password won't work for a mail app).</li>
         <li><b>Outlook / Office 365</b> - your normal password usually works; with MFA, generate an app password in your Microsoft security settings.</li>
@@ -1070,19 +1070,19 @@ const HELP = {
       <p>Your account passwords are <b>encrypted</b> so not even we can read them, your mail stays on your provider's own servers, and anything that <b>leaves</b> your account - a reply, a forward - always waits for you to press the button. Scribe drafts; it never sends on its own.</p>` },
   contacts: { title: 'Contacts', tip: 'The people in your life, kept close - with a gentle nudge when it has been too long since you spoke, measured from when you last actually did.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
-      <p>Contacts with an email are checked against Shizu, so you can see which of your people are here and connect with them.</p>
+      <p>Contacts with an email are checked against Koyeba, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
       <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'Spending, portfolio and a read on the markets in one glance - and your money lines up with your life, because your Life Spaces double as the spending categories.',
+  financial: { title: 'Money', tip: 'Spending, portfolio and a read on the markets in one glance - and your money lines up with your life, because your Spaces double as the spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
       <h4>Portfolio</h4>
-      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Shizu keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
+      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Koyeba keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
       <h4>Spending</h4>
       <ul>
-      <li><b>Import a statement</b> (CSV or PDF) and Shizu reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
-      <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a lifespace.</li>
+      <li><b>Import a statement</b> (CSV or PDF) and Koyeba reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
+      <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a space.</li>
       <li>The month reads back as <b>spend, income and net</b>, with your <b>top categories</b>, so the shape of the month is clear without a spreadsheet.</li>
       </ul>
       <h4>Advice</h4>
@@ -1097,22 +1097,22 @@ const HELP = {
       <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Life Spaces', tip: 'A home for every part of your life - an area, a project, even a person. Everything to do with it in one place, so you stop hunting across a dozen apps for the pieces.',
-    body: `<p>Shizu keeps a <b>lifespace for each part of your life</b> - the way a book of accounts keeps a separate lifespace for each domain. A lifespace can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
-      <p><b>One lifespace gathers that whole corner of your life:</b></p>
+  areas: { title: 'Spaces', tip: 'A home for every part of your life - an area, a project, even a person. Everything to do with it in one place, so you stop hunting across a dozen apps for the pieces.',
+    body: `<p>Koyeba keeps a <b>space for each part of your life</b> - the way a book of accounts keeps a separate space for each domain. A space can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
+      <p><b>One space gathers that whole corner of your life:</b></p>
       <ul>
       <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
       <li>A dashboard across the top with quick jumps and live counts, so one glance tells you where that part of your life stands.</li>
       <li>Room for the bigger picture when you want it - a <b>vision</b>, a <b>Wheel of Life</b> and a <b>bucket list</b>.</li>
-      <li>Give each lifespace a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its lifespace's colour.</li>
-      <li><b>Share</b> a lifespace with the people in it, so a family or a team work off the same one.</li>
+      <li>Give each space a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its space's colour.</li>
+      <li><b>Share</b> a space with the people in it, so a family or a team work off the same one.</li>
       </ul>
       <p>Notes or tables - reach for whichever fits the material:</p>
       <ul>
-      <li>A <b>note</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Notes take headings, lists, links and rich text, and one note can live on more than one lifespace.</li>
+      <li>A <b>note</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Notes take headings, lists, links and rich text, and one note can live on more than one space.</li>
       <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
       </ul>
-      <p>Make a page or table straight from a lifespace, or tag an existing one to it. Rename, recolour, share or add lifespaces whenever you like - the whole app follows.</p>` },
+      <p>Make a page or table straight from a space, or tag an existing one to it. Rename, recolour, share or add spaces whenever you like - the whole app follows.</p>` },
   reflect: { title: 'Reflection', tip: 'A quiet corner of the app for the inner life - journal, coaching, dreams, meditation, and a few reflection tools for when you want a different lens. Each its own page, nothing on show.',
     body: `<p><b>Reflection</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
       <ul>
@@ -1130,42 +1130,42 @@ const HELP = {
     body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
       <h4>Adding something</h4>
       <ul>
-      <li><b>Paste a link</b> and Shizu fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
+      <li><b>Paste a link</b> and Koyeba fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
       <li><b>Type a book or film</b> title (tap <b>Book</b> or <b>Film</b> first if you want to be sure) and it looks up the cover, year and a link for you.</li>
       <li>Quickest from anywhere: <b>+ New → Read or watch</b>, or the <b>+</b> beside Read &amp; Watch in the sidebar.</li>
       </ul>
       <h4>Five kinds, each worded to suit</h4>
-      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Shizu guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
+      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Koyeba guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
       <h4>Working the list</h4>
       <ul>
       <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
       <li><b>Filter by kind</b> with the chips, so it reads as "films I want to see" or "articles still to read".</li>
       <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
-      <li><b>File it to a Life Space</b> and it sits with that part of your life, in that lifespace's colour - your watercolour reading filed under Art, say.</li>
+      <li><b>File it to a Space</b> and it sits with that part of your life, in that space's colour - your watercolour reading filed under Art, say.</li>
       </ul>
-      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Shizu.</p>` },
+      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Koyeba.</p>` },
   timer: { title: 'Toolbox', tip: 'The small tools for doing the work: a focus timer that logs your deep-work sessions, a plain countdown for anything, and your practices.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on Shizu', tip: 'Connect with the people you know who are on Shizu - then share Life Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
-    body: `<p>Some of the people in your Contacts are on Shizu too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
+  friends: { title: 'Contacts on Koyeba', tip: 'Connect with the people you know who are on Koyeba - then share Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
+    body: `<p>Some of the people in your Contacts are on Koyeba too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
       <h4>Connecting</h4>
       <ul>
-      <li>At the top of <b>Contacts</b>, Shizu quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
+      <li>At the top of <b>Contacts</b>, Koyeba quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
       <li>Or add someone straight off by <b>name or email</b>.</li>
       <li>A request waits until they accept. <b>Incoming</b> requests are yours to accept or decline, and you can see the ones you have <b>sent</b>.</li>
       </ul>
       <h4>What connecting lets you do</h4>
       <ul>
-      <li><b>Share a Life Space</b> with the people in it - a household runs the move off one shared lifespace, co-parents keep the same calendar and to-dos.</li>
+      <li><b>Share a Space</b> with the people in it - a household runs the move off one shared space, co-parents keep the same calendar and to-dos.</li>
       <li><b>Share a Note or a task</b>, view-only or to edit together.</li>
       <li><b>Assign a task</b> to someone you are connected to, so it lands on their plate as well as yours.</li>
       <li>Keep <b>shared notes</b>, <b>chat</b>, and <b>start a call</b> when it is quicker to talk.</li>
       </ul>
-      <p>Your data stays yours: a person only ever sees the exact lifespace, page or task you share with them, and you can stop sharing at any time.</p>` },
+      <p>Your data stays yours: a person only ever sees the exact space, page or task you share with them, and you can stop sharing at any time.</p>` },
   today: { title: 'Flow', tip: 'Plan your day by feel, not by force: drag your practices and tasks onto a timed day, tick off what you did, and let your streaks build. Practices are a palette, never a timetable.',
     body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by page and priority.</p>
       <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
@@ -1176,35 +1176,35 @@ const HELP = {
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
       <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep a few places open at once like browser tabs, pin the ones you always want to hand, and jump anywhere in a couple of keystrokes with ⌘K.',
-    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Shizu - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
+    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Koyeba - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
       <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
-      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Shizu opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
+      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Koyeba opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
       <li><b>Unpin</b> by tapping the <b>📌</b> again; it becomes an ordinary working tab.</li>
       <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
-      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Shizu.</li></ul>
+      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Koyeba.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Shizu card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
-  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Shizu card, and two-factor security - all in one place.',
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Koyeba card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
+  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Koyeba card, and two-factor security - all in one place.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
-      <ul><li><b>Your Shizu card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
+      <ul><li><b>Your Koyeba card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
       <li><b>Two-factor authentication</b> lives here too, under Security: add a second step at sign-in from your authenticator app.</li>
       <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
-    body: `<p>Every plan is the whole of Shizu - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
-  'settings-notifications': { title: 'Notifications', tip: 'How and when Shizu reaches you - the brief, text alerts, and a couple of Home touches.',
+    body: `<p>Every plan is the whole of Koyeba - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
+  'settings-notifications': { title: 'Notifications', tip: 'How and when Koyeba reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
       <p><b>Around the app:</b> the <b>daily inspirational quote</b> on Home, Today and the brief, and whether you <b>see online contacts</b> in the Home sidebar.</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
-  'settings-invites': { title: 'Invites', tip: 'Bring people onto Shizu.',
-    body: `<p>Put in someone's email and a note, and Shizu emails them the invitation. They click one link, sign in and their own Shizu is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
-  'settings-manage': { title: 'Manage', tip: 'Life Spaces, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Life Spaces</b> (what Shizu orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+  'settings-invites': { title: 'Invites', tip: 'Bring people onto Koyeba.',
+    body: `<p>Put in someone's email and a note, and Koyeba emails them the invitation. They click one link, sign in and their own Koyeba is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
+  'settings-manage': { title: 'Manage', tip: 'Spaces, mail accounts, spending categories and reminders.',
+    body: `<p>Each tile opens a small subpage: <b>Spaces</b> (what Koyeba orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
     body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
@@ -1272,13 +1272,13 @@ function renderGuideIndex() {
     const h = HELP[k];
     return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
   }).join('');
-  $('#pane').innerHTML = `${pageCrumb('Shizu Guide')}
-    <div class="pane-head home-head"><h1>Shizu Guide</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Koyeba Guide')}
+    <div class="pane-head home-head"><h1>Koyeba Guide</h1></div>
     <div class="help-doc">
       <div class="guide-ethos">
         <div class="guide-ethos-mark">${MARK}</div>
         <div class="guide-ethos-tag">For a life well lived</div>
-        <p class="guide-ethos-p">Shizu holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
+        <p class="guide-ethos-p">Koyeba holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
       </div>
       <p class="help-lede">Here's how it all works. Pick a tool below to see its guide.</p>
       <div class="guide-sec-h">All the guides</div>
@@ -1287,13 +1287,13 @@ function renderGuideIndex() {
       <p class="guide-start-p">Spotted something, hit a snag, or have an idea? We read every note.</p>
       <button class="add-btn wide help-feedback-btn" data-guide-feedback="Guide">💬 Give feedback</button>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>Your data belongs to you.</b> Shizu is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Shizu is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
+      <p class="guide-start-p"><b>Your data belongs to you.</b> Koyeba is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Koyeba is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
-        <a class="guide-legal-link" href="https://shizu.fyi/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
-        <a class="guide-legal-link" href="https://shizu.fyi/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
-        <a class="guide-legal-link" href="mailto:contact@shizu.fyi">Contact us ✉</a>
+        <a class="guide-legal-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
+        <a class="guide-legal-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
+        <a class="guide-legal-link" href="mailto:contact@koyeba.co">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a>.<br>© ${new Date().getFullYear()} Shizu · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyeba · daybook.fyi</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -1345,14 +1345,14 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
-    case 'card': return 'Shizu card';
+    case 'card': return 'Koyeba card';
     case 'admin': return 'Admin';
-    case 'friends': return 'Contacts on Shizu';
+    case 'friends': return 'Contacts on Koyeba';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
-    case 'area': return (state.area_open && state.area_open.area.title) || 'Life Space'; case 'areas': return t('nav.areas');
+    case 'area': return (state.area_open && state.area_open.area.title) || 'Space'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Shizu';
+    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Koyeba';
     case 'messages': return 'Messages';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
@@ -1364,7 +1364,7 @@ function labelForView(v) {
   }
 }
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
-// single note reads "Shizu Notes", a contact "Shizu Contacts", etc.
+// single note reads "Koyeba Notes", a contact "Koyeba Contacts", etc.
 const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
 // The back button that rides in the top line (to the right of the ☰ menu), shown
 // only when there is somewhere to go back to.
@@ -1393,7 +1393,7 @@ function openView(v) {
     case 'practicecard': return openPracticeCard(v.id);
     case 'friends': return openContacts();   // merged into Contacts
     case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
-    case 'connect': return openConnect(); case 'daybookpeople': return openShizuPeople();
+    case 'connect': return openConnect(); case 'daybookpeople': return openKoyebaPeople();
     case 'messages': return openMessagesPage();
     case 'shared': return openSharedHub();
     case 'goals': return openGoals(); case 'goalcard': return openGoalCard(v.id); case 'bucketcard': return openBucketCard(v.id);
@@ -1496,7 +1496,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
   const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
   // The back arrow is always present on the bar. With view-history it pops that;
-  // otherwise it steps up one level to the parent crumb (Life Spaces, Pages, …), so a
+  // otherwise it steps up one level to the parent crumb (Spaces, Pages, …), so a
   // directly-opened page (a restored tab, a deep link) is never a dead end. (Robin.)
   const parentIdx = opts.omitCurrent ? items.length - 1 : items.length - 2;
   const parent = parentIdx >= 0 ? items[parentIdx] : null;
@@ -1523,7 +1523,7 @@ function addNewMenuHtml() {
     modOn('notes') ? `<button class="addnew-item" data-new-table><span class="addnew-ic">⊞</span>Table</button>` : '',
     modOn('tasks') ? item('task', '✓', 'Task') : '',
     modOn('calendar') ? item('event', '▦', 'Event') : '',
-    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Life Space</button>` : '',
+    modOn('areas') ? `<button class="addnew-item" data-new-area><span class="addnew-ic">◈</span>Space</button>` : '',
     modOn('goals') ? item('goal', '◎', 'Goal') : '',
     modOn('contacts') ? item('contact', '☺', 'Contact') : '',
     modOn('journal') ? item('journal', '✎', 'Journal') : '',
@@ -1585,7 +1585,7 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
         // A new build is live. Never yank the page out mid-work - show a quiet,
         // sticky "tap to refresh" nudge and let the choice be theirs. (Robin.)
         updating = true;
-        toast('A new version of Shizu is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
+        toast('A new version of Koyeba is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
       }
     } catch { /* offline - keep running what we have */ }
   }
@@ -1705,7 +1705,7 @@ function navSection(key, v) {
     }).join('') || '<div class="nav-sub muted">Star anything to pin it here</div>';
   } else if (key === 'notes') {
     // "Recent" shows the most recently VIEWED items of any kind - pages, tables,
-    // lifespaces, tasks and reflections - newest first, not just notes. (Robin.)
+    // spaces, tasks and reflections - newest first, not just notes. (Robin.)
     title = 'Recent'; add = '<button class="nav-add" data-new-note title="New note">+</button>';
     const activeId = (v.type === 'note' && state.note && state.note.path[0] && state.note.path[0].id)
       || (v.type === 'table' && state.tables_open && state.tables_open.id)
@@ -1713,7 +1713,7 @@ function navSection(key, v) {
       || (v.type === 'taskcard' && state.task_open && state.task_open.task && state.task_open.task.id) || null;
     rows = recentItems().filter((r) => r && r.id && r.kind).slice(0, 20).map((n) => {
       const active = n.id === activeId;
-      // The item's life-area hue as a left edge + tinted glyph. A lifespace is its own
+      // The item's life-area hue as a left edge + tinted glyph. A space is its own
       // colour; everything else takes the hue of the area it sits in (recovered from
       // whatever's loaded for older entries that predate the stored area).
       const aid = n.kind === 'area' ? n.id : (n.area || (() => { const b = (state.noteTops || []).find((x) => x.id === n.id) || (state.tables || []).find((x) => x.id === n.id); return b ? blockAreas(b)[0] : null; })());
@@ -1723,7 +1723,7 @@ function navSection(key, v) {
       return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
     }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
   } else if (key === 'people') {
-    // Your connected Shizu people, online ones first and offline ones greyed,
+    // Your connected Koyeba people, online ones first and offline ones greyed,
     // so you can see who's about at a glance and message them in a tap.
     title = 'People'; add = '<button class="nav-add" data-open-contacts title="Contacts">👤</button>';
     // Need the friends list (names) once; the 90s status poll keeps who's online.
@@ -1735,18 +1735,18 @@ function navSection(key, v) {
     rows = sorted.map((f) => {
       const on = isOnline(f); const un = unreadFrom(f.id);
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Shizu</button>');
+    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyeba</button>');
   } else {
-    title = 'Life Spaces'; add = '<button class="nav-add" data-new-area title="New lifespace">+</button>';
+    title = 'Spaces'; add = '<button class="nav-add" data-new-area title="New space">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
-    // so the sidebar reads at a glance like the rest of the app. Life Spaces shared
+    // so the sidebar reads at a glance like the rest of the app. Spaces shared
     // with me sit below my own, marked with who shared them.
     if (state.sharedAreas === undefined) loadSharedAreas().then(() => renderNav());
     const foRow = (a, shared) => {
       const on = v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
       return `<button class="nav-sub has-area${on ? ' on' : ''}${shared ? ' nav-sub-shared' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"${shared ? ` title="Shared with you by ${esc(a.sharedBy || 'someone')}"` : ''}><span class="i">◈</span><span class="t">${esc(a.title || 'Untitled')}</span>${shared ? '<span class="nav-sub-shb" aria-hidden="true">👥</span>' : ''}</button>`;
     };
-    rows = (state.areas.map((a) => foRow(a, false)).join('') + (state.sharedAreas || []).map((a) => foRow(a, true)).join('')) || '<div class="nav-sub muted">No lifespaces yet</div>';
+    rows = (state.areas.map((a) => foRow(a, false)).join('') + (state.sharedAreas || []).map((a) => foRow(a, true)).join('')) || '<div class="nav-sub muted">No spaces yet</div>';
   }
   return `<div class="nav-sec" data-nav-sec="${key}">
     <div class="nav-sec-h" draggable="true" data-sec-toggle="${key}" title="${collapsed ? 'Expand' : 'Collapse'}">
@@ -1866,7 +1866,7 @@ function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(
 // on accent) recolours the whole app. Cached in localStorage for instant paint
 // and mirrored to settings (kv_accent) so it follows you across devices.
 const ACCENT_PRESETS = [
-  ['#a8844a', 'Shizu'], ['#c4412e', 'Rust'], ['#c2703a', 'Amber'],
+  ['#a8844a', 'Koyeba'], ['#c4412e', 'Rust'], ['#c2703a', 'Amber'],
   ['#3f7d93', 'Teal'], ['#5a7d5a', 'Forest'], ['#6b5b95', 'Plum'],
   ['#4f6d9c', 'Indigo'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
 ];
@@ -2027,8 +2027,8 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnySet || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 
-// ── Your Shizu card ─────────────────────────────────────────────────────
-// A little profile: how people find you on Shizu, and your window to the
+// ── Your Koyeba card ─────────────────────────────────────────────────────
+// A little profile: how people find you on Koyeba, and your window to the
 // world - photo, tagline, a colour, and the contact details you choose to show.
 // Kept in kv_card_profile (photo is a small square data URI); name/handle come
 // from the account. Others seeing it comes next; for now it's yours to make.
@@ -2080,13 +2080,13 @@ function cardHtml(d, full) {
   const accent = d.accent || '#c4412e';
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
-  const qr = d.subdomain ? qrSvg('https://shizu.fyi/u/' + d.subdomain, 74) : '';
+  const qr = d.subdomain ? qrSvg('https://koyeba.co/u/' + d.subdomain, 74) : '';
   return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
     <div class="dbc-band"></div>
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Shizu</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Shizu">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Koyeba</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Koyeba">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -2126,7 +2126,7 @@ async function cardSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 // A contact's photo: crop-to-square 256px JPEG data URI on props.photo - small
-// and light, in keeping with Shizu (no high-res uploads). (Robin.)
+// and light, in keeping with Koyeba (no high-res uploads). (Robin.)
 async function contactSetPhoto(file) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
   try {
@@ -2137,7 +2137,7 @@ async function contactSetPhoto(file) {
     await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
   } catch (e) { toast(e.message || 'Could not read that image'); }
 }
-// Dismiss a "your contact is on Shizu" suggestion. Drops it locally and persists
+// Dismiss a "your contact is on Koyeba" suggestion. Drops it locally and persists
 // the hidden id (kv_sugg_hidden), so getFriends keeps it out from now on. (Robin:
 // let me hide a suggestion as well as connect.)
 async function hideSuggestion(id) {
@@ -2182,20 +2182,20 @@ function cardChosenEmails(c) {
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
-  $('#pane').innerHTML = `${pageCrumb('Shizu card')}
-    <div class="pane-head home-head"><h1>Your Shizu card</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Koyeba card')}
+    <div class="pane-head home-head"><h1>Your Koyeba card</h1></div>
     ${cardEditorHtml()}`;
 }
 // Repaint the card editor on whichever surface it's on: the Settings > Card tab,
-// or the standalone Shizu card view.
+// or the standalone Koyeba card view.
 function rerenderCard() { if (state.view && state.view.type === 'settings') renderSettings(); else renderCard(); }
-// The card editor body (preview + fields), reused by the standalone Shizu card
+// The card editor body (preview + fields), reused by the standalone Koyeba card
 // view and the Settings > Card tab.
 function cardEditorHtml() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
   const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
-  return `<p class="dbc-lede">How people find you on Shizu, and your small window to the world. Make it yours.</p>
+  return `<p class="dbc-lede">How people find you on Koyeba, and your small window to the world. Make it yours.</p>
     <div class="dbc-wrap">
       <div class="dbc-preview">${cardPreviewHtml(true)}</div>
       <div class="dbc-edit">
@@ -2223,8 +2223,8 @@ function cardEditorHtml() {
         <div class="dbc-field"><span class="dbc-l">Show my phone</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
-        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Shizu</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://shizu.fyi/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
+        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Koyeba</small></span>
+          <div class="dbc-qrwrap">${qrSvg('https://koyeba.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
@@ -2250,7 +2250,7 @@ function personAvatar(id, name, extra) {
   if (c && c.photo) return `<span class="fr-av fr-av-photo ${extra || ''}" style="background-image:url('${c.photo}')"></span>`;
   return `<span class="fr-av ${extra || ''}">${esc(initial((c && c.name) || name || '?'))}</span>`;
 }
-// Read-only view of someone else's Shizu card, in a light overlay.
+// Read-only view of someone else's Koyeba card, in a light overlay.
 async function openPublicCard(id, seed) {
   id = Number(id); if (!id) return;
   state.viewCard = { id, data: seed || (state.cardCache && state.cardCache[id]) || null, loading: true };
@@ -2271,7 +2271,7 @@ function renderPublicCard() {
   if (d && d.id && !isMe) {
     if (connected) act = `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>`;
     else if (outgoing) act = '<span class="dbc-view-pending">Request sent ✓</span>';
-    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Shizu</button>`;
+    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Koyeba</button>`;
   }
   el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${act ? `<div class="dbc-view-acts">${act}</div>` : ''}</div></div>`;
 }
@@ -2281,7 +2281,7 @@ async function openConnectBySub(sub) {
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
   try {
     const d = await api('/api/card/by/' + encodeURIComponent(sub));
-    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Shizu card was not found'); }
+    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Koyeba card was not found'); }
   } catch (e) { openHome(); toast(e.message || 'Could not open that card'); }
 }
 function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
@@ -2353,14 +2353,14 @@ async function saveAiKey(provider) {
 }
 async function closeMyAccount() {
   if (state.me && state.me.id === 1) { toast('The owner account cannot be closed here.'); return; }
-  if (!(await uiConfirm('Close your account? This permanently deletes your Shizu and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
+  if (!(await uiConfirm('Close your account? This permanently deletes your Koyeba and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
   const typed = await uiPrompt('Type DELETE to confirm you want to permanently erase your account.', { title: 'Are you sure?', okLabel: 'Close my account', placeholder: 'DELETE' });
   if ((typed || '').trim().toUpperCase() !== 'DELETE') { toast('Account not closed.'); return; }
   try {
     await api('/api/account/close', { method: 'POST' });
     try { localStorage.clear(); } catch {}
     toast('Your account has been closed.');
-    setTimeout(() => { location.href = 'https://shizu.fyi'; }, 900);
+    setTimeout(() => { location.href = 'https://koyeba.co'; }, 900);
   } catch (e) { toast(e.message); }
 }
 async function clearAiKey(provider) {
@@ -2372,11 +2372,11 @@ const aiProvLabel = (p) => ({ anthropic: 'Claude', openai: 'ChatGPT', gemini: 'G
 // which provider it is. No picking, no per-provider boxes.
 function aiConnectHtml(a) {
   if (a.aiAnySet && a.aiProvider) {
-    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Shizu.</div>
+    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Koyeba.</div>
       <button class="ghost ai-disconnect" data-ai-disconnect="${esc(a.aiProvider)}">Disconnect ${esc(aiProvLabel(a.aiProvider))}</button>
       ${a.aiProvider === 'gemini' ? '' : '<p class="plan-note"><b>Voice notes</b> and the <b>Money</b> tools (reading a statement, summarising the finance videos you follow) are the one exception - they need <b>Gemini</b>, the only AI that reads audio and video. A <b>free</b> Gemini key covers both; paste one below and they switch on too.</p>'}`;
   }
-  return `<p class="plan-desc">Shizu runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
+  return `<p class="plan-desc">Koyeba runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
     <div class="ai-key-in"><input class="sel" type="password" data-ai-key-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-ai-connect>Connect</button></div>
     <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div>
     <p class="plan-note">Your one key powers everything. The <b>one exception</b> is <b>voice notes</b> and the <b>Money</b> tools, which need <b>Gemini</b> (it alone reads audio and video) - a <b>free</b> Gemini key covers them.</p>`;
@@ -2457,13 +2457,13 @@ async function downloadExport() {
 // sweep rather than quietly surviving it.
 // A crumb shared across *.daybook.fyi (the token can't be - it's per-origin in
 // localStorage): which subdomain this browser is signed in on. The apex marketing
-// page reads it so "Sign in" jumps you straight to your Shizu instead of asking
+// page reads it so "Sign in" jumps you straight to your Koyeba instead of asking
 // for your email again. Cleared on sign-out.
 function rememberSubdomain(sub) { if (!sub || !/^[a-z0-9-]{1,63}$/i.test(sub)) return; try { document.cookie = `db_sub=${encodeURIComponent(sub)}; domain=.daybook.fyi; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax; secure`; } catch {} }
 function forgetSubdomain() { try { document.cookie = 'db_sub=; domain=.daybook.fyi; path=/; max-age=0; samesite=lax; secure'; } catch {} }
 const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
 async function signOut() {
-  if (!(await uiConfirm('Sign out of Shizu on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
+  if (!(await uiConfirm('Sign out of Koyeba on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
   // Push goes first, while the token that authorises it still exists: a device
   // left subscribed would carry on buzzing with this account's mail afterwards.
   try {
@@ -2655,14 +2655,14 @@ function renderAdmin() {
       <label class="set-mod adm-signup"><span><b>Open registration</b><br><span class="scope">On: anyone can sign up. Off: invite-only (members invite each other, or you).</span></span><input type="checkbox" data-admin-signup ${pub ? 'checked' : ''}></label>
     </div>
     <div class="set-card" style="margin-top:14px">
-      <div class="set-row-t">Default Life Spaces</div>
+      <div class="set-row-t">Default Spaces</div>
       <p class="home-empty" style="margin:6px 0 14px">Every new account starts with these. Edit a name inline, remove one with ×, or add another. Existing members aren't touched.</p>
-      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no lifespaces.</span>'}</div>
-      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a lifespace…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
+      <div class="adm-areas">${(a.settings && a.settings.defaultLifeAreas || []).map((n, i) => `<span class="adm-area-chip"><span class="adm-area-dot" style="--h:${Math.round((210 + i * 137.5) % 360)}"></span><input class="adm-area-in" data-adm-area="${i}" value="${esc(n)}" autocomplete="off"><button class="adm-area-x" data-adm-area-del="${i}" title="Remove">×</button></span>`).join('') || '<span class="sp-cat-empty">None - new accounts start with no spaces.</span>'}</div>
+      <div class="adm-area-add"><input class="sel" id="adm-area-new" placeholder="Add a space…" autocomplete="off"><button class="add-btn wide" data-adm-area-add>Add</button></div>
     </div>
     <div class="set-card" style="margin-top:14px">
       <div class="set-row-t">Hidden for now</div>
-      <p class="home-empty" style="margin:6px 0 14px">Parts of Shizu switched off for the moment - a running note so we remember what to bring back.</p>
+      <p class="home-empty" style="margin:6px 0 14px">Parts of Koyeba switched off for the moment - a running note so we remember what to bring back.</p>
       <div class="adm-hidden">${HIDDEN_FEATURES.length ? HIDDEN_FEATURES.map((h) => `<div class="admin-row"><span><b>${esc(h.label)}</b> <span class="scope">${esc(h.where || '')}${h.note ? ' · ' + esc(h.note) : ''}</span></span><span class="aq-author">${h.since ? 'hidden ' + esc(h.since) : ''}</span></div>`).join('') : '<span class="sp-cat-empty">Nothing hidden right now.</span>'}</div>
     </div>`;
 
@@ -2671,11 +2671,11 @@ function renderAdmin() {
       <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
     </div>`;
 
-  const BR_SW = [['#a8844a', 'Shizu Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
+  const BR_SW = [['#a8844a', 'Koyeba Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Shizu</span></span>
+        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Koyeba</span></span>
         <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
       </div>
       <div class="home-sec-h" style="margin-top:6px">Logo files</div>
@@ -2701,7 +2701,7 @@ function renderAdmin() {
   const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
   const costsPane = `<div class="set-card">
       <div class="home-sec-h">Running costs</div>
-      <p class="inv-hint">What Shizu costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
+      <p class="inv-hint">What Koyeba costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
       <div class="adm-cost-list">${costMonths.map(costRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No cost data yet.</div>'}</div>
     </div>
     <div class="set-card" style="margin-top:14px">
@@ -2710,7 +2710,7 @@ function renderAdmin() {
       <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
     </div>`;
 
-  // ── Health: the outside services Shizu leans on, up or down ───────────
+  // ── Health: the outside services Koyeba leans on, up or down ───────────
   // Robin: "we don't like silent breakages." Probed every half hour by the
   // worker; this is the glanceable status, a Check-now, and the alert toggle.
   const hs = a.health || null;
@@ -2718,7 +2718,7 @@ function renderAdmin() {
   const svcDown = svcList.filter(([, v]) => !v.ok).length;
   const healthPane = `<div class="set-card">
       <div class="home-sec-h">Integrations ${svcList.length ? (svcDown ? `<span class="adm-health-badge down">${svcDown} down</span>` : '<span class="adm-health-badge ok">all up</span>') : ''}</div>
-      <p class="inv-hint">The outside services Shizu depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
+      <p class="inv-hint">The outside services Koyeba depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
       ${svcList.length ? `<div class="adm-health-list">${svcList.map(([k, v]) => `
         <div class="adm-health-row${v.ok ? '' : ' down'}" title="${esc(v.ok ? 'Up' : 'Down')} since ${esc(timeAgo(v.since || v.at))}">
           <span class="ahr-dot ${v.ok ? 'ok' : 'down'}"></span>
@@ -2745,13 +2745,13 @@ function renderAdmin() {
 
   const panes = { members: membersPane, feedback: feedbackPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
-    members: `${users.length} on Shizu · tap anyone for the full picture`,
+    members: `${users.length} on Koyeba · tap anyone for the full picture`,
     feedback: feedback.length ? `${feedback.length} note${feedback.length === 1 ? '' : 's'} from the Guide` : 'What people send from the Guide',
-    costs: 'What it costs to run Shizu, by month',
-    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Shizu depends on',
+    costs: 'What it costs to run Koyeba, by month',
+    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Koyeba depends on',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
-    brand: 'The Shizu logo, icons and colours',
+    brand: 'The Koyeba logo, icons and colours',
   };
 
   $('#pane').innerHTML = `
@@ -2817,13 +2817,13 @@ async function setUserFree(id, months) {
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months === 'forever' ? 'Free forever' : months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
   catch (e) { toast(e.message); renderAdmin(); }
 }
-// ── Friends on Shizu ────────────────────────────────────────────────
+// ── Friends on Koyeba ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
-// Order Shizu contacts by who was online most recently: anyone online right
+// Order Koyeba contacts by who was online most recently: anyone online right
 // now (live presence poll, or the last-known flag) sits at the top, then the
 // rest by how recently they were last seen, newest first, down to never-seen.
-// Used by the sidebar lists and the Contacts / Shizu Contacts pages so they
+// Used by the sidebar lists and the Contacts / Koyeba Contacts pages so they
 // all agree. (Robin, 2026-10-27.)
 function friendsByRecency(list) {
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
@@ -2839,15 +2839,15 @@ function friendsByRecency(list) {
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
-  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Shizu card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Koyeba card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
-// page re-renders whichever view the action was taken on - Contacts, the Shizu
+// page re-renders whichever view the action was taken on - Contacts, the Koyeba
 // people hub, or Home (where invitations surface too). (Robin, 2026-10-13.)
 function renderFriends() {
   const v = state.view && state.view.type;
   if (v === 'home') renderHome();
-  else if (v === 'daybookpeople') renderShizuPeople();
+  else if (v === 'daybookpeople') renderKoyebaPeople();
   else renderContacts();
 }
 async function friendAdd(id) { try { state.friends = await api('/api/friends', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Request sent'); } catch (e) { toast(e.message); } }
@@ -2870,17 +2870,17 @@ async function peopleSearch() {
   // query still matches what's typed.
   if (($('#friend-email') || {}).value?.trim() !== q) return;
   box.innerHTML = people.length
-    ? `<div class="fr-scan-note">People on Shizu matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
-    : `<div class="home-empty" style="padding:8px 2px">No one on Shizu matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
+    ? `<div class="fr-scan-note">People on Koyeba matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+    : `<div class="home-empty" style="padding:8px 2px">No one on Koyeba matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Connected'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
-// Invite someone to Shizu: their email, a note in your own words, Send. The
+// Invite someone to Koyeba: their email, a note in your own words, Send. The
 // worker emails the invitation with a one-click link - the invitee never copies a
 // code anywhere. Leave the email blank and it just mints a code to share by hand.
 // One dialog behind every entry point (Contacts, Settings, Admin) so there is a
 // single way to do this.
-function inviteToShizu(prefill) {
+function inviteToKoyeba(prefill) {
   // The one generous move, offered to everyone: 6 months of Premium, free, for up
   // to ten friends. No plan to pick - a plain invite lands them on Free and they
   // upgrade themselves if they ever want to. `giftsLeft` is undefined until the
@@ -2893,7 +2893,7 @@ function inviteToShizu(prefill) {
     : `<p class="inv-d-hint">You've given out all 10 of your free ${gMonths}-month gifts - a plain invite still lands them on Free.</p>`;
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
-    <div class="recur-h">Invite someone to Shizu</div>
+    <div class="recur-h">Invite someone to Koyeba</div>
     <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
       <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
@@ -3052,11 +3052,11 @@ async function dismissRequest(id) {
   if (state.inviteReq) state.inviteReq.count = (state.admin && state.admin.requests || []).length;
   renderAdmin();
 }
-// Unread Shizu MESSAGES (not friend requests) - the signal we make loud.
+// Unread Koyeba MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
-// Name of a Shizu contact by id, from whatever's loaded (friends list, then
+// Name of a Koyeba contact by id, from whatever's loaded (friends list, then
 // the online roster). Falls back to a generic label.
 function friendName(id) {
   const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id));
@@ -3073,13 +3073,13 @@ async function refreshFriendStatus() {
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
     // Ping when a contact's unread rises (a new message) - unless you're already
-    // in that chat. A toast alerts you wherever you are in Shizu.
+    // in that chat. A toast alerts you wherever you are in Koyeba.
     if (hadBaseline) {
       const openWith = state.chat && state.chat.with;
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
           const nm = friendName(id);
-          toast(`💬 ${nm || 'A Shizu contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
+          toast(`💬 ${nm || 'A Koyeba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
         }
       });
     }
@@ -3089,7 +3089,7 @@ async function refreshFriendStatus() {
     const ae = document.activeElement; const editing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
     if (changed && state.view && !editing) {
       if (state.view.type === 'home') renderHome();
-      else if (state.view.type === 'daybookpeople') renderShizuPeople();   // online-first list stays live
+      else if (state.view.type === 'daybookpeople') renderKoyebaPeople();   // online-first list stays live
       else if (state.view.type === 'messages') refreshMessages();   // new messages / read state stay live
     }
   } catch {}
@@ -3347,7 +3347,7 @@ function myFaceHtml() {
   return photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
 }
 // The unified Shared hub: one place for everything shared in both directions -
-// notes, tables, Life Spaces (via the shares model) and tasks (via assignments,
+// notes, tables, Spaces (via the shares model) and tasks (via assignments,
 // labelled "assigned" so the difference stays legible). (Robin, 2026-10-29.)
 async function openSharedHub() {
   const gen = bumpNav();
@@ -3366,7 +3366,7 @@ async function openSharedHub() {
     renderSharedHub();
   } catch (e) { if (gen === navGen) { state.sharedHub = { loading: false, error: e.message }; renderSharedHub(); } }
 }
-const SHARE_KIND_META = { area: { ic: '◈', lbl: 'Life Space' }, table: { ic: '▦', lbl: 'Table' }, task: { ic: '✓', lbl: 'Task' }, note: { ic: '▤', lbl: 'Note' } };
+const SHARE_KIND_META = { area: { ic: '◈', lbl: 'Space' }, table: { ic: '▦', lbl: 'Table' }, task: { ic: '✓', lbl: 'Task' }, note: { ic: '▤', lbl: 'Note' } };
 function renderSharedHub() {
   if (!(state.view && state.view.type === 'shared')) return;
   const h = state.sharedHub || { loading: true };
@@ -3375,7 +3375,7 @@ function renderSharedHub() {
   const byMe = [...(h.byMe || []), ...(h.byMeTasks || [])].sort((a, b) => (ord[a.kind] ?? 1) - (ord[b.kind] ?? 1));
   // One card per thing shared WITH me - the same colourful, kind-tinted card as
   // "shared by me", but leading with the sharer's face and "from <them>". The
-  // type (Note / Table / Life Space / Task) reads large and in its own colour.
+  // type (Note / Table / Space / Task) reads large and in its own colour.
   // (Robin, 2026-10-29.)
   const hubRow = (s) => {
     const km = SHARE_KIND_META[s.kind] || SHARE_KIND_META.note;
@@ -3420,8 +3420,8 @@ function renderSharedHub() {
   };
   const loadingW = h.loading && !withMe.length;
   const loadingB = h.loading && !byMe.length;
-  const withBody = loadingW ? '<div class="empty">Loading…</div>' : withMe.length ? `<div class="tbl-cards">${withMe.map(hubRow).join('')}</div>` : '<div class="empty">Nothing shared with you yet. When someone shares a note, table, task or Life Space, it turns up here.</div>';
-  const byBody = loadingB ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(hubCard).join('')}</div>` : "<div class=\"empty\">You haven't shared anything yet. Open a note, task or Life Space and give someone access.</div>";
+  const withBody = loadingW ? '<div class="empty">Loading…</div>' : withMe.length ? `<div class="tbl-cards">${withMe.map(hubRow).join('')}</div>` : '<div class="empty">Nothing shared with you yet. When someone shares a note, table, task or Space, it turns up here.</div>';
+  const byBody = loadingB ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(hubCard).join('')}</div>` : "<div class=\"empty\">You haven't shared anything yet. Open a note, task or Space and give someone access.</div>";
   $('#pane').innerHTML = `
     ${pageCrumb('Shared')}
     <div class="pane-head home-head"><h1>Shared</h1></div>
@@ -3469,7 +3469,7 @@ function renderMessagesPage() {
   }).join('');
   const body = threads.length ? `<div class="msg-threads">${rows}</div>`
     : (state.threads == null ? '<div class="msg-empty muted">Loading…</div>'
-      : `<div class="msg-empty"><p>No messages yet.</p><p class="muted">Say hello to someone from <button class="link-btn" data-open-daybook>Shizu Contacts</button>.</p></div>`);
+      : `<div class="msg-empty"><p>No messages yet.</p><p class="muted">Say hello to someone from <button class="link-btn" data-open-daybook>Koyeba Contacts</button>.</p></div>`);
   $('#pane').innerHTML = `
     ${pageCrumb('Messages')}
     <div class="pane-head"><h1>Messages</h1></div>
@@ -3493,7 +3493,7 @@ async function openShare(id, title, kind) {
   } catch (e) { toast(e.message); }
   state.share.loading = false; renderShare();
 }
-function shareWebUrl() { return state.share && state.share.webToken ? `https://shizu.fyi/n/${state.share.webToken}` : ''; }
+function shareWebUrl() { return state.share && state.share.webToken ? `https://koyeba.co/n/${state.share.webToken}` : ''; }
 function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.id === fid); return s ? (s.canEdit ? 'edit' : 'view') : ''; }
 function renderShare() {
   let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
@@ -3506,16 +3506,16 @@ function renderShare() {
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
-        <p>You're not connected with anyone on Shizu yet.</p>
+        <p>You're not connected with anyone on Koyeba yet.</p>
         <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
-  // A public link: notes only, for sharing with someone who isn't on Shizu.
-  // Off by default; a quiet, revocable read-only page at shizu.fyi/n/<token>.
+  // A public link: notes only, for sharing with someone who isn't on Koyeba.
+  // Off by default; a quiet, revocable read-only page at koyeba.co/n/<token>.
   const webUrl = shareWebUrl();
   const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
-    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Shizu account needed. Read-only.</small></span></div>
+    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Koyeba account needed. Read-only.</small></span></div>
     ${webUrl ? `<div class="sw-live">
         <input class="sw-url" type="text" readonly value="${esc(webUrl)}" data-share-web-url aria-label="Public link">
         <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop sharing</button></div>
@@ -3627,7 +3627,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
-// Where AI actually gets used across Shizu, and which model powers each - so
+// Where AI actually gets used across Koyeba, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
@@ -3664,14 +3664,14 @@ const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.
 const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your normal password:
   <ol class="gpw-steps">
     <li>Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a> (required before app passwords appear).</li>
-    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Shizu</b>, and press Create.</li>
+    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Koyeba</b>, and press Create.</li>
     <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
   </ol>`;
 // ── Mobile Home layout ────────────────────────────────────────────────
 // Everything after the tool buttons on mobile Home can be reordered and hidden
 // from Settings → Mobile. Today and the tool buttons stay pinned at the top.
 // key -> [section class, display name]. Order here is the default arrangement.
-// Starred Goals, Life Spaces and Toolbox were dropped here (2026-10-22): since the
+// Starred Goals, Spaces and Toolbox were dropped here (2026-10-22): since the
 // Home rebuild they're lead blocks driven by the on-Home "Homepage sections" chips,
 // not home-sec-* elements, so their toggles controlled nothing. These are the
 // sections this panel genuinely still orders/hides on mobile.
@@ -3728,7 +3728,7 @@ function renderSettings() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Life Spaces', 'What your Shizu orbits', 'data-open-areas=""'],
+    ['◈', 'Spaces', 'What your Koyeba orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -3738,7 +3738,7 @@ function renderSettings() {
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in. Your
-  // Shizu card and your security (two-factor) are not separate tabs - they
+  // Koyeba card and your security (two-factor) are not separate tabs - they
   // live inside Account: the card as a sub-page (Edit card), two-factor inline.
   // Tools sits right after Appearance; Manage retired - every tile it held (Life
   // Spaces, Mail accounts, Practices, Spending categories, Reviews, Flow) is
@@ -3755,7 +3755,7 @@ function renderSettings() {
     ['import', t('set.tab.import')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
-  // Shizu card editor opens from Account and returns there.
+  // Koyeba card editor opens from Account and returns there.
   const SUBTABS = ['card'];
   const SUB_TITLE = { card: t('set.tab.card') };
   // Calendar feed subscriptions (holidays, fixtures) - load once.
@@ -3833,7 +3833,7 @@ function renderSettings() {
       </div>
       <div class="set-acct-cols">
         <div class="set-card set-cardpreview">
-          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Shizu card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
+          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Koyeba card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
           <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
         </div>
         <div class="set-card set-account-sec">
@@ -3843,20 +3843,20 @@ function renderSettings() {
       </div>
       <div class="set-card set-yourdata">
         <div class="set-sec-title">Your data</div>
-        <div class="set-row-s">Your Shizu is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
+        <div class="set-row-s">Your Koyeba is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
         <div class="yd-hosts">
-          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Shizu</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
+          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Koyeba</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
-        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://shizu.fyi/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
+        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Shizu on this device. Anything not saved to your account is cleared from this browser.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Koyeba on this device. Anything not saved to your account is cleared from this browser.</div></div>
           <button class="ghost" data-account-signout>↪ Sign out</button>
         </div>
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Shizu and everything in it. This cannot be undone.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Koyeba and everything in it. This cannot be undone.</div></div>
           <button class="ghost acct-danger" data-account-close>Close my account…</button>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -3869,7 +3869,7 @@ function renderSettings() {
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
-        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Shizu symbol - the clean octagram, or held in its ring.</div>
+        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Koyeba symbol - the clean octagram, or held in its ring.</div>
           <div class="mark-opts">
             <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
             <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
@@ -3890,9 +3890,9 @@ function renderSettings() {
     const onByok = curKey === 'byok';
     const onTrial = !onManaged && !onByok;
     const heroName = onManaged ? 'Premium Plus' : onByok ? 'Premium' : 'Free trial';
-    const heroSub = onManaged ? 'The whole of Shizu, with the AI run for you.'
-      : onByok ? 'The whole of Shizu, powered by your own AI key.'
-      : "You're exploring Shizu. Pick a plan below whenever you're ready.";
+    const heroSub = onManaged ? 'The whole of Koyeba, with the AI run for you.'
+      : onByok ? 'The whole of Koyeba, powered by your own AI key.'
+      : "You're exploring Koyeba. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     // Monthly or annual. Annual holds at the old yearly price, so it's a bigger
     // saving now the monthly has gone up - most on Premium. The buttons still open
@@ -3910,42 +3910,42 @@ function renderSettings() {
     const cycLabel = cycle === 'annual' ? ' (annual)' : ' (monthly)';
     const act = (isCurrent, label, subject) => isCurrent
       ? '<div class="plan-active">✓ Your current plan</div>'
-      : `<a class="add-btn wide" href="mailto:contact@shizu.fyi?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
+      : `<a class="add-btn wide" href="mailto:contact@koyeba.co?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
     return `<div class="set-card plan-hero">
         <div class="plan-hero-eyebrow">Your plan</div>
         <div class="plan-hero-name">${esc(heroName)}</div>
         <div class="plan-hero-sub">${esc(heroSub)}</div>
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">${onTrial ? 'Choose your plan' : 'Plans'}</div>
-      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Shizu - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
+      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Koyeba - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
       ${cycleToggle}
       <div class="plan-cards">
         <div class="plan-card ${onByok ? 'on' : ''}">
           <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
           ${priceBlock('byok')}
           <p class="plan-desc">Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the provider directly.</p>
-          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Shizu Premium plan' + cycLabel)}
+          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Koyeba Premium plan' + cycLabel)}
         </div>
         <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
           ${priceBlock('managed')}
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up. The hands-off option.</p>
-          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Shizu Premium Plus plan' + cycLabel)}
+          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Koyeba Premium Plus plan' + cycLabel)}
         </div>
       </div>
       <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.${cycle === 'annual' ? ' Annual billing saves you two months.' : ''}</div>
       <div class="set-row-t" style="margin:26px 0 4px">Your AI</div>
-      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Shizu.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Koyeba.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
       ${onManaged
         ? '<p class="set-row-s" style="margin:10px 0 0">On Premium Plus the AI is handled for you - there’s no key to add.</p>'
         : `<div class="plan-ai-connect ${a.aiOff ? 'ai-disabled' : ''}" style="margin-top:12px">${aiConnectHtml(a)}</div>`}
-      <div class="set-row-t" style="margin:22px 0 4px">Where Shizu uses AI</div>
-      <p class="set-row-s" style="margin:0 0 10px">Every place Shizu calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
+      <div class="set-row-t" style="margin:22px 0 4px">Where Koyeba uses AI</div>
+      <p class="set-row-s" style="margin:0 0 10px">Every place Koyeba calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
       ${aiUsesTogglesHtml()}`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   // Tools that have a setup page of their own carry a quiet link to it. (Robin, 2026-10-29.)
-  const MOD_SETTINGS = { mail: 'Mail accounts', calendar: 'Calendar setup', areas: 'Manage Life Spaces' };
+  const MOD_SETTINGS = { mail: 'Mail accounts', calendar: 'Calendar setup', areas: 'Manage Spaces' };
   const modRow = ([k, l]) => `<label class="set-mod"><span><span class="set-mod-l">${l}</span>${MOD_SETTINGS[k] ? `<button type="button" class="set-modlink" data-modlink="${k}">${MOD_SETTINGS[k]} ›</button>` : ''}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`;
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(modRow).join('')}</div></div>
       <div class="set-card">
@@ -3955,7 +3955,7 @@ function renderSettings() {
       </div>`;
 
   const notificationsPane = state.account ? `<div class="set-card set-notifs">
-        <p class="inv-hint" style="margin:0 0 16px">Notifications all stay in the app now - a push to your devices (desktop and mobile) and a row in My Shizu. Nothing goes to email or text; only your sign-in codes and invitations ever reach an inbox.</p>
+        <p class="inv-hint" style="margin:0 0 16px">Notifications all stay in the app now - a push to your devices (desktop and mobile) and a row in Coming into view. Nothing goes to email or text; only your sign-in codes and invitations ever reach an inbox.</p>
         <div class="set-notif-group"><div class="set-notif-h">On your devices</div>
           <label class="set-mod"><span>New-mail alerts<small>A push when new mail arrives - at most one every 30 minutes, never a buzz per email. Turn off for quiet.</small></span><input type="checkbox" data-account-mailpush ${state.account.mailPush !== false ? 'checked' : ''}></label>
         </div>
@@ -4020,7 +4020,7 @@ function renderSettings() {
 // family of importers (tasks CSV, calendar .ics, bookmarks next).
 function importState() { if (!state.import) state.import = { kind: 'notes', area: '', parsed: [], running: false, done: 0, err: '' }; return state.import; }
 function importAreaOpts(imp) {
-  return `<option value="">${imp.area ? 'No lifespace' : 'No lifespace (filed loose)'}</option>`
+  return `<option value="">${imp.area ? 'No space' : 'No space (filed loose)'}</option>`
     + (state.areas || []).map((a) => `<option value="${a.id}" ${imp.area === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('');
 }
 function importPane() {
@@ -4036,7 +4036,7 @@ function importPane() {
 }
 function importContactsPaneHtml() {
   return `
-      <p class="imp-lead">Bring your address book into Shizu - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
+      <p class="imp-lead">Bring your address book into Koyeba - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
       <p class="imp-hint">Export a <b>vCard</b> (<code>.vcf</code>) from <b>Google Contacts</b>, <b>Apple Contacts</b>, <b>Outlook</b> or your phone - one file can hold everyone - then choose it below.</p>
       <div class="imp-field">
         <label class="imp-label">Choose your vCard</label>
@@ -4083,7 +4083,7 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Shizu reads the dates straight out - you tick which ones land on your calendar.</p>
+        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Koyeba reads the dates straight out - you tick which ones land on your calendar.</p>
         <button class="add-btn wide" data-open-flyer>Add from a file</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
@@ -4269,7 +4269,7 @@ function openFlyerImport() {
 }
 function closeFlyer() { const el = document.getElementById('flyer'); if (el) el.remove(); }
 function flyerAreaOpts(f) {
-  return `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
+  return `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}" ${f.area === a.id ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
 }
 function flyerEvRowHtml(e, i) {
   const when = (e.allDay || !e.start) ? `${dpLabel(e.date)} · all day` : `${dpLabel(e.date)} · ${e.start}${e.end ? `–${e.end}` : ''}`;
@@ -4309,7 +4309,7 @@ function renderFlyerImport() {
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Shizu reads the dates out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Koyeba reads the dates out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -4686,7 +4686,7 @@ function navItems(v) {
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
-    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Shizu</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyeba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
   };
 }
@@ -4714,7 +4714,7 @@ function mobileNavOrder() {
       localStorage.setItem('life.nav.contactsUnderTasks', '1');
     }
   } catch {}
-  // One-time (2026-10-28): lift Life Spaces to directly under Reflection
+  // One-time (2026-10-28): lift Spaces to directly under Reflection
   // (wellbeing) for anyone with a saved drawer order, matching the new default.
   // Guarded so it runs once and never fights a later manual reorder. (Robin.)
   try {
@@ -4754,7 +4754,7 @@ function navMobileListHtml(v) {
 function navGridHtml(v) {
   const NI = navItems(v);
   // Each group is collapsible, in the same chevron-header style as the Starred /
-  // Recent / Life Spaces sections, with its open/closed state remembered. (Robin.)
+  // Recent / Spaces sections, with its open/closed state remembered. (Robin.)
   const grp = (key, label, items) => {
     const on = items.filter(Boolean);
     if (!on.length) return '';
@@ -4781,19 +4781,19 @@ function navGridHtml(v) {
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
-// contacts are switched on - the live Shizu people below, in the same box, so
+// contacts are switched on - the live Koyeba people below, in the same box, so
 // there's a single place for everyone rather than a group plus a separate list.
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  // People box order: Contacts, Shizu, Connect - half-width tiles in the same
+  // People box order: Contacts, Koyeba, Connect - half-width tiles in the same
   // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Shizu</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyeba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
-  // The live Shizu people, names and all, under a collapsible header so it can
+  // The live Koyeba people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
   let friendsBlock = '';
   if (modOn('contacts') && peopleOn()) {
@@ -4802,21 +4802,21 @@ function peopleBox() {
     const onlineN = navOnlineCount();
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Shizu Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyeba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
   const gcol = !!state.nav.collapsed['grp.people'];
   return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
 }
-// How many Shizu contacts are online right now - drives the green dot on the
-// "Shizu Contacts" header so you see someone's about even with the list folded.
+// How many Koyeba contacts are online right now - drives the green dot on the
+// "Koyeba Contacts" header so you see someone's about even with the list folded.
 function navOnlineCount() {
   const friends = (state.friends && state.friends.friends) || [];
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   return friends.filter((f) => onSet.has(f.id) || !!f.online).length;
 }
-// The live Shizu-friends list (online first), reused inside the People box.
+// The live Koyeba-friends list (online first), reused inside the People box.
 function navPeopleRows() {
   if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
   const friends = (state.friends && state.friends.friends) || [];
@@ -4826,9 +4826,9 @@ function navPeopleRows() {
   return sorted.map((f) => {
     const on = isOnline(f); const un = unreadFrom(f.id);
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Shizu</button>');
+  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyeba</button>');
 }
-// The same Shizu Contacts list, for the MOBILE drawer. On a wide screen it
+// The same Koyeba Contacts list, for the MOBILE drawer. On a wide screen it
 // lives in the grid's People box, but that box is hidden on mobile, so without
 // this the live contacts never showed on a phone. Mobile-only via .nav-mpeople;
 // shares the collapsed state and rows with the desktop box. (Robin, 2026-10-20.)
@@ -4839,7 +4839,7 @@ function navPeopleMobileHtml() {
   const onlineN = navOnlineCount();
   const open = navPeopleOpen();
   return `<div class="nav-mpeople">
-    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Shizu Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyeba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
     ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
   </div>`;
 }
@@ -4849,18 +4849,18 @@ function renderNav() {
   // The mobile nav drawer closes itself the moment you navigate to a new view.
   if (document.body.classList.contains('nav-drawer-open') && ((v && v.type) || '') !== state.__drawerView) closeNavDrawer();
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
-  if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the lifespace
+  if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the space
   const dark = document.documentElement.dataset.theme === 'dark';
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em class="brand-word">shizu</em></button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em class="brand-word">shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -4877,8 +4877,8 @@ function renderNav() {
           <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
         </div>
         ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
-        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Shizu on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://shizu.fyi/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://shizu.fyi/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@shizu.fyi">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Shizu</span></div>
+        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Koyeba on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
+        <div class="nav-legal"><a href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@koyeba.co">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Koyeba</span></div>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
@@ -5122,7 +5122,7 @@ async function openNote(id) {
   // a borrowed note's membership is the owner's to see; you get the banner.
   if (!note.sharedBy) api(`/api/blocks/${id}/shares`).then((r) => { if (state.note && state.note.current.id === id) { state.note.shares = r.shares || []; if (state.view.type === 'note') renderNoteKeepFocus(); } }).catch(() => { if (state.note) state.note.shares = []; });
   if (!state.friends) api('/api/friends').then((fr) => { state.friends = fr; if (state.view.type === 'note') renderNoteKeepFocus(); }).catch(() => {});
-  // The "Keep private" lock only shows when the note sits in a shared Life Space,
+  // The "Keep private" lock only shows when the note sits in a shared Space,
   // so we need to know which areas have members. Loaded once per session (the Life
   // Spaces view loads it too). (Robin, 2026-10-30.)
   if (state.areaSummary === undefined) api('/api/areas/summary').then((r) => { state.areaSummary = r.summary || {}; if (state.view.type === 'note') renderNoteKeepFocus(); }).catch(() => { state.areaSummary = state.areaSummary || {}; });
@@ -5275,7 +5275,7 @@ const firstName = () => {
 function homeDate() {
   return new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
 }
-// Shizu hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
+// Koyeba hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
 // we have it), then the big greeting followed by a muted second breath. Quiet,
 // editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
 function homePartOfDay() { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
@@ -5337,7 +5337,7 @@ async function loadWeather() {
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
 const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown in front of every note in a list
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
-const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Life Spaces' };
+const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Spaces' };
 
 async function openHome() {
   const gen = bumpNav();
@@ -5392,12 +5392,12 @@ async function openHome() {
   // Friend invitations surface on Home (towards the bottom), so refresh them each
   // time Home opens - Today is the wall of everything you need to know. (Robin.)
   api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
-  // Life Spaces/pages shared WITH me surface front and centre - a share you shouldn't
+  // Spaces/pages shared WITH me surface front and centre - a share you shouldn't
   // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
   api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; state.sharesDismissed = r.dismissed || []; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
   if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
-  // What others have done in lifespaces you share - surfaced on the feed. Mark seen so
+  // What others have done in spaces you share - surfaced on the feed. Mark seen so
   // next visit only flags what's new since this one. (Robin, 2026-10-14.)
   api('/api/feed/folios').then((r) => {
     if (r && r.updates) { state.home.folioFeed = r; if (state.view && state.view.type === 'home') renderHome(); if (r.updates.length) api('/api/feed/folios/seen', { method: 'POST' }).catch(() => {}); }
@@ -5427,7 +5427,7 @@ function homeTodayItems() {
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
   const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
-  // Birthdays now live in the My Shizu feed, not the Today calendar, so they're
+  // Birthdays now live in the Coming into view feed, not the Today calendar, so they're
   // no longer injected here (avoids listing them twice). (Robin, 2026-10-15.)
   for (const s of src.slots || []) {
     const hue = hues[s.lane] ?? 0;
@@ -5573,7 +5573,7 @@ function pomoHtml() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life Spaces</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Spaces</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -5600,7 +5600,7 @@ function pomoPanel() {
       </div>
       <div class="pomo-focus"><span class="pomo-focus-l">Focus on</span>
         <div class="pomo-cats">
-          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Life Spaces</button>
+          <button class="pomo-cat ${pt === 'area' ? 'on' : ''}" data-pomo-cat="area">Spaces</button>
           <button class="pomo-cat ${pt === 'goal' ? 'on' : ''}" data-pomo-cat="goal">Goals</button>
           <button class="pomo-cat ${pt === 'task' ? 'on' : ''}" data-pomo-cat="task">Tasks</button>
         </div>
@@ -5676,11 +5676,11 @@ function timerChime() {
 }
 function timerPanel() {
   const r = timerRemaining();
-  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('');
+  const areaOpts = `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}" ${timerState.area === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('');
   return `<div class="tbx-cols"><div class="tbx-main"><div class="tmr ${timerState.running ? 'running' : ''}">
       <div class="tmr-time js-timer-time">${timerFmt(r)}</div>
       <input class="sel tmr-label" data-timer-label placeholder="What are you working on?" value="${esc(timerState.label || '')}" autocomplete="off">
-      <label class="tmr-area-l"><span>Life Space</span><select class="sel" data-timer-area>${areaOpts}</select></label>
+      <label class="tmr-area-l"><span>Space</span><select class="sel" data-timer-area>${areaOpts}</select></label>
       <div class="tmr-quick">${TIMER_QUICK.map((m) => `<button class="tmr-q ${timerState.dur === m * 60 ? 'on' : ''}" data-timer-set="${m}">${m}m</button>`).join('')}</div>
       <div class="tmr-custom"><span class="tmr-custom-l">Custom</span><input class="sel tmr-cnum" id="timer-min" type="number" min="0" max="1440" inputmode="numeric" value="${Math.floor(timerState.dur / 60)}" title="Minutes"><span class="tmr-colon">:</span><input class="sel tmr-cnum" id="timer-sec" type="number" min="0" max="59" inputmode="numeric" value="${String(timerState.dur % 60).padStart(2, '0')}" title="Seconds"><button class="ghost tmr-set" data-timer-custom>Set</button></div>
       <div class="tmr-ctrls"><button class="add-btn wide" data-timer-toggle>${timerState.running ? 'Pause' : (r < timerState.dur ? 'Resume' : 'Start')}</button><button class="ghost pomo-reset" data-timer-reset title="Reset">↺</button></div>
@@ -6149,7 +6149,7 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -6181,7 +6181,7 @@ function practiceEditorHtml() {
         <section class="pe-sec">
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
-          <label class="pe-f"><span>Life Space</span><select class="sel" id="pe-area"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
+          <label class="pe-f"><span>Space</span><select class="sel" id="pe-area"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
         </section>
 
         <section class="pe-sec">
@@ -6218,7 +6218,7 @@ function practiceEditorHtml() {
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
-// the rest of Shizu has, held in the editor's state and saved with it.
+// the rest of Koyeba has, held in the editor's state and saved with it.
 function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
@@ -6348,7 +6348,7 @@ function homeReqAlertHtml() {
   const r = state.inviteReq; const n = (r && r.count) || 0;
   if (!n) return '';
   const first = (r.requests && r.requests[0] && r.requests[0].name) || '';
-  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Shizu` : 'New invite request');
+  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Koyeba` : 'New invite request');
   const sub = n > 1 ? 'People asking to join · tap to see' : 'Someone wants an invite · tap to see';
   return `<button class="home-msgalert home-reqalert" data-open-requests>
     <span class="hma-ic">✦</span>
@@ -6359,7 +6359,7 @@ function homeReqAlertHtml() {
 // The "Getting started" card on Home: the single, low-friction doorway into the
 // setup hub, shown until you finish or hide it. New accounts land on Home (no
 // forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
-// The Shizu mark - monoline octagram with an inner square - for the Getting
+// The Koyeba mark - monoline octagram with an inner square - for the Getting
 // Started banner. Matches the app icon, favicon and emails (no more crane).
 const ORIGAMI_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M27 27H73V73H27Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
@@ -6374,7 +6374,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="gs-banner" data-open-getstarted>
       <span class="gs-art">${ORIGAMI_SVG}</span>
-      <span class="gs-body"><span class="gs-t">Welcome to the Fold</span><span class="gs-s">Let's set Shizu up to fit you. Tap here to begin.</span></span>
+      <span class="gs-body"><span class="gs-t">Welcome to the Fold</span><span class="gs-s">Let's set Koyeba up to fit you. Tap here to begin.</span></span>
       <span class="gs-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide getting started">✕</button>
@@ -6449,7 +6449,7 @@ function openP1Tasks() {
 }
 // The Home section: who you're overdue with, longest first. The nudge is a
 // person, not a chore, so the row opens their card - and the ✓ is there for the
-// common case where you rang them before Shizu got round to asking.
+// common case where you rang them before Koyeba got round to asking.
 function kitHomeHtml() {
   const due = (state.home.alerts && state.home.alerts.keepInTouch) || [];
   if (!due.length) return '';
@@ -6553,13 +6553,13 @@ function homeInvitesHtml() {
   const rows = inv.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('');
   return `<section class="home-sec home-sec-card home-invites">
     <div class="home-sec-h">✦ Invitations<span class="muted">${inv.length}</span></div>
-    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Shizu.' : `${inv.length} people want to connect with you on Shizu.`}</p>
+    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Koyeba.' : `${inv.length} people want to connect with you on Koyeba.`}</p>
     ${rows}
   </section>`;
 }
-// Front and centre on Home: someone shared a Life Space or page with you. Persists
+// Front and centre on Home: someone shared a Space or page with you. Persists
 // until you open them or clear them with ×, so an invitation is never missed.
-// (Robin: all such invites belong top and centre - the Shizu wall.)
+// (Robin: all such invites belong top and centre - the Koyeba wall.)
 function homeSharedAlertHtml() {
   const items = (state.sharedItems || []);
   const seen = state.sharesSeen || '';
@@ -6571,7 +6571,7 @@ function homeSharedAlertHtml() {
   const rows = fresh.slice(0, 8).map((s) => {
     const who = esc(s.owner || 'Someone');
     const ic = s.kind === 'task' ? '✓' : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤';
-    const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
+    const what = s.kind === 'area' ? 'a Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
     return `<div class="sha-card">
       <button class="sha-card-open" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${who} shared ${what} with you</span><span class="sh-meta">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}</span></span></button>
       <button class="sha-card-x" data-shared-dismiss="${esc(s.id)}" title="Dismiss - I've seen this" aria-label="Dismiss">×</button>
@@ -6583,9 +6583,9 @@ function homeSharedAlertHtml() {
     <button class="sha-seeall" data-open-shared-hub>See everything shared, both ways →</button>
   </section>`;
 }
-// What others have done in lifespaces you share - a feed on Home. Each row taps
+// What others have done in spaces you share - a feed on Home. Each row taps
 // through to the thing. New-since-last-visit items carry a soft dot. (Robin.)
-// The "Shared lifespaces" feed is a managed Home section now (a chip in the sections
+// The "Shared spaces" feed is a managed Home section now (a chip in the sections
 // list, reorderable, collapsible). This builds its data: whether there's anything,
 // the new-since-seen count, and the rows wall. (Robin, 2026-10-15.)
 function folioFeedData() {
@@ -6606,7 +6606,7 @@ function folioFeedData() {
   return { has: true, count: nNew, wall: `<div class="upd-wall">${rows}</div>` };
 }
 // Soft-dismissed feed rows ("had enough of this"): a map {key: whenMs}, pruned so
-// it can't grow without bound. Powers the × on the informational My Shizu rows.
+// it can't grow without bound. Powers the × on the informational Coming into view rows.
 function lbDismissedMap() {
   let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.feedDismiss') || '{}') || {}; } catch {}
   const cut = Date.now() - 90 * 86400000; let changed = false;
@@ -6646,11 +6646,11 @@ function lbDismiss(key) {
   syncFeedDismiss();   // persist to the account: survives the next login and reaches other devices
   renderHome();
 }
-// The "My Shizu" feed - one reverse-chronological stream of everything going on
+// The "Coming into view" feed - one reverse-chronological stream of everything going on
 // around you: tasks back from snooze, gentle keep-in-touch nudges, upcoming
 // birthdays, things people shared with you, and what they've done in your shared
-// Life Spaces. Newest at the top; most rows carry an × to clear them once you've
-// had enough. (Robin, 2026-10-15: Today = the calendar, My Shizu = all the rest.)
+// Spaces. Newest at the top; most rows carry an × to clear them once you've
+// had enough. (Robin, 2026-10-15: Today = the calendar, Coming into view = all the rest.)
 function lifebookFeedInner() {
   const alerts = state.home.alerts || {};
   const dismissed = lbDismissedMap();
@@ -6667,7 +6667,7 @@ function lifebookFeedInner() {
       items.push({ ts: Date.now() + 10000, html:
         `<div class="lb-item lb-click" data-lb-2fa role="button" tabindex="0" title="Set up two-factor authentication">
           <span class="lb-ic">🔐</span>
-          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Shizu - ${when}. It takes about a minute.</span></span></div>` });
+          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Koyeba - ${when}. It takes about a minute.</span></span></div>` });
     }
   }
   // Tasks back from snooze - tick to complete, × to clear.
@@ -6698,10 +6698,10 @@ function lifebookFeedInner() {
         <span class="lb-b"><span class="lb-t">${esc(b.name || 'Someone')}'s birthday</span><span class="lb-m">${when}</span></span>
         <button class="lb-x" data-lb-x="${esc(key)}" title="Clear" aria-label="Clear">×</button></div>` });
   });
-  // Someone shared a Life Space / page / task with you.
+  // Someone shared a Space / page / task with you.
   (state.sharedItems || []).forEach((s) => {
     const key = 'shin:' + s.id; if (gone(key)) return;
-    const what = s.kind === 'area' ? 'a Life Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
+    const what = s.kind === 'area' ? 'a Space' : s.kind === 'table' ? 'a table' : s.kind === 'task' ? 'a task' : 'a page';
     const ts = s.shared_at ? new Date(s.shared_at).getTime() : Date.now();
     items.push({ ts, html:
       `<div class="lb-item lb-click" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}" role="button" tabindex="0">
@@ -6709,7 +6709,7 @@ function lifebookFeedInner() {
         <span class="lb-b"><span class="lb-t"><b>${esc(s.owner || 'Someone')}</b> shared ${what} with you</span><span class="lb-m">${esc(s.title || 'Untitled')}${s.canEdit ? '' : ' · view only'}${s.shared_at ? ' · ' + timeAgo(ts) : ''}</span></span>
         <button class="lb-x" data-lb-x="${esc(key)}" title="Clear" aria-label="Clear">×</button></div>` });
   });
-  // What other people have done in Life Spaces you share.
+  // What other people have done in Spaces you share.
   const ff = (state.home && state.home.folioFeed && state.home.folioFeed.updates) || [];
   const IC = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
   const THING = { note: 'a page', task: 'a task', goal: 'a goal', table: 'a table', contact: 'a contact', bucket: 'a bucket-list item', bookmark: 'a saved link', journal: 'a reflection', event: 'an event' };
@@ -6728,7 +6728,7 @@ function lifebookFeedInner() {
   items.sort((a, b) => b.ts - a.ts);
   // Pinned alerts that want attention sit above the stream (not dismissible here).
   const pinned = `${homeMailAlertHtml()}${homeReviewDueBanner()}${homeDeadlinesHtml()}`;
-  if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Life Spaces will show up here.</div>';
+  if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Spaces will show up here.</div>';
   return `${pinned}${items.length ? `<div class="lb-feed">${items.map((i) => i.html).join('')}</div>` : ''}`;
 }
 function homeDiscoverHtml() {
@@ -6745,7 +6745,7 @@ function homeDiscoverHtml() {
   try { hidden = localStorage.getItem('life.home.discHidden') === '1'; open = localStorage.getItem('life.home.discOpen') !== '0'; } catch {}
   if (hidden) return '';
   return `<section class="home-discover">
-    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover Shizu<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
+    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover Koyeba<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
     ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
   </section>`;
 }
@@ -6754,8 +6754,8 @@ function homeDiscoverHtml() {
 function homeMainEnabled() {
   let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
   if (!Array.isArray(o)) return ['priority', 'tracker'];
-  // Today and My Shizu are now fixed (pinned first and second, not configurable),
-  // and shared-lifespace activity folded into My Shizu - drop any of these from a
+  // Today and Coming into view are now fixed (pinned first and second, not configurable),
+  // and shared-space activity folded into Coming into view - drop any of these from a
   // saved layout that still carries them. (Robin, 2026-10-16.)
   o = o.filter((k) => k !== 'foliofeed' && k !== 'today' && k !== 'lifebook');
   return o;
@@ -6868,7 +6868,7 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
     <div class="home">
-      <div class="home-kanji" aria-hidden="true">静</div>
+      <div class="home-kanji" aria-hidden="true"></div>
       <div class="home-top">
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
@@ -6924,7 +6924,7 @@ function renderHome() {
           const alerts = state.home.alerts || {};
           const off = state.home.dayOffset || 0;
           const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-          const todayRows = evRows;   // Today is the calendar only now; snooze-returns live in the My Shizu feed
+          const todayRows = evRows;   // Today is the calendar only now; snooze-returns live in the Coming into view feed
           const p1all = priorityTasks(); const p1total = alerts.p1 || p1all.length;
           const kit = alerts.keepInTouch || [];
           // A due catch-up also surfaces as a Today notification, with a ✓ (been in
@@ -6947,13 +6947,13 @@ function renderHome() {
           const bodies = {
             // Today is purely the day's calendar + practices now. Everything else
             // (birthdays, nudges, snooze-returns, deadlines, shared activity) lives in
-            // the My Shizu feed just below. (Robin, 2026-10-15.)
+            // the Coming into view feed just below. (Robin, 2026-10-15.)
             today: state.home.dayLoading ? '<div class="home-empty">Loading…</div>'
               : (todayRows ? `<div class="today-cal">${todayRows}</div>`
                 : `<div class="home-empty">${off === 0 ? 'Nothing in your calendar today.' : 'Nothing on this day.'}</div>`),
             priority: p1all.length ? `<div class="p1-list">${p1all.slice(0, 10).map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${p1total > 10 ? `See all ${p1total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : '<div class="home-empty">No priority tasks right now - nicely done.</div>',
             focus: homeGoals.length ? `<div class="goal-grid">${homeGoals.map((g) => goalCardMini(g, !!gp(g).focus)).join('')}</div>` : '<div class="home-empty">No active goals yet. Set one from Goals.</div>',
-            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No lifespaces yet. Create one from Life Spaces.</div>',
+            favareas: sortedAreas.length ? `<div class="favarea-sort"><label class="favarea-sort-l">Sort<select class="sel" data-home-area-sort><option value="az" ${homeAreaSort === 'az' ? 'selected' : ''}>Name A-Z</option><option value="za" ${homeAreaSort === 'za' ? 'selected' : ''}>Name Z-A</option><option value="recent" ${homeAreaSort === 'recent' ? 'selected' : ''}>Recently viewed</option></select></label></div><div class="favarea-grid">${sortedAreas.map((a) => `<button class="favarea ${(a.props && a.props.fav) ? 'is-fav' : ''}" style="--h:${hueOf(a)}" data-open-area="${a.id}"><span class="fa-dot"></span><span class="fa-t">${esc(a.title || 'Untitled')}</span>${(a.props && a.props.fav) ? '<span class="fa-star" title="Starred">★</span>' : ''}</button>`).join('')}</div>` : '<div class="home-empty">No spaces yet. Create one from Spaces.</div>',
             tracker: (state.practices && state.practices.activities) ? t2TrackerHtml() : (() => { if (state.practices === undefined) loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return '<div class="home-empty" style="padding:20px 0">Loading your tracker…</div>'; })(),
             mail: homeMailHtml(),
             favs: favListHtml(),
@@ -6962,7 +6962,7 @@ function renderHome() {
             today: { ic: '☀', label: homeDayLabel(off), count: null, nav: dayNav },
             priority: { ic: '✓', label: 'Priority', count: p1total || null },
             focus: { ic: '🎯', label: 'Goals', count: homeGoals.length || null },
-            favareas: { ic: '◈', label: 'Life Spaces', count: sortedAreas.length || null },
+            favareas: { ic: '◈', label: 'Spaces', count: sortedAreas.length || null },
             tracker: { ic: '📊', label: 'Tracker', count: null },
             mail: { ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal || null },
             favs: { ic: '★', label: 'Starred', count: null },
@@ -6974,7 +6974,7 @@ function renderHome() {
             { k: 'priority', ic: '✓', label: 'Do next', count: p1total, on: modOn('tasks') },
             { k: 'tracker', ic: '✦', label: t('nav.practices'), extra: '<button class="lead-more" data-open-tracker title="Open the full Tracker">Open →</button>', on: modOn('today') },
             { k: 'focus', ic: '◎', label: 'Goals', count: homeGoals.length, on: modOn('goals') },
-            { k: 'favareas', ic: '◈', label: 'Life Spaces', count: sortedAreas.length, on: modOn('areas') },
+            { k: 'favareas', ic: '◈', label: 'Spaces', count: sortedAreas.length, on: modOn('areas') },
             { k: 'mail', ic: '✉︎', label: 'Inbox', count: state.mailUnreadTotal, on: modOn('mail') },
           ];
           const avail = MAIN_DEF.filter((s) => s.on);
@@ -6997,20 +6997,20 @@ function renderHome() {
               <div class="lead-h" data-home-main-toggle="today" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${top ? '▾' : '▸'}</span><span class="lead-ic">☀</span><span class="lead-name">${esc(homeDayLabel(off))}</span><span class="lead-h-r">${top ? `<span class="lead-nav">${dayNav}</span>` : ''}<button class="lead-add" data-quick-add="event" title="Add an event" aria-label="Add an event">+</button></span></div>
               ${top ? bodies.today : ''}
             </section>` }); }
-          // "My Shizu" - the feed of everything else - sits right under Today, on
+          // "Coming into view" - the feed of everything else - sits right under Today, on
           // today itself only (other days just show that day's calendar). A fixed,
           // foldable strip; not removable.
           if (off === 0) {
             const lop = homeMainOpen('lifebook');
             const lifebookBlock = `<section class="lead-block lead-lifebook${lop ? '' : ' lead-collapsed'}" data-lead-key="lifebook">
-              <div class="lead-h" data-home-main-toggle="lifebook" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${lop ? '▾' : '▸'}</span><span class="lead-ic">✦</span><span class="lead-name">My Shizu</span></div>
+              <div class="lead-h" data-home-main-toggle="lifebook" role="button" tabindex="0"><span class="lead-grip lead-grip-ghost" aria-hidden="true">⠿</span><span class="lead-chev">${lop ? '▾' : '▸'}</span><span class="lead-ic">✦</span><span class="lead-name">Coming into view</span></div>
               ${lop ? (() => { try { return lifebookFeedInner(); } catch (e) { return '<div class="home-empty">Your feed will appear here.</div>'; } })() : ''}
             </section>`;
             const ti = blockEls.findIndex((b) => b.k === 'today');
             blockEls.splice(ti >= 0 ? ti + 1 : 0, 0, { k: 'lifebook', html: lifebookBlock });
           }
           // Recently viewed now lives in the sidebar's top expander, so it's no longer
-          // a Home section: Home is Today, then My Shizu, then the sections you
+          // a Home section: Home is Today, then Coming into view, then the sections you
           // choose. (Robin, 2026-10-16.)
           const blocks = blockEls.map((b) => b.html).join('');
           // Homepage features: one chip per section - tap to show/hide (lit = shown),
@@ -7185,7 +7185,7 @@ function renderNotesList() {
   const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
   const cards = (list) => list.map(noteCard).join('');
   const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this lifespace')}` : '';
+  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this space')}` : '';
   // In "Page" order (unfiltered), split into a section per area.
   let listHtml;
   if (mode === 'area' && !q) {
@@ -7194,7 +7194,7 @@ function renderNotesList() {
     // under "No page".
     for (const n of all) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }); }
     const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Life Space') : 'No lifespace'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
+    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Space') : 'No space'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
   } else {
     listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
   }
@@ -7204,7 +7204,7 @@ function renderNotesList() {
   if (type === 'shared') {
     const isNT = (k) => k === 'note' || k === 'table';
     const withMe = (state.sharedWithMe || []).filter((s) => isNT(s.kind));
-    // sharedByMe now also carries Life Spaces (for the Shared hub); the Notes
+    // sharedByMe now also carries Spaces (for the Shared hub); the Notes
     // view only wants notes & tables. undefined while still loading.
     const byMe = state.sharedByMe === undefined ? undefined : (state.sharedByMe || []).filter((s) => s.kind === 'note' || s.kind === 'table');
     const entries = noteEntries();
@@ -7421,13 +7421,13 @@ function spiritActionsHtml() {
   const base = state.spirit.saved ? `<div class="spirit-saved">✓ Saved to your cards</div><button class="spirit-again" data-spirit-draw>↻ Draw another</button>` : `<button class="spirit-save" data-spirit-save>✓ Save this card</button><button class="spirit-again" data-spirit-draw>↻ Go again</button>`;
   return base + reflLedgerSelect('spirit');
 }
-// "Save to a Life Space": a reading (I Ching cast, spirit card) can be kept as a
-// reflection filed in a lifespace, where it joins that lifespace's Reflections and can
-// be revisited in context. A quiet lifespace picker; choosing one files it. (Robin.)
+// "Save to a Space": a reading (I Ching cast, spirit card) can be kept as a
+// reflection filed in a space, where it joins that space's Reflections and can
+// be revisited in context. A quiet space picker; choosing one files it. (Robin.)
 function reflLedgerSelect(kind) {
   const areas = (state.areas || []).filter((a) => !a.sharedBy);
   if (!areas.length) return '';
-  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a lifespace"><option value="">✦ Save to a Life Space…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
+  return `<select class="sel refl-save-sel" data-refl-save="${esc(kind)}" aria-label="Save to a space"><option value="">✦ Save to a Space…</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}</option>`).join('')}</select>`;
 }
 async function saveReadingToLedger(kind, areaId) {
   if (!areaId) return;
@@ -7446,7 +7446,7 @@ async function saveReadingToLedger(kind, areaId) {
   } else return;
   try {
     await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title, body, props: { date: new Date().toISOString(), mode, area: areaId, areas: [areaId] } }) });
-    toast(`Saved to ${area ? area.title : 'lifespace'} ✓`);
+    toast(`Saved to ${area ? area.title : 'space'} ✓`);
   } catch (e) { toast(e.message); }
 }
 const spiritWhen = (at) => { try { return new Date(at).toLocaleString(dloc(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch { return ''; } };
@@ -8195,7 +8195,7 @@ function renderCompass() {
   if (!s.text) {
     const areas = (state.areas || []).filter((a) => a && a.title);
     const sel = (cur, val) => (cur === val ? ' selected' : '');
-    const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Life Space <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
+    const areaSel = areas.length ? `<label class="cmp-sig"><span class="cmp-sig-l">Space <span class="ho-opt">optional</span></span><select class="sel" id="cmp-area"><option value="">—</option>${areas.map((a) => `<option value="${esc(a.title)}"${sel(s.area, a.title)}>${esc(a.title)}</option>`).join('')}</select></label>` : '';
     body = `<div class="ic-intro cmp-form">
       <div class="ic-coin-row"><span class="ic-coin">⚖︎</span></div>
       <h2 class="ic-h">Weigh a decision</h2>
@@ -8819,7 +8819,7 @@ function renderReadwatch() {
         ${isEd ? `<div class="rw-edit">
           <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
           <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
+          <label class="rw-edit-f"><span>Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
           <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
           <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
         </div>` : ''}
@@ -8835,7 +8835,7 @@ function renderReadwatch() {
     ${pageCrumb(t('saved.title'))}
     <div class="pane-head home-head"><h1>${t('saved.title')}</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
     <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
-    <div class="rw-type" title="Shizu works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
+    <div class="rw-type" title="Koyeba works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     ${items.length ? `${(() => {
       const tc = {}; items.forEach((b) => { const k = rwMediaKey(b.props || {}); tc[k] = (tc[k] || 0) + 1; });
@@ -8860,10 +8860,10 @@ function rwSetupHtml() {
   return `<div class="rw-setup-panel">
     <div class="rw-setup-h">One-tap saving</div>
     <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
-      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Shizu</a></div></div>
-    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Shizu”:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Koyeba</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Koyeba”:
       <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
-      Then anywhere: <b>Share → Save to Shizu</b>.</div>
+      Then anywhere: <b>Share → Save to Koyeba</b>.</div>
     <div class="rw-setup-note">This save link is private to you.</div>
   </div>`;
 }
@@ -9000,7 +9000,7 @@ function renderBookmarkCard() {
         ${openTop ? openBtn : ''}
         <div class="rwc-rate">${rwRatingHtml(b)}</div>
         <div class="rwc-row"><span class="rwc-lbl">Status</span><span class="rwc-status-seg">${rwStatusOpts(mk).map(([v, l]) => `<button class="rwc-seg ${rwStatusVal(p) === v ? 'on' : ''}" data-rw-setstatus="${b.id}:${v}">${esc(l)}</button>`).join('')}</span></div>
-        <label class="rwc-row"><span class="rwc-lbl">Life Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No lifespace</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
+        <label class="rwc-row"><span class="rwc-lbl">Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
         <label class="rwc-row"><span class="rwc-lbl">Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
         <label class="rwc-notes-l"><span class="rwc-lbl">Notes</span><textarea class="sel rwc-notes" data-rw-note="${b.id}" placeholder="Your thoughts, quotes, why you saved it…" rows="14">${esc(p.note || '')}</textarea></label>
         ${openTop ? '' : openBtn}
@@ -9018,7 +9018,7 @@ function areaTag(b) {
 }
 // A picker to set a block's page, used on note and table pages.
 function areaSelect(cur, attr) {
-  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Life Space</option>${
+  return `<span class="area-pick"><select class="area-sel" ${attr}><option value="">+ Space</option>${
     editableAreas().map((a) => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('')
   }</select></span>`;
 }
@@ -9035,7 +9035,7 @@ async function openAreasList() {
   state.view = { type: 'areas' };
   renderNav();
   renderAreasList();   // paint immediately with whatever summary we have
-  // Re-pull lifespaces shared with me every time the page opens, so a lifespace someone
+  // Re-pull spaces shared with me every time the page opens, so a space someone
   // just shared shows up without a full app reload (the cache can be stale). It
   // also refreshes the sidebar list. (Robin, 2026-10-14.)
   api('/api/blocks?kind=area&shared=1').then((r) => { state.sharedAreas = Array.isArray(r) ? r : []; if (state.view && state.view.type === 'areas') { renderNav(); renderAreasList(); } }).catch(() => {});
@@ -9053,8 +9053,8 @@ function areaActivity(last) {
   if (d < 31) return { cls: 'mild', label: 'This month' };
   return { cls: 'quiet', label: `Quiet · ${Math.max(1, Math.round(d / 7))}w` };
 }
-// Life Spaces others have shared with me. Loaded once (mirrors the People section's
-// friend load) so they appear in my Life Spaces list - both the sidebar and this page
+// Spaces others have shared with me. Loaded once (mirrors the People section's
+// friend load) so they appear in my Spaces list - both the sidebar and this page
 // - alongside my own. A dedicated fetch keeps them out of the area pickers.
 function loadSharedAreas() {
   if (Array.isArray(state.sharedAreas)) return Promise.resolve(state.sharedAreas);
@@ -9064,8 +9064,8 @@ function loadSharedAreas() {
     .catch(() => { state.sharedAreas = []; return state.sharedAreas; });
   return state._sharedAreasP;
 }
-// Life Spaces I can file things INTO: my own, plus any shared *with* me where I was
-// granted edit. Once someone adds me to their Life Space, I can assign a note, an
+// Spaces I can file things INTO: my own, plus any shared *with* me where I was
+// granted edit. Once someone adds me to their Space, I can assign a note, an
 // email, a task, a goal - anything - to it, and it becomes a joined space. View-only
 // shares are deliberately excluded: I can read them but can't file into them.
 // (Kicks off the shared-areas load if it hasn't happened; boot preloads it so the
@@ -9075,41 +9075,41 @@ function editableAreas() {
   return state.areas.concat((state.sharedAreas || []).filter((a) => a && a.canEdit));
 }
 // " · shared" tag for a picker option/chip, so a joined space reads as distinct
-// from my own Life Spaces.
+// from my own Spaces.
 const sharedTag = (a) => (a && a.sharedBy ? ' · shared' : '');
 // The Pages page: a colourful, sortable board of area cards - each a monogram
 // in the area's colour, its vision, an "how active" indicator, and live counts
 // (open tasks, goals, notes, people). Clicks through to the area's dashboard.
-// A Mine / Shared-with-me / All filter sits above; lifespaces shared with me carry a
+// A Mine / Shared-with-me / All filter sits above; spaces shared with me carry a
 // "shared by" tag and aren't draggable (they're someone else's order, not mine).
 function renderAreasList() {
   const sum = state.areaSummary || {};
   const S = (id) => sum[id] || {};
   const sortMode = areasSortMode();
-  // Mine / Shared-with-me / All. Life Spaces others shared with me are loaded lazily.
+  // Mine / Shared-with-me / All. Spaces others shared with me are loaded lazily.
   let scope = state.areasScope || (state.areasScope = (() => { try { return localStorage.getItem('life.areas.scope') || 'all'; } catch { return 'all'; } })());
   // "Mine" retired in favour of "Shared by me"; anyone still on it lands on All.
   if (scope === 'mine') { scope = state.areasScope = 'all'; try { localStorage.setItem('life.areas.scope', 'all'); } catch {} }
   if (state.sharedAreas === undefined) loadSharedAreas().then(() => { if (state.view && state.view.type === 'areas') renderAreasList(); });
   const canDrag = sortMode === 'rank' && scope === 'all';
-  // A lifespace's recency for the "recently active" sort. My own come from the summary;
-  // lifespaces shared with me aren't in my summary, so fall back to the block's own
-  // last-updated - a just-shared or just-edited shared lifespace still sorts to the top.
+  // A space's recency for the "recently active" sort. My own come from the summary;
+  // spaces shared with me aren't in my summary, so fall back to the block's own
+  // last-updated - a just-shared or just-edited shared space still sorts to the top.
   const activityTs = (a) => { const l = S(a.id).last; if (l) return l; const u = a.updated_at || a.created_at; return u ? new Date(u).getTime() : 0; };
   const applySort = (list) => {
     if (sortMode === 'active') return list.slice().sort((a, b) => activityTs(b) - activityTs(a));
     if (sortMode === 'tasks') return list.slice().sort((a, b) => (S(b.id).tasks || 0) - (S(a.id).tasks || 0));
     if (sortMode === 'name') return list.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    return list;   // 'rank' keeps the given order (my ranked lifespaces, shared ones appended)
+    return list;   // 'rank' keeps the given order (my ranked spaces, shared ones appended)
   };
   const mineRanked = areasByRank();
   const received = (state.sharedAreas || []).slice();
-  // Life Spaces I own that I've given someone access to (members = people I've
+  // Spaces I own that I've given someone access to (members = people I've
   // shared the space's block with, from the summary). Drives "Shared by me".
   const mineShared = mineRanked.filter((a) => (S(a.id).members || 0) > 0);
   const favAreas = mineRanked.filter((a) => a.props && a.props.fav);
   const renderCard = (a) => (a.sharedBy ? sharedCard(a) : card(a));
-  // A lifespace I own: the full card with live metrics, draggable in "My order".
+  // A space I own: the full card with live metrics, draggable in "My order".
   const card = (a) => {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
@@ -9137,7 +9137,7 @@ function renderAreasList() {
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
     </div>`;
   };
-  // A lifespace shared WITH me: someone else's, so no metrics, star or drag - just a
+  // A space shared WITH me: someone else's, so no metrics, star or drag - just a
   // "shared by" tag and whether I can edit. Opens read-only / edit per my access.
   const sharedCard = (a) => {
     const hue = hueOf(a);
@@ -9153,23 +9153,23 @@ function renderAreasList() {
   };
   const scopeBtn = (v, l, tip) => { const n = v === 'shared' ? received.length : v === 'sharedby' ? mineShared.length : 0; return `<button class="cg-chip areas-scope ${scope === v ? 'on' : ''}" data-areas-scope="${v}" title="${tip}">${l}${n ? ` <span class="cg-n">${n}</span>` : ''}</button>`; };
   const controls = `<div class="areas-controls">
-    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Life Spaces you own and lifespaces shared with you')}${scopeBtn('shared', 'Shared with me', 'Only lifespaces others have shared with you')}${scopeBtn('sharedby', 'Shared by me', 'Life Spaces you have shared with others')}</div>
+    <div class="areas-scopeseg">${scopeBtn('all', 'All', 'Spaces you own and spaces shared with you')}${scopeBtn('shared', 'Shared with me', 'Only spaces others have shared with you')}${scopeBtn('sharedby', 'Shared by me', 'Spaces you have shared with others')}</div>
     <label class="areas-sortwrap">Sort <select class="sel areas-sort" data-areas-sort>${AREAS_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
   </div>`;
   const sections = [];
   if (scope === 'all' && favAreas.length && canDrag) sections.push(`<section class="home-sec"><div class="home-sec-h">Starred</div><div class="area-cards area-gcards">${favAreas.map(card).join('')}</div></section>`);
-  // One unified, sorted grid for the chosen scope. In All, my own lifespaces and the
-  // lifespaces shared with me sit together and sort together - so a recently-active
-  // shared lifespace shows up top, not quarantined at the bottom - each still visually
+  // One unified, sorted grid for the chosen scope. In All, my own spaces and the
+  // spaces shared with me sit together and sort together - so a recently-active
+  // shared space shows up top, not quarantined at the bottom - each still visually
   // marked as mine or shared. (Robin, 2026-10-14.)
   const listForScope = scope === 'shared' ? applySort(received) : scope === 'sharedby' ? applySort(mineShared) : applySort(mineRanked.concat(received));
-  const header = scope === 'shared' ? `Shared with you · ${listForScope.length}` : scope === 'sharedby' ? `Shared by you · ${listForScope.length}` : `All lifespaces · ${listForScope.length}`;
-  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Life Space with you, it turns up here.' : scope === 'sharedby' ? "You haven't shared a Life Space yet. Open one, then give someone access and it turns up here." : 'No lifespaces yet.'}</div>`;
+  const header = scope === 'shared' ? `Shared with you · ${listForScope.length}` : scope === 'sharedby' ? `Shared by you · ${listForScope.length}` : `All spaces · ${listForScope.length}`;
+  const grid = listForScope.length ? listForScope.map(renderCard).join('') : `<div class="empty">${scope === 'shared' ? 'Nothing shared with you yet. When someone shares a Space with you, it turns up here.' : scope === 'sharedby' ? "You haven't shared a Space yet. Open one, then give someone access and it turns up here." : 'No spaces yet.'}</div>`;
   sections.push(`<section class="home-sec"><div class="home-sec-h">${header}</div><div class="area-cards area-gcards">${grid}</div></section>`);
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
-    <div class="pane-head home-head"><h1>Life Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Life Space is a living chapter in your Shizu - everything about what matters, in one place.</p>
+    <div class="pane-head home-head"><h1>Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
+    <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Koyeba - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
 }
@@ -9179,17 +9179,17 @@ async function openArea(id) {
   state.area_open = { area, blocks, shares: null };
   recordRecent('area', id, area.title);
   renderNav(); renderArea();
-  // Private (per-user) Notepad: load this person's own pad for the lifespace. (Robin.)
+  // Private (per-user) Notepad: load this person's own pad for the space. (Robin.)
   if (!wallShared(area)) api('/api/folio-note?area=' + encodeURIComponent(id)).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.myWall = (r && r.value) || ''; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
   // People connected: who this area is shared with (async, non-blocking).
   Promise.all([
     api(`/api/blocks/${id}/shares`).then((r) => r.shares || []).catch(() => []),
     state.friends ? Promise.resolve() : api('/api/friends').then((f) => { state.friends = f; }).catch(() => {}),
   ]).then(([shares]) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.shares = shares; if (state.view.type === 'area') renderArea(); } });
-  // Latest Updates wall: a cross-member activity feed for this lifespace (async).
+  // Latest Updates wall: a cross-member activity feed for this space (async).
   api(`/api/area/${id}/updates`).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.updates = r || { updates: [] }; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
 }
-// Re-render the Life Space after a search keystroke, keeping the cursor in the
+// Re-render the Space after a search keystroke, keeping the cursor in the
 // search box (renderArea rebuilds the whole pane, which would otherwise blur it).
 function renderAreaKeepQ() {
   const a = document.activeElement;
@@ -9207,7 +9207,7 @@ function areaContactsPanel(area, contacts) {
   const q = ((state.area_open && state.area_open.contactQuery) || '').trim().toLowerCase();
   const inIds = new Set(contacts.map((c) => c.id));
   const results = q ? (state.contacts || []).filter((c) => !inIds.has(c.id) && ((c.title || '').toLowerCase().includes(q) || ((c.props && c.props.email) || '').toLowerCase().includes(q))).slice(0, 8) : [];
-  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this lifespace" aria-label="Remove from this lifespace">×</button></div>`).join('');
+  const cards = contacts.map((c) => `<div class="area-contact-wrap">${contactCardHtml(c)}<button class="area-contact-rm" data-area-contact-rm="${c.id}" title="Remove from this space" aria-label="Remove from this space">×</button></div>`).join('');
   return `<div class="area-contacts">
     ${contacts.length ? `<div class="contact-grid">${cards}</div>` : '<div class="home-empty">No contacts here yet - add the people tied to this area (a vet, a landlord, a coach…).</div>'}
     <div class="area-contact-add">
@@ -9223,7 +9223,7 @@ function addContactToArea(contactId) {
   const cur = blockAreas(c); if (cur.includes(area.id)) return;
   setBlockAreas('contact', contactId, [...cur, area.id]);
   if (state.area_open.blocks && !state.area_open.blocks.some((b) => b.id === contactId)) state.area_open.blocks.push(c);
-  state.area_open.contactQuery = ''; renderArea(); toast('Added to this lifespace');
+  state.area_open.contactQuery = ''; renderArea(); toast('Added to this space');
 }
 function removeContactFromArea(contactId) {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -9445,7 +9445,7 @@ function visionHighlights(text) {
   const score = (x) => (/^i\b|^i'/i.test(x) ? 2 : 0) + (x.length >= 20 && x.length <= 120 ? 1 : 0);
   return parts.map((x, i) => ({ x, i, sc: score(x) })).sort((a, b) => (b.sc - a.sc) || (a.i - b.i)).slice(0, 3).map((o) => o.x);
 }
-// One lifespace header style everywhere: chevron, an icon in its tinted badge, the
+// One space header style everywhere: chevron, an icon in its tinted badge, the
 // serif label, and a count pill. (Robin: there were two header looks, now one.)
 const areaSecH = (key, label, count, icon) => `<div class="home-sec-h area-sec-h" data-area-sec="${esc(key)}" role="button"><span class="acw-chev">${areaSecOpen(key) ? '▾' : '▸'}</span>${icon ? `<span class="ash-ic">${icon}</span>` : ''}<span class="ash-l">${esc(label)}</span>${count != null ? `<span class="ash-c">${count}</span>` : ''}</div>`;
 function timeAgo(t) {
@@ -9459,7 +9459,7 @@ function timeAgo(t) {
   return Math.floor(d / 365) + 'y ago';
 }
 // Plain "N days ago" for the admin members list: Robin wants the day count, not a
-// date, so how long since someone used Shizu reads at a glance (and big numbers
+// date, so how long since someone used Koyeba reads at a glance (and big numbers
 // flag churn). (Robin, 2026-10-18.)
 function daysAgoLabel(ts) {
   if (!ts) return 'never';
@@ -9536,22 +9536,22 @@ function areaSentimentHtml(area) {
 }
 // A compact "who has access" row for the masthead, sitting under Add/Share: round
 // faces (you + anyone you share with) and a ＋ to give someone access. The faces
-// open each person's Shizu card; the ＋ opens the same Share surface the ▾
+// open each person's Koyeba card; the ＋ opens the same Share surface the ▾
 // overview uses - this is just the quick view. (Robin, 2026-10-28: faces replace
-// the Life Space Access box.)
+// the Space Access box.)
 function areaFacesRow(area) {
   const canEdit = !area.sharedBy || !!area.canEdit;
   const shares = state.area_open && state.area_open.shares;
   if (shares && shares.length) loadCards(shares.map((s) => s.id));
   const friends = (state.friends && state.friends.friends) || [];
   const faces = [];
-  // A lifespace shared TO you leads with its owner's face; then always you.
+  // A space shared TO you leads with its owner's face; then always you.
   if (area.sharedBy) faces.push(`<span class="aface aface-owner" title="${esc(area.sharedBy)} · owner"><span class="fr-av">${esc(initial(area.sharedBy))}</span></span>`);
   {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Shizu card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyeba card">${av}</button>`);
   }
   const LIM = 6;
   const list = shares || [];
@@ -9564,7 +9564,7 @@ function areaFacesRow(area) {
   const add = (canEdit && !area.sharedBy) ? `<button class="aface aface-add" data-area-invite title="Give someone access" aria-label="Give someone access">＋</button>` : '';
   return `<div class="area-faces">${faces.join('')}${more}${add}</div>`;
 }
-// Days until a birthday (MM-DD), 0 = today, for the lifespace "Today" section.
+// Days until a birthday (MM-DD), 0 = today, for the space "Today" section.
 function bdayInDays(bday) {
   const mmdd = String(bday || '').slice(-5); const [mm, dd] = mmdd.split('-').map(Number); if (!mm || !dd) return -1;
   const now = new Date(); const t0 = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -9572,9 +9572,9 @@ function bdayInDays(bday) {
   if (diff < 0) diff = Math.round((Date.UTC(now.getFullYear() + 1, mm - 1, dd) - t0) / 86400000);
   return diff;
 }
-// The lifespace's own week-at-a-glance: this lifespace's events for today + the next
-// six days. Built for co-parents and anyone sharing a lifespace - both sides see
-// the same key activities. Lazy-loaded once per lifespace open, then cached on
+// The space's own week-at-a-glance: this space's events for today + the next
+// six days. Built for co-parents and anyone sharing a space - both sides see
+// the same key activities. Lazy-loaded once per space open, then cached on
 // state.area_open.week; invalidated whenever an event is written. (Robin.)
 function loadAreaWeek(areaId, offset = 0) {
   const st = state.area_open; if (!st || String(st.area.id) !== String(areaId)) return;
@@ -9595,12 +9595,12 @@ function loadAreaWeek(areaId, offset = 0) {
   });
 }
 function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null; }
-// "Private" means: you see it on the Life Space, nobody you share with does. Make
+// "Private" means: you see it on the Space, nobody you share with does. Make
 // that obvious wherever a block shows - a labelled chip (not a bare padlock) and
 // a distinct card treatment (is-private: dashed edge + faint wash), on anything:
 // note, task, contact, goal, saved link, reflection. (Robin.)
 const isPrivateBlock = (b) => !!(b && b.props && b.props.private);
-const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Life Space">🔒 Private</span>' : '';
+const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Space">🔒 Private</span>' : '';
 const privCls = (b) => isPrivateBlock(b) ? ' is-private' : '';
 function renderArea() {
   const { area, blocks } = state.area_open;
@@ -9630,7 +9630,7 @@ function renderArea() {
   // reopen to look back on what you've done in this area.
   const doneGoals = goals.filter((g) => (gp(g).status || 'active') === 'done');
   const h = hueOf(area);
-  // Expose the space's hue on the body so the whole Life Space page can carry a
+  // Expose the space's hue on the body so the whole Space page can carry a
   // faint origami fold in its own colour (see body[data-view="area"] .pane). (Robin.)
   try { document.body.style.setProperty('--area-h', h); } catch {}
   const cover = (area.props && area.props.cover) || null;
@@ -9689,10 +9689,10 @@ function renderArea() {
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
   const visionSnip = (area.props && (area.props.vision || '').trim()) || '';
-  // You can add to a lifespace you own, OR one shared with you WITH edit access -
+  // You can add to a space you own, OR one shared with you WITH edit access -
   // edit access is good enough; you don't have to own it. (Robin, 2026-10-14.)
   const canEditArea = !area.sharedBy || !!area.canEdit;
-  // "Preview as member": on a lifespace you own AND share, you can flip to see what
+  // "Preview as member": on a space you own AND share, you can flip to see what
   // the people you share with see - the bits you've kept private are dimmed and
   // stamped "only you". Owner-only, and only worth offering once it's shared. (Robin.)
   const canPreviewMember = canEditArea && memberCount > 0;
@@ -9733,7 +9733,7 @@ function renderArea() {
   // other parts as its own collapsible card - notes & tables, tasks, contacts,
   // wheel, saved links, reflections, emails. (Robin, 2026-09-26: the tabs change
   // only the top bit; the rest of the cards always show.)
-  // P1-P4 quick filter for this lifespace's Tasks section, to the right of the
+  // P1-P4 quick filter for this space's Tasks section, to the right of the
   // List/Board switch. Narrows only what's shown, never the counts. (Robin.)
   const aqp = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set());
   const prioOk = (tk) => !aqp.size || aqp.has(tk.props.priority || '');
@@ -9745,7 +9745,7 @@ function renderArea() {
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
   const notesBody = notesTotal ? `<div class="tbl-cards noteord-cards">${orderedNoteCards}</div>${secMore('Pages and tables', noteTblOrdered.length)}` : '<div class="home-empty">No notes or tables here yet.</div>';
   // Notes list: sortable (default most-recently used), an optional starred-only
-  // filter, a comfortable cap with "Show all", and live search from the Life Space
+  // filter, a comfortable cap with "Show all", and live search from the Space
   // box, so a long list stays scannable. (Robin, 2026-10-19/20.)
   const PG_CAP = 12;
   const pgQuery = ((state.area_open && state.area_open.q) || '').trim().toLowerCase();
@@ -9780,7 +9780,7 @@ function renderArea() {
   // Everything below Vision & Goals and the stats strip is now one grid of square
   // cards (the SAME tiles as settings): one card per activated tool/section, and
   // tapping a card expands its content below. The registry + grid are built lower
-  // down, next to the feeds they fold in. (Robin, 2026-10-11: new lifespace approach.)
+  // down, next to the feeds they fold in. (Robin, 2026-10-11: new space approach.)
   const attList = (area.props && area.props.attachments) || [];
   const linkN = blockLinks(area).length;
   // The tab-controlled top: Vision / Goals / Bucket list.
@@ -9790,7 +9790,7 @@ function renderArea() {
   // Wheel of Life is a tab only for areas you actually track in the wheel; untracked
   // ones drop it (toggle tracking from the Wheel of Life page). (Robin, 2026-09-27.)
   const wheelTracked = !(area.props && area.props.reviewOff);
-  // Only surface the Wheel of Life tab once this lifespace has actually been scored in
+  // Only surface the Wheel of Life tab once this space has actually been scored in
   // a review - no empty "rate it in your weekly review" tab before then. The score
   // is set in the weekly review, so it appears the moment there's one. (Robin.)
   const wheelReviewed = Math.min(Number((area.props && area.props.wheelScore) || 0), 5) > 0;
@@ -9808,13 +9808,13 @@ function renderArea() {
   // The open tab's own name as a kicker above its card (Vision on Vision, Goals
   // on Goals, and so on) - mirrors the "Vision" label Robin liked. (Robin.)
   const topKick = (openTile && tops[openTile]) ? `<div class="area-recent-h area-tab-kick">${esc(openTile)}</div>` : '';
-  // Vision & Goals leads the lifespace - the tab strip and the open tab's card sit
+  // Vision & Goals leads the space - the tab strip and the open tab's card sit
   // right under the masthead. Everything else (dashboard, today, week, the flow
   // sections) follows below. (Robin: Vision & Goals at the top.)
   // "Add to this area" rides the tab-strip row, right-aligned alongside the
   // Vision / Goals / Wheel of Life / Bucket list tabs. (Robin, 2026-10-12.)
   // Defined here, before areaVisionGoals uses it - a const can't be read above
-  // its declaration (that TDZ error stopped lifespaces opening). (Robin, 2026-10-13.)
+  // its declaration (that TDZ error stopped spaces opening). (Robin, 2026-10-13.)
   const areaAddBtn = (area.sharedBy && !canEditArea) ? '' : `<div class="addnew area-addnew area-addnew-row">
         <button class="add-btn wide addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false"><span class="an-plus">＋</span>Add to this Space<span class="an-ch">▾</span></button>
         <div class="addnew-menu" hidden>
@@ -9838,7 +9838,7 @@ function renderArea() {
   // two Tasks figures read as "Tasks" (open) and "Done". (Robin.)
   const DASH_STATS = [
     // Pages and Tables are separate metrics now - each shows only when it has any
-    // (the filter below drops zero counts), so a lifespace with pages but no tables
+    // (the filter below drops zero counts), so a space with pages but no tables
     // shows just Pages. Both open the Pages & tables tile. (Robin, 2026-10-14.)
     [notes.length, 'Notes', 'Notes'],
     [tables.length, 'Tables', 'Tables'],
@@ -9869,7 +9869,7 @@ function renderArea() {
   // cards - the SAME tiles as the settings grid. A card per activated section;
   // tap it and its content (plus its own add/connect actions, so you can add a
   // file, a link or a page without opening settings) expands below. One open at a
-  // time. The old feeds (Up next, Recently viewed, Week ahead, Be ready, Life Space
+  // time. The old feeds (Up next, Recently viewed, Week ahead, Be ready, Space
   // Access) fold in as cards too. (Robin, 2026-10-11.)
   const due = area.props && area.props.due;
   const dueRel = due ? deadlineRel(due) : null;
@@ -9878,7 +9878,7 @@ function renderArea() {
     .map(({ c, d }) => `<div class="ev-row ev-bday ev-click" data-open-contact="${c.id}" role="button" tabindex="0"><span class="ev-time">🎂</span><span class="ev-t">${esc(c.title || 'Someone')}'s birthday</span><span class="ev-loc ev-surfaced">${d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`}</span></div>`).join('');
   const beReadyBody = dueRow + bdayRows;
   // Week ahead is built lazily (and kicks off its own load) only when its card is
-  // open, so a closed lifespace doesn't fetch the week on every render.
+  // open, so a closed space doesn't fetch the week on every render.
   const buildWeekBody = () => {
     const offset = state.area_open.weekOffset || 0;
     if (!state.area_open.week || String(state.area_open.week.for) !== String(area.id) || (state.area_open.week.offset || 0) !== offset) loadAreaWeek(area.id, offset);
@@ -9945,7 +9945,7 @@ function renderArea() {
     { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
   ].filter((s) => s.show);
   let openToolId = state.area_open.toolTile;
-  // Default on opening a Life Space: open the first section that actually has
+  // Default on opening a Space: open the first section that actually has
   // something in it, in the order above (Notes first, then Tasks, Calendar…). An
   // explicit tap is kept - including closing the open tile, which sets null, not
   // undefined - so the default only applies before you touch a tile. (Robin, 2026-10-28.)
@@ -9955,20 +9955,20 @@ function renderArea() {
   const openSec = SECTIONS.find((s) => s.id === openToolId);
   const toolPanel = openSec ? `<div class="ovt-panel area-tool-panel"><div class="ovt-panel-h"><span class="ovt-ph-ic">${openSec.ic}</span>${esc(openSec.label)}</div>${openSec.acts ? `<div class="ovt-acts">${openSec.acts}</div>` : ''}<div class="area-tool-body">${openSec.body()}</div></div>` : '';
   const areaTools = SECTIONS.length ? `<div class="area-tools" style="--h:${h}"><div class="ovt-grid area-tools-grid">${toolTiles}</div>${toolPanel}</div>` : '';
-  // Life Space Access is a permanent half-row card between the stats strip and the tool
+  // Space Access is a permanent half-row card between the stats strip and the tool
   // cards (its settings tile stays in the ▾ overview). (Robin, 2026-10-11.)
-  // Life Space Access and the always-open Notepad share a half-and-half row between the
+  // Space Access and the always-open Notepad share a half-and-half row between the
   // stats strip and the tool cards (each takes a column; one alone stays half
   // width). The Notepad isn't a tile - it's permanently open here. (Robin.)
-  // Life Space Access always shows (unless hidden via Sections). On a lifespace shared WITH
-  // me it names the owner + me, so you can always see who can see this lifespace - we
+  // Space Access always shows (unless hidden via Sections). On a space shared WITH
+  // me it names the owner + me, so you can always see who can see this space - we
   // always need it. (Robin, 2026-10-14.)
   // The "Who has access" box is retired: access now reads as faces in the masthead
   // (and the full controls live in the ▾ overview / Share). The Notepad drops to the
   // very bottom of the page, full width. (Robin, 2026-10-28.)
   const notepadFull = secHidden('Wall') ? '' : `<section class="area-dash-shared area-notepad area-notepad-full" style="--h:${h}">${areaSecH('Notepad', 'Notepad', null, '📝')}${areaSecOpen('Notepad') ? `<div class="area-notepad-body">${areaWallBody(area)}</div>` : ''}</section>`;
   // Latest Updates: a Facebook-style wall of what everyone with access has done in
-  // this lifespace, newest first. Life Spaces are made for sharing, so it names the person
+  // this space, newest first. Spaces are made for sharing, so it names the person
   // ("Smita added an event"). A cross-member feed from /api/area/:id/updates.
   const UPD_IC = { note: '▤', table: '▦', task: '✓', event: '◑', contact: '👤', goal: '🎯', bookmark: '🔖', journal: '✎', bucket: '✦', file: '📎' };
   const UPD_THING = { note: 'a page', table: 'a table', task: 'a task', event: 'an event', contact: 'a contact', goal: 'a goal', bookmark: 'a book or film', journal: 'a reflection', bucket: 'a bucket-list item', file: 'a file' };
@@ -9989,7 +9989,7 @@ function renderArea() {
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Life Spaces', attr: 'data-open-areas' }, { label: area.title }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Spaces', attr: 'data-open-areas' }, { label: area.title }])}
     <div class="area-body" style="--h:${h}">
     <header class="area-hero area-mast ${cover && !coverHidden ? 'has-cover' : 'no-cover'}" style="--h:${h}">
       ${coverHidden
@@ -9999,19 +9999,19 @@ function renderArea() {
         <div class="am-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div>
         <span class="am-cover-scrim"></span>
         ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}
-        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Shizu&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
+        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Koyeba&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
       </div>`
         : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
       <div class="am-plate">
-        <div class="am-kicker">Life Space</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this lifespace colour" aria-label="Change lifespace colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Life Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
+        <div class="am-kicker">Space</div>
+        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this space colour" aria-label="Change space colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
         ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Life Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${areaSentimentHtml(area)}<span class="area-h1-tools am-rowtools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Life Space settings and overview" title="Settings &amp; overview">▾</button></span></div>
+        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${areaSentimentHtml(area)}<span class="area-h1-tools am-rowtools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Space settings and overview" title="Settings &amp; overview">▾</button></span></div>
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
     </header>
-    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this lifespace as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
+    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this space as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
     ${areaDash ? '<div class="area-recent-h area-tabs-kick">Metrics</div>' : ''}
     ${areaDash}
     ${areaVisionGoals}
@@ -10031,7 +10031,7 @@ function areaOverviewHtml(area, c, blocks) {
   const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
   const shares = state.area_open && state.area_open.shares;
   const friends = (state.friends && state.friends.friends) || [];
-  // Your own Shizu card always shows here (unless this area was shared TO you
+  // Your own Koyeba card always shows here (unless this area was shared TO you
   // by someone else): you are the first person who has access.
   const meCard = (() => {
     if (area.sharedBy) return '';
@@ -10041,10 +10041,10 @@ function areaOverviewHtml(area, c, blocks) {
     const sub = subd ? `lifebook.fyi/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
-    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Shizu card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
+    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Koyeba card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
   if (shares && shares.length) loadCards(shares.map((s) => s.id));
-  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Shizu card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Koyeba card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
     : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
@@ -10054,11 +10054,11 @@ function areaOverviewHtml(area, c, blocks) {
   // recent-views list, filtered to this area).
   const rv = recentItems().filter((x) => x && x.area === area.id && x.id !== area.id).slice(0, 6);
   const viewedHtml = rv.length ? rv.map((x) => `<button class="ov-act ov-act-btn" data-fav-open="${x.kind}:${x.id}"><span class="ov-act-ic">${kIcon[x.kind] || '•'}</span><span class="ov-act-t">${esc(x.title || 'Untitled')}</span><span class="ov-act-time">${timeAgo(x.ts)}</span></button>`).join('') : '<div class="ov-muted">Nothing opened here yet.</div>';
-  // Owner section control, now an icon-tile grid: one tile per piece of the Life Space,
+  // Owner section control, now an icon-tile grid: one tile per piece of the Space,
   // each expanding to its settings - on / only you / shared (with whom) - plus the
   // connect & add actions that used to live in the Connections hub at the foot of
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
-  const SEC_LABELS = { 'Shared with': 'Life Space Access', Sentiment: 'Wheel of Life', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
+  const SEC_LABELS = { 'Shared with': 'Space Access', Sentiment: 'Wheel of Life', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
   const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
@@ -10068,7 +10068,7 @@ function areaOverviewHtml(area, c, blocks) {
   // Each shareable function is one of three states: Off (neither of us), Only me
   // (on for me, off for them) or Shared (all or some members).
   const seg = (k, state, val, label) => `<button class="ovs-segb ${state === val ? 'on' : ''}" data-area-sec-state="${esc(k)}::${val}">${label}</button>`;
-  // The pieces of the Life Space, each a tile. `conn` adds a "Connect existing" button,
+  // The pieces of the Space, each a tile. `conn` adds a "Connect existing" button,
   // `acts` are add buttons, `file`/`members` are their special cases - all reusing
   // the handlers the old Connections tiles used.
   const aid = area.id;
@@ -10102,16 +10102,16 @@ function areaOverviewHtml(area, c, blocks) {
   const pieceTile = (p) => {
     const n = pieceCount[p.k]; const openT = setTile === p.k; const off = hidden.includes(p.k);
     // Each piece is a clear ON / OFF: the switch (top-right) turns it on or off -
-    // OFF greys the tile and hides the section from the Life Space; the body opens
+    // OFF greys the tile and hides the section from the Space; the body opens
     // its settings (sharing, add actions) when it's on. (Robin, 2026-10-30.)
     return `<div class="ovt-tile ovt-set${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" role="group" aria-label="${esc(SEC_LABELS[p.k] || p.k)}">
       <button class="ovt-main" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${off ? 'Off' : 'Open settings'}"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>
-      <button class="ovt-switch${off ? '' : ' on'}" data-area-sec-toggle="${esc(p.k)}" role="switch" aria-checked="${off ? 'false' : 'true'}" title="${off ? 'Off - tap to show it on this Life Space' : 'On - tap to turn it off'}"><span class="ovt-sw-knob"></span></button>
+      <button class="ovt-switch${off ? '' : ' on'}" data-area-sec-toggle="${esc(p.k)}" role="switch" aria-checked="${off ? 'false' : 'true'}" title="${off ? 'Off - tap to show it on this Space' : 'On - tap to turn it off'}"><span class="ovt-sw-knob"></span></button>
     </div>`;
   };
   const pieceShareCtl = (k) => {
     // On/off is the tile's switch now, so the panel only carries the sharing choice.
-    if (hidden.includes(k)) return `<div class="ovt-offnote">Switched <b>off</b> - hidden from this Life Space. Flip the switch to use it.</div>`;
+    if (hidden.includes(k)) return `<div class="ovt-offnote">Switched <b>off</b> - hidden from this Space. Flip the switch to use it.</div>`;
     if (!SHARE_KEYS.includes(k) || !hasMembers) return '';   // nothing to share, or nobody to share with
     const st = scfg[k]; const sharedCfg = st === 'all' || (Array.isArray(st) && st.length);
     // The Notepad defaults to Shared and only goes private on an explicit 'me'.
@@ -10208,19 +10208,19 @@ function areaMembersBody(area) {
   if (shares == null) return '<div class="mem-empty">Loading…</div>';
   const friends = (state.friends && state.friends.friends) || [];
   const LIMIT = 8;
-  // The owner's own card leads "Who has access" (so a private lifespace still reads
+  // The owner's own card leads "Who has access" (so a private space still reads
   // as "you + invite", not an empty bar). (Robin.)
   const meCard = () => {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
-    return `<button class="mem-card mem-card-me" data-open-card title="Your Shizu card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
+    return `<button class="mem-card mem-card-me" data-open-card title="Your Koyeba card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
   };
-  // A lifespace shared WITH me: name its owner + me (I can't list the owner's full
+  // A space shared WITH me: name its owner + me (I can't list the owner's full
   // roster - that's owner-scoped - so show who I can see), plus any co-members the
   // share list did return. Always rendered, never an empty bar. (Robin.)
   if (area.sharedBy) {
-    const owner = `<div class="mem-card mem-card-owner" title="Owner of this lifespace"><span class="fr-av">${esc(initial(area.sharedBy))}</span><span class="mem-name">${esc(area.sharedBy)}</span><span class="mem-you mem-owner">owner</span></div>`;
+    const owner = `<div class="mem-card mem-card-owner" title="Owner of this space"><span class="fr-av">${esc(initial(area.sharedBy))}</span><span class="mem-name">${esc(area.sharedBy)}</span><span class="mem-you mem-owner">owner</span></div>`;
     const others = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="mem-card" ${f.id ? `data-friend-chat="${f.id}" data-friend-name="${esc(name)}"` : ''} title="Message ${esc(name)}"><span class="fr-av ${f.online ? 'online' : ''}">${esc(initial(name))}</span><span class="mem-name">${esc(name)}</span><span class="mem-msg">💬</span></button>`; }).join('');
     return `<div class="mem-row">${owner}${meCard()}${others}</div>`;
   }
@@ -10232,9 +10232,9 @@ function areaMembersBody(area) {
   const invite = area.sharedBy ? '' : '<button class="mem-invite" data-area-invite title="Invite someone to this area">✦ Invite</button>';
   return (ownerCard || cards.length) ? `<div class="mem-row">${ownerCard}${shown.join('')}${more}${invite}</div>` : `<div class="mem-empty">Just you so far. ${invite}</div>`;
 }
-// Opt-in sharing controls (owner-only, once a lifespace has members): each tool is
+// Opt-in sharing controls (owner-only, once a space has members): each tool is
 // locked by default and you unlock it to share, with all members or a chosen few.
-// An 'open' (legacy) lifespace shows a switch to start choosing. (Robin: everything
+// An 'open' (legacy) space shows a switch to start choosing. (Robin: everything
 // locked by default; unlock to share; our views differ by what each unlocks.)
 const SHARE_SECS = [['Pages and tables', (b) => b.kind === 'note' || b.kind === 'table', '▤'], ['Tasks', (b) => b.kind === 'task', '✓'], ['Contacts', (b) => b.kind === 'contact', '👤'], ['Goals', (b) => b.kind === 'goal', '🎯'], ['Saved links', (b) => b.kind === 'bookmark', '🔖'], ['Reflections', (b) => b.kind === 'journal', '✎'], ['Bucket list', (b) => b.kind === 'bucket', '✦']];
 function areaShareControls(area) {
@@ -10243,7 +10243,7 @@ function areaShareControls(area) {
   if (!shares.length) return '';  // nothing to share until someone has access
   const p = area.props || {};
   if (p.shareMode !== 'optin') {
-    return `<div class="area-share-ctl"><p class="as-note">Everyone you share this lifespace with sees everything in it.</p><button class="as-choose" data-area-share-optin>🔒 Choose what to share instead</button></div>`;
+    return `<div class="area-share-ctl"><p class="as-note">Everyone you share this space with sees everything in it.</p><button class="as-choose" data-area-share-optin>🔒 Choose what to share instead</button></div>`;
   }
   const blocks = (state.area_open && state.area_open.blocks) || [];
   const cfg = p.shareSections || {};
@@ -10261,7 +10261,7 @@ function patchAreaShare(patch) {
   api('/api/blocks/' + a.id, { method: 'PATCH', body: JSON.stringify({ props: patch }) }).catch((e) => toast(e.message));
   renderArea();
 }
-// Switch an 'open' lifespace to opt-in, pre-filling every present section to 'all'
+// Switch an 'open' space to opt-in, pre-filling every present section to 'all'
 // so nothing a member already sees disappears - then the owner locks from there.
 function areaShareStartOptin() {
   const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
@@ -10278,10 +10278,10 @@ function areaSecState(k, stateVal) {
   let hs = Array.isArray(a.props.hiddenSecs) ? a.props.hiddenSecs.slice() : [];
   let cfg = { ...(a.props.shareSections || {}) };
   const patch = {};
-  // Choosing Only me / Shared on a legacy 'open' lifespace quietly switches it to
+  // Choosing Only me / Shared on a legacy 'open' space quietly switches it to
   // opt-in, pre-filling every tool as Shared so nothing a member already sees
   // disappears - only the tool you just set changes. So a part can go private
-  // even while the rest of the lifespace stays shared. (Robin.)
+  // even while the rest of the space stays shared. (Robin.)
   if (stateVal !== 'off' && a.props.shareMode !== 'optin') {
     cfg = {}; SHARE_SECS.forEach(([name]) => { cfg[name] = 'all'; });
     a.props.shareMode = 'optin'; patch.shareMode = 'optin';
@@ -10298,7 +10298,7 @@ function areaSecState(k, stateVal) {
   renderArea();
 }
 // The tile switch: flip a whole piece ON or OFF (hidden). OFF greys the tile, hides
-// the section from the Life Space, forgets its share config and closes its panel.
+// the section from the Space, forgets its share config and closes its panel.
 // (Robin, 2026-10-30: clear on/off buttons.)
 function toggleAreaSec(k) {
   const a = state.area_open && state.area_open.area; if (!a || a.sharedBy) return;
@@ -10329,20 +10329,20 @@ function areaSecMember(name, who) {
   else cfg[name] = (list.length >= shares.length) ? 'all' : list;
   patchAreaShare({ shareSections: cfg });
 }
-// Is this lifespace's Notepad shared (one pad everyone edits) or private (each person
-// their own)? A legacy/open lifespace keeps the shared pad; on an opt-in lifespace it's
+// Is this space's Notepad shared (one pad everyone edits) or private (each person
+// their own)? A legacy/open space keeps the shared pad; on an opt-in space it's
 // shared only when the Wall section is actually shared, else private per-user. (Robin.)
 function wallShared(area) {
   const p = (area && area.props) || {};
   if (p.shareMode !== 'optin') return true;   // legacy/open: the shared pad
   // Shared unless explicitly set to "Only me" - so an existing shared notepad never
-  // vanishes when a lifespace becomes opt-in; it goes private only when you choose it.
+  // vanishes when a space becomes opt-in; it goes private only when you choose it.
   return (p.shareSections || {}).Wall !== 'me';
 }
 function areaWallBody(area) {
   const shared = wallShared(area);
   const wall = shared ? ((area.props && area.props.wall) || '') : ((state.area_open && state.area_open.myWall) || '');
-  const ph = shared ? 'A shared space for this lifespace - everyone with access can see it.' : 'Your private notepad for this lifespace - only you see this.';
+  const ph = shared ? 'A shared space for this space - everyone with access can see it.' : 'Your private notepad for this space - only you see this.';
   return `<textarea class="home-notepad area-wall-ta" data-area-wall placeholder="${esc(ph)}">${esc(wall)}</textarea>`;
 }
 // Area file attachments - same store the vision images use, same handlers as a
@@ -10353,7 +10353,7 @@ function areaAttachHtml(area) {
     ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
   return `<section class="attachments area-files" data-att-zone="${area.id}">
-    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Shizu keeps things light, not a photo vault</span></div>
+    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Koyeba keeps things light, not a photo vault</span></div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file or photo</span></label>
     </div></section>`;
@@ -10365,7 +10365,7 @@ async function setBlockArea(kind, id, areaId) {
     if (kind === 'note') { bump(state.note && state.note.current); bump(state.noteTops.find((n) => n.id === id)); }
     if (kind === 'table') { bump(state.tables_open); bump(state.tables.find((t) => t.id === id)); }
     if (kind === 'contact') { bump(state.contact_open && state.contact_open.contact); bump((state.contacts || []).find((x) => x.id === id)); }
-    toast(areaId ? 'Life Space set' : 'Life Space cleared');
+    toast(areaId ? 'Space set' : 'Space cleared');
   } catch (e) { toast(e.message); }
 }
 // Set a note's full list of pages. props.area mirrors the first so any
@@ -10413,7 +10413,7 @@ function blockAreasControl(kind, b) {
   const id = b.id; const ids = blockAreas(b);
   const chips = ids.map((aid) => { const a = areaById(aid); if (!a) return ''; return `<span class="area-chip-pick" style="--h:${hueOf(a)}"><button class="acp-link" data-open-area="${aid}"><span class="cd"></span>${esc(a.title)}${sharedTag(a)}</button><button class="acp-x" data-area-remove="${kind}:${id}:${aid}" title="Remove from this area">×</button></span>`; }).join('');
   const remaining = editableAreas().filter((a) => !ids.includes(a.id));
-  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Life Space' : '+ Life Space'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('')}</select></span>` : '';
+  const add = remaining.length ? `<span class="area-pick"><select class="area-sel" data-area-add="${kind}:${id}"><option value="">${ids.length ? '+ Add Space' : '+ Space'}</option>${remaining.map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('')}</select></span>` : '';
   return `<span class="note-areas">${chips}${add}</span>`;
 }
 // From a life-area page: create a task/note already tagged to this area, then
@@ -10426,8 +10426,8 @@ async function areaNewEvent(id) {
   // Prefill the new event's page with this one (the form reads ce-area).
   setTimeout(() => { const ar = document.getElementById('ce-area'); if (ar) ar.value = a.id; const ti = document.getElementById('ce-title'); if (ti) ti.focus(); }, 40);
 }
-// Add an event on a specific day from the lifespace's Week ahead - seeds the date
-// AND pre-files it to this lifespace, so a co-parent fills the week in place.
+// Add an event on a specific day from the space's Week ahead - seeds the date
+// AND pre-files it to this space, so a co-parent fills the week in place.
 async function areaNewEventOnDay(id, iso) {
   const a = state.area_open && state.area_open.area; if (!a || String(a.id) !== String(id)) return;
   await openCalendar(iso);
@@ -10445,9 +10445,9 @@ async function areaAddTask() {
   state.taskAdding = true; state.taskFocusArm = Date.now();
   await openTasks(); renderTasks();
 }
-// Add a reflection (journal or dream) filed to this lifespace, then open it to
-// write. It then shows in the lifespace's Reflections section. (Robin: everything
-// connects to a Life Space.)
+// Add a reflection (journal or dream) filed to this space, then open it to
+// write. It then shows in the space's Reflections section. (Robin: everything
+// connects to a Space.)
 async function areaAddJournal(isDream) {
   const area = state.area_open && state.area_open.area; if (!area) return;
   const date = new Date().toISOString();
@@ -10461,8 +10461,8 @@ async function areaAddJournal(isDream) {
     await openJournalEntry(entry.id);
   } catch (e) { toast(e.message); }
 }
-// Add a Saved item (a book or film, via Read & Watch) filed to this lifespace, then
-// open its card to name it. Shows in the lifespace's Saved links. (Robin.)
+// Add a Saved item (a book or film, via Read & Watch) filed to this space, then
+// open its card to name it. Shows in the space's Saved links. (Robin.)
 async function areaAddSaved(media) {
   const area = state.area_open && state.area_open.area; if (!area) return;
   try {
@@ -10500,7 +10500,7 @@ function openAreaColor() {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box areacol-dialog" style="--h:${start}">
     <div class="recur-h">Area colour</div>
-    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this lifespace')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
+    <p class="recur-p">Pick the colour for <b>${esc(area.title || 'this space')}</b>. It follows everywhere the area appears - tasks, notes, Home and more.</p>
     <div class="areacol-swatches">${AREA_HUES.map((hu) => `<button class="areacol-sw${hu === start ? ' on' : ''}" style="--h:${hu}" data-areacol="${hu}" aria-label="Hue ${hu}"></button>`).join('')}</div>
     <label class="areacol-fine">Fine tune<input type="range" min="0" max="359" value="${start}" class="areacol-slider" data-areacol-slider></label>
     <div class="ui-dialog-btns"><button class="ui-btn cancel" data-areacol-cancel>Cancel</button><button class="ui-btn primary" data-areacol-done>Done</button></div>
@@ -10528,12 +10528,12 @@ function openAreaColor() {
   el.querySelector('[data-areacol-done]').addEventListener('click', commit);
 }
 
-// The lifespace cover image: search free photos (Unsplash, when a key is set) or
+// The space cover image: search free photos (Unsplash, when a key is set) or
 // paste any image link. Mirrors openAreaColor's dialog. Writes area.props.cover;
 // Remove clears it. The access key stays server-side - the client only ever sees
 // ready-to-use image URLs.
 // Downscale a chosen image to a cover-sized JPEG/PNG and upload it to R2 via the
-// public image store, returning a permanent URL to persist on the lifespace. (Robin:
+// public image store, returning a permanent URL to persist on the space. (Robin:
 // upload a cover from your computer.)
 async function coverUpload(file) {
   // Use the EXACT path that note attachments use and that already works for Robin's
@@ -10573,7 +10573,7 @@ function openAreaCover() {
   const cur = (area.props && area.props.cover) || null;
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog" style="--h:${hueOf(area)}">
     <div class="recur-h">Cover image</div>
-    <p class="recur-p">Give this Life Space a photo - upload your own, or search free ones.</p>
+    <p class="recur-p">Give this Space a photo - upload your own, or search free ones.</p>
     <label class="cv-drop" title="Upload a photo">
       <input type="file" accept="image/*" hidden data-cv-file>
       <span class="cv-drop-ic">⬆</span>
@@ -10681,7 +10681,7 @@ function openCoverAdjust() {
   el.querySelector('[data-cadj-cancel]').addEventListener('click', close);
   el.querySelector('[data-cadj-save]').addEventListener('click', save);
 }
-// Connect an EXISTING thing to a lifespace: clicking a connector tile opens this -
+// Connect an EXISTING thing to a space: clicking a connector tile opens this -
 // search your pages/tasks/contacts/goals first, attach one, or make a new one.
 // (Robin: first option should be search, not add new.)
 function openAreaConnect(kind) {
@@ -10691,7 +10691,7 @@ function openAreaConnect(kind) {
   const refresh = () => { const l = document.getElementById('aconn-list'); if (l) l.innerHTML = rowsHtml(); };
   if (kind === 'contact' && state.contacts === undefined) loadContacts().then(refresh).catch(() => {});
   // Events aren't blocks: pull the shared calendar pool (loadNoteEvents) and poll
-  // once for it to land, then show those not already on this lifespace. (Robin: the
+  // once for it to land, then show those not already on this space. (Robin: the
   // Event connector must let you find an EXISTING event, not only make a new one.)
   if (kind === 'event') {
     loadNoteEvents();
@@ -10721,7 +10721,7 @@ function openAreaConnect(kind) {
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog cover-dialog">
     <div class="recur-h">Connect ${kind === 'event' ? 'an event' : `a ${LABEL[kind]}`}</div>
-    <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this lifespace')}</b>, or make a new one.</p>
+    <p class="recur-p">Search an existing ${LABEL[kind]} to connect to <b>${esc(area.title || 'this space')}</b>, or make a new one.</p>
     <input class="sel nconn-q" data-aconn-q placeholder="Search your ${LABEL[kind]}s…" autocomplete="off">
     <div class="nconn-list" id="aconn-list" style="margin-top:10px">${rowsHtml()}</div>
     <div class="ui-dialog-btns"><button class="ui-btn aconn-new" data-aconn-new>＋ New ${LABEL[kind]}</button><button class="ui-btn cancel" data-aconn-cancel>Close</button></div>
@@ -11023,14 +11023,14 @@ function gcalBarHtml(ctx) {
   if (knownMember) {
     primary = s.connected
       ? `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`
-      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Shizu ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Koyeba ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
   } else if (acct && acct.isOwner) {
     // The owner's main calendar runs on the shared connection (env token), not a
     // member link. Name the address it reads, and offer to pause it (the token
     // stays, so reconnecting is instant). (Robin, 2026-10-29.)
     const em = s.ownerEmail ? ` · ${esc(s.ownerEmail)}` : '';
     primary = s.ownerOff
-      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Shizu isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
+      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Koyeba isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
       : `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${em}</span><button class="ghost gcal-x" data-gcal-owner-pause>Disconnect</button></div>`;
   }
   // Additional connected calendars - for EVERYONE (owner included). Each is stored
@@ -11115,7 +11115,7 @@ async function caldavConnect() {
 }
 async function gcalAccountDisconnect(id) {
   const a = (state.gcalAccounts || []).find((x) => x.id === id);
-  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Shizu.`, { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Koyeba.`, { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api(`/api/gcal/accounts/${id}`, { method: 'DELETE' });
     state.gcalAccounts = (state.gcalAccounts || []).filter((x) => x.id !== id);
@@ -11124,14 +11124,14 @@ async function gcalAccountDisconnect(id) {
   } catch (e) { toast(e.message); }
 }
 async function gcalDisconnect() {
-  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Shizu.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Koyeba.', { okLabel: 'Disconnect', danger: true }))) return;
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
 }
 // Owner pause/resume of the shared Workspace calendar (the env token stays, so a
 // resume is instant). Disconnecting asks first; resuming is a quiet one-tap.
 async function ownerGcalPause(off) {
-  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Shizu until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Koyeba until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api('/api/gcal/owner-pause', { method: 'POST', body: JSON.stringify({ off }) });
     state.gcal = { ...(state.gcal || {}), ownerOff: off };
@@ -11412,7 +11412,7 @@ function ceQuickBar(ev) {
   const area = hasArea ? areaById(ev.area) : null;
   const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
   const out = [];
-  // Every attribute has its own field now (Life Space, Reminder, Repeat, and
+  // Every attribute has its own field now (Space, Reminder, Repeat, and
   // website/contact in the Connect panel below), so the quick bar is just the note
   // link and delete on an EXISTING event - and nothing at all on a new one. (Robin.)
   if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
@@ -11487,8 +11487,8 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Life Space</span><select id="ce-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
-      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Shizu')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
+      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyeba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
       ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
     ${ceQuickBar(ev)}
@@ -11628,7 +11628,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
       }
     }
     state.cal.draftNotes = [];
-    invalidateAreaWeek();   // a lifespace's week-at-a-glance must pick up the change
+    invalidateAreaWeek();   // a space's week-at-a-glance must pick up the change
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
     // Jump the view to the event's day so it's visible even if it moved months.
@@ -11638,7 +11638,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
   } catch (e) { toast(e.message); }
 }
 // ── Event reminders (in-app alarms) ─────────────────────────────────────
-// A reminder set on an event fires while Shizu is open: a toast, a chime and,
+// A reminder set on an event fires while Koyeba is open: a toast, a chime and,
 // if you allow it, a browser notification. Checked on a short loop so it works
 // across a reload and background-tab throttling. It fires client-side, so it
 // needs the app open somewhere - which for a day tool it usually is.
@@ -11670,7 +11670,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://shizu.fyi/email-mark.png?v=3' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://koyeba.co/email-mark.png?v=3' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
@@ -11983,7 +11983,7 @@ function homeDeadlinesHtml() {
   const horizon = localISO(new Date(Date.now() + 7 * 86400000));
   const items = [];
   (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => { const due = goalDueISO(g); if (due && due <= horizon) items.push({ kind: 'goal', id: g.id, title: g.title || 'Goal', due, area: gp(g).area }); });
-  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Life Space', due, area: a.id }); });
+  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Space', due, area: a.id }); });
   if (!items.length) return '';
   items.sort((x, y) => x.due.localeCompare(y.due));
   const rows = items.slice(0, 5).map((x) => {
@@ -12560,7 +12560,7 @@ function openTaskPopover(taskId, slotId) {
           <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" step="5" value="${t.duration || 30}"> min</span></label>
         </div>
-        <label class="pe-f"><span>Life Space</span><select class="sel" id="te-area"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+        <label class="pe-f"><span>Space</span><select class="sel" id="te-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
         <label class="pe-tog"><input type="checkbox" id="te-done" ${t.done ? 'checked' : ''}><span><b>Done</b></span></label>
       </div>
       <div class="pe-foot"><button class="ghost pe-del" data-task-del="${esc(t.tana_id)}">Delete</button><button class="add-btn wide" data-task-save>Save</button></div>
@@ -12625,7 +12625,7 @@ const MAIL_QUADS = [
 const normQuad = (q) => (q === 'others' ? 'chilled' : q);
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
-// after it leaves the loaded inbox (Shizu remembers it). Old data stored a bare
+// after it leaves the loaded inbox (Koyeba remembers it). Old data stored a bare
 // quad string; both shapes are read here. Works the same for Gmail and IMAP - the
 // snapshot carries the account it came from.
 const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[key]; return v == null ? null : (typeof v === 'string' ? { q: v, m: null } : v); };
@@ -13037,8 +13037,8 @@ function mailAreaMenuHtml() {
   const am = state.mail.areaMenu; if (!am) return '';
   const areas = editableAreas();
   return `<div class="mail-movebg" data-mail-area-close><div class="mail-move" style="top:${am.y}px;left:${am.x}px" role="menu">
-    <div class="mail-move-h">File in a Life Space…</div>
-    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}${sharedTag(a)}</button>`).join('') : '<div class="mail-move-empty">No Life Spaces yet.</div>'}
+    <div class="mail-move-h">File in a Space…</div>
+    ${areas.length ? areas.map((a) => `<button class="mail-move-item" data-mail-area-to="${a.id}"><span class="mm-dot" style="background:hsl(${hueOf(a)} 55% 55%)"></span>${esc(a.title || 'Untitled')}${sharedTag(a)}</button>`).join('') : '<div class="mail-move-empty">No Spaces yet.</div>'}
   </div></div>`;
 }
 async function openMailAreaMenu(anchor) {
@@ -13228,8 +13228,8 @@ const isStandalone = () => { try { return window.matchMedia('(display-mode: stan
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
 function installRowHtml() {
   if (isStandalone()) return '';   // already installed as an app
-  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Shizu</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
-  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Shizu</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Shizu opens full-screen and works offline.</div></div></div>`;
+  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyeba</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
+  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyeba</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Koyeba opens full-screen and works offline.</div></div></div>`;
   return '';
 }
 async function promptInstall() {
@@ -13237,7 +13237,7 @@ async function promptInstall() {
   try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch {}
   deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings();
 }
-// PWA share target: another app shared a link/text to Shizu (via /share). A URL
+// PWA share target: another app shared a link/text to Koyeba (via /share). A URL
 // becomes a Read & Watch bookmark; plain text becomes a note. Then land on it.
 async function handleShareTarget() {
   const q = new URLSearchParams(location.search);
@@ -13280,7 +13280,7 @@ async function subscribePush(reg) {
 }
 // User tapped "Enable notifications": prompt, subscribe, register with server.
 async function enablePush() {
-  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Shizu to your Home Screen from Safari first.'); return; }
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Koyeba to your Home Screen from Safari first.'); return; }
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
@@ -13298,12 +13298,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Shizu to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a badge on the app icon when mail arrives, add Koyeba to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Shizu app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Show a number on the Koyeba app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
@@ -13461,7 +13461,7 @@ function mailMarkReadLocal(key) {
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
-  // Once you've read an email in Shizu it stays read - full stop. We DON'T prune
+  // Once you've read an email in Koyeba it stays read - full stop. We DON'T prune
   // the key when the server happens to report it seen: Gmail's seen flag flip-flops
   // (eventual consistency + the sticky-read cache), and pruning meant the next
   // fetch that said "unseen" had nothing to correct it, so a mail you'd already
@@ -14104,7 +14104,7 @@ function sigBuilderInner(a) {
         </div>
       </div>
       ${f('name', 'Name', 'Robin Lumley-Savile')}
-      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Shizu')}</div>
+      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Koyeba')}</div>
       <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
       ${f('website', 'Website', 'daybook.fyi', 'url')}
       ${f('address', 'Address / location', 'Lisbon, Portugal')}
@@ -14193,9 +14193,9 @@ function renderMailAccounts(note) {
       <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 10px">Make Shizu open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://shizu.fyi/mail" target="_blank" rel="noopener"><b>shizu.fyi/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Shizu. Safari / iOS can't do this.</p>
-      <button class="add-btn wide" data-mail-handler>Set Shizu as my email app</button></section>
+      <p class="scope" style="margin:0 0 10px">Make Koyeba open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://koyeba.co/mail" target="_blank" rel="noopener"><b>koyeba.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Koyeba. Safari / iOS can't do this.</p>
+      <button class="add-btn wide" data-mail-handler>Set Koyeba as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
   if (mailAddDraft()) { state.mail.addProvider = (mailAddDraft() || {}).provider || null; showMailAccountForm(); }
@@ -14836,7 +14836,7 @@ function renderMail(loading) {
   } else if (m.open) {
     const o = m.open;
     // Order by how often it's reached for: respond, triage, flag, then the two
-    // "capture into Shizu" actions (file in a page, make a task), the AI
+    // "capture into Koyeba" actions (file in a page, make a task), the AI
     // draft, and the rare spam/block last. On mobile the whole bar wraps so none
     // of these hide off-screen (the life-area button used to scroll out of view).
     // Reply is a dropdown that defaults to Reply all, with "Reply to sender" and
@@ -14942,13 +14942,13 @@ ${''/* The "older unread sits further down" banner is retired: the background
 }
 
 function showQuickTask() {
-  const opts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('');
+  const opts = `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('');
   // The full task options, matching the Tasks board's add form: area, priority,
   // duration, snooze (hide until), repeat and notes.
   $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>Life Space</span><select id="qt-area" class="sel">${opts}</select></label>
+      <label class="atf"><span>Space</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
@@ -14959,7 +14959,7 @@ function showQuickTask() {
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
   $('#qt-title').focus();
 }
-// Turn the open email into a Shizu task: subject becomes the title, and
+// Turn the open email into a Koyeba task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
 // Turning an email into a task opens a little popover first, so the title, life
@@ -15150,7 +15150,7 @@ function mailTaskMenuHtml() {
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
-    <label class="mtask-field"><span>Life Space</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
+    <label class="mtask-field"><span>Space</span><select class="sel" id="mtask-area"><option value="">None</option>${areas.map((a) => `<option value="${a.id}">${esc(a.title)}</option>`).join('')}</select></label>
     <label class="mtask-field"><span>Priority</span><select class="sel" id="mtask-prio">${PRIOS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}</select></label>
     <div class="mtask-actions"><button class="ghost" data-mail-task-close>Cancel</button><button class="add-btn wide" data-mail-task-add>Add task</button></div>
   </div></div>`;
@@ -15196,7 +15196,7 @@ function showQuickEvent() {
       <div class="ce-when-row"><span class="ce-when-lbl">Ends</span><span class="ce-when-fields">${dateFieldHtml('qe-enddate', endDate)}${timeFieldHtml('qe-endtime', endTime)}</span></div>
     </div>
     <label class="ce-allday"><input type="checkbox" id="qe-allday"> All day <span class="ce-allday-hint">(a trip can span several days)</span></label>
-    <label class="ce-field"><span class="ce-flbl">Life Space</span><select id="qe-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+    <label class="ce-field"><span class="ce-flbl">Space</span><select id="qe-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
     <label class="ce-field"><span class="ce-flbl">Location</span><input id="qe-loc" class="sel" placeholder="Where? (optional)" autocomplete="off"></label>
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="qe-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2"></textarea></label>
     <label class="ce-field ce-repeat-field"><span class="ce-flbl">Repeat</span><select id="qe-repeat" class="sel">
@@ -15279,7 +15279,7 @@ function rerenderCurrent() {
   else if (v === 'today') renderToday();
   else if (v === 'tracker') renderTracker();
   else if (v === 'contacts' || v === 'friends') renderContacts();
-  else if (v === 'connect') renderConnect(); else if (v === 'daybookpeople') renderShizuPeople();
+  else if (v === 'connect') renderConnect(); else if (v === 'daybookpeople') renderKoyebaPeople();
   else if (v === 'home') renderHome();
   // No `else openHome()`: falling back to Home for an unhandled view was THE
   // "Contacts sends me to the homepage" bug - a background re-render (a friend
@@ -15422,7 +15422,7 @@ function nextRepeat(repeat, anchorISO) {
 }
 function taskBadges(t) {
   const out = [];
-  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Life Space">🔒 Private</span>');
+  if (t.props.private) out.push('<span class="tbadge priv" title="Private - only you can see this, even inside a shared Space">🔒 Private</span>');
   if (!t.props.done && t.props.kstatus === 'doing') out.push('<span class="tbadge doing" title="In the Doing column on the board">Doing</span>');
   if (t.props.snooze && t.props.snooze > todayISO()) out.push(`<span class="tbadge snz" title="Surfaces on your Home that day">☀ ${esc(dpLabel(t.props.snooze))}</span>`);
   if (t.props.repeat) out.push(`<span class="tbadge rpt">🔁 ${esc(repeatShort(t.props.repeat))}</span>`);
@@ -15437,7 +15437,7 @@ function taskTableHtml(list, emptyMsg) {
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
       <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
-      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Life Space</span>'}</span></td>
+      <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Space</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
     </tr>`;
@@ -15494,7 +15494,7 @@ function taskKanbanHtml(list) {
 // data-driven so a new filterable field is one entry here, not new UI code.
 const TASK_FIELDS = {
   priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'P1'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4'], ['', 'None']], get: (t) => t.props.priority || '' },
-  area: { label: 'Life Space', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
+  area: { label: 'Space', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
   duration: { label: 'Duration', ops: ['gte', 'lte', 'isset', 'notset'], kind: 'minutes', get: (t) => (t.props.duration != null && t.props.duration !== '' ? Number(t.props.duration) : null) },
   repeat: { label: 'Repeat', ops: ['isset', 'notset'], get: (t) => t.props.repeat || '' },
   snoozed: { label: 'Snoozed', ops: ['yes', 'no'], get: (t) => isSnoozed(t) },
@@ -15590,7 +15590,7 @@ function renderTasks() {
     </div>` : ''}
   </div>`;
   const preArea = state.taskAddArea || '';   // set when + Task is used from a Page page
-  const opts = `<option value="">No lifespace</option>` + editableAreas().map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
+  const opts = `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title)}${sharedTag(a)}</option>`).join('');
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
@@ -16029,8 +16029,8 @@ function contactCardHtml(c) {
     <span class="contact-av${p.photo ? ' has-photo' : ''}"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
-// Your own Shizu card, shown as a "You" card at the top of Contacts. It's
-// always there (can't be deleted, only hidden) and ties to your Shizu card -
+// Your own Koyeba card, shown as a "You" card at the top of Contacts. It's
+// always there (can't be deleted, only hidden) and ties to your Koyeba card -
 // it's how you appear to others. Tapping it opens the card editor.
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
@@ -16038,7 +16038,7 @@ function selfContactHtml() {
   const sub = a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
-  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Shizu card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Koyeba card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
 // Contacts are organised by Page, not a separate "groups" concept. The bar
@@ -16058,7 +16058,7 @@ function contactAreaBarHtml() {
 // of chips. (CSS shows chips on desktop, this select on mobile.)
 function contactAreaSelectHtml(areas) {
   if (!areas || !areas.length) return '';
-  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Life Spaces · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
+  return `<select class="sel cts-area-sel" data-contact-area-sel aria-label="Filter contacts by page"><option value="" ${!state.contactsArea ? 'selected' : ''}>All Spaces · ${(state.contacts || []).length}</option>${areas.map((x) => `<option value="${x.a.id}" ${state.contactsArea === x.a.id ? 'selected' : ''}>${esc(x.a.title)} · ${x.n}</option>`).join('')}</select>`;
 }
 // Right-click menu on a contact card: add to a group, remove from one, delete.
 const areaHiddenForContacts = (a) => !!(a && a.props && a.props.contactsHide);
@@ -16081,9 +16081,9 @@ function contactMenuHtml() {
   const curRow = (a) => `<button class="ctx-item ctx-area ctx-area-on" data-ctx-unarea="${a.id}" style="--h:${hueOf(a)}"><span class="ctx-cb ctx-cb-on"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button>`;
   const addRow = (a) => `<div class="ctx-arearow" style="--h:${hueOf(a)}"><button class="ctx-item ctx-area" data-ctx-area="${a.id}"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span></button><button class="ctx-area-hide" data-ctx-area-hide="${a.id}" title="Hide ${esc(a.title)} from this list" aria-label="Hide ${esc(a.title)} from the contacts list">⊘</button></div>`;
   const hidRow = (a) => `<button class="ctx-item ctx-area ctx-area-dim" data-ctx-area-unhide="${a.id}" style="--h:${hueOf(a)}" title="Show ${esc(a.title)} in the list again"><span class="ctx-cb"></span><span class="ctx-adot"></span><span class="ctx-area-n">${esc(a.title)}</span><span class="ctx-area-unhide">unhide</span></button>`;
-  const areaSection = allAreas.length ? `<div class="ctx-lbl">Life Spaces</div>
+  const areaSection = allAreas.length ? `<div class="ctx-lbl">Spaces</div>
     ${currentAreas.map(curRow).join('')}
-    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No lifespaces to add.</div>')}
+    ${available.map(addRow).join('') || (currentAreas.length ? '' : '<div class="ctx-empty">No spaces to add.</div>')}
     ${hiddenAreas.length ? (showHidden ? `${hiddenAreas.map(hidRow).join('')}<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▴ Hide hidden</button>` : `<button class="ctx-item ctx-showhidden" data-ctx-hidden-toggle>▾ Show ${hiddenAreas.length} hidden</button>`) : ''}
     <div class="ctx-sep"></div>` : '';
   // A few recently-opened contacts up top, most recent first - a quick hop to
@@ -16094,7 +16094,7 @@ function contactMenuHtml() {
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${areaSection}
-    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Shizu</button><div class="ctx-sep"></div>` : ''}
+    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Koyeba</button><div class="ctx-sep"></div>` : ''}
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
 }
@@ -16121,24 +16121,24 @@ function openContactMenu(id, x, y) {
   state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
-// Automatically surfaced at the top of Contacts: Shizu scans every contact's
+// Automatically surfaced at the top of Contacts: Koyeba scans every contact's
 // email against its accounts (worker getFriends), and this tells you, up front,
-// which of your people are already on Shizu - tap to connect.
-function contactsShizuBannerHtml() {
-  // Your address-book contacts who are on Shizu, ready to connect. Shizu
-  // connection *requests* live on the Shizu Contacts hub, not here. No
+// which of your people are already on Koyeba - tap to connect.
+function contactsKoyebaBannerHtml() {
+  // Your address-book contacts who are on Koyeba, ready to connect. Koyeba
+  // connection *requests* live on the Koyeba Contacts hub, not here. No
   // "checking…"/"none yet" noise. (Robin, 2026-10-14.)
   const sug = (state.friends && state.friends.suggestions) || [];
   if (!sug.length) return '';
   const n = sug.length;
-  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Shizu"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Shizu Contacts below</div>` : '';
-  const head = n === 1 ? 'A friend of yours is on Shizu — connect?' : `${n} friends of yours are on Shizu — connect?`;
+  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Koyeba"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Koyeba Contacts below</div>` : '';
+  const head = n === 1 ? 'A friend of yours is on Koyeba — connect?' : `${n} friends of yours are on Koyeba — connect?`;
   return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
 }
-// The Shizu-friends pane: suggestions, connect-by-email + Invite, incoming
+// The Koyeba-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
-// page and the dedicated Shizu people page.
+// page and the dedicated Koyeba people page.
 function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
@@ -16152,29 +16152,29 @@ function friendsPaneHtml(opts) {
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${d.incoming.length ? `<div class="ppl-sub ppl-sub-req">${d.incoming.length === 1 ? 'Wants to connect with you' : `${d.incoming.length} people want to connect with you`}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      <p class="fr-intro">Invite your friends to Shizu so you can share with them - a whole Life Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
-      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Shizu<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Shizu</button>`)).join('')}</div>` : ''}
-      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Shizu - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Shizu by email">✦ Invite to Shizu</button></div>
+      <p class="fr-intro">Invite your friends to Koyeba so you can share with them - a whole Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Koyeba<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Koyeba</button>`)).join('')}</div>` : ''}
+      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Koyeba - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Koyeba by email">✦ Invite to Koyeba</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Shizu.</div>')}
+      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Koyeba.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
-      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Life Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
+      ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
-// The Shizu people hub: your card, your friends on Shizu, and the invite +
+// The Koyeba people hub: your card, your friends on Koyeba, and the invite +
 // connect tools - all on one page. Its own view, reached from the People box.
-async function openShizuPeople() {
+async function openKoyebaPeople() {
   state.view = { type: 'daybookpeople' };
   renderNav();
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
-  renderShizuPeople();
+  renderKoyebaPeople();
 }
-function renderShizuPeople() {
+function renderKoyebaPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Shizu Contacts')}
-    <div class="pane-head"><h1>Shizu Contacts</h1></div>
-    <p class="t2-sub">Your people on Shizu - share a page, a note or a few tasks with them.</p>
-    <section class="home-sec"><div class="home-sec-h">Your Shizu card</div>${selfContactHtml()}</section>
+    ${pageCrumb('Koyeba Contacts')}
+    <div class="pane-head"><h1>Koyeba Contacts</h1></div>
+    <p class="t2-sub">Your people on Koyeba - share a page, a note or a few tasks with them.</p>
+    <section class="home-sec"><div class="home-sec-h">Your Koyeba card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
 function renderContacts() {
@@ -16189,10 +16189,10 @@ function renderContacts() {
   const list = sortContacts((state.contacts || []).filter(match));
   const area = af && areaById(af);
   const emptyMsg = q ? 'No contacts match.'
-    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this lifespace.`
+    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this space.`
     : 'No contacts yet. Add one, or import a vCard (.vcf) from Google, Outlook, your phone or any address book.';
   // While searching, strip the page back to just the search box and the matching
-  // contacts - no Add/Import, no "Contacts on Shizu", no group bar. Just results.
+  // contacts - no Add/Import, no "Contacts on Koyeba", no group bar. Just results.
   const searching = !!q;
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.contacts'))}
@@ -16208,9 +16208,9 @@ function renderContacts() {
       <div class="cts-head">
         <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
         ${contactAreaBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Shizu - connect and share">❖ Shizu Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Koyeba - connect and share">❖ Koyeba Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       </div>
-      ${contactsShizuBannerHtml()}
+      ${contactsKoyebaBannerHtml()}
       ${contactSelBarHtml()}
       ${state.contactAdding ? contactAddForm() : ''}
       ${(() => {
@@ -16238,7 +16238,7 @@ function renderContacts() {
 // buttons, so the find box grows to fill and the row reserves right-padding equal
 // to the gap, landing Invite exactly under the search box's edge. Desktop only;
 // re-runs on resize.
-// The Shizu-friends connect row now lives in its own section, so it just
+// The Koyeba-friends connect row now lives in its own section, so it just
 // flexes to fill via CSS - no cross-section width alignment needed any more.
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
@@ -16256,7 +16256,7 @@ function contactAddForm() {
       <label class="atf"><span>${t('ct.postcode')}</span><input id="ct-postcode" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('ct.country')}</span>${countrySelect('ct-country', '', 'sel')}</label>
     </div>
-    ${editableAreas().length ? `<label class="atf atf-full"><span>Life Space</span><select id="ct-area" class="sel"><option value="">No lifespace</option>${editableAreas().map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>` : ''}
+    ${editableAreas().length ? `<label class="atf atf-full"><span>Space</span><select id="ct-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${state.contactAddArea === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>` : ''}
     <label class="atf atf-full"><span>Notes</span><textarea id="ct-notes" class="sel" rows="2" placeholder="A short note about them (optional)" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">${t('ct.addcontact')}</button><button type="button" class="ghost" data-contact-add-close>${t('ct.done')}</button></div>
     ${ccDatalist()}
@@ -16419,7 +16419,7 @@ function contactBoxesHtml(c) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 Shizu Connect</button>
+          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 Koyeba Connect</button>
           <button type="button" class="nx-choose" data-contact-new-note="${c.id}">▤ New Note</button>
           <button type="button" class="nx-choose" data-contact-new-task="${c.id}">✓ New Task</button>
           <button type="button" class="nx-choose" data-contact-new-event="${c.id}">📅 New Event</button>
@@ -16644,7 +16644,7 @@ function renderContactCard() {
         p.signal ? act('cc-act-sig', CICO.msg, 'Signal', `href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"`) : '',
         addr ? act('', CICO.map, 'Map', `href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"`) : '',
         addr ? act('', CICO.nav, 'Directions', `href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"`) : '',
-        act('cc-act-invite', CICO.invite, 'Invite', `data-cc-invite="${esc(firstEmail || '')}" title="Invite to Shizu"`, 'button'),
+        act('cc-act-invite', CICO.invite, 'Invite', `data-cc-invite="${esc(firstEmail || '')}" title="Invite to Koyeba"`, 'button'),
       ].filter(Boolean).join('');
       return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
       <span class="cc-av-wrap">
@@ -16675,12 +16675,12 @@ function renderContactCard() {
     <div class="cc-sec">
       <div class="cc-sec-h">Organise</div>
       <div class="tf-meta">
-        <div class="tf-field"><span class="tf-label">Life Spaces</span>${blockAreasControl('contact', c)}</div>
+        <div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div>
       </div>
     </div>
     ${keepInTouchSection(c)}
     ${contactBoxesHtml(c)}
-    <div class="cc-group-h">Life Spaces</div>
+    <div class="cc-group-h">Spaces</div>
     ${notesSection(c.body, 'contact', c.id, false, 'Notes to self')}`;
   autoGrowSoon($('#contactcard-name'));
 }
@@ -16819,7 +16819,7 @@ async function newContactGroup() {
       <div class="recur-h">New group</div>
       <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
       <div class="cgm-or">Or create from a page</div>
-      <div class="cgm-areas">${chips || '<span class="muted">No lifespaces yet.</span>'}</div>
+      <div class="cgm-areas">${chips || '<span class="muted">No spaces yet.</span>'}</div>
       <div class="ui-dialog-btns">
         <button class="ui-btn cancel" data-cgm-close>Done</button>
         <button class="ui-btn primary" data-cgm-create>Create</button>
@@ -17086,11 +17086,11 @@ async function saveSpendExtras(extras) {
 async function spendCatAdd() {
   const name = String(await uiPrompt('New spending category:', { placeholder: 'e.g. Savings' }) || '').trim();
   if (!name) return;
-  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Life Spaces are categories too)'); return; }
+  if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Spaces are categories too)'); return; }
   saveSpendExtras([...spendExtras(), name]);
 }
 async function spendCatRename(oldName) {
-  if (spendIsArea(oldName)) { toast('This is a Life Space - rename it in the Life Spaces section.'); return; }
+  if (spendIsArea(oldName)) { toast('This is a Space - rename it in the Spaces section.'); return; }
   const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
   if (!name || name === oldName) return;
   if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
@@ -17135,7 +17135,7 @@ async function loadPortfolio(force) {
 }
 // The default currency the money tools show in. It's a display choice (symbol +
 // number grouping), not a conversion - you enter amounts in your own currency
-// and Shizu shows them with your symbol. Chosen in Settings › Appearance,
+// and Koyeba shows them with your symbol. Chosen in Settings › Appearance,
 // stored on the account (account.currency, default EUR). [code, symbol, locale, name]
 const CURRENCIES_APP = [
   ['EUR', '€', 'en-IE', 'Euro'],
@@ -17392,7 +17392,7 @@ async function advicePoll() {
   await loadAdvice();
 }
 // ── Spending ─────────────────────────────────────────────────────────────
-// Spending categories ARE the Life Spaces by default: add a Life Space and it
+// Spending categories ARE the Spaces by default: add a Space and it
 // becomes a spending category automatically. A few money-only buckets (income,
 // the catch-all) sit alongside, and the user can add extra one-off categories
 // that don't map to an area (stored in settings.kv_spend_categories).
@@ -17448,7 +17448,7 @@ function spendingBody() {
     return `<span class="trk-cat-chip ${area ? 'sp-cat-area' : ''}">${esc(c)}${tag}${cross}${edit}</span>`;
   };
   const catManage = f.spendCatsOpen ? `<div class="sp-catmanage"><div class="fin-sec-h"><span>Categories</span><button class="ghost" data-sp-cat-add>+ Extra category</button></div>
-    <p class="sp-cat-note">Your <b>Life Spaces</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
+    <p class="sp-cat-note">Your <b>Spaces</b> are your spending categories. A category can be an <b>expense</b>, <b>income</b>, or both - use <b>＋inc</b> / <b>＋exp</b> to add one to the other column.</p>
     <div class="sp-cat-cols">
       <div class="sp-cat-col sp-cat-col-exp"><div class="sp-cat-col-h">Expense categories</div><div class="trk-cats">${expenseCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
       <div class="sp-cat-col sp-cat-col-inc"><div class="sp-cat-col-h">Income categories</div><div class="trk-cats">${incomeCatList().map(catChip).join('') || '<span class="sp-cat-empty">None</span>'}</div></div>
@@ -17915,7 +17915,7 @@ function renderGoals() {
   const focusN = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus).length;
   const allN = state.goals.filter((g) => (gp(g).status || 'active') === 'active').length;
   const tabs = `<div class="goals-tabs">
-    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By Life Space</button>
+    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By Space</button>
     <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">★ Starred${focusN ? ` · ${focusN}` : ''}</button>
     <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
     <button class="gtab ${view === 'bucket' ? 'on' : ''}" data-goals-view="bucket">✦ Bucket list${(state.bucket || []).length ? ` · ${state.bucket.length}` : ''}</button>
@@ -17958,7 +17958,7 @@ function goalsListBody() {
   const controls = `<div class="glist-controls">
     <select class="sel" data-glist-status><option value="all" ${fStatus === 'all' ? 'selected' : ''}>All statuses</option>${GSTATUS.map(([v, l]) => `<option value="${v}" ${fStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <select class="sel" data-glist-area>${areaOpts}</select>
-    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Life Space'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
+    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Space'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
   </div>`;
   if (!goals.length) return `${controls}<div class="empty" style="padding:28px">No goals match these filters.</div>`;
   const rows = goals.map((g) => {
@@ -17991,11 +17991,11 @@ function toggleGoalArea(id) {
 function visionEditOpen(id) { try { const c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); return Array.isArray(c) && c.includes(id); } catch { return false; } }
 function toggleVisionEdit(id) {
   try { let c = JSON.parse(localStorage.getItem('life.goals.vedit') || '[]'); if (!Array.isArray(c)) c = []; const i = c.indexOf(id); if (i >= 0) c.splice(i, 1); else c.push(id); localStorage.setItem('life.goals.vedit', JSON.stringify(c)); } catch {}
-  // Shared by the Goals page and a Life Space's own Vision - re-render whichever
+  // Shared by the Goals page and a Space's own Vision - re-render whichever
   // is on screen. (Robin, 2026-10-29.)
   if (state.view && state.view.type === 'area') renderArea(); else renderGoals();
 }
-// Any Life Space that doesn't need a vision + goals can be closed off the Goals
+// Any Space that doesn't need a vision + goals can be closed off the Goals
 // page (×), leaving only the ones that matter; restored from the strip at the
 // foot. Remembered per area. (Robin, 2026-10-29.)
 function goalAreaHiddenSet() { try { const c = JSON.parse(localStorage.getItem('life.goals.ahidden') || '[]'); return new Set(Array.isArray(c) ? c : []); } catch { return new Set(); } }
@@ -18043,7 +18043,7 @@ function goalsByAreaBody() {
     const gvInner = `${hlHtml}<div class="gv-togs">${hlTog}${editTog}</div>${showCard ? vision : ''}`;
     const open = goalAreaOpen(a.id);
     return `<section class="goal-area ${open ? '' : 'collapsed'}" style="--h:${hueOf(a)}">
-      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button><button class="ghost goal-area-x" data-goal-area-hide="${a.id}" title="Hide ${esc(a.title)} from Goals" aria-label="Hide this Life Space from Goals">×</button></div>
+      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button><button class="ghost goal-area-x" data-goal-area-hide="${a.id}" title="Hide ${esc(a.title)} from Goals" aria-label="Hide this Space from Goals">×</button></div>
       ${open ? `<div class="ga-step ga-step-vision"><span class="ga-step-l">Vision</span><div class="gv-vision">${gvInner}</div></div>
       <div class="ga-flow"><span class="ga-flow-l">Goals</span>${goals.length ? `<span class="ga-flow-n">${goals.length}</span>` : ''}</div>
       <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map((g) => goalCardMini(g)).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>` : ''}
@@ -18051,11 +18051,11 @@ function goalsByAreaBody() {
   }).join('');
   const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
   const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map((g) => goalCardMini(g)).join('')}</div></section>` : '';
-  // Hidden Life Spaces sit in a quiet strip at the foot; tap one to bring it back.
+  // Hidden Spaces sit in a quiet strip at the foot; tap one to bring it back.
   const hiddenAreas = [...hidden].map((id) => areaById(id)).filter(Boolean);
   const hiddenStrip = hiddenAreas.length ? `<div class="goal-hidden-strip"><span class="ghs-l">Hidden</span>${hiddenAreas.map((a) => `<button class="ghs-chip" data-goal-area-show="${a.id}" title="Show ${esc(a.title)} on Goals again"><span class="cd" style="--h:${hueOf(a)}"></span>${esc(a.title)}<span class="ghs-plus">+</span></button>`).join('')}</div>` : '';
   // The "this quarter's focus" strip lives on its own tab now, not at the top here.
-  const controls = `<div class="glist-controls glist-controls-area"><select class="sel" data-garea-sort title="Sort goals within each Life Space">${GOAL_AREA_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>Sort: ${esc(l)}</option>`).join('')}</select></div>`;
+  const controls = `<div class="glist-controls glist-controls-area"><select class="sel" data-garea-sort title="Sort goals within each Space">${GOAL_AREA_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>Sort: ${esc(l)}</option>`).join('')}</select></div>`;
   return `${controls}${areaSections}${noAreaSec}${hiddenStrip}
     ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map((g) => goalCardMini(g)).join('')}</div></details>` : ''}`;
 }
@@ -18123,7 +18123,7 @@ async function openGoalCard(id) {
 const gcConnOpen = () => { try { return localStorage.getItem('life.goal.connOpen') !== '0'; } catch { return true; } };
 function renderGoalCard() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
-  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
+  const areaOpts = `<option value="">No space</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
   const gtype = p.gtype === 'number' ? 'number' : 'done';   // legacy 'achievement' folds into 'done'
   const metricRaw = gtype === 'number' ? (p.metric || 'manual') : 'manual';
@@ -18267,7 +18267,7 @@ function connectedNotesPickerInner() {
   if (gAreas.length) list = list.filter((n) => blockAreas(n).some((aid) => gAreas.includes(aid)));
   if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q));
   list = list.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}pages${gAreas.length ? ' in this lifespace' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
+  if (!list.length) return `<div class="home-empty" style="padding:10px 12px">No ${q ? 'matching ' : ''}pages${gAreas.length ? ' in this space' : ''} to connect${q ? '' : ' - write one with “+ New note”'}.</div>`;
   return list.slice(0, 60).map((n) => `<div class="gal-row gal-row-link" data-goal-link-note="${n.id}" role="button" tabindex="0" title="Connect to this goal"><span class="ga-t">▤ ${esc(n.title || 'Untitled')}</span><span class="gal-link gal-link-cue">＋ Link</span></div>`).join('')
     + (list.length > 60 ? `<div class="home-empty" style="padding:8px 0 0">Showing first 60 - search to narrow.</div>` : '');
 }
@@ -18438,7 +18438,7 @@ async function newBucket() {
 async function openBucketCard(id) { const b = await api(`/api/blocks/${id}`); state.bucket_open = { item: b }; state.view = { type: 'bucketcard', id }; renderNav(); renderBucketCard(); }
 function renderBucketCard() {
   const b = state.bucket_open.item; const p = b.props || {};
-  const areaOpts = `<option value="">No lifespace</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
+  const areaOpts = `<option value="">No space</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
@@ -18448,7 +18448,7 @@ function renderBucketCard() {
       <textarea class="note-title" id="bucketcard-title" rows="1" placeholder="Something to do before you die…">${esc(b.title || '')}</textarea>
     </div>
     <div class="tf-meta">
-      <div class="tf-field"><span class="tf-label">Life Spaces</span>${blockAreasControl('bucket', b)}</div>
+      <div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('bucket', b)}</div>
       <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
     </div>
@@ -18731,7 +18731,7 @@ function renderWheel() {
   const allAreas = (state.areas || []).filter((a) => a && a.title && !a.sharedBy).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const trackHtml = allAreas.length ? `<section class="wheeltrack">
       <div class="home-sec-h">Which areas to track</div>
-      <p class="scope">Tick the areas you want in your Wheel of Life. Unticked ones drop off the wheel, out of your reviews, and off their own page - they stay as lifespaces, just not part of the wheel.</p>
+      <p class="scope">Tick the areas you want in your Wheel of Life. Unticked ones drop off the wheel, out of your reviews, and off their own page - they stay as spaces, just not part of the wheel.</p>
       <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
     </section>` : '';
   $('#pane').innerHTML = `
@@ -19711,7 +19711,7 @@ function reviewDeadlineItems(p) {
     .map((t) => ({ id: t.id, kind: 'task', title: t.title || 'Task', due: t.props.due, area: t.props.area }));
   const areaItems = (state.areas || [])
     .filter((a) => a.props && a.props.due)
-    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Life Space', due: a.props.due, area: a.id }));
+    .map((a) => ({ id: a.id, kind: 'area', title: a.title || 'Space', due: a.props.due, area: a.id }));
   return [...goalItems, ...taskItems, ...areaItems]
     .filter((x) => x.due && x.due <= horizonI)
     .sort((a, b) => a.due.localeCompare(b.due));
@@ -19796,7 +19796,7 @@ function renderReviewCard() {
       <div class="rv-input-panel">${inputTab === 'wheel'
         ? `${reviewWheelPreview(p)}
            <p class="rva-intro">Score how each area went out of 5 and add a line on how it felt - your scores draw the <b>Wheel of Life</b>${wheelAreas.length >= 3 ? ', which takes shape above as you go' : ''}. Tap the × to leave an area out of this review, or set which areas you track everywhere on the <button class="linkish" data-open-wheel>Wheel of Life page</button>.</p>
-           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Life Spaces to reflect on them here.'}</div>`}</div>
+           <div class="rva-rows">${areaBlock || `<div class="muted">Every area left out of this review.${wheelHiddenN ? ' <button class="linkish" data-wheel-restore>Bring them back</button>' : ' Add some Spaces to reflect on them here.'}</div>`}</div>
            ${areaBlock && wheelHiddenN ? `<button class="wheel-restore" data-wheel-restore>${wheelHiddenN} left out · show ${wheelHiddenN === 1 ? 'it' : 'them'}</button>` : ''}`
         : `<p class="rv-reflect-intro">A few prompts to get you going - answer what speaks to you, skip what doesn't.</p>
            <div class="rv-qa">${cfg.prompts.map((q, i) => { const has = String((p.answers || {})[i] || '').trim(); return `<div class="rv-q ${has ? 'answered' : ''}">
@@ -19919,7 +19919,7 @@ function rvgSetCurrent(id, val) {
 function goalReviewSection(r) {
   const p = r.props || {};
   const goals = p.snapshot || [];
-  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Life Spaces and they'll appear here next time.</div></section>`;
+  if (!goals.length) return `<section class="rv-goalreview"><div class="home-sec-h">Goal review</div><div class="muted">No active goals were snapshotted for this period. Set a goal or two on your Spaces and they'll appear here next time.</div></section>`;
   const gr = p.goalReview || {};
   // Map the tasks that fed each goal: done ones from the period's record, plus the
   // ones still open now - so a goal shows what actually moved it and what's left.
@@ -20095,13 +20095,13 @@ function reviewDoneCards(m) {
       return `<div class="rvd-group"><div class="rvd-group-h">${a ? `<span class="rvm-dot" style="background:hsl(${hueOf(a)} 55% 56%)"></span>` : ''}${esc(name)}<span class="rvd-count">${ts.length}</span></div><div class="rvm-cards">${cards}</div></div>`;
     }).join('');
   }
-  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Life Space</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
+  const toggle = `<div class="rvd-sort"><span class="rvd-sort-l">Group by</span><button class="rvd-sort-b ${sort === 'area' ? 'on' : ''}" data-rvd-sort="area">Space</button><button class="rvd-sort-b ${sort === 'priority' ? 'on' : ''}" data-rvd-sort="priority">Priority</button></div>`;
   return `<div class="rvd-list"><div class="rvd-total"><b>${done.length}</b> ticked off across <b>${nA}</b> area${nA === 1 ? '' : 's'} · tap any to open it</div>${toggle}${groups}</div>`;
 }
 // The practices you kept in the period, each a card showing how many days you
 // ticked it off. Ticking practices counts as much as ticking tasks (Robin), so
 // they get the same card treatment, not just a number. Title-matched to the live
-// practices so each is tinted by its Life Space and taps straight through; a
+// practices so each is tinted by its Space and taps straight through; a
 // practice since renamed or deleted still shows as a plain card.
 function reviewPracticesHtml(m) {
   const kept = (m.practices || []).filter((x) => x && x.count > 0).slice().sort((a, b) => b.count - a.count);
@@ -20175,7 +20175,7 @@ function visionBody() {
       ${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}
     </button>`;
   }).join('');
-  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Life Spaces to build your vision.</div>'}</div>`;
+  return `<div class="vision-grid">${cards || '<div class="empty" style="padding:30px">Add Spaces to build your vision.</div>'}</div>`;
 }
 async function loadVisionThumbs() {
   for (const a of state.areas) for (const im of ((a.props && a.props.attachments) || [])) {
@@ -20494,7 +20494,7 @@ function noteUnlinkContact(cid) {
 // xlink handlers). Opens each link in a new tab.
 // ── "Linked & attached" panel (replaces the right-hand column) ──────────────
 // One list of everything this note connects to - notes, tasks, people, events,
-// web links and files - with a Link search (anything in Shizu, or a web
+// web links and files - with a Link search (anything in Koyeba, or a web
 // address) and file upload beneath. Reuses every existing link/unlink/add action
 // via their data-attributes, so nothing new touches the storage. (Robin, 2026-10-26.)
 function nxOpenRow(icon, name, kind, meta, openAttr, removeAttr) {
@@ -20530,9 +20530,9 @@ function noteLinkSearchRows(q) {
   const connIds = new Set((state.note.connected || []).map((c) => String(c.id)));
   let count = 0;
   for (const c of [...(state.noteTops || []), ...(state.tables || [])]) { if (count >= 18) break; if (!c || String(c.id) === String(n.id) || connIds.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; const isT = isTableNote(c); out.push(`<button class="nx-sugg-row" data-note-connect="${c.id}"><span class="ic">${isT ? '▦' : '▤'}</span>${esc(c.title || 'Untitled')}<span class="kind">${isT ? 'Table' : 'Note'}</span></button>`); count++; }
-  // Goals and Life Spaces too, so Connect finds everything in your Shizu. (Robin.)
+  // Goals and Spaces too, so Connect finds everything in your Koyeba. (Robin.)
   { const curGoal = n.props && n.props.goal; for (const g of (state.goals || [])) { if (count >= 18) break; if ((gp(g).status || 'active') === 'done') continue; if (String(g.id) === String(curGoal)) continue; if (!(g.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-goal="${g.id}"><span class="ic">🎯</span>${esc(g.title || 'Untitled goal')}<span class="kind">Goal</span></button>`); count++; } }
-  { const curAreas = new Set(blockAreas(n).map(String)); for (const a of (state.areas || [])) { if (count >= 18) break; if (curAreas.has(String(a.id))) continue; if (!(a.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-area="${a.id}"><span class="ic">◈</span>${esc(a.title || 'Life Space')}<span class="kind">Space</span></button>`); count++; } }
+  { const curAreas = new Set(blockAreas(n).map(String)); for (const a of (state.areas || [])) { if (count >= 18) break; if (curAreas.has(String(a.id))) continue; if (!(a.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-area="${a.id}"><span class="ic">◈</span>${esc(a.title || 'Space')}<span class="kind">Space</span></button>`); count++; } }
   for (const tk of (state.allTasks || [])) { if (count >= 18) break; if (!tk.props || tk.props.note === n.id || tk.props.done) continue; if (!(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
   const cids = new Set(((n.props && n.props.contacts) || []).map(String));
   for (const c of (state.contacts || [])) { if (count >= 18) break; if (cids.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-contact="${c.id}"><span class="ic">👤</span>${esc(c.title || 'Unnamed')}<span class="kind">Person</span></button>`); count++; }
@@ -20575,7 +20575,7 @@ async function addNoteTaskFromPane() {
   const inp = document.getElementById('nx-task-input');
   const title = ((inp && inp.value) || (state.note && state.note.taskQuery) || '').trim();
   if (!title) { if (inp) inp.focus(); return; }
-  const area = blockAreas(n)[0] || (n.props && n.props.area) || null;   // same Life Space as the note
+  const area = blockAreas(n)[0] || (n.props && n.props.area) || null;   // same Space as the note
   const psel = document.getElementById('nx-task-prio');
   const priority = (psel && psel.value) || null;
   const noteTitle = n.title || '';
@@ -20616,7 +20616,7 @@ function noteConnectedPanel(n) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 Shizu Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 Koyeba Connect</button>
           <button type="button" class="nx-choose ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">✓ Add Task</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
@@ -20697,13 +20697,13 @@ function shareBtn(block, kind, opts) {
   }
   return `<button class="note-share ghost ${n ? 'on' : ''}" data-share-open="${block.id}" data-share-kind="${kind}" data-share-title="${esc(block.title || '')}" data-tip="Share with a friend" aria-label="Share with a friend">Share${n ? ` · ${n}` : ''}</button>`;
 }
-// The note header's share control, matched to a Life Space masthead: a row of
+// The note header's share control, matched to a Space masthead: a row of
 // round faces (you, then everyone you've shared with) and a ＋ to add someone,
-// in place of the bare "Share · N" pill. A face opens that person's Shizu
+// in place of the bare "Share · N" pill. A face opens that person's Koyeba
 // card; the ＋ opens the same Share surface. Owner-only - a borrowed note shows
 // the "shared with you" banner instead. (Robin, 2026-10-29: notes share like
-// Life Spaces, same little round face thingies.)
-// True when this note is filed under at least one Life Space that has actually
+// Spaces, same little round face thingies.)
+// True when this note is filed under at least one Space that has actually
 // been shared - an owned area with members, or an area someone shared with me.
 // "Keep private" only makes sense (and only shows) then; with nobody to be private
 // from, the lock was just confusing. (Robin, 2026-10-30.)
@@ -20727,7 +20727,7 @@ function noteFacesRow(n) {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Shizu card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyeba card">${av}</button>`);
   }
   const LIM = 6;
   for (const s of list.slice(0, LIM)) {
@@ -20744,7 +20744,7 @@ function sharedBanner(block) {
   if (!block.sharedBy) return '';
   return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
 }
-// People a note is shared with: their Shizu contact cards, tap to message.
+// People a note is shared with: their Koyeba contact cards, tap to message.
 // Owner only - a borrowed note shows the "shared with you" banner instead.
 function noteMembersHtml(n) {
   if (n.sharedBy) return '';
@@ -20903,7 +20903,7 @@ function renderNote() {
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
           <span class="note-hide-mobile note-faces-wrap">${noteFacesRow(n)}</span>
-          ${(n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Life Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button>`}${n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
+          ${(n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button>`}${n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
       </div>
     </div>
@@ -20987,7 +20987,7 @@ async function moveNoteToArea(areaId) {
 function closeMove() { const el = document.getElementById('move-overlay'); if (el) el.innerHTML = ''; state.move = null; }
 
 // ── view: table ──────────────────────────────────────
-const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Life Space'], ['attach', 'Attachments']];
+const TYPES = [['text', 'Text'], ['url', 'URL'], ['number', 'Number'], ['currency', 'Currency'], ['date', 'Date'], ['checkbox', 'Tick box'], ['select', 'Select'], ['area', 'Space'], ['attach', 'Attachments']];
 // The currency symbols a Currency column can carry (blank = a plain number with
 // two decimals). Stored on the column as `col.currency`.
 const CURRENCIES = [['€', '€ Euro'], ['$', '$ Dollar'], ['£', '£ Pound'], ['', 'No symbol']];
@@ -21447,7 +21447,7 @@ function buildPalette() {
     state.pal.sel = 0; renderPalItems(); return;
   }
   const ql = q.toLowerCase();
-  // Typing searches your own stuff - notes, tables, tasks, Life Spaces, people -
+  // Typing searches your own stuff - notes, tables, tasks, Spaces, people -
   // PLUS any tool or settings page whose name or a keyword matches, so "settings",
   // "journal", "calendar"… still jump you there. These only appear on a real match
   // (never as a default list), so a one-letter query isn't flooded. Nav hits show
@@ -21533,7 +21533,7 @@ function renderPalette() {
 }
 // The little type chip. A row shows the table it belongs to ("Portugal Place"),
 // not a bare "Row", so you know which card a hit relates to. (Robin.)
-const PAL_KIND_LABEL = { nav: 'Go to', note: 'Note', table: 'Table', area: 'Life Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+const PAL_KIND_LABEL = { nav: 'Go to', note: 'Note', table: 'Table', area: 'Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
   if (it.kind === 'recent') return '🕘';
@@ -21998,7 +21998,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
-  // Shizu card: live-update the preview as you type, save shortly after.
+  // Koyeba card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
@@ -22113,7 +22113,7 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  // Internal links jump within Shizu instead of opening a browser tab.
+  // Internal links jump within Koyeba instead of opening a browser tab.
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
@@ -22245,7 +22245,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
-  if (t.closest('[data-open-daybook]')) { openShizuPeople().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-daybook]')) { openKoyebaPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-messages-page]')) { openMessagesPage().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
@@ -22392,7 +22392,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
   { const ot = t.closest('[data-onb-tile]'); if (ot) { const id = ot.dataset.onbTile; state.onb && (state.onb.open = state.onb.open === id ? null : id); renderOnboarding(); return; } }
-  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('security'); else if (d === 'contacts') openContacts(); else if (d === 'import') openSettings('import'); else if (d === 'calendar') openCalendar(); else if (d === 'mail') openMailAccounts(); else if (d === 'invite') inviteToShizu(); return; } }
+  { const on = t.closest('[data-onb-nav]'); if (on) { const d = on.dataset.onbNav; closeOnbHub(); if (d === 'card') openCard(); else if (d === 'tools') openSettings('tools'); else if (d === 'twofa') openSettings('security'); else if (d === 'contacts') openContacts(); else if (d === 'import') openSettings('import'); else if (d === 'calendar') openCalendar(); else if (d === 'mail') openMailAccounts(); else if (d === 'invite') inviteToKoyeba(); return; } }
   { const oas = t.closest('[data-onb-ai-save]'); if (oas) { onbSaveAi(oas.dataset.onbAiSave); return; } }
   { if (t.closest('[data-onb-ai-connect]')) { onbConnectAi(); return; } }
   if (t.closest('[data-onb-mail-connect]')) { onbConnectGmail(); return; }
@@ -22417,7 +22417,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-totp-disable]')) { totpDisable(); return; }
   if (t.closest('[data-totp-cancel]') || t.closest('[data-totp-done]')) { state.totp = null; renderSettings(); return; }
   if (t.closest('[data-totp-copy]')) { const codes = (state.totp && state.totp.recovery || []).join('\n'); if (codes) { try { navigator.clipboard.writeText(codes); toast('Recovery codes copied'); } catch { toast('Copy failed - select them by hand'); } } return; }
-  if (t.closest('[data-create-invite]')) { inviteToShizu(); return; }
+  if (t.closest('[data-create-invite]')) { inviteToKoyeba(); return; }
   if (t.closest('[data-admin-invite]')) { adminInvite(); return; }
   const ri = t.closest('[data-req-invite]'); if (ri) { const id = ri.dataset.reqInvite; adminInvite(ri.dataset.reqEmail || '', () => dismissRequest(id)); return; }
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
@@ -22430,7 +22430,7 @@ document.addEventListener('click', (e) => {
   { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
-  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://shizu.fyi/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://koyeba.co/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   { const cv = t.closest('[data-copy-val]'); if (cv) { const v = cv.dataset.copyVal || ''; try { navigator.clipboard.writeText(v); toast('Copied'); } catch { toast(v); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -22735,7 +22735,7 @@ document.addEventListener('click', (e) => {
     // In the installed app there's no address bar, so Brave's "allow handler" icon
     // has nowhere to appear - it must be done in a normal Brave tab.
     if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-      toast('Do this in a normal Brave tab, not the installed app - open shizu.fyi/mail in Brave and tap this there.');
+      toast('Do this in a normal Brave tab, not the installed app - open koyeba.co/mail in Brave and tap this there.');
       return;
     }
     const r = registerMailHandler();
@@ -22885,7 +22885,7 @@ document.addEventListener('click', (e) => {
   { const cp = t.closest('[data-conn-pick]'); if (cp) { connPickChoose(cp.dataset.connPick, cp.dataset.connKind, cp.dataset.connTitle); return; } }
   { const cu = t.closest('[data-conn-unlink]'); if (cu) { connUnlinkOne(cu.dataset.connUnlink); return; } }
   { const co = t.closest('[data-conn-open]'); if (co) { connOpen(co.dataset.connOpen, co.dataset.connKind); return; } }
-  // A lifespace tool card: open its content panel (one open at a time). Buttons inside
+  // A space tool card: open its content panel (one open at a time). Buttons inside
   // the panel live outside any [data-area-tool], so they fall through to their own
   // handlers below. (Robin, 2026-10-11: tools are square cards that expand.)
   { const atool = t.closest('[data-area-tool]'); if (atool && state.area_open) { const k = atool.dataset.areaTool; state.area_open.toolTile = (state.area_open.toolTile === k) ? null : k; renderArea(); return; } }
@@ -22935,9 +22935,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-adm-area-add]')) { adminAreaAdd(); return; }
   { const ax = t.closest('[data-adm-area-del]'); if (ax) { adminAreaDel(ax.dataset.admAreaDel); return; } }
   if (t.closest('[data-open-friends]')) { openFriends(); return; }
-  if (t.closest('[data-invite-daybook]')) { inviteToShizu(); return; }
-  { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToShizu(cvi.dataset.ccInvite || undefined); return; } }
-  { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToShizu(email); return; } }
+  if (t.closest('[data-invite-daybook]')) { inviteToKoyeba(); return; }
+  { const cvi = t.closest('[data-cc-invite]'); if (cvi) { inviteToKoyeba(cvi.dataset.ccInvite || undefined); return; } }
+  { const ci = t.closest('[data-ctx-invite]'); if (ci) { const email = ci.dataset.ctxInvite; state.contactMenu = null; renderContacts(); inviteToKoyeba(email); return; } }
   if (t.closest('[data-friend-add-email]')) { friendAddEmail(); return; }
   { const sh = t.closest('[data-sugg-hide]'); if (sh) { e.preventDefault(); e.stopPropagation(); hideSuggestion(sh.dataset.suggHide); return; } }
   { const fa = t.closest('[data-friend-add]'); if (fa) { friendAdd(fa.dataset.friendAdd); return; } }
@@ -22946,12 +22946,12 @@ document.addEventListener('click', (e) => {
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); setFold(prose.dataset.blockId, i, !head.classList.contains('folded')); reapplyFolds(prose); } return; } }
-  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Shizu` : 'No contacts on Shizu yet'); }); return; }
+  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Koyeba` : 'No contacts on Koyeba yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
   if (t.closest('[data-share-close]')) { closeShare(); return; }
-  if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToShizu()).catch(() => {}); return; }
+  if (t.closest('[data-share-invite]')) { closeShare(); openContacts().then(() => inviteToKoyeba()).catch(() => {}); return; }
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
   if (t.closest('[data-share-web-on]')) { shareWebOn(); return; }
@@ -23141,7 +23141,7 @@ document.addEventListener('contextmenu', (e) => {
   const nrc = e.target.closest('.nt-card[data-open-note], .nt-card[data-open-table]');
   if (nrc && state.view.type === 'notes') { e.preventDefault(); openNoteMenu(nrc.dataset.openNote || nrc.dataset.openTable, e.clientX, e.clientY); return; }
   // Right-click a link inside note/task prose: offer to open it in a new tab.
-  // Internal Shizu links (#rl-…) open in a fresh in-app tab; web links open in
+  // Internal Koyeba links (#rl-…) open in a fresh in-app tab; web links open in
   // a new browser tab.
   const alink = e.target.closest('a[href]');
   if (alink && alink.closest('.prose, .note-body')) {
@@ -23157,7 +23157,7 @@ function linkMenuKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeLin
 function openLinkMenu(x, y, href, view) {
   closeLinkMenu();
   const items = view
-    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Shizu tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
+    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Koyeba tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
     : ['<button class="ctx-item" data-lm="browser">↗ Open in new browser tab</button>', '<button class="ctx-item" data-lm="copy">Copy link</button>'];
   const mx = Math.min(x, window.innerWidth - 232), my = Math.min(y, window.innerHeight - 110);
   const el = document.createElement('div'); el.id = 'linkmenu'; el.className = 'ctx-bg';
@@ -24619,7 +24619,7 @@ function editPrio(span) {
 }
 function editArea(span) {
   const id = span.dataset.editArea; const t = taskCopies(id)[0]; if (!t) return;
-  editInlineSelect(span, t.props.area, [{ value: '', label: 'No lifespace' }, ...editableAreas().map((a) => ({ value: a.id, label: a.title + sharedTag(a) }))], (v) => patchTaskProps(id, { area: v }));
+  editInlineSelect(span, t.props.area, [{ value: '', label: 'No space' }, ...editableAreas().map((a) => ({ value: a.id, label: a.title + sharedTag(a) }))], (v) => patchTaskProps(id, { area: v }));
 }
 
 // ── view: task focus (open card) ─────────────────────
@@ -24710,7 +24710,7 @@ async function promptCustomDuration(curMin) {
 // surface settings; picking here overrides them for this task.
 // A task's reminder: tied to its Due Date, not a separate "surface on" date. Tick
 // "Remind me" and say how many days before - it then nudges you IN THE APP (a push
-// on desktop + mobile, and a row in My Shizu) on that day. Under the hood the
+// on desktop + mobile, and a row in Coming into view) on that day. Under the hood the
 // reminder day is stored in props.snooze (due minus N), so the existing surfacing
 // and "hide until" machinery keeps working. No email, no text. (Robin, 2026-10-29.)
 function taskReminderDay(p) { return (p.due && p.remindDays != null) ? addDaysStr(p.due, -Math.max(0, Number(p.remindDays) || 0)) : null; }
@@ -24728,7 +24728,7 @@ function taskScheduleHtml(t) {
       ${p.repeat && !p.kit ? `<div class="ts-row ts-row-in"><span class="ts-row-l">How many times<small>${p.repeatCount ? `${Number(p.repeatDone) || 0} of ${p.repeatCount} done` : 'blank = forever'}</small></span><input type="number" min="1" max="999" inputmode="numeric" class="sel ts-num" data-repeatcount-task="${id}" value="${p.repeatCount || ''}" placeholder="∞"></div>` : ''}
       <label class="ts-row ts-toggle"><span class="ts-row-l">Remind me</span><input type="checkbox" data-remind-toggle="${id}" ${remindOn ? 'checked' : ''}></label>
       ${remindOn ? `<div class="ts-row ts-row-in"><span class="ts-row-l">Days before<small>0 = on the day</small></span><input type="number" min="0" max="365" inputmode="numeric" class="sel ts-num" data-remind-days="${id}" value="${days}"></div>
-      ${remindDay ? `<p class="ts-hint">A nudge in the app on <b>${esc(dpLabel(remindDay))}</b>, and in My Shizu.</p>` : ''}
+      ${remindDay ? `<p class="ts-hint">A nudge in the app on <b>${esc(dpLabel(remindDay))}</b>, and in Coming into view.</p>` : ''}
       <label class="ts-check"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide from my Tasks until the reminder</span></label>` : ''}
     </div>` : '<p class="ts-empty">Add a due date and you can set a repeat and a reminder.</p>';
   return `<div class="task-sched ${hasDue ? 'has-due' : ''}">
@@ -24748,7 +24748,7 @@ function taskSurfaceHtml(t) {
     <label class="tfs-toggle"><input type="checkbox" data-remind-toggle="${id}" ${remindOn ? 'checked' : ''} ${hasDue ? '' : 'disabled'}><span>Remind me</span></label>
     ${remindOn && hasDue ? `<div class="tfs-block">
       <label class="tfs-row"><span class="tfs-l">How many days before<small class="tf-hint">0 = on the day it's due</small></span><span class="tfs-ctrl"><input type="number" min="0" max="365" inputmode="numeric" class="sel tfs-num" data-remind-days="${id}" value="${days}"></span></label>
-      ${remindDay ? `<p class="tfs-note">You'll be reminded in the app on <b>${esc(dpLabel(remindDay))}</b>, and it'll show in My Shizu.</p>` : ''}
+      ${remindDay ? `<p class="tfs-note">You'll be reminded in the app on <b>${esc(dpLabel(remindDay))}</b>, and it'll show in Coming into view.</p>` : ''}
       <label class="tfs-toggle"><input type="checkbox" data-surface-hide="${id}" ${p.hideUntil ? 'checked' : ''}><span>Hide it from my Tasks until the reminder</span></label>
     </div>` : ''}
   </div>`;
@@ -24778,7 +24778,7 @@ function renderTaskCard() {
       <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
       <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
-          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Shizu contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
+          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Koyeba contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
           ${t.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-task-cur data-tip="Delete this task" aria-label="Delete this task">${MAIL_ICO.trash}</button>`}</span>
       </div>
     </div>
@@ -24795,7 +24795,7 @@ function renderTaskCard() {
         <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="tf-field"><span class="tf-label">Duration</span>
         <select class="sel" data-dur-task="${t.id}">${durationOptionsHtml(t.props.duration)}</select></label>
-      <div class="tf-field"><span class="tf-label">Life Spaces</span>
+      <div class="tf-field"><span class="tf-label">Spaces</span>
         ${blockAreasControl('task', t)}</div>
       <label class="tf-field"><span class="tf-label">Status</span>
         <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
@@ -24898,7 +24898,7 @@ function connectAddSectionHtml() {
 // The task card used to carry five separate boxes - Goals, Contacts, Web links,
 // Connected and Attachments. That's the same clutter the note panel already
 // retired, so a task now gets the one-panel treatment too: a single list of
-// everything it links to, with a Link tab (search anything in Shizu - notes,
+// everything it links to, with a Link tab (search anything in Koyeba - notes,
 // tasks, people, events, GOALS, pages - or paste a web address) and an
 // Attach-a-file tab. Every row reuses the existing add/unlink plumbing, so
 // storage is unchanged: a goal still lives in props.goals (the task counts
@@ -24971,7 +24971,7 @@ function taskConnectedPanel(t) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 Shizu Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 Koyeba Connect</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label>
           <button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button>
@@ -26306,13 +26306,13 @@ document.addEventListener('keydown', (e) => {
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
-// in to Robin's Shizu, so the wordmark drops the owner's name and reads just
-// "Shizu". On a tenant subdomain it stays whose it is.
+// in to Robin's Koyeba, so the wordmark drops the owner's name and reads just
+// "Koyeba". On a tenant subdomain it stays whose it is.
 const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">shizu</em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -26347,7 +26347,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Shizu</em></div>
+      <div class="gate2-mark"><em>Koyeba</em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -26361,12 +26361,12 @@ function showSignup(email, inviteRequired, invited) {
   $('#su-signout').addEventListener('click', () => { clearToken(); location.reload(); });
   $('#su-name').focus();
 }
-// Their Shizu lives on its own subdomain - a different origin, with its own
+// Their Koyeba lives on its own subdomain - a different origin, with its own
 // empty localStorage. Carry the session over in the fragment (never sent to a
 // server, never logged) so the new origin is signed in on arrival. Reloading the
 // apex instead used to land the newcomer back on the marketing page, which is
 // what made a completed signup look like a failed one.
-function goToMyShizu(sub) {
+function goToMyKoyeba(sub) {
   const host = sub ? `${sub}.daybook.fyi` : '';
   if (!host || location.hostname === host) { location.reload(); return; }
   location.replace(`https://${host}/#t=${encodeURIComponent(token())}`);
@@ -26472,7 +26472,7 @@ async function openMailCompose(c) {
   renderMail();
   setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
 }
-// Offer Shizu as the browser's mailto handler (Chromium/Firefox). The
+// Offer Koyeba as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() {
   if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
@@ -26484,7 +26484,7 @@ function registerMailHandler() {
 // A gentle, skippable guide shown once when a new account first opens: orient
 // them, offer AI (optional), offer email (optional). Persisted per-user via
 // /api/kv/onboarded so it shows exactly once and never nags an existing member.
-const ONB_STEPS = ['Welcome', 'Life Spaces', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
+const ONB_STEPS = ['Welcome', 'Spaces', 'Add AI', 'Connect email', 'Backup phone', 'Done'];
 // No forced wizard any more: a new account lands straight on Home with the least
 // friction. Setup lives in an at-your-own-pace hub (showOnboarding) you open from
 // the Home "Getting started" card, whenever you like. maybeOnboard just learns
@@ -26501,7 +26501,7 @@ async function finishOnboarding() {
   try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
   state.onbSeen = true;
   closeOnbHub();
-  // "Open Shizu" lands you on Home - the place to start - not back on whatever
+  // "Open Koyeba" lands you on Home - the place to start - not back on whatever
   // Settings tab the setup hub was opened from. (Robin, 2026-10-29.)
   Promise.resolve(openHome()).catch(() => {});
 }
@@ -26510,9 +26510,9 @@ async function finishOnboarding() {
 // collapsible, tick-as-you-go checklist at the top of the Account page. Reads
 // global state; tapping an item opens the hub at that step. Completion detectors
 // mirror the hub's TILES - keep them in step. (Robin, 2026-10-26.)
-// Has Shizu been added as an app on this kind of device? We can't see another
+// Has Koyeba been added as an app on this kind of device? We can't see another
 // device, so we remember a manual "I've added it" per kind, and also count the
-// CURRENT device as done when Shizu is running as an installed (standalone) app.
+// CURRENT device as done when Koyeba is running as an installed (standalone) app.
 function appInstalled(which) {
   try { if (localStorage.getItem('lf_app_' + which) === '1') return true; } catch {}
   let standalone = false;
@@ -26531,7 +26531,7 @@ function welcomeItems() {
   // nothing to bring in). (Robin, 2026-10-29.)
   const items = [
     { id: 'identity', ic: '🎨', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
-    { id: 'folios', ic: '◈', label: 'Your Life Spaces', done: (state.areas || []).length > 0 },
+    { id: 'folios', ic: '◈', label: 'Your Spaces', done: (state.areas || []).length > 0 },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 || !!a.isOwner },
     { id: 'twofa', ic: '🔒', label: 'Two-factor security', done: !!a.totpEnabled },
@@ -26562,7 +26562,7 @@ function welcomeGuideHtml() {
       <button class="set-welcome-x" data-welcome-dismiss title="Hide getting started" aria-label="Hide getting started">✕</button>
     </summary>
     <div class="set-welcome-body">
-      <p class="set-welcome-lede">Set Shizu up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
+      <p class="set-welcome-lede">Set Koyeba up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
       <div class="set-welcome-grid">
         ${items.map((x) => `<button class="wg-item${x.done ? ' done' : ''}" data-onb-open-hub="${x.id}" title="${x.done ? 'Done - open to review' : 'Set this up'}">
           <span class="wg-item-pip" aria-hidden="true">${x.done ? '✓' : ''}</span>
@@ -26609,18 +26609,18 @@ function onbAreas() {
     ? '<p class="onb-p onb-muted">Loading your areas…</p>'
     : areas.length
       ? `<div class="onb-areas">${areas.map((a) => `<span class="onb-area" style="--h:${hueOf(a)}"><span class="onb-area-dot"></span><span class="onb-area-t">${esc(a.title || 'Untitled')}</span><button class="onb-area-x" data-onb-area-del="${a.id}" title="Remove this area" aria-label="Remove">×</button></span>`).join('')}</div>`
-      : '<p class="onb-p onb-muted">No Life Spaces yet - add the ones that matter to you below.</p>';
+      : '<p class="onb-p onb-muted">No Spaces yet - add the ones that matter to you below.</p>';
   const have = new Set((areas || []).map((a) => (a.title || '').trim().toLowerCase()));
   const sugg = AREA_EXAMPLES.filter(([n]) => !have.has(n.toLowerCase()));
   const suggHtml = sugg.length
     ? `<div class="onb-sugg-wrap"><div class="onb-sugg-h">Not sure where to start? Tap to add any of these:</div>
        <div class="onb-sugg">${sugg.map(([n, h]) => `<button class="onb-sugg-btn" data-onb-area-suggest="${esc(n)}"><span class="onb-sugg-n">+ ${esc(n)}</span>${h ? `<span class="onb-sugg-s">${esc(h)}</span>` : ''}</button>`).join('')}</div></div>`
     : '';
-  return `<h2 class="onb-h">Your Life Spaces</h2>
-    <p class="onb-p">Life Spaces are the parts of your life Shizu is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Life Space, so each one gathers everything about that part of your life in one place.</p>
+  return `<h2 class="onb-h">Your Spaces</h2>
+    <p class="onb-p">Spaces are the parts of your life Koyeba is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
-    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a lifespace…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>
+    <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a space…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>
     ${suggHtml}`;
 }
 async function onbDelArea(id) {
@@ -26647,10 +26647,10 @@ function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.mi
 function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
-  return `<h2 class="onb-h">Welcome to Shizu${name ? `, ${name}` : ''}</h2>
+  return `<h2 class="onb-h">Welcome to Koyeba${name ? `, ${name}` : ''}</h2>
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
-    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Shizu helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Koyeba helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {
@@ -26664,7 +26664,7 @@ function onbAi() {
   const a = state.onb.account || {};
   const connected = a.aiAnySet && a.aiProvider;
   return `<h2 class="onb-h">Add your AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p"><b>Shizu works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p"><b>Koyeba works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
     <p class="onb-p">AI just adds a few optional helpers - Reflection coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
     ${connected
       ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`
@@ -26680,10 +26680,10 @@ async function onbConnectAi() {
 }
 function onbEmail() {
   const n = (Array.isArray(state.onb.mailAccounts) ? state.onb.mailAccounts.length : 0) || (state.onb.mailDone ? 1 : 0);
-  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Shizu.</div>
+  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Koyeba.</div>
     <p class="onb-p">Add another, or manage them, in the full mail setup.</p>
     <button class="add-btn wide" data-onb-nav="mail">Open mail setup →</button>`;
-  return `<p class="onb-p">Read and send your email right inside Shizu - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
+  return `<p class="onb-p">Read and send your email right inside Koyeba - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
     <p class="onb-p onb-muted">The setup walks you through your provider - some (Gmail included) need a one-time app password, and it shows you exactly how.</p>
     <button class="add-btn wide" data-onb-nav="mail">Connect a mailbox →</button>`;
 }
@@ -26691,7 +26691,7 @@ function onbPhone() {
   const a = state.onb.account || {};
   const saved = (a.phone || '').trim();
   return `<h2 class="onb-h">A backup way in <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Shizu signs you in with a code sent to your email. But once Shizu <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
+    <p class="onb-p">Koyeba signs you in with a code sent to your email. But once Koyeba <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
     <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
     ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
     <div class="onb-mailform">
@@ -26713,13 +26713,13 @@ function onbDone() {
     <ul class="onb-tips">
       <li><b>+ Task</b>, <b>+ Note</b> and <b>+ Event</b> on Home capture things fast.</li>
       <li>Press <b>⌘K</b> or the search box to jump anywhere.</li>
-      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Life Space, a note, a table, or a few tasks. Completely up to you.</li>
+      <li><b>Invite your friends</b> from <b>Contacts</b>, then share whatever you like - a Space, a note, a table, or a few tasks. Completely up to you.</li>
       <li>Change anything later in <b>Settings</b> - AI, mail, appearance and more.</li>
     </ul>
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
 }
 // "Make it yours": name, a highlight colour and a photo, all inline - the three
-// quick touches that make a new Shizu feel like the member's own. Each writes
+// quick touches that make a new Koyeba feel like the member's own. Each writes
 // straight through (account name, the app accent, the card photo) and re-renders
 // the hub in place. (Robin, 2026-10-28.)
 function onbIdentity() {
@@ -26731,7 +26731,7 @@ function onbIdentity() {
   const photo = card.photo
     ? `<span class="dbc-photo sm" style="background-image:url('${card.photo}')"></span>`
     : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c4412e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
-  return `<p class="onb-p">A few quick touches to make Shizu feel like yours - change any of it later.</p>
+  return `<p class="onb-p">A few quick touches to make Koyeba feel like yours - change any of it later.</p>
     <div class="onb-field"><span class="onb-l">Your name</span>
       <span class="onb-inline"><input id="onb-name" class="sel" value="${esc(a.name || '')}" placeholder="What should we call you?" maxlength="60" autocomplete="name"><button class="add-btn wide" data-onb-name-save>Save</button></span></div>
     <div class="onb-field"><span class="onb-l">Highlight colour <span class="onb-opt">if you like</span></span>
@@ -26757,7 +26757,7 @@ async function onbSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 function onbRemovePhoto() { if (state.card) { delete state.card.photo; saveCard(); } if (state.onb) renderOnboarding(); }
-// Your Shizu calendar works from the start (native events, no account). This
+// Your Koyeba calendar works from the start (native events, no account). This
 // step brings an OUTSIDE calendar in - Google read-only, or iCloud/Yahoo two-way
 // - which the Calendar view's own connect strip handles in full.
 function onbCalendar() {
@@ -26767,7 +26767,7 @@ function onbCalendar() {
   const list = accts.length
     ? `<div class="onb-ok">✓ Connected: ${accts.map((x) => esc(x.label || (x.provider === 'caldav' ? 'iCloud / CalDAV' : 'Google'))).join(', ')}. Manage them on the Calendar.</div>`
     : (a.isOwner ? '<div class="onb-ok">✓ Your Google calendar is connected - you\'ll see it on the Calendar.</div>' : '');
-  return `<p class="onb-p">Your Shizu calendar works from the off - add events anytime, no account needed.</p>
+  return `<p class="onb-p">Your Koyeba calendar works from the off - add events anytime, no account needed.</p>
     <p class="onb-p">Connect an <b>outside</b> calendar to see it here too: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
     ${list}
     <button class="add-btn wide" data-onb-nav="calendar">${connected ? 'Open the Calendar' : 'Open the Calendar to connect'} →</button>`;
@@ -26775,7 +26775,7 @@ function onbCalendar() {
 // What you can bring in today. Notes and contacts have a home to send you to;
 // events and statements live on their own tools (mentioned, not linked).
 function onbImport() {
-  return `<p class="onb-p">Bring your existing notes and contacts into Shizu.</p>
+  return `<p class="onb-p">Bring your existing notes and contacts into Koyeba.</p>
     <ul class="onb-tips">
       <li><b>Notes</b> - Markdown or text files from Obsidian, Bear, Apple Notes, Notion and the like.</li>
       <li><b>Contacts</b> - a vCard (.vcf) from Google, Outlook, iCloud or your phone.</li>
@@ -26789,7 +26789,7 @@ function onbTwofaPanel() {
     <button class="add-btn wide" data-onb-nav="twofa">Manage two-factor →</button>`;
   return `<p class="onb-p">Add a second step at sign-in from an authenticator app (Google Authenticator, Authy, 1Password…), so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`;
 }
-// "Add the web app" - Shizu is a proper app you install straight from the
+// "Add the web app" - Koyeba is a proper app you install straight from the
 // browser, no app store. Pick your device, follow three plain steps. (Robin, 2026-10-29.)
 function onbAppDesktop() {
   const os = (state.onb && state.onb.appDeskOS) || (/(Mac|iPhone|iPad)/.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'win');
@@ -26797,13 +26797,13 @@ function onbAppDesktop() {
   const steps = os === 'mac' ? [
     ['In Safari', 'Click <b>Share</b> (the square with an arrow ↑) in the toolbar, then <b>Add to Dock</b>.'],
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['That’s it', 'Shizu now lives in your Dock and opens in its own window.'],
+    ['That’s it', 'Koyeba now lives in your Dock and opens in its own window.'],
   ] : [
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Shizu…</b>'],
-    ['That’s it', 'Shizu now lives on your taskbar and opens in its own window.'],
+    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Koyeba…</b>'],
+    ['That’s it', 'Koyeba now lives on your taskbar and opens in its own window.'],
   ];
-  return `<p class="onb-p">Add Shizu to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Shizu.</p>
+  return `<p class="onb-p">Add Koyeba to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Koyeba.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'mac' ? 'on' : ''}" data-onb-deskos="mac">Mac</button>
       <button type="button" class="onb-ostab ${os === 'win' ? 'on' : ''}" data-onb-deskos="win">Windows</button>
@@ -26815,15 +26815,15 @@ function onbAppPhone() {
   const os = (state.onb && state.onb.appPhoneOS) || (/(iPhone|iPad|iPod)/.test(navigator.userAgent || '') ? 'ios' : 'android');
   const done = appInstalled('phone');
   const steps = os === 'ios' ? [
-    ['Open Shizu in Safari', 'It has to be Safari for this step - not Chrome.'],
+    ['Open Koyeba in Safari', 'It has to be Safari for this step - not Chrome.'],
     ['Tap Share', 'The square with an arrow ↑, at the bottom of the screen.'],
     ['Add to Home Screen', 'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.'],
   ] : [
-    ['Open Shizu in Chrome', 'On your Android phone.'],
+    ['Open Koyeba in Chrome', 'On your Android phone.'],
     ['Tap the ⋮ menu', 'Top-right of the screen.'],
     ['Install app', 'Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.'],
   ];
-  return `<p class="onb-p">Add Shizu to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
+  return `<p class="onb-p">Add Koyeba to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'ios' ? 'on' : ''}" data-onb-phoneos="ios">iPhone</button>
       <button type="button" class="onb-ostab ${os === 'android' ? 'on' : ''}" data-onb-phoneos="android">Android</button>
@@ -26848,7 +26848,7 @@ function renderOnboarding() {
   const calConnected = (state.gcalAccounts || []).length > 0 || !!a.isOwner;
   const TILES = [
     { id: 'identity', ic: '🎨', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
-    { id: 'folios', ic: '◈', label: 'Your Life Spaces', hint: 'The parts of your life', done: (state.areas || []).length > 0, body: onbAreas },
+    { id: 'folios', ic: '◈', label: 'Your Spaces', hint: 'The parts of your life', done: (state.areas || []).length > 0, body: onbAreas },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Gmail, Outlook, iCloud…', opt: true, done: mailConnected, body: onbEmail },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: calConnected, body: onbCalendar },
     { id: 'import', ic: '⤓', label: 'Import', hint: 'Notes & contacts', opt: true, done: contacts.length > 0, body: onbImport },
@@ -26858,7 +26858,7 @@ function renderOnboarding() {
   ];
   // AI is handled for you on Premium Plus, so there's nothing to add there.
   if (!onManaged) TILES.push({ id: 'ai', ic: '✦', label: 'Add AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiGeminiSet || a.aiOpenaiSet), body: onbAi });
-  // The two foundations - making it yours and your Life Spaces - count toward
+  // The two foundations - making it yours and your Spaces - count toward
   // "all set". Every connection and safety step is genuinely optional and must
   // never make a new member look unfinished or imply it's required. (Robin.)
   const countable = TILES.filter((x) => ('done' in x) && !x.opt);
@@ -26874,17 +26874,17 @@ function renderOnboarding() {
   const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
   // Hold the overlay's scroll steady while background data re-renders it below.
   const prevScroll = (document.querySelector('#onb .onb-bg') || {}).scrollTop || 0;
-  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Shizu">
+  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Koyeba">
     <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
     <div class="onb-head">
       <span class="onb-mark">${MARK}</span>
-      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Shizu${name ? `, ${esc(name)}` : ''}`}</h2>
+      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Koyeba${name ? `, ${esc(name)}` : ''}`}</h2>
       <p class="onb-lede">${allDone ? 'The essentials are in place. Everything else here is optional - add it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required, AI included.'}</p>
       <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
     </div>
     <div class="onb-grid">${tilesHtml}</div>
     ${panel}
-    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Shizu' : 'Done for now'}</button>
+    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Koyeba' : 'Done for now'}</button>
   </div></div>`;
   // When a step opens, bring its panel to the top so you land on the actual content,
   // not the tile grid above it. The overlay re-renders repeatedly as background data
@@ -26952,7 +26952,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Shizu</em></div>';
+  const mark = '<div class="gate2-mark"><em>Koyeba</em></div>';
   const head = (txt) => `<div style="font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
@@ -26960,7 +26960,7 @@ function showRequired2fa() {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:ui-monospace,SFMono-Regular,monospace;font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
-      <button class="gate2-btn" id="r2-done">Done - open Shizu</button>`;
+      <button class="gate2-btn" id="r2-done">Done - open Koyeba</button>`;
     document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
     return;
   }
@@ -26983,7 +26983,7 @@ function showRequired2fa() {
     return;
   }
   card.innerHTML = `${mark}${head('Two-factor is now required')}
-    <p class="gate2-sub">To keep your Shizu secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
+    <p class="gate2-sub">To keep your Koyeba secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
     <button class="gate2-btn" id="r2-start">Set it up now</button>
     <p class="gate2-alt"><a href="/blog/two-factor-authentication" target="_blank" rel="noopener">Why?</a> · <button type="button" class="su-signout" id="r2-signout">sign out</button></p>`;
   document.getElementById('r2-start').onclick = async () => {
@@ -27008,13 +27008,13 @@ function showRequired2fa() {
   // and home-screen installs migrate without a re-login. (Robin, 2026-10-15.)
   try {
     const _h = location.hostname;
-    if (_h !== 'shizu.fyi' && _h !== 'www.shizu.fyi' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
+    if (_h !== 'koyeba.co' && _h !== 'www.koyeba.co' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
       const tk = token();
-      location.replace('https://shizu.fyi/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
+      location.replace('https://koyeba.co/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
       return;
     }
   } catch {}
-  // Session hand-off from the apex (see goToMyShizu): #t=<jwt> signs this
+  // Session hand-off from the apex (see goToMyKoyeba): #t=<jwt> signs this
   // origin in on arrival, then the fragment is wiped from the URL.
   let preEmail = '', preChannel = '';
   try {
@@ -27038,11 +27038,11 @@ function showRequired2fa() {
     invited = !!storedInvite();
   } catch {}
   if (!token()) {
-    showGate(invited ? "You've been invited to Shizu. Sign in with your email to accept." : null);
+    showGate(invited ? "You've been invited to Koyeba. Sign in with your email to accept." : null);
     // They typed their email on the marketing sign-in box; prefill it and let them
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was
-    // impossible - the one case (mailbox lives inside Shizu) it exists for.
+    // impossible - the one case (mailbox lives inside Koyeba) it exists for.
     if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; if (preChannel === 'sms') gateSend('sms'); else { const b = $('#gate-btn'); if (b) b.focus(); } }
     return;
   }
@@ -27059,7 +27059,7 @@ function showRequired2fa() {
       // day/night theme, so re-resolve in case they'd previously chosen one. (Robin.)
       try { if (themeLocked()) applyTheme(false); } catch {}
       // Two-factor becomes required three months after an account opens. Past that,
-      // a member without it set up must turn it on before using Shizu. Sign-out
+      // a member without it set up must turn it on before using Koyeba. Sign-out
       // is always offered, so this asks firmly but can never lock anyone out.
       if (!me.user.totp_enabled && me.user.created_at && (Date.now() - Date.parse(me.user.created_at)) > 90 * 86400000) { showRequired2fa(); return; }
     }
@@ -27084,13 +27084,13 @@ function showRequired2fa() {
     try { state.modules = JSON.parse((modKv && modKv.value) || '{}') || {}; } catch { state.modules = {}; }
     state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     state.areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    // Preload Life Spaces shared with me, so the moment I open a note/email/task the
-    // "file into a Life Space" pickers already offer the joined spaces I can edit.
+    // Preload Spaces shared with me, so the moment I open a note/email/task the
+    // "file into a Space" pickers already offer the joined spaces I can edit.
     loadSharedAreas();
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     // Restore the tabs you had open, focused on the one you were using - so
-    // reopening Shizu on desktop puts you back exactly where you left off. The
+    // reopening Koyeba on desktop puts you back exactly where you left off. The
     // installed PHONE app is the exception: after an hour away it still drops you
     // on Home (a fresh glance beats last night's page), though a quick reopen keeps
     // your place. A deep-link route below still wins over all of this. (Robin:
@@ -27143,7 +27143,7 @@ function showRequired2fa() {
     syncBgPatternFromServer();  // and the background pattern, likewise
     syncDateStyleFromServer();  // and the UK/US date style, likewise
 
-    loadAccount();           // name, handle & contact details for the Shizu card
+    loadAccount();           // name, handle & contact details for the Koyeba card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Pinned I Ching / horoscope readings follow the account, so they surface on
     // Well-being and Home on any device.

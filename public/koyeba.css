@@ -1,0 +1,45 @@
+/* Koyeba — design tokens (day + night) and self-hosted type.
+   Day is the default on :root; night is `body.night` (per design/koyeba/README.md §3).
+   Colour values are traced exactly from the prototype (design/koyeba/Koyeba App.dc.html);
+   hex in the comments is the approximation only. One accent: gold. Night is forest, never navy. */
+
+/* ── Type: self-hosted latin woff2 in /fonts ──────────────────────────────── */
+@font-face{font-family:'Cormorant Garamond';src:url('/fonts/CormorantGaramond-300.woff2') format('woff2');font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Cormorant Garamond';src:url('/fonts/CormorantGaramond-300-italic.woff2') format('woff2');font-weight:300;font-style:italic;font-display:swap}
+@font-face{font-family:'Cormorant Garamond';src:url('/fonts/CormorantGaramond-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+
+/* ── Day (default) ────────────────────────────────────────────────────────── */
+:root{
+  --k-bg:oklch(0.975 0.012 85);      /* ≈#f8f4ec  page (ivory) */
+  --k-panel:oklch(0.99 0.006 85);    /* ≈#fdfbf7  cards, drawer, inputs-in-panels */
+  --k-soft:oklch(0.94 0.016 82);     /* ≈#efe9dc  selected row, inner dividers, open sheet */
+  --k-ink:oklch(0.22 0.018 60);      /* ≈#2a2620  text */
+  --k-mute:oklch(0.46 0.022 70);     /* ≈#6b6357  secondary text */
+  --k-line:oklch(0.88 0.014 80);     /* ≈#e0d9cc  1px keylines */
+  --k-gold:oklch(0.72 0.13 75);      /* ≈#c99a3e  accent fills, rules, markers */
+  --k-goldt:oklch(0.55 0.11 70);     /* ≈#8f6c2a  gold TEXT (passes contrast on ivory) */
+  --k-deep:oklch(0.28 0.04 155);     /* ≈#2c4a3a  forest: capture bar, notification, avatars */
+  --k-ondeep:oklch(0.975 0.012 85);  /* ≈#f8f4ec  text on forest */
+  --k-ongold:oklch(0.22 0.018 60);   /* text on a solid gold button (same in both themes) */
+
+  --k-serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;         /* anything that speaks */
+  --k-sans:'Jost',system-ui,-apple-system,'Segoe UI',Helvetica,sans-serif; /* anything that labels */
+}
+
+/* ── Night: deep forest green — never blue-grey, navy or black ────────────── */
+body.night{
+  --k-bg:oklch(0.19 0.02 160);
+  --k-panel:oklch(0.22 0.022 160);
+  --k-soft:oklch(0.25 0.024 160);
+  --k-ink:oklch(0.94 0.012 85);
+  --k-mute:oklch(0.74 0.02 80);
+  --k-line:oklch(0.33 0.02 160);
+  --k-gold:oklch(0.74 0.12 76);
+  --k-goldt:oklch(0.80 0.11 78);
+  --k-deep:oklch(0.14 0.02 160);
+  --k-ondeep:oklch(0.94 0.012 85);
+  /* --k-ongold stays the day ink: text on gold is always dark. */
+}

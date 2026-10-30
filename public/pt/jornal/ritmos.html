@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ritmos, não listas de tarefas</title>
-<meta name="description" content="A maioria das ferramentas de produtividade acrescenta mais listas. O Shizu trabalha antes com os seus ritmos - e deixa uma pequena máquina discreta correr em segundo plano, para que fique por cima de tudo sem a importunação.">
-<link rel="canonical" href="https://shizu.fyi/pt/jornal/ritmos">
-<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/rhythms">
-<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/ritmos">
-<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/rythmes">
-<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/ritmos">
-<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/rhythms">
+<meta name="description" content="A maioria das ferramentas de produtividade acrescenta mais listas. O Koyeba trabalha antes com os seus ritmos - e deixa uma pequena máquina discreta correr em segundo plano, para que fique por cima de tudo sem a importunação.">
+<link rel="canonical" href="https://koyeba.co/pt/jornal/ritmos">
+<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/rhythms">
+<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/ritmos">
+<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/rythmes">
+<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/ritmos">
+<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/rhythms">
 <meta property="og:title" content="Ritmos, não listas de tarefas">
 <meta property="og:description" content="Trabalhe com os seus ritmos, e deixe uma pequena máquina discreta manter os pratos a girar - para que fique por cima de tudo sem a importunação.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://shizu.fyi/pt/jornal/ritmos">
+<meta property="og:url" content="https://koyeba.co/pt/jornal/ritmos">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +49,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,9 +65,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a>
+    <a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a>
     <ul class="nav-links">
-      <li><a href="/pt#idea">O seu Shizu</a></li>
+      <li><a href="/pt#idea">O seu Koyeba</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal" class="on">Jornal</a></li>
@@ -83,7 +83,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/pt/jornal">← O Jornal do Shizu</a>
+      <a class="back-link" href="/pt/jornal">← O Jornal do Koyeba</a>
       <div class="eyebrow">Modos de trabalhar</div>
       <h1>Ritmos, não listas de tarefas</h1>
       <div class="article-meta">
@@ -97,13 +97,13 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">A maioria das ferramentas de produtividade responde a uma vida ocupada com mais listas. O Shizu tenta o contrário - trabalhar com os seus ritmos, e deixar uma pequena máquina discreta manter os pratos a girar, para que fique por cima de tudo sem a importunação.</p>
+      <p class="lede">A maioria das ferramentas de produtividade responde a uma vida ocupada com mais listas. O Koyeba tenta o contrário - trabalhar com os seus ritmos, e deixar uma pequena máquina discreta manter os pratos a girar, para que fique por cima de tudo sem a importunação.</p>
 
       <p>Já todos sentimos a passadeira da produtividade: uma lista maior, uma aplicação nova, um ímpeto de ordem, e depois o lento regresso ao caos duas semanas mais tarde. A lista nunca foi o problema. A vida não chega como uma lista plana - chega em ciclos.</p>
 
       <h2>A vida corre em ciclos</h2>
       <p>Os seus dias têm uma forma. Também as suas semanas, as suas estações, as pessoas que tenciona manter por perto, os hábitos que tenta cultivar. Uma boa ferramenta deve dobrar-se a esses ritmos em vez de os achatar numa pilha indiferenciada de tarefas que estão todas, de algum modo, para agora.</p>
-      <p>É por isso que o Shizu não é, deliberadamente, um horário rígido. Se está concentrado, continue - um bloco pode flutuar até o dia decidir onde assenta. Nada aqui o importuna por uma tarde saltada nem quebra uma sequência para o castigar. Orientação, não dívida.</p>
+      <p>É por isso que o Koyeba não é, deliberadamente, um horário rígido. Se está concentrado, continue - um bloco pode flutuar até o dia decidir onde assenta. Nada aqui o importuna por uma tarde saltada nem quebra uma sequência para o castigar. Orientação, não dívida.</p>
 
       <blockquote>Defina uma vez, e deixe correr em silêncio, em segundo plano.</blockquote>
 
@@ -113,7 +113,7 @@
         <li><strong>Trabalho recorrente que entende a cadência.</strong> "Falar com esta pessoa de três em três meses" avança a partir do dia em que falou de facto, não do dia em que ficou por fazer - por isso assinalá-la tarde dá-lhe três meses a sério, não quatro dias.</li>
         <li><strong>Revisões que chegam por si.</strong> Uma revisão semanal ou mensal chega como um ritmo, não como uma data que tem de se lembrar de marcar.</li>
         <li><strong>Um resumo matinal</strong> que reúne em silêncio o seu dia - calendário, o que mais importa, uma frase para pensar - e chega uma só vez, cedo, em vez de uma centena de alertas.</li>
-        <li><strong>Trazer à vista, não gritar.</strong> O Shizu mostra o que precisa genuinamente de si hoje e deixa o resto esperar, fora do caminho, até estar mesmo para fazer.</li>
+        <li><strong>Trazer à vista, não gritar.</strong> O Koyeba mostra o que precisa genuinamente de si hoje e deixa o resto esperar, fora do caminho, até estar mesmo para fazer.</li>
       </ul>
 
       <h2>Para que possa ficar por cima de tudo</h2>
@@ -123,7 +123,7 @@
 
     <div class="article-end">
       <h3>Veja por si mesmo</h3>
-      <p>O Shizu está em acesso antecipado, apenas por convite. Peça um convite e entraremos em contacto em breve.</p>
+      <p>O Koyeba está em acesso antecipado, apenas por convite. Peça um convite e entraremos em contacto em breve.</p>
       <a class="btn btn-primary" href="/pt#invite">Pedir um convite →</a>
     </div>
   </article>
@@ -131,18 +131,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true">静</span><span style="white-space:nowrap">Shizu</span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
+    <div class="foot-brand"><a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyeba</span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="/pt#idea">O seu Shizu</a></li>
+      <li><a href="/pt#idea">O seu Koyeba</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
       <li><a href="/pt#invite">Pedir um convite</a></li>
       <li><a href="/pt/privacidade">Privacidade</a></li>
       <li><a href="/pt/termos">Termos</a></li>
-      <li><a href="mailto:contact@shizu.fyi">Contacto</a></li>
+      <li><a href="mailto:contact@koyeba.co">Contacto</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Dúvidas? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
   </div>
 </footer>
 

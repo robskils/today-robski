@@ -1,7 +1,7 @@
 // CalDAV: connect any CalDAV calendar (iCloud, Yahoo, Fastmail, a self-hosted
 // server) with an email + an app-specific password, and read/write it two-way.
 // Stored as a calendar_accounts row (provider='caldav'); its events merge onto
-// the Shizu calendar like the extra Google accounts, with the same
+// the Koyeba calendar like the extra Google accounts, with the same
 // acct:<id>:<uid> id scheme so writes route back here.
 //
 // Robin doesn't use Yahoo himself - this is for members who do (2026-10-25). It's
@@ -110,7 +110,7 @@ const pad = (n) => String(n).padStart(2, '0');
 function buildVcalendar({ uid, title, allDay, startInstant, endInstant, startDate, endDate, location, notes, rrule }) {
   const utc = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
   const dateStamp = (iso) => iso.replace(/-/g, '');
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Shizu//CalDAV//EN', 'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${utc(new Date())}`];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Koyeba//CalDAV//EN', 'BEGIN:VEVENT', `UID:${uid}`, `DTSTAMP:${utc(new Date())}`];
   if (allDay) { lines.push(`DTSTART;VALUE=DATE:${dateStamp(startDate)}`, `DTEND;VALUE=DATE:${dateStamp(endDate)}`); }
   else { lines.push(`DTSTART:${utc(startInstant)}`, `DTEND:${utc(endInstant)}`); }
   lines.push(`SUMMARY:${icsEscape(title)}`);
