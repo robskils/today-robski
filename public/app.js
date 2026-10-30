@@ -5017,6 +5017,10 @@ async function openNote(id) {
   // a borrowed note's membership is the owner's to see; you get the banner.
   if (!note.sharedBy) api(`/api/blocks/${id}/shares`).then((r) => { if (state.note && state.note.current.id === id) { state.note.shares = r.shares || []; if (state.view.type === 'note') renderNoteKeepFocus(); } }).catch(() => { if (state.note) state.note.shares = []; });
   if (!state.friends) api('/api/friends').then((fr) => { state.friends = fr; if (state.view.type === 'note') renderNoteKeepFocus(); }).catch(() => {});
+  // The "Keep private" lock only shows when the note sits in a shared Life Space,
+  // so we need to know which areas have members. Loaded once per session (the Life
+  // Spaces view loads it too). (Robin, 2026-10-30.)
+  if (state.areaSummary === undefined) api('/api/areas/summary').then((r) => { state.areaSummary = r.summary || {}; if (state.view.type === 'note') renderNoteKeepFocus(); }).catch(() => { state.areaSummary = state.areaSummary || {}; });
 }
 // Re-render the note WITHOUT stealing the cursor: a fresh note focuses its title,
 // but the shares/friends fetches resolve a beat later and would rebuild the pane -
@@ -20539,6 +20543,16 @@ function shareBtn(block, kind, opts) {
 // card; the ＋ opens the same Share surface. Owner-only - a borrowed note shows
 // the "shared with you" banner instead. (Robin, 2026-10-29: notes share like
 // Life Spaces, same little round face thingies.)
+// True when this note is filed under at least one Life Space that has actually
+// been shared - an owned area with members, or an area someone shared with me.
+// "Keep private" only makes sense (and only shows) then; with nobody to be private
+// from, the lock was just confusing. (Robin, 2026-10-30.)
+function noteInSharedArea(n) {
+  const ids = blockAreas(n).map(String); if (!ids.length) return false;
+  const sum = state.areaSummary || {};
+  const sharedIds = new Set((state.sharedAreas || []).map((a) => String(a.id)));
+  return ids.some((aid) => (sum[aid] && (sum[aid].members || 0) > 0) || sharedIds.has(aid));
+}
 function noteFacesRow(n) {
   if (n.sharedBy) return '';
   const shares = state.note && state.note.shares;
@@ -20729,8 +20743,7 @@ function renderNote() {
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
           <span class="note-hide-mobile note-faces-wrap">${noteFacesRow(n)}</span>
-          ${n.sharedBy ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from area members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>
-          <button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">🖼</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">📎</button><details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
+          ${(n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Life Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">🖼</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">📎</button>`}${n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
         </span>
       </div>
     </div>
@@ -22739,7 +22752,7 @@ document.addEventListener('click', (e) => {
   { const ad = t.closest('[data-balias-del]'); if (ad) { noteDelAlias(Number(ad.dataset.baliasDel), ad.dataset.aliasCtx); return; } }
   if (t.closest('[data-new-sub]')) { newNote(state.note.current.id).catch((x) => toast(x.message)); return; }
   { const nc = t.closest('[data-note-connect]'); if (nc) { connectExistingNote(nc.dataset.noteConnect); return; } }
-  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) { const want = at.dataset.noteAddtab; state.note.addTab = (state.note.addTab === want) ? 'none' : want; renderNote(); const sel = state.note.addTab === 'connect' ? '[data-note-link-q]' : state.note.addTab === 'weblink' ? '#nx-weblink-input' : state.note.addTab === 'task' ? '#nx-task-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
+  { const at = t.closest('[data-note-addtab]'); if (at) { if (state.note) { const want = at.dataset.noteAddtab; const y = window.scrollY; state.note.addTab = (state.note.addTab === want) ? 'none' : want; renderNote(); try { window.scrollTo(0, y); } catch {} const sel = state.note.addTab === 'connect' ? '[data-note-link-q]' : state.note.addTab === 'weblink' ? '#nx-weblink-input' : state.note.addTab === 'task' ? '#nx-task-input' : null; if (sel) { const i = document.querySelector(sel); if (i) { try { i.focus({ preventScroll: true }); } catch { i.focus(); } } } } return; } }
   { const au = t.closest('[data-note-addurl]'); if (au) { addNoteWebLink(au.dataset.noteAddurl); return; } }
   { const tat = t.closest('[data-task-addtab]'); if (tat) { if (state.task_open) { const want = tat.dataset.taskAddtab; state.task_open.addTab = (state.task_open.addTab === want) ? 'none' : want; connResetPick(); renderTaskCard(); const sel = state.task_open.addTab === 'connect' ? '[data-conn-q]' : state.task_open.addTab === 'weblink' ? '#conn-weblink-input' : null; if (sel) { const i = document.querySelector(sel); if (i) i.focus(); } } return; } }
   { const cau = t.closest('[data-conn-addurl]'); if (cau) { const ctx = connCtx(); if (ctx && ctx.block) addBlockWebLink(ctx.kind, ctx.block.id, cau.dataset.connAddurl); return; } }
