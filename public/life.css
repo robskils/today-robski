@@ -8158,6 +8158,11 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose h1 { font-family:'Fraunces',Georgia,serif; font-size:30px; font-weight:600; margin:20px 0 8px; --hsize:30px; }
 .prose h2 { font-size:26px; margin:14px 0 6px; --hsize:26px; }
 .prose h3 { font-size:22px; margin:12px 0 5px; --hsize:22px; }
+/* The fold system indents each level with margin now (and the chevron tracks it),
+   so clear the older .note-body padding-left step-in - otherwise it pushed the text
+   right while the arrow stayed put, floating the arrow off deeper headings. With no
+   padding the arrow sits the SAME tight distance from every heading. (Robin, 2026-10-30.) */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { padding-left:0; }
 /* A sub-heading sitting directly under a heading shouldn't leave a gap at all -
    the parent heading's bottom margin already separates them. */
 .prose :is(h1,h2,h3) + :is(h1,h2,h3) { margin-top:2px; }
