@@ -19497,8 +19497,10 @@ function renderReviewReport() {
   const sBits = [];
   if (doneN) sBits.push(`<b>${doneN}</b> ticked off${nAreas > 1 ? ` across <b>${nAreas}</b> areas` : ''}`); else sBits.push('a quiet one on the record');
   if (topAName) sBits.push(`led by ${esc(topAName)}`);
-  if (wAvg) sBits.push(`The Wheel of Life at <b>${wAvg}</b>/5`);
-  const standfirst = sBits.join(' · ') + '.';
+  // The Wheel of Life score sits on its own second line - a calmer two-beat
+  // standfirst (what got done, then how the life felt). (Robin, 2026-10-30.)
+  const wheelBit = wAvg ? `The Wheel of Life at <b>${wAvg}</b>/5` : '';
+  const standfirst = sBits.join(' · ') + '.' + (wheelBit ? `<span class="rr-standfirst-wheel">${wheelBit}.</span>` : '');
   const sent = reviewSentiment(p, r);
   // Featured win: the week's standout, as a magazine feature line.
   const top = reviewTopWin(m);
