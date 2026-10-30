@@ -19387,7 +19387,7 @@ function reviewTrendsHtml(p) {
   const rows = [];
   rows.push(`<div class="rr-trend"><div class="rr-trend-h"><span class="rr-trend-lbl">Tasks completed</span><span class="rr-trend-now">${dn}</span>${deltaTag(dn, pdn, '')}</div>${spark(doneS, doneS.length - 1, (v) => `${v} done`)}</div>`);
   if (wn) rows.push(`<div class="rr-trend"><div class="rr-trend-h"><span class="rr-trend-lbl">Wheel of Life</span><span class="rr-trend-now">${wn}<small>/5</small></span>${deltaTag(wn, pwn, '')}</div>${spark(wheelS.map((v) => v || 0), wheelS.length - 1, (v) => `${v}/5`)}</div>`);
-  return `<div class="rr-trends">${rows.join('')}</div>`;
+  return `<div class="rr-trends">${rows.join('')}<p class="rr-caption">The last ${last.length} ${word}s side by side - this ${word} is the bar on the far right.</p></div>`;
 }
 // A pull-quote lifted from what you actually wrote (a reflection answer or the
 // freewrite) - a line of your own words, featured magazine-style.
