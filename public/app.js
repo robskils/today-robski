@@ -14458,6 +14458,19 @@ const MAIL_ICO = {
   image: mIco('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="8.7" cy="9.3" r="1.5"/><path d="M3.9 16.8l4.4-4.2 3 2.7 3.2-3.5 4.6 4.7"/>'),   // framed picture - insert image
   paperclip: mIco('<path d="M18.9 11.4l-7.1 7.1a4.1 4.1 0 0 1-5.8-5.8l7.2-7.2a2.6 2.6 0 0 1 3.7 3.7l-7.2 7.2a1.25 1.25 0 0 1-1.8-1.8l6.5-6.5"/>'),   // paperclip - insert file
 };
+// Monoline icons for the contact card - circular quick actions and the detail
+// rows - so every mark is one consistent line set, not a jumble of emoji.
+// (Robin, 2026-10-30: rebuild the contact card look.)
+const CICO = {
+  mail: mIco('<rect x="3" y="5.5" width="18" height="13" rx="2.3"/><path d="M3.7 7.2l8.3 5.8 8.3-5.8"/>'),
+  call: mIco('<path d="M5 4.6h3.1l1.3 4-2 1.4a11 11 0 0 0 5.2 5.2l1.4-2 4 1.3v3.1a1.5 1.5 0 0 1-1.6 1.5A14 14 0 0 1 3.5 6.2 1.5 1.5 0 0 1 5 4.6z"/>'),
+  msg: mIco('<path d="M20.5 11.3a7.3 6.8 0 0 1-10 6.3L5 19l1.3-4.2a7.3 6.8 0 1 1 14.2-3.5z"/>'),
+  wa: mIco('<path d="M20.5 11.3a7.3 6.8 0 0 1-10 6.3L5 19l1.3-4.2a7.3 6.8 0 1 1 14.2-3.5z"/><path d="M9.6 9.5c.1-.3.3-.3.5-.3h.4c.2 0 .3.1.4.3l.5 1c0 .1 0 .2-.1.3l-.4.4c-.1.1-.1.2 0 .4a4.4 4.4 0 0 0 1.9 1.7c.2.1.3.1.4 0l.5-.6c.1-.1.2-.1.3 0l1 .6c.2.1.2.2.2.3 0 .4-.3.8-.7 1-.3.1-.8.2-1.9-.3a6.4 6.4 0 0 1-2.8-2.7c-.2-.4-.4-.9-.4-1.3 0-.2 0-.4.2-.5z"/>'),
+  map: mIco('<path d="M12 21.2c3.9-4.1 6.4-7.6 6.4-10.7A6.4 6.4 0 0 0 5.6 10.5c0 3.1 2.5 6.6 6.4 10.7z"/><circle cx="12" cy="10.3" r="2.4"/>'),
+  nav: mIco('<path d="M3.2 10.9l17.6-6.8-6.8 17.6-2.6-8.2z"/>'),
+  cake: mIco('<path d="M4 20.5h16"/><path d="M5.5 20.5v-6.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v6.5"/><path d="M5.5 15.5c1.2.9 2.4.9 3.6 0s2.4-.9 3.6 0 2.4.9 3.6 0 1.3-.6 1.7-.7"/><path d="M12 11.5V8.5"/>'),
+  invite: mIco('<circle cx="9.5" cy="8" r="3.2"/><path d="M4 19a5.5 5.5 0 0 1 11 0"/><path d="M18.5 8.5v5M16 11h5"/>'),
+};
 // Recognised video-meeting links, so we can float a "Join" button.
 const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
 function mailMeetingLink(o) {
@@ -15891,12 +15904,12 @@ function contactDetailsView(c, p) {
     return `<div class="cc-fact ${cls || ''}"><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${val}</span>${copyBtn(copyVal)}</div>`;
   };
   const rows = [];
-  contactEmails(p).forEach((em) => rows.push(fact('✉', esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'), '', em)));
-  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact('☎', esc(disp), 'tel:' + esc(tel), '', disp)); });
-  if (p.birthday) rows.push(fact('🎂', esc(fmtBirthday(p.birthday))));
+  contactEmails(p).forEach((em) => rows.push(fact(CICO.mail, esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'), '', em)));
+  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact(CICO.call, esc(disp), 'tel:' + esc(tel), '', disp)); });
+  if (p.birthday) rows.push(fact(CICO.cake, esc(fmtBirthday(p.birthday))));
   const addrs = contactAddresses(p);
   let body = rows.join('');
-  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">📍</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div>${copyBtn(formatAddress(addrs[0]))}</div>`;
+  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">${CICO.map}</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div>${copyBtn(formatAddress(addrs[0]))}</div>`;
   return body || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone, birthday or an address.</p>';
 }
 // Gather every address row on the open card into the array + the mirrored primary.
@@ -16552,17 +16565,18 @@ function renderContactCard() {
       const addr = formatAddress(contactAddresses(p)[0]);
       const kit = p.kitEvery ? kitWhen((kitTaskOf() || {}).props ? (kitTaskOf().props.snooze) : '') : '';
       const areaChips = areas.map((a) => `<button class="cc-area-chip" data-open-area="${a.id}" style="--h:${hueOf(a)}" title="Open ${esc(a.title)}"><span class="cd"></span>${esc(a.title)}</button>`).join('');
+      const act = (cls, ic, label, attrs, tag) => `<${tag || 'a'} class="cc-act${cls ? ' ' + cls : ''}" ${attrs}><span class="cc-act-ic">${ic}</span><span class="cc-act-l">${label}</span></${tag || 'a'}>`;
       const links = [
-        firstEmail ? `<button class="cc-qbtn" data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"><span class="cc-qic">✉</span>Email</button>` : '',
-        num ? `<a class="cc-qbtn" href="tel:${esc(num)}" title="Call"><span class="cc-qic">☎</span>Call</a>` : '',
-        num ? `<a class="cc-qbtn" href="sms:${esc(num)}" title="Message"><span class="cc-qic">💬</span>Message</a>` : '',
-        (() => { const wa = num.replace(/[^\d]/g, ''); return wa.length >= 8 ? `<a class="cc-qbtn cc-qbtn-wa" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" title="Message on WhatsApp"><span class="cc-qic">🟢</span>WhatsApp</a>` : ''; })(),
-        p.telegram ? `<a class="cc-qbtn cc-qbtn-tg" href="${esc(socialUrl('telegram', p.telegram))}" target="_blank" rel="noopener noreferrer" title="Telegram"><span class="cc-qic">✈️</span>Telegram</a>` : '',
-        p.instagram ? `<a class="cc-qbtn cc-qbtn-ig" href="${esc(socialUrl('instagram', p.instagram))}" target="_blank" rel="noopener noreferrer" title="Instagram"><span class="cc-qic">📷</span>Instagram</a>` : '',
-        p.signal ? `<a class="cc-qbtn cc-qbtn-sig" href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"><span class="cc-qic">🔵</span>Signal</a>` : '',
-        addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"><span class="cc-qic">📍</span>Map</a>` : '',
-        addr ? `<a class="cc-qbtn" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"><span class="cc-qic">🧭</span>Directions</a>` : '',
-        `<button class="cc-qbtn cc-qbtn-invite" data-cc-invite="${esc(firstEmail || '')}" title="Invite to LifeFold"><span class="cc-qic">✦</span>Invite</button>`,
+        firstEmail ? act('', CICO.mail, 'Email', `data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"`, 'button') : '',
+        num ? act('', CICO.call, 'Call', `href="tel:${esc(num)}" title="Call"`) : '',
+        num ? act('', CICO.msg, 'Message', `href="sms:${esc(num)}" title="Message"`) : '',
+        (() => { const wa = num.replace(/[^\d]/g, ''); return wa.length >= 8 ? act('cc-act-wa', CICO.wa, 'WhatsApp', `href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" title="Message on WhatsApp"`) : ''; })(),
+        p.telegram ? act('cc-act-tg', CICO.msg, 'Telegram', `href="${esc(socialUrl('telegram', p.telegram))}" target="_blank" rel="noopener noreferrer" title="Telegram"`) : '',
+        p.instagram ? act('cc-act-ig', CICO.msg, 'Instagram', `href="${esc(socialUrl('instagram', p.instagram))}" target="_blank" rel="noopener noreferrer" title="Instagram"`) : '',
+        p.signal ? act('cc-act-sig', CICO.msg, 'Signal', `href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"`) : '',
+        addr ? act('', CICO.map, 'Map', `href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"`) : '',
+        addr ? act('', CICO.nav, 'Directions', `href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"`) : '',
+        act('cc-act-invite', CICO.invite, 'Invite', `data-cc-invite="${esc(firstEmail || '')}" title="Invite to LifeFold"`, 'button'),
       ].filter(Boolean).join('');
       return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
       <span class="cc-av-wrap">
