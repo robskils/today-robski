@@ -6231,12 +6231,18 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .ovt-tile { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:15px 8px; border:1px solid var(--line); border-radius:14px; background:var(--paper); color:var(--ink); cursor:pointer; transition:border-color .12s, background .12s, transform .08s; }
 /* Activated section: a border in the Life Space's colour + a coloured icon, so the
    tools that are on read at a glance. Hover / expanded states still win. (Robin.) */
-.ovt-tile.ovt-live { border-color:color-mix(in srgb,var(--c,var(--accent)) 55%,var(--line)); background:color-mix(in srgb,var(--c,var(--accent)) 5%,var(--paper)); }
-.ovt-tile.ovt-live .ovt-ic { color:var(--c,var(--accent)); }
-.ovt-tile:hover { border-color:var(--c,var(--accent)); background:var(--card); transform:translateY(-1px); }
-.ovt-tile.on { border-color:var(--c,var(--accent)); background:color-mix(in srgb,var(--c,var(--accent)) 15%,var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,var(--accent)) 42%,transparent); }
-.ovt-tile.on .ovt-ic { color:var(--c,var(--accent)); }
-.ovt-tile.ovt-off { opacity:.5; }
+/* On = clearly the highlight colour (a solid accent line + a faint accent ring, so
+   it reads as on even in dark mode); Off = a plain grey line with muted content.
+   Was a muted blend of the space's hue that you couldn't tell apart from off.
+   (Robin, 2026-10-30.) */
+.ovt-tile.ovt-live { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--paper)); box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 32%,transparent); }
+.ovt-tile.ovt-live .ovt-ic { color:var(--accent); }
+.ovt-tile:hover { border-color:var(--accent); background:var(--card); transform:translateY(-1px); }
+.ovt-tile.on { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 15%,var(--card)); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 42%,transparent); }
+.ovt-tile.on .ovt-ic { color:var(--accent); }
+.ovt-tile.ovt-off:hover .ovt-ic, .ovt-tile.ovt-off:hover .ovt-l { color:var(--ink); }
+.ovt-tile.ovt-off { border-color:var(--line-2); background:var(--paper); opacity:.72; }
+.ovt-tile.ovt-off .ovt-ic, .ovt-tile.ovt-off .ovt-l, .ovt-tile.ovt-off .ovt-c { color:var(--ink-3); }
 .ovt-ic { font-size:21px; line-height:1; }
 .ovt-l { font-size:13px; font-weight:600; text-align:center; line-height:1.2; }
 .ovt-c { position:absolute; top:7px; right:9px; font-size:12px; font-weight:700; color:var(--c,var(--accent)); line-height:1; }
