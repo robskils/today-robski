@@ -5337,6 +5337,17 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .home-head h1 { font-family:'Shippori Mincho',serif; font-size:clamp(30px,4.5vw,42px); font-weight:500; }
 .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
 .home-hi { min-width:0; }
+/* ── Shizu home hero: editorial, spacious, 静 breathing behind it. ── */
+.home { position:relative; }
+.home-kanji { position:absolute; top:-3vh; right:-1.5vw; z-index:0; font-family:'Shippori Mincho',serif; font-weight:800; font-size:min(64vh,640px); line-height:.78; color:var(--ink); opacity:.045; pointer-events:none; user-select:none; }
+.home-top, .home-scroll { position:relative; z-index:1; }
+.home .home-head { flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:0; margin:16px 0 10px; }
+.home-eyebrow { font-family:'Inter',sans-serif; font-size:12.5px; font-weight:700; letter-spacing:.26em; text-transform:uppercase; color:var(--accent); margin-bottom:18px; }
+.home .home-head h1 { font-family:'Shippori Mincho',serif; font-size:clamp(34px,5.6vw,62px); font-weight:500; line-height:1.12; letter-spacing:-.01em; max-width:20ch; text-wrap:balance; }
+.home .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
+.home-hi-sub { color:var(--ink-3); }
+.brand-kanji { font-family:'Shippori Mincho',serif; font-weight:700; font-size:1.3em; color:var(--ink); margin-right:.32em; vertical-align:-.07em; }
+@media (max-width:760px){ .home-kanji { font-size:84vw; top:2vh; right:-8vw; } }
 .home-date { margin-top:4px; font-size:16px; color:var(--accent); font-weight:600; letter-spacing:.01em; }
 /* The live time: a quiet serif note beside the date, set a touch larger so it
    reads as a gentle clock rather than a label. */

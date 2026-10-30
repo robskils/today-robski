@@ -4800,13 +4800,13 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em>Shizu</em></button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em>Shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -5221,6 +5221,19 @@ const firstName = () => {
 function homeDate() {
   return new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
 }
+// Shizu hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
+// we have it), then the big greeting followed by a muted second breath. Quiet,
+// editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
+function homePartOfDay() { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
+function homeEyebrow() {
+  const wd = new Date().toLocaleDateString(dloc(), { weekday: 'long' });
+  const p = homePartOfDay();
+  let wx = ''; try { const w = state.weather; if (w && w.code != null) { const m = WMO_WX(w.code); if (m && m[1]) wx = m[1].toLowerCase(); } } catch {}
+  const noun = p === 'night' ? 'night' : p;
+  const phrase = wx ? `a ${wx} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
+  return `${esc(wd)} · ${esc(phrase)}`;
+}
+function homeSubClause() { return ({ night: 'The day has folded away.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'Your day is nearly folded away.' })[homePartOfDay()]; }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so
 // it stays right without re-rendering the page.
 function homeTimeStr() { return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
@@ -6801,10 +6814,12 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
     <div class="home">
+      <div class="home-kanji" aria-hidden="true">静</div>
       <div class="home-top">
       <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
       <div class="home-head">
-        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}</h1></div>
+        <div class="home-eyebrow">${homeEyebrow()}</div>
+        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}.<span class="home-hi-sub"> ${homeSubClause()}</span></h1></div>
       </div>
       <div class="home-actionbar">
         <div class="home-ab-left"><span class="home-date">${homeDate()}</span><span class="home-time">${homeTimeStr()}</span>${weatherChipHtml()}</div>
@@ -26243,7 +26258,7 @@ const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(loc
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em>Shizu</em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
