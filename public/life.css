@@ -1273,19 +1273,24 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 /* ── Submitted review, read as a report ─────────────────────────────── */
 /* The report reads like a short magazine article. */
 .rr { --c:hsl(var(--h,40) 45% 50%); max-width:680px; }
-.rr-eyebrow { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--c); }
-.rr-headline { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(28px,4.2vw,36px); font-weight:600; line-height:1.08; letter-spacing:-.01em; color:var(--ink); margin:8px 0 2px; text-wrap:balance; }
+/* The masthead: the eyebrow sits over a fine accent rule, like a publication's. */
+.rr-eyebrow { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--c); padding-bottom:12px; border-bottom:1.5px solid color-mix(in srgb,var(--c) 45%,var(--line)); }
+.rr-headline { font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(30px,4.6vw,40px); font-weight:600; line-height:1.06; letter-spacing:-.015em; color:var(--ink); margin:16px 0 2px; text-wrap:balance; }
 .rr-kicker { font-size:15px; font-weight:600; color:var(--ink-2); margin-top:2px; }
 .rr-submitted { font-size:12.5px; color:var(--ink-3); margin-top:5px; }
 .rr-standfirst { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; line-height:1.45; color:var(--ink-2); margin:12px 0 0; }
 .rr-standfirst b { color:var(--ink); font-weight:600; }
 .rr-byline { margin-top:12px; font-size:13.5px; color:var(--ink-3); } .rr-byline b { color:var(--ink-2); }
 .rr-byline-emoji { font-size:16px; }
-/* Figures strip: the numbers as an infographic band. */
-.rr-figs { display:flex; flex-wrap:wrap; gap:10px 28px; margin:22px 0; padding:18px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-.rr-fig { display:flex; flex-direction:column; gap:2px; }
-.rr-fig-n { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:600; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
-.rr-fig-l { font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+/* A caption, magazine-style: small italic serif under a diagram or band. */
+.rr-caption { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:14.5px; line-height:1.5; color:var(--ink-3); text-align:center; margin:9px auto 0; max-width:48ch; }
+.rr-label { display:block; text-align:center; font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--c); margin-bottom:4px; }
+/* Figures: the numbers as a proper infographic band - a tinted card, big serif
+   numerals, centred, each on its own with room to breathe. (Robin, 2026-10-30.) */
+.rr-figs { display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start; gap:18px 40px; margin:26px 0 8px; padding:24px 22px; border-radius:18px; background:linear-gradient(180deg,color-mix(in srgb,var(--c) 8%,var(--card)),var(--card) 85%); border:1px solid color-mix(in srgb,var(--c) 20%,var(--line)); }
+.rr-fig { display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; }
+.rr-fig-n { font-family:'Cormorant Garamond',serif; font-size:clamp(34px,5vw,42px); font-weight:600; line-height:.95; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.rr-fig-l { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
 .rr-fig-d { font-size:12px; font-weight:700; margin-left:6px; vertical-align:middle; font-variant-numeric:tabular-nums; }
 .rr-fig-d.up { color:var(--done); } .rr-fig-d.down { color:var(--ink-3); }
 /* Trends infographic: sparklines + move-on-last. */
@@ -1335,8 +1340,8 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-tabpanel { margin-top:2px; }
 .rr-read p { font-size:16.5px; line-height:1.62; color:var(--ink); margin:0 0 12px; }
 .rr-read p:last-child { margin-bottom:0; }
-.rr-wheel { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin:2px 0 16px; }
-.rr-wheel-chart { flex:none; width:180px; max-width:60vw; }
+.rr-wheel { display:flex; align-items:center; gap:26px; flex-wrap:wrap; margin:2px 0 16px; }
+.rr-wheel-chart { flex:none; width:212px; max-width:62vw; }
 .rr-wheel-comm { font-size:15px; line-height:1.55; color:var(--ink-2); margin:0 0 12px; } .rr-wheel-comm b { color:var(--ink); }
 .rr-wheel-read { flex:1 1 260px; min-width:0; }
 /* Dashed "last time" outline laid over the current wheel. */
@@ -1370,6 +1375,13 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-q { font-size:13.5px; font-weight:600; color:var(--ink-3); margin-bottom:4px; }
 .rr-a { font-size:16px; line-height:1.6; color:var(--ink); white-space:pre-wrap; }
 .rr-free { font-size:16px; line-height:1.6; color:var(--ink); margin-top:6px; }
+/* The inspiring sign-off: a centred serif line between two short accent rules,
+   with the LifeFold mark beneath - a magazine's closing flourish. */
+.rr-coda { display:flex; flex-direction:column; align-items:center; gap:14px; margin:40px 0 8px; text-align:center; }
+.rr-coda-rule { width:54px; height:2px; border-radius:2px; background:color-mix(in srgb,var(--c) 70%,transparent); }
+.rr-coda-line { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-size:22px; line-height:1.4; color:var(--ink-2); margin:0; max-width:34ch; text-wrap:balance; }
+.rr-coda-mark { line-height:0; opacity:.8; }
+.rr-coda-mark .brand-mark { width:30px; height:30px; color:var(--c); }
 .rr-foot { margin-top:28px; padding-top:20px; border-top:1px solid var(--line); display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .rr-foot-note { font-size:12.5px; color:var(--ink-3); }
 .rr-edit-btn { font-size:13.5px; }

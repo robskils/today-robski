@@ -19535,7 +19535,7 @@ function renderReviewReport() {
   const prevDone = prevRev ? (prevRev.tasksDone != null ? prevRev.tasksDone : ((prevRev.mirror || {}).tasksDone || []).length) : null;
   const prevWheel = prevRev ? Math.min(wheelAvg(prevRev.wheel), 5) : null;
   const figs = [doneN ? [doneN, 'ticked off', dTag(doneN, prevDone)] : null, nAreas > 1 ? [nAreas, 'areas moved', ''] : null, practicesK ? [practicesK, 'practices kept', ''] : null, goalMoved ? [goalMoved, 'toward goals', ''] : null, wAvg ? [`${wAvg}/5`, 'wheel of life', dTag(wAvg, prevWheel)] : null].filter(Boolean);
-  const figsHtml = figs.length ? `<div class="rr-figs">${figs.map(([n, l, d]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
+  const figsHtml = figs.length ? `<span class="rr-label">By the numbers</span><div class="rr-figs">${figs.map(([n, l, d]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
   // The record - the fuel behind the report - as tabs (By page / Goals / In
   // your words), inside a collapsible section below the commentary.
   const recTabs = [];
@@ -19552,6 +19552,10 @@ function renderReviewReport() {
   // Forward-looking coda: what's on the horizon now that you've looked back.
   const dlItems = reviewDeadlineItems(p);
   const deadlinesHtml = dlItems.length ? rrSec('deadlines', `On the horizon · ${dlItems.length}`, `<div class="rv-dl-list">${reviewDeadlineRows(p)}</div>`) : '';
+  // A quiet, inspiring sign-off at the foot of the report - echoes the tagline where
+  // it belongs (the footer), and leaves you looking forward. (Robin, 2026-10-30.)
+  const pw = PERIOD_WORD[p.rtype] || 'period';
+  const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
   $('#pane').innerHTML = `
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
@@ -19572,6 +19576,7 @@ function renderReviewReport() {
       ${(doneN || practicesK) ? rrSec('moved', 'What moved', `${doneN ? reviewWinsHtml(m, p, true) : ''}${reviewPracticesHtml(m)}`) : ''}
       ${recordHtml}
       ${deadlinesHtml}
+      <div class="rr-coda"><span class="rr-coda-rule"></span><p class="rr-coda-line">${esc(codaLine)}</p><span class="rr-coda-mark">${MARK}</span></div>
       <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
     </article>`;
   loadThumbs();
