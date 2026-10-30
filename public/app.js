@@ -10012,7 +10012,7 @@ function areaOverviewHtml(area, c, blocks) {
     // Each piece is a clear ON / OFF: the switch (top-right) turns it on or off -
     // OFF greys the tile and hides the section from the Life Space; the body opens
     // its settings (sharing, add actions) when it's on. (Robin, 2026-10-30.)
-    return `<div class="ovt-tile${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" role="group" aria-label="${esc(SEC_LABELS[p.k] || p.k)}">
+    return `<div class="ovt-tile ovt-set${openT ? ' on' : ''}${off ? ' ovt-off' : ' ovt-live'}" role="group" aria-label="${esc(SEC_LABELS[p.k] || p.k)}">
       <button class="ovt-main" data-ov-tile="${esc(p.k)}" aria-expanded="${openT}" title="${off ? 'Off' : 'Open settings'}"><span class="ovt-ic">${p.ic}</span><span class="ovt-l">${esc(SEC_LABELS[p.k] || p.k)}</span>${n ? `<span class="ovt-c">${n}</span>` : ''}</button>
       <button class="ovt-switch${off ? '' : ' on'}" data-area-sec-toggle="${esc(p.k)}" role="switch" aria-checked="${off ? 'false' : 'true'}" title="${off ? 'Off - tap to show it on this Life Space' : 'On - tap to turn it off'}"><span class="ovt-sw-knob"></span></button>
     </div>`;
