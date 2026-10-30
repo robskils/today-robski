@@ -4648,7 +4648,7 @@ export default {
       // during the transition: each apex (+ www) is the public marketing site and
       // each per-user subdomain is the app. Auth is the JWT, not the host, so the
       // app itself is host-agnostic - this is the only place the apex is named.
-      const APP_DOMAINS = ['daybook.fyi', 'lifebook.fyi', 'lifefold.co'];
+      const APP_DOMAINS = ['daybook.fyi', 'lifebook.fyi', 'lifefold.co', 'shizu.fyi'];
       const isApex = APP_DOMAINS.includes(host) || APP_DOMAINS.some((d) => host === 'www.' + d);
       const isLife = APP_DOMAINS.some((d) => host.endsWith('.' + d)) && !isApex;
       // Public marketing pages in English, and their localised counterparts

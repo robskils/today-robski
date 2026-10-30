@@ -62,6 +62,18 @@ custom_domain = true
 pattern = "www.lifefold.co"
 custom_domain = true
 
+# shizu.fyi: the Shizu rebrand domain, served in PARALLEL with lifefold.co (which
+# keeps working so the installed PWA there doesn't break). custom_domain because
+# the zone is fresh - wrangler provisions the proxied DNS record + cert on deploy.
+# Also add 'shizu.fyi' to APP_DOMAINS in worker/index.js. (Robin, 2026-10-30.)
+[[routes]]
+pattern = "shizu.fyi"
+custom_domain = true
+
+[[routes]]
+pattern = "www.shizu.fyi"
+custom_domain = true
+
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
