@@ -26899,7 +26899,7 @@ function showRequired2fa() {
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
   const mark = '<div class="gate2-mark"><em>Shizu</em></div>';
-  const head = (txt) => `<div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
+  const head = (txt) => `<div style="font-family:'Hanken Grotesk',sans-serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
   if (st.recovery) {
