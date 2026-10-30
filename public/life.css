@@ -2,19 +2,21 @@
    Large type throughout; light and dark defined once each. */
 
 :root[data-theme='light'] {
-  --paper:#ece2cf; --paper-2:#e4d9c0; --card:#f6efdd;
-  --ink:#1b1820; --ink-2:rgba(27,24,32,.64); --ink-3:rgba(27,24,32,.42);
-  --line:rgba(27,24,32,.12); --line-2:rgba(27,24,32,.22); --pat-ink:rgba(27,24,32,.05); --fold-pat:rgba(168,132,74,.5); --body-crease:rgba(120,92,45,.04); --facet-a:rgba(255,252,244,.55); --facet-b:rgba(120,92,45,.055);
+  /* Cool slate neutrals (60%) instead of warm beige - the coral accent (10%) now
+     pops against them. (Robin, 2026-10-30: the beige was the problem.) */
+  --paper:#d7dde6; --paper-2:#c7cfda; --card:#eef2f7;
+  --ink:#1a2130; --ink-2:rgba(26,33,48,.64); --ink-3:rgba(26,33,48,.42);
+  --line:rgba(26,33,48,.11); --line-2:rgba(26,33,48,.20); --pat-ink:rgba(26,33,48,.05); --fold-pat:rgba(92,112,140,.42); --body-crease:rgba(42,64,98,.05); --facet-a:rgba(255,255,255,.55); --facet-b:rgba(42,64,98,.055);
   --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
-  --note-surface:rgba(255,253,248,.66); --note-edge:rgba(27,24,32,.10);
+  --note-surface:rgba(250,252,255,.60); --note-edge:rgba(26,33,48,.10);
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
-  --shadow:0 1px 2px rgba(27,24,32,.05),0 5px 12px -4px rgba(27,24,32,.09),0 18px 34px -16px rgba(27,24,32,.16);
-  /* Frosted glass for the big panels - sunlit, translucent, a bright top edge.
+  --shadow:0 1px 2px rgba(26,36,56,.06),0 5px 12px -4px rgba(26,36,56,.11),0 18px 34px -16px rgba(26,36,56,.22);
+  /* Frosted glass for the big panels - cool, translucent, a bright top edge.
      Applied to container surfaces only (not the 373 --card controls). (Robin, 2026-10-30.) */
-  --glass-bg:linear-gradient(158deg, rgba(255,253,248,.74), rgba(255,249,240,.56));
-  --glass-edge:rgba(255,255,255,.62);
-  --glass-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 2px 7px rgba(92,64,24,.06), 0 20px 44px -18px rgba(92,64,24,.24);
+  --glass-bg:linear-gradient(158deg, rgba(253,254,255,.70), rgba(244,248,253,.52));
+  --glass-edge:rgba(255,255,255,.68);
+  --glass-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 2px 7px rgba(30,45,70,.07), 0 20px 44px -18px rgba(30,45,70,.26);
 }
 :root[data-theme='dark'] {
   --paper:#111327; --paper-2:#1a1c31; --card:#1a1c31;
@@ -35,18 +37,18 @@
    warm paper stays everywhere else (it's the brand); this is light theme + the
    Page view only. (Robin: too much grey gets you down; white's better here.) */
 :root[data-theme='light'] body[data-view='area'] {
-  --paper:#efe6d2; --paper-2:#e7dcc2; --card:#f8f1e0;
+  --paper:#e4e9ef; --paper-2:#d4dbe4; --card:#f4f7fb;
 }
 /* The page is aged paper: a whisper of grain and a soft top light, so it reads
    like an almanac, not an office doc. Light theme only. (Robin.) */
 :root[data-theme='light'] body {
   background:
-    radial-gradient(120% 95% at 12% -14%, rgba(255,214,150,.42), transparent 54%),
-    radial-gradient(95% 85% at 99% 2%, rgba(255,172,146,.24), transparent 54%),
-    radial-gradient(92% 92% at 94% 114%, rgba(190,158,255,.10), transparent 60%),
-    radial-gradient(88% 88% at 2% 116%, rgba(150,208,186,.12), transparent 60%),
-    radial-gradient(140% 120% at 50% -12%, rgba(255,251,240,.55), transparent 56%),
-    repeating-linear-gradient(0deg, rgba(120,92,45,.022) 0 2px, transparent 2px 4px),
+    radial-gradient(120% 95% at 12% -14%, rgba(178,204,246,.32), transparent 55%),
+    radial-gradient(95% 85% at 99% 2%, rgba(203,180,236,.17), transparent 55%),
+    radial-gradient(92% 92% at 94% 114%, rgba(126,158,212,.22), transparent 60%),
+    radial-gradient(88% 88% at 2% 116%, rgba(116,184,178,.13), transparent 60%),
+    radial-gradient(140% 120% at 50% -14%, rgba(255,255,255,.5), transparent 56%),
+    repeating-linear-gradient(0deg, rgba(42,64,98,.02) 0 2px, transparent 2px 4px),
     var(--paper);
   background-attachment:fixed, fixed, fixed, fixed, fixed, scroll, scroll;
 }
