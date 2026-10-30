@@ -6335,7 +6335,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .ov-act-btn:last-child { border-bottom:0; }
 .ov-act-btn:hover .ov-act-t { color:var(--accent); }
 .ov-muted { color:var(--ink-3); font-size:14px; padding:4px 0; }
-.ov-sections { margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+/* Sections leads the overview now, so no top divider (the flex gap spaces it). */
 .ov-secgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:6px 14px; }
 .ov-sectog { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-2); cursor:pointer; padding:3px 0; }
 .ov-sectog input { width:17px; height:17px; accent-color:var(--accent); flex:none; }
