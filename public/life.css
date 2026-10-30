@@ -7970,19 +7970,20 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    where the grip is hidden and only the arrow needs room. */
 .prose.prose-heads { padding-left:48px; }
 @media (max-width:760px){ .prose.prose-heads { padding-left:28px; } }
-/* The fold arrow: a clear little chip, not a faint glyph. The grip, the chip and
-   the title all sit centred on the heading's first line: `top` is half the line
-   height (--hsize carries the font-size per level, line-height 1.75, so ×0.875 is
-   the line's middle) and translateY(-50%) centres the chip on it. The ▼ glyph sits
-   a touch smaller than the chip so the triangle reads clean and Notion-like, not
-   edge-to-edge. (Robin, 2026-10-29: the triangle was a touch too big.) */
-.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent-ink); background:var(--accent); cursor:pointer; user-select:none; font-size:13px; line-height:1; border-radius:6px; transition:filter .12s, transform .12s; }
-.fold-toggle:hover { filter:brightness(1.08); transform:translateY(-50%) scale(1.06); }
+/* The fold arrow: just the triangle now, no chip - in the highlight colour. It
+   keeps a 22px hit area (invisible) so it's still easy to tap, and sits centred on
+   the heading's first line (`top` is half the line height - --hsize per level,
+   line-height 1.75, so ×0.875 is the middle - and translateY(-50%) centres it).
+   (Robin, 2026-10-30: lose the square, keep the arrow in the highlight colour.) */
+.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); background:none; cursor:pointer; user-select:none; font-size:13px; line-height:1; transition:transform .12s; }
+.fold-toggle:hover { transform:translateY(-50%) scale(1.18); }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it
    stays a pointer-device gesture; on touch it's hidden and the section stacks. */
-.head-grip { position:absolute; left:-48px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:.7; transition:opacity .12s, color .12s; }
-.prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.9; }
+/* The drag-to-reorder dots stay hidden until you hover the heading - no clutter
+   the rest of the time. (Robin, 2026-10-30.) */
+.head-grip { position:absolute; left:-48px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
+.prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.85; }
 .head-grip:hover { opacity:1 !important; color:var(--accent); }
 .head-grip:active { cursor:grabbing; }
 @media (hover:none){ .head-grip { display:none; } }
