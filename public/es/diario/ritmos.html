@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ritmos, no listas de tareas</title>
-<meta name="description" content="La mayoría de las herramientas de productividad acumulan más listas. LifeFold trabaja con tus ritmos y deja que una pequeña maquinaria silenciosa funcione de fondo, para que estés al día sin que nadie te machaque.">
-<link rel="canonical" href="https://lifefold.co/es/diario/ritmos">
-<link rel="alternate" hreflang="en" href="https://lifefold.co/blog/rhythms">
-<link rel="alternate" hreflang="pt-PT" href="https://lifefold.co/pt/jornal/ritmos">
-<link rel="alternate" hreflang="fr" href="https://lifefold.co/fr/journal/rythmes">
-<link rel="alternate" hreflang="es" href="https://lifefold.co/es/diario/ritmos">
-<link rel="alternate" hreflang="x-default" href="https://lifefold.co/blog/rhythms">
+<meta name="description" content="La mayoría de las herramientas de productividad acumulan más listas. Shizu trabaja con tus ritmos y deja que una pequeña maquinaria silenciosa funcione de fondo, para que estés al día sin que nadie te machaque.">
+<link rel="canonical" href="https://shizu.fyi/es/diario/ritmos">
+<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/rhythms">
+<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/ritmos">
+<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/rythmes">
+<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/ritmos">
+<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/rhythms">
 <meta property="og:title" content="Ritmos, no listas de tareas">
 <meta property="og:description" content="Trabaja con tus ritmos y deja que una pequeña maquinaria silenciosa mantenga todo en marcha, para que estés al día sin que nadie te machaque.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://lifefold.co/es/diario/ritmos">
+<meta property="og:url" content="https://shizu.fyi/es/diario/ritmos">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,7 +47,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>LifeFold uses analytics cookies to understand how the site is used - nothing personal, and never any of your LifeFold content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,7 +65,7 @@
   <div class="wrap nav-in">
     <a class="brand" href="/es"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a>
     <ul class="nav-links">
-      <li><a href="/es#idea">Tu LifeFold</a></li>
+      <li><a href="/es#idea">Tu Shizu</a></li>
       <li><a href="/es#tools">Herramientas</a></li>
       <li><a href="/es#private">Privacidad</a></li>
       <li><a href="/es/diario" class="on">Diario</a></li>
@@ -81,7 +81,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/es/diario">← El Diario de LifeFold</a>
+      <a class="back-link" href="/es/diario">← El Diario de Shizu</a>
       <div class="eyebrow">Formas de trabajar</div>
       <h1>Ritmos, no listas de tareas</h1>
       <div class="article-meta">
@@ -95,13 +95,13 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">La mayoría de las herramientas de productividad responden a una vida ajetreada con más listas. LifeFold prueba lo contrario: trabajar con tus ritmos y dejar que una pequeña maquinaria silenciosa mantenga todo en marcha, para que estés al día sin que nadie te machaque.</p>
+      <p class="lede">La mayoría de las herramientas de productividad responden a una vida ajetreada con más listas. Shizu prueba lo contrario: trabajar con tus ritmos y dejar que una pequeña maquinaria silenciosa mantenga todo en marcha, para que estés al día sin que nadie te machaque.</p>
 
       <p>Todos hemos sentido la cinta de correr de la productividad: una lista más larga, una aplicación nueva, un arrebato de orden y, quince días después, el lento regreso al caos. La lista nunca fue el problema. La vida no llega como una lista plana: llega en ciclos.</p>
 
       <h2>La vida funciona en ciclos</h2>
       <p>Tus días tienen una forma. También tus semanas, tus estaciones, las personas con las que quieres seguir cerca, los hábitos que intentas mantener. Una buena herramienta debería adaptarse a esos ritmos en lugar de aplanarlos en un único montón indiferenciado de tareas que, de algún modo, vencen todas ahora mismo.</p>
-      <p>Por eso LifeFold no es, a propósito, un horario rígido. Si estás concentrado, sigue así: un bloque puede quedarse flotando hasta que el día decida dónde cae. Aquí nada te reprocha una tarde que te saltaste ni rompe una racha para castigarte. Orientación, no deuda.</p>
+      <p>Por eso Shizu no es, a propósito, un horario rígido. Si estás concentrado, sigue así: un bloque puede quedarse flotando hasta que el día decida dónde cae. Aquí nada te reprocha una tarde que te saltaste ni rompe una racha para castigarte. Orientación, no deuda.</p>
 
       <blockquote>Configúralo una vez y deja que funcione en silencio, de fondo.</blockquote>
 
@@ -111,7 +111,7 @@
         <li><strong>Trabajo recurrente que entiende la cadencia.</strong> «Hablar con esta persona cada tres meses» se recalcula desde el día en que de verdad hablasteis, no desde el día en que venció, así que marcarlo tarde te da tres meses reales, no cuatro días.</li>
         <li><strong>Revisiones que llegan solas.</strong> Una revisión semanal o mensual llega como un ritmo, no como una fecha que tengas que acordarte de fijar.</li>
         <li><strong>Un resumen matinal</strong> que reúne tu día sin hacer ruido - calendario, lo más importante, una frase para pensar - y llega una sola vez, temprano, en lugar de cien avisos.</li>
-        <li><strong>Mostrar, no gritar.</strong> LifeFold te enseña lo que de verdad te necesita hoy y deja que lo demás espere, apartado, hasta que le toque de verdad.</li>
+        <li><strong>Mostrar, no gritar.</strong> Shizu te enseña lo que de verdad te necesita hoy y deja que lo demás espere, apartado, hasta que le toque de verdad.</li>
       </ul>
 
       <h2>Para que estés al día</h2>
@@ -121,7 +121,7 @@
 
     <div class="article-end">
       <h3>Compruébalo tú mismo</h3>
-      <p>LifeFold está en acceso anticipado, solo con invitación. Solicita una invitación y nos pondremos en contacto contigo muy pronto.</p>
+      <p>Shizu está en acceso anticipado, solo con invitación. Solicita una invitación y nos pondremos en contacto contigo muy pronto.</p>
       <a class="btn btn-primary" href="/es#invite">Solicitar una invitación →</a>
     </div>
   </article>
@@ -131,16 +131,16 @@
   <div class="wrap foot-in">
     <div class="foot-brand"><a class="brand" href="/es"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a><span class="foot-tag">Para una vida bien vivida</span></div>
     <ul class="foot-links">
-      <li><a href="/es#idea">Tu LifeFold</a></li>
+      <li><a href="/es#idea">Tu Shizu</a></li>
       <li><a href="/es#tools">Herramientas</a></li>
       <li><a href="/es/diario">Diario</a></li>
       <li><a href="/es#invite">Solicitar una invitación</a></li>
       <li><a href="/es/privacidad">Privacidad</a></li>
       <li><a href="/es/terminos">Términos</a></li>
-      <li><a href="mailto:contact@lifefold.co">Contacto</a></li>
+      <li><a href="mailto:contact@shizu.fyi">Contacto</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">¿Dudas? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
+    <div class="foot-meta">¿Dudas? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
   </div>
 </footer>
 

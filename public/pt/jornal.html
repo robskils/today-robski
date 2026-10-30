@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>O Jornal do LifeFold</title>
-<meta name="description" content="Notas sobre a construção do LifeFold - um sistema operativo de vida, calmo, privado e tudo-num-só, criado por uma equipa minúscula em Lisboa.">
-<link rel="canonical" href="https://lifefold.co/pt/jornal">
-<link rel="alternate" hreflang="en" href="https://lifefold.co/blog">
-<link rel="alternate" hreflang="pt-PT" href="https://lifefold.co/pt/jornal">
-<link rel="alternate" hreflang="fr" href="https://lifefold.co/fr/journal">
-<link rel="alternate" hreflang="es" href="https://lifefold.co/es/diario">
-<link rel="alternate" hreflang="x-default" href="https://lifefold.co/blog">
-<meta property="og:title" content="O Jornal do LifeFold">
-<meta property="og:description" content="Notas sobre a construção do LifeFold - um sistema operativo de vida, calmo, privado e tudo-num-só, criado em Lisboa.">
+<title>O Jornal do Shizu</title>
+<meta name="description" content="Notas sobre a construção do Shizu - um sistema operativo de vida, calmo, privado e tudo-num-só, criado por uma equipa minúscula em Lisboa.">
+<link rel="canonical" href="https://shizu.fyi/pt/jornal">
+<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog">
+<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal">
+<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal">
+<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario">
+<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog">
+<meta property="og:title" content="O Jornal do Shizu">
+<meta property="og:description" content="Notas sobre a construção do Shizu - um sistema operativo de vida, calmo, privado e tudo-num-só, criado em Lisboa.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://lifefold.co/pt/jornal">
+<meta property="og:url" content="https://shizu.fyi/pt/jornal">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,7 +47,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>LifeFold uses analytics cookies to understand how the site is used - nothing personal, and never any of your LifeFold content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,7 +65,7 @@
   <div class="wrap nav-in">
     <a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a>
     <ul class="nav-links">
-      <li><a href="/pt#idea">O seu LifeFold</a></li>
+      <li><a href="/pt#idea">O seu Shizu</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal" class="on">Jornal</a></li>
@@ -80,8 +80,8 @@
 
 <main class="wrap">
   <div class="blog-top">
-    <div class="eyebrow">O Jornal do LifeFold</div>
-    <h1>Notas sobre a construção do LifeFold</h1>
+    <div class="eyebrow">O Jornal do Shizu</div>
+    <h1>Notas sobre a construção do Shizu</h1>
     <p>Um sistema operativo de vida, calmo, privado e tudo-num-só - e a equipa pequena e sem pressas, em Lisboa, que o constrói. Aqui fica o que vamos pensando pelo caminho.</p>
   </div>
 
@@ -103,7 +103,7 @@
         <span class="dot">·</span><span>4 min de leitura</span>
       </div>
       <h2>Uma tabela, ou uma nota?</h2>
-      <p>Uma nota é para palavras que seguem em frente; uma tabela é para factos que se repetem. Quando recorrer a cada uma, e como alternar entre elas no LifeFold sem perder nada.</p>
+      <p>Uma nota é para palavras que seguem em frente; uma tabela é para factos que se repetem. Quando recorrer a cada uma, e como alternar entre elas no Shizu sem perder nada.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/instalar-como-app">
@@ -112,8 +112,8 @@
         <span class="dot">·</span><span>Outubro de 2026</span>
         <span class="dot">·</span><span>3 min de leitura</span>
       </div>
-      <h2>Instale o LifeFold como uma aplicação</h2>
-      <p>O LifeFold corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline e com notificações. Eis como, no Chrome, Brave, Edge, Safari, Windows, Mac, iPhone e Android.</p>
+      <h2>Instale o Shizu como uma aplicação</h2>
+      <p>O Shizu corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline e com notificações. Eis como, no Chrome, Brave, Edge, Safari, Windows, Mac, iPhone e Android.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/ligar-contas">
@@ -123,7 +123,7 @@
         <span class="dot">·</span><span>4 min de leitura</span>
       </div>
       <h2>Ligue o seu email e calendário</h2>
-      <p>O LifeFold é um verdadeiro cliente de email. Ligue o Gmail, o Google Workspace, o Yahoo ou qualquer caixa de correio IMAP, e o seu calendário, para que tudo viva num só lugar calmo e se mantenha em sincronia.</p>
+      <p>O Shizu é um verdadeiro cliente de email. Ligue o Gmail, o Google Workspace, o Yahoo ou qualquer caixa de correio IMAP, e o seu calendário, para que tudo viva num só lugar calmo e se mantenha em sincronia.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/convidar-amigos">
@@ -132,8 +132,8 @@
         <span class="dot">·</span><span>Outubro de 2026</span>
         <span class="dot">·</span><span>3 min de leitura</span>
       </div>
-      <h2>Convidar amigos para o LifeFold</h2>
-      <p>O LifeFold cresce de boca em boca. Como convidar um amigo - um email e uma nota, sem códigos para escrever - e como lhe pode oferecer seis meses de Premium.</p>
+      <h2>Convidar amigos para o Shizu</h2>
+      <p>O Shizu cresce de boca em boca. Como convidar um amigo - um email e uma nota, sem códigos para escrever - e como lhe pode oferecer seis meses de Premium.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/consciencia">
@@ -143,7 +143,7 @@
         <span class="dot">·</span><span>4 min de leitura</span>
       </div>
       <h2>Consciência, e uma pitada de reflexão</h2>
-      <p>Uma grande parte do LifeFold é trazer a sua vida à vista - e, onde ajuda, uma pitada de reflexão. Objetivos, uma visão, revisões: tudo opcional, tudo ocultável, e genuinamente útil para as áreas que merecem uma pausa.</p>
+      <p>Uma grande parte do Shizu é trazer a sua vida à vista - e, onde ajuda, uma pitada de reflexão. Objetivos, uma visão, revisões: tudo opcional, tudo ocultável, e genuinamente útil para as áreas que merecem uma pausa.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/ritmos">
@@ -153,7 +153,7 @@
         <span class="dot">·</span><span>4 min de leitura</span>
       </div>
       <h2>Ritmos, não listas de tarefas</h2>
-      <p>A maioria das ferramentas de produtividade acrescenta mais listas. O LifeFold trabalha antes com os seus ritmos - e deixa uma pequena máquina discreta correr em segundo plano, para que fique por cima de tudo sem a importunação.</p>
+      <p>A maioria das ferramentas de produtividade acrescenta mais listas. O Shizu trabalha antes com os seus ritmos - e deixa uma pequena máquina discreta correr em segundo plano, para que fique por cima de tudo sem a importunação.</p>
       <span class="more">Ler o artigo →</span>
     </a>
     <a class="post-card" href="/pt/jornal/bem-vindo">
@@ -162,8 +162,8 @@
         <span class="dot">·</span><span>Outubro de 2026</span>
         <span class="dot">·</span><span>3 min de leitura</span>
       </div>
-      <h2>Bem-vindo ao LifeFold</h2>
-      <p>O que é o LifeFold, num minuto: o seu email, calendário, notas e tarefas num só lugar, ligados através das áreas da sua vida. Uma visita rápida - e porque está a ser construído, devagar e à mão, em Lisboa.</p>
+      <h2>Bem-vindo ao Shizu</h2>
+      <p>O que é o Shizu, num minuto: o seu email, calendário, notas e tarefas num só lugar, ligados através das áreas da sua vida. Uma visita rápida - e porque está a ser construído, devagar e à mão, em Lisboa.</p>
       <span class="more">Ler o artigo →</span>
     </a>
   </div>
@@ -173,16 +173,16 @@
   <div class="wrap foot-in">
     <div class="foot-brand"><a class="brand" href="/pt"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="/pt#idea">O seu LifeFold</a></li>
+      <li><a href="/pt#idea">O seu Shizu</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
       <li><a href="/pt#invite">Pedir um convite</a></li>
       <li><a href="/pt/privacidade">Privacidade</a></li>
       <li><a href="/pt/termos">Termos</a></li>
-      <li><a href="mailto:contact@lifefold.co">Contacto</a></li>
+      <li><a href="mailto:contact@shizu.fyi">Contacto</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Dúvidas? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
   </div>
 </footer>
 

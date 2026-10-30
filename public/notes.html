@@ -41,7 +41,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>LifeFold uses analytics cookies to understand how the site is used - nothing personal, and never any of your LifeFold content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);

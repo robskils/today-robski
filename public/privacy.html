@@ -5,14 +5,14 @@
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="icon" type="image/png" href="/icon-192.v12.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v12.png">
-<title>Privacy Policy · LifeFold</title>
+<title>Privacy Policy · Shizu</title>
 <meta name="robots" content="index">
-<link rel="canonical" href="https://lifefold.co/privacy">
-<link rel="alternate" hreflang="en" href="https://lifefold.co/privacy">
-<link rel="alternate" hreflang="pt-PT" href="https://lifefold.co/pt/privacidade">
-<link rel="alternate" hreflang="fr" href="https://lifefold.co/fr/confidentialite">
-<link rel="alternate" hreflang="es" href="https://lifefold.co/es/privacidad">
-<link rel="alternate" hreflang="x-default" href="https://lifefold.co/privacy">
+<link rel="canonical" href="https://shizu.fyi/privacy">
+<link rel="alternate" hreflang="en" href="https://shizu.fyi/privacy">
+<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/privacidade">
+<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/confidentialite">
+<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/privacidad">
+<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/privacy">
 <style>
   :root { --paper:#efeae0; --paper-2:#e7e0d2; --card:#fbf9f4; --ink:#211c17; --ink-2:#574e44; --ink-3:#8b7f72; --line:#e4ddcf; --rust:#a8844a; }
   * { box-sizing:border-box; }
@@ -66,7 +66,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>LifeFold uses analytics cookies to understand how the site is used - nothing personal, and never any of your LifeFold content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -80,53 +80,53 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="brand" href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>LifeFold</b></a>
+  <a class="brand" href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Shizu</b></a>
   <h1>Privacy Policy</h1>
   <p class="updated">Last updated 8 September 2026</p>
 
-  <p>LifeFold (<a href="https://lifefold.co">daybook.fyi</a>) is a private, calm home for your day - your calendar, tasks, notes, mail and more, in one place. This policy explains what we collect, how we use it, and the control you have. LifeFold is operated by Robin Lumley-Savile. Questions? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a>.</p>
+  <p>Shizu (<a href="https://shizu.fyi">daybook.fyi</a>) is a private, calm home for your day - your calendar, tasks, notes, mail and more, in one place. This policy explains what we collect, how we use it, and the control you have. Shizu is operated by Robin Lumley-Savile. Questions? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a>.</p>
 
   <div class="callout">
     <p style="margin:0 0 8px"><b>Your data belongs to you. We help you keep it in order - we don't profit from it.</b></p>
-    <p style="margin:0">LifeFold is paid for by its subscribers, never by advertisers and never by selling what you put in. We don't read your notes, we don't pass on your information, and we never use it to train AI. Your LifeFold is private to you - no other member can see it, and we don't look through it either. And because it's yours, you're never locked in: take everything with you whenever you want, or delete it for good in a single click.</p>
+    <p style="margin:0">Shizu is paid for by its subscribers, never by advertisers and never by selling what you put in. We don't read your notes, we don't pass on your information, and we never use it to train AI. Your Shizu is private to you - no other member can see it, and we don't look through it either. And because it's yours, you're never locked in: take everything with you whenever you want, or delete it for good in a single click.</p>
   </div>
 
   <h2>What we collect</h2>
   <ul>
     <li><b>Your account</b> - the email address you sign in with and the name you choose.</li>
-    <li><b>What you create</b> - the tasks, notes, tables, events, journal entries and other content you add to LifeFold, so we can store it and show it back to you.</li>
+    <li><b>What you create</b> - the tasks, notes, tables, events, journal entries and other content you add to Shizu, so we can store it and show it back to you.</li>
     <li><b>Connected accounts</b> - if you choose to connect a service (such as Google Calendar or an email mailbox), the credentials needed to access it on your behalf, stored encrypted.</li>
   </ul>
 
   <h2>Google user data</h2>
-  <p>If you connect your Google Calendar, LifeFold requests read and write access to your calendar events (the <code>calendar.events</code> scope) and your Google account email address, only so that:</p>
+  <p>If you connect your Google Calendar, Shizu requests read and write access to your calendar events (the <code>calendar.events</code> scope) and your Google account email address, only so that:</p>
   <ul>
-    <li>your own calendar events can be shown inside LifeFold alongside your other items, and</li>
+    <li>your own calendar events can be shown inside Shizu alongside your other items, and</li>
     <li>we can label the connection with the Google account you connected.</li>
   </ul>
   <div class="callout">
-    <p style="margin:0"><b>Limited Use.</b> LifeFold's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. Your Google Calendar data is used only to provide and improve the calendar features you see in LifeFold. It is <b>never</b> sold, never used for advertising, and never shared with third parties or used to train any AI or machine-learning model.</p>
+    <p style="margin:0"><b>Limited Use.</b> Shizu's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. Your Google Calendar data is used only to provide and improve the calendar features you see in Shizu. It is <b>never</b> sold, never used for advertising, and never shared with third parties or used to train any AI or machine-learning model.</p>
   </div>
 
   <h2>How your data is used</h2>
-  <p>We use your data solely to run LifeFold for you - to store your content, sign you in, show your calendar and mail, and deliver features you turn on (such as the morning brief). We do not sell your data, and we do not use it for advertising.</p>
+  <p>We use your data solely to run Shizu for you - to store your content, sign you in, show your calendar and mail, and deliver features you turn on (such as the morning brief). We do not sell your data, and we do not use it for advertising.</p>
 
   <h2>Cookies and analytics</h2>
-  <p>The public pages of this site (home, privacy and terms) can use two analytics services - Google Analytics and VisitorTracking - to understand how the site is used so we can improve it. These set cookies and collect usage data such as pages viewed and approximate location. They load <b>only if you accept</b> in the cookie banner shown on your first visit; choose Decline and neither one runs. Your choice is remembered on your device, and you can change it any time by clearing this site's cookies. These analytics run on the marketing pages only - <b>never inside your signed-in LifeFold</b> - and they never see your LifeFold content.</p>
+  <p>The public pages of this site (home, privacy and terms) can use two analytics services - Google Analytics and VisitorTracking - to understand how the site is used so we can improve it. These set cookies and collect usage data such as pages viewed and approximate location. They load <b>only if you accept</b> in the cookie banner shown on your first visit; choose Decline and neither one runs. Your choice is remembered on your device, and you can change it any time by clearing this site's cookies. These analytics run on the marketing pages only - <b>never inside your signed-in Shizu</b> - and they never see your Shizu content.</p>
 
   <h2>Storage and security</h2>
   <p>Your data is stored on Cloudflare's infrastructure. Access is scoped to your account alone - signing in needs a one-time code sent to your email (and, if you turn it on, a second factor from your authenticator app), so your email password alone isn't enough to get in.</p>
-  <p>The most sensitive things you entrust to LifeFold - your connected-account tokens and mailbox passwords - are <b>encrypted at rest (AES-256-GCM)</b>, so not even we can read them. We don't read your content, and we never sell it or use it to train any AI or machine-learning model. When you delete something, it's deleted.</p>
+  <p>The most sensitive things you entrust to Shizu - your connected-account tokens and mailbox passwords - are <b>encrypted at rest (AES-256-GCM)</b>, so not even we can read them. We don't read your content, and we never sell it or use it to train any AI or machine-learning model. When you delete something, it's deleted.</p>
 
   <h2>Sharing your data</h2>
-  <p>We don't share your personal data with third parties, except the infrastructure and service providers strictly needed to run LifeFold (for example Cloudflare for hosting, and Google's own APIs when you connect Google Calendar). Content you explicitly choose to share with another LifeFold member is shared only as you direct. We never sell your data, and we never hand it to advertisers.</p>
+  <p>We don't share your personal data with third parties, except the infrastructure and service providers strictly needed to run Shizu (for example Cloudflare for hosting, and Google's own APIs when you connect Google Calendar). Content you explicitly choose to share with another Shizu member is shared only as you direct. We never sell your data, and we never hand it to advertisers.</p>
 
   <h2>Your control - take it, or delete it</h2>
   <p>Because your data is yours, you're never locked in:</p>
   <ul>
-    <li><b>Download everything</b> - export your full LifeFold from Settings › Account, any time, in a portable format.</li>
+    <li><b>Download everything</b> - export your full Shizu from Settings › Account, any time, in a portable format.</li>
     <li><b>Delete your account</b> - close it from Settings › Account and your data is removed. No questions, no retention games.</li>
-    <li><b>Host it yourself</b> - your data is portable and yours to take elsewhere. Running LifeFold on your own storage is on our roadmap; until then, your export gives you everything.</li>
+    <li><b>Host it yourself</b> - your data is portable and yours to take elsewhere. Running Shizu on your own storage is on our roadmap; until then, your export gives you everything.</li>
     <li><b>Disconnect any service</b> - at any time (for Google Calendar, use the Disconnect button in the calendar view); we revoke the token and delete it.</li>
   </ul>
 
@@ -134,7 +134,7 @@
   <p>If this policy changes, we'll update this page and the date above.</p>
 
   <footer>
-    LifeFold · <a href="https://lifefold.co">daybook.fyi</a> · <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <a href="#" data-cookie-settings>Cookie settings</a>
+    Shizu · <a href="https://shizu.fyi">daybook.fyi</a> · <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <a href="#" data-cookie-settings>Cookie settings</a>
     <p style="margin:12px 0 0"><span class="foot-lang-label">Language</span><span class="lang-switch"></span></p>
   </footer>
 </div>

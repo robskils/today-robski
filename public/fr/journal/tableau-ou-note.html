@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Un tableau, ou une note ?</title>
-<meta name="description" content="Quand utiliser un tableau et quand utiliser une note dans LifeFold - pourquoi ils diffèrent, quand choisir l'un ou l'autre, et comment passer de l'un à l'autre sans rien perdre.">
-<link rel="canonical" href="https://lifefold.co/fr/journal/tableau-ou-note">
-<link rel="alternate" hreflang="en" href="https://lifefold.co/blog/tables-or-notes">
-<link rel="alternate" hreflang="pt-PT" href="https://lifefold.co/pt/jornal/tabela-ou-nota">
-<link rel="alternate" hreflang="fr" href="https://lifefold.co/fr/journal/tableau-ou-note">
-<link rel="alternate" hreflang="es" href="https://lifefold.co/es/diario/tabla-o-nota">
-<link rel="alternate" hreflang="x-default" href="https://lifefold.co/blog/tables-or-notes">
+<meta name="description" content="Quand utiliser un tableau et quand utiliser une note dans Shizu - pourquoi ils diffèrent, quand choisir l'un ou l'autre, et comment passer de l'un à l'autre sans rien perdre.">
+<link rel="canonical" href="https://shizu.fyi/fr/journal/tableau-ou-note">
+<link rel="alternate" hreflang="en" href="https://shizu.fyi/blog/tables-or-notes">
+<link rel="alternate" hreflang="pt-PT" href="https://shizu.fyi/pt/jornal/tabela-ou-nota">
+<link rel="alternate" hreflang="fr" href="https://shizu.fyi/fr/journal/tableau-ou-note">
+<link rel="alternate" hreflang="es" href="https://shizu.fyi/es/diario/tabla-o-nota">
+<link rel="alternate" hreflang="x-default" href="https://shizu.fyi/blog/tables-or-notes">
 <meta property="og:title" content="Un tableau, ou une note ?">
-<meta property="og:description" content="Quand utiliser un tableau et quand une note dans LifeFold - pourquoi, quand et comment.">
+<meta property="og:description" content="Quand utiliser un tableau et quand une note dans Shizu - pourquoi, quand et comment.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://lifefold.co/fr/journal/tableau-ou-note">
+<meta property="og:url" content="https://shizu.fyi/fr/journal/tableau-ou-note">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,7 +47,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>LifeFold uses analytics cookies to understand how the site is used - nothing personal, and never any of your LifeFold content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Shizu uses analytics cookies to understand how the site is used - nothing personal, and never any of your Shizu content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -65,7 +65,7 @@
   <div class="wrap nav-in">
     <a class="brand" href="/fr"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a>
     <ul class="nav-links">
-      <li><a href="/fr#idea">Votre LifeFold</a></li>
+      <li><a href="/fr#idea">Votre Shizu</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr#private">Confidentialité</a></li>
       <li><a href="/fr/journal" class="on">Journal</a></li>
@@ -81,7 +81,7 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/fr/journal">← Le Journal de LifeFold</a>
+      <a class="back-link" href="/fr/journal">← Le Journal de Shizu</a>
       <div class="eyebrow">Façons de travailler</div>
       <h1>Un tableau, ou une note ?</h1>
       <div class="article-meta">
@@ -95,7 +95,7 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">Dans LifeFold, une note et un tableau sont deux formes d'une même idée : un endroit où poser une information et la retrouver. Une note est faite pour les mots qui s'enchaînent. Un tableau est fait pour les faits qui se répètent. Choisissez la bonne forme et votre LifeFold reste clair ; choisissez la mauvaise et vous passez votre temps à lutter contre le format au lieu de vous en servir.</p>
+      <p class="lede">Dans Shizu, une note et un tableau sont deux formes d'une même idée : un endroit où poser une information et la retrouver. Une note est faite pour les mots qui s'enchaînent. Un tableau est fait pour les faits qui se répètent. Choisissez la bonne forme et votre Shizu reste clair ; choisissez la mauvaise et vous passez votre temps à lutter contre le format au lieu de vous en servir.</p>
 
       <h2>Le grain de chacun</h2>
       <p>Une note n'a aucune structure à respecter. Vous l'ouvrez et vous écrivez - une pensée, un plan, un brouillon, une entrée de journal, une fiche de référence que vous lisez de haut en bas. Elle épouse ce que vous y apportez.</p>
@@ -122,7 +122,7 @@
       </ul>
       <p>Le test : si vous alliez la <em>parcourir</em>, la trier ou la compter, elle veut être un tableau.</p>
 
-      <h2>Comment ça marche dans LifeFold</h2>
+      <h2>Comment ça marche dans Shizu</h2>
       <ul>
         <li><b>Commencez une note</b> - choisissez Nouvelle note et écrivez. C'est tout.</li>
         <li><b>Transformez une note en tableau, et inversement.</b> Toute note peut devenir un tableau puis redevenir une note, donc rien n'est une impasse. Quand une note se remplit peu à peu du même type de fait, encore et encore, passez-la en tableau. Si le tableau s'avère excessif, revenez en arrière. Votre contenu vous suit.</li>
@@ -137,7 +137,7 @@
 
     <div class="article-end">
       <h3>Gardez votre vie dans un endroit clair</h3>
-      <p>LifeFold est sur invitation le temps de bien faire les choses. Les notes, les tableaux, et tout ce qui les relie - venez jeter un œil.</p>
+      <p>Shizu est sur invitation le temps de bien faire les choses. Les notes, les tableaux, et tout ce qui les relie - venez jeter un œil.</p>
       <a class="btn btn-primary" href="/fr#invite">Demander une invitation →</a>
     </div>
   </article>
@@ -147,16 +147,16 @@
   <div class="wrap foot-in">
     <div class="foot-brand"><a class="brand" href="/fr"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="white-space:nowrap">Life<i style="font-style:italic;margin-left:0">Fold</i></span></a><span class="foot-tag">Pour une vie bien vécue</span></div>
     <ul class="foot-links">
-      <li><a href="/fr#idea">Votre LifeFold</a></li>
+      <li><a href="/fr#idea">Votre Shizu</a></li>
       <li><a href="/fr#tools">Outils</a></li>
       <li><a href="/fr/journal">Journal</a></li>
       <li><a href="/fr#invite">Demander une invitation</a></li>
       <li><a href="/fr/confidentialite">Confidentialité</a></li>
       <li><a href="/fr/conditions">Conditions</a></li>
-      <li><a href="mailto:contact@lifefold.co">Contact</a></li>
+      <li><a href="mailto:contact@shizu.fyi">Contact</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Des questions ? <a href="mailto:contact@lifefold.co">contact@lifefold.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> LifeFold</div>
+    <div class="foot-meta">Des questions ? <a href="mailto:contact@shizu.fyi">contact@shizu.fyi</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Shizu</div>
   </div>
 </footer>
 
