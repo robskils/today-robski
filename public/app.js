@@ -1789,29 +1789,52 @@ function navTopSecs(v) {
 // automatically - night view after dusk, day view through the day, no choice to
 // make. (Robin, 2026-10-24: for most people except admins it's always automatic.)
 function themeLocked() { return !!(state.me && state.me.id !== 1); }
-function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
-function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
+// Three pickable worlds - 'light' (Slate), 'calm' (warm washi) and 'dark' (Night) -
+// plus 'auto', which follows the sun between Slate and Night. 'calm' is always a
+// deliberate pick, never auto-selected. (Robin, 2026-10-30: slate / calm / night.)
+function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' || m === 'calm' ? m : 'auto'; }
+function themeLabel() { const m = themeMode(); return m === 'light' ? '☁ Slate' : m === 'calm' ? '☀ Calm' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☁'} Auto`; }
 let themeTimer;
 function applyTheme(rerender) {
   const m = themeMode();
-  const dark = m === 'dark' ? true : m === 'light' ? false : autoIsDark();
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  try { localStorage.setItem('today.theme', dark ? 'dark' : 'light'); } catch {}
+  // calm is its own warm washi world; otherwise resolve to light/dark (auto by the sun).
+  const theme = m === 'calm' ? 'calm' : (m === 'dark' ? 'dark' : m === 'light' ? 'light' : (autoIsDark() ? 'dark' : 'light'));
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem('today.theme', theme); } catch {}
   if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
   else { const b = document.querySelector('[data-theme-toggle]'); if (b) b.textContent = themeLabel(); }
   clearTimeout(themeTimer);
   // In auto mode, re-check every few minutes so it flips at sunrise/sunset.
   if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 5 * 60 * 1000);
 }
+// The nav button steps through the four in order; the Settings picker sets one directly.
 function cycleTheme() {
   if (themeLocked()) return;   // members follow day/night automatically; nothing to cycle
-  const m = themeMode();
-  // From Auto, flip straight to the OPPOSITE of what's showing (one visible click,
-  // no dead Auto→same-colour step). Then dark→auto returns to automatic.
-  const next = m === 'auto' ? (autoIsDark() ? 'light' : 'dark') : (m === 'light' ? 'dark' : 'auto');
+  const order = ['auto', 'light', 'calm', 'dark'];
+  const next = order[(order.indexOf(themeMode()) + 1) % order.length];
   try { localStorage.setItem('life.theme.mode', next); } catch {}
   applyTheme(true);
   if (next === 'auto') ensureLoc();
+}
+function setThemeMode(mode) {
+  if (themeLocked()) return;
+  if (!['auto', 'light', 'calm', 'dark'].includes(mode)) return;
+  try { localStorage.setItem('life.theme.mode', mode); } catch {}
+  applyTheme(true);
+  // Update the picker's selected state in place (applyTheme re-renders nav, not Settings).
+  document.querySelectorAll('[data-theme-set]').forEach((b) => { const on = b.dataset.themeSet === mode; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  if (mode === 'auto') ensureLoc();
+}
+// Mini previews for the Settings theme picker: a paper swatch with an accent dot.
+function themeSwatches() {
+  const cur = themeMode();
+  const opts = [
+    ['auto', 'Auto', 'linear-gradient(135deg,#d7dde6 0 50%,#141530 50% 100%)', '#c2703a'],
+    ['light', 'Slate', '#d7dde6', '#c2703a'],
+    ['calm', 'Calm', '#e9e0ce', '#cf4327'],
+    ['dark', 'Night', '#141530', '#c2a05f'],
+  ];
+  return opts.map(([mode, label, bg, dot]) => `<button class="theme-swatch-btn ${cur === mode ? 'on' : ''}" data-theme-set="${mode}" type="button" aria-pressed="${cur === mode}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
 function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(); }
 
@@ -3811,7 +3834,9 @@ function renderSettings() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-row"><div><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Auto follows your local sunrise &amp; sunset.'}</div></div>${themeLocked() ? `<span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span>` : `<button class="add-btn wide" data-theme-toggle>${themeLabel()}</button>`}</div>
+        <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Three worlds to work in. Auto follows your local sunrise &amp; sunset, between Slate and Night.'}</div>
+          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☁ Slate'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
+        </div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
           <div class="acc-swatches">${swatches}</div>
           <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
@@ -22128,6 +22153,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-nav-drawer]')) { toggleNavDrawer(); return; }
   if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
+  { const ts = t.closest('[data-theme-set]'); if (ts) { setThemeMode(ts.dataset.themeSet); return; } }
   // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
   // drawer as it navigates - the destination's renderNav() then paints it shut.
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;

@@ -43,7 +43,7 @@ INSERT OR IGNORE INTO users (id, email, name, subdomain, plan, status, created_a
 -- ── Connected calendars (multi-account, multi-provider) ────────────────
 -- Beyond the single Google account on users.gcal_*, a member can connect
 -- several more calendars. Each row is one connected calendar, merged onto the
--- LifeFold calendar in its own colour and (when writable) editable in place.
+-- Shizu calendar in its own colour and (when writable) editable in place.
 -- Google uses an OAuth refresh token; CalDAV (Yahoo/iCloud) uses a URL + username
 -- + app password. Event ids from these carry an `acct:<id>:` prefix so a write
 -- routes back to the right account. The existing owner-shared + users.gcal paths

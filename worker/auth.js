@@ -144,7 +144,7 @@ export async function requestCode(request, env, json, err) {
   const email = String(body.email || '').trim().toLowerCase();
   if (!validEmail(email)) return err('That does not look like an email address', 400);
   // 'sms' texts the code to ALERT_PHONE instead of emailing it. This is the
-  // fix for the Catch-22 once LifeFold *is* the mailbox: if email breaks or
+  // fix for the Catch-22 once Shizu *is* the mailbox: if email breaks or
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
@@ -173,7 +173,7 @@ export async function requestCode(request, env, json, err) {
   if (channel === 'sms') {
     // Text the code to THIS user's own saved phone - never the owner's hardcoded
     // ALERT_PHONE. This is the escape hatch for someone whose email now lives
-    // inside LifeFold: the emailed code would be locked behind this very sign-in,
+    // inside Shizu: the emailed code would be locked behind this very sign-in,
     // but a text to their phone still gets them in. Needs an existing account
     // with a phone on file (Settings › Account); a brand-new signup has neither,
     // so it simply falls through to email.
@@ -184,7 +184,7 @@ export async function requestCode(request, env, json, err) {
       toPhone = (phRow && phRow.value) || (acct.id === 1 ? env.ALERT_PHONE : '');
     }
     if (toPhone) {
-      const sms = await sendSms(env, `${code} is your LifeFold sign-in code. It expires in 30 minutes.`, toPhone);
+      const sms = await sendSms(env, `${code} is your Shizu sign-in code. It expires in 30 minutes.`, toPhone);
       // Only report SMS if it actually left: a not-configured or rejected send
       // silently falls through to email, so the user is never stranded without a
       // code just because SMS credit ran out.
@@ -308,19 +308,19 @@ export async function verifyTotp(request, env, json, err) {
 // non-ASCII subject needs RFC 2047 encoding.
 export async function sendCodeMail(env, email, code, kind) {
   const alias = kind === 'alias';
-  const subject = alias ? `${code} - confirm your email for LifeFold` : `${code} - your LifeFold sign-in code`;
+  const subject = alias ? `${code} - confirm your email for Shizu` : `${code} - your Shizu sign-in code`;
   const html = codeEmail(code, kind);
   const text = alias
-    ? `Enter ${code} in LifeFold to add this address to your account. It expires in 30 minutes.`
-    : `Your LifeFold sign-in code is ${code}. It expires in 30 minutes.`;
+    ? `Enter ${code} in Shizu to add this address to your account. It expires in 30 minutes.`
+    : `Your Shizu sign-in code is ${code}. It expires in 30 minutes.`;
 
   // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
   // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
-  // carries the LifeFold address. Same transport and secret as the invite and the
+  // carries the Shizu address. Same transport and secret as the invite and the
   // morning brief. Falls back to Resend only if no SMTP secret is set.
   if (env.BRIEF_SMTP_PASS) {
     const acct = {
-      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'LifeFold',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Shizu',
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
@@ -348,7 +348,7 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-// LifeFold branding: warm paper and rust, matching the app and the homepage.
+// Shizu branding: warm paper and rust, matching the app and the homepage.
 //
 // Table layout and inline styles throughout: Gmail strips <style> blocks, and
 // Outlook's renderer is Word. No flexbox, no CSS variables, no SVG.
@@ -356,9 +356,9 @@ export function codeEmail(code, kind) {
   const alias = kind === 'alias';
   const eyebrow = alias ? 'Confirm email' : 'Sign in';
   const line = alias
-    ? `Enter this code in LifeFold to add this address to your account. It expires in <strong style="color:#211c17">30 minutes</strong>.`
+    ? `Enter this code in Shizu to add this address to your account. It expires in <strong style="color:#211c17">30 minutes</strong>.`
     : `Your sign-in code. It expires in <strong style="color:#211c17">30 minutes</strong>.`;
-  const pre = alias ? `${code} confirms this email for your LifeFold account.` : `${code} is your LifeFold sign-in code. It expires in 30 minutes.`;
+  const pre = alias ? `${code} confirms this email for your Shizu account.` : `${code} is your Shizu sign-in code. It expires in 30 minutes.`;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
@@ -374,10 +374,10 @@ export function codeEmail(code, kind) {
         <!-- Wordmark: the real mark (sun over two page-lines) as a PNG - the
              favicon is an SVG and every major client strips those - over the
              name and the tagline. alt is empty on purpose: with images off the
-             serif wordmark below already says LifeFold, so a blocked image
-             should leave nothing behind rather than a second "LifeFold". -->
+             serif wordmark below already says Shizu, so a blocked image
+             should leave nothing behind rather than a second "Shizu". -->
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://lifefold.co/email-mark.png?v=3" width="46" height="46" alt="LifeFold" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <img src="https://lifefold.co/email-mark.png?v=3" width="46" height="46" alt="Shizu" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:700;letter-spacing:-0.01em;color:#211c17">Life<i>Fold</i></p>
         </td></tr>
 

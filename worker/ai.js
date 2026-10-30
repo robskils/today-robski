@@ -157,7 +157,7 @@ async function geminiCall(env, feature, key, { system, user, max_tokens = 500, i
 }
 // Warm, not scolding: this is what a member sees when they open an AI feature with
 // AI off. It should invite, not block - AI is an optional extra. (Robin, 2026-10-16.)
-export const aiNeedsKey = (provider) => 'This one uses AI, which is switched off right now - an optional extra, so the rest of LifeFold works just as well without it. Turn it on anytime in Settings → Plan.';
+export const aiNeedsKey = (provider) => 'This one uses AI, which is switched off right now - an optional extra, so the rest of Shizu works just as well without it. Turn it on anytime in Settings → Plan.';
 
 // One ledger row per call. Best-effort: logging must never break the feature.
 export async function logAiUsage(env, provider, feature, model, inTok, outTok) {

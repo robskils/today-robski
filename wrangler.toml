@@ -96,17 +96,17 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "LifeFold <today@incremento.co>"
+FROM_EMAIL = "Shizu <today@incremento.co>"
 
-# Daybook sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
-# from contact@daybook.fyi through Purelymail SMTP: a real mailbox on a fully
-# SPF/DKIM/DMARC-aligned domain, so nothing depends on a Resend-verified domain
-# and nothing sends from robski.uk any more. BRIEF_SMTP_PASS (secret) is that
-# mailbox's app password; these two set the SMTP login and the From address (the
-# "Daybook" display name is in code). FROM_EMAIL above is only the Resend
-# fallback used if BRIEF_SMTP_PASS is ever unset.
-BRIEF_FROM = "contact@lifefold.co"
-BRIEF_SMTP_USER = "contact@lifefold.co"
+# Shizu sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
+# from contact@shizu.fyi through Purelymail SMTP: a real mailbox on a fully
+# SPF/DKIM/DMARC-aligned domain (shizu.fyi passes all four, incl. DMARC), so
+# nothing depends on a Resend-verified domain. BRIEF_SMTP_PASS (secret) is the
+# Purelymail account's shared password; these two set the SMTP login and the From
+# address (the "Shizu" display name is in code). FROM_EMAIL above is only the
+# Resend fallback used if SMTP auth ever fails. (shizu.fyi mail set up 2026-10-30.)
+BRIEF_FROM = "contact@shizu.fyi"
+BRIEF_SMTP_USER = "contact@shizu.fyi"
 
 # Per-member Google Calendar connect (worker/gcal.js). This is the PUBLIC client
 # id of the SEPARATE OAuth client in the standalone "Daybook Calendar" Google
@@ -158,7 +158,7 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only Robin to start; invite-only test users get added here (or, once the users
 # table drives access, this list stops being the gate).
 ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
-FROM_EMAIL = "LifeFold <today@incremento.co>"
+FROM_EMAIL = "Shizu <today@incremento.co>"
 BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the
