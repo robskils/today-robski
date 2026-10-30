@@ -24,7 +24,7 @@ const isManagedPlan = (p) => normPlan(p) === 'managed';
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
-const MARK = '<svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><circle class="brand-ring" cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>';
+const MARK = '<span class="brand-mark" aria-hidden="true">静</span>';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -4800,13 +4800,13 @@ function renderNav() {
   const navHtml = `
     <div class="nav-topline" title="Home">
       <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></button>
+      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em class="brand-word">shizu</em></button>
       ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
     </div>
     <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
     <div class="nav-new">${addNewMenuHtml()}</div>
     <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
+      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em class="brand-word">shizu</em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
       <div class="nav-foot">
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
@@ -26258,7 +26258,7 @@ const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(loc
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup"><span class="brand-kanji" aria-hidden="true">静</span><em>Shizu</em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">shizu</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -26899,7 +26899,7 @@ function showRequired2fa() {
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
   const mark = '<div class="gate2-mark"><em>Shizu</em></div>';
-  const head = (txt) => `<div style="font-family:'Shippori Mincho',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
+  const head = (txt) => `<div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
   if (st.recovery) {
