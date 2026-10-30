@@ -8431,7 +8431,10 @@ input[type=search]::-webkit-search-cancel-button:hover { opacity:1; background-c
 /* Small grouping sub-heading above the Connect boxes and the Notes section. */
 .cc-group-h { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin:26px 0 2px; }
 .cc-group-h + .cc-boxes { margin-top:10px; }
-.cc-boxes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:22px; align-items:stretch; }
+/* Linked & attached on a contact: label on top, panel full width below (same as
+   the note and task cards). The old 2-column split stranded the panel in the
+   right half and wasted the whole left side. (Robin, 2026-10-30.) */
+.cc-boxes { margin-top:22px; }
 .cc-group-h + .focus-notes { margin-top:8px; }
 .cc-box { display:flex; flex-direction:column; gap:10px; padding:15px 16px; border:1px solid var(--line); border-radius:14px; background:var(--card); box-shadow:var(--shadow); }
 .cc-box-h { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:600; color:var(--ink); }
