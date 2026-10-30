@@ -627,9 +627,38 @@ function proseSiblingsUnder(head) {
   while (n && !(HLVL[n.tagName] && HLVL[n.tagName] <= lvl)) { out.push(n); n = n.nextElementSibling; }
   return out;
 }
-function applyFold(head, folded) {
-  proseSiblingsUnder(head).forEach((el) => el.classList.toggle('folded-hidden', folded));
-  head.classList.toggle('folded', folded);
+// Re-derive EVERY element's folded state from the headings and the saved fold set,
+// in one pass per flow (the prose, and each column). This is what makes folding
+// robust and properly nested: an element is hidden if it sits inside ANY folded
+// section, at any level - so folding an H2 hides the H3s under it AND their content
+// down to the next H2, and unfolding the H2 keeps a child H3 that was folded on its
+// own still folded. The fold glyph is set to match. (Robin, 2026-10-30: robust folds.)
+function reapplyFolds(prose) {
+  if (!prose) return;
+  const foldedSet = new Set(getFolds(prose.dataset.blockId));
+  const allHeads = [...prose.querySelectorAll('h1, h2, h3')];
+  const idxOf = new Map(allHeads.map((h, i) => [h, i]));
+  const run = (flow) => {
+    const stack = [];   // levels of the folded sections we're currently inside
+    for (const el of flow.children) {
+      // A columns wrapper isn't a heading; hide it if we're inside a fold, and let
+      // the per-column pass handle the headings within it.
+      if (el.classList && el.classList.contains('ncols')) { el.classList.toggle('folded-hidden', stack.length > 0); continue; }
+      const lvl = HLVL[el.tagName];
+      if (lvl) {
+        while (stack.length && stack[stack.length - 1] >= lvl) stack.pop();   // this heading ends any open section of its level or deeper
+        el.classList.toggle('folded-hidden', stack.length > 0);              // the heading itself hides if inside a folded parent
+        const isFolded = foldedSet.has(idxOf.get(el));
+        el.classList.toggle('folded', isFolded);
+        const tg = el.querySelector(':scope > .fold-toggle'); if (tg) tg.textContent = isFolded ? '►' : '▼';
+        if (isFolded) stack.push(lvl);
+      } else {
+        el.classList.toggle('folded-hidden', stack.length > 0);
+      }
+    }
+  };
+  run(prose);
+  prose.querySelectorAll(':scope > .ncols > .ncol').forEach(run);
 }
 // Content used to step in under each heading to show it belonged there. With the
 // fold / drag / column system the hierarchy already reads from the headings and
@@ -648,25 +677,24 @@ function applyProseIndent(prose) {
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
     applyProseIndent(prose);
+    // CLEAN SLATE first: strip every fold chevron and drag grip, including any that
+    // migrated into a non-heading (a list item, a paragraph) while editing - that's
+    // what put a stray toggle on a bullet. Then add exactly one fresh chevron + grip
+    // to each real heading. A re-render always restores a correct set, so the system
+    // self-heals from any editing mess. (Robin, 2026-10-30: robust folds.)
+    prose.querySelectorAll('.fold-toggle, .head-grip').forEach((x) => x.remove());
     // All section heads in document order - including any inside column wrappers -
     // so a sidebar section is foldable and draggable too, and the fold index stays
     // consistent whether or not a note uses columns.
     const heads = [...prose.querySelectorAll('h1, h2, h3')];
     if (!heads.length) return;
-    const folded = getFolds(prose.dataset.blockId);
-    heads.forEach((h, i) => {
-      let toggle = h.querySelector(':scope > .fold-toggle');
-      if (!toggle) { toggle = document.createElement('span'); toggle.className = 'fold-toggle'; toggle.contentEditable = 'false'; toggle.setAttribute('title', 'Fold / unfold'); h.insertBefore(toggle, h.firstChild); }
-      // A grip to drag the whole section (this heading + everything under it, up
-      // to the next same-or-higher heading) up or down. Live-DOM only, stripped
-      // on save like the fold chevron.
-      let grip = h.querySelector(':scope > .head-grip');
-      if (!grip) { grip = document.createElement('span'); grip.className = 'head-grip'; grip.contentEditable = 'false'; grip.setAttribute('draggable', 'true'); grip.setAttribute('title', 'Drag to reorder this section'); grip.textContent = '⠿'; }
-      h.insertBefore(grip, h.firstChild);   // grip first, then the fold chevron
-      const isFolded = folded.includes(i);
-      toggle.textContent = isFolded ? '►' : '▼';   // the full triangles read bigger + sit centred in the chip
-      applyFold(h, isFolded);
-    });
+    for (const h of heads) {
+      const grip = document.createElement('span'); grip.className = 'head-grip'; grip.contentEditable = 'false'; grip.setAttribute('draggable', 'true'); grip.setAttribute('title', 'Drag to reorder this section'); grip.textContent = '⠿';
+      const toggle = document.createElement('span'); toggle.className = 'fold-toggle'; toggle.contentEditable = 'false'; toggle.setAttribute('title', 'Fold / unfold');
+      h.insertBefore(toggle, h.firstChild);
+      h.insertBefore(grip, h.firstChild);   // grip first, then the chevron
+    }
+    reapplyFolds(prose);   // one pass sets every heading's glyph + hides folded content, nested correctly
   });
 }
 // Drag a heading's grip to reorder its section within the note. The section is
@@ -22783,7 +22811,7 @@ document.addEventListener('click', (e) => {
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
-  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); const folded = !head.classList.contains('folded'); applyFold(head, folded); ft.textContent = folded ? '►' : '▼'; setFold(prose.dataset.blockId, i, folded); } return; } }
+  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); setFold(prose.dataset.blockId, i, !head.classList.contains('folded')); reapplyFolds(prose); } return; } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on LifeFold` : 'No contacts on LifeFold yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
