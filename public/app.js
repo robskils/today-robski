@@ -14364,7 +14364,7 @@ function wrapEmailHtml(html, blockImages) {
   // to the parent, which opens it in the OS default browser (a sandboxed iframe
   // can't do that itself, and its own scripts were already stripped).
   return `<!doctype html><html><head><meta name="color-scheme" content="light">
-    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,var(--k-sans);font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
     </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){var busy=false;
     // Shrink-to-fit: a fixed-width email (a 600px bank/marketing table that ignores
     // max-width) would otherwise force sideways scrolling on a phone. Measure the
@@ -26953,13 +26953,13 @@ function showRequired2fa() {
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
   const mark = '<div class="gate2-mark"><em>Koyeba</em></div>';
-  const head = (txt) => `<div style="font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
+  const head = (txt) => `<div style="font-family:var(--k-serif);font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
   if (st.recovery) {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:ui-monospace,SFMono-Regular,monospace;font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:var(--k-sans);font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
       <button class="gate2-btn" id="r2-done">Done - open Koyeba</button>`;
     document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
     return;
@@ -26968,7 +26968,7 @@ function showRequired2fa() {
     const onPhone = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || '');
     card.innerHTML = `${mark}${head('Add your authenticator')}
       <p class="gate2-sub"><b>1.</b> In your authenticator app (Google Authenticator, Authy, 1Password…) add an account and enter this key${onPhone ? ` - or <a href="${esc(st.setup.uri)}">tap to open your app</a>` : ''}.</p>
-      <div style="margin:10px 0;padding:12px;background:var(--paper-2);border-radius:10px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:17px;letter-spacing:2px;word-break:break-all;text-align:center">${esc(st.setup.secret || '')}</div>
+      <div style="margin:10px 0;padding:12px;background:var(--paper-2);border-radius:10px;font-family:var(--k-sans);font-size:17px;letter-spacing:2px;word-break:break-all;text-align:center">${esc(st.setup.secret || '')}</div>
       <p class="gate2-sub"><b>2.</b> Enter the 6-digit code it shows.</p>
       <input class="gate2-input" id="r2-code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" maxlength="6">
       ${st.err ? `<p class="gate2-err">${esc(st.err)}</p>` : ''}

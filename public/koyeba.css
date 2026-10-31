@@ -25,8 +25,9 @@
   --k-ondeep:oklch(0.975 0.012 85);  /* ≈#f8f4ec  text on forest */
   --k-ongold:oklch(0.22 0.018 60);   /* text on a solid gold button (same in both themes) */
 
-  --k-serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;         /* anything that speaks */
-  --k-sans:'Jost',system-ui,-apple-system,'Segoe UI',Helvetica,sans-serif; /* anything that labels */
+  --k-serif:'Cormorant Garamond',serif;         /* anything that speaks */
+  --k-sans:'Jost',sans-serif; /* anything that labels */
+  font-synthesis:none; /* never fake a weight or slant we have no real face for */
 }
 
 /* ── Night: deep forest green — never blue-grey, navy or black ────────────── */
