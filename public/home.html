@@ -72,338 +72,224 @@
 @font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
 
-/* ── Tokens: ivory day (default), deep-forest night (traced from the prototype) ── */
+/* ── Tokens: ivory day (default), deep-forest night (§3) ── */
 :root{
-  --k-bg:#f8f4ec;          /* ivory page */
-  --k-panel:#fdfbf7;       /* cards, inputs */
-  --k-soft:#efe9dc;        /* tinted bands, selected rows */
-  --k-ink:#2a2620;         /* text */
-  --k-mute:#6b6357;        /* secondary text */
-  --k-faint:#9a9082;       /* tertiary text */
-  --k-line:#e0d9cc;        /* 1px warm keylines */
-  --k-gold:#c99a3e;        /* the one accent - fills, rules, markers */
-  --k-goldt:#8f6c2a;       /* gold TEXT on ivory (passes contrast) */
-  --k-deep:#2c4a3a;        /* forest: the hero panel bar, the privacy band */
-  --k-ondeep:#f8f4ec;      /* text on forest */
-  --k-ongold:#2a2620;      /* text on a solid gold button */
+  --k-bg:#f8f4ec; --k-panel:#fdfbf7; --k-soft:#efe9dc;
+  --k-ink:#2a2620; --k-mute:#6b6357; --k-faint:#9a9082; --k-line:#e0d9cc;
+  --k-gold:#c99a3e; --k-goldt:#8f6c2a; --k-deep:#2c4a3a; --k-ondeep:#f8f4ec; --k-ongold:#2a2620;
+  /* The two forest panels stay forest in both themes, so their colours are fixed. */
+  --k-forest:#2c4a3a; --k-forest-deep:#13241d; --k-onforest:#f8f4ec;
+  --k-forest-line:rgba(248,244,236,.16); --k-forest-mute:rgba(248,244,236,.78);
   --k-serif:'Cormorant Garamond', Georgia, serif;
   --k-sans:'Jost', system-ui, sans-serif;
-  --maxw:1120px;
-  font-synthesis:none;     /* never fake a weight or a slant */
+  --maxw:1240px;
+  font-synthesis:none;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --k-bg:#13241d;
-    --k-panel:#1a2e25;
-    --k-soft:#20362b;
-    --k-ink:#eef1e6;
-    --k-mute:#b4bbac;
-    --k-faint:#8a9385;
-    --k-line:#33463d;
-    --k-gold:#d8b25e;
-    --k-goldt:#e2c37a;
-    --k-deep:#0e1a14;
-    --k-ondeep:#eef1e6;
-    --k-ongold:#2a2620;
+    --k-bg:#13241d; --k-panel:#1a2e25; --k-soft:#20362b;
+    --k-ink:#eef1e6; --k-mute:#b4bbac; --k-faint:#8a9385; --k-line:#33463d;
+    --k-gold:#d8b25e; --k-goldt:#e2c37a; --k-deep:#0e1a14; --k-ondeep:#eef1e6; --k-ongold:#2a2620;
   }
 }
 
 html { scroll-behavior: smooth; }
-body {
-  background: var(--k-bg);
-  color: var(--k-ink);
-  font-family: var(--k-sans);
-  font-size: 17px;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+body { background: var(--k-bg); color: var(--k-ink); font-family: var(--k-sans); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
-
+img { display: block; }
 h1, h2, h3 { font-family: var(--k-serif); font-weight: 300; letter-spacing: 0; line-height: 1.08; text-wrap: balance; }
-h2 { font-size: clamp(30px, 4.4vw, 46px); }
-h3 { font-size: clamp(22px, 2.8vw, 30px); }
-.em { font-style: italic; color: var(--k-goldt); }
+i, em, .i { font-style: italic; }
+.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(20px,4vw,48px); }
+.gold { color: var(--k-gold); }
+.goldt { color: var(--k-goldt); }
 
-/* ── eyebrow: a 28px gold rule, then a wide-tracked Jost label ── */
-.eyebrow { display: inline-flex; align-items: center; gap: 14px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 18px; }
+/* ── eyebrow: a 28×1px gold rule, then a wide-tracked Jost label ── */
+.eyebrow { display: inline-flex; align-items: center; gap: 12px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); white-space: nowrap; }
 .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
-.center .eyebrow, .eyebrow.center { justify-content: center; }
+.eyebrow.center { justify-content: center; }
+.eyebrow.center::after { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
+.eyebrow.on-forest { color: var(--k-gold); }
 
-/* ── buttons: small, square, Jost 500 uppercase, one gold ── */
-.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; padding: 13px 26px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
+/* ── buttons: small, square, Jost 500 uppercase ── */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; padding: 14px 22px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
 .btn-primary { background: var(--k-gold); color: var(--k-ongold); }
 .btn-primary:hover { background: color-mix(in oklab, var(--k-gold), var(--k-ink) 16%); }
+.btn-ink { background: var(--k-ink); color: var(--k-bg); }
+.btn-ink:hover { background: color-mix(in oklab, var(--k-ink), var(--k-gold) 22%); }
 .btn-ghost { background: transparent; color: var(--k-ink); border-color: var(--k-line); }
 .btn-ghost:hover { border-color: var(--k-ink); }
+.link-gold { font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); }
+.link-gold:hover { color: var(--k-gold); }
 
 /* ── nav ── */
 nav { position: sticky; top: 0; z-index: 50; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
-.nav-in { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 20px; }
-.brand { display: inline-flex; align-items: center; gap: 11px; }
-.brand-mark { height: 24px; width: auto; display: block; }
+.nav-in { display: flex; align-items: center; gap: clamp(16px,3vw,40px); height: 84px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; }
+.brand-mark { height: 26px; width: auto; }
 .ko-ivory { display: none; }
 @media (prefers-color-scheme: dark) { .ko-ink { display: none; } .ko-ivory { display: block; } }
-.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 26px; line-height: 1; color: var(--k-ink); }
+.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 30px; line-height: 1; color: var(--k-ink); }
 .brand-word .dot { color: var(--k-gold); }
-.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-.nav-links a { font-size: 14px; color: var(--k-mute); transition: color .18s; }
-.nav-links a:hover { color: var(--k-ink); }
-.nav-cta { display: flex; align-items: center; gap: 14px; }
-.nav-cta .btn { padding: 10px 18px; }
-@media (max-width: 1024px) { .nav-links { display: none; } }
-@media (max-width: 560px) {
-  .wrap { padding: 0 20px; }
-  .nav-in { position: relative; flex-direction: column; height: auto; gap: 13px; padding: 14px 0 16px; }
-  .nav-cta { width: 100%; justify-content: center; }
-  .nav-cta .lang-switch.nav-lang { position: absolute; top: 15px; right: 0; margin: 0; }
-}
+.nav-links { display: flex; align-items: center; gap: clamp(16px,2.4vw,32px); margin-left: clamp(0px,4vw,56px); list-style: none; min-width: 0; overflow: hidden; }
+.nav-links a { font-size: 15px; color: var(--k-ink); white-space: nowrap; transition: color .18s; }
+.nav-links a:hover { color: var(--k-goldt); }
+.nav-cta { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+.nav-cta .sign { font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.nav-cta .sign:hover { color: var(--k-goldt); }
+@media (max-width: 860px) { .nav-links { display: none; } }
 
-/* language switcher */
+/* ── section rhythm ── */
+.sec { border-top: 1px solid var(--k-line); }
+.sec-in { padding: clamp(64px,8vw,112px) 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,420px), 1fr)); gap: clamp(40px,6vw,96px); }
+.two.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); }
+.lead { font-size: 17px; line-height: 1.7; color: var(--k-mute); text-wrap: pretty; }
+h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px; }
+.set-head { margin-top: 20px; }
+
+/* ── hero ── */
+.hero-in { padding: clamp(56px,8vw,112px) 0 clamp(64px,8vw,120px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: clamp(40px,6vw,88px); align-items: center; }
+.hero h1 { font-size: clamp(52px,6.4vw,86px); line-height: 1; letter-spacing: -.01em; margin-top: 22px; }
+.hero h1 i { color: var(--k-gold); }
+.hero-sub { font-size: 18px; line-height: 1.65; color: var(--k-mute); max-width: 500px; margin-top: 28px; text-wrap: pretty; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-top: 40px; }
+
+/* hero demo card (flat, square, no shadow) */
+.demo { background: var(--k-panel); border: 1px solid var(--k-line); padding: 30px 32px 28px; }
+.demo-line { font-family: var(--k-serif); font-weight: 300; font-size: clamp(28px,3vw,38px); line-height: 1.2; padding: 22px 0 14px; border-bottom: 1px solid var(--k-ink); min-height: 46px; display: flex; align-items: flex-end; margin-top: 12px; }
+.demo-caret { width: 2px; height: 34px; margin-left: 3px; margin-bottom: 4px; background: var(--k-gold); }
+.demo-rows { display: grid; padding-top: 8px; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+.demo-row { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
+.demo-rk { font-family: var(--k-sans); font-weight: 600; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-mute); }
+.demo-rv { font-family: var(--k-sans); font-size: 15px; line-height: 1.45; }
+.demo-foot { display: flex; align-items: center; gap: 14px; padding-top: 18px; }
+.demo-foot .df-t { font-size: 13px; color: var(--k-mute); }
+.demo-set { margin-left: auto; font-family: var(--k-sans); font-weight: 500; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; padding: 10px 16px; background: var(--k-gold); color: var(--k-ongold); white-space: nowrap; }
+
+/* ── the idea ── */
+.idea-body { display: grid; gap: 18px; padding-top: 8px; font-size: 17px; line-height: 1.7; color: var(--k-mute); }
+.idea-body .know { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 21px; color: var(--k-ink); }
+
+/* ── tools: two columns of folding rows, no icons ── */
+.tools-head { max-width: 760px; }
+.tools-head .lead { max-width: 620px; margin-top: 20px; }
+.tool-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: 0 clamp(40px,5vw,80px); margin-top: 56px; }
+.tg-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--k-ink); }
+.tg-label { font-family: var(--k-sans); font-weight: 600; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.tg-count { font-family: var(--k-sans); font-size: 12px; color: var(--k-mute); }
+.tool { border-bottom: 1px solid var(--k-line); }
+.tool-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.tool-name { font-family: var(--k-serif); font-weight: 300; font-size: 28px; line-height: 1.1; min-width: 150px; color: var(--k-ink); }
+.tool-line { flex: 1; font-family: var(--k-sans); font-size: 14px; line-height: 1.45; color: var(--k-mute); }
+.tool-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.tool-body { padding: 0 0 22px 168px; display: grid; gap: 10px; }
+.tool-desc { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+.tool-joins { font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-goldt); }
+@media (max-width: 560px) { .tool-h { flex-wrap: wrap; gap: 4px 14px; } .tool-name { min-width: 0; } .tool-line { flex-basis: 100%; } .tool-body { padding-left: 0; } }
+
+/* ── spaces (forest panel) ── */
+.forest { background: var(--k-forest); color: var(--k-onforest); }
+.forest .lead { color: var(--k-forest-mute); }
+.forest .eyebrow { color: var(--k-gold); }
+.forest h2 i { color: var(--k-gold); }
+.share { margin-top: 40px; border-top: 1px solid var(--k-forest-line); }
+.share-h { display: flex; align-items: baseline; gap: 16px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--k-forest-line); }
+.share-h .st { font-family: var(--k-serif); font-weight: 300; font-size: 26px; color: var(--k-onforest); }
+.share-h .ss { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-forest-mute); }
+.share-body { padding: 18px 0 4px; display: grid; gap: 14px; }
+.share-body[hidden] { display: none; }
+.share-body p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-forest-mute); text-wrap: pretty; }
+.share-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 28px; font-family: var(--k-sans); font-size: 14px; }
+.spacecard { border: 1px solid var(--k-forest-line); padding: 30px 32px; }
+.sc-top { display: flex; align-items: baseline; gap: 14px; }
+.sc-num { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 20px; color: var(--k-gold); }
+.sc-name { font-family: var(--k-serif); font-weight: 300; font-size: 38px; line-height: 1; }
+.sc-who { margin-left: auto; font-family: var(--k-sans); font-size: 12.5px; color: var(--k-forest-mute); }
+.sc-groups { margin-top: 22px; }
+.sc-group { border-top: 1px solid var(--k-forest-line); }
+.sc-gh { display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.sc-gl { font-family: var(--k-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; }
+.sc-gc { font-family: var(--k-sans); font-size: 12px; color: var(--k-forest-mute); }
+.sc-gs { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 18px; color: var(--k-forest-mute); }
+.sc-items { display: grid; gap: 10px; padding: 0 0 16px; }
+.sc-item { display: flex; gap: 14px; align-items: baseline; font-family: var(--k-sans); font-size: 14.5px; line-height: 1.4; }
+.sc-item .it-t { flex: 1; }
+.sc-item .it-m { font-size: 12.5px; color: var(--k-forest-mute); white-space: nowrap; }
+.sc-join { border-top: 1px solid var(--k-forest-line); padding-top: 16px; font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-gold); }
+
+/* ── the inner life (centred) ── */
+.inner-in { max-width: 880px; margin: 0 auto; text-align: center; }
+.inner-in .lead { margin: 24px auto 0; max-width: 620px; }
+.inner-more { margin-top: 28px; font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); cursor: pointer; background: none; border: 0; }
+.inner-extra { margin: 18px auto 0; max-width: 620px; }
+
+/* ── private by design (folding points, no ticks) ── */
+.priv-points { border-top: 1px solid var(--k-line); }
+.priv { border-bottom: 1px solid var(--k-line); }
+.priv-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.priv-num { width: 26px; flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-gold); }
+.priv-title { flex: 1; font-family: var(--k-serif); font-weight: 300; font-size: 25px; line-height: 1.2; color: var(--k-ink); }
+.priv-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.priv-body { padding: 0 0 20px 44px; font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); text-wrap: pretty; }
+
+/* ── made to be quick (three columns) ── */
+.quick-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr)); gap: clamp(28px,4vw,56px); margin-top: 48px; }
+.quick-step { border-top: 1px solid var(--k-ink); padding-top: 22px; }
+.quick-n { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 26px; color: var(--k-gold); }
+.quick-t { font-family: var(--k-serif); font-weight: 300; font-size: 30px; line-height: 1.15; margin-top: 10px; }
+.quick-p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); margin-top: 10px; }
+
+/* ── invite (deep-forest panel) ── */
+.invite { background: var(--k-forest-deep); color: var(--k-onforest); }
+.invite-in { max-width: 760px; margin: 0 auto; padding: clamp(72px,9vw,128px) 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.invite-script { width: 220px; height: auto; opacity: .9; }
+.invite .eyebrow { margin-top: 44px; color: var(--k-gold); }
+.invite h2 { font-size: clamp(44px,5vw,66px); line-height: 1.05; margin-top: 20px; }
+.invite-lead { font-family: var(--k-sans); font-size: 17px; line-height: 1.7; color: var(--k-forest-mute); margin-top: 22px; max-width: 520px; text-wrap: pretty; }
+.invite-form { width: min(100%,520px); margin-top: 40px; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.inv-field { border-bottom: 1px solid var(--k-forest-line); }
+.inv-field + .inv-field { margin-top: 4px; }
+.inv-field input { width: 100%; background: transparent; border: 0; padding: 15px 2px; font-family: var(--k-sans); font-size: 16px; color: var(--k-onforest); }
+.inv-field input::placeholder { color: var(--k-forest-mute); }
+.inv-field input:focus { outline: none; }
+.inv-field:focus-within { border-bottom-color: var(--k-gold); }
+.invite-form .if-actions { display: flex; justify-content: center; margin-top: 26px; }
+.invite-form .if-note { margin-top: 16px; font-size: 14px; color: var(--k-gold); text-align: center; }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
+.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-forest-mute); font-size: 16.5px; line-height: 1.6; }
+.inv-have { margin-top: 22px; font-family: var(--k-sans); font-size: 14px; color: var(--k-onforest); opacity: .75; }
+.inv-have:hover { opacity: 1; }
+
+/* ── footer ── */
+.foot-in { padding: 56px 0 40px; }
+.foot-top { display: flex; flex-wrap: wrap; gap: 32px 64px; align-items: flex-start; }
+.foot-brand { display: grid; gap: 10px; }
+.foot-tag { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-mute); }
+.foot-col { display: grid; gap: 10px; font-family: var(--k-sans); font-size: 14px; }
+.foot-col a { color: var(--k-ink); } .foot-col a:hover { color: var(--k-goldt); }
+.foot-meta { margin-left: auto; font-family: var(--k-sans); font-size: 13px; line-height: 1.7; color: var(--k-mute); text-align: right; }
+.foot-lisboa { font-style: italic; color: var(--k-goldt); font-family: var(--k-serif); font-size: 15px; }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 4px; }
+.foot-lang-label { font-size: 13px; color: var(--k-faint); }
+.foot-mark { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 80px; opacity: .5; transition: opacity .6s ease; }
+.foot-mark:hover { opacity: 1; }
+.foot-mark img { width: 240px; max-width: 72vw; height: auto; }
+.dict { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 26px; text-align: center; }
+.dict-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; }
+.dict-word { font-family: var(--k-serif); font-weight: 500; font-size: 24px; line-height: 1; }
+.dict-say { font-family: var(--k-sans); font-size: 14px; color: var(--k-mute); white-space: nowrap; }
+.dict-pos { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 18px; color: var(--k-goldt); white-space: nowrap; }
+.dict-def { font-family: var(--k-serif); font-weight: 300; font-size: 20px; line-height: 1.3; color: var(--k-mute); }
+
+/* language switcher (filled by i18n.js) */
 .lang-switch { display: inline-flex; align-items: center; gap: 1px; }
 .lang-switch a { display: inline-block; padding: 4px 7px; font-size: 12.5px; font-weight: 500; letter-spacing: .04em; color: var(--k-faint); transition: color .16s, background .16s; }
 .lang-switch a:hover { color: var(--k-ink); background: var(--k-soft); }
 .lang-switch a.on { color: var(--k-goldt); }
-.nav-lang { margin-right: 2px; }
-.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
-.foot-lang-label { font-size: 13px; color: var(--k-faint); }
-.lang-switch.lang-dd { position: relative; gap: 0; }
-.lang-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: transparent; border: 1px solid var(--k-line); padding: 7px 10px; cursor: pointer; line-height: 1; transition: border-color .16s, color .16s; }
-.lang-btn:hover { color: var(--k-ink); border-color: var(--k-ink); }
-.lang-caret { font-size: 10px; opacity: .7; }
-.lang-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 160px; background: var(--k-panel); border: 1px solid var(--k-line); padding: 6px; display: none; z-index: 60; }
-.lang-switch.lang-dd.open .lang-menu { display: block; }
-.lang-menu a { display: block; padding: 8px 12px; font-size: 14px; font-weight: 400; color: var(--k-mute); }
-.lang-menu a:hover { background: var(--k-soft); color: var(--k-ink); }
-.lang-menu a.on { color: var(--k-goldt); font-weight: 500; }
 
-/* ── hero ── */
-.hero { padding: 86px 0 70px; }
-.hero-in { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 60px; align-items: center; }
-.hero-copy { min-width: 0; }
-.hero h1 { font-size: clamp(44px, 6.6vw, 76px); line-height: 1.02; }
-.hero h1 .l2 { display: block; font-style: italic; color: var(--k-goldt); }
-.hero-sub { margin-top: 26px; font-size: clamp(16.5px, 1.8vw, 19px); color: var(--k-mute); max-width: 46ch; line-height: 1.6; }
-.hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.hero-note { margin-top: 20px; font-size: 13px; letter-spacing: .02em; color: var(--k-faint); }
-
-/* hero device: one clean, flat, square panel */
-.device { border: 1px solid var(--k-line); background: var(--k-panel); }
-.device-bar { display: flex; align-items: center; justify-content: space-between; background: var(--k-deep); color: var(--k-ondeep); padding: 13px 18px; }
-.device-bar .dw { font-family: var(--k-serif); font-weight: 500; font-size: 18px; }
-.device-bar .dw .dot { color: var(--k-gold); }
-.device-bar .dd { font-size: 10.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; opacity: .8; font-family: var(--k-sans); }
-.device-body { padding: 20px 20px 22px; }
-.device-eyebrow { display: flex; align-items: center; gap: 12px; font-size: 10.5px; font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 4px; }
-.device-eyebrow::before { content: ""; width: 24px; height: 1px; background: var(--k-gold); }
-.prow { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
-.prow:last-child { border-bottom: 0; }
-.pt { font-family: var(--k-serif); font-size: 19px; color: var(--k-mute); width: 44px; flex: none; font-variant-numeric: tabular-nums; }
-.sq { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.sq.out { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.sq.mute { background: var(--k-faint); }
-.plbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
-.prow.done .plbl { color: var(--k-faint); text-decoration: line-through; }
-.ptick { color: var(--k-goldt); font-size: 14px; flex: none; }
-.pcal { font-size: 9px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 2px 6px; flex: none; }
-@media (max-width: 880px) {
-  .hero { padding: 54px 0 48px; }
-  .hero-in { grid-template-columns: 1fr; gap: 40px; }
-  .hero-sub { max-width: none; }
-}
-
-/* ── section scaffolding ── */
-section { position: relative; }
-.band { padding: 92px 0; }
-.band-head { max-width: 640px; margin-bottom: 50px; }
-.band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
-.band-head p { margin-top: 18px; font-size: 18px; color: var(--k-mute); line-height: 1.6; }
-.rule-top { border-top: 1px solid var(--k-line); }
-.soft { background: var(--k-soft); border-top: 1px solid var(--k-line); border-bottom: 1px solid var(--k-line); }
-
-/* concept */
-.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-.concept-lead { font-family: var(--k-serif); font-size: clamp(26px, 3.2vw, 34px); line-height: 1.28; font-weight: 300; }
-.concept-lead .em { font-style: italic; color: var(--k-goldt); }
-.concept-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.65; }
-.concept-body p + p { margin-top: 18px; }
-.concept-body .close { margin-top: 20px; font-family: var(--k-serif); font-style: italic; font-size: 22px; color: var(--k-ink); line-height: 1.35; }
-@media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 30px; } }
-.holds { list-style: none; margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 26px; }
-.holds li { display: grid; grid-template-columns: 9px 1fr; gap: 12px; align-items: start; }
-.holds .hsq { width: 7px; height: 7px; margin-top: 9px; background: var(--k-gold); }
-.holds b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; display: block; line-height: 1.2; }
-.holds span { font-size: 14px; color: var(--k-faint); line-height: 1.45; display: block; margin-top: 2px; }
-@media (max-width: 460px) { .holds { grid-template-columns: 1fr; } }
-
-/* litany */
-.litany-band { padding: clamp(58px, 9vw, 100px) 0; }
-.litany { font-family: var(--k-serif); font-weight: 300; font-size: clamp(27px, 4.4vw, 46px); line-height: 1.3; color: var(--k-ink); max-width: 22ch; text-wrap: balance; }
-.litany .em { color: var(--k-goldt); font-style: italic; }
-
-/* tools showcase */
-.ts-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.tstile { flex: 1 1 164px; max-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--k-panel); border: 1px solid var(--k-line); cursor: pointer; font: inherit; color: var(--k-ink); transition: border-color .16s, background .16s; }
-.tstile:hover { border-color: var(--k-mute); }
-.tstile .tsi { font-size: 21px; line-height: 1; color: var(--k-goldt); }
-.tstile .tsn { font-size: 13px; font-weight: 500; }
-.tstile.on { border-color: var(--k-gold); background: var(--k-soft); }
-.tstile.on .tsn { color: var(--k-goldt); }
-.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 36px; }
-.tsp-ic { font-size: 30px; line-height: 1; color: var(--k-goldt); margin-bottom: 16px; }
-.tsp-name { font-family: var(--k-serif); font-size: clamp(26px, 3vw, 34px); font-weight: 300; line-height: 1.05; }
-.tsp-tag { color: var(--k-goldt); font-family: var(--k-serif); font-style: italic; font-size: 19px; margin: 6px 0 15px; }
-.tsp-desc { color: var(--k-mute); font-size: 16px; line-height: 1.6; max-width: 46ch; }
-.tsp-feats { list-style: none; margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
-.tsp-feats li { position: relative; padding-left: 22px; font-size: 14.5px; color: var(--k-mute); line-height: 1.45; }
-.tsp-feats li::before { content: '✓'; position: absolute; left: 0; top: 0; color: var(--k-goldt); font-size: 12px; }
-.tspv { background: var(--k-bg); border: 1px solid var(--k-line); padding: 18px 20px; }
-.pv-rows { display: flex; flex-direction: column; }
-.pv-row { display: flex; align-items: center; gap: 11px; padding: 9px 0; font-size: 14.5px; color: var(--k-ink); border-bottom: 1px solid var(--k-line); }
-.pv-row:last-child { border-bottom: 0; }
-.pv-ava { width: 25px; height: 25px; background: var(--k-deep); color: var(--k-ondeep); font-family: var(--k-serif); font-size: 13px; display: grid; place-items: center; flex: none; }
-.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pv-t b { font-weight: 400; font-family: var(--k-serif); font-size: 16px; }
-.adot { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.adot.rust, .adot.gold { background: var(--k-gold); }
-.adot.pine { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.adot.blue { background: var(--k-faint); }
-.adot.big { width: 10px; height: 10px; }
-.pv-chip { font-size: 10.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border: 1px solid var(--k-line); color: var(--k-mute); flex: none; }
-.pv-chip.q-urgent { background: var(--k-gold); color: var(--k-ongold); border-color: var(--k-gold); }
-.pv-chip.q-important { color: var(--k-goldt); border-color: var(--k-gold); }
-.pv-chip.q-chilled, .pv-chip.q-others { color: var(--k-faint); }
-.pv-quad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--k-line); }
-.pv-quad .lbl { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-faint); margin-right: 2px; }
-.pv-time { width: 46px; font-family: var(--k-serif); font-size: 16px; color: var(--k-mute); font-variant-numeric: tabular-nums; flex: none; }
-.pv-amt { font-family: var(--k-serif); font-size: 17px; color: var(--k-ink); flex: none; font-variant-numeric: tabular-nums; }
-.pv-check { width: 16px; height: 16px; border: 1px solid var(--k-gold); flex: none; }
-.pv-check.on { background: var(--k-gold); position: relative; }
-.pv-check.on::after { content: '✓'; color: var(--k-ongold); font-size: 10px; position: absolute; inset: 0; display: grid; place-items: center; }
-.pv-done { color: var(--k-faint); text-decoration: line-through; }
-.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
-.pv-abar { flex: 1; }
-.pv-aname { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 7px; color: var(--k-ink); }
-.pv-apct { color: var(--k-faint); font-family: var(--k-serif); font-size: 16px; }
-.pv-bar { height: 4px; background: var(--k-line); overflow: hidden; }
-.pv-bar > i { display: block; height: 100%; background: var(--k-gold); }
-.pv-note-h { font-family: var(--k-serif); font-size: 20px; font-weight: 300; margin-bottom: 6px; color: var(--k-ink); }
-.pv-note-l { font-size: 14px; color: var(--k-mute); line-height: 1.55; margin-bottom: 12px; }
-.pv-links { display: flex; flex-wrap: wrap; gap: 6px; }
-.pv-link { font-size: 11px; font-weight: 500; color: var(--k-goldt); border: 1px solid var(--k-line); padding: 3px 8px; }
-.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.pv-tbl th { text-align: left; color: var(--k-faint); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; border-bottom: 1px solid var(--k-line); }
-.pv-tbl td { padding: 8px; border-bottom: 1px solid var(--k-line); color: var(--k-ink); font-family: var(--k-serif); font-size: 16px; }
-.r-q { font-family: var(--k-serif); font-style: italic; font-size: 18px; line-height: 1.4; color: var(--k-ink); }
-.mood { display: flex; align-items: center; gap: 7px; }
-.md { width: 11px; height: 11px; box-shadow: inset 0 0 0 1px var(--k-faint); }
-.md.on { background: var(--k-gold); box-shadow: none; }
-.mood-l { margin-left: 5px; font-size: 12.5px; color: var(--k-faint); font-family: var(--k-sans); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 3px 9px; }
-@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 24px; padding: 26px; } }
-@media (max-width: 520px) { .ts-tiles { gap: 8px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
-
-/* Spaces */
-.areas-grid { display: grid; grid-template-columns: 1.06fr 0.94fr; gap: 60px; align-items: center; }
-.areas-lead { font-family: var(--k-serif); font-size: clamp(23px, 2.9vw, 31px); line-height: 1.3; font-weight: 300; margin-bottom: 18px; }
-.areas-lead .em, .areas-body .em { color: var(--k-goldt); font-style: italic; }
-.areas-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.62; }
-@media (max-width: 820px) { .areas-grid { grid-template-columns: 1fr; gap: 34px; } }
-.areas-flow { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 38px 28px; background: var(--k-panel); border: 1px solid var(--k-line); }
-.af-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; }
-.af-chip { font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: var(--k-bg); border: 1px solid var(--k-line); padding: 7px 13px; }
-.af-arrow { color: var(--k-gold); font-size: 22px; line-height: 1; }
-.af-area { display: inline-flex; align-items: center; gap: 11px; font-family: var(--k-serif); font-size: 22px; font-weight: 300; color: var(--k-ongold); background: var(--k-gold); padding: 11px 24px; }
-.af-dot { width: 8px; height: 8px; background: var(--k-ongold); opacity: .7; }
-.areas-share { margin-top: 66px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
-.areas-share-h { font-family: var(--k-serif); font-size: clamp(24px, 3vw, 32px); font-weight: 300; margin: 14px 0 14px; }
-.areas-share-lead { color: var(--k-mute); font-size: 17.5px; line-height: 1.6; max-width: 52ch; margin: 0 auto 38px; }
-.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 14px; }
-.share-case { background: var(--k-panel); border: 1px solid var(--k-line); padding: 26px 18px; display: flex; flex-direction: column; align-items: center; gap: 7px; transition: border-color .16s; }
-.share-case:hover { border-color: var(--k-mute); }
-.share-case .ssq { width: 8px; height: 8px; background: var(--k-gold); margin-bottom: 6px; }
-.share-case b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; color: var(--k-ink); }
-.share-case span:last-child { font-size: 13.5px; color: var(--k-faint); }
-@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
-
-/* inner life */
-.inner-band .band-head { max-width: 760px; }
-.inner-band p { font-size: 18.5px; }
-
-/* ethos */
-.ethos { padding: 86px 0; text-align: center; }
-.ethos-line { font-family: var(--k-serif); font-size: clamp(28px, 4.2vw, 44px); line-height: 1.2; font-weight: 300; text-wrap: balance; max-width: 20ch; margin: 6px auto 0; }
-.ethos-line .em { font-style: italic; color: var(--k-goldt); }
-.ethos-sub { margin: 22px auto 0; max-width: 46ch; font-size: 17.5px; color: var(--k-mute); line-height: 1.6; }
-
-/* privacy - forest band */
-.privacy { background: var(--k-deep); color: var(--k-ondeep); }
-.privacy .eyebrow { color: var(--k-gold); }
-.privacy .eyebrow::before { background: var(--k-gold); }
-.privacy h2 { color: var(--k-ondeep); margin-bottom: 24px; }
-.privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-.privacy-lead { font-size: 18px; line-height: 1.65; color: color-mix(in oklab, var(--k-ondeep), transparent 12%); }
-.privacy-lead + .privacy-lead { margin-top: 20px; }
-.privacy-lead b { color: var(--k-ondeep); font-weight: 400; font-family: var(--k-serif); font-size: 20px; }
-.privacy-points { list-style: none; display: flex; flex-direction: column; gap: 16px; }
-.privacy-points li { display: flex; gap: 14px; font-size: 16px; line-height: 1.5; color: color-mix(in oklab, var(--k-ondeep), transparent 8%); }
-.privacy-points .tick { flex: none; width: 20px; height: 20px; background: var(--k-gold); color: var(--k-ongold); display: grid; place-items: center; font-size: 11px; }
-@media (max-width: 820px) { .privacy-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* capture */
-.capture-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; }
-.steps { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--k-line); }
-.step { display: flex; gap: 20px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--k-line); }
-.step-n { flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 30px; color: var(--k-goldt); width: 32px; line-height: 1; }
-.step-t b { display: block; font-family: var(--k-serif); font-size: 21px; font-weight: 300; margin-bottom: 3px; }
-.step-t span { font-size: 15px; color: var(--k-mute); }
-@media (max-width: 820px) { .capture-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* closing */
-.closing { text-align: center; padding: 104px 0; background: var(--k-soft); border-top: 1px solid var(--k-line); }
-.closing .script { width: 150px; height: auto; display: block; margin: 0 auto; opacity: .9; }
-.closing .script-ivory { display: none; }
-@media (prefers-color-scheme: dark) { .closing .script-ink { display: none; } .closing .script-ivory { display: block; } }
-.closing .gold-rule { width: 30px; height: 1px; background: var(--k-gold); margin: 22px auto; }
-.closing h2 { font-size: clamp(34px, 5vw, 52px); }
-.closing > .wrap > p { margin: 20px auto 0; max-width: 46ch; font-size: 18px; color: var(--k-mute); }
-.invite-form { max-width: 520px; margin: 34px auto 0; text-align: left; }
-.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.if-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.invite-form input, .invite-form textarea { width: 100%; font-family: var(--k-sans); font-size: 16px; color: var(--k-ink); background: var(--k-panel); border: 1px solid var(--k-line); padding: 13px 15px; }
-.invite-form textarea { margin-top: 12px; resize: vertical; line-height: 1.5; }
-.invite-form input::placeholder, .invite-form textarea::placeholder { color: var(--k-faint); }
-.invite-form input:focus, .invite-form textarea:focus { outline: none; border-color: var(--k-gold); }
-.if-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 16px; }
-.if-note { margin-top: 14px; text-align: center; font-size: 15px; color: var(--k-goldt); }
-.invite-thanks { text-align: center; padding: 8px 0; }
-.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
-.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-mute); font-size: 16.5px; }
-@media (max-width: 520px) { .if-grid { grid-template-columns: 1fr; } }
-
-/* footer */
-footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
-.foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
-.foot-tag { font-family: var(--k-serif); font-style: italic; font-size: 15.5px; color: var(--k-faint); padding-left: 35px; }
-.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-.foot-links { display: flex; gap: 24px; list-style: none; flex-wrap: wrap; }
-.foot-links a { color: var(--k-faint); font-size: 14px; transition: color .18s; }
-.foot-links a:hover { color: var(--k-ink); }
-.foot-meta { font-size: 13.5px; color: var(--k-faint); }
-.foot-lisboa { font-family: var(--k-serif); font-style: italic; color: var(--k-goldt); }
-.foot-meta a { color: var(--k-goldt); } .foot-meta a:hover { text-decoration: underline; }
-
-/* reveal */
-.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  html { scroll-behavior: auto; }
-}
-
-/* sign-in modal */
+/* ── sign-in modal (kept from the old homepage) ── */
 .signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: color-mix(in oklab, var(--k-ink) 46%, transparent); }
 .signin-overlay[hidden] { display: none; }
 .signin-box { position: relative; width: min(440px, 100%); background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 32px 28px; }
@@ -421,6 +307,11 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 .signin-foot a { color: var(--k-goldt); font-weight: 500; }
 .signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1px solid var(--k-gold); text-align: center; font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--k-goldt); cursor: pointer; font-family: var(--k-sans); transition: background .18s, color .18s; }
 .signin-smslink:hover { background: var(--k-gold); color: var(--k-ongold); }
+
+/* ── reveal on scroll ── */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .demo-rows { transition: none; } }
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -465,7 +356,7 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/">
+    <a class="brand" href="#top">
       <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
       <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
       <span class="brand-word">Koyeba<span class="dot">.</span></span>
@@ -477,254 +368,164 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
       <li><a href="/blog">Journal</a></li>
     </ul>
     <div class="nav-cta">
-      <div class="lang-switch nav-lang"></div>
-      <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
+      <a class="sign" href="#" data-signin>Sign in</a>
       <a class="btn btn-primary" href="#invite">Request an invite</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
+<header id="top">
   <div class="wrap hero-in">
-    <div class="hero-copy">
-      <div class="eyebrow reveal">Invite-only, early access</div>
-      <h1 class="reveal">Set it down.<span class="l2">It comes back when you need it.</span></h1>
-      <p class="hero-sub reveal">Koyeba is a calm, private home for your whole life - mail, calendar, tasks, notes, money and the inner life, joined up through Spaces. Set something down, let go of it, and trust it to return at the right moment.</p>
-      <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Request an invite →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Sign in</a>
+    <div class="hero-copy reveal">
+      <div class="eyebrow">Invite-only · early access</div>
+      <h1>Set it down.<br><i>It comes back</i> when you need it.</h1>
+      <p class="hero-sub">A calm, private home for your mail, calendar, tasks, notes and the rest of your life – joined up through Spaces, so things find their own place and return at the right moment.</p>
+      <div class="hero-actions">
+        <a class="btn btn-ink" href="#invite">Request an invite</a>
+        <a class="link-gold" href="#idea">How it works →</a>
       </div>
-      <p class="hero-note reveal">Private by design. No adverts, nothing sold, no noise.</p>
     </div>
     <div class="reveal">
-      <div class="device">
-        <div class="device-bar"><span class="dw">Koyeba<span class="dot">.</span></span><span class="dd">Friday · 31 Oct</span></div>
-        <div class="device-body">
-          <div class="device-eyebrow">Today</div>
-          <div class="prow done"><span class="pt">07:30</span><span class="sq mute"></span><span class="plbl">Morning sit</span><span class="ptick">✓</span></div>
-          <div class="prow"><span class="pt">10:00</span><span class="sq"></span><span class="plbl">Draft the Sintra proposal</span></div>
-          <div class="prow"><span class="pt">13:00</span><span class="sq out"></span><span class="plbl">Lunch with Marta</span><span class="pcal">cal</span></div>
-          <div class="prow"><span class="pt">18:00</span><span class="sq mute"></span><span class="plbl">Walk before the light goes</span></div>
-        </div>
+      <div class="demo" aria-hidden="true">
+        <div class="eyebrow">Set something down</div>
+        <div class="demo-line"><span id="demoTyped"></span><span class="demo-caret" id="demoCaret"></span></div>
+        <div class="demo-rows" id="demoRows"></div>
       </div>
     </div>
   </div>
 </header>
 
-<section class="band" id="idea">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Where it starts</div></div>
-    <div class="concept-grid">
-      <div class="reveal">
-      <p class="concept-lead">A life is many parts at once - the doing and the dreaming, the urgent and the quiet. Koyeba gathers them into <span class="em">one calm place.</span></p>
-      <ul class="holds">
-        <li><span class="hsq"></span><div><b>Your day</b><span>Schedule, tasks and appointments</span></div></li>
-        <li><span class="hsq"></span><div><b>Your people</b><span>The ones you want to keep close</span></div></li>
-        <li><span class="hsq"></span><div><b>Your reflections</b><span>Thoughts, feelings, what it means</span></div></li>
-        <li><span class="hsq"></span><div><b>Your to-dos</b><span>Urgent now, and the long game</span></div></li>
-      </ul>
-    </div>
-    <div class="concept-body reveal">
-      <p>We carry too much at once. Tasks half-remembered, ideas we meant to keep, money we meant to watch, feelings we never sat with. Held loosely, it leaks - onto scraps of paper, into ten different apps, or just quietly lost.</p>
-      <p>Koyeba is where it all comes in. You set something down and let go of it, and it comes back when you need it - the task when the day calls for it, the page when you're planning, the thought when you pause.</p>
-      <p class="close">Set it down with confidence. Find it again with trust.</p>
-    </div>
-    </div>
-  </div>
-</section>
-
-<section class="litany-band soft">
-  <div class="wrap reveal">
-    <p class="litany">Your time, your people, your plans, your rhythms - and the scattered digital life wrapped around them. Gathered into one quiet place, and <span class="em">wholly yours.</span></p>
-  </div>
-</section>
-
-<section class="band" id="tools">
-  <div class="wrap">
-    <div class="band-head center reveal">
-      <div class="eyebrow center">Your whole suite</div>
-      <h2>Every tool, in one place</h2>
-      <p>Mail, calendar, pages, tasks, money and people for the doing; reflection, goals and Spaces for the inner life. Joined up so nothing slips, and handled quietly, so you stay on top of it.</p>
-    </div>
-    <div class="toolshow reveal">
-      <div class="ts-tiles" id="tsTiles">
-        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Spaces</span></button>
-        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Mail</span></button>
-        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Calendar</span></button>
-        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tasks</span></button>
-        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notes</span></button>
-        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">Read &amp; Watch</span></button>
-        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Reflection</span></button>
-        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Journal</span></button>
-        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
-        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Goals</span></button>
-        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Reviews</span></button>
-        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Bucket list</span></button>
-        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contacts</span></button>
-        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Sharing</span></button>
-        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Messaging</span></button>
-        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Money</span></button>
-        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tables</span></button>
-      </div>
-      <div class="tspanel" id="tsPanel"></div>
-    </div>
-    <script>
-    (function(){
-      var T={
-        areas:{ic:'◈',name:'Spaces',tag:'The heart of Koyeba',desc:`Your mail, calendar, tasks, notes, goals, people and spending gather around the real parts of your life - each showing where it stands at a glance.`,feats:["Everything gathers by the part of life it belongs to","Set a date and a Space becomes a project, counting down","Share a Space with the people who live it"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Frigiliana trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Health <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Home move <span class="pv-apct">85%</span></div><div class="pv-bar"><i style="width:85%"></i></div></div></div>`},
-        mail:{ic:'✉',name:'Mail',tag:'Every inbox, one room',desc:`Bring every account into one stream - Gmail, Outlook, any IMAP inbox - and work them all as one.`,feats:["All your accounts merged into one inbox","Sort fast: Urgent, Important, Read later","File a mail into a Space, and share it there"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgent</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Important</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">Read later</span></div></div><div class="pv-quad"><span class="lbl">Sort</span><span class="pv-chip q-urgent">Urgent</span><span class="pv-chip q-important">Important</span><span class="pv-chip q-chilled">Read later</span><span class="pv-chip q-others">Archive</span></div>`},
-        calendar:{ic:'◑',name:'Calendar',tag:'Month, week, agenda',desc:`One view onto your days - in sync with the calendar you already use.`,feats:["Month, week and agenda in one view","Two-way sync with your Google calendar","An event can count toward a practice"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Proposal review</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Lunch with Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga by the river</span></div></div>`},
-        tasks:{ic:'✓',name:'Tasks',tag:'Your day, flowing',desc:`A day that flows, not a nagging list - work with it when you're in the zone.`,feats:["Nothing shouts; a task simply says 12 days past","Resurfaces exactly when it's due","Each task carries its Space"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot rust"></span><span class="pv-t pv-done">Morning sit</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Draft the Sintra proposal</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Walk before the light goes</span></div></div>`},
-        notes:{ic:'▤',name:'Notes',tag:'Write freely, link it up',desc:`A scribbled idea, a longer thought, or a plan with everything linked in - captured in seconds and joined to where it belongs.`,feats:["Set something down in two taps, from anywhere","Link in a website, a task, an event, a person","Turn any note into a table when ready"],pv:`<div class="pv-note-h">Frigiliana trip</div><p class="pv-note-l">Coast road, the house with the blue door. Confirm the dates before the 20th.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Book the ferry</span><span class="pv-link">◷ Fri 12th</span><span class="pv-link">↳ Frigiliana trip</span></div>`},
-        readwatch:{ic:'☆',name:'Read & Watch',tag:'Save it for later',desc:`Keep the sites, articles, books and films you mean to get to - saved in one tap, ready for when you have the time.`,feats:["One-tap capture - bookmarklet or iOS Shortcut","Articles, websites, books and films, all sorted","Pull one up when you have a free evening"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Film</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Four Thousand Weeks</span><span class="pv-chip">Book</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - the Lisbon issue</span><span class="pv-chip">Link</span></div></div>`},
-        wellbeing:{ic:'✎',name:'Reflection',tag:'The inner life, tended',desc:`The reflective half - journalling, reviews, dreams and gentle reflection tools, right beside the doing.`,feats:["Journalling, reviews and gentle coaching","Reflection tools to spark a thought when you want one","There when you need them, out of the way when you don't"],pv:`<p class="r-q" style="margin:0 0 13px">"What did today ask of me, and what did I give it?"</p><div class="mood" style="margin-bottom:14px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Steady this week</span></div><div class="chips"><span class="chip">Journal</span><span class="chip">Dreams</span><span class="chip">Readings</span></div>`},
-        journal:{ic:'✒',name:'Journal',tag:'Think on the page',desc:`Pick a prompt, write, and dig deeper with a follow-up question whenever you want to go further.`,feats:["A prompt picker to get you going","'Dig deeper' asks the next question","Entries live in your reflection history"],pv:`<p class="r-q" style="margin:0 0 11px">"What am I making room for this week?"</p><p class="pv-note-l" style="margin:0">Less noise. One real conversation with Marta. A walk that isn't going anywhere.</p>`},
-        coaching:{ic:'✦',name:'Coaching',tag:'A question, not a lecture',desc:`Gentle, optional coaching that asks the right question at the right moment, drawing on your own goals and reviews.`,feats:["Grounded in your goals and reviews","It asks; it never instructs","Opt-in, with your own AI key"],pv:`<p class="r-q" style="margin:0 0 12px">"You've moved the gym three times - what's really in the way?"</p><div class="chips"><span class="chip">Reflect</span><span class="chip">Reframe</span><span class="chip">Try again</span></div>`},
-        goals:{ic:'◎',name:'Goals',tag:'Intentions, made to happen',desc:`Set what matters, break it into steps, and watch it move.`,feats:["Break a goal into real next actions","Progress at a glance","Tied to the Spaces they live in"],pv:`<div class="pv-aname">Run a half-marathon <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:15px"><i style="width:60%"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10k without stopping</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Book the race</span></div></div>`},
-        reviews:{ic:'↻',name:'Reviews',tag:'Look back to move forward',desc:`A gentle rhythm of reviews - weekly, monthly, by season - to see how life is really going and reset what matters.`,feats:["Reminders on your own cadence","Pulls real numbers from your Spaces","See progress, then reset your intentions"],pv:`<div class="pv-aname">Weekly review <span class="pv-apct">3 of 4 done</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Frigiliana trip</span><span class="pv-amt">on track</span></div><div class="pv-row"><span class="pv-t">Next due</span><span class="pv-amt">Sunday</span></div></div>`},
-        bucket:{ic:'⚑',name:'Bucket list',tag:'The life list',desc:`The experiences, places and dreams you don't want to miss - captured, and nudged into real plans when the moment is right.`,feats:["Dreams, trips, skills, one-offs - all in one place","Turn any line into a goal with real next steps","Tick them off as life actually happens"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">See the Northern Lights</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Learn to surf</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Walk the Camino</span></div></div>`},
-        contacts:{ic:'☺',name:'Contacts',tag:'Keep the people close',desc:`The people in your life, close - who they are, what matters to them, when you last spoke.`,feats:["Keep-in-touch nudges when it's time","Birthdays and what matters to them","Live in the Spaces they belong to"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · last spoke 6 weeks</span><span class="pv-chip">Say hi</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · birthday Friday</span><span class="pv-chip">Nudge</span></div></div>`},
-        sharing:{ic:'⇄',name:'Sharing',tag:'Share a Space, not your life',desc:`Invite the people in one part of your life into just that Space - co-parents, family, a trip - and keep everything else private.`,feats:["Per-Space access - nothing else leaks","A shared wall for each Space","They see only what you choose"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>The kids</b> · shared Space</span><span class="pv-chip">2 people</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">You</span><span class="pv-chip">owner</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Co-parent</span><span class="pv-chip">can edit</span></div></div>`},
-        messaging:{ic:'❝',name:'Messaging',tag:'Talk where the life is',desc:`Message the people in a shared Space, right where the plans, dates and files already live - no app-switching.`,feats:["Threaded to the Space it's about","Everyone sees the same context","No more scattered group chats"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">Handover still 6pm Friday?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Yes - I'll bring the kit bag.</span></div></div>`},
-        money:{ic:'€',name:'Money',tag:'Where it goes, by Space',desc:`See your spending sorted by the parts of life you care about.`,feats:["Spending sorted by Space","See where it really goes","No spreadsheets, no faff"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Frigiliana trip</span><span class="pv-amt">€1,240</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Health</span><span class="pv-amt">€85</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Home</span><span class="pv-amt">€430</span></div></div>`},
-        tables:{ic:'▦',name:'Tables',tag:'Structure when you want it',desc:`Turn a note into a proper table for whatever's worth tracking - right where you wrote it.`,feats:["A proper table wherever you need one","Grows out of a note in a tap","Track whatever's worth tracking"],pv:`<table class="pv-tbl"><thead><tr><th>Place</th><th>Seen</th><th>Go?</th></tr></thead><tbody><tr><td>Blue door house</td><td>Yes</td><td>★</td></tr><tr><td>Coast road inn</td><td>Not yet</td><td>-</td></tr></tbody></table>`}
-      };
-      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
-      function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
-      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
-      render('areas');
-    })();
-    </script>
-  </div>
-</section>
-
-<section class="band soft" id="connect">
-  <div class="wrap areas-grid">
+<section class="sec" id="idea">
+  <div class="wrap sec-in two">
     <div class="reveal">
-      <div class="eyebrow">Where it all meets</div>
-      <h2>Spaces join the dots</h2>
-      <p class="areas-lead">Each part of your life gets a Space - a project, the family, your health, the business. Tag anything to one, and the mail, events, tasks, pages and spending for <span class="em">that part of life</span> all gather there.</p>
-      <div class="areas-body">
-        <p>An email becomes a task. A page becomes a table. A payment files itself against the right Space. Nothing piles up in silos; it <span class="em">flows</span> to where it belongs - so you hold your life lightly, and step around the overwhelm.</p>
+      <div class="eyebrow">The idea</div>
+      <h2 class="big">We carry too much at once.</h2>
+    </div>
+    <div class="idea-body reveal">
+      <p>Tasks half-remembered, ideas we meant to keep, money we meant to watch. Held loosely, it leaks – onto scraps of paper, into ten different apps, or just quietly lost.</p>
+      <p>Koyeba is Lingala for <span class="know">to know</span>. Put something down once and you'll always know where it is – the task when the day calls for it, the page when you're planning, the thought when you pause.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tools">
+  <div class="wrap sec-in">
+    <div class="tools-head reveal">
+      <div class="eyebrow">Tools</div>
+      <h2 class="big">Everything you use, <i>talking to each other.</i></h2>
+      <p class="lead">Open any one to see what it does, and where it leads.</p>
+    </div>
+    <div class="tool-cols reveal" id="toolCols"></div>
+  </div>
+</section>
+
+<section class="forest" id="spaces">
+  <div class="wrap sec-in two wide">
+    <div class="reveal">
+      <div class="eyebrow">Spaces</div>
+      <h2 class="big">Each part of your life <i>gets a Space.</i></h2>
+      <p class="lead">The kids, the house, the dog, the business. An email becomes a task, a payment files itself, an event finds its people – and all of it gathers in the Space it belongs to.</p>
+      <div class="share">
+        <button class="share-h" type="button" data-share><span class="st">Share a Space with the people in it</span><span class="ss" id="shareSign">+</span></button>
+        <div class="share-body" id="shareBody" hidden>
+          <p>Open one part of your life to the people who live it with you – and only that part.</p>
+          <div class="share-grid">
+            <span><span class="gold">Co-parents</span> on the kids</span><span><span class="gold">A family</span> on the move</span><span><span class="gold">Friends</span> on a weekend away</span><span><span class="gold">A couple</span> on the money</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="areas-flow reveal" aria-hidden="true">
-      <div class="af-tools"><span class="af-chip">Mail</span><span class="af-chip">Event</span><span class="af-chip">Task</span><span class="af-chip">Note</span><span class="af-chip">Spend</span></div>
-      <div class="af-arrow">↓</div>
-      <div class="af-area"><span class="af-dot"></span>The family</div>
-    </div>
-  </div>
-  <div class="wrap areas-share reveal">
-    <div class="eyebrow center">Better together</div>
-    <h3 class="areas-share-h">Share a Space with the people in it</h3>
-    <p class="areas-share-lead">Open one part of your life to the people who live it with you - and only that part. Everyone sees what they should; nobody drowns in a group chat.</p>
-    <div class="share-cases">
-      <div class="share-case"><span class="ssq"></span><b>Co-parents</b><span>on “the kids”</span></div>
-      <div class="share-case"><span class="ssq"></span><b>A family</b><span>on “the move”</span></div>
-      <div class="share-case"><span class="ssq"></span><b>A group</b><span>on an event</span></div>
-      <div class="share-case"><span class="ssq"></span><b>A couple</b><span>on the money</span></div>
+    <div class="spacecard reveal">
+      <div class="sc-top"><span class="sc-num">II</span><span class="sc-name">The kids</span><span class="sc-who">Ada &amp; Tom</span></div>
+      <div class="sc-groups" id="spaceGroups"></div>
+      <div class="sc-join">Mrs Okafor's email → Sign the trip form, due Monday</div>
     </div>
   </div>
 </section>
 
-<section class="band inner-band" id="inner">
-  <div class="wrap band-head center reveal">
-    <div class="eyebrow center">For the inner life</div>
-    <h2>The inner life, included</h2>
-    <p>Most tools take care of the doing and leave the rest of you outside. Koyeba keeps both close - the outer life of tasks and plans, the inner life of thoughts, feelings and what it all means - so each makes more sense of the other. Journalling, reviews, gentle coaching and quiet reflection tools aren't bolted-on extras; they're how you bring a little awareness to the ordinary days, and notice the life you're actually living. There when you need them, out of the way when you don't.</p>
-  </div>
-</section>
-
-<section class="ethos soft">
-  <div class="wrap reveal">
-    <div class="eyebrow center">The Koyeba way</div>
-    <p class="ethos-line">What you need, surfaced in the right place, at the <span class="em">right time.</span></p>
-    <p class="ethos-sub">In tune with the rhythms of your life - nothing shouts for attention, and nothing worth remembering slips away.</p>
-  </div>
-</section>
-
-<section class="band privacy" id="private">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Private by design</div></div>
-    <div class="privacy-grid">
-      <div class="reveal">
-      <h2>Yours. Securely.</h2>
-      <p class="privacy-lead">Koyeba holds the most personal parts of your life - your reflections, your relationships. So it's locked down properly: <b>two-factor sign-in</b>, your data <b>encrypted at rest.</b></p>
-      <p class="privacy-lead">And your data? We don't want it. We're building a business on trust, not on selling you - so nothing of yours is mined, sold, or fed to anyone's model. It's yours. Export the lot in one tap, keep it on your own storage if you'd rather, bring your own AI - the choice is always yours.</p>
-    </div>
-    <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Two-factor sign-in - your Koyeba, properly locked.</div></li>
-      <li><span class="tick">✓</span><div>Never mined, never sold, never used to train anything.</div></li>
-      <li><span class="tick">✓</span><div>Export everything, any time, in a tap - or keep it on your own storage.</div></li>
-      <li><span class="tick">✓</span><div>Close your account whenever you like, and take it all with you.</div></li>
-      <li><span class="tick">✓</span><div>A business built on trust, not on your data.</div></li>
-    </ul>
+<section class="sec" id="inner">
+  <div class="wrap sec-in">
+    <div class="inner-in reveal">
+      <div class="eyebrow center">The inner life</div>
+      <h2 class="big">Room for the doing, <i>and for the rest of you.</i></h2>
+      <p class="lead">Journalling, reviews, goals and gentle coaching sit beside your tasks and plans, so each makes more sense of the other. There when you want them, out of the way when you don't.</p>
+      <button class="inner-more" type="button" data-inner id="innerMore">Read more +</button>
+      <p class="lead inner-extra" id="innerExtra" hidden>Most tools look after the outer life and leave the rest outside. Koyeba keeps a quiet place for thoughts, feelings and what it all means – a little awareness for ordinary days, and a way to notice the life you're actually living.</p>
     </div>
   </div>
 </section>
 
-<section class="band">
-  <div class="wrap capture-grid">
+<section class="sec" id="private">
+  <div class="wrap sec-in two">
+    <div class="reveal">
+      <div class="eyebrow">Private by design</div>
+      <h2 class="big">Yours. <i>Properly.</i></h2>
+      <p class="lead">Koyeba holds the most personal parts of your life, so we built a business on trust, not on selling you.</p>
+    </div>
+    <div class="priv-points reveal" id="privPoints"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap sec-in">
     <div class="reveal">
       <div class="eyebrow">Made to be quick</div>
-      <h2>Set it down in two taps</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Capture is meant to be effortless, especially on your phone. Get it out of your head in seconds and let it go - Koyeba tucks it into the right place for you.</p></div>
+      <h2 class="big">Two taps, then <i>let it go.</i></h2>
     </div>
-    <div class="steps reveal">
-      <div class="step"><span class="step-n">I</span><div class="step-t"><b>Open and jot</b><span>A task, a page, a number, a feeling - whatever you're holding.</span></div></div>
-      <div class="step"><span class="step-n">II</span><div class="step-t"><b>Let it go</b><span>It lands in the right place, tagged to the Space it belongs to.</span></div></div>
-      <div class="step"><span class="step-n">III</span><div class="step-t"><b>It comes back</b><span>At the right moment - in your day, your plans, or your review.</span></div></div>
+    <div class="quick-cols reveal">
+      <div class="quick-step"><div class="quick-n">I</div><div class="quick-t">Open and jot</div><p class="quick-p">A task, a date, a number, a feeling – whatever you're holding.</p></div>
+      <div class="quick-step"><div class="quick-n">II</div><div class="quick-t">It finds its place</div><p class="quick-p">Into the right tool, tagged to the Space it belongs to.</p></div>
+      <div class="quick-step"><div class="quick-n">III</div><div class="quick-t">It comes into view</div><p class="quick-p">In your day, your plans or your review – when it's useful, not before.</p></div>
     </div>
   </div>
 </section>
 
-<section class="closing" id="invite">
-  <div class="wrap reveal">
-    <img class="script script-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" aria-hidden="true">
-    <img class="script script-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="" aria-hidden="true">
-    <div class="gold-rule"></div>
+<section class="invite" id="invite">
+  <div class="wrap invite-in reveal">
+    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba, written in Mandombe">
     <div class="eyebrow center">Early access</div>
     <h2>Come and set it down.</h2>
-    <p>Koyeba is invite-only while it's young, growing gently by word of mouth so it stays calm and well cared for. Tell us a little about you, and we'll make a space for you.</p>
-    <form class="invite-form reveal" id="invite-form" novalidate>
+    <p class="invite-lead">Koyeba is growing gently, by word of mouth, so it stays calm and well cared for. Tell us a little about you and we'll make a space for you.</p>
+    <form class="invite-form" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="if-grid">
-        <input id="if-name" placeholder="Your name" autocomplete="name" required>
-        <input id="if-email" type="email" placeholder="Your email" autocomplete="email" required>
-      </div>
-      <textarea id="if-why" placeholder="What would you use Koyeba for? A line is plenty." rows="2"></textarea>
-      <div class="if-actions">
-        <button class="btn btn-primary" type="submit" id="if-submit">Request an invite →</button>
-        <a class="btn btn-ghost" href="#" data-signin>I have an account</a>
-      </div>
+      <div class="inv-field"><input id="if-name" placeholder="Your name" autocomplete="name" required></div>
+      <div class="inv-field"><input id="if-email" type="email" placeholder="Your email" autocomplete="email" required></div>
+      <div class="inv-field"><input id="if-heard" placeholder="How did you hear about Koyeba? (optional)" autocomplete="off"></div>
+      <div class="if-actions"><button class="btn btn-primary" type="submit" id="if-submit">Request an invite →</button></div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
+    <a class="inv-have" href="#" data-signin>I already have an account</a>
   </div>
 </section>
 
-<footer id="signin">
+<footer>
   <div class="wrap foot-in">
-    <div class="foot-brand">
-      <a class="brand" href="/">
-        <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
-        <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
-        <span class="brand-word">Koyeba<span class="dot">.</span></span>
-      </a>
-      <span class="foot-tag">For a life well lived</span>
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="brand" href="#top">
+          <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
+          <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
+          <span class="brand-word">Koyeba<span class="dot">.</span></span>
+        </a>
+        <span class="foot-tag">For a life well lived</span>
+      </div>
+      <div class="foot-col">
+        <a href="#idea">The idea</a><a href="#tools">Tools</a><a href="#private">Privacy</a><a href="/blog">Journal</a>
+      </div>
+      <div class="foot-col">
+        <a href="/privacy">Privacy policy</a><a href="/terms">Terms</a><a href="#" data-cookie-settings>Cookie settings</a><a href="mailto:contact@koyeba.co">contact@koyeba.co</a>
+      </div>
+      <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyeba</div>
+      <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
     </div>
-    <ul class="foot-links">
-      <li><a href="#idea">The idea</a></li>
-      <li><a href="#tools">Tools</a></li>
-      <li><a href="#private">Privacy</a></li>
-      <li><a href="/blog">Journal</a></li>
-      <li><a href="#invite">Request an invite</a></li>
-      <li><a href="/privacy">Privacy policy</a></li>
-      <li><a href="/terms">Terms</a></li>
-      <li><a href="#" data-cookie-settings>Cookie settings</a></li>
-      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
-    </ul>
-    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Questions? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
+    <a class="foot-mark" href="#top" title="Back to the top">
+      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba">
+      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba">
+    </a>
+    <div class="dict">
+      <div class="dict-head"><span class="dict-word">Koyeba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verb, Lingala</span></div>
+      <div class="dict-def">To know – facts, places, people.</div>
+    </div>
   </div>
 </footer>
 
@@ -750,56 +551,192 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 <script>window.__lang='en';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es',it:'/it',de:'/de'};</script>
 <script src="/i18n.js" defer></script>
 <script>
+(function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
-  const sm = document.getElementById('signin-modal');
-  const openSignin = (e) => {
-    if (e) e.preventDefault();
-    sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
-  };
-  const closeSignin = () => { sm.hidden = true; };
-  document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
-  document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
-  sm.addEventListener('click', (e) => { if (e.target === sm) closeSignin(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
-  document.getElementById('signin-form').addEventListener('submit', (e) => {
+
+  // ── Tools: two columns of folding rows, one open at a time, Mail open first ──
+  var TOOLS = [
+    { label: 'For the doing', items: [
+      ['Mail', 'Triage in one pass', 'Mark each email urgent, important or later and your inbox is clear. Turn any message into a task, a note or an event.', 'Joins Tasks, Calendar, Spaces'],
+      ['Calendar', 'Your days, joined up', 'Events arrive from mail and from what you set down, each with the notes and people it needs.', 'Joins Mail, Tasks, Contacts'],
+      ['Tasks', 'Urgent now, and the long game', 'What needs doing today comes forward; the rest waits quietly in its Space.', 'Joins Mail, Calendar, Goals'],
+      ['Notes', 'Pages and tables', 'Write freely, or turn a page into a table when it needs columns.', 'Joins Spaces, Tasks'],
+      ['Messaging', 'Know when someone writes', 'Conversations with the people in your Spaces, with a gentle word when one arrives.', 'Joins Contacts, Sharing'],
+      ['Money', 'Spending, filed for you', 'Payments land against the right Space, so you can see what the house or the dog really costs.', 'Joins Spaces, Mail'],
+      ['Contacts', 'The people you keep close', 'Everyone you write to, meet and share with, in one place.', 'Joins Mail, Messaging, Sharing'] ] },
+    { label: 'For the inner life', items: [
+      ['Journal', 'A page for each day', 'Write a line or a page. It sits alongside what actually happened that day.', 'Joins Calendar, Reviews'],
+      ['Reflection', 'Sit with what matters', 'Gentle prompts for when you want to think something through.', 'Joins Journal, Goals'],
+      ['Reviews', 'Look back, then forward', 'A weekly and monthly look at what moved, what didn’t, and what’s next.', 'Joins Tasks, Goals, Journal'],
+      ['Goals', 'The long game', 'Hold a few things you’re working towards, broken into steps that turn into tasks.', 'Joins Tasks, Reviews'],
+      ['Coaching', 'A quiet nudge', 'Optional guidance with your own AI key – never ours, never trained on you.', 'Joins Reflection, Goals'],
+      ['Read & Watch', 'What you mean to get to', 'Books, films and articles, kept until you have the evening for them.', 'Joins Notes, Spaces'],
+      ['Bucket list', 'One day', 'The bigger things, kept somewhere you’ll see them again.', 'Joins Goals'] ] }
+  ];
+  var openTool = 'Mail';
+  var cols = document.getElementById('toolCols');
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function renderTools() {
+    cols.innerHTML = TOOLS.map(function (g) {
+      var rows = g.items.map(function (it) {
+        var name = it[0], line = it[1], body = it[2], joins = it[3], on = openTool === name;
+        return '<div class="tool"><button class="tool-h" type="button" data-tool="' + esc(name) + '">'
+          + '<span class="tool-name">' + esc(name) + '</span>'
+          + '<span class="tool-line">' + esc(line) + '</span>'
+          + '<span class="tool-sign">' + (on ? '−' : '+') + '</span></button>'
+          + (on ? '<div class="tool-body"><div class="tool-desc">' + esc(body) + '</div><div class="tool-joins">' + esc(joins) + '</div></div>' : '')
+          + '</div>';
+      }).join('');
+      return '<div class="tool-group"><div class="tg-head"><span class="tg-label">' + esc(g.label) + '</span><span class="tg-count">' + g.items.length + '</span></div>' + rows + '</div>';
+    }).join('');
+  }
+  cols.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tool]'); if (!b) return;
+    var n = b.getAttribute('data-tool'); openTool = (openTool === n) ? null : n; renderTools();
+  });
+  renderTools();
+
+  // ── Spaces: the sample Space's folding groups (Mail + Tasks open) ──
+  var SPACE = [
+    ['Mail', [['Mrs Okafor – Year 4 trip', 'Thu'], ['Swim club – new times', 'Tue']]],
+    ['Tasks', [['Sign Ada’s trip form', 'Mon'], ['Tom: costume for Friday', 'Next wk']]],
+    ['Calendar', [['Ada swimming', 'Fri 16:00'], ['Parents’ evening', 'Wed 18:30']]],
+    ['Notes', [['Swimming kit list', ''], ['Half-term ideas', '']]]
+  ];
+  var sg = { Mail: true, Tasks: true };
+  var sgWrap = document.getElementById('spaceGroups');
+  function renderSpace() {
+    sgWrap.innerHTML = SPACE.map(function (g) {
+      var label = g[0], items = g[1], open = !!sg[label];
+      var rows = open ? '<div class="sc-items">' + items.map(function (it) {
+        return '<div class="sc-item"><span class="it-t">' + esc(it[0]) + '</span><span class="it-m">' + esc(it[1]) + '</span></div>';
+      }).join('') + '</div>' : '';
+      return '<div class="sc-group"><button class="sc-gh" type="button" data-sg="' + esc(label) + '"><span class="sc-gl">' + esc(label) + '</span><span class="sc-gc">' + items.length + '</span><span class="sc-gs">' + (open ? '−' : '+') + '</span></button>' + rows + '</div>';
+    }).join('');
+  }
+  sgWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sg]'); if (!b) return;
+    var n = b.getAttribute('data-sg'); sg[n] = !sg[n]; renderSpace();
+  });
+  renderSpace();
+
+  // Share fold
+  var shareOpen = false, shareBody = document.getElementById('shareBody'), shareSign = document.getElementById('shareSign');
+  document.querySelector('[data-share]').addEventListener('click', function () {
+    shareOpen = !shareOpen; shareBody.hidden = !shareOpen; shareSign.textContent = shareOpen ? '−' : '+';
+  });
+
+  // Inner "Read more"
+  var innerOpen = false, innerExtra = document.getElementById('innerExtra'), innerMore = document.getElementById('innerMore');
+  document.querySelector('[data-inner]').addEventListener('click', function () {
+    innerOpen = !innerOpen; innerExtra.hidden = !innerOpen; innerMore.textContent = innerOpen ? 'Fold away −' : 'Read more +';
+  });
+
+  // ── Private: five folding points I–V, one open at a time, first open ──
+  var PRIV = [
+    ['Two-factor sign-in', 'Your Koyeba is properly locked, and your data is encrypted at rest.'],
+    ['Never mined, never sold', 'Nothing of yours is used for adverts or fed to anyone’s model.'],
+    ['Bring your own AI', 'AI is opt-in, with your own key. Leave it off and Koyeba works just the same.'],
+    ['Export everything', 'Take it all in one tap, any time – or keep it on your own storage.'],
+    ['Leave whenever you like', 'Close your account and take everything with you.']
+  ];
+  var ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+  var openPriv = 0, privWrap = document.getElementById('privPoints');
+  function renderPriv() {
+    privWrap.innerHTML = PRIV.map(function (p, i) {
+      var open = openPriv === i;
+      return '<div class="priv"><button class="priv-h" type="button" data-priv="' + i + '"><span class="priv-num">' + ROMAN[i] + '</span><span class="priv-title">' + esc(p[0]) + '</span><span class="priv-sign">' + (open ? '−' : '+') + '</span></button>'
+        + (open ? '<div class="priv-body">' + esc(p[1]) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  privWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-priv]'); if (!b) return;
+    var i = +b.getAttribute('data-priv'); openPriv = (openPriv === i) ? null : i; renderPriv();
+  });
+  renderPriv();
+
+  // ── Hero capture demo: types a phrase, then the readout fades up; cycles three ──
+  var DEMOS = [
+    { text: 'Dentist on Tuesday at nine', rows: [['Into', 'Me'], ['As', 'Calendar · Tue 3 Nov, 09:00'], ['Reminds', 'Monday evening, and 08:15 on the day']], foot: 'Nothing else to do.' },
+    { text: 'Ada’s trip form is due Monday', rows: [['Into', 'The kids'], ['As', 'Task · due Mon 2 Nov'], ['Joins', 'Mrs Okafor’s email · “Year 4 trip”']], foot: 'Linked to the email it came from.' },
+    { text: 'Biscuit’s flea drops, €18.40', rows: [['Into', 'Biscuit'], ['As', 'Money · spent today'], ['Joins', 'Pet costs this month · €46.20']], foot: 'Filed against the right Space.' }
+  ];
+  var typed = document.getElementById('demoTyped'), caret = document.getElementById('demoCaret'), rowsEl = document.getElementById('demoRows');
+  function paintRows(demo) {
+    rowsEl.innerHTML = demo.rows.map(function (r) {
+      return '<div class="demo-row"><span class="demo-rk">' + esc(r[0]) + '</span><span class="demo-rv">' + esc(r[1]) + '</span></div>';
+    }).join('') + '<div class="demo-foot"><span class="df-t">' + esc(demo.foot) + '</span><span class="demo-set">Set down ↵</span></div>';
+  }
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    typed.textContent = DEMOS[0].text; caret.style.opacity = '0'; paintRows(DEMOS[0]); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none';
+  } else {
+    var di = 0, n = 0, phase = 'type', timer;
+    paintRows(DEMOS[0]); rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)';
+    function tick() {
+      var demo = DEMOS[di];
+      if (phase === 'type') {
+        if (n < demo.text.length) { n++; typed.textContent = demo.text.slice(0, n); caret.style.opacity = '1'; timer = setTimeout(tick, 55 + Math.random() * 50); }
+        else { timer = setTimeout(function () { phase = 'show'; paintRows(demo); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none'; caret.style.opacity = '0'; timer = setTimeout(tick, 3800); }, 500); }
+      } else {
+        phase = 'type'; n = 0; di = (di + 1) % DEMOS.length; typed.textContent = ''; rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)'; timer = setTimeout(tick, 700);
+      }
+    }
+    timer = setTimeout(tick, 900);
+  }
+
+  // ── Sign-in modal (kept) ──
+  var sm = document.getElementById('signin-modal');
+  function openSignin(e) { if (e) e.preventDefault(); sm.hidden = false; setTimeout(function () { document.getElementById('signin-email').focus(); }, 30); }
+  function closeSignin() { sm.hidden = true; }
+  document.querySelectorAll('[data-signin]').forEach(function (el) { el.addEventListener('click', openSignin); });
+  document.querySelectorAll('[data-signin-close]').forEach(function (el) { el.addEventListener('click', closeSignin); });
+  sm.addEventListener('click', function (e) { if (e.target === sm) closeSignin(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
+  document.getElementById('signin-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email address.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
   });
   document.getElementById('signin-sms').addEventListener('click', function () {
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Enter your email first, so we know where to text.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
   });
-  const invForm = document.getElementById('invite-form');
+
+  // ── Invite form (kept logic; name + email) ──
+  var invForm = document.getElementById('invite-form');
   if (invForm) invForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    const name = document.getElementById('if-name').value.trim();
-    const email = document.getElementById('if-email').value.trim();
-    const why = document.getElementById('if-why').value.trim();
-    const hp = document.getElementById('if-hp').value;
-    const note = document.getElementById('if-note');
-    const btn = document.getElementById('if-submit');
-    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Request an invite →'; };
+    var name = document.getElementById('if-name').value.trim();
+    var email = document.getElementById('if-email').value.trim();
+    var heard = document.getElementById('if-heard').value.trim();
+    var hp = document.getElementById('if-hp').value;
+    var note = document.getElementById('if-note');
+    var btn = document.getElementById('if-submit');
+    var fail = function (m) { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Request an invite →'; };
     if (!name) return fail('A name, please.');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('A valid email, please.');
     note.hidden = true; btn.disabled = true; btn.textContent = 'Sending…';
-    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you.</h3><p>We\'ll be in touch soon. Koyeba grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
-      .catch(() => fail('Something went wrong - email contact@koyeba.co and we\'ll sort you out.'));
+    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you.</h3><p>We\'ll be in touch soon. Koyeba grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
+      .catch(function () { fail('Something went wrong - email contact@koyeba.co and we\'ll sort you out.'); });
   });
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+
+  // ── Reveal on scroll ──
+  if ('IntersectionObserver' in window && !reduce) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
     }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
   } else {
-    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
   }
+})();
 </script>
 </body>
 </html>
