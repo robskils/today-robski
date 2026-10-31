@@ -23,6 +23,7 @@ Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole l
 12. **Night mode is deep forest green.** Never blue-grey, navy or black.
 13. **Use the tokens** (`--k-bg`, `--k-panel`, `--k-soft`, `--k-ink`, `--k-mute`, `--k-line`, `--k-gold`, `--k-goldt`, `--k-deep`, `--k-ondeep`). Their values for both themes are in the README, §3. Don't hard-code new colours.
 14. **No new visual elements.** Build anything new from the existing parts: folding sections, a ledger of Cormorant numbers, keyline rows, Space numerals, and gold only where something needs you.
+15. **Eyebrow above the grid (two-column bands).** In a two-column section the eyebrow - the 28×1px gold rule and its Jost label - sits ABOVE the grid, full-width, never inside the left column. Both columns then begin level at the heading or lead, so the right column aligns with the heading (e.g. "Yours. Securely."), not with the eyebrow above it. Top-aligned two-column bands only; centred bands are exempt. (Robin's house style, 2026-10-31.)
 
 ## Type — exact, no substitutes
 - **Only two fonts exist:** Cormorant Garamond and Jost, self-hosted from `design/koyeba/fonts/` with `@font-face`. **Never** Inter, Fraunces, Georgia, system-ui or a Google Fonts link. If a font fails to load, fix the `@font-face`; don't swap the font.
