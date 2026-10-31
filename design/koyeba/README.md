@@ -327,6 +327,9 @@ These were not designed in this pass: Goals, Contacts, Dreams, Compass, Coaching
 ## Files in this bundle
 - `Koyeba App.dc.html`: the full interactive prototype, covering every screen above.
 - `Koyeba Logo.dc.html`: the Mandombe logo explorations, 2a–2f.
+- `Koyeba Brand Pack.dc.html`: the brand rules (logo, colour, type, voice, do's and don'ts).
+- `Koyeba Business Card.dc.html`: the business card (3a is the chosen direction).
+- `email-signature.html`: a ready-to-paste email signature.
 - `support.js`: the runtime needed only to open the prototypes locally.
 - `fonts/`: Cormorant Garamond and Jost, woff2.
 - `assets/`: the Mandombe SVGs.

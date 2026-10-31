@@ -3,7 +3,7 @@
 Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole life: mail, calendar, tasks, notes and tables, messages, money and the inner life, joined up through **Spaces**. Domain: **koyeba.co** (moving from shizu.fyi). "Koyeba" is Lingala for "to know": things come into view when you need them.
 
 ## Source of truth
-- The design lives in `design/koyeba/`: `README.md` (the full spec), `Koyeba App.dc.html` (the interactive prototype) and `Koyeba Logo.dc.html`.
+- The design lives in `design/koyeba/`: `README.md` (the full spec), `Koyeba App.dc.html` (the interactive prototype), `Koyeba Brand Pack.dc.html` (logo, colour, type, voice, do's and don'ts) and `Koyeba Logo.dc.html`.
 - **If the code and the prototype disagree, the prototype is right.** Open it in a browser and compare side by side after every UI change.
 - The prototype is a reference. Rebuild it in this codebase (`public/`, `worker/`); don't paste it in and don't ship `support.js`.
 - The front end changes. The worker, schema, auth, sync and APIs stay as they are unless a task says otherwise.
@@ -24,6 +24,22 @@ Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole l
 13. **Use the tokens** (`--k-bg`, `--k-panel`, `--k-soft`, `--k-ink`, `--k-mute`, `--k-line`, `--k-gold`, `--k-goldt`, `--k-deep`, `--k-ondeep`). Their values for both themes are in the README, §3. Don't hard-code new colours.
 14. **No new visual elements.** Build anything new from the existing parts: folding sections, a ledger of Cormorant numbers, keyline rows, Space numerals, and gold only where something needs you.
 
+## Type — exact, no substitutes
+- **Only two fonts exist:** Cormorant Garamond and Jost, self-hosted from `design/koyeba/fonts/` with `@font-face`. **Never** Inter, Fraunces, Georgia, system-ui or a Google Fonts link. If a font fails to load, fix the `@font-face`; don't swap the font.
+- **Weights:** Cormorant 300 (and 300 italic), plus 500 for the wordmark only. Jost 400, 500 and 600. Nothing else, and no faux bold.
+- **Italic is allowed in only four places,** always Cormorant 300 italic:
+  1. the one gold word in a heading ("Good evening, *Robin.*");
+  2. Roman numerals for Spaces (I, II, III);
+  3. quiet connection lines ("Already a task: …", "Nothing yet. Just this.");
+  4. quotations and the daily question.
+- **Never italicise Jost. Never italicise whole headings, buttons, labels or body text.** If the prototype isn't italic there, you don't make it italic.
+- After any UI change, check in DevTools (Computed → Rendered Fonts) that the text really is rendering in Cormorant Garamond or Jost.
+
+## When unsure
+- **Don't use your initiative on look or wording.** Find the nearest example in `Koyeba App.dc.html` or `Koyeba Brand Pack.dc.html` and copy it exactly.
+- If there's no example, **stop and ask Robin**. Don't invent.
+- Never "tidy up", "modernise" or "improve" styling that already matches the prototype.
+
 ## Words
 - Calm, warm, British English, short sentences. No hype, no exclamation marks, no emoji.
 - "Spaces", never "Life Spaces". "Coming into view", never "My Shizu". "Set something down…", not "Quick add". "Not yet", not "Snooze". "12 days past", not "OVERDUE".
@@ -43,7 +59,6 @@ Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole l
 ## Before you finish any UI task
 - Compare the result with the prototype at about 920px and at 1440px wide, in both day and night.
 - Check: no new colours, no radius, no shadows, nothing that doesn't fold, no text that wraps one word per line.
-
 
 ---
 
