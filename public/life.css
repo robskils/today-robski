@@ -9515,7 +9515,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* ── Koyeba seven-fold nav (desktop sidebar) - the prototype's left column.
    One fold open at a time; Cormorant fold titles, Jost items, gold for current.
    Styles translated from design/koyeba/Koyeba App.dc.html. (Koyeba, 2026-10-31.) */
-.nav-folds-wrap { display:flex; flex-direction:column; flex:1; min-height:0; }
+/* flex:1 fills the gap between search and the pinned account cluster; overflow-y
+   lets a long fold (e.g. 16 Spaces) scroll WITHIN that gap instead of spilling
+   over the Guide/Settings/Sign-out cluster and footer below it. min-height:0 is
+   what allows a flex child to scroll. (Robin's 16 Spaces + People, 2026-10-31.) */
+.nav-folds-wrap { display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 .nav-k { display:none; }   /* the desktop ⌘K lives in the folds' Find row now */
 .kfind { display:flex; align-items:center; gap:12px; width:100%; margin:12px 0; padding:10px 0; background:none; border:0; border-bottom:1px solid var(--k-line); cursor:text; text-align:left; }
 .kfind-l { font-family:var(--k-sans); font-weight:400; font-size:15px; color:var(--k-mute); }
