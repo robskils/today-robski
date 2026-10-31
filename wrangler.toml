@@ -111,15 +111,15 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 # account's own address, and codes go to robin@lumley-savile.com.
 FROM_EMAIL = "Koyeba <today@incremento.co>"
 
-# Shizu sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
-# from contact@shizu.fyi through Purelymail SMTP: a real mailbox on a fully
-# SPF/DKIM/DMARC-aligned domain (shizu.fyi passes all four, incl. DMARC), so
-# nothing depends on a Resend-verified domain. BRIEF_SMTP_PASS (secret) is the
-# Purelymail account's shared password; these two set the SMTP login and the From
-# address (the "Shizu" display name is in code). FROM_EMAIL above is only the
-# Resend fallback used if SMTP auth ever fails. (shizu.fyi mail set up 2026-10-30.)
-BRIEF_FROM = "contact@shizu.fyi"
-BRIEF_SMTP_USER = "contact@shizu.fyi"
+# Koyeba sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
+# from contact@koyeba.co through Purelymail SMTP: a real mailbox on a fully
+# SPF/DKIM/DMARC-aligned domain (koyeba.co passes all four, incl. DMARC), so
+# nothing depends on a Resend-verified domain. BRIEF_SMTP_PASS (secret) is this
+# mailbox's password; these two set the SMTP login and the From address (the
+# "Koyeba" display name is in code). FROM_EMAIL above is only the Resend fallback
+# used if SMTP auth ever fails. (Flipped shizu.fyi -> koyeba.co, 2026-10-31.)
+BRIEF_FROM = "contact@koyeba.co"
+BRIEF_SMTP_USER = "contact@koyeba.co"
 
 # Per-member Google Calendar connect (worker/gcal.js). This is the PUBLIC client
 # id of the SEPARATE OAuth client in the standalone "Daybook Calendar" Google
