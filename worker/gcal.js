@@ -12,7 +12,7 @@
 import { encryptSecret, decryptSecret } from './ai.js';
 import { signJWT, verifyJWT } from './auth.js';
 
-const REDIRECT_URI = 'https://lifefold.co/api/gcal/callback';
+const REDIRECT_URI = 'https://koyeba.co/api/gcal/callback';
 const SCOPES = 'openid https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
 
 export const gcalAvailable = (env) => !!(env.GCAL_MEMBER_CLIENT_ID && env.GCAL_MEMBER_CLIENT_SECRET);
@@ -47,7 +47,9 @@ export async function gcalConnectUrl(env) {
 }
 
 const bounce = (loc) => new Response(null, { status: 302, headers: { Location: loc, 'Cache-Control': 'no-store' } });
-const home = (sd, q) => `https://${sd || 'robski'}.daybook.fyi/calendar?gcal=${q}`;
+// Single domain now (no per-user subdomains): land back in the app at the apex.
+// The calendar view reads ?gcal= and surfaces the outcome once. (Koyeba, 2026-10-31.)
+const home = (sd, q) => `https://koyeba.co/app?gcal=${q}`;
 
 // Google redirects here (unauthenticated - the member's session lives on their
 // subdomain, not the apex), so trust comes from the signed `state`, not a cookie.

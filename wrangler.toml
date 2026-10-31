@@ -125,7 +125,9 @@ BRIEF_SMTP_USER = "contact@shizu.fyi"
 # id of the SEPARATE OAuth client in the standalone "Daybook Calendar" Google
 # Cloud project (External / Production) - never the owner's Internal client. The
 # matching secret is GCAL_MEMBER_CLIENT_SECRET (wrangler secret). Redirect URI
-# registered in Google: https://daybook.fyi/api/gcal/callback.
+# in worker/gcal.js is https://koyeba.co/api/gcal/callback - it must also be
+# registered in the Google Cloud console (Daybook Calendar project > Credentials
+# > Authorized redirect URIs) or the consent screen rejects it. (Koyeba, 2026-10-31.)
 GCAL_MEMBER_CLIENT_ID = "238117536975-kcef30rm0s1jnk9oit00cnu0bh5van8k.apps.googleusercontent.com"
 
 # Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:
