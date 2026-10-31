@@ -4843,6 +4843,81 @@ function navPeopleMobileHtml() {
     ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
   </div>`;
 }
+// ── Koyeba seven-fold nav (the prototype's left column). Each item reuses an
+//    existing data-open-* / data-view-* handler, so navigation is unchanged - this
+//    only regroups the tools into seven folds, one open at a time.
+const KFOLDS = [
+  { id: 'today', label: 'Today', items: [
+      ['Home', 'data-view-home', null], ['Flow', 'data-open-today', 'today'], ['Practices', 'data-open-practices', 'today'] ] },
+  { id: 'spaces', label: 'Spaces', spaces: true },
+  { id: 'tools', label: 'Tools', items: [
+      ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
+      ['Notes', 'data-open-notes', 'notes'], ['Goals', 'data-open-goals', 'goals'], ['Saved', 'data-open-readwatch', 'saved'],
+      ['Discover', 'data-open-discover', 'discover'] ] },
+  { id: 'people', label: 'People', items: [
+      ['Contacts', 'data-open-contacts', 'contacts'], ['Messages', 'data-messages-page', 'contacts'], ['Connect', 'data-open-connect', 'contacts'] ] },
+  { id: 'money', label: 'Money', items: [
+      ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Money', 'data-open-money', 'financial'],
+      ['Portfolio', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
+  { id: 'inner', label: 'Inner life', items: [
+      ['Reflection', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
+      ['Dreams', 'data-open-dreams', 'dreams'], ['Compass', 'data-open-compass', 'compass'], ['I Ching', 'data-open-iching', 'iching'],
+      ['Spirit Cards', 'data-spirit-open', 'spirit'], ['Horoscope', 'data-open-horo', 'horoscope'], ['Insights', 'data-open-insights', 'insights'] ] },
+  { id: 'reviews', label: 'Reviews', items: [
+      ['Daily', 'data-journal-dailyreview', 'journal'], ['Weekly', 'data-open-reviewtype="weekly"', 'goals'], ['Monthly', 'data-open-reviewtype="monthly"', 'goals'],
+      ['Quarterly', 'data-open-reviewtype="quarterly"', 'goals'], ['Yearly', 'data-open-reviewtype="yearly"', 'goals'] ] },
+];
+// view.type -> which fold it belongs to (so the right fold opens on navigation).
+const KFOLD_VIEW = {
+  home: 'today', today: 'today', practices: 'today', tracker: 'today',
+  area: 'spaces', areas: 'spaces',
+  mail: 'tools', mailaccounts: 'tools', calendar: 'tools', tasks: 'tools', taskcard: 'tools', notes: 'tools', note: 'tools', table: 'tools', tables: 'tools', readwatch: 'tools', discover: 'tools', goals: 'tools', goalcard: 'tools', bucketcard: 'tools',
+  contacts: 'people', contactcard: 'people', messages: 'people', connect: 'people', friends: 'people', daybookpeople: 'people',
+  money: 'money', financial: 'money',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner',
+  reviews: 'reviews', reviewcard: 'reviews',
+};
+function kToRoman(n) { const m = [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]]; let r = ''; for (const [s, val] of m) { while (n >= val) { r += s; n -= val; } } return r; }
+function kFoldDefault(v) { return KFOLD_VIEW[(v && v.type) || ''] || 'today'; }
+function kOpenFold(v) { try { const x = localStorage.getItem('koyeba.fold'); return x === null ? kFoldDefault(v) : x; } catch { return kFoldDefault(v); } }
+function setKFold(id) { const cur = kOpenFold(state.view); try { localStorage.setItem('koyeba.fold', cur === id ? '' : id); } catch {} renderNav(); }
+function kItemOn(mod) { return !mod ? true : mod === 'reflect' ? reflectOn() : modOn(mod); }
+function kFoldHint(f) {
+  if (f.id === 'today') { try { return new Date().toLocaleDateString('en-GB', { weekday: 'long' }); } catch { return ''; } }
+  if (f.id === 'spaces') { const n = (state.areas || []).length; return n ? `${n} space${n === 1 ? '' : 's'}` : ''; }
+  if (f.id === 'tools') { const m = state.mailUnreadTotal || 0; return m ? `Mail ${m} to sort` : ''; }
+  if (f.id === 'people') { const u = unreadMsgs(); return u ? `${u} new message${u === 1 ? '' : 's'}` : ''; }
+  if (f.id === 'reviews') return 'Weekly, on Sunday';
+  return '';
+}
+function navFoldsHtml(v) {
+  const openId = kOpenFold(v);
+  const curFold = KFOLD_VIEW[(v && v.type) || ''] || '';
+  const foldHtml = (f) => {
+    const open = openId === f.id;
+    let items = '';
+    if (f.spaces) {
+      const areas = state.areas || [];
+      items = areas.map((a, i) => `<button class="kfi" data-open-area="${a.id}"><span class="kfi-num">${kToRoman(i + 1)}</span><span class="kfi-l">${esc(a.title || 'Untitled')}</span></button>`).join('')
+        + `<button class="kfi kfi-all" data-open-areas><span class="kfi-num"></span><span class="kfi-l">${areas.length ? 'All spaces' : 'Add a space'}</span></button>`;
+    } else {
+      items = f.items.filter((it) => kItemOn(it[2])).map((it) => {
+        const [label, attrs] = it;
+        const badge = (label === 'Mail' && state.mailUnreadTotal) ? state.mailUnreadTotal : (label === 'Messages' && unreadMsgs()) ? unreadMsgs() : 0;
+        return `<button class="kfi" ${attrs}><span class="kfi-num"></span><span class="kfi-l">${label}</span>${badge ? `<span class="kfi-b">${badge > 99 ? '99+' : badge}</span>` : ''}</button>`;
+      }).join('');
+    }
+    return `<div class="kfold${open ? ' open' : ''}">`
+      + `<button type="button" class="kfold-h" data-kfold="${f.id}" aria-expanded="${open}">`
+      + `<span class="kfold-head"><span class="kfold-label${curFold === f.id ? ' on' : ''}">${f.label}</span>${open ? '' : `<span class="kfold-hint">${esc(kFoldHint(f))}</span>`}</span>`
+      + `<span class="kfold-sign">${open ? '−' : '+'}</span></button>`
+      + (open ? `<div class="kfold-items">${items}</div>` : '')
+      + `</div>`;
+  };
+  return `<div class="nav-folds-wrap">`
+    + `<button type="button" class="kfind" data-palette aria-label="${t('nav.search')}"><span class="kfind-l">Find…</span><kbd class="kfind-k">${PK('⌘K')}</kbd></button>`
+    + `<div class="kfolds">${KFOLDS.map(foldHtml).join('')}</div></div>`;
+}
 function renderNav() {
   const v = state.view;
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
@@ -4865,11 +4940,9 @@ function renderNav() {
         <button class="foot-search" data-palette title="Search">⌕</button>
       </div>
       <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
-      ${navTopSecs(v)}
+      ${navFoldsHtml(v)}
       ${navMobileListHtml(v)}
       ${navPeopleMobileHtml(v)}
-      ${navGridHtml(v)}
-      <div class="nav-secs" id="nav-secs">${state.nav.order.map((k) => ['people', 'favs', 'notes', 'areas'].includes(k) ? '' : navSection(k, v)).join('')}</div>
       <div class="nav-bottom">
         <div class="nav-bottom-row">
           <button class="nav-theme nav-guide ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide title="${t('nav.guide')}"><span class="ns-ic">ⓘ</span><span class="ns-lbl"> ${t('nav.guide')}</span></button>
@@ -4894,7 +4967,7 @@ function renderNav() {
     // button under your finger re-targets the click (that's the "first Contacts
     // tap goes Home" bug: a data-driven render lands mid-tap). Defer to just after.
     if (navHeld) { navDeferred = true; }
-    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
+    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; nav.querySelectorAll('[data-kfold]').forEach((b) => { b.onclick = () => setKFold(b.dataset.kfold); }); }
   }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
