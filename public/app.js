@@ -5352,10 +5352,6 @@ const firstName = () => {
   const m = state.me || {};
   return String(m.name || '').trim().split(/\s+/)[0] || String(m.subdomain || '').trim();
 };
-// "Saturday 29 August" (UK) or "Saturday, August 29" (US) - clean, no ordinal.
-function homeDate() {
-  return new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
-}
 // Koyeba hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
 // we have it), then the big greeting followed by a muted second breath. Quiet,
 // editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
@@ -5394,14 +5390,6 @@ const WMO_WX = (code) => {
   if (c >= 95) return ['⛈️', 'Thunderstorm'];
   return ['🌡️', 'Weather'];
 };
-function weatherChipHtml() {
-  if (state.weather === undefined) { loadWeather(); return ''; }
-  const w = state.weather;
-  if (!w || w === 'off' || w.temp == null) return '';   // loading, unavailable, or no reading
-  const [ic, label] = WMO_WX(w.code);
-  const hl = (w.high != null && w.low != null) ? `<span class="wx-hl">↑${w.high}° ↓${w.low}°</span>` : '';
-  return `<div class="wx-chip" title="${esc(label)} where you are${w.high != null ? ` · today ${w.high}° / ${w.low}°` : ''}"><span class="wx-ic">${ic}</span><span class="wx-t">${w.temp}${w.unit || '°'}</span>${hl}</div>`;
-}
 async function loadWeather() {
   if (state.weather !== undefined) return;   // undefined = not started; null = loading; object/'off' = done
   state.weather = null;
@@ -6528,26 +6516,6 @@ function openP1Tasks() {
   state.taskFilters = [{ field: 'priority', op: 'is', value: 'P1' }];
   state.taskFiltersOpen = false; saveTaskFilters(); state._taskViewForce = true; openTasks();
 }
-// The Home section: who you're overdue with, longest first. The nudge is a
-// person, not a chore, so the row opens their card - and the ✓ is there for the
-// common case where you rang them before Koyeba got round to asking.
-function kitHomeHtml() {
-  const due = (state.home.alerts && state.home.alerts.keepInTouch) || [];
-  if (!due.length) return '';
-  const rows = due.map((k) => {
-    const a = areaById(k.area);
-    const since = k.last ? `Last spoke ${kitWhen(k.last)}` : 'Not spoken yet';
-    return `<div class="kit-hrow"${a ? ` style="--h:${hueOf(a)}"` : ''}>
-      <button class="kit-hopen" data-open-contact="${k.id}">
-        <span class="contact-av kit-hav">${esc(initial(k.name || '?'))}</span>
-        <span class="kit-hnm">${esc(k.name)}</span><span class="kit-hsub">${esc(since)}</span>
-      </button>
-      <button class="kit-hdone" data-kit-done="${esc(k.taskId)}" title="I've been in touch">✓</button>
-      <button class="kit-hsnooze" data-kit-snooze="${esc(k.taskId)}" title="Not now - remind me again in a week" aria-label="Snooze ${esc(k.name || '')} for a week">×</button>
-    </div>`;
-  }).join('');
-  return `<section class="home-sec home-sec-kit" data-hsec="keepintouch">${secH('keepintouch', t('home.sec.keepintouch'), `<span class="muted">${due.length}</span>`, true)}${secOpen('keepintouch') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
-}
 // The same "who you're due a catch-up with" list, for the Contacts page.
 function contactsKitHtml() {
   const due = state.contactsKitDue || [];
@@ -6576,14 +6544,6 @@ function contactsXmasHtml() {
     </div>`;
   }).join('');
   return `<section class="home-sec cts-xmas">${secH('ctsxmas', '🎄 Christmas list', `<span class="muted">${list.length}</span>`, false)}${secOpen('ctsxmas') ? `<div class="kit-hlist">${rows}</div>` : ''}</section>`;
-}
-function p1Html() {
-  const all = priorityTasks();
-  if (!all.length) return '';
-  const total = (state.home && state.home.alerts && state.home.alerts.p1) || all.length;
-  const shown = all.slice(0, 8);
-  const more = total - shown.length;
-  return `<section class="home-sec home-sec-p1" data-hsec="priority">${secH('priority', t('home.sec.priority'), `<span class="muted">${total}</span>`, true)}${secOpen('priority') ? `<div class="p1-list">${shown.map((tk) => { const a = areaById(tk.area); return `<button class="p1-row" data-open-task="${tk.id}" draggable="true" data-p1-id="${tk.id}" style="--h:${hueOf(a)}"><span class="p1-grip" title="Drag to reorder">⠿</span><span class="p1-t">${esc(tk.title)}</span>${a ? `<span class="p1-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}</button>`; }).join('')}</div><button class="p1-all" data-open-p1>${more > 0 ? `See all ${total} P1 tasks` : 'Open P1 on the Tasks board'} →</button>` : ''}</section>`;
 }
 // A few of the newest inbox messages on Home, from the warm server-side cache
 // (the same one the cron keeps fresh) - instant, no slow IMAP round-trip. Loaded
@@ -6812,56 +6772,6 @@ function lifebookFeedInner() {
   if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Spaces will show up here.</div>';
   return `${pinned}${items.length ? `<div class="lb-feed">${items.map((i) => i.html).join('')}</div>` : ''}`;
 }
-function homeDiscoverHtml() {
-  const feats = [
-    ['⌨', 'Quick jump', 'Reach anything with ⌘K', 'data-palette'],
-    modOn('timer') ? ['🧘', 'Meditation & focus', 'Breathe with a synth-bell timer', 'data-open-toolbox'] : null,
-    modOn('goals') ? ['🎯', 'Wheel of Life', 'Rate your areas, watch the trend', 'data-open-reviews-tool'] : null,
-    modOn('goals') ? ['🖼', 'Vision board', "Picture where you're headed", 'data-open-vision-tab'] : null,
-    modOn('saved') ? ['🔖', 'Read & Watch', 'Park a link, come back later', 'data-open-readwatch'] : null,
-    reflectOn() ? ['✎', 'Reflection', 'Journal, meditate, cast the I Ching, and more', 'data-open-wellbeing'] : null,
-  ].filter(Boolean);
-  if (!feats.length) return '';
-  let hidden = false, open = true;
-  try { hidden = localStorage.getItem('life.home.discHidden') === '1'; open = localStorage.getItem('life.home.discOpen') !== '0'; } catch {}
-  if (hidden) return '';
-  return `<section class="home-discover">
-    <div class="home-sec-h disc-h" data-disc-toggle role="button" tabindex="0"><span class="acw-chev">${open ? '▾' : '▸'}</span>Discover Koyeba<button class="disc-hide" data-disc-hide title="Hide this section">×</button></div>
-    ${open ? `<div class="disc-row">${feats.map(([ic, t, s, attr]) => `<button class="disc-card" ${attr}><span class="disc-ic">${ic}</span><span class="disc-body"><span class="disc-t">${t}</span><span class="disc-s">${esc(s)}</span></span><span class="disc-go">→</span></button>`).join('')}</div>` : ''}
-  </section>`;
-}
-// Which sections show in the Home MAIN area, and their fold state - both yours to
-// change (kept in localStorage). Defaults to Today + Do next + Practices.
-function homeMainEnabled() {
-  let o = null; try { o = JSON.parse(localStorage.getItem('life.home.mainSecs') || 'null'); } catch {}
-  if (!Array.isArray(o)) return ['priority', 'tracker'];
-  // Today and Coming into view are now fixed (pinned first and second, not configurable),
-  // and shared-space activity folded into Coming into view - drop any of these from a
-  // saved layout that still carries them. (Robin, 2026-10-16.)
-  o = o.filter((k) => k !== 'foliofeed' && k !== 'today' && k !== 'lifebook');
-  return o;
-}
-function setHomeMainEnabled(arr) { try { localStorage.setItem('life.home.mainSecs', JSON.stringify(arr)); } catch {} renderHome(); }
-function homeMainOpen(k) {
-  // Explicit choice wins; otherwise on mobile every card except Today starts
-  // collapsed, so Home opens as a uniform stack of one-row cards (mirrors secOpen).
-  try { const o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); if (k in o) return o[k] !== false; } catch {}
-  return !isMobileHome() || k === 'today' || k === 'lifebook';
-}
-function toggleHomeMainOpen(k) { let o = {}; try { o = JSON.parse(localStorage.getItem('life.home.mainOpen') || '{}'); } catch {} o[k] = !homeMainOpen(k); try { localStorage.setItem('life.home.mainOpen', JSON.stringify(o)); } catch {} renderHome(); }
-function homeMainRemove(k) { setHomeMainEnabled(homeMainEnabled().filter((x) => x !== k)); }
-function homeMainAdd(k) { const e = homeMainEnabled(); if (!e.includes(k)) setHomeMainEnabled([...e, k]); }
-function homeMainToggle(k) { const e = homeMainEnabled(); if (e.includes(k)) homeMainRemove(k); else homeMainAdd(k); }
-// The order of ALL Home sections (enabled or not) - what the show/hide chips can
-// be dragged into. The enabled ones render on Home in this order.
-const MAIN_KEYS = ['priority', 'tracker', 'focus', 'favareas', 'favs', 'mail'];
-function homeMainOrder() {
-  let o = [];
-  try { o = JSON.parse(localStorage.getItem('life.home.mainOrder') || 'null'); } catch {}
-  o = Array.isArray(o) ? o.filter((k) => MAIN_KEYS.includes(k)) : [];
-  return [...o, ...MAIN_KEYS.filter((k) => !o.includes(k))];
-}
-function setHomeMainOrder(arr) { try { localStorage.setItem('life.home.mainOrder', JSON.stringify(arr)); } catch {} renderHome(); }
 // ── Koyeba Home (the reimagined Today) ──────────────────────────────────────
 // The day at a glance, in the prototype's grammar: a two-line greeting, a ledger
 // of Cormorant numbers, then Today + Your spaces beside Coming into view, a line
@@ -7186,7 +7096,6 @@ async function submitCap() {
 }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
-  if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
   // A rebuild (e.g. collapsing a section) would otherwise jump the page and the
   // rail back to the top. Only when Home is already on screen, remember the page
   // scroll and the rail's own scroll and put them back after the repaint.
@@ -22228,7 +22137,6 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-account-ai]')) { const off = !e.target.checked; if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); renderSettings(); }
   if (e.target.matches('[data-ai-feature]')) { const key = e.target.dataset.aiFeature; const on = e.target.checked; if (state.account) { state.account.aiFeatures = state.account.aiFeatures || {}; if (on) delete state.account.aiFeatures[key]; else state.account.aiFeatures[key] = false; saveAccount({ aiFeatures: state.account.aiFeatures }); } const lbl = (AI_USES.find((u) => u[0] === key) || [])[1] || 'That'; toast(on ? `${lbl} AI on` : `${lbl} AI off`); renderSettings(); return; }
   if (e.target.matches('[data-mod-toggle]')) { state.modules = state.modules || {}; const k = e.target.dataset.modToggle; state.modules[k] = e.target.checked; saveModules(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); }
-  if (e.target.matches('[data-home-feature]')) { state.home = state.home || {}; state.home.featOpen = true; homeMainToggle(e.target.dataset.homeFeature); return; }   // tick a Home section on/off
   if (e.target.matches('[data-msec-show]')) { const key = e.target.dataset.msecShow; const cfg = mobileHomeCfg(); const set = new Set(cfg.hidden); if (e.target.checked) set.delete(key); else set.add(key); cfg.hidden = [...set]; saveMobileHomeCfg(cfg); toast(e.target.checked ? 'Shown on mobile' : 'Hidden on mobile'); }
   if (e.target.matches('[data-people-toggle]')) { const on = e.target.checked; try { localStorage.setItem('life.home.people', on ? '1' : '0'); } catch {} api('/api/kv/home_people', { method: 'PUT', body: JSON.stringify({ value: on ? '1' : '0' }) }).catch(() => {}); toast(on ? 'People shown on Home' : 'People hidden from Home'); if (state.view && state.view.type === 'home') renderHome(); }
   // Mail search hits IMAP, so debounce and re-focus the box after results land
@@ -22343,13 +22251,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-shortcuts-bg]') && !t.closest('.sc-panel')) { closeShortcuts(); return; }
   { const an = t.closest('[data-addnew-toggle]'); if (an) { const menu = an.parentElement.querySelector('.addnew-menu'); if (menu) { const willOpen = menu.hasAttribute('hidden'); if (willOpen) menu.removeAttribute('hidden'); else menu.setAttribute('hidden', ''); an.setAttribute('aria-expanded', willOpen ? 'true' : 'false'); } return; } }
   const qadd = t.closest('[data-quick-add]'); if (qadd) { quickAdd(qadd.dataset.quickAdd); return; }
-  { const hx = t.closest('[data-home-main-x]'); if (hx) { homeMainRemove(hx.dataset.homeMainX); return; } }   // × removes a Home section
-  { const ha = t.closest('[data-home-main-add]'); if (ha) { homeMainAdd(ha.dataset.homeMainAdd); return; } }   // ＋ chip re-adds one
-  // The Homepage-sections panel is controlled: we manage its open state so a chip
-  // toggle or a reorder (both re-render Home) doesn't snap it shut.
-  { const hft = t.closest('[data-hf-toggle]'); if (hft) { e.preventDefault(); state.home = state.home || {}; state.home.featOpen = !state.home.featOpen; renderHome(); return; } }
-  // Click a Home section header (not a button/link inside it) to fold/unfold it.
-  { const hmt = t.closest('[data-home-main-toggle]'); if (hmt && !t.closest('button, a, select, input, [data-home-day], [data-lead-pgrip]')) { if (Date.now() - suppressLeadClick < 400) return; toggleHomeMainOpen(hmt.dataset.homeMainToggle); return; } }
   if (t.closest('[data-nav-back]')) { navBack(); return; }
   // The note breadcrumb's back is always shown: retrace history if there is any,
   // else step up to the Notes list (its parent). (Robin.)
@@ -22365,8 +22266,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pal-bg]') === t.closest('.pal-bg') && t.closest('[data-pal-bg]') && !t.closest('.pal')) { closePalette(); return; }
   if (t.closest('[data-pal-smart]')) { palSmartSearch(); return; }
   const pi = t.closest('[data-pal-i]'); if (pi) { execItem(state.pal.items[+pi.dataset.palI]); return; }
-  if (t.closest('[data-disc-hide]')) { try { localStorage.setItem('life.home.discHidden', '1'); } catch {} renderHome(); return; }
-  if (t.closest('[data-disc-toggle]')) { try { localStorage.setItem('life.home.discOpen', (localStorage.getItem('life.home.discOpen') !== '0') ? '0' : '1'); } catch {} renderHome(); return; }
   if (t.closest('[data-palette]')) { openPalette(); return; }
   if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
   { const gf = t.closest('[data-guide-feedback]'); if (gf) { openFeedbackForm(gf.dataset.guideFeedback || ''); return; } }
@@ -22551,15 +22450,6 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
-  { const ht = t.closest('[data-htile]'); if (ht) {
-    const cur = state.home.tileOpen || 'today'; const next = ht.dataset.htile;
-    if (next !== cur) { navHist.push({ type: 'home', tile: cur }); if (navHist.length > 60) navHist.shift(); }
-    state.home.tileOpen = next; state.view = { type: 'home', tile: next };
-    navLastView = { ...state.view }; navLastKey = viewKey(state.view);
-    try { localStorage.setItem('life.home.tileOpen', next); } catch {}
-    renderHome(); return;
-  } }
-  if (t.closest('[data-recent-more]')) { state.home = state.home || {}; state.home.recentAll = !state.home.recentAll; renderHome(); return; }
   // Koyeba Home ledger: tapping a cell opens its rows (one open at a time).
   { const kl = t.closest('[data-kled]'); if (kl) { const k = kl.dataset.kled; state.home.ledgerOpen = state.home.ledgerOpen === k ? null : k; renderHome(); return; } }
   // Koyeba Home fold headers (Today / Your spaces / Coming into view / the line /
@@ -23735,7 +23625,7 @@ document.addEventListener('submit', (e) => {
 // drag to reorder favourites on the home, and to reorder the sidebar sections.
 // A dragged item dims; the item it would land next to shows an accent insertion
 // line (above or below, following the pointer) so the drop target is obvious.
-let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragHomeSec = null, dragP1 = null, dragArea = null, dragNoteOrd = null, dragKtask = null;
+let dragFav = null, dragSec = null, dragSub = null, dragContact = null, dragFocus = null, dragP1 = null, dragArea = null, dragNoteOrd = null, dragKtask = null;
 // Reorder the note/table cards in a page's panel; the order lives on the area
 // (props.noteOrder) so it sticks. Mirrors areaDropTarget.
 function noteordDropTarget(container, x, y, draggedId) {
@@ -23819,209 +23709,9 @@ function msecDragEnd(e) {
 document.addEventListener('pointerup', msecDragEnd);
 document.addEventListener('pointercancel', msecDragEnd);
 
-// Drag a section up or down IN PLACE on the mobile Home. Pointer events (touch +
-// mouse); reorders the same saved arrangement as Settings → Mobile, so the two
-// stay in lockstep. Only the dragged card moves - a coloured line shows where it
-// will land - and everything snaps to the new order on release.
-let homeSecDrag = null;
-let homeSecPress = null;
+// Read by the section-fold click guard below (data-sec-collapse); the home-section
+// and lead/chip drags that used to set it went with the pre-Koyeba Home.
 let suppressSecClick = 0;
-const msecEl = (k) => document.querySelector('.' + MSEC_CLASS[k]);
-// Drag the WHOLE card (no grip): a long-press starts the reorder, so a quick swipe
-// still scrolls and a tap still toggles the card open/closed.
-document.addEventListener('pointerdown', (e) => {
-  if (!matchMedia('(pointer:coarse)').matches) return;
-  const hdr = e.target.closest && e.target.closest('.home-mdrag-h'); if (!hdr) return;
-  if (e.target.closest('button:not(.home-sec-toggle), a, input, textarea, select')) return;
-  const sec = hdr.closest('[data-hsec]'); if (!sec) return;
-  const pid = e.pointerId, startY = e.clientY, startX = e.clientX, key = sec.dataset.hsec;
-  homeSecPress = { pid, startX, startY, timer: setTimeout(() => {
-    if (!homeSecPress) return; homeSecPress.timer = null;
-    const cfg = mobileHomeCfg();
-    const order = cfg.order.filter((k) => !cfg.hidden.includes(k) && msecEl(k));
-    homeSecDrag = { key, sec, id: pid, startY, moved: true, order, newOrder: order.slice() };
-    sec.classList.add('mdragging');
-    try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
-    try { hdr.setPointerCapture(pid); } catch {}
-  }, 300) };
-});
-document.addEventListener('pointermove', (e) => {
-  // Before the long-press fires, any real movement means scroll/tap - cancel it.
-  if (homeSecPress && e.pointerId === homeSecPress.pid && homeSecPress.timer) {
-    if (Math.abs(e.clientY - homeSecPress.startY) > 8 || Math.abs(e.clientX - homeSecPress.startX) > 8) { clearTimeout(homeSecPress.timer); homeSecPress = null; }
-    return;
-  }
-  const d = homeSecDrag; if (!d || e.pointerId !== d.id) return;
-  e.preventDefault();
-  const dy = e.clientY - d.startY;
-  d.sec.style.transform = `translateY(${dy}px)`;
-  const others = d.order.filter((k) => k !== d.key);
-  let ins = others.length;
-  for (let i = 0; i < others.length; i++) { const el = msecEl(others[i]); if (!el) continue; const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { ins = i; break; } }
-  d.newOrder = [...others.slice(0, ins), d.key, ...others.slice(ins)];
-  d.order.forEach((k) => { const el = msecEl(k); if (el) el.classList.remove('mdrop-top', 'mdrop-bottom'); });
-  if (ins < others.length) { const el = msecEl(others[ins]); if (el) el.classList.add('mdrop-top'); }
-  else if (others.length) { const el = msecEl(others[others.length - 1]); if (el) el.classList.add('mdrop-bottom'); }
-  // Edge auto-scroll so you can reach far positions in a long Home.
-  const vh = window.innerHeight;
-  if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
-});
-function homeSecDragEnd(e) {
-  if (homeSecPress && (!e || e.pointerId === homeSecPress.pid)) { if (homeSecPress.timer) clearTimeout(homeSecPress.timer); homeSecPress = null; }
-  const d = homeSecDrag; if (!d || (e && e.pointerId !== d.id)) return;
-  homeSecDrag = null;
-  d.sec.style.transform = ''; d.sec.classList.remove('mdragging');
-  d.order.forEach((k) => { const el = msecEl(k); if (el) el.classList.remove('mdrop-top', 'mdrop-bottom'); });
-  // Only swallow the release-click when the card actually moved. A long-press that
-  // fired but didn't reorder is really a tap, so it must still toggle the card
-  // (otherwise "press and nothing happens" - the grip-swallows-the-tap bug).
-  const reordered = d.newOrder && d.newOrder.join() !== d.order.join();
-  if (reordered) {
-    suppressSecClick = Date.now();
-    const cfg = mobileHomeCfg();
-    // Refill only the visible-section slots of the saved order, leaving hidden
-    // sections where they sit, so a later un-hide reappears sensibly.
-    const visible = new Set(d.newOrder);
-    let vi = 0;
-    cfg.order = cfg.order.map((k) => visible.has(k) ? d.newOrder[vi++] : k);
-    saveMobileHomeCfg(cfg); applyMobileHomeOrder();
-    toast('Moved');
-  } else if (d.key) {
-    // Long-press fired but the card never moved: treat it as a tap and toggle
-    // here, swallowing the follow-up click so it doesn't double-toggle. (Pointer
-    // capture can otherwise eat the click entirely - hence toggling ourselves.)
-    suppressSecClick = Date.now();
-    const c = homeCollapsed(); c[d.key] = secOpen(d.key);
-    try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {}
-    renderHome();
-  }
-}
-document.addEventListener('pointerup', homeSecDragEnd);
-document.addEventListener('pointercancel', homeSecDragEnd);
-// ── Homepage-sections panel: drag a chip to reorder how sections stack on Home ──
-let hfDrag = null; let hfSuppressClick = 0;
-document.addEventListener('pointerdown', (e) => {
-  const chip = e.target.closest && e.target.closest('.hf-chip[data-hf-id]'); if (!chip) return;
-  const cont = chip.closest('.hf-chips'); if (!cont) return;
-  hfDrag = { id: chip.dataset.hfId, chip, cont, pid: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false, targetIdx: null };
-});
-document.addEventListener('pointermove', (e) => {
-  const d = hfDrag; if (!d || e.pointerId !== d.pid) return;
-  if (!d.moved) {
-    if (Math.abs(e.clientX - d.startX) > 6 || Math.abs(e.clientY - d.startY) > 6) { d.moved = true; d.chip.classList.add('hf-dragging'); try { d.chip.setPointerCapture(d.pid); } catch {} }
-    else return;
-  }
-  e.preventDefault();
-  d.chip.style.transform = `translate(${e.clientX - d.startX}px, ${e.clientY - d.startY}px)`;
-  const chips = [...d.cont.querySelectorAll('.hf-chip[data-hf-id]')].filter((c) => c !== d.chip);
-  // Vertical list: drop before the first chip whose middle is below the pointer.
-  let idx = 0;
-  for (const c of chips) { const r = c.getBoundingClientRect(); if (e.clientY > r.top + r.height / 2) idx++; }
-  d.targetIdx = idx;
-  chips.forEach((c, i) => c.classList.toggle('hf-drop', i === idx));
-});
-function hfDragEnd(e) {
-  const d = hfDrag; if (!d || (e && e.pointerId !== d.pid)) return; hfDrag = null;
-  d.chip.style.transform = ''; d.chip.classList.remove('hf-dragging');
-  d.cont.querySelectorAll('.hf-chip').forEach((c) => c.classList.remove('hf-drop'));
-  if (!d.moved) return;   // a tap - let the click toggle show/hide
-  hfSuppressClick = Date.now();
-  const visible = [...d.cont.querySelectorAll('.hf-chip[data-hf-id]')].map((c) => c.dataset.hfId).filter((k) => k !== d.id);
-  const beforeKey = (d.targetIdx != null && d.targetIdx < visible.length) ? visible[d.targetIdx] : null;
-  const cur = homeMainOrder();
-  const arr = cur.filter((k) => k !== d.id);
-  let i = beforeKey ? arr.indexOf(beforeKey) : arr.length; if (i < 0) i = arr.length;
-  arr.splice(i, 0, d.id);
-  state.home = state.home || {}; state.home.featOpen = true;   // keep the panel open after a reorder
-  if (arr.join() !== cur.join()) setHomeMainOrder(arr); else renderHome();
-}
-document.addEventListener('pointerup', hfDragEnd);
-document.addEventListener('pointercancel', hfDragEnd);
-// Desktop home-section drag: pointer-based (grab the ⠿ grip), reordering within
-// the section's own column (main or side). Replaces the finicky HTML5 drag.
-let deskSecDrag = null;
-document.addEventListener('pointerdown', (e) => {
-  const grip = e.target.closest && e.target.closest('[data-hsec-pgrip]');
-  if (!grip) return;
-  const sec = grip.closest('[data-hsec]'); const col = sec && sec.closest('.home-main, .home-side');
-  if (!sec || !col) return;
-  e.preventDefault(); e.stopPropagation();
-  const order = [...col.querySelectorAll(':scope > [data-hsec]')].map((el) => el.dataset.hsec);
-  deskSecDrag = { key: grip.dataset.hsecPgrip, sec, col, side: col.classList.contains('home-side'), id: e.pointerId, startY: e.clientY, moved: false, order, before: null };
-  sec.classList.add('mdragging');
-  try { grip.setPointerCapture(e.pointerId); } catch {}
-});
-document.addEventListener('pointermove', (e) => {
-  const d = deskSecDrag; if (!d || e.pointerId !== d.id) return;
-  e.preventDefault();
-  const dy = e.clientY - d.startY;
-  if (Math.abs(dy) > 4) d.moved = true;
-  d.sec.style.position = 'relative'; d.sec.style.zIndex = '20'; d.sec.style.transform = `translateY(${dy}px)`;
-  const others = [...d.col.querySelectorAll(':scope > [data-hsec]')].filter((el) => el !== d.sec);
-  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
-  let beforeEl = null;
-  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
-  d.before = beforeEl ? beforeEl.dataset.hsec : null;
-  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
-  // Autoscroll while dragging near an edge: the rail scrolls itself (it's its own
-  // overflow container), the main lead rides the page scroll.
-  const scroller = d.side ? d.col : document.scrollingElement;
-  if (scroller) { const sr = d.side ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight }; if (e.clientY < sr.top + 60) scroller.scrollBy(0, -14); else if (e.clientY > sr.bottom - 60) scroller.scrollBy(0, 14); }
-});
-function deskSecDragEnd(e) {
-  const d = deskSecDrag; if (!d || (e && e.pointerId !== d.id)) return;
-  deskSecDrag = null;
-  d.sec.style.transform = ''; d.sec.style.zIndex = ''; d.sec.style.position = ''; d.sec.classList.remove('mdragging');
-  d.col.querySelectorAll('[data-hsec]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
-  // Only swallow the click when the grip was actually dragged; a plain grab-and-
-  // release must still let the header's tap toggle the card.
-  if (d.moved) { suppressSecClick = Date.now(); (d.side ? reorderHomeSide : reorderHomeSec)(d.key, d.before, d.order); }
-}
-document.addEventListener('pointerup', deskSecDragEnd);
-document.addEventListener('pointercancel', deskSecDragEnd);
-// Main-area cards (the lead blocks: Today, Do next, Practices, ...): grab the ⠿
-// grip in the header and drag up/down to reorder them, saved to homeMainOrder.
-// Desktop only - the mobile Home uses its own arrangement (Settings › Mobile).
-let leadDrag = null; let suppressLeadClick = 0;
-document.addEventListener('pointerdown', (e) => {
-  if (matchMedia('(max-width:820px)').matches) return;
-  const grip = e.target.closest && e.target.closest('[data-lead-pgrip]'); if (!grip) return;
-  const sec = grip.closest('[data-lead-key]'); const col = sec && sec.closest('.home-lead'); if (!sec || !col) return;
-  e.preventDefault(); e.stopPropagation();
-  leadDrag = { key: grip.dataset.leadPgrip, sec, col, id: e.pointerId, startY: e.clientY, moved: false, before: null };
-  sec.classList.add('mdragging');
-  try { grip.setPointerCapture(e.pointerId); } catch {}
-});
-document.addEventListener('pointermove', (e) => {
-  const d = leadDrag; if (!d || e.pointerId !== d.id) return;
-  e.preventDefault();
-  const dy = e.clientY - d.startY;
-  if (Math.abs(dy) > 4) d.moved = true;
-  d.sec.style.position = 'relative'; d.sec.style.zIndex = '20'; d.sec.style.transform = `translateY(${dy}px)`;
-  const others = [...d.col.querySelectorAll(':scope > [data-lead-key]')].filter((el) => el !== d.sec);
-  others.forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
-  let beforeEl = null;
-  for (const el of others) { const r = el.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { beforeEl = el; break; } }
-  d.before = beforeEl ? beforeEl.dataset.leadKey : null;
-  if (beforeEl) beforeEl.classList.add('mdrop-top'); else if (others.length) others[others.length - 1].classList.add('mdrop-bottom');
-  const vh = window.innerHeight; if (e.clientY < 80) window.scrollBy(0, -14); else if (e.clientY > vh - 80) window.scrollBy(0, 14);
-});
-function leadDragEnd(e) {
-  const d = leadDrag; if (!d || (e && e.pointerId !== d.id)) return;
-  leadDrag = null;
-  d.sec.style.transform = ''; d.sec.style.zIndex = ''; d.sec.style.position = ''; d.sec.classList.remove('mdragging');
-  d.col.querySelectorAll('[data-lead-key]').forEach((el) => el.classList.remove('mdrop-top', 'mdrop-bottom'));
-  if (!d.moved) return;
-  suppressLeadClick = Date.now();   // don't let the release toggle the card open/shut
-  const cur = [...d.col.querySelectorAll(':scope > [data-lead-key]')].map((el) => el.dataset.leadKey);
-  const without = cur.filter((k) => k !== d.key);
-  let i = d.before ? without.indexOf(d.before) : without.length; if (i < 0) i = without.length;
-  const newEnabled = [...without.slice(0, i), d.key, ...without.slice(i)];
-  const rest = homeMainOrder().filter((k) => !newEnabled.includes(k));
-  setHomeMainOrder([...newEnabled, ...rest]);
-}
-document.addEventListener('pointerup', leadDragEnd);
-document.addEventListener('pointercancel', leadDragEnd);
 // Drag an inbox row up onto a quadrant card to file it fast. Touch: long-press
 // then drag (so a tap still opens and a swipe still scrolls). Mouse: drag on move.
 let mailDrag = null; let mailDragPress = null; let mailDragSuppressClick = 0;
@@ -24315,26 +24005,6 @@ function savePracticeOrder(orderedIds) {
   acts.sort((x, y) => String(x.lane || '').localeCompare(String(y.lane || '')) || ((x.position || 0) - (y.position || 0)) || ((x.id || 0) - (y.id || 0)));
   rerenderPractices();
 }
-function reorderHomeSec(dragged, before, cur) {
-  const arr = cur.filter((k) => k !== dragged);
-  let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
-  arr.splice(i, 0, dragged);
-  const val = JSON.stringify(arr);
-  try { localStorage.setItem('life.home.mainOrder', val); } catch {}
-  // Persist to the account too, so the arrangement follows you to other desktops.
-  api('/api/kv/home_order', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
-  renderHome();
-}
-const HOME_SIDE_KEYS = new Set(['recent', 'notepad', 'people']);
-function reorderHomeSide(dragged, before, cur) {
-  const arr = cur.filter((k) => k !== dragged);
-  let i = before ? arr.indexOf(before) : arr.length; if (i < 0) i = arr.length;
-  arr.splice(i, 0, dragged);
-  const val = JSON.stringify(arr);
-  try { localStorage.setItem('life.home.sideOrder', val); } catch {}
-  api('/api/kv/home_side_order', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch(() => {});
-  renderHome();
-}
 function clearDropMarks() {
   document.querySelectorAll('.drop-before, .drop-after').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
 }
@@ -24392,7 +24062,6 @@ document.addEventListener('dragstart', (e) => {
   const f = e.target.closest('[data-fav-id]'); if (f) { dragFav = f.dataset.favId; f.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const fo = e.target.closest('[data-focus-id]'); if (fo) { dragFocus = fo.dataset.focusId; fo.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const pr = e.target.closest('[data-p1-id]'); if (pr) { dragP1 = pr.dataset.p1Id; pr.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
-  const hg = e.target.closest('[data-hsec-grip]'); if (hg) { dragHomeSec = hg.dataset.hsecGrip; const s = e.target.closest('[data-hsec]'); if (s) s.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const sub = e.target.closest('[data-sub-id]'); if (sub) { dragSub = sub.dataset.subId; sub.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const s = e.target.closest('.nav-sec-h'); if (s) { const sec = s.closest('[data-nav-sec]'); dragSec = sec.dataset.navSec; sec.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
   const ar = e.target.closest('[data-area-drag]'); if (ar) { dragArea = ar.dataset.areaDrag; ar.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; return; }
@@ -24407,7 +24076,6 @@ document.addEventListener('dragover', (e) => {
   if (dragKtask) { const c = e.target.closest('[data-kcol]'); document.querySelectorAll('.kcol.kcol-over').forEach((el) => el.classList.remove('kcol-over')); if (c) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; c.classList.add('kcol-over'); } return; }
   if (dragFocus && e.target.closest('.home-sec-focus')) { e.preventDefault(); const o = e.target.closest('[data-focus-id]'); markDrop(o && o.dataset.focusId !== dragFocus ? o : null, e, 'h'); return; }
   if (dragP1 && e.target.closest('.home-sec-p1')) { e.preventDefault(); const o = e.target.closest('[data-p1-id]'); markDrop(o && o.dataset.p1Id !== dragP1 ? o : null, e, 'h'); return; }
-  if (dragHomeSec && (e.target.closest('.home-main') || e.target.closest('.home-side'))) { e.preventDefault(); const o = e.target.closest('[data-hsec]'); markDrop(o && o.dataset.hsec !== dragHomeSec ? o : null, e, 'v'); return; }
   if (dragSec && e.target.closest('#nav-secs')) { e.preventDefault(); const o = e.target.closest('[data-nav-sec]'); markDrop(o && o.dataset.navSec !== dragSec ? o : null, e, 'v'); return; }
   if (dragSub && e.target.closest('[data-subpages]')) { e.preventDefault(); const o = e.target.closest('[data-sub-id]'); markDrop(o && o.dataset.subId !== dragSub ? o : null, e, 'v'); return; }
   if (dragContact) { const gd = e.target.closest('[data-group-drop]'); document.querySelectorAll('.cg-chip.cg-over').forEach((el) => el.classList.remove('cg-over')); if (gd) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; gd.classList.add('cg-over'); } return; }
@@ -24460,19 +24128,6 @@ document.addEventListener('drop', (e) => {
     const before = over && over.dataset.p1Id !== dragP1 ? dropBefore(over, ids, (el) => el.dataset.p1Id) : null;
     clearDropMarks(); reorderP1(dragP1, before); dragP1 = null; return;
   }
-  if (dragHomeSec) {
-    e.preventDefault();
-    const side = HOME_SIDE_KEYS.has(dragHomeSec);
-    const cur = [...document.querySelectorAll(`${side ? '.home-side' : '.home-main'} [data-hsec]`)].map((el) => el.dataset.hsec);
-    const over = e.target.closest('[data-hsec]');
-    const overKey = over && over.dataset.hsec;
-    clearDropMarks();
-    // Ignore a drop over the other column - each column reorders on its own.
-    if (overKey && !cur.includes(overKey)) { dragHomeSec = null; return; }
-    const before = (overKey && overKey !== dragHomeSec) ? dropBefore(over, cur, (el) => el.dataset.hsec) : null;
-    (side ? reorderHomeSide : reorderHomeSec)(dragHomeSec, before, cur);
-    dragHomeSec = null; return;
-  }
   if (dragSec) {
     e.preventDefault(); const over = e.target.closest('[data-nav-sec]');
     const before = over && over.dataset.navSec !== dragSec ? dropBefore(over, state.nav.order, (el) => el.dataset.navSec) : null;
@@ -24491,7 +24146,7 @@ document.addEventListener('drop', (e) => {
     dragContact = null;
   }
 });
-document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over, .kcol.kcol-over').forEach((el) => el.classList.remove('cg-over', 'kcol-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragHomeSec = null; dragP1 = null; dragArea = null; dragNoteOrd = null; dragKtask = null; });
+document.addEventListener('dragend', () => { clearDropMarks(); document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging')); document.querySelectorAll('.cg-chip.cg-over, .kcol.kcol-over').forEach((el) => el.classList.remove('cg-over', 'kcol-over')); dragFav = null; dragSec = null; dragSub = null; dragContact = null; dragFocus = null; dragP1 = null; dragArea = null; dragNoteOrd = null; dragKtask = null; });
 
 // ── mail: swipe a row (mobile) — left = Archive, right = Trash ──
 let mailSwipe = null;
