@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Koyeba - un foyer paisible pour toute votre vie</title>
-<meta name="description" content="Koyeba réunit le courrier, l’agenda, les tâches, les notes, l’argent et la vie intérieure en un seul lieu privé, reliés par les Spaces. Posez-le, et il revient quand vous en avez besoin. Vos données sont à vous.">
+<meta name="description" content="Koyeba réunit courrier, agenda, tâches, notes, argent et vie intérieure en un seul endroit privé, reliés par les Spaces. Posez-le, et il revient quand vous en avez besoin. Vos données sont à vous.">
 <link rel="canonical" href="https://koyeba.co/fr">
 <link rel="alternate" hreflang="en" href="https://koyeba.co/">
 <link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt">
@@ -42,20 +42,20 @@
     {
       "@type": "WebSite",
       "@id": "https://koyeba.co/#website",
-      "url": "https://koyeba.co/fr",
+      "url": "https://koyeba.co/",
       "name": "Koyeba",
-      "slogan": "For a life well lived",
+      "slogan": "Pour une vie bien vécue",
       "description": "Un foyer paisible et privé pour toute votre vie - courrier, agenda, tâches, notes, argent et vie intérieure, reliés par les Spaces.",
-      "inLanguage": "en-GB"
+      "inLanguage": "fr"
     },
     {
       "@type": "SoftwareApplication",
       "name": "Koyeba",
-      "slogan": "For a life well lived",
+      "slogan": "Pour une vie bien vécue",
       "url": "https://koyeba.co/",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "Koyeba est un foyer paisible et privé pour tout ce que vous portez - courrier, agenda, tâches, notes, argent et vie intérieure. Posez-le, et il revient quand vous en avez besoin. Vos données vous sont privées, et l’IA est optionnelle, avec votre propre clé.",
+      "description": "Koyeba est un foyer paisible et privé pour tout ce que vous portez - courrier, agenda, tâches, notes, argent et vie intérieure. Posez-le, et il revient quand vous en avez besoin. Vos données vous appartiennent, et l’IA est optionnelle, avec votre propre clé.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -72,338 +72,225 @@
 @font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
 
-/* ── Tokens: ivory day (default), deep-forest night (traced from the prototype) ── */
+/* ── Tokens: ivory day (default), deep-forest night (§3) ── */
 :root{
-  --k-bg:#f8f4ec;          /* ivory page */
-  --k-panel:#fdfbf7;       /* cards, inputs */
-  --k-soft:#efe9dc;        /* tinted bands, selected rows */
-  --k-ink:#2a2620;         /* text */
-  --k-mute:#6b6357;        /* secondary text */
-  --k-faint:#9a9082;       /* tertiary text */
-  --k-line:#e0d9cc;        /* 1px warm keylines */
-  --k-gold:#c99a3e;        /* the one accent - fills, rules, markers */
-  --k-goldt:#8f6c2a;       /* gold TEXT on ivory (passes contrast) */
-  --k-deep:#2c4a3a;        /* forest: the hero panel bar, the privacy band */
-  --k-ondeep:#f8f4ec;      /* text on forest */
-  --k-ongold:#2a2620;      /* text on a solid gold button */
+  --k-bg:#f8f4ec; --k-panel:#fdfbf7; --k-soft:#efe9dc;
+  --k-ink:#2a2620; --k-mute:#6b6357; --k-faint:#9a9082; --k-line:#e0d9cc;
+  --k-gold:#c99a3e; --k-goldt:#8f6c2a; --k-deep:#2c4a3a; --k-ondeep:#f8f4ec; --k-ongold:#2a2620;
+  /* The two forest panels stay forest in both themes, so their colours are fixed. */
+  --k-forest:#2c4a3a; --k-forest-deep:#13241d; --k-onforest:#f8f4ec;
+  --k-forest-line:rgba(248,244,236,.16); --k-forest-mute:rgba(248,244,236,.78);
   --k-serif:'Cormorant Garamond', Georgia, serif;
   --k-sans:'Jost', system-ui, sans-serif;
-  --maxw:1120px;
-  font-synthesis:none;     /* never fake a weight or a slant */
+  --maxw:1240px;
+  font-synthesis:none;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --k-bg:#13241d;
-    --k-panel:#1a2e25;
-    --k-soft:#20362b;
-    --k-ink:#eef1e6;
-    --k-mute:#b4bbac;
-    --k-faint:#8a9385;
-    --k-line:#33463d;
-    --k-gold:#d8b25e;
-    --k-goldt:#e2c37a;
-    --k-deep:#0e1a14;
-    --k-ondeep:#eef1e6;
-    --k-ongold:#2a2620;
+    --k-bg:#13241d; --k-panel:#1a2e25; --k-soft:#20362b;
+    --k-ink:#eef1e6; --k-mute:#b4bbac; --k-faint:#8a9385; --k-line:#33463d;
+    --k-gold:#d8b25e; --k-goldt:#e2c37a; --k-deep:#0e1a14; --k-ondeep:#eef1e6; --k-ongold:#2a2620;
   }
 }
 
 html { scroll-behavior: smooth; }
-body {
-  background: var(--k-bg);
-  color: var(--k-ink);
-  font-family: var(--k-sans);
-  font-size: 17px;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+body { background: var(--k-bg); color: var(--k-ink); font-family: var(--k-sans); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
-
+img { display: block; }
 h1, h2, h3 { font-family: var(--k-serif); font-weight: 300; letter-spacing: 0; line-height: 1.08; text-wrap: balance; }
-h2 { font-size: clamp(30px, 4.4vw, 46px); }
-h3 { font-size: clamp(22px, 2.8vw, 30px); }
-.em { font-style: italic; color: var(--k-goldt); }
+i, em, .i { font-style: italic; }
+.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(20px,4vw,48px); }
+.gold { color: var(--k-gold); }
+.goldt { color: var(--k-goldt); }
 
-/* ── eyebrow: a 28px gold rule, then a wide-tracked Jost label ── */
-.eyebrow { display: inline-flex; align-items: center; gap: 14px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 18px; }
+/* ── eyebrow: a 28×1px gold rule, then a wide-tracked Jost label ── */
+.eyebrow { display: inline-flex; align-items: center; gap: 12px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); white-space: nowrap; }
 .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
-.center .eyebrow, .eyebrow.center { justify-content: center; }
+.eyebrow.center { justify-content: center; }
+.eyebrow.center::after { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
+.eyebrow.on-forest { color: var(--k-gold); }
 
-/* ── buttons: small, square, Jost 500 uppercase, one gold ── */
-.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; padding: 13px 26px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
+/* ── buttons: small, square, Jost 500 uppercase ── */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; padding: 14px 22px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
 .btn-primary { background: var(--k-gold); color: var(--k-ongold); }
 .btn-primary:hover { background: color-mix(in oklab, var(--k-gold), var(--k-ink) 16%); }
+.btn-ink { background: var(--k-ink); color: var(--k-bg); }
+.btn-ink:hover { background: color-mix(in oklab, var(--k-ink), var(--k-gold) 22%); }
 .btn-ghost { background: transparent; color: var(--k-ink); border-color: var(--k-line); }
 .btn-ghost:hover { border-color: var(--k-ink); }
+.link-gold { font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); }
+.link-gold:hover { color: var(--k-gold); }
 
 /* ── nav ── */
 nav { position: sticky; top: 0; z-index: 50; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
-.nav-in { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 20px; }
-.brand { display: inline-flex; align-items: center; gap: 11px; }
-.brand-mark { height: 24px; width: auto; display: block; }
+.nav-in { display: flex; align-items: center; gap: clamp(16px,3vw,40px); height: 84px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; }
+.brand-mark { height: 26px; width: auto; }
 .ko-ivory { display: none; }
 @media (prefers-color-scheme: dark) { .ko-ink { display: none; } .ko-ivory { display: block; } }
-.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 26px; line-height: 1; color: var(--k-ink); }
+.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 30px; line-height: 1; color: var(--k-ink); }
 .brand-word .dot { color: var(--k-gold); }
-.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-.nav-links a { font-size: 14px; color: var(--k-mute); transition: color .18s; }
-.nav-links a:hover { color: var(--k-ink); }
-.nav-cta { display: flex; align-items: center; gap: 14px; }
-.nav-cta .btn { padding: 10px 18px; }
-@media (max-width: 1024px) { .nav-links { display: none; } }
-@media (max-width: 560px) {
-  .wrap { padding: 0 20px; }
-  .nav-in { position: relative; flex-direction: column; height: auto; gap: 13px; padding: 14px 0 16px; }
-  .nav-cta { width: 100%; justify-content: center; }
-  .nav-cta .lang-switch.nav-lang { position: absolute; top: 15px; right: 0; margin: 0; }
-}
+.nav-links { display: flex; align-items: center; gap: clamp(16px,2.4vw,32px); margin-left: clamp(0px,4vw,56px); list-style: none; min-width: 0; overflow: hidden; }
+.nav-links a { font-size: 15px; color: var(--k-ink); white-space: nowrap; transition: color .18s; }
+.nav-links a:hover { color: var(--k-goldt); }
+.nav-cta { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+.nav-cta .sign { font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.nav-cta .sign:hover { color: var(--k-goldt); }
+@media (max-width: 860px) { .nav-links { display: none; } }
 
-/* language switcher */
+/* ── section rhythm ── */
+.sec { border-top: 1px solid var(--k-line); }
+.sec-in { padding: clamp(64px,8vw,112px) 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,420px), 1fr)); gap: clamp(40px,6vw,96px); }
+.two.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); }
+.lead { font-size: 17px; line-height: 1.7; color: var(--k-mute); text-wrap: pretty; }
+h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px; }
+.set-head { margin-top: 20px; }
+
+/* ── hero ── */
+.hero-in { padding: clamp(56px,8vw,112px) 0 clamp(64px,8vw,120px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: clamp(40px,6vw,88px); align-items: center; }
+.hero h1 { font-size: clamp(52px,6.4vw,86px); line-height: 1; letter-spacing: -.01em; margin-top: 22px; }
+.hero h1 i { color: var(--k-gold); }
+.hero-sub { font-size: 18px; line-height: 1.65; color: var(--k-mute); max-width: 500px; margin-top: 28px; text-wrap: pretty; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-top: 40px; }
+
+/* hero demo card (flat, square, no shadow) */
+.demo { background: var(--k-panel); border: 1px solid var(--k-line); padding: 30px 32px 28px; }
+.demo-line { font-family: var(--k-serif); font-weight: 300; font-size: clamp(28px,3vw,38px); line-height: 1.2; padding: 22px 0 14px; border-bottom: 1px solid var(--k-ink); min-height: 46px; display: flex; align-items: flex-end; margin-top: 12px; }
+.demo-caret { width: 2px; height: 34px; margin-left: 3px; margin-bottom: 4px; background: var(--k-gold); }
+.demo-rows { display: grid; padding-top: 8px; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+.demo-row { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
+.demo-rk { font-family: var(--k-sans); font-weight: 600; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-mute); }
+.demo-rv { font-family: var(--k-sans); font-size: 15px; line-height: 1.45; }
+.demo-foot { display: flex; align-items: center; gap: 14px; padding-top: 18px; }
+.demo-foot .df-t { font-size: 13px; color: var(--k-mute); }
+.demo-set { margin-left: auto; font-family: var(--k-sans); font-weight: 500; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; padding: 10px 16px; background: var(--k-gold); color: var(--k-ongold); white-space: nowrap; }
+
+/* ── the idea ── */
+.idea-body { display: grid; gap: 18px; padding-top: 8px; font-size: 17px; line-height: 1.7; color: var(--k-mute); }
+.idea-body .know { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 21px; color: var(--k-ink); }
+
+/* ── tools: two columns of folding rows, no icons ── */
+.tools-head { max-width: 760px; }
+.tools-head .lead { max-width: 620px; margin-top: 20px; }
+.tool-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: 0 clamp(40px,5vw,80px); margin-top: 56px; }
+.tg-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--k-ink); }
+.tg-label { font-family: var(--k-sans); font-weight: 600; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.tg-count { font-family: var(--k-sans); font-size: 12px; color: var(--k-mute); }
+.tool { border-bottom: 1px solid var(--k-line); }
+.tool-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.tool-name { font-family: var(--k-serif); font-weight: 300; font-size: 28px; line-height: 1.1; min-width: 150px; color: var(--k-ink); }
+.tool-line { flex: 1; font-family: var(--k-sans); font-size: 14px; line-height: 1.45; color: var(--k-mute); }
+.tool-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.tool-body { padding: 0 0 22px 168px; display: grid; gap: 10px; }
+.tool-desc { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+.tool-joins { font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-goldt); }
+@media (max-width: 560px) { .tool-h { flex-wrap: wrap; gap: 4px 14px; } .tool-name { min-width: 0; } .tool-line { flex-basis: 100%; } .tool-body { padding-left: 0; } }
+
+/* ── spaces (forest panel) ── */
+.forest { background: var(--k-forest); color: var(--k-onforest); }
+.forest button { color: inherit; }   /* buttons default to black, which reads as muddy "blue on green" on the forest - never that; inherit the ivory */
+.forest .lead { color: var(--k-forest-mute); }
+.forest .eyebrow { color: var(--k-gold); }
+.forest h2 i { color: var(--k-gold); }
+.share { margin-top: 40px; border-top: 1px solid var(--k-forest-line); }
+.share-h { display: flex; align-items: baseline; gap: 16px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--k-forest-line); }
+.share-h .st { font-family: var(--k-serif); font-weight: 300; font-size: 26px; color: var(--k-onforest); }
+.share-h .ss { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-forest-mute); }
+.share-body { padding: 18px 0 4px; display: grid; gap: 14px; }
+.share-body[hidden] { display: none; }
+.share-body p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-forest-mute); text-wrap: pretty; }
+.share-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 28px; font-family: var(--k-sans); font-size: 14px; }
+.spacecard { border: 1px solid var(--k-forest-line); padding: 30px 32px; }
+.sc-top { display: flex; align-items: baseline; gap: 14px; }
+.sc-num { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 20px; color: var(--k-gold); }
+.sc-name { font-family: var(--k-serif); font-weight: 300; font-size: 38px; line-height: 1; }
+.sc-who { margin-left: auto; font-family: var(--k-sans); font-size: 12.5px; color: var(--k-forest-mute); }
+.sc-groups { margin-top: 22px; }
+.sc-group { border-top: 1px solid var(--k-forest-line); }
+.sc-gh { display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.sc-gl { font-family: var(--k-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; }
+.sc-gc { font-family: var(--k-sans); font-size: 12px; color: var(--k-forest-mute); }
+.sc-gs { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 18px; color: var(--k-forest-mute); }
+.sc-items { display: grid; gap: 10px; padding: 0 0 16px; }
+.sc-item { display: flex; gap: 14px; align-items: baseline; font-family: var(--k-sans); font-size: 14.5px; line-height: 1.4; }
+.sc-item .it-t { flex: 1; }
+.sc-item .it-m { font-size: 12.5px; color: var(--k-forest-mute); white-space: nowrap; }
+.sc-join { border-top: 1px solid var(--k-forest-line); padding-top: 16px; font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-gold); }
+
+/* ── the inner life (centred) ── */
+.inner-in { max-width: 880px; margin: 0 auto; text-align: center; }
+.inner-in .lead { margin: 24px auto 0; max-width: 620px; }
+.inner-more { margin-top: 28px; font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); cursor: pointer; background: none; border: 0; }
+.inner-extra { margin: 18px auto 0; max-width: 620px; }
+
+/* ── private by design (folding points, no ticks) ── */
+.priv-points { border-top: 1px solid var(--k-line); }
+.priv { border-bottom: 1px solid var(--k-line); }
+.priv-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.priv-num { width: 26px; flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-gold); }
+.priv-title { flex: 1; font-family: var(--k-serif); font-weight: 300; font-size: 25px; line-height: 1.2; color: var(--k-ink); }
+.priv-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.priv-body { padding: 0 0 20px 44px; font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); text-wrap: pretty; }
+
+/* ── made to be quick (three columns) ── */
+.quick-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr)); gap: clamp(28px,4vw,56px); margin-top: 48px; }
+.quick-step { border-top: 1px solid var(--k-ink); padding-top: 22px; }
+.quick-n { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 26px; color: var(--k-gold); }
+.quick-t { font-family: var(--k-serif); font-weight: 300; font-size: 30px; line-height: 1.15; margin-top: 10px; }
+.quick-p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); margin-top: 10px; }
+
+/* ── invite (deep-forest panel) ── */
+.invite { background: var(--k-forest-deep); color: var(--k-onforest); }
+.invite-in { max-width: 760px; margin: 0 auto; padding: clamp(72px,9vw,128px) 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.invite-script { width: 220px; height: auto; opacity: .9; }
+.invite .eyebrow { margin-top: 44px; color: var(--k-gold); }
+.invite h2 { font-size: clamp(44px,5vw,66px); line-height: 1.05; margin-top: 20px; }
+.invite-lead { font-family: var(--k-sans); font-size: 17px; line-height: 1.7; color: var(--k-forest-mute); margin-top: 22px; max-width: 520px; text-wrap: pretty; }
+.invite-form { width: min(100%,520px); margin-top: 40px; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.inv-field { border-bottom: 1px solid var(--k-forest-line); }
+.inv-field + .inv-field { margin-top: 4px; }
+.inv-field input { width: 100%; background: transparent; border: 0; padding: 15px 2px; font-family: var(--k-sans); font-size: 16px; color: var(--k-onforest); }
+.inv-field input::placeholder { color: var(--k-forest-mute); }
+.inv-field input:focus { outline: none; }
+.inv-field:focus-within { border-bottom-color: var(--k-gold); }
+.invite-form .if-actions { display: flex; justify-content: center; margin-top: 26px; }
+.invite-form .if-note { margin-top: 16px; font-size: 14px; color: var(--k-gold); text-align: center; }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
+.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-forest-mute); font-size: 16.5px; line-height: 1.6; }
+.inv-have { margin-top: 22px; font-family: var(--k-sans); font-size: 14px; color: var(--k-onforest); opacity: .75; }
+.inv-have:hover { opacity: 1; }
+
+/* ── footer ── */
+.foot-in { padding: 56px 0 40px; }
+.foot-top { display: flex; flex-wrap: wrap; gap: 32px 64px; align-items: flex-start; }
+.foot-brand { display: grid; gap: 10px; }
+.foot-tag { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-mute); }
+.foot-col { display: grid; gap: 10px; font-family: var(--k-sans); font-size: 14px; }
+.foot-col a { color: var(--k-ink); } .foot-col a:hover { color: var(--k-goldt); }
+.foot-meta { margin-left: auto; font-family: var(--k-sans); font-size: 13px; line-height: 1.7; color: var(--k-mute); text-align: right; }
+.foot-lisboa { font-style: italic; color: var(--k-goldt); font-family: var(--k-serif); font-size: 15px; }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 4px; }
+.foot-lang-label { font-size: 13px; color: var(--k-faint); }
+.foot-mark { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 80px; opacity: .5; transition: opacity .6s ease; }
+.foot-mark:hover { opacity: 1; }
+.foot-mark img { width: 240px; max-width: 72vw; height: auto; }
+.dict { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 26px; text-align: center; }
+.dict-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; }
+.dict-word { font-family: var(--k-serif); font-weight: 500; font-size: 24px; line-height: 1; }
+.dict-say { font-family: var(--k-sans); font-size: 14px; color: var(--k-mute); white-space: nowrap; }
+.dict-pos { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 18px; color: var(--k-goldt); white-space: nowrap; }
+.dict-def { font-family: var(--k-serif); font-weight: 300; font-size: 20px; line-height: 1.3; color: var(--k-mute); }
+
+/* language switcher (filled by i18n.js) */
 .lang-switch { display: inline-flex; align-items: center; gap: 1px; }
 .lang-switch a { display: inline-block; padding: 4px 7px; font-size: 12.5px; font-weight: 500; letter-spacing: .04em; color: var(--k-faint); transition: color .16s, background .16s; }
 .lang-switch a:hover { color: var(--k-ink); background: var(--k-soft); }
 .lang-switch a.on { color: var(--k-goldt); }
-.nav-lang { margin-right: 2px; }
-.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
-.foot-lang-label { font-size: 13px; color: var(--k-faint); }
-.lang-switch.lang-dd { position: relative; gap: 0; }
-.lang-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: transparent; border: 1px solid var(--k-line); padding: 7px 10px; cursor: pointer; line-height: 1; transition: border-color .16s, color .16s; }
-.lang-btn:hover { color: var(--k-ink); border-color: var(--k-ink); }
-.lang-caret { font-size: 10px; opacity: .7; }
-.lang-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 160px; background: var(--k-panel); border: 1px solid var(--k-line); padding: 6px; display: none; z-index: 60; }
-.lang-switch.lang-dd.open .lang-menu { display: block; }
-.lang-menu a { display: block; padding: 8px 12px; font-size: 14px; font-weight: 400; color: var(--k-mute); }
-.lang-menu a:hover { background: var(--k-soft); color: var(--k-ink); }
-.lang-menu a.on { color: var(--k-goldt); font-weight: 500; }
 
-/* ── hero ── */
-.hero { padding: 86px 0 70px; }
-.hero-in { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 60px; align-items: center; }
-.hero-copy { min-width: 0; }
-.hero h1 { font-size: clamp(44px, 6.6vw, 76px); line-height: 1.02; }
-.hero h1 .l2 { display: block; font-style: italic; color: var(--k-goldt); }
-.hero-sub { margin-top: 26px; font-size: clamp(16.5px, 1.8vw, 19px); color: var(--k-mute); max-width: 46ch; line-height: 1.6; }
-.hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.hero-note { margin-top: 20px; font-size: 13px; letter-spacing: .02em; color: var(--k-faint); }
-
-/* hero device: one clean, flat, square panel */
-.device { border: 1px solid var(--k-line); background: var(--k-panel); }
-.device-bar { display: flex; align-items: center; justify-content: space-between; background: var(--k-deep); color: var(--k-ondeep); padding: 13px 18px; }
-.device-bar .dw { font-family: var(--k-serif); font-weight: 500; font-size: 18px; }
-.device-bar .dw .dot { color: var(--k-gold); }
-.device-bar .dd { font-size: 10.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; opacity: .8; font-family: var(--k-sans); }
-.device-body { padding: 20px 20px 22px; }
-.device-eyebrow { display: flex; align-items: center; gap: 12px; font-size: 10.5px; font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 4px; }
-.device-eyebrow::before { content: ""; width: 24px; height: 1px; background: var(--k-gold); }
-.prow { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
-.prow:last-child { border-bottom: 0; }
-.pt { font-family: var(--k-serif); font-size: 19px; color: var(--k-mute); width: 44px; flex: none; font-variant-numeric: tabular-nums; }
-.sq { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.sq.out { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.sq.mute { background: var(--k-faint); }
-.plbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
-.prow.done .plbl { color: var(--k-faint); text-decoration: line-through; }
-.ptick { color: var(--k-goldt); font-size: 14px; flex: none; }
-.pcal { font-size: 9px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 2px 6px; flex: none; }
-@media (max-width: 880px) {
-  .hero { padding: 54px 0 48px; }
-  .hero-in { grid-template-columns: 1fr; gap: 40px; }
-  .hero-sub { max-width: none; }
-}
-
-/* ── section scaffolding ── */
-section { position: relative; }
-.band { padding: 92px 0; }
-.band-head { max-width: 640px; margin-bottom: 50px; }
-.band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
-.band-head p { margin-top: 18px; font-size: 18px; color: var(--k-mute); line-height: 1.6; }
-.rule-top { border-top: 1px solid var(--k-line); }
-.soft { background: var(--k-soft); border-top: 1px solid var(--k-line); border-bottom: 1px solid var(--k-line); }
-
-/* concept */
-.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-.concept-lead { font-family: var(--k-serif); font-size: clamp(26px, 3.2vw, 34px); line-height: 1.28; font-weight: 300; }
-.concept-lead .em { font-style: italic; color: var(--k-goldt); }
-.concept-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.65; }
-.concept-body p + p { margin-top: 18px; }
-.concept-body .close { margin-top: 20px; font-family: var(--k-serif); font-style: italic; font-size: 22px; color: var(--k-ink); line-height: 1.35; }
-@media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 30px; } }
-.holds { list-style: none; margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 26px; }
-.holds li { display: grid; grid-template-columns: 9px 1fr; gap: 12px; align-items: start; }
-.holds .hsq { width: 7px; height: 7px; margin-top: 9px; background: var(--k-gold); }
-.holds b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; display: block; line-height: 1.2; }
-.holds span { font-size: 14px; color: var(--k-faint); line-height: 1.45; display: block; margin-top: 2px; }
-@media (max-width: 460px) { .holds { grid-template-columns: 1fr; } }
-
-/* litany */
-.litany-band { padding: clamp(58px, 9vw, 100px) 0; }
-.litany { font-family: var(--k-serif); font-weight: 300; font-size: clamp(27px, 4.4vw, 46px); line-height: 1.3; color: var(--k-ink); max-width: 22ch; text-wrap: balance; }
-.litany .em { color: var(--k-goldt); font-style: italic; }
-
-/* tools showcase */
-.ts-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.tstile { flex: 1 1 164px; max-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--k-panel); border: 1px solid var(--k-line); cursor: pointer; font: inherit; color: var(--k-ink); transition: border-color .16s, background .16s; }
-.tstile:hover { border-color: var(--k-mute); }
-.tstile .tsi { font-size: 21px; line-height: 1; color: var(--k-goldt); }
-.tstile .tsn { font-size: 13px; font-weight: 500; }
-.tstile.on { border-color: var(--k-gold); background: var(--k-soft); }
-.tstile.on .tsn { color: var(--k-goldt); }
-.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 36px; }
-.tsp-ic { font-size: 30px; line-height: 1; color: var(--k-goldt); margin-bottom: 16px; }
-.tsp-name { font-family: var(--k-serif); font-size: clamp(26px, 3vw, 34px); font-weight: 300; line-height: 1.05; }
-.tsp-tag { color: var(--k-goldt); font-family: var(--k-serif); font-style: italic; font-size: 19px; margin: 6px 0 15px; }
-.tsp-desc { color: var(--k-mute); font-size: 16px; line-height: 1.6; max-width: 46ch; }
-.tsp-feats { list-style: none; margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
-.tsp-feats li { position: relative; padding-left: 22px; font-size: 14.5px; color: var(--k-mute); line-height: 1.45; }
-.tsp-feats li::before { content: '✓'; position: absolute; left: 0; top: 0; color: var(--k-goldt); font-size: 12px; }
-.tspv { background: var(--k-bg); border: 1px solid var(--k-line); padding: 18px 20px; }
-.pv-rows { display: flex; flex-direction: column; }
-.pv-row { display: flex; align-items: center; gap: 11px; padding: 9px 0; font-size: 14.5px; color: var(--k-ink); border-bottom: 1px solid var(--k-line); }
-.pv-row:last-child { border-bottom: 0; }
-.pv-ava { width: 25px; height: 25px; background: var(--k-deep); color: var(--k-ondeep); font-family: var(--k-serif); font-size: 13px; display: grid; place-items: center; flex: none; }
-.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pv-t b { font-weight: 400; font-family: var(--k-serif); font-size: 16px; }
-.adot { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.adot.rust, .adot.gold { background: var(--k-gold); }
-.adot.pine { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.adot.blue { background: var(--k-faint); }
-.adot.big { width: 10px; height: 10px; }
-.pv-chip { font-size: 10.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border: 1px solid var(--k-line); color: var(--k-mute); flex: none; }
-.pv-chip.q-urgent { background: var(--k-gold); color: var(--k-ongold); border-color: var(--k-gold); }
-.pv-chip.q-important { color: var(--k-goldt); border-color: var(--k-gold); }
-.pv-chip.q-chilled, .pv-chip.q-others { color: var(--k-faint); }
-.pv-quad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--k-line); }
-.pv-quad .lbl { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-faint); margin-right: 2px; }
-.pv-time { width: 46px; font-family: var(--k-serif); font-size: 16px; color: var(--k-mute); font-variant-numeric: tabular-nums; flex: none; }
-.pv-amt { font-family: var(--k-serif); font-size: 17px; color: var(--k-ink); flex: none; font-variant-numeric: tabular-nums; }
-.pv-check { width: 16px; height: 16px; border: 1px solid var(--k-gold); flex: none; }
-.pv-check.on { background: var(--k-gold); position: relative; }
-.pv-check.on::after { content: '✓'; color: var(--k-ongold); font-size: 10px; position: absolute; inset: 0; display: grid; place-items: center; }
-.pv-done { color: var(--k-faint); text-decoration: line-through; }
-.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
-.pv-abar { flex: 1; }
-.pv-aname { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 7px; color: var(--k-ink); }
-.pv-apct { color: var(--k-faint); font-family: var(--k-serif); font-size: 16px; }
-.pv-bar { height: 4px; background: var(--k-line); overflow: hidden; }
-.pv-bar > i { display: block; height: 100%; background: var(--k-gold); }
-.pv-note-h { font-family: var(--k-serif); font-size: 20px; font-weight: 300; margin-bottom: 6px; color: var(--k-ink); }
-.pv-note-l { font-size: 14px; color: var(--k-mute); line-height: 1.55; margin-bottom: 12px; }
-.pv-links { display: flex; flex-wrap: wrap; gap: 6px; }
-.pv-link { font-size: 11px; font-weight: 500; color: var(--k-goldt); border: 1px solid var(--k-line); padding: 3px 8px; }
-.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.pv-tbl th { text-align: left; color: var(--k-faint); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; border-bottom: 1px solid var(--k-line); }
-.pv-tbl td { padding: 8px; border-bottom: 1px solid var(--k-line); color: var(--k-ink); font-family: var(--k-serif); font-size: 16px; }
-.r-q { font-family: var(--k-serif); font-style: italic; font-size: 18px; line-height: 1.4; color: var(--k-ink); }
-.mood { display: flex; align-items: center; gap: 7px; }
-.md { width: 11px; height: 11px; box-shadow: inset 0 0 0 1px var(--k-faint); }
-.md.on { background: var(--k-gold); box-shadow: none; }
-.mood-l { margin-left: 5px; font-size: 12.5px; color: var(--k-faint); font-family: var(--k-sans); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 3px 9px; }
-@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 24px; padding: 26px; } }
-@media (max-width: 520px) { .ts-tiles { gap: 8px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
-
-/* Spaces */
-.areas-grid { display: grid; grid-template-columns: 1.06fr 0.94fr; gap: 60px; align-items: center; }
-.areas-lead { font-family: var(--k-serif); font-size: clamp(23px, 2.9vw, 31px); line-height: 1.3; font-weight: 300; margin-bottom: 18px; }
-.areas-lead .em, .areas-body .em { color: var(--k-goldt); font-style: italic; }
-.areas-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.62; }
-@media (max-width: 820px) { .areas-grid { grid-template-columns: 1fr; gap: 34px; } }
-.areas-flow { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 38px 28px; background: var(--k-panel); border: 1px solid var(--k-line); }
-.af-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; }
-.af-chip { font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: var(--k-bg); border: 1px solid var(--k-line); padding: 7px 13px; }
-.af-arrow { color: var(--k-gold); font-size: 22px; line-height: 1; }
-.af-area { display: inline-flex; align-items: center; gap: 11px; font-family: var(--k-serif); font-size: 22px; font-weight: 300; color: var(--k-ongold); background: var(--k-gold); padding: 11px 24px; }
-.af-dot { width: 8px; height: 8px; background: var(--k-ongold); opacity: .7; }
-.areas-share { margin-top: 66px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
-.areas-share-h { font-family: var(--k-serif); font-size: clamp(24px, 3vw, 32px); font-weight: 300; margin: 14px 0 14px; }
-.areas-share-lead { color: var(--k-mute); font-size: 17.5px; line-height: 1.6; max-width: 52ch; margin: 0 auto 38px; }
-.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 14px; }
-.share-case { background: var(--k-panel); border: 1px solid var(--k-line); padding: 26px 18px; display: flex; flex-direction: column; align-items: center; gap: 7px; transition: border-color .16s; }
-.share-case:hover { border-color: var(--k-mute); }
-.share-case .ssq { width: 8px; height: 8px; background: var(--k-gold); margin-bottom: 6px; }
-.share-case b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; color: var(--k-ink); }
-.share-case span:last-child { font-size: 13.5px; color: var(--k-faint); }
-@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
-
-/* inner life */
-.inner-band .band-head { max-width: 760px; }
-.inner-band p { font-size: 18.5px; }
-
-/* ethos */
-.ethos { padding: 86px 0; text-align: center; }
-.ethos-line { font-family: var(--k-serif); font-size: clamp(28px, 4.2vw, 44px); line-height: 1.2; font-weight: 300; text-wrap: balance; max-width: 20ch; margin: 6px auto 0; }
-.ethos-line .em { font-style: italic; color: var(--k-goldt); }
-.ethos-sub { margin: 22px auto 0; max-width: 46ch; font-size: 17.5px; color: var(--k-mute); line-height: 1.6; }
-
-/* privacy - forest band */
-.privacy { background: var(--k-deep); color: var(--k-ondeep); }
-.privacy .eyebrow { color: var(--k-gold); }
-.privacy .eyebrow::before { background: var(--k-gold); }
-.privacy h2 { color: var(--k-ondeep); margin-bottom: 24px; }
-.privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-.privacy-lead { font-size: 18px; line-height: 1.65; color: color-mix(in oklab, var(--k-ondeep), transparent 12%); }
-.privacy-lead + .privacy-lead { margin-top: 20px; }
-.privacy-lead b { color: var(--k-ondeep); font-weight: 400; font-family: var(--k-serif); font-size: 20px; }
-.privacy-points { list-style: none; display: flex; flex-direction: column; gap: 16px; }
-.privacy-points li { display: flex; gap: 14px; font-size: 16px; line-height: 1.5; color: color-mix(in oklab, var(--k-ondeep), transparent 8%); }
-.privacy-points .tick { flex: none; width: 20px; height: 20px; background: var(--k-gold); color: var(--k-ongold); display: grid; place-items: center; font-size: 11px; }
-@media (max-width: 820px) { .privacy-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* capture */
-.capture-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; }
-.steps { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--k-line); }
-.step { display: flex; gap: 20px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--k-line); }
-.step-n { flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 30px; color: var(--k-goldt); width: 32px; line-height: 1; }
-.step-t b { display: block; font-family: var(--k-serif); font-size: 21px; font-weight: 300; margin-bottom: 3px; }
-.step-t span { font-size: 15px; color: var(--k-mute); }
-@media (max-width: 820px) { .capture-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* closing */
-.closing { text-align: center; padding: 104px 0; background: var(--k-soft); border-top: 1px solid var(--k-line); }
-.closing .script { width: 150px; height: auto; display: block; margin: 0 auto; opacity: .9; }
-.closing .script-ivory { display: none; }
-@media (prefers-color-scheme: dark) { .closing .script-ink { display: none; } .closing .script-ivory { display: block; } }
-.closing .gold-rule { width: 30px; height: 1px; background: var(--k-gold); margin: 22px auto; }
-.closing h2 { font-size: clamp(34px, 5vw, 52px); }
-.closing > .wrap > p { margin: 20px auto 0; max-width: 46ch; font-size: 18px; color: var(--k-mute); }
-.invite-form { max-width: 520px; margin: 34px auto 0; text-align: left; }
-.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.if-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.invite-form input, .invite-form textarea { width: 100%; font-family: var(--k-sans); font-size: 16px; color: var(--k-ink); background: var(--k-panel); border: 1px solid var(--k-line); padding: 13px 15px; }
-.invite-form textarea { margin-top: 12px; resize: vertical; line-height: 1.5; }
-.invite-form input::placeholder, .invite-form textarea::placeholder { color: var(--k-faint); }
-.invite-form input:focus, .invite-form textarea:focus { outline: none; border-color: var(--k-gold); }
-.if-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 16px; }
-.if-note { margin-top: 14px; text-align: center; font-size: 15px; color: var(--k-goldt); }
-.invite-thanks { text-align: center; padding: 8px 0; }
-.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
-.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-mute); font-size: 16.5px; }
-@media (max-width: 520px) { .if-grid { grid-template-columns: 1fr; } }
-
-/* footer */
-footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
-.foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
-.foot-tag { font-family: var(--k-serif); font-style: italic; font-size: 15.5px; color: var(--k-faint); padding-left: 35px; }
-.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-.foot-links { display: flex; gap: 24px; list-style: none; flex-wrap: wrap; }
-.foot-links a { color: var(--k-faint); font-size: 14px; transition: color .18s; }
-.foot-links a:hover { color: var(--k-ink); }
-.foot-meta { font-size: 13.5px; color: var(--k-faint); }
-.foot-lisboa { font-family: var(--k-serif); font-style: italic; color: var(--k-goldt); }
-.foot-meta a { color: var(--k-goldt); } .foot-meta a:hover { text-decoration: underline; }
-
-/* reveal */
-.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  html { scroll-behavior: auto; }
-}
-
-/* sign-in modal */
+/* ── sign-in modal (kept from the old homepage) ── */
 .signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: color-mix(in oklab, var(--k-ink) 46%, transparent); }
 .signin-overlay[hidden] { display: none; }
 .signin-box { position: relative; width: min(440px, 100%); background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 32px 28px; }
@@ -421,6 +308,11 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 .signin-foot a { color: var(--k-goldt); font-weight: 500; }
 .signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1px solid var(--k-gold); text-align: center; font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--k-goldt); cursor: pointer; font-family: var(--k-sans); transition: background .18s, color .18s; }
 .signin-smslink:hover { background: var(--k-gold); color: var(--k-ongold); }
+
+/* ── reveal on scroll ── */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .demo-rows { transition: none; } }
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -449,7 +341,7 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Choix des cookies');
-    b.innerHTML = '<p>Koyeba utilise des cookies d’analyse pour comprendre comment le site est utilisé - rien de personnel, et jamais aucun de vos contenus Koyeba. Nous le permettez-vous ? <a href="/privacy">Confidentialité</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Refuser</button><button class="dbk-accept" type="button">Accepter</button></div>';
+    b.innerHTML = '<p>Koyeba utilise des cookies de mesure d’audience pour comprendre comment le site est utilisé - rien de personnel, et jamais aucun de vos contenus Koyeba. Vous permettez ? <a href="/privacy">Confidentialité</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Refuser</button><button class="dbk-accept" type="button">Accepter</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -465,282 +357,192 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/">
+    <a class="brand" href="#top">
       <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
       <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
       <span class="brand-word">Koyeba<span class="dot">.</span></span>
     </a>
     <ul class="nav-links">
-      <li><a href="#idea">Votre Koyeba</a></li>
+      <li><a href="#idea">L’idée</a></li>
       <li><a href="#tools">Outils</a></li>
       <li><a href="#private">Confidentialité</a></li>
-      <li><a href="/blog">Journal</a></li>
+      <li><a href="/fr/journal">Journal</a></li>
     </ul>
     <div class="nav-cta">
-      <div class="lang-switch nav-lang"></div>
-      <a class="btn btn-ghost" href="#" data-signin>Se connecter</a>
+      <a class="sign" href="#" data-signin>Se connecter</a>
       <a class="btn btn-primary" href="#invite">Demander une invitation</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
+<header id="top">
   <div class="wrap hero-in">
-    <div class="hero-copy">
-      <div class="eyebrow reveal">Sur invitation, en accès anticipé</div>
-      <h1 class="reveal">Posez-le.<span class="l2">Il revient quand vous en avez besoin.</span></h1>
-      <p class="hero-sub reveal">Koyeba est un foyer paisible et privé pour toute votre vie - courrier, agenda, tâches, notes, argent et vie intérieure, reliés par les Spaces. Posez une chose, lâchez-la, et comptez sur son retour au bon moment.</p>
-      <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Demander une invitation →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Se connecter</a>
+    <div class="hero-copy reveal">
+      <div class="eyebrow">Sur invitation · accès anticipé</div>
+      <h1>Posez-le.<br><i>Il revient</i> quand vous en avez besoin.</h1>
+      <p class="hero-sub">Un foyer paisible et privé pour votre courrier, votre agenda, vos tâches, vos notes et le reste de votre vie – reliés par les Spaces, pour que tout trouve sa place et revienne au bon moment.</p>
+      <div class="hero-actions">
+        <a class="btn btn-ink" href="#invite">Demander une invitation</a>
+        <a class="link-gold" href="#idea">Comment ça marche →</a>
       </div>
-      <p class="hero-note reveal">Privé par principe. Pas de publicité, rien à vendre, aucun bruit.</p>
     </div>
     <div class="reveal">
-      <div class="device">
-        <div class="device-bar"><span class="dw">Koyeba<span class="dot">.</span></span><span class="dd">Vendredi · 31 oct.</span></div>
-        <div class="device-body">
-          <div class="device-eyebrow">Aujourd’hui</div>
-          <div class="prow done"><span class="pt">07:30</span><span class="sq mute"></span><span class="plbl">Méditation du matin</span><span class="ptick">✓</span></div>
-          <div class="prow"><span class="pt">10:00</span><span class="sq"></span><span class="plbl">Rédiger la proposition de Sintra</span></div>
-          <div class="prow"><span class="pt">13:00</span><span class="sq out"></span><span class="plbl">Déjeuner avec Marta</span><span class="pcal">cal</span></div>
-          <div class="prow"><span class="pt">18:00</span><span class="sq mute"></span><span class="plbl">Marcher avant la tombée du jour</span></div>
-        </div>
+      <div class="demo" aria-hidden="true">
+        <div class="eyebrow">Posez quelque chose</div>
+        <div class="demo-line"><span id="demoTyped"></span><span class="demo-caret" id="demoCaret"></span></div>
+        <div class="demo-rows" id="demoRows"></div>
       </div>
     </div>
   </div>
 </header>
 
-<section class="band" id="idea">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Là où tout commence</div></div>
-    <div class="concept-grid">
-      <div class="reveal">
-      <p class="concept-lead">Une vie, c’est plusieurs parts à la fois - le faire et le rêver, l’urgent et le calme. Koyeba les réunit en <span class="em">un seul lieu paisible.</span></p>
-      <ul class="holds">
-        <li><span class="hsq"></span><div><b>Votre journée</b><span>Agenda, tâches et rendez-vous</span></div></li>
-        <li><span class="hsq"></span><div><b>Vos proches</b><span>Ceux que vous voulez garder près de vous</span></div></li>
-        <li><span class="hsq"></span><div><b>Vos réflexions</b><span>Pensées, émotions, ce que cela veut dire</span></div></li>
-        <li><span class="hsq"></span><div><b>Vos tâches</b><span>L’urgent d’aujourd’hui, et le long terme</span></div></li>
-      </ul>
-    </div>
-    <div class="concept-body reveal">
-      <p>Nous portons trop de choses à la fois. Des tâches à moitié retenues, des idées qu’on voulait garder, l’argent qu’on voulait surveiller, des émotions qu’on n’a jamais prises le temps d’écouter. Tenu sans fermeté, cela fuit - sur des bouts de papier, dans dix applications, ou simplement perdu.</p>
-      <p>Koyeba, c’est là que tout entre. Vous posez une chose et vous la lâchez, et elle revient quand vous en avez besoin - la tâche quand le jour l’appelle, la page quand vous planifiez, la pensée quand vous faites une pause.</p>
-      <p class="close">Posez-le en confiance. Retrouvez-le en toute tranquillité.</p>
-    </div>
-    </div>
-  </div>
-</section>
-
-<section class="litany-band soft">
-  <div class="wrap reveal">
-    <p class="litany">Votre temps, vos proches, vos projets, vos rythmes - et la vie numérique éparpillée qui les entoure. Réunis en un seul lieu paisible, et <span class="em">entièrement à vous.</span></p>
-  </div>
-</section>
-
-<section class="band" id="tools">
-  <div class="wrap">
-    <div class="band-head center reveal">
-      <div class="eyebrow center">Tout réuni</div>
-      <h2>Tous les outils, en un seul lieu</h2>
-      <p>Courrier, agenda, pages, tâches, argent et personnes pour le faire ; réflexion, objectifs et Spaces pour la vie intérieure. Reliés pour que rien ne file, et gérés en silence, pour que tout reste maîtrisé.</p>
-    </div>
-    <div class="toolshow reveal">
-      <div class="ts-tiles" id="tsTiles">
-        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Spaces</span></button>
-        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Messagerie</span></button>
-        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Agenda</span></button>
-        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tâches</span></button>
-        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notes</span></button>
-        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">À lire &amp; à voir</span></button>
-        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Réflexion</span></button>
-        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Journal</span></button>
-        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
-        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Objectifs</span></button>
-        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Bilans</span></button>
-        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Liste de vie</span></button>
-        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contacts</span></button>
-        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Partage</span></button>
-        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Messages</span></button>
-        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Budget</span></button>
-        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tableaux</span></button>
-      </div>
-      <div class="tspanel" id="tsPanel"></div>
-    </div>
-    <script>
-    (function(){
-      var T={
-        areas:{ic:'◈',name:'Spaces',tag:'Le cœur de Koyeba',desc:`Votre courrier, votre agenda, vos tâches, vos notes, vos objectifs, vos proches et vos dépenses se rassemblent autour des vraies parts de votre vie - chacune montrant où elle en est, d’un coup d’œil.`,feats:["Tout se rassemble selon la part de vie à laquelle cela appartient","Donnez une date et un Space devient un projet, en compte à rebours","Partagez un Space avec ceux qui le vivent"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Frigiliana trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Santé <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Santé <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:85%"></i></div></div></div>`},
-        mail:{ic:'✉',name:'Messagerie',tag:'Toutes les boîtes, une seule pièce',desc:`Réunissez tous vos comptes en un seul flux - Gmail, Outlook, n’importe quelle boîte IMAP - et gérez-les comme un seul.`,feats:["Tous vos comptes dans une seule boîte","Triez vite : Urgent, Important, À lire plus tard","Classez un courrier dans un Space, et partagez-le là"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgent</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Important</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">À lire plus tard</span></div></div><div class="pv-quad"><span class="lbl">Trier</span><span class="pv-chip q-urgent">Urgent</span><span class="pv-chip q-important">Important</span><span class="pv-chip q-chilled">À lire plus tard</span><span class="pv-chip q-others">Archive</span></div>`},
-        calendar:{ic:'◑',name:'Agenda',tag:'Mois, semaine, agenda',desc:`Une seule vue sur vos journées - synchronisée avec l’agenda que vous utilisez déjà.`,feats:["Mois, semaine et agenda en une seule vue","Synchronisation bidirectionnelle avec votre Google","Un événement peut compter comme une pratique"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revoir la proposition</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Déjeuner avec Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga au bord de la rivière</span></div></div>`},
-        tasks:{ic:'✓',name:'Tâches',tag:'Votre journée, qui coule',desc:`Une journée qui coule, pas une liste qui harcèle - avancez avec elle quand vous êtes lancé.`,feats:["Rien ne crie ; une tâche dit simplement 12 jours passés","Elle revient exactement quand elle est due","Chaque tâche porte son Space"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot rust"></span><span class="pv-t pv-done">Méditation du matin</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Rédiger la proposition de Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Marcher avant la tombée du jour</span></div></div>`},
-        notes:{ic:'▤',name:'Notes',tag:'Écrivez librement, reliez tout',desc:`Une idée griffonnée, une pensée plus longue, ou un plan avec tout relié - saisi en quelques secondes et rattaché à sa place.`,feats:["Posez une chose en deux gestes, de n’importe où","Reliez un site, une tâche, un événement, une personne","Transformez une note en table quand vous voulez"],pv:`<div class="pv-note-h">Voyage à Frigiliana</div><p class="pv-note-l">La route côtière, la maison à la porte bleue. Confirmer les dates avant le 20.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Réserver le ferry</span><span class="pv-link">◷ Fri 12th</span><span class="pv-link">↳ Frigiliana trip</span></div>`},
-        readwatch:{ic:'☆',name:'À lire & à voir',tag:'Gardez pour plus tard',desc:`Gardez les sites, articles, livres et films que vous voulez découvrir - en un geste, prêts pour quand vous aurez le temps.`,feats:["Capture en un geste - bookmarklet ou raccourci iOS","Articles, sites, livres et films, tout est classé","Ressortez-en un quand vous avez une soirée libre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Film</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Four Thousand Weeks</span><span class="pv-chip">Livre</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - le numéro Lisbonne</span><span class="pv-chip">Lien</span></div></div>`},
-        wellbeing:{ic:'✎',name:'Réflexion',tag:'La vie intérieure, cultivée',desc:`La moitié réflexive - journal, bilans, rêves et outils de réflexion sereins, juste à côté du faire.`,feats:["Journal, bilans et coaching serein","Des outils de réflexion pour éveiller une pensée quand vous voulez","Là quand vous en avez besoin, à l’écart sinon"],pv:`<p class="r-q" style="margin:0 0 13px">"Que m’a demandé cette journée, et que lui ai-je donné ?"</p><div class="mood" style="margin-bottom:14px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Stable cette semaine</span></div><div class="chips"><span class="chip">Journal</span><span class="chip">Rêves</span><span class="chip">Lectures</span></div>`},
-        journal:{ic:'✒',name:'Journal',tag:'Penser sur la page',desc:`Choisissez une amorce, écrivez, et creusez avec une question de plus dès que vous voulez aller plus loin.`,feats:["Un choix d’amorces pour démarrer","« Creuser » pose la question suivante","Les entrées vivent dans votre histoire de réflexion"],pv:`<p class="r-q" style="margin:0 0 11px">"À quoi je fais de la place cette semaine ?"</p><p class="pv-note-l" style="margin:0">Moins de bruit. Une vraie conversation avec Marta. Une promenade qui ne mène nulle part.</p>`},
-        coaching:{ic:'✦',name:'Coaching',tag:'Une question, pas un sermon',desc:`Un coaching serein et optionnel qui pose la bonne question au bon moment, à partir de vos objectifs et de vos bilans.`,feats:["Ancré dans vos objectifs et vos bilans","Il demande ; il ne donne jamais d’ordre","Optionnel, avec votre propre clé d’IA"],pv:`<p class="r-q" style="margin:0 0 12px">"Vous avez déplacé la salle de sport trois fois - qu’est-ce qui gêne vraiment ?"</p><div class="chips"><span class="chip">Réfléchir</span><span class="chip">Recadrer</span><span class="chip">Réessayer</span></div>`},
-        goals:{ic:'◎',name:'Objectifs',tag:'Des intentions qui aboutissent',desc:`Fixez ce qui compte, découpez-le en étapes, et regardez-le avancer.`,feats:["Découpez un objectif en vraies prochaines actions","Le progrès d’un coup d’œil","Lié aux Spaces où ils vivent"],pv:`<div class="pv-aname">Courir un semi-marathon <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:15px"><i style="width:60%"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10 km sans m’arrêter</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">S’inscrire à la course</span></div></div>`},
-        reviews:{ic:'↻',name:'Bilans',tag:'Regarder en arrière pour avancer',desc:`Un rythme serein de bilans - par semaine, par mois, par saison - pour voir comment va vraiment la vie et réorienter ce qui compte.`,feats:["Des rappels à votre propre cadence","Il tire de vrais chiffres de vos Spaces","Voyez le progrès, puis réorientez vos intentions"],pv:`<div class="pv-aname">Bilan de la semaine <span class="pv-apct">3 sur 4 faits</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Voyage à Frigiliana</span><span class="pv-amt">dans les temps</span></div><div class="pv-row"><span class="pv-t">Prochain</span><span class="pv-amt">dimanche</span></div></div>`},
-        bucket:{ic:'⚑',name:'Liste de vie',tag:'La liste d’une vie',desc:`Les expériences, les lieux et les rêves à ne pas manquer - saisis, puis portés vers de vrais projets au bon moment.`,feats:["Rêves, voyages, savoir-faire, moments uniques - tout au même endroit","Transformez une ligne en objectif avec de vraies étapes","Cochez-les à mesure que la vie arrive"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Voir les aurores boréales</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Apprendre à surfer</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Faire le Camino</span></div></div>`},
-        contacts:{ic:'☺',name:'Contacts',tag:'Garder les gens près de soi',desc:`Les gens de votre vie, près de vous - qui ils sont, ce qui leur importe, quand vous vous êtes parlé.`,feats:["Des rappels pour garder le contact au bon moment","Les anniversaires et ce qui leur importe","Ils vivent dans les Spaces où ils ont leur place"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · parlé il y a 6 semaines</span><span class="pv-chip">Dire bonjour</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · anniversaire vendredi</span><span class="pv-chip">Rappeler</span></div></div>`},
-        sharing:{ic:'⇄',name:'Partage',tag:'Partagez un Space, pas votre vie',desc:`Invitez les gens d’une part de votre vie dans ce seul Space - coparents, famille, un voyage - et gardez tout le reste privé.`,feats:["Un accès par Space - rien d’autre ne filtre","Un mur partagé pour chaque Space","Ils ne voient que ce que vous choisissez"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Les enfants</b> · Space partagé</span><span class="pv-chip">2 personnes</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Vous</span><span class="pv-chip">propriétaire</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Coparent</span><span class="pv-chip">peut modifier</span></div></div>`},
-        messaging:{ic:'❝',name:'Messages',tag:'Parler là où la vie se passe',desc:`Parlez aux gens d’un Space partagé, là où vivent déjà les plans, les dates et les fichiers - sans changer d’appli.`,feats:["Rattaché au Space dont il s’agit","Chacun voit le même contexte","Fini les conversations de groupe éparpillées"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">La passation toujours vendredi 18 h ?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Oui - j’apporte le sac.</span></div></div>`},
-        money:{ic:'€',name:'Budget',tag:'Où va l’argent, par Space',desc:`Voyez vos dépenses classées par les parts de vie qui vous tiennent à cœur.`,feats:["Dépenses classées par Space","Voyez où va vraiment l’argent","Pas de tableurs, pas de tracas"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Voyage à Frigiliana</span><span class="pv-amt">1 240 €</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Santé</span><span class="pv-amt">85 €</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Maison</span><span class="pv-amt">430 €</span></div></div>`},
-        tables:{ic:'▦',name:'Tableaux',tag:'De la structure quand vous voulez',desc:`Transformez une note en vraie table pour tout ce qui mérite un suivi - là où vous l’avez écrite.`,feats:["Une vraie table là où vous en avez besoin","Elle naît d’une note en un geste","Suivez tout ce qui en vaut la peine"],pv:`<table class="pv-tbl"><thead><tr><th>Lieu</th><th>Vu</th><th>On y va ?</th></tr></thead><tbody><tr><td>Maison à la porte bleue</td><td>Oui</td><td>★</td></tr><tr><td>Auberge de la côte</td><td>Pas encore</td><td>-</td></tr></tbody></table>`}
-      };
-      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
-      function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
-      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
-      render('areas');
-    })();
-    </script>
-  </div>
-</section>
-
-<section class="band soft" id="connect">
-  <div class="wrap areas-grid">
+<section class="sec" id="idea">
+  <div class="wrap sec-in two">
     <div class="reveal">
-      <div class="eyebrow">Là où tout se rejoint</div>
-      <h2>Les Spaces relient tout</h2>
-      <p class="areas-lead">Chaque part de votre vie reçoit un Space - un projet, la famille, votre santé, l’entreprise. Rattachez-y ce que vous voulez, et le courrier, les événements, les tâches, les pages et les dépenses de <span class="em">cette part de vie</span> s’y rassemblent.</p>
-      <div class="areas-body">
-        <p>Un e-mail devient une tâche. Une page devient une table. Un paiement se classe tout seul dans le bon Space. Rien ne s’entasse en silos ; cela <span class="em">circule</span> vers sa place - pour que vous portiez votre vie avec légèreté, et contourniez le trop-plein.</p>
+      <div class="eyebrow">L’idée</div>
+      <h2 class="big">Nous portons trop de choses à la fois.</h2>
+    </div>
+    <div class="idea-body reveal">
+      <p>Des tâches à moitié oubliées, des idées qu’on voulait garder, de l’argent qu’on voulait surveiller. Mal retenu, tout cela s’égare – sur des bouts de papier, dans dix applications différentes, ou simplement perdu en silence.</p>
+      <p>Koyeba signifie <span class="know">savoir</span> en lingala. Posez quelque chose une fois et vous saurez toujours où le retrouver – la tâche quand la journée l’appelle, la page quand vous planifiez, la pensée quand vous vous arrêtez.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tools">
+  <div class="wrap sec-in">
+    <div class="tools-head reveal">
+      <div class="eyebrow">Outils</div>
+      <h2 class="big">Tout ce que vous utilisez, <i>qui se parle.</i></h2>
+      <p class="lead">Ouvrez-en un pour voir ce qu’il fait, et où il mène.</p>
+    </div>
+    <div class="tool-cols reveal" id="toolCols"></div>
+  </div>
+</section>
+
+<section class="forest" id="spaces">
+  <div class="wrap sec-in two wide">
+    <div class="reveal">
+      <div class="eyebrow">Spaces</div>
+      <h2 class="big">Chaque partie de votre vie <i>a son Space.</i></h2>
+      <p class="lead">Les enfants, la maison, le chien, l’activité. Un e-mail devient une tâche, un paiement se classe tout seul, un événement retrouve ses participants – et tout se rassemble dans le Space auquel il appartient.</p>
+      <div class="share">
+        <button class="share-h" type="button" data-share><span class="st">Partagez un Space avec les personnes qui y vivent</span><span class="ss" id="shareSign">+</span></button>
+        <div class="share-body" id="shareBody" hidden>
+          <p>Ouvrez une partie de votre vie aux personnes qui la vivent avec vous – et seulement cette partie.</p>
+          <div class="share-grid">
+            <span><span class="gold">Les coparents</span> sur les enfants</span><span><span class="gold">Une famille</span> en déplacement</span><span><span class="gold">Des amis</span> en week-end</span><span><span class="gold">Un couple</span> sur l’argent</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="areas-flow reveal" aria-hidden="true">
-      <div class="af-tools"><span class="af-chip">Courrier</span><span class="af-chip">Événement</span><span class="af-chip">Tâche</span><span class="af-chip">Note</span><span class="af-chip">Dépense</span></div>
-      <div class="af-arrow">↓</div>
-      <div class="af-area"><span class="af-dot"></span>La famille</div>
-    </div>
-  </div>
-  <div class="wrap areas-share reveal">
-    <div class="eyebrow center">Mieux ensemble</div>
-    <h3 class="areas-share-h">Partagez un Space avec ceux qui le vivent</h3>
-    <p class="areas-share-lead">Ouvrez une part de votre vie aux gens qui la vivent avec vous - et seulement celle-là. Chacun voit ce qu’il doit ; personne ne se noie dans une conversation de groupe.</p>
-    <div class="share-cases">
-      <div class="share-case"><span class="ssq"></span><b>Coparents</b><span>sur « les enfants »</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Une famille</b><span>sur « le déménagement »</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Un groupe</b><span>sur un événement</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Un couple</b><span>sur les comptes</span></div>
+    <div class="spacecard reveal">
+      <div class="sc-top"><span class="sc-num">II</span><span class="sc-name">Les enfants</span><span class="sc-who">Ada &amp; Tom</span></div>
+      <div class="sc-groups" id="spaceGroups"></div>
+      <div class="sc-join">E-mail de Mrs Okafor → Signer l’autorisation de sortie, pour lundi</div>
     </div>
   </div>
 </section>
 
-<section class="band inner-band" id="inner">
-  <div class="wrap band-head center reveal">
-    <div class="eyebrow center">Pour la vie intérieure</div>
-    <h2>La vie intérieure, incluse</h2>
-    <p>La plupart des outils s’occupent du faire et laissent le reste de vous dehors. Koyeba garde les deux près de vous - la vie extérieure des tâches et des plans, la vie intérieure des pensées, des émotions et de ce que tout cela veut dire - pour que chacune éclaire l’autre. Le journal, les bilans, le coaching serein et des outils de réflexion discrets ne sont pas des extras rapportés ; c’est ainsi que vous apportez un peu de conscience aux jours ordinaires, et que vous remarquez la vie que vous vivez vraiment. Là quand vous en avez besoin, à l’écart sinon.</p>
-  </div>
-</section>
-
-<section class="ethos soft">
-  <div class="wrap reveal">
-    <div class="eyebrow center">La manière Koyeba</div>
-    <p class="ethos-line">Ce dont vous avez besoin, au bon endroit, au <span class="em">bon moment.</span></p>
-    <p class="ethos-sub">En accord avec les rythmes de votre vie - rien ne réclame l’attention, et rien de ce qui mérite d’être retenu ne se perd.</p>
-  </div>
-</section>
-
-<section class="band privacy" id="private">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Privé par principe</div></div>
-    <div class="privacy-grid">
-      <div class="reveal">
-      <h2>À vous. En sécurité.</h2>
-      <p class="privacy-lead">Koyeba garde les parts les plus personnelles de votre vie - vos réflexions, vos relations. C’est donc bien verrouillé : <b>connexion à deux facteurs</b>, vos données <b>chiffrées au repos.</b></p>
-      <p class="privacy-lead">Et vos données ? Nous n’en voulons pas. Nous bâtissons une activité sur la confiance, pas sur votre revente - rien de ce qui est à vous n’est exploité, vendu, ni donné à entraîner le modèle de quiconque. C’est à vous. Exportez tout en un geste, gardez-le sur votre propre stockage si vous préférez, apportez votre propre IA - le choix est toujours le vôtre.</p>
-    </div>
-    <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Connexion à deux facteurs - votre Koyeba, bien verrouillé.</div></li>
-      <li><span class="tick">✓</span><div>Jamais exploité, jamais vendu, jamais utilisé pour entraîner quoi que ce soit.</div></li>
-      <li><span class="tick">✓</span><div>Exportez tout, à tout moment, en un geste - ou gardez-le sur votre stockage.</div></li>
-      <li><span class="tick">✓</span><div>Fermez votre compte quand vous voulez, et emportez tout avec vous.</div></li>
-      <li><span class="tick">✓</span><div>Une activité bâtie sur la confiance, pas sur vos données.</div></li>
-    </ul>
+<section class="sec" id="inner">
+  <div class="wrap sec-in">
+    <div class="inner-in reveal">
+      <div class="eyebrow center">La vie intérieure</div>
+      <h2 class="big">De la place pour l’action, <i>et pour le reste de vous-même.</i></h2>
+      <p class="lead">Le journal, les bilans, les objectifs et un accompagnement en douceur côtoient vos tâches et vos projets, pour que chacun éclaire l’autre. Présents quand vous les voulez, à l’écart quand ce n’est pas le moment.</p>
+      <button class="inner-more" type="button" data-inner id="innerMore">Lire la suite +</button>
+      <p class="lead inner-extra" id="innerExtra" hidden>La plupart des outils s’occupent de la vie extérieure et laissent le reste dehors. Koyeba garde un lieu paisible pour les pensées, les sentiments et le sens de tout cela – un peu de conscience pour les jours ordinaires, et une façon de prêter attention à la vie que vous vivez vraiment.</p>
     </div>
   </div>
 </section>
 
-<section class="band">
-  <div class="wrap capture-grid">
+<section class="sec" id="private">
+  <div class="wrap sec-in two">
     <div class="reveal">
-      <div class="eyebrow">Fait pour aller vite</div>
-      <h2>Posez-le en deux gestes</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Poser une chose doit être sans effort, surtout sur le téléphone. Sortez-la de votre tête en quelques secondes et lâchez-la - Koyeba la range à la bonne place pour vous.</p></div>
+      <div class="eyebrow">Privé par conception</div>
+      <h2 class="big">À vous. <i>Vraiment.</i></h2>
+      <p class="lead">Koyeba conserve les parts les plus personnelles de votre vie, alors nous avons bâti une entreprise sur la confiance, non sur la vente de vos données.</p>
     </div>
-    <div class="steps reveal">
-      <div class="step"><span class="step-n">I</span><div class="step-t"><b>Ouvrez et notez</b><span>Une tâche, une page, un chiffre, une émotion - ce que vous portez.</span></div></div>
-      <div class="step"><span class="step-n">II</span><div class="step-t"><b>Lâchez-la</b><span>Elle se pose à la bonne place, rattachée au Space où elle a sa place.</span></div></div>
-      <div class="step"><span class="step-n">III</span><div class="step-t"><b>Elle revient</b><span>Au bon moment - dans votre journée, vos plans ou votre bilan.</span></div></div>
+    <div class="priv-points reveal" id="privPoints"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap sec-in">
+    <div class="reveal">
+      <div class="eyebrow">Pensé pour aller vite</div>
+      <h2 class="big">Deux gestes, puis <i>laissez aller.</i></h2>
+    </div>
+    <div class="quick-cols reveal">
+      <div class="quick-step"><div class="quick-n">I</div><div class="quick-t">Ouvrez et notez</div><p class="quick-p">Une tâche, une date, un chiffre, une émotion – tout ce que vous portez.</p></div>
+      <div class="quick-step"><div class="quick-n">II</div><div class="quick-t">Il trouve sa place</div><p class="quick-p">Dans le bon outil, rattaché au Space auquel il appartient.</p></div>
+      <div class="quick-step"><div class="quick-n">III</div><div class="quick-t">Il revient à vous</div><p class="quick-p">Dans votre journée, vos projets ou votre bilan – quand c’est utile, pas avant.</p></div>
     </div>
   </div>
 </section>
 
-<section class="closing" id="invite">
-  <div class="wrap reveal">
-    <img class="script script-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" aria-hidden="true">
-    <img class="script script-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="" aria-hidden="true">
-    <div class="gold-rule"></div>
+<section class="invite" id="invite">
+  <div class="wrap invite-in reveal">
+    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba, écrit en Mandombe">
     <div class="eyebrow center">Accès anticipé</div>
     <h2>Venez le poser.</h2>
-    <p>Koyeba est sur invitation tant qu’il est jeune, grandissant doucement par le bouche-à-oreille pour rester paisible et bien soigné. Dites-nous un mot sur vous, et nous vous ferons une place.</p>
-    <form class="invite-form reveal" id="invite-form" novalidate>
+    <p class="invite-lead">Koyeba grandit doucement, par le bouche-à-oreille, pour qu’il reste paisible et bien soigné. Parlez-nous un peu de vous et nous vous ferons une place.</p>
+    <form class="invite-form" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="if-grid">
-        <input id="if-name" placeholder="Votre nom" autocomplete="name" required>
-        <input id="if-email" type="email" placeholder="Votre e-mail" autocomplete="email" required>
-      </div>
-      <textarea id="if-why" placeholder="Pour quoi utiliseriez-vous Koyeba ? Une ligne suffit." rows="2"></textarea>
-      <div class="if-actions">
-        <button class="btn btn-primary" type="submit" id="if-submit">Demander une invitation →</button>
-        <a class="btn btn-ghost" href="#" data-signin>J’ai déjà un compte</a>
-      </div>
+      <div class="inv-field"><input id="if-name" placeholder="Votre nom" autocomplete="name" required></div>
+      <div class="inv-field"><input id="if-email" type="email" placeholder="Votre e-mail" autocomplete="email" required></div>
+      <div class="inv-field"><input id="if-heard" placeholder="Comment avez-vous connu Koyeba ? (facultatif)" autocomplete="off"></div>
+      <div class="if-actions"><button class="btn btn-primary" type="submit" id="if-submit">Demander une invitation →</button></div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
+    <a class="inv-have" href="#" data-signin>J’ai déjà un compte</a>
   </div>
 </section>
 
-<footer id="signin">
+<footer>
   <div class="wrap foot-in">
-    <div class="foot-brand">
-      <a class="brand" href="/">
-        <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
-        <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
-        <span class="brand-word">Koyeba<span class="dot">.</span></span>
-      </a>
-      <span class="foot-tag">Pour une vie bien vécue</span>
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="brand" href="#top">
+          <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
+          <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
+          <span class="brand-word">Koyeba<span class="dot">.</span></span>
+        </a>
+        <span class="foot-tag">Pour une vie bien vécue</span>
+      </div>
+      <div class="foot-col">
+        <a href="#idea">L’idée</a><a href="#tools">Outils</a><a href="#private">Confidentialité</a><a href="/fr/journal">Journal</a>
+      </div>
+      <div class="foot-col">
+        <a href="/privacy">Politique de confidentialité</a><a href="/terms">Conditions</a><a href="#" data-cookie-settings>Paramètres des cookies</a><a href="mailto:contact@koyeba.co">contact@koyeba.co</a>
+      </div>
+      <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyeba</div>
+      <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
     </div>
-    <ul class="foot-links">
-      <li><a href="#idea">Votre Koyeba</a></li>
-      <li><a href="#tools">Outils</a></li>
-      <li><a href="#private">Confidentialité</a></li>
-      <li><a href="/blog">Journal</a></li>
-      <li><a href="#invite">Demander une invitation</a></li>
-      <li><a href="/privacy">Politique de confidentialité</a></li>
-      <li><a href="/terms">Conditions</a></li>
-      <li><a href="#" data-cookie-settings>Paramètres des cookies</a></li>
-      <li><a href="mailto:contact@koyeba.co">Contact</a></li>
-    </ul>
-    <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Des questions ? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
+    <a class="foot-mark" href="#top" title="Retour en haut">
+      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba">
+      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba">
+    </a>
+    <div class="dict">
+      <div class="dict-head"><span class="dict-word">Koyeba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verbe, lingala</span></div>
+      <div class="dict-def">Savoir – des faits, des lieux, des personnes.</div>
+    </div>
   </div>
 </footer>
 
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Connectez-vous à votre Koyeba">
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Se connecter à votre Koyeba">
     <button class="signin-close" data-signin-close aria-label="Fermer">&times;</button>
-    <div class="eyebrow">Content de vous revoir</div>
+    <div class="eyebrow">Bon retour</div>
     <h3 class="signin-h">Connectez-vous à votre Koyeba</h3>
-    <p class="signin-p">Entrez votre e-mail et nous vous envoyons un code. De là, nous vous menons à votre Koyeba.</p>
+    <p class="signin-p">Saisissez votre e-mail et nous vous enverrons un code. Nous vous emmènerons ensuite vers votre Koyeba.</p>
     <form id="signin-form">
       <label class="signin-label" for="signin-email">Votre e-mail</label>
       <div class="signin-field">
         <input id="signin-email" class="signin-input" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com">
       </div>
       <button class="btn btn-primary signin-go" type="submit">Continuer →</button>
-      <button type="button" class="signin-smslink" id="signin-sms">Envoyer mon code par SMS</button>
+      <button type="button" class="signin-smslink" id="signin-sms">Recevoir mon code de connexion par SMS</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
     <p class="signin-foot">Pas encore de Koyeba ? <a href="#invite" data-signin-close>Demander une invitation</a></p>
@@ -750,56 +552,192 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 <script>window.__lang='fr';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es',it:'/it',de:'/de'};</script>
 <script src="/i18n.js" defer></script>
 <script>
+(function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
-  const sm = document.getElementById('signin-modal');
-  const openSignin = (e) => {
-    if (e) e.preventDefault();
-    sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
-  };
-  const closeSignin = () => { sm.hidden = true; };
-  document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
-  document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
-  sm.addEventListener('click', (e) => { if (e.target === sm) closeSignin(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
-  document.getElementById('signin-form').addEventListener('submit', (e) => {
+
+  // ── Tools: two columns of folding rows, one open at a time, Mail open first ──
+  var TOOLS = [
+    { label: 'Pour l’action', items: [
+      ['Courrier', 'Le tri en une passe', 'Marquez chaque e-mail urgent, important ou à plus tard et votre boîte est au clair. Transformez n’importe quel message en tâche, en note ou en événement.', 'Relie Tâches, Agenda, Spaces'],
+      ['Agenda', 'Vos journées, reliées', 'Les événements arrivent du courrier et de ce que vous posez, chacun avec les notes et les personnes dont il a besoin.', 'Relie Courrier, Tâches, Contacts'],
+      ['Tâches', 'L’urgent maintenant, et le long terme', 'Ce qui doit être fait aujourd’hui passe devant ; le reste attend tranquillement dans son Space.', 'Relie Courrier, Agenda, Objectifs'],
+      ['Notes', 'Pages et tableaux', 'Écrivez librement, ou transformez une page en tableau dès qu’elle a besoin de colonnes.', 'Relie Spaces, Tâches'],
+      ['Messages', 'Savoir quand on vous écrit', 'Des conversations avec les personnes de vos Spaces, avec un mot discret quand un message arrive.', 'Relie Contacts, Partage'],
+      ['Argent', 'Les dépenses, classées pour vous', 'Les paiements se rangent dans le bon Space, pour voir ce que la maison ou le chien coûte vraiment.', 'Relie Spaces, Courrier'],
+      ['Contacts', 'Les personnes qui vous sont proches', 'Tous ceux à qui vous écrivez, que vous rencontrez et avec qui vous partagez, au même endroit.', 'Relie Courrier, Messages, Partage'] ] },
+    { label: 'Pour la vie intérieure', items: [
+      ['Journal', 'Une page par jour', 'Écrivez une ligne ou une page. Elle se place à côté de ce qui s’est vraiment passé ce jour-là.', 'Relie Agenda, Bilans'],
+      ['Réflexion', 'S’attarder sur l’essentiel', 'De douces suggestions pour quand vous voulez réfléchir à quelque chose.', 'Relie Journal, Objectifs'],
+      ['Bilans', 'Regarder en arrière, puis devant', 'Un point hebdomadaire et mensuel sur ce qui a avancé, ce qui n’a pas bougé, et ce qui vient.', 'Relie Tâches, Objectifs, Journal'],
+      ['Objectifs', 'Le long terme', 'Gardez quelques caps que vous visez, découpés en étapes qui deviennent des tâches.', 'Relie Tâches, Bilans'],
+      ['Accompagnement', 'Un coup de pouce discret', 'Des conseils optionnels avec votre propre clé d’IA – jamais la nôtre, jamais entraînée sur vous.', 'Relie Réflexion, Objectifs'],
+      ['Lire & Regarder', 'Ce que vous comptez découvrir', 'Livres, films et articles, gardés jusqu’au soir où vous aurez le temps.', 'Relie Notes, Spaces'],
+      ['Liste de rêves', 'Un jour', 'Les grands rêves, gardés là où vous les reverrez.', 'Relie Objectifs'] ] }
+  ];
+  var openTool = 'Courrier';
+  var cols = document.getElementById('toolCols');
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function renderTools() {
+    cols.innerHTML = TOOLS.map(function (g) {
+      var rows = g.items.map(function (it) {
+        var name = it[0], line = it[1], body = it[2], joins = it[3], on = openTool === name;
+        return '<div class="tool"><button class="tool-h" type="button" data-tool="' + esc(name) + '">'
+          + '<span class="tool-name">' + esc(name) + '</span>'
+          + '<span class="tool-line">' + esc(line) + '</span>'
+          + '<span class="tool-sign">' + (on ? '−' : '+') + '</span></button>'
+          + (on ? '<div class="tool-body"><div class="tool-desc">' + esc(body) + '</div><div class="tool-joins">' + esc(joins) + '</div></div>' : '')
+          + '</div>';
+      }).join('');
+      return '<div class="tool-group"><div class="tg-head"><span class="tg-label">' + esc(g.label) + '</span><span class="tg-count">' + g.items.length + '</span></div>' + rows + '</div>';
+    }).join('');
+  }
+  cols.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tool]'); if (!b) return;
+    var n = b.getAttribute('data-tool'); openTool = (openTool === n) ? null : n; renderTools();
+  });
+  renderTools();
+
+  // ── Spaces: the sample Space’s folding groups (Mail + Tasks open) ──
+  var SPACE = [
+    ['Courrier', [['Mrs Okafor – sortie scolaire', 'jeu.'], ['Club de natation – nouveaux horaires', 'mar.']]],
+    ['Tâches', [['Signer l’autorisation de sortie d’Ada', 'lun.'], ['Tom : déguisement pour vendredi', 'sem. pro.']]],
+    ['Agenda', [['Natation d’Ada', 'ven. 16:00'], ['Réunion parents-profs', 'mer. 18:30']]],
+    ['Notes', [['Liste des affaires de natation', ''], ['Idées pour les vacances', '']]]
+  ];
+  var sg = { 'Courrier': true, 'Tâches': true };
+  var sgWrap = document.getElementById('spaceGroups');
+  function renderSpace() {
+    sgWrap.innerHTML = SPACE.map(function (g) {
+      var label = g[0], items = g[1], open = !!sg[label];
+      var rows = open ? '<div class="sc-items">' + items.map(function (it) {
+        return '<div class="sc-item"><span class="it-t">' + esc(it[0]) + '</span><span class="it-m">' + esc(it[1]) + '</span></div>';
+      }).join('') + '</div>' : '';
+      return '<div class="sc-group"><button class="sc-gh" type="button" data-sg="' + esc(label) + '"><span class="sc-gl">' + esc(label) + '</span><span class="sc-gc">' + items.length + '</span><span class="sc-gs">' + (open ? '−' : '+') + '</span></button>' + rows + '</div>';
+    }).join('');
+  }
+  sgWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sg]'); if (!b) return;
+    var n = b.getAttribute('data-sg'); sg[n] = !sg[n]; renderSpace();
+  });
+  renderSpace();
+
+  // Share fold
+  var shareOpen = false, shareBody = document.getElementById('shareBody'), shareSign = document.getElementById('shareSign');
+  document.querySelector('[data-share]').addEventListener('click', function () {
+    shareOpen = !shareOpen; shareBody.hidden = !shareOpen; shareSign.textContent = shareOpen ? '−' : '+';
+  });
+
+  // Inner "Read more"
+  var innerOpen = false, innerExtra = document.getElementById('innerExtra'), innerMore = document.getElementById('innerMore');
+  document.querySelector('[data-inner]').addEventListener('click', function () {
+    innerOpen = !innerOpen; innerExtra.hidden = !innerOpen; innerMore.textContent = innerOpen ? 'Replier −' : 'Lire la suite +';
+  });
+
+  // ── Private: five folding points I–V, one open at a time, first open ──
+  var PRIV = [
+    ['Connexion à deux facteurs', 'Votre Koyeba est bien verrouillé, et vos données sont chiffrées au repos.'],
+    ['Jamais exploité, jamais vendu', 'Rien de ce qui vous appartient ne sert à la publicité ni n’alimente aucun modèle.'],
+    ['Apportez votre propre IA', 'L’IA est facultative, avec votre propre clé. Laissez-la désactivée et Koyeba fonctionne tout aussi bien.'],
+    ['Tout exporter', 'Emportez tout en un geste, à tout moment – ou gardez tout sur votre propre espace de stockage.'],
+    ['Partez quand vous voulez', 'Fermez votre compte et emportez tout avec vous.']
+  ];
+  var ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+  var openPriv = 0, privWrap = document.getElementById('privPoints');
+  function renderPriv() {
+    privWrap.innerHTML = PRIV.map(function (p, i) {
+      var open = openPriv === i;
+      return '<div class="priv"><button class="priv-h" type="button" data-priv="' + i + '"><span class="priv-num">' + ROMAN[i] + '</span><span class="priv-title">' + esc(p[0]) + '</span><span class="priv-sign">' + (open ? '−' : '+') + '</span></button>'
+        + (open ? '<div class="priv-body">' + esc(p[1]) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  privWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-priv]'); if (!b) return;
+    var i = +b.getAttribute('data-priv'); openPriv = (openPriv === i) ? null : i; renderPriv();
+  });
+  renderPriv();
+
+  // ── Hero capture demo: types a phrase, then the readout fades up; cycles three ──
+  var DEMOS = [
+    { text: 'Dentiste mardi à neuf heures', rows: [['Dans', 'Moi'], ['Devient', 'Agenda · mar. 3 nov., 09:00'], ['Rappelle', 'lundi soir, et 08:15 le jour même']], foot: 'Rien d’autre à faire.' },
+    { text: 'L’autorisation de sortie d’Ada est à rendre lundi', rows: [['Dans', 'Les enfants'], ['Devient', 'Tâche · pour lun. 2 nov.'], ['Relie', 'l’e-mail de Mrs Okafor · « sortie scolaire »']], foot: 'Reliée à l’e-mail dont elle provient.' },
+    { text: 'Pipette anti-puces de Biscuit, 18,40 €', rows: [['Dans', 'Biscuit'], ['Devient', 'Argent · dépensé aujourd’hui'], ['Relie', 'Frais de Biscuit ce mois-ci · 46,20 €']], foot: 'Classé dans le bon Space.' }
+  ];
+  var typed = document.getElementById('demoTyped'), caret = document.getElementById('demoCaret'), rowsEl = document.getElementById('demoRows');
+  function paintRows(demo) {
+    rowsEl.innerHTML = demo.rows.map(function (r) {
+      return '<div class="demo-row"><span class="demo-rk">' + esc(r[0]) + '</span><span class="demo-rv">' + esc(r[1]) + '</span></div>';
+    }).join('') + '<div class="demo-foot"><span class="df-t">' + esc(demo.foot) + '</span><span class="demo-set">Poser ↵</span></div>';
+  }
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    typed.textContent = DEMOS[0].text; caret.style.opacity = '0'; paintRows(DEMOS[0]); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none';
+  } else {
+    var di = 0, n = 0, phase = 'type', timer;
+    paintRows(DEMOS[0]); rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)';
+    function tick() {
+      var demo = DEMOS[di];
+      if (phase === 'type') {
+        if (n < demo.text.length) { n++; typed.textContent = demo.text.slice(0, n); caret.style.opacity = '1'; timer = setTimeout(tick, 55 + Math.random() * 50); }
+        else { timer = setTimeout(function () { phase = 'show'; paintRows(demo); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none'; caret.style.opacity = '0'; timer = setTimeout(tick, 3800); }, 500); }
+      } else {
+        phase = 'type'; n = 0; di = (di + 1) % DEMOS.length; typed.textContent = ''; rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)'; timer = setTimeout(tick, 700);
+      }
+    }
+    timer = setTimeout(tick, 900);
+  }
+
+  // ── Sign-in modal (kept) ──
+  var sm = document.getElementById('signin-modal');
+  function openSignin(e) { if (e) e.preventDefault(); sm.hidden = false; setTimeout(function () { document.getElementById('signin-email').focus(); }, 30); }
+  function closeSignin() { sm.hidden = true; }
+  document.querySelectorAll('[data-signin]').forEach(function (el) { el.addEventListener('click', openSignin); });
+  document.querySelectorAll('[data-signin-close]').forEach(function (el) { el.addEventListener('click', closeSignin); });
+  sm.addEventListener('click', function (e) { if (e.target === sm) closeSignin(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
+  document.getElementById('signin-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Entrez votre adresse e-mail.'; err.hidden = false; return; }
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Saisissez votre adresse e-mail.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
   });
   document.getElementById('signin-sms').addEventListener('click', function () {
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Entrez d’abord votre e-mail, pour savoir où envoyer.'; err.hidden = false; return; }
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Saisissez d’abord votre e-mail, pour savoir où envoyer le SMS.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
   });
-  const invForm = document.getElementById('invite-form');
+
+  // ── Invite form (kept logic; name + email) ──
+  var invForm = document.getElementById('invite-form');
   if (invForm) invForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    const name = document.getElementById('if-name').value.trim();
-    const email = document.getElementById('if-email').value.trim();
-    const why = document.getElementById('if-why').value.trim();
-    const hp = document.getElementById('if-hp').value;
-    const note = document.getElementById('if-note');
-    const btn = document.getElementById('if-submit');
-    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Demander une invitation →' };
+    var name = document.getElementById('if-name').value.trim();
+    var email = document.getElementById('if-email').value.trim();
+    var heard = document.getElementById('if-heard').value.trim();
+    var hp = document.getElementById('if-hp').value;
+    var note = document.getElementById('if-note');
+    var btn = document.getElementById('if-submit');
+    var fail = function (m) { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Demander une invitation →'; };
     if (!name) return fail('Un nom, s’il vous plaît.');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Un e-mail valide, s’il vous plaît.');
     note.hidden = true; btn.disabled = true; btn.textContent = 'Envoi…';
-    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Koyeba grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’adorerait, envoyez-le-nous.</p></div>'; })
-      .catch(() => fail('Quelque chose a échoué - écrivez à contact@koyeba.co et nous arrangerons ça.'));
+    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Koyeba grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’aimerait, parlez-lui de nous.</p></div>'; })
+      .catch(function () { fail('Un problème est survenu - écrivez à contact@koyeba.co et nous arrangerons cela.'); });
   });
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+
+  // ── Reveal on scroll ──
+  if ('IntersectionObserver' in window && !reduce) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
     }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
   } else {
-    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
   }
+})();
 </script>
 </body>
 </html>

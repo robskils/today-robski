@@ -4,7 +4,7 @@
 <script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Koyeba - un hogar sereno para toda tu vida</title>
+<title>Koyeba – un hogar sereno para toda tu vida</title>
 <meta name="description" content="Koyeba reúne el correo, el calendario, las tareas, las notas, el dinero y la vida interior en un solo lugar privado, unidos por los Spaces. Déjalo, y vuelve cuando lo necesites. Tus datos son tuyos.">
 <link rel="canonical" href="https://koyeba.co/es">
 <link rel="alternate" hreflang="en" href="https://koyeba.co/">
@@ -21,17 +21,17 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Koyeba">
-<meta property="og:title" content="Koyeba - déjalo, y vuelve">
+<meta property="og:title" content="Koyeba – déjalo, y vuelve">
 <meta property="og:description" content="Un hogar sereno y privado para toda tu vida: correo, calendario, tareas, notas, dinero y la vida interior, unidos por los Spaces. Tus datos son tuyos.">
 <meta property="og:url" content="https://koyeba.co/es">
 <meta property="og:image" content="https://koyeba.co/brand/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Koyeba - déjalo, y vuelve cuando lo necesites">
+<meta property="og:image:alt" content="Koyeba – déjalo, y vuelve cuando lo necesites">
 <meta property="og:locale" content="es_ES">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Koyeba - déjalo, y vuelve">
+<meta name="twitter:title" content="Koyeba – déjalo, y vuelve">
 <meta name="twitter:description" content="Un hogar sereno y privado para toda tu vida. Déjalo, y vuelve cuando lo necesites.">
 <meta name="twitter:image" content="https://koyeba.co/brand/og-image.png">
 <!-- Structured data -->
@@ -42,20 +42,20 @@
     {
       "@type": "WebSite",
       "@id": "https://koyeba.co/#website",
-      "url": "https://koyeba.co/es",
+      "url": "https://koyeba.co/",
       "name": "Koyeba",
-      "slogan": "For a life well lived",
-      "description": "Un hogar sereno y privado para toda tu vida - correo, calendario, tareas, notas, dinero y la vida interior, unidos por los Spaces.",
-      "inLanguage": "en-GB"
+      "slogan": "Para una vida bien vivida",
+      "description": "Un hogar sereno y privado para toda tu vida – correo, calendario, tareas, notas, dinero y la vida interior, unidos por los Spaces.",
+      "inLanguage": "es"
     },
     {
       "@type": "SoftwareApplication",
       "name": "Koyeba",
-      "slogan": "For a life well lived",
+      "slogan": "Para una vida bien vivida",
       "url": "https://koyeba.co/",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "Koyeba es un hogar sereno y privado para todo lo que llevas - correo, calendario, tareas, notas, dinero y la vida interior. Déjalo, y vuelve cuando lo necesites. Tus datos son privados, y la IA es opcional, con tu propia clave.",
+      "description": "Koyeba es un hogar sereno y privado para todo lo que llevas – correo, calendario, tareas, notas, dinero y la vida interior. Déjalo, y vuelve cuando lo necesites. Tus datos son privados, y la IA es opcional, con tu propia clave.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -72,338 +72,225 @@
 @font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
 
-/* ── Tokens: ivory day (default), deep-forest night (traced from the prototype) ── */
+/* ── Tokens: ivory day (default), deep-forest night (§3) ── */
 :root{
-  --k-bg:#f8f4ec;          /* ivory page */
-  --k-panel:#fdfbf7;       /* cards, inputs */
-  --k-soft:#efe9dc;        /* tinted bands, selected rows */
-  --k-ink:#2a2620;         /* text */
-  --k-mute:#6b6357;        /* secondary text */
-  --k-faint:#9a9082;       /* tertiary text */
-  --k-line:#e0d9cc;        /* 1px warm keylines */
-  --k-gold:#c99a3e;        /* the one accent - fills, rules, markers */
-  --k-goldt:#8f6c2a;       /* gold TEXT on ivory (passes contrast) */
-  --k-deep:#2c4a3a;        /* forest: the hero panel bar, the privacy band */
-  --k-ondeep:#f8f4ec;      /* text on forest */
-  --k-ongold:#2a2620;      /* text on a solid gold button */
+  --k-bg:#f8f4ec; --k-panel:#fdfbf7; --k-soft:#efe9dc;
+  --k-ink:#2a2620; --k-mute:#6b6357; --k-faint:#9a9082; --k-line:#e0d9cc;
+  --k-gold:#c99a3e; --k-goldt:#8f6c2a; --k-deep:#2c4a3a; --k-ondeep:#f8f4ec; --k-ongold:#2a2620;
+  /* The two forest panels stay forest in both themes, so their colours are fixed. */
+  --k-forest:#2c4a3a; --k-forest-deep:#13241d; --k-onforest:#f8f4ec;
+  --k-forest-line:rgba(248,244,236,.16); --k-forest-mute:rgba(248,244,236,.78);
   --k-serif:'Cormorant Garamond', Georgia, serif;
   --k-sans:'Jost', system-ui, sans-serif;
-  --maxw:1120px;
-  font-synthesis:none;     /* never fake a weight or a slant */
+  --maxw:1240px;
+  font-synthesis:none;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --k-bg:#13241d;
-    --k-panel:#1a2e25;
-    --k-soft:#20362b;
-    --k-ink:#eef1e6;
-    --k-mute:#b4bbac;
-    --k-faint:#8a9385;
-    --k-line:#33463d;
-    --k-gold:#d8b25e;
-    --k-goldt:#e2c37a;
-    --k-deep:#0e1a14;
-    --k-ondeep:#eef1e6;
-    --k-ongold:#2a2620;
+    --k-bg:#13241d; --k-panel:#1a2e25; --k-soft:#20362b;
+    --k-ink:#eef1e6; --k-mute:#b4bbac; --k-faint:#8a9385; --k-line:#33463d;
+    --k-gold:#d8b25e; --k-goldt:#e2c37a; --k-deep:#0e1a14; --k-ondeep:#eef1e6; --k-ongold:#2a2620;
   }
 }
 
 html { scroll-behavior: smooth; }
-body {
-  background: var(--k-bg);
-  color: var(--k-ink);
-  font-family: var(--k-sans);
-  font-size: 17px;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+body { background: var(--k-bg); color: var(--k-ink); font-family: var(--k-sans); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
-
+img { display: block; }
 h1, h2, h3 { font-family: var(--k-serif); font-weight: 300; letter-spacing: 0; line-height: 1.08; text-wrap: balance; }
-h2 { font-size: clamp(30px, 4.4vw, 46px); }
-h3 { font-size: clamp(22px, 2.8vw, 30px); }
-.em { font-style: italic; color: var(--k-goldt); }
+i, em, .i { font-style: italic; }
+.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(20px,4vw,48px); }
+.gold { color: var(--k-gold); }
+.goldt { color: var(--k-goldt); }
 
-/* ── eyebrow: a 28px gold rule, then a wide-tracked Jost label ── */
-.eyebrow { display: inline-flex; align-items: center; gap: 14px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 18px; }
+/* ── eyebrow: a 28×1px gold rule, then a wide-tracked Jost label ── */
+.eyebrow { display: inline-flex; align-items: center; gap: 12px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); white-space: nowrap; }
 .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
-.center .eyebrow, .eyebrow.center { justify-content: center; }
+.eyebrow.center { justify-content: center; }
+.eyebrow.center::after { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
+.eyebrow.on-forest { color: var(--k-gold); }
 
-/* ── buttons: small, square, Jost 500 uppercase, one gold ── */
-.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; padding: 13px 26px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
+/* ── buttons: small, square, Jost 500 uppercase ── */
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; padding: 14px 22px; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: background .18s, border-color .18s, color .18s; }
 .btn-primary { background: var(--k-gold); color: var(--k-ongold); }
 .btn-primary:hover { background: color-mix(in oklab, var(--k-gold), var(--k-ink) 16%); }
+.btn-ink { background: var(--k-ink); color: var(--k-bg); }
+.btn-ink:hover { background: color-mix(in oklab, var(--k-ink), var(--k-gold) 22%); }
 .btn-ghost { background: transparent; color: var(--k-ink); border-color: var(--k-line); }
 .btn-ghost:hover { border-color: var(--k-ink); }
+.link-gold { font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); }
+.link-gold:hover { color: var(--k-gold); }
 
 /* ── nav ── */
 nav { position: sticky; top: 0; z-index: 50; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
-.nav-in { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 20px; }
-.brand { display: inline-flex; align-items: center; gap: 11px; }
-.brand-mark { height: 24px; width: auto; display: block; }
+.nav-in { display: flex; align-items: center; gap: clamp(16px,3vw,40px); height: 84px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; }
+.brand-mark { height: 26px; width: auto; }
 .ko-ivory { display: none; }
 @media (prefers-color-scheme: dark) { .ko-ink { display: none; } .ko-ivory { display: block; } }
-.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 26px; line-height: 1; color: var(--k-ink); }
+.brand-word { font-family: var(--k-serif); font-weight: 500; font-size: 30px; line-height: 1; color: var(--k-ink); }
 .brand-word .dot { color: var(--k-gold); }
-.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-.nav-links a { font-size: 14px; color: var(--k-mute); transition: color .18s; }
-.nav-links a:hover { color: var(--k-ink); }
-.nav-cta { display: flex; align-items: center; gap: 14px; }
-.nav-cta .btn { padding: 10px 18px; }
-@media (max-width: 1024px) { .nav-links { display: none; } }
-@media (max-width: 560px) {
-  .wrap { padding: 0 20px; }
-  .nav-in { position: relative; flex-direction: column; height: auto; gap: 13px; padding: 14px 0 16px; }
-  .nav-cta { width: 100%; justify-content: center; }
-  .nav-cta .lang-switch.nav-lang { position: absolute; top: 15px; right: 0; margin: 0; }
-}
+.nav-links { display: flex; align-items: center; gap: clamp(16px,2.4vw,32px); margin-left: clamp(0px,4vw,56px); list-style: none; min-width: 0; overflow: hidden; }
+.nav-links a { font-size: 15px; color: var(--k-ink); white-space: nowrap; transition: color .18s; }
+.nav-links a:hover { color: var(--k-goldt); }
+.nav-cta { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+.nav-cta .sign { font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.nav-cta .sign:hover { color: var(--k-goldt); }
+@media (max-width: 860px) { .nav-links { display: none; } }
 
-/* language switcher */
+/* ── section rhythm ── */
+.sec { border-top: 1px solid var(--k-line); }
+.sec-in { padding: clamp(64px,8vw,112px) 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,420px), 1fr)); gap: clamp(40px,6vw,96px); }
+.two.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); }
+.lead { font-size: 17px; line-height: 1.7; color: var(--k-mute); text-wrap: pretty; }
+h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px; }
+.set-head { margin-top: 20px; }
+
+/* ── hero ── */
+.hero-in { padding: clamp(56px,8vw,112px) 0 clamp(64px,8vw,120px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: clamp(40px,6vw,88px); align-items: center; }
+.hero h1 { font-size: clamp(52px,6.4vw,86px); line-height: 1; letter-spacing: -.01em; margin-top: 22px; }
+.hero h1 i { color: var(--k-gold); }
+.hero-sub { font-size: 18px; line-height: 1.65; color: var(--k-mute); max-width: 500px; margin-top: 28px; text-wrap: pretty; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-top: 40px; }
+
+/* hero demo card (flat, square, no shadow) */
+.demo { background: var(--k-panel); border: 1px solid var(--k-line); padding: 30px 32px 28px; }
+.demo-line { font-family: var(--k-serif); font-weight: 300; font-size: clamp(28px,3vw,38px); line-height: 1.2; padding: 22px 0 14px; border-bottom: 1px solid var(--k-ink); min-height: 46px; display: flex; align-items: flex-end; margin-top: 12px; }
+.demo-caret { width: 2px; height: 34px; margin-left: 3px; margin-bottom: 4px; background: var(--k-gold); }
+.demo-rows { display: grid; padding-top: 8px; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+.demo-row { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
+.demo-rk { font-family: var(--k-sans); font-weight: 600; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-mute); }
+.demo-rv { font-family: var(--k-sans); font-size: 15px; line-height: 1.45; }
+.demo-foot { display: flex; align-items: center; gap: 14px; padding-top: 18px; }
+.demo-foot .df-t { font-size: 13px; color: var(--k-mute); }
+.demo-set { margin-left: auto; font-family: var(--k-sans); font-weight: 500; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; padding: 10px 16px; background: var(--k-gold); color: var(--k-ongold); white-space: nowrap; }
+
+/* ── the idea ── */
+.idea-body { display: grid; gap: 18px; padding-top: 8px; font-size: 17px; line-height: 1.7; color: var(--k-mute); }
+.idea-body .know { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 21px; color: var(--k-ink); }
+
+/* ── tools: two columns of folding rows, no icons ── */
+.tools-head { max-width: 760px; }
+.tools-head .lead { max-width: 620px; margin-top: 20px; }
+.tool-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: 0 clamp(40px,5vw,80px); margin-top: 56px; }
+.tg-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--k-ink); }
+.tg-label { font-family: var(--k-sans); font-weight: 600; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+.tg-count { font-family: var(--k-sans); font-size: 12px; color: var(--k-mute); }
+.tool { border-bottom: 1px solid var(--k-line); }
+.tool-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.tool-name { font-family: var(--k-serif); font-weight: 300; font-size: 28px; line-height: 1.1; min-width: 150px; color: var(--k-ink); }
+.tool-line { flex: 1; font-family: var(--k-sans); font-size: 14px; line-height: 1.45; color: var(--k-mute); }
+.tool-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.tool-body { padding: 0 0 22px 168px; display: grid; gap: 10px; }
+.tool-desc { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+.tool-joins { font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-goldt); }
+@media (max-width: 560px) { .tool-h { flex-wrap: wrap; gap: 4px 14px; } .tool-name { min-width: 0; } .tool-line { flex-basis: 100%; } .tool-body { padding-left: 0; } }
+
+/* ── spaces (forest panel) ── */
+.forest { background: var(--k-forest); color: var(--k-onforest); }
+.forest button { color: inherit; }   /* buttons default to black, which reads as muddy "blue on green" on the forest - never that; inherit the ivory */
+.forest .lead { color: var(--k-forest-mute); }
+.forest .eyebrow { color: var(--k-gold); }
+.forest h2 i { color: var(--k-gold); }
+.share { margin-top: 40px; border-top: 1px solid var(--k-forest-line); }
+.share-h { display: flex; align-items: baseline; gap: 16px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--k-forest-line); }
+.share-h .st { font-family: var(--k-serif); font-weight: 300; font-size: 26px; color: var(--k-onforest); }
+.share-h .ss { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-forest-mute); }
+.share-body { padding: 18px 0 4px; display: grid; gap: 14px; }
+.share-body[hidden] { display: none; }
+.share-body p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-forest-mute); text-wrap: pretty; }
+.share-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 28px; font-family: var(--k-sans); font-size: 14px; }
+.spacecard { border: 1px solid var(--k-forest-line); padding: 30px 32px; }
+.sc-top { display: flex; align-items: baseline; gap: 14px; }
+.sc-num { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 20px; color: var(--k-gold); }
+.sc-name { font-family: var(--k-serif); font-weight: 300; font-size: 38px; line-height: 1; }
+.sc-who { margin-left: auto; font-family: var(--k-sans); font-size: 12.5px; color: var(--k-forest-mute); }
+.sc-groups { margin-top: 22px; }
+.sc-group { border-top: 1px solid var(--k-forest-line); }
+.sc-gh { display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.sc-gl { font-family: var(--k-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; }
+.sc-gc { font-family: var(--k-sans); font-size: 12px; color: var(--k-forest-mute); }
+.sc-gs { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 18px; color: var(--k-forest-mute); }
+.sc-items { display: grid; gap: 10px; padding: 0 0 16px; }
+.sc-item { display: flex; gap: 14px; align-items: baseline; font-family: var(--k-sans); font-size: 14.5px; line-height: 1.4; }
+.sc-item .it-t { flex: 1; }
+.sc-item .it-m { font-size: 12.5px; color: var(--k-forest-mute); white-space: nowrap; }
+.sc-join { border-top: 1px solid var(--k-forest-line); padding-top: 16px; font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-gold); }
+
+/* ── the inner life (centred) ── */
+.inner-in { max-width: 880px; margin: 0 auto; text-align: center; }
+.inner-in .lead { margin: 24px auto 0; max-width: 620px; }
+.inner-more { margin-top: 28px; font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); cursor: pointer; background: none; border: 0; }
+.inner-extra { margin: 18px auto 0; max-width: 620px; }
+
+/* ── private by design (folding points, no ticks) ── */
+.priv-points { border-top: 1px solid var(--k-line); }
+.priv { border-bottom: 1px solid var(--k-line); }
+.priv-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
+.priv-num { width: 26px; flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-gold); }
+.priv-title { flex: 1; font-family: var(--k-serif); font-weight: 300; font-size: 25px; line-height: 1.2; color: var(--k-ink); }
+.priv-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
+.priv-body { padding: 0 0 20px 44px; font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); text-wrap: pretty; }
+
+/* ── made to be quick (three columns) ── */
+.quick-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr)); gap: clamp(28px,4vw,56px); margin-top: 48px; }
+.quick-step { border-top: 1px solid var(--k-ink); padding-top: 22px; }
+.quick-n { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 26px; color: var(--k-gold); }
+.quick-t { font-family: var(--k-serif); font-weight: 300; font-size: 30px; line-height: 1.15; margin-top: 10px; }
+.quick-p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); margin-top: 10px; }
+
+/* ── invite (deep-forest panel) ── */
+.invite { background: var(--k-forest-deep); color: var(--k-onforest); }
+.invite-in { max-width: 760px; margin: 0 auto; padding: clamp(72px,9vw,128px) 0; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.invite-script { width: 220px; height: auto; opacity: .9; }
+.invite .eyebrow { margin-top: 44px; color: var(--k-gold); }
+.invite h2 { font-size: clamp(44px,5vw,66px); line-height: 1.05; margin-top: 20px; }
+.invite-lead { font-family: var(--k-sans); font-size: 17px; line-height: 1.7; color: var(--k-forest-mute); margin-top: 22px; max-width: 520px; text-wrap: pretty; }
+.invite-form { width: min(100%,520px); margin-top: 40px; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.inv-field { border-bottom: 1px solid var(--k-forest-line); }
+.inv-field + .inv-field { margin-top: 4px; }
+.inv-field input { width: 100%; background: transparent; border: 0; padding: 15px 2px; font-family: var(--k-sans); font-size: 16px; color: var(--k-onforest); }
+.inv-field input::placeholder { color: var(--k-forest-mute); }
+.inv-field input:focus { outline: none; }
+.inv-field:focus-within { border-bottom-color: var(--k-gold); }
+.invite-form .if-actions { display: flex; justify-content: center; margin-top: 26px; }
+.invite-form .if-note { margin-top: 16px; font-size: 14px; color: var(--k-gold); text-align: center; }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
+.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-forest-mute); font-size: 16.5px; line-height: 1.6; }
+.inv-have { margin-top: 22px; font-family: var(--k-sans); font-size: 14px; color: var(--k-onforest); opacity: .75; }
+.inv-have:hover { opacity: 1; }
+
+/* ── footer ── */
+.foot-in { padding: 56px 0 40px; }
+.foot-top { display: flex; flex-wrap: wrap; gap: 32px 64px; align-items: flex-start; }
+.foot-brand { display: grid; gap: 10px; }
+.foot-tag { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-mute); }
+.foot-col { display: grid; gap: 10px; font-family: var(--k-sans); font-size: 14px; }
+.foot-col a { color: var(--k-ink); } .foot-col a:hover { color: var(--k-goldt); }
+.foot-meta { margin-left: auto; font-family: var(--k-sans); font-size: 13px; line-height: 1.7; color: var(--k-mute); text-align: right; }
+.foot-lisboa { font-style: italic; color: var(--k-goldt); font-family: var(--k-serif); font-size: 15px; }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 4px; }
+.foot-lang-label { font-size: 13px; color: var(--k-faint); }
+.foot-mark { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 80px; opacity: .5; transition: opacity .6s ease; }
+.foot-mark:hover { opacity: 1; }
+.foot-mark img { width: 240px; max-width: 72vw; height: auto; }
+.dict { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 26px; text-align: center; }
+.dict-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; }
+.dict-word { font-family: var(--k-serif); font-weight: 500; font-size: 24px; line-height: 1; }
+.dict-say { font-family: var(--k-sans); font-size: 14px; color: var(--k-mute); white-space: nowrap; }
+.dict-pos { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 18px; color: var(--k-goldt); white-space: nowrap; }
+.dict-def { font-family: var(--k-serif); font-weight: 300; font-size: 20px; line-height: 1.3; color: var(--k-mute); }
+
+/* language switcher (filled by i18n.js) */
 .lang-switch { display: inline-flex; align-items: center; gap: 1px; }
 .lang-switch a { display: inline-block; padding: 4px 7px; font-size: 12.5px; font-weight: 500; letter-spacing: .04em; color: var(--k-faint); transition: color .16s, background .16s; }
 .lang-switch a:hover { color: var(--k-ink); background: var(--k-soft); }
 .lang-switch a.on { color: var(--k-goldt); }
-.nav-lang { margin-right: 2px; }
-.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 12px; }
-.foot-lang-label { font-size: 13px; color: var(--k-faint); }
-.lang-switch.lang-dd { position: relative; gap: 0; }
-.lang-btn { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: transparent; border: 1px solid var(--k-line); padding: 7px 10px; cursor: pointer; line-height: 1; transition: border-color .16s, color .16s; }
-.lang-btn:hover { color: var(--k-ink); border-color: var(--k-ink); }
-.lang-caret { font-size: 10px; opacity: .7; }
-.lang-menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 160px; background: var(--k-panel); border: 1px solid var(--k-line); padding: 6px; display: none; z-index: 60; }
-.lang-switch.lang-dd.open .lang-menu { display: block; }
-.lang-menu a { display: block; padding: 8px 12px; font-size: 14px; font-weight: 400; color: var(--k-mute); }
-.lang-menu a:hover { background: var(--k-soft); color: var(--k-ink); }
-.lang-menu a.on { color: var(--k-goldt); font-weight: 500; }
 
-/* ── hero ── */
-.hero { padding: 86px 0 70px; }
-.hero-in { display: grid; grid-template-columns: 1.04fr 0.96fr; gap: 60px; align-items: center; }
-.hero-copy { min-width: 0; }
-.hero h1 { font-size: clamp(44px, 6.6vw, 76px); line-height: 1.02; }
-.hero h1 .l2 { display: block; font-style: italic; color: var(--k-goldt); }
-.hero-sub { margin-top: 26px; font-size: clamp(16.5px, 1.8vw, 19px); color: var(--k-mute); max-width: 46ch; line-height: 1.6; }
-.hero-actions { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.hero-note { margin-top: 20px; font-size: 13px; letter-spacing: .02em; color: var(--k-faint); }
-
-/* hero device: one clean, flat, square panel */
-.device { border: 1px solid var(--k-line); background: var(--k-panel); }
-.device-bar { display: flex; align-items: center; justify-content: space-between; background: var(--k-deep); color: var(--k-ondeep); padding: 13px 18px; }
-.device-bar .dw { font-family: var(--k-serif); font-weight: 500; font-size: 18px; }
-.device-bar .dw .dot { color: var(--k-gold); }
-.device-bar .dd { font-size: 10.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; opacity: .8; font-family: var(--k-sans); }
-.device-body { padding: 20px 20px 22px; }
-.device-eyebrow { display: flex; align-items: center; gap: 12px; font-size: 10.5px; font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: var(--k-goldt); margin-bottom: 4px; }
-.device-eyebrow::before { content: ""; width: 24px; height: 1px; background: var(--k-gold); }
-.prow { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
-.prow:last-child { border-bottom: 0; }
-.pt { font-family: var(--k-serif); font-size: 19px; color: var(--k-mute); width: 44px; flex: none; font-variant-numeric: tabular-nums; }
-.sq { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.sq.out { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.sq.mute { background: var(--k-faint); }
-.plbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
-.prow.done .plbl { color: var(--k-faint); text-decoration: line-through; }
-.ptick { color: var(--k-goldt); font-size: 14px; flex: none; }
-.pcal { font-size: 9px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 2px 6px; flex: none; }
-@media (max-width: 880px) {
-  .hero { padding: 54px 0 48px; }
-  .hero-in { grid-template-columns: 1fr; gap: 40px; }
-  .hero-sub { max-width: none; }
-}
-
-/* ── section scaffolding ── */
-section { position: relative; }
-.band { padding: 92px 0; }
-.band-head { max-width: 640px; margin-bottom: 50px; }
-.band-head.center { margin-left: auto; margin-right: auto; text-align: center; }
-.band-head p { margin-top: 18px; font-size: 18px; color: var(--k-mute); line-height: 1.6; }
-.rule-top { border-top: 1px solid var(--k-line); }
-.soft { background: var(--k-soft); border-top: 1px solid var(--k-line); border-bottom: 1px solid var(--k-line); }
-
-/* concept */
-.concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-.concept-lead { font-family: var(--k-serif); font-size: clamp(26px, 3.2vw, 34px); line-height: 1.28; font-weight: 300; }
-.concept-lead .em { font-style: italic; color: var(--k-goldt); }
-.concept-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.65; }
-.concept-body p + p { margin-top: 18px; }
-.concept-body .close { margin-top: 20px; font-family: var(--k-serif); font-style: italic; font-size: 22px; color: var(--k-ink); line-height: 1.35; }
-@media (max-width: 820px) { .concept-grid { grid-template-columns: 1fr; gap: 30px; } }
-.holds { list-style: none; margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 26px; }
-.holds li { display: grid; grid-template-columns: 9px 1fr; gap: 12px; align-items: start; }
-.holds .hsq { width: 7px; height: 7px; margin-top: 9px; background: var(--k-gold); }
-.holds b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; display: block; line-height: 1.2; }
-.holds span { font-size: 14px; color: var(--k-faint); line-height: 1.45; display: block; margin-top: 2px; }
-@media (max-width: 460px) { .holds { grid-template-columns: 1fr; } }
-
-/* litany */
-.litany-band { padding: clamp(58px, 9vw, 100px) 0; }
-.litany { font-family: var(--k-serif); font-weight: 300; font-size: clamp(27px, 4.4vw, 46px); line-height: 1.3; color: var(--k-ink); max-width: 22ch; text-wrap: balance; }
-.litany .em { color: var(--k-goldt); font-style: italic; }
-
-/* tools showcase */
-.ts-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.tstile { flex: 1 1 164px; max-width: 200px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 10px; background: var(--k-panel); border: 1px solid var(--k-line); cursor: pointer; font: inherit; color: var(--k-ink); transition: border-color .16s, background .16s; }
-.tstile:hover { border-color: var(--k-mute); }
-.tstile .tsi { font-size: 21px; line-height: 1; color: var(--k-goldt); }
-.tstile .tsn { font-size: 13px; font-weight: 500; }
-.tstile.on { border-color: var(--k-gold); background: var(--k-soft); }
-.tstile.on .tsn { color: var(--k-goldt); }
-.tspanel { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 36px; }
-.tsp-ic { font-size: 30px; line-height: 1; color: var(--k-goldt); margin-bottom: 16px; }
-.tsp-name { font-family: var(--k-serif); font-size: clamp(26px, 3vw, 34px); font-weight: 300; line-height: 1.05; }
-.tsp-tag { color: var(--k-goldt); font-family: var(--k-serif); font-style: italic; font-size: 19px; margin: 6px 0 15px; }
-.tsp-desc { color: var(--k-mute); font-size: 16px; line-height: 1.6; max-width: 46ch; }
-.tsp-feats { list-style: none; margin: 16px 0 0; display: flex; flex-direction: column; gap: 9px; }
-.tsp-feats li { position: relative; padding-left: 22px; font-size: 14.5px; color: var(--k-mute); line-height: 1.45; }
-.tsp-feats li::before { content: '✓'; position: absolute; left: 0; top: 0; color: var(--k-goldt); font-size: 12px; }
-.tspv { background: var(--k-bg); border: 1px solid var(--k-line); padding: 18px 20px; }
-.pv-rows { display: flex; flex-direction: column; }
-.pv-row { display: flex; align-items: center; gap: 11px; padding: 9px 0; font-size: 14.5px; color: var(--k-ink); border-bottom: 1px solid var(--k-line); }
-.pv-row:last-child { border-bottom: 0; }
-.pv-ava { width: 25px; height: 25px; background: var(--k-deep); color: var(--k-ondeep); font-family: var(--k-serif); font-size: 13px; display: grid; place-items: center; flex: none; }
-.pv-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pv-t b { font-weight: 400; font-family: var(--k-serif); font-size: 16px; }
-.adot { width: 8px; height: 8px; flex: none; background: var(--k-gold); }
-.adot.rust, .adot.gold { background: var(--k-gold); }
-.adot.pine { background: transparent; box-shadow: inset 0 0 0 1px var(--k-gold); }
-.adot.blue { background: var(--k-faint); }
-.adot.big { width: 10px; height: 10px; }
-.pv-chip { font-size: 10.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; padding: 3px 9px; border: 1px solid var(--k-line); color: var(--k-mute); flex: none; }
-.pv-chip.q-urgent { background: var(--k-gold); color: var(--k-ongold); border-color: var(--k-gold); }
-.pv-chip.q-important { color: var(--k-goldt); border-color: var(--k-gold); }
-.pv-chip.q-chilled, .pv-chip.q-others { color: var(--k-faint); }
-.pv-quad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--k-line); }
-.pv-quad .lbl { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--k-faint); margin-right: 2px; }
-.pv-time { width: 46px; font-family: var(--k-serif); font-size: 16px; color: var(--k-mute); font-variant-numeric: tabular-nums; flex: none; }
-.pv-amt { font-family: var(--k-serif); font-size: 17px; color: var(--k-ink); flex: none; font-variant-numeric: tabular-nums; }
-.pv-check { width: 16px; height: 16px; border: 1px solid var(--k-gold); flex: none; }
-.pv-check.on { background: var(--k-gold); position: relative; }
-.pv-check.on::after { content: '✓'; color: var(--k-ongold); font-size: 10px; position: absolute; inset: 0; display: grid; place-items: center; }
-.pv-done { color: var(--k-faint); text-decoration: line-through; }
-.pv-area { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
-.pv-abar { flex: 1; }
-.pv-aname { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 7px; color: var(--k-ink); }
-.pv-apct { color: var(--k-faint); font-family: var(--k-serif); font-size: 16px; }
-.pv-bar { height: 4px; background: var(--k-line); overflow: hidden; }
-.pv-bar > i { display: block; height: 100%; background: var(--k-gold); }
-.pv-note-h { font-family: var(--k-serif); font-size: 20px; font-weight: 300; margin-bottom: 6px; color: var(--k-ink); }
-.pv-note-l { font-size: 14px; color: var(--k-mute); line-height: 1.55; margin-bottom: 12px; }
-.pv-links { display: flex; flex-wrap: wrap; gap: 6px; }
-.pv-link { font-size: 11px; font-weight: 500; color: var(--k-goldt); border: 1px solid var(--k-line); padding: 3px 8px; }
-.pv-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.pv-tbl th { text-align: left; color: var(--k-faint); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; border-bottom: 1px solid var(--k-line); }
-.pv-tbl td { padding: 8px; border-bottom: 1px solid var(--k-line); color: var(--k-ink); font-family: var(--k-serif); font-size: 16px; }
-.r-q { font-family: var(--k-serif); font-style: italic; font-size: 18px; line-height: 1.4; color: var(--k-ink); }
-.mood { display: flex; align-items: center; gap: 7px; }
-.md { width: 11px; height: 11px; box-shadow: inset 0 0 0 1px var(--k-faint); }
-.md.on { background: var(--k-gold); box-shadow: none; }
-.mood-l { margin-left: 5px; font-size: 12.5px; color: var(--k-faint); font-family: var(--k-sans); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--k-mute); border: 1px solid var(--k-line); padding: 3px 9px; }
-@media (max-width: 820px) { .tspanel { grid-template-columns: 1fr; gap: 24px; padding: 26px; } }
-@media (max-width: 520px) { .ts-tiles { gap: 8px; } .tstile { flex-basis: 98px; padding: 14px 8px; } }
-
-/* Spaces */
-.areas-grid { display: grid; grid-template-columns: 1.06fr 0.94fr; gap: 60px; align-items: center; }
-.areas-lead { font-family: var(--k-serif); font-size: clamp(23px, 2.9vw, 31px); line-height: 1.3; font-weight: 300; margin-bottom: 18px; }
-.areas-lead .em, .areas-body .em { color: var(--k-goldt); font-style: italic; }
-.areas-body p { color: var(--k-mute); font-size: 17.5px; line-height: 1.62; }
-@media (max-width: 820px) { .areas-grid { grid-template-columns: 1fr; gap: 34px; } }
-.areas-flow { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 38px 28px; background: var(--k-panel); border: 1px solid var(--k-line); }
-.af-tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; }
-.af-chip { font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--k-mute); background: var(--k-bg); border: 1px solid var(--k-line); padding: 7px 13px; }
-.af-arrow { color: var(--k-gold); font-size: 22px; line-height: 1; }
-.af-area { display: inline-flex; align-items: center; gap: 11px; font-family: var(--k-serif); font-size: 22px; font-weight: 300; color: var(--k-ongold); background: var(--k-gold); padding: 11px 24px; }
-.af-dot { width: 8px; height: 8px; background: var(--k-ongold); opacity: .7; }
-.areas-share { margin-top: 66px; text-align: center; max-width: 860px; margin-left: auto; margin-right: auto; }
-.areas-share-h { font-family: var(--k-serif); font-size: clamp(24px, 3vw, 32px); font-weight: 300; margin: 14px 0 14px; }
-.areas-share-lead { color: var(--k-mute); font-size: 17.5px; line-height: 1.6; max-width: 52ch; margin: 0 auto 38px; }
-.share-cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 14px; }
-.share-case { background: var(--k-panel); border: 1px solid var(--k-line); padding: 26px 18px; display: flex; flex-direction: column; align-items: center; gap: 7px; transition: border-color .16s; }
-.share-case:hover { border-color: var(--k-mute); }
-.share-case .ssq { width: 8px; height: 8px; background: var(--k-gold); margin-bottom: 6px; }
-.share-case b { font-family: var(--k-serif); font-size: 21px; font-weight: 300; color: var(--k-ink); }
-.share-case span:last-child { font-size: 13.5px; color: var(--k-faint); }
-@media (max-width: 560px) { .share-cases { grid-template-columns: 1fr 1fr; } .areas-share { margin-top: 48px; } }
-
-/* inner life */
-.inner-band .band-head { max-width: 760px; }
-.inner-band p { font-size: 18.5px; }
-
-/* ethos */
-.ethos { padding: 86px 0; text-align: center; }
-.ethos-line { font-family: var(--k-serif); font-size: clamp(28px, 4.2vw, 44px); line-height: 1.2; font-weight: 300; text-wrap: balance; max-width: 20ch; margin: 6px auto 0; }
-.ethos-line .em { font-style: italic; color: var(--k-goldt); }
-.ethos-sub { margin: 22px auto 0; max-width: 46ch; font-size: 17.5px; color: var(--k-mute); line-height: 1.6; }
-
-/* privacy - forest band */
-.privacy { background: var(--k-deep); color: var(--k-ondeep); }
-.privacy .eyebrow { color: var(--k-gold); }
-.privacy .eyebrow::before { background: var(--k-gold); }
-.privacy h2 { color: var(--k-ondeep); margin-bottom: 24px; }
-.privacy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-.privacy-lead { font-size: 18px; line-height: 1.65; color: color-mix(in oklab, var(--k-ondeep), transparent 12%); }
-.privacy-lead + .privacy-lead { margin-top: 20px; }
-.privacy-lead b { color: var(--k-ondeep); font-weight: 400; font-family: var(--k-serif); font-size: 20px; }
-.privacy-points { list-style: none; display: flex; flex-direction: column; gap: 16px; }
-.privacy-points li { display: flex; gap: 14px; font-size: 16px; line-height: 1.5; color: color-mix(in oklab, var(--k-ondeep), transparent 8%); }
-.privacy-points .tick { flex: none; width: 20px; height: 20px; background: var(--k-gold); color: var(--k-ongold); display: grid; place-items: center; font-size: 11px; }
-@media (max-width: 820px) { .privacy-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* capture */
-.capture-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; }
-.steps { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--k-line); }
-.step { display: flex; gap: 20px; align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--k-line); }
-.step-n { flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 30px; color: var(--k-goldt); width: 32px; line-height: 1; }
-.step-t b { display: block; font-family: var(--k-serif); font-size: 21px; font-weight: 300; margin-bottom: 3px; }
-.step-t span { font-size: 15px; color: var(--k-mute); }
-@media (max-width: 820px) { .capture-grid { grid-template-columns: 1fr; gap: 30px; } }
-
-/* closing */
-.closing { text-align: center; padding: 104px 0; background: var(--k-soft); border-top: 1px solid var(--k-line); }
-.closing .script { width: 150px; height: auto; display: block; margin: 0 auto; opacity: .9; }
-.closing .script-ivory { display: none; }
-@media (prefers-color-scheme: dark) { .closing .script-ink { display: none; } .closing .script-ivory { display: block; } }
-.closing .gold-rule { width: 30px; height: 1px; background: var(--k-gold); margin: 22px auto; }
-.closing h2 { font-size: clamp(34px, 5vw, 52px); }
-.closing > .wrap > p { margin: 20px auto 0; max-width: 46ch; font-size: 18px; color: var(--k-mute); }
-.invite-form { max-width: 520px; margin: 34px auto 0; text-align: left; }
-.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.if-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.invite-form input, .invite-form textarea { width: 100%; font-family: var(--k-sans); font-size: 16px; color: var(--k-ink); background: var(--k-panel); border: 1px solid var(--k-line); padding: 13px 15px; }
-.invite-form textarea { margin-top: 12px; resize: vertical; line-height: 1.5; }
-.invite-form input::placeholder, .invite-form textarea::placeholder { color: var(--k-faint); }
-.invite-form input:focus, .invite-form textarea:focus { outline: none; border-color: var(--k-gold); }
-.if-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; margin-top: 16px; }
-.if-note { margin-top: 14px; text-align: center; font-size: 15px; color: var(--k-goldt); }
-.invite-thanks { text-align: center; padding: 8px 0; }
-.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
-.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-mute); font-size: 16.5px; }
-@media (max-width: 520px) { .if-grid { grid-template-columns: 1fr; } }
-
-/* footer */
-footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
-.foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
-.foot-tag { font-family: var(--k-serif); font-style: italic; font-size: 15.5px; color: var(--k-faint); padding-left: 35px; }
-.foot-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-.foot-links { display: flex; gap: 24px; list-style: none; flex-wrap: wrap; }
-.foot-links a { color: var(--k-faint); font-size: 14px; transition: color .18s; }
-.foot-links a:hover { color: var(--k-ink); }
-.foot-meta { font-size: 13.5px; color: var(--k-faint); }
-.foot-lisboa { font-family: var(--k-serif); font-style: italic; color: var(--k-goldt); }
-.foot-meta a { color: var(--k-goldt); } .foot-meta a:hover { text-decoration: underline; }
-
-/* reveal */
-.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; transition: none; }
-  html { scroll-behavior: auto; }
-}
-
-/* sign-in modal */
+/* ── sign-in modal (kept from the old homepage) ── */
 .signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: color-mix(in oklab, var(--k-ink) 46%, transparent); }
 .signin-overlay[hidden] { display: none; }
 .signin-box { position: relative; width: min(440px, 100%); background: var(--k-panel); border: 1px solid var(--k-line); padding: 34px 32px 28px; }
@@ -421,6 +308,11 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 .signin-foot a { color: var(--k-goldt); font-weight: 500; }
 .signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1px solid var(--k-gold); text-align: center; font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--k-goldt); cursor: pointer; font-family: var(--k-sans); transition: background .18s, color .18s; }
 .signin-smslink:hover { background: var(--k-gold); color: var(--k-ongold); }
+
+/* ── reveal on scroll ── */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .demo-rows { transition: none; } }
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -449,7 +341,7 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Opciones de cookies');
-    b.innerHTML = '<p>Koyeba usa cookies de análisis para entender cómo se usa el sitio - nada personal, y nunca ninguno de tus contenidos en Koyeba. ¿Nos dejas? <a href="/privacy">Privacidad</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Rechazar</button><button class="dbk-accept" type="button">Aceptar</button></div>';
+    b.innerHTML = '<p>Koyeba usa cookies de análisis para entender cómo se usa el sitio – nada personal, y nunca ninguno de tus contenidos en Koyeba. ¿Nos dejas? <a href="/privacy">Privacidad</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Rechazar</button><button class="dbk-accept" type="button">Aceptar</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -465,266 +357,176 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/">
+    <a class="brand" href="#top">
       <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
       <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
       <span class="brand-word">Koyeba<span class="dot">.</span></span>
     </a>
     <ul class="nav-links">
-      <li><a href="#idea">Tu Koyeba</a></li>
+      <li><a href="#idea">La idea</a></li>
       <li><a href="#tools">Herramientas</a></li>
       <li><a href="#private">Privacidad</a></li>
-      <li><a href="/blog">Diario</a></li>
+      <li><a href="/es/diario">Diario</a></li>
     </ul>
     <div class="nav-cta">
-      <div class="lang-switch nav-lang"></div>
-      <a class="btn btn-ghost" href="#" data-signin>Iniciar sesión</a>
+      <a class="sign" href="#" data-signin>Iniciar sesión</a>
       <a class="btn btn-primary" href="#invite">Solicitar una invitación</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
+<header id="top">
   <div class="wrap hero-in">
-    <div class="hero-copy">
-      <div class="eyebrow reveal">Solo por invitación, en acceso anticipado</div>
-      <h1 class="reveal">Déjalo.<span class="l2">Vuelve cuando lo necesites.</span></h1>
-      <p class="hero-sub reveal">Koyeba es un hogar sereno y privado para toda tu vida - correo, calendario, tareas, notas, dinero y la vida interior, unidos por los Spaces. Deja algo, suéltalo, y confía en que vuelve en el momento justo.</p>
-      <div class="hero-actions reveal">
-        <a class="btn btn-primary" href="#invite">Solicitar una invitación →</a>
-        <a class="btn btn-ghost" href="#" data-signin>Iniciar sesión</a>
+    <div class="hero-copy reveal">
+      <div class="eyebrow">Solo por invitación · acceso anticipado</div>
+      <h1>Déjalo.<br><i>Vuelve</i> cuando lo necesites.</h1>
+      <p class="hero-sub">Un hogar sereno y privado para tu correo, calendario, tareas, notas y el resto de tu vida – unidos por los Spaces, para que todo encuentre su sitio y vuelva en el momento justo.</p>
+      <div class="hero-actions">
+        <a class="btn btn-ink" href="#invite">Solicitar una invitación</a>
+        <a class="link-gold" href="#idea">Cómo funciona →</a>
       </div>
-      <p class="hero-note reveal">Privado por principio. Sin anuncios, nada a la venta, sin ruido.</p>
     </div>
     <div class="reveal">
-      <div class="device">
-        <div class="device-bar"><span class="dw">Koyeba<span class="dot">.</span></span><span class="dd">Viernes · 31 oct.</span></div>
-        <div class="device-body">
-          <div class="device-eyebrow">Hoy</div>
-          <div class="prow done"><span class="pt">07:30</span><span class="sq mute"></span><span class="plbl">Meditación de la mañana</span><span class="ptick">✓</span></div>
-          <div class="prow"><span class="pt">10:00</span><span class="sq"></span><span class="plbl">Redactar la propuesta de Sintra</span></div>
-          <div class="prow"><span class="pt">13:00</span><span class="sq out"></span><span class="plbl">Comida con Marta</span><span class="pcal">cal</span></div>
-          <div class="prow"><span class="pt">18:00</span><span class="sq mute"></span><span class="plbl">Pasear antes de que caiga la luz</span></div>
-        </div>
+      <div class="demo" aria-hidden="true">
+        <div class="eyebrow">Deja algo</div>
+        <div class="demo-line"><span id="demoTyped"></span><span class="demo-caret" id="demoCaret"></span></div>
+        <div class="demo-rows" id="demoRows"></div>
       </div>
     </div>
   </div>
 </header>
 
-<section class="band" id="idea">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Donde empieza</div></div>
-    <div class="concept-grid">
-      <div class="reveal">
-      <p class="concept-lead">Una vida son muchas partes a la vez - el hacer y el soñar, lo urgente y lo tranquilo. Koyeba las reúne en <span class="em">un solo lugar sereno.</span></p>
-      <ul class="holds">
-        <li><span class="hsq"></span><div><b>Tu día</b><span>Agenda, tareas y citas</span></div></li>
-        <li><span class="hsq"></span><div><b>Tus personas</b><span>Las que quieres tener cerca</span></div></li>
-        <li><span class="hsq"></span><div><b>Tus reflexiones</b><span>Pensamientos, emociones, lo que significan</span></div></li>
-        <li><span class="hsq"></span><div><b>Tus tareas</b><span>Lo urgente de hoy, y el largo plazo</span></div></li>
-      </ul>
-    </div>
-    <div class="concept-body reveal">
-      <p>Cargamos demasiado a la vez. Tareas a medio recordar, ideas que queríamos guardar, dinero que queríamos vigilar, emociones a las que nunca prestamos atención. Sujeto sin firmeza, se escapa - a trozos de papel, a diez aplicaciones distintas, o simplemente se pierde.</p>
-      <p>Koyeba es donde entra todo. Dejas algo y lo sueltas, y vuelve cuando lo necesitas - la tarea cuando el día la pide, la página cuando estás planeando, el pensamiento cuando haces una pausa.</p>
-      <p class="close">Déjalo con confianza. Reencuéntralo con tranquilidad.</p>
-    </div>
-    </div>
-  </div>
-</section>
-
-<section class="litany-band soft">
-  <div class="wrap reveal">
-    <p class="litany">Tu tiempo, tus personas, tus planes, tus ritmos - y la vida digital dispersa que los envuelve. Reunidos en un solo lugar sereno, y <span class="em">enteramente tuyos.</span></p>
-  </div>
-</section>
-
-<section class="band" id="tools">
-  <div class="wrap">
-    <div class="band-head center reveal">
-      <div class="eyebrow center">Todo reunido</div>
-      <h2>Todas las herramientas, en un solo lugar</h2>
-      <p>Correo, calendario, páginas, tareas, dinero y personas para el hacer; reflexión, metas y Spaces para la vida interior. Unidos para que nada se escape, y llevados en silencio, para que lo tengas todo bajo control.</p>
-    </div>
-    <div class="toolshow reveal">
-      <div class="ts-tiles" id="tsTiles">
-        <button class="tstile" data-tool="areas" type="button"><span class="tsi">◈</span><span class="tsn">Spaces</span></button>
-        <button class="tstile" data-tool="mail" type="button"><span class="tsi">✉</span><span class="tsn">Correo</span></button>
-        <button class="tstile" data-tool="calendar" type="button"><span class="tsi">◑</span><span class="tsn">Calendario</span></button>
-        <button class="tstile" data-tool="tasks" type="button"><span class="tsi">✓</span><span class="tsn">Tareas</span></button>
-        <button class="tstile" data-tool="notes" type="button"><span class="tsi">▤</span><span class="tsn">Notas</span></button>
-        <button class="tstile" data-tool="readwatch" type="button"><span class="tsi">☆</span><span class="tsn">Leer y ver</span></button>
-        <button class="tstile" data-tool="wellbeing" type="button"><span class="tsi">✎</span><span class="tsn">Reflexión</span></button>
-        <button class="tstile" data-tool="journal" type="button"><span class="tsi">✒</span><span class="tsn">Diario</span></button>
-        <button class="tstile" data-tool="coaching" type="button"><span class="tsi">✦</span><span class="tsn">Coaching</span></button>
-        <button class="tstile" data-tool="goals" type="button"><span class="tsi">◎</span><span class="tsn">Metas</span></button>
-        <button class="tstile" data-tool="reviews" type="button"><span class="tsi">↻</span><span class="tsn">Revisiones</span></button>
-        <button class="tstile" data-tool="bucket" type="button"><span class="tsi">⚑</span><span class="tsn">Lista de vida</span></button>
-        <button class="tstile" data-tool="contacts" type="button"><span class="tsi">☺</span><span class="tsn">Contactos</span></button>
-        <button class="tstile" data-tool="sharing" type="button"><span class="tsi">⇄</span><span class="tsn">Compartir</span></button>
-        <button class="tstile" data-tool="messaging" type="button"><span class="tsi">❝</span><span class="tsn">Mensajes</span></button>
-        <button class="tstile" data-tool="money" type="button"><span class="tsi">€</span><span class="tsn">Dinero</span></button>
-        <button class="tstile" data-tool="tables" type="button"><span class="tsi">▦</span><span class="tsn">Tablas</span></button>
-      </div>
-      <div class="tspanel" id="tsPanel"></div>
-    </div>
-    <script>
-    (function(){
-      var T={
-        areas:{ic:'◈',name:'Spaces',tag:'El corazón de Koyeba',desc:`Tu correo, calendario, tareas, notas, metas, personas y gastos se reúnen en torno a las partes reales de tu vida - cada una mostrando cómo va, de un vistazo.`,feats:["Todo se reúne por la parte de la vida a la que pertenece","Pon una fecha y un Space se vuelve un proyecto, en cuenta atrás","Comparte un Space con quienes lo viven"],pv:`<div class="pv-area"><span class="adot rust"></span><div class="pv-abar"><div class="pv-aname">Frigiliana trip <span class="pv-apct">68%</span></div><div class="pv-bar"><i style="width:68%"></i></div></div></div><div class="pv-area"><span class="adot pine"></span><div class="pv-abar"><div class="pv-aname">Salud <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:40%"></i></div></div></div><div class="pv-area"><span class="adot blue"></span><div class="pv-abar"><div class="pv-aname">Salud <span class="pv-apct">40%</span></div><div class="pv-bar"><i style="width:85%"></i></div></div></div>`},
-        mail:{ic:'✉',name:'Correo',tag:'Todas las bandejas, una sala',desc:`Trae todas tus cuentas a un solo flujo - Gmail, Outlook, cualquier bandeja IMAP - y trabájalas como una sola.`,feats:["Todas tus cuentas en una bandeja","Ordena rápido: Urgente, Importante, Leer luego","Archiva un correo en un Space, y compártelo ahí"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">M</span><span class="pv-t"><b>Marta</b> · Re: proposta Sintra</span><span class="pv-chip q-urgent">Urgente</span></div><div class="pv-row"><span class="pv-ava">C</span><span class="pv-t"><b>Câmara de Lisboa</b> · IMI 2026</span><span class="pv-chip q-important">Importante</span></div><div class="pv-row"><span class="pv-ava">J</span><span class="pv-t"><b>João</b> · Horário do dojo</span><span class="pv-chip q-chilled">Leer luego</span></div></div><div class="pv-quad"><span class="lbl">Ordenar</span><span class="pv-chip q-urgent">Urgente</span><span class="pv-chip q-important">Importante</span><span class="pv-chip q-chilled">Leer luego</span><span class="pv-chip q-others">Archivo</span></div>`},
-        calendar:{ic:'◑',name:'Calendario',tag:'Mes, semana, agenda',desc:`Una sola vista de tus días - sincronizada con el calendario que ya usas.`,feats:["Mes, semana y agenda en una vista","Sincronización en ambos sentidos con tu Google","Un evento puede contar como práctica"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-time">09:00</span><span class="adot rust"></span><span class="pv-t">Revisar la propuesta</span></div><div class="pv-row"><span class="pv-time">13:00</span><span class="adot blue"></span><span class="pv-t">Comida con Marta</span></div><div class="pv-row"><span class="pv-time">18:30</span><span class="adot pine"></span><span class="pv-t">Yoga junto al río</span></div></div>`},
-        tasks:{ic:'✓',name:'Tareas',tag:'Tu día, que fluye',desc:`Un día que fluye, no una lista que insiste - trabaja con él cuando estás metido.`,feats:["Nada grita; una tarea solo dice 12 días atrás","Reaparece justo cuando toca","Cada tarea lleva su Space"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="adot rust"></span><span class="pv-t pv-done">Meditación de la mañana</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot rust"></span><span class="pv-t">Redactar la propuesta de Sintra</span></div><div class="pv-row"><span class="pv-check"></span><span class="adot pine"></span><span class="pv-t">Pasear antes de que caiga la luz</span></div></div>`},
-        notes:{ic:'▤',name:'Notas',tag:'Escribe a gusto, enlázalo todo',desc:`Una idea garabateada, un pensamiento más largo, o un plan con todo enlazado - captado en segundos y unido a donde pertenece.`,feats:["Deja algo en dos toques, desde donde sea","Enlaza un sitio, una tarea, un evento, una persona","Convierte una nota en tabla cuando quieras"],pv:`<div class="pv-note-h">Viaje a Frigiliana</div><p class="pv-note-l">La carretera de la costa, la casa de la puerta azul. Confirmar las fechas antes del 20.</p><div class="pv-links"><span class="pv-link">↗ blue-door-house.pt</span><span class="pv-link">✓ Reservar el ferry</span><span class="pv-link">◷ Fri 12th</span><span class="pv-link">↳ Frigiliana trip</span></div>`},
-        readwatch:{ic:'☆',name:'Leer y ver',tag:'Guárdalo para después',desc:`Guarda los sitios, artículos, libros y películas que quieres alcanzar - en un toque, listos para cuando tengas tiempo.`,feats:["Captura en un toque - bookmarklet o atajo de iOS","Artículos, sitios, libros y películas, todo ordenado","Saca uno cuando tengas una tarde libre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">▷</span><span class="pv-t">Aftersun</span><span class="pv-chip">Película</span></div><div class="pv-row"><span class="pv-ava">❏</span><span class="pv-t">Four Thousand Weeks</span><span class="pv-chip">Libro</span></div><div class="pv-row"><span class="pv-ava">↗</span><span class="pv-t">monocle.com - el número de Lisboa</span><span class="pv-chip">Enlace</span></div></div>`},
-        wellbeing:{ic:'✎',name:'Reflexión',tag:'La vida interior, cuidada',desc:`La mitad reflexiva - diario, revisiones, sueños y herramientas de reflexión serenas, junto al hacer.`,feats:["Diario, revisiones y coaching sereno","Herramientas de reflexión para despertar una idea cuando quieras","Ahí cuando las necesitas, fuera del paso cuando no"],pv:`<p class="r-q" style="margin:0 0 13px">"¿Qué me pidió hoy el día, y qué le di?"</p><div class="mood" style="margin-bottom:14px"><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md on"></i><i class="md"></i><span class="mood-l">Estable esta semana</span></div><div class="chips"><span class="chip">Diario</span><span class="chip">Sueños</span><span class="chip">Lecturas</span></div>`},
-        journal:{ic:'✒',name:'Diario',tag:'Pensar sobre la página',desc:`Elige un disparador, escribe, y profundiza con una pregunta más siempre que quieras llegar más lejos.`,feats:["Un selector de disparadores para arrancar","«Profundizar» hace la siguiente pregunta","Las entradas viven en tu historial de reflexión"],pv:`<p class="r-q" style="margin:0 0 11px">"¿A qué le estoy haciendo sitio esta semana?"</p><p class="pv-note-l" style="margin:0">Menos ruido. Una conversación de verdad con Marta. Un paseo que no va a ninguna parte.</p>`},
-        coaching:{ic:'✦',name:'Coaching',tag:'Una pregunta, no un sermón',desc:`Un coaching sereno y opcional que hace la pregunta justa en el momento justo, a partir de tus metas y revisiones.`,feats:["Anclado en tus metas y revisiones","Pregunta; nunca da órdenes","Opcional, con tu propia clave de IA"],pv:`<p class="r-q" style="margin:0 0 12px">"Has movido el gimnasio tres veces - ¿qué estorba de verdad?"</p><div class="chips"><span class="chip">Reflexionar</span><span class="chip">Replantear</span><span class="chip">Volver a intentar</span></div>`},
-        goals:{ic:'◎',name:'Metas',tag:'Intenciones que se cumplen',desc:`Define lo que importa, divídelo en pasos, y míralo avanzar.`,feats:["Divide una meta en próximos pasos reales","El progreso de un vistazo","Ligado a los Spaces donde viven"],pv:`<div class="pv-aname">Correr una media maratón <span class="pv-apct">60%</span></div><div class="pv-bar" style="margin-bottom:15px"><i style="width:60%"></i></div><div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">10k sin parar</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Inscribirse en la carrera</span></div></div>`},
-        reviews:{ic:'↻',name:'Revisiones',tag:'Mirar atrás para avanzar',desc:`Un ritmo sereno de revisiones - semanal, mensual, por estación - para ver cómo va de verdad la vida y reorientar lo que importa.`,feats:["Recordatorios a tu propia cadencia","Saca números reales de tus Spaces","Ve el progreso, luego reorienta tus intenciones"],pv:`<div class="pv-aname">Revisión semanal <span class="pv-apct">3 de 4 hechas</span></div><div class="pv-bar" style="margin-bottom:14px"><i style="width:75%"></i></div><div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viaje a Frigiliana</span><span class="pv-amt">en marcha</span></div><div class="pv-row"><span class="pv-t">Próxima</span><span class="pv-amt">domingo</span></div></div>`},
-        bucket:{ic:'⚑',name:'Lista de vida',tag:'La lista de la vida',desc:`Las experiencias, lugares y sueños que no quieres perderte - captados, y llevados a planes reales cuando llega el momento.`,feats:["Sueños, viajes, destrezas, momentos únicos - todo en un sitio","Convierte una línea en una meta con pasos reales","Táchalos a medida que la vida ocurre"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-check on"></span><span class="pv-t pv-done">Ver la aurora boreal</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Aprender a surfear</span></div><div class="pv-row"><span class="pv-check"></span><span class="pv-t">Hacer el Camino</span></div></div>`},
-        contacts:{ic:'☺',name:'Contactos',tag:'Las personas, cerca',desc:`Las personas de tu vida, cerca - quiénes son, qué les importa, cuándo hablasteis por última vez.`,feats:["Recordatorios para mantener el contacto cuando toca","Cumpleaños y lo que les importa","Viven en los Spaces donde encajan"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t"><b>Ana</b> · hablasteis hace 6 semanas</span><span class="pv-chip">Saludar</span></div><div class="pv-row"><span class="pv-ava">T</span><span class="pv-t"><b>Tomás</b> · cumpleaños el viernes</span><span class="pv-chip">Recordar</span></div></div>`},
-        sharing:{ic:'⇄',name:'Compartir',tag:'Comparte un Space, no tu vida',desc:`Invita a las personas de una parte de tu vida solo a ese Space - copadres, familia, un viaje - y mantén todo lo demás privado.`,feats:["Acceso por Space - nada más se filtra","Un muro compartido para cada Space","Ven solo lo que elijas"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t"><b>Los niños</b> · Space compartido</span><span class="pv-chip">2 personas</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Tú</span><span class="pv-chip">dueño</span></div><div class="pv-row"><span class="pv-ava">X</span><span class="pv-t">Copadre</span><span class="pv-chip">puede editar</span></div></div>`},
-        messaging:{ic:'❝',name:'Mensajes',tag:'Hablar donde está la vida',desc:`Habla con las personas de un Space compartido, justo donde ya viven los planes, las fechas y los archivos - sin cambiar de app.`,feats:["Ligado al Space del que trata","Todos ven el mismo contexto","Se acabaron los grupos de chat dispersos"],pv:`<div class="pv-rows"><div class="pv-row"><span class="pv-ava">A</span><span class="pv-t">¿La entrega sigue el viernes a las 18 h?</span></div><div class="pv-row"><span class="pv-ava">D</span><span class="pv-t">Sí - llevo yo la bolsa.</span></div></div>`},
-        money:{ic:'€',name:'Dinero',tag:'A dónde va, por Space',desc:`Ve tus gastos ordenados por las partes de la vida que te importan.`,feats:["Gastos ordenados por Space","Ve a dónde va de verdad","Sin hojas de cálculo, sin líos"],pv:`<div class="pv-rows"><div class="pv-row"><span class="adot rust"></span><span class="pv-t">Viaje a Frigiliana</span><span class="pv-amt">1.240 €</span></div><div class="pv-row"><span class="adot pine"></span><span class="pv-t">Salud</span><span class="pv-amt">85 €</span></div><div class="pv-row"><span class="adot blue"></span><span class="pv-t">Casa</span><span class="pv-amt">430 €</span></div></div>`},
-        tables:{ic:'▦',name:'Tablas',tag:'Estructura cuando quieras',desc:`Convierte una nota en una tabla de verdad para lo que valga la pena seguir - justo donde la escribiste.`,feats:["Una tabla de verdad donde la necesites","Nace de una nota en un toque","Sigue lo que valga la pena"],pv:`<table class="pv-tbl"><thead><tr><th>Lugar</th><th>Visto</th><th>¿Vamos?</th></tr></thead><tbody><tr><td>Casa de la puerta azul</td><td>Sí</td><td>★</td></tr><tr><td>Posada de la costa</td><td>Aún no</td><td>-</td></tr></tbody></table>`}
-      };
-      var tiles=document.getElementById('tsTiles'),panel=document.getElementById('tsPanel');
-      function render(k){var t=T[k];if(!t)return;var f=(t.feats||[]).map(function(x){return '<li>'+x+'</li>';}).join('');panel.innerHTML=`<div class="tspanel-l"><div class="tsp-ic">${t.ic}</div><div class="tsp-name">${t.name}</div><div class="tsp-tag">${t.tag}</div><div class="tsp-desc">${t.desc}</div><ul class="tsp-feats">${f}</ul></div><div class="tspanel-r"><div class="tspv">${t.pv}</div></div>`;var bs=tiles.children;for(var i=0;i<bs.length;i++){bs[i].classList.toggle('on',bs[i].getAttribute('data-tool')===k);}}
-      tiles.addEventListener('click',function(e){var b=e.target.closest('.tstile');if(b)render(b.getAttribute('data-tool'));});
-      render('areas');
-    })();
-    </script>
-  </div>
-</section>
-
-<section class="band soft" id="connect">
-  <div class="wrap areas-grid">
+<section class="sec" id="idea">
+  <div class="wrap sec-in two">
     <div class="reveal">
-      <div class="eyebrow">Donde todo se encuentra</div>
-      <h2>Los Spaces unen los puntos</h2>
-      <p class="areas-lead">Cada parte de tu vida tiene un Space - un proyecto, la familia, tu salud, el negocio. Asocia lo que quieras a uno, y el correo, los eventos, las tareas, las páginas y los gastos de <span class="em">esa parte de la vida</span> se reúnen ahí.</p>
-      <div class="areas-body">
-        <p>Un correo se vuelve una tarea. Una página se vuelve una tabla. Un pago se archiva solo en el Space correcto. Nada se amontona en silos; <span class="em">fluye</span> a donde pertenece - para que lleves tu vida con ligereza, y esquives el agobio.</p>
+      <div class="eyebrow">La idea</div>
+      <h2 class="big">Cargamos demasiado a la vez.</h2>
+    </div>
+    <div class="idea-body reveal">
+      <p>Tareas a medio recordar, ideas que queríamos guardar, dinero que queríamos vigilar. Sujeto sin firmeza, se escapa – a trozos de papel, a diez aplicaciones distintas, o simplemente se pierde en silencio.</p>
+      <p>Koyeba significa <span class="know">saber</span> en lingala. Deja algo una vez y siempre sabrás dónde está – la tarea cuando el día la pide, la página cuando estás planeando, el pensamiento cuando haces una pausa.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tools">
+  <div class="wrap sec-in">
+    <div class="tools-head reveal">
+      <div class="eyebrow">Herramientas</div>
+      <h2 class="big">Todo lo que usas, <i>hablando entre sí.</i></h2>
+      <p class="lead">Abre cualquiera para ver qué hace, y a dónde lleva.</p>
+    </div>
+    <div class="tool-cols reveal" id="toolCols"></div>
+  </div>
+</section>
+
+<section class="forest" id="spaces">
+  <div class="wrap sec-in two wide">
+    <div class="reveal">
+      <div class="eyebrow">Spaces</div>
+      <h2 class="big">Cada parte de tu vida <i>tiene su Space.</i></h2>
+      <p class="lead">Los niños, la casa, el perro, el negocio. Un correo se vuelve una tarea, un pago se archiva solo, un evento encuentra a sus personas – y todo se reúne en el Space al que pertenece.</p>
+      <div class="share">
+        <button class="share-h" type="button" data-share><span class="st">Comparte un Space con quienes lo viven</span><span class="ss" id="shareSign">+</span></button>
+        <div class="share-body" id="shareBody" hidden>
+          <p>Abre una parte de tu vida a las personas que la viven contigo – y solo esa parte.</p>
+          <div class="share-grid">
+            <span><span class="gold">Copadres</span> en los niños</span><span><span class="gold">Una familia</span> en la mudanza</span><span><span class="gold">Amigos</span> en una escapada</span><span><span class="gold">Una pareja</span> en las cuentas</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="areas-flow reveal" aria-hidden="true">
-      <div class="af-tools"><span class="af-chip">Correo</span><span class="af-chip">Evento</span><span class="af-chip">Tarea</span><span class="af-chip">Nota</span><span class="af-chip">Gasto</span></div>
-      <div class="af-arrow">↓</div>
-      <div class="af-area"><span class="af-dot"></span>La familia</div>
-    </div>
-  </div>
-  <div class="wrap areas-share reveal">
-    <div class="eyebrow center">Mejor juntos</div>
-    <h3 class="areas-share-h">Comparte un Space con quienes lo viven</h3>
-    <p class="areas-share-lead">Abre una parte de tu vida a las personas que la viven contigo - y solo esa parte. Cada uno ve lo que debe; nadie se ahoga en un grupo de chat.</p>
-    <div class="share-cases">
-      <div class="share-case"><span class="ssq"></span><b>Copadres</b><span>en “los niños”</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Una familia</b><span>en “la mudanza”</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Un grupo</b><span>en un evento</span></div>
-      <div class="share-case"><span class="ssq"></span><b>Una pareja</b><span>en las cuentas</span></div>
+    <div class="spacecard reveal">
+      <div class="sc-top"><span class="sc-num">II</span><span class="sc-name">Los niños</span><span class="sc-who">Ada &amp; Tom</span></div>
+      <div class="sc-groups" id="spaceGroups"></div>
+      <div class="sc-join">El correo de Mrs Okafor → Firmar la autorización de la excursión, para el lunes</div>
     </div>
   </div>
 </section>
 
-<section class="band inner-band" id="inner">
-  <div class="wrap band-head center reveal">
-    <div class="eyebrow center">Para la vida interior</div>
-    <h2>La vida interior, incluida</h2>
-    <p>La mayoría de las herramientas se ocupan del hacer y dejan fuera el resto de ti. Koyeba mantiene las dos cerca - la vida exterior de las tareas y los planes, la vida interior de los pensamientos, las emociones y lo que todo significa - para que cada una dé más sentido a la otra. El diario, las revisiones, el coaching sereno y las herramientas de reflexión discretas no son extras añadidos; son como traes un poco de conciencia a los días corrientes, y reparas en la vida que de verdad vives. Ahí cuando las necesitas, fuera del paso cuando no.</p>
-  </div>
-</section>
-
-<section class="ethos soft">
-  <div class="wrap reveal">
-    <div class="eyebrow center">El modo Koyeba</div>
-    <p class="ethos-line">Lo que necesitas, en el sitio justo, en el <span class="em">momento justo.</span></p>
-    <p class="ethos-sub">En sintonía con los ritmos de tu vida - nada grita por atención, y nada que valga la pena recordar se pierde.</p>
-  </div>
-</section>
-
-<section class="band privacy" id="private">
-  <div class="wrap">
-    <div class="reveal"><div class="eyebrow">Privado por principio</div></div>
-    <div class="privacy-grid">
-      <div class="reveal">
-      <h2>Tuyo. Seguro.</h2>
-      <p class="privacy-lead">Koyeba guarda las partes más personales de tu vida - tus reflexiones, tus relaciones. Por eso está bien cerrado: <b>acceso en dos pasos</b>, tus datos <b>cifrados en reposo.</b></p>
-      <p class="privacy-lead">¿Y tus datos? No los queremos. Construimos un negocio sobre la confianza, no sobre venderte - así que nada de lo tuyo se explota, se vende, ni se da a entrenar el modelo de nadie. Es tuyo. Expórtalo todo en un toque, guárdalo en tu propio almacenamiento si prefieres, trae tu propia IA - la elección es siempre tuya.</p>
-    </div>
-    <ul class="privacy-points reveal">
-      <li><span class="tick">✓</span><div>Acceso en dos pasos - tu Koyeba, bien cerrado.</div></li>
-      <li><span class="tick">✓</span><div>Nunca explotado, nunca vendido, nunca usado para entrenar nada.</div></li>
-      <li><span class="tick">✓</span><div>Exporta todo, cuando quieras, en un toque - o guárdalo en tu almacenamiento.</div></li>
-      <li><span class="tick">✓</span><div>Cierra tu cuenta cuando quieras, y llévatelo todo contigo.</div></li>
-      <li><span class="tick">✓</span><div>Un negocio hecho sobre la confianza, no sobre tus datos.</div></li>
-    </ul>
+<section class="sec" id="inner">
+  <div class="wrap sec-in">
+    <div class="inner-in reveal">
+      <div class="eyebrow center">La vida interior</div>
+      <h2 class="big">Sitio para el hacer, <i>y para el resto de ti.</i></h2>
+      <p class="lead">El diario, las revisiones, las metas y un coaching sereno acompañan a tus tareas y planes, para que cada uno dé más sentido al otro. Ahí cuando los quieres, fuera del paso cuando no.</p>
+      <button class="inner-more" type="button" data-inner id="innerMore">Leer más +</button>
+      <p class="lead inner-extra" id="innerExtra" hidden>La mayoría de las herramientas se ocupan de la vida exterior y dejan el resto fuera. Koyeba guarda un lugar tranquilo para los pensamientos, las emociones y lo que todo significa – un poco de conciencia para los días corrientes, y una forma de reparar en la vida que de verdad vives.</p>
     </div>
   </div>
 </section>
 
-<section class="band">
-  <div class="wrap capture-grid">
+<section class="sec" id="private">
+  <div class="wrap sec-in two">
+    <div class="reveal">
+      <div class="eyebrow">Privado por principio</div>
+      <h2 class="big">Tuyo. <i>De verdad.</i></h2>
+      <p class="lead">Koyeba guarda las partes más personales de tu vida, así que construimos un negocio sobre la confianza, no sobre venderte.</p>
+    </div>
+    <div class="priv-points reveal" id="privPoints"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap sec-in">
     <div class="reveal">
       <div class="eyebrow">Hecho para ser rápido</div>
-      <h2>Déjalo en dos toques</h2>
-      <div class="band-head" style="margin-top:20px;margin-bottom:0"><p style="margin-top:0">Dejar algo debe ser sin esfuerzo, sobre todo en el móvil. Sácalo de la cabeza en segundos y suéltalo - Koyeba lo guarda en el sitio justo por ti.</p></div>
+      <h2 class="big">Dos toques, y <i>suéltalo.</i></h2>
     </div>
-    <div class="steps reveal">
-      <div class="step"><span class="step-n">I</span><div class="step-t"><b>Abre y anota</b><span>Una tarea, una página, un número, una emoción - lo que lleves.</span></div></div>
-      <div class="step"><span class="step-n">II</span><div class="step-t"><b>Suéltalo</b><span>Cae en el sitio justo, asociado al Space al que pertenece.</span></div></div>
-      <div class="step"><span class="step-n">III</span><div class="step-t"><b>Vuelve</b><span>En el momento justo - en tu día, tus planes o tu revisión.</span></div></div>
+    <div class="quick-cols reveal">
+      <div class="quick-step"><div class="quick-n">I</div><div class="quick-t">Abre y anota</div><p class="quick-p">Una tarea, una fecha, un número, una emoción – lo que lleves encima.</p></div>
+      <div class="quick-step"><div class="quick-n">II</div><div class="quick-t">Encuentra su sitio</div><p class="quick-p">En la herramienta justa, asociado al Space al que pertenece.</p></div>
+      <div class="quick-step"><div class="quick-n">III</div><div class="quick-t">Vuelve a la vista</div><p class="quick-p">En tu día, tus planes o tu revisión – cuando es útil, no antes.</p></div>
     </div>
   </div>
 </section>
 
-<section class="closing" id="invite">
-  <div class="wrap reveal">
-    <img class="script script-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" aria-hidden="true">
-    <img class="script script-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="" aria-hidden="true">
-    <div class="gold-rule"></div>
+<section class="invite" id="invite">
+  <div class="wrap invite-in reveal">
+    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba, escrito en Mandombe">
     <div class="eyebrow center">Acceso anticipado</div>
     <h2>Ven a dejarlo.</h2>
-    <p>Koyeba es solo por invitación mientras es joven, creciendo despacio de boca en boca para mantenerse sereno y bien cuidado. Cuéntanos un poco sobre ti, y te haremos un sitio.</p>
-    <form class="invite-form reveal" id="invite-form" novalidate>
+    <p class="invite-lead">Koyeba crece despacio, de boca en boca, para mantenerse sereno y bien cuidado. Cuéntanos un poco sobre ti y te haremos un sitio.</p>
+    <form class="invite-form" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <div class="if-grid">
-        <input id="if-name" placeholder="Tu nombre" autocomplete="name" required>
-        <input id="if-email" type="email" placeholder="Tu correo" autocomplete="email" required>
-      </div>
-      <textarea id="if-why" placeholder="¿Para qué usarías Koyeba? Una línea basta." rows="2"></textarea>
-      <div class="if-actions">
-        <button class="btn btn-primary" type="submit" id="if-submit">Solicitar una invitación →</button>
-        <a class="btn btn-ghost" href="#" data-signin>Ya tengo cuenta</a>
-      </div>
+      <div class="inv-field"><input id="if-name" placeholder="Tu nombre" autocomplete="name" required></div>
+      <div class="inv-field"><input id="if-email" type="email" placeholder="Tu correo" autocomplete="email" required></div>
+      <div class="inv-field"><input id="if-heard" placeholder="¿Cómo conociste Koyeba? (opcional)" autocomplete="off"></div>
+      <div class="if-actions"><button class="btn btn-primary" type="submit" id="if-submit">Solicitar una invitación →</button></div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
+    <a class="inv-have" href="#" data-signin>Ya tengo cuenta</a>
   </div>
 </section>
 
-<footer id="signin">
+<footer>
   <div class="wrap foot-in">
-    <div class="foot-brand">
-      <a class="brand" href="/">
-        <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
-        <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
-        <span class="brand-word">Koyeba<span class="dot">.</span></span>
-      </a>
-      <span class="foot-tag">Para una vida bien vivida</span>
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="brand" href="#top">
+          <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
+          <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
+          <span class="brand-word">Koyeba<span class="dot">.</span></span>
+        </a>
+        <span class="foot-tag">Para una vida bien vivida</span>
+      </div>
+      <div class="foot-col">
+        <a href="#idea">La idea</a><a href="#tools">Herramientas</a><a href="#private">Privacidad</a><a href="/es/diario">Diario</a>
+      </div>
+      <div class="foot-col">
+        <a href="/privacy">Política de privacidad</a><a href="/terms">Términos</a><a href="#" data-cookie-settings>Ajustes de cookies</a><a href="mailto:contact@koyeba.co">contact@koyeba.co</a>
+      </div>
+      <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyeba</div>
+      <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
     </div>
-    <ul class="foot-links">
-      <li><a href="#idea">Tu Koyeba</a></li>
-      <li><a href="#tools">Herramientas</a></li>
-      <li><a href="#private">Privacidad</a></li>
-      <li><a href="/blog">Diario</a></li>
-      <li><a href="#invite">Solicitar una invitación</a></li>
-      <li><a href="/privacy">Política de privacidad</a></li>
-      <li><a href="/terms">Términos</a></li>
-      <li><a href="#" data-cookie-settings>Ajustes de cookies</a></li>
-      <li><a href="mailto:contact@koyeba.co">Contacto</a></li>
-    </ul>
-    <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">¿Preguntas? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyeba</div>
+    <a class="foot-mark" href="#top" title="Volver arriba">
+      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba">
+      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba">
+    </a>
+    <div class="dict">
+      <div class="dict-head"><span class="dict-word">Koyeba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verbo, lingala</span></div>
+      <div class="dict-def">Saber – hechos, lugares, personas.</div>
+    </div>
   </div>
 </footer>
 
@@ -750,56 +552,192 @@ footer { border-top: 1px solid var(--k-line); padding: 46px 0; }
 <script>window.__lang='es';window.__alts={en:'/',pt:'/pt',fr:'/fr',es:'/es',it:'/it',de:'/de'};</script>
 <script src="/i18n.js" defer></script>
 <script>
+(function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
-  const sm = document.getElementById('signin-modal');
-  const openSignin = (e) => {
-    if (e) e.preventDefault();
-    sm.hidden = false; setTimeout(() => document.getElementById('signin-email').focus(), 30);
-  };
-  const closeSignin = () => { sm.hidden = true; };
-  document.querySelectorAll('[data-signin]').forEach((el) => el.addEventListener('click', openSignin));
-  document.querySelectorAll('[data-signin-close]').forEach((el) => el.addEventListener('click', closeSignin));
-  sm.addEventListener('click', (e) => { if (e.target === sm) closeSignin(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
-  document.getElementById('signin-form').addEventListener('submit', (e) => {
+
+  // ── Tools: two columns of folding rows, one open at a time, Mail open first ──
+  var TOOLS = [
+    { label: 'Para el hacer', items: [
+      ['Correo', 'Ordena de una pasada', 'Marca cada correo urgente, importante o para luego y tu bandeja queda limpia. Convierte cualquier mensaje en una tarea, una nota o un evento.', 'Une Tareas, Calendario, Spaces'],
+      ['Calendario', 'Tus días, unidos', 'Los eventos llegan del correo y de lo que dejas, cada uno con las notas y las personas que necesita.', 'Une Correo, Tareas, Contactos'],
+      ['Tareas', 'Lo urgente de ahora, y el largo plazo', 'Lo que toca hoy pasa al frente; el resto espera en silencio en su Space.', 'Une Correo, Calendario, Metas'],
+      ['Notas', 'Páginas y tablas', 'Escribe a gusto, o convierte una página en tabla cuando necesite columnas.', 'Une Spaces, Tareas'],
+      ['Mensajes', 'Entérate cuando alguien escribe', 'Conversaciones con las personas de tus Spaces, con un aviso discreto cuando llega una.', 'Une Contactos, Compartir'],
+      ['Dinero', 'El gasto, archivado por ti', 'Los pagos caen en el Space correcto, para que veas lo que de verdad cuestan la casa o el perro.', 'Une Spaces, Correo'],
+      ['Contactos', 'Las personas que tienes cerca', 'Todas las personas a las que escribes, ves y con las que compartes, en un solo lugar.', 'Une Correo, Mensajes, Compartir'] ] },
+    { label: 'Para la vida interior', items: [
+      ['Diario', 'Una página para cada día', 'Escribe una línea o una página. Queda junto a lo que de verdad pasó ese día.', 'Une Calendario, Revisiones'],
+      ['Reflexión', 'Detente en lo que importa', 'Disparadores suaves para cuando quieras pensar algo a fondo.', 'Une Diario, Metas'],
+      ['Revisiones', 'Mira atrás, luego adelante', 'Una mirada semanal y mensual a lo que avanzó, lo que no, y lo que viene.', 'Une Tareas, Metas, Diario'],
+      ['Metas', 'El largo plazo', 'Guarda unas pocas cosas hacia las que trabajas, divididas en pasos que se vuelven tareas.', 'Une Tareas, Revisiones'],
+      ['Coaching', 'Un empujón sereno', 'Una guía opcional con tu propia clave de IA – nunca la nuestra, nunca entrenada contigo.', 'Une Reflexión, Metas'],
+      ['Leer y ver', 'Lo que quieres alcanzar', 'Libros, películas y artículos, guardados hasta que tengas la tarde para ellos.', 'Une Notas, Spaces'],
+      ['Lista de vida', 'Algún día', 'Las cosas más grandes, guardadas en un sitio donde volverás a verlas.', 'Une Metas'] ] }
+  ];
+  var openTool = 'Correo';
+  var cols = document.getElementById('toolCols');
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function renderTools() {
+    cols.innerHTML = TOOLS.map(function (g) {
+      var rows = g.items.map(function (it) {
+        var name = it[0], line = it[1], body = it[2], joins = it[3], on = openTool === name;
+        return '<div class="tool"><button class="tool-h" type="button" data-tool="' + esc(name) + '">'
+          + '<span class="tool-name">' + esc(name) + '</span>'
+          + '<span class="tool-line">' + esc(line) + '</span>'
+          + '<span class="tool-sign">' + (on ? '−' : '+') + '</span></button>'
+          + (on ? '<div class="tool-body"><div class="tool-desc">' + esc(body) + '</div><div class="tool-joins">' + esc(joins) + '</div></div>' : '')
+          + '</div>';
+      }).join('');
+      return '<div class="tool-group"><div class="tg-head"><span class="tg-label">' + esc(g.label) + '</span><span class="tg-count">' + g.items.length + '</span></div>' + rows + '</div>';
+    }).join('');
+  }
+  cols.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tool]'); if (!b) return;
+    var n = b.getAttribute('data-tool'); openTool = (openTool === n) ? null : n; renderTools();
+  });
+  renderTools();
+
+  // ── Spaces: the sample Space's folding groups (Mail + Tasks open) ──
+  var SPACE = [
+    ['Correo', [['Mrs Okafor – Excursión de 4.º', 'Jue'], ['Club de natación – nuevos horarios', 'Mar']]],
+    ['Tareas', [['Firmar la autorización de Ada', 'Lun'], ['Tom: disfraz para el viernes', 'Próx. sem.']]],
+    ['Calendario', [['Natación de Ada', 'Vie 16:00'], ['Reunión de padres', 'Mié 18:30']]],
+    ['Notas', [['Lista para natación', ''], ['Ideas para las vacaciones', '']]]
+  ];
+  var sg = { Correo: true, Tareas: true };
+  var sgWrap = document.getElementById('spaceGroups');
+  function renderSpace() {
+    sgWrap.innerHTML = SPACE.map(function (g) {
+      var label = g[0], items = g[1], open = !!sg[label];
+      var rows = open ? '<div class="sc-items">' + items.map(function (it) {
+        return '<div class="sc-item"><span class="it-t">' + esc(it[0]) + '</span><span class="it-m">' + esc(it[1]) + '</span></div>';
+      }).join('') + '</div>' : '';
+      return '<div class="sc-group"><button class="sc-gh" type="button" data-sg="' + esc(label) + '"><span class="sc-gl">' + esc(label) + '</span><span class="sc-gc">' + items.length + '</span><span class="sc-gs">' + (open ? '−' : '+') + '</span></button>' + rows + '</div>';
+    }).join('');
+  }
+  sgWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sg]'); if (!b) return;
+    var n = b.getAttribute('data-sg'); sg[n] = !sg[n]; renderSpace();
+  });
+  renderSpace();
+
+  // Share fold
+  var shareOpen = false, shareBody = document.getElementById('shareBody'), shareSign = document.getElementById('shareSign');
+  document.querySelector('[data-share]').addEventListener('click', function () {
+    shareOpen = !shareOpen; shareBody.hidden = !shareOpen; shareSign.textContent = shareOpen ? '−' : '+';
+  });
+
+  // Inner "Read more"
+  var innerOpen = false, innerExtra = document.getElementById('innerExtra'), innerMore = document.getElementById('innerMore');
+  document.querySelector('[data-inner]').addEventListener('click', function () {
+    innerOpen = !innerOpen; innerExtra.hidden = !innerOpen; innerMore.textContent = innerOpen ? 'Plegar −' : 'Leer más +';
+  });
+
+  // ── Private: five folding points I–V, one open at a time, first open ──
+  var PRIV = [
+    ['Acceso en dos pasos', 'Tu Koyeba está bien cerrado, y tus datos están cifrados en reposo.'],
+    ['Nunca explotado, nunca vendido', 'Nada de lo tuyo se usa para anuncios ni se da a entrenar el modelo de nadie.'],
+    ['Trae tu propia IA', 'La IA es opcional, con tu propia clave. Déjala apagada y Koyeba funciona igual.'],
+    ['Expórtalo todo', 'Llévatelo todo en un toque, cuando quieras – o guárdalo en tu propio almacenamiento.'],
+    ['Vete cuando quieras', 'Cierra tu cuenta y llévatelo todo contigo.']
+  ];
+  var ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+  var openPriv = 0, privWrap = document.getElementById('privPoints');
+  function renderPriv() {
+    privWrap.innerHTML = PRIV.map(function (p, i) {
+      var open = openPriv === i;
+      return '<div class="priv"><button class="priv-h" type="button" data-priv="' + i + '"><span class="priv-num">' + ROMAN[i] + '</span><span class="priv-title">' + esc(p[0]) + '</span><span class="priv-sign">' + (open ? '−' : '+') + '</span></button>'
+        + (open ? '<div class="priv-body">' + esc(p[1]) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  privWrap.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-priv]'); if (!b) return;
+    var i = +b.getAttribute('data-priv'); openPriv = (openPriv === i) ? null : i; renderPriv();
+  });
+  renderPriv();
+
+  // ── Hero capture demo: types a phrase, then the readout fades up; cycles three ──
+  var DEMOS = [
+    { text: 'Dentista el martes a las nueve', rows: [['En', 'Yo'], ['Como', 'Calendario · mar 3 nov, 09:00'], ['Avisa', 'El lunes por la noche, y a las 08:15 ese día']], foot: 'Nada más que hacer.' },
+    { text: 'La autorización de la excursión de Ada, para el lunes', rows: [['En', 'Los niños'], ['Como', 'Tarea · para el lun 2 nov'], ['Une', 'El correo de Mrs Okafor · “Excursión de 4.º”']], foot: 'Enlazada al correo del que vino.' },
+    { text: 'Pipeta antipulgas de Galleta, 18,40 €', rows: [['En', 'Galleta'], ['Como', 'Dinero · gastado hoy'], ['Une', 'Gastos de mascota este mes · 46,20 €']], foot: 'Archivado en el Space correcto.' }
+  ];
+  var typed = document.getElementById('demoTyped'), caret = document.getElementById('demoCaret'), rowsEl = document.getElementById('demoRows');
+  function paintRows(demo) {
+    rowsEl.innerHTML = demo.rows.map(function (r) {
+      return '<div class="demo-row"><span class="demo-rk">' + esc(r[0]) + '</span><span class="demo-rv">' + esc(r[1]) + '</span></div>';
+    }).join('') + '<div class="demo-foot"><span class="df-t">' + esc(demo.foot) + '</span><span class="demo-set">Dejar ↵</span></div>';
+  }
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    typed.textContent = DEMOS[0].text; caret.style.opacity = '0'; paintRows(DEMOS[0]); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none';
+  } else {
+    var di = 0, n = 0, phase = 'type', timer;
+    paintRows(DEMOS[0]); rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)';
+    function tick() {
+      var demo = DEMOS[di];
+      if (phase === 'type') {
+        if (n < demo.text.length) { n++; typed.textContent = demo.text.slice(0, n); caret.style.opacity = '1'; timer = setTimeout(tick, 55 + Math.random() * 50); }
+        else { timer = setTimeout(function () { phase = 'show'; paintRows(demo); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none'; caret.style.opacity = '0'; timer = setTimeout(tick, 3800); }, 500); }
+      } else {
+        phase = 'type'; n = 0; di = (di + 1) % DEMOS.length; typed.textContent = ''; rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)'; timer = setTimeout(tick, 700);
+      }
+    }
+    timer = setTimeout(tick, 900);
+  }
+
+  // ── Sign-in modal (kept) ──
+  var sm = document.getElementById('signin-modal');
+  function openSignin(e) { if (e) e.preventDefault(); sm.hidden = false; setTimeout(function () { document.getElementById('signin-email').focus(); }, 30); }
+  function closeSignin() { sm.hidden = true; }
+  document.querySelectorAll('[data-signin]').forEach(function (el) { el.addEventListener('click', openSignin); });
+  document.querySelectorAll('[data-signin-close]').forEach(function (el) { el.addEventListener('click', closeSignin); });
+  sm.addEventListener('click', function (e) { if (e.target === sm) closeSignin(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sm.hidden) closeSignin(); });
+  document.getElementById('signin-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Escribe tu correo.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email);
   });
   document.getElementById('signin-sms').addEventListener('click', function () {
-    const email = document.getElementById('signin-email').value.trim();
-    const err = document.getElementById('signin-err');
+    var email = document.getElementById('signin-email').value.trim();
+    var err = document.getElementById('signin-err');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Escribe primero tu correo, para saber a dónde enviarlo.'; err.hidden = false; return; }
     location.href = '/signin#e=' + encodeURIComponent(email) + '&c=sms';
   });
-  const invForm = document.getElementById('invite-form');
+
+  // ── Invite form (kept logic; name + email) ──
+  var invForm = document.getElementById('invite-form');
   if (invForm) invForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    const name = document.getElementById('if-name').value.trim();
-    const email = document.getElementById('if-email').value.trim();
-    const why = document.getElementById('if-why').value.trim();
-    const hp = document.getElementById('if-hp').value;
-    const note = document.getElementById('if-note');
-    const btn = document.getElementById('if-submit');
-    const fail = (m) => { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Solicitar una invitación →' };
+    var name = document.getElementById('if-name').value.trim();
+    var email = document.getElementById('if-email').value.trim();
+    var heard = document.getElementById('if-heard').value.trim();
+    var hp = document.getElementById('if-hp').value;
+    var note = document.getElementById('if-note');
+    var btn = document.getElementById('if-submit');
+    var fail = function (m) { note.textContent = m; note.hidden = false; btn.disabled = false; btn.textContent = 'Solicitar una invitación →'; };
     if (!name) return fail('Un nombre, por favor.');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Un correo válido, por favor.');
     note.hidden = true; btn.disabled = true; btn.textContent = 'Enviando…';
-    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: why, hp: hp, source: document.referrer || '' }) })
-      .then((r) => r.ok ? r.json() : Promise.reject())
-      .then(() => { invForm.innerHTML = '<div class="invite-thanks"><h3>Gracias.</h3><p>Te escribiremos pronto. Koyeba crece de boca en boca - si conoces a alguien que lo adoraría, mándanoslo.</p></div>'; })
-      .catch(() => fail('Algo salió mal - escribe a contact@koyeba.co y lo arreglamos.'));
+    fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Gracias.</h3><p>Te escribiremos pronto. Koyeba crece de boca en boca – si conoces a alguien que lo adoraría, mándanoslo.</p></div>'; })
+      .catch(function () { fail('Algo salió mal – escribe a contact@koyeba.co y lo arreglamos.'); });
   });
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+
+  // ── Reveal on scroll ──
+  if ('IntersectionObserver' in window && !reduce) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
     }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
   } else {
-    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
   }
+})();
 </script>
 </body>
 </html>
