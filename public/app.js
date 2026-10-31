@@ -1811,16 +1811,17 @@ function navTopSecs(v) {
 // automatically - night view after dusk, day view through the day, no choice to
 // make. (Robin, 2026-10-24: for most people except admins it's always automatic.)
 function themeLocked() { return !!(state.me && state.me.id !== 1); }
-// Three pickable worlds - 'light' (Slate), 'calm' (warm washi) and 'dark' (Night) -
-// plus 'auto', which follows the sun between Slate and Night. 'calm' is always a
-// deliberate pick, never auto-selected. (Robin, 2026-10-30: slate / calm / night.)
-function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' || m === 'calm' ? m : 'auto'; }
-function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'calm' ? '✦ Calm' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
+// Two pickable worlds - 'light' (Day, ivory) and 'dark' (Night, deep forest) -
+// plus 'auto', which follows the sun between them. (Koyeba: one gold accent; the
+// old washi/vermilion 'calm' world was retired 2026-10-31. A stored 'calm' now
+// resolves to 'auto', and the dead [data-theme='calm'] CSS is simply unreachable.)
+function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
+function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 function applyTheme(rerender) {
   const m = themeMode();
-  // calm is its own warm washi world; otherwise resolve to light/dark (auto by the sun).
-  const theme = m === 'calm' ? 'calm' : (m === 'dark' ? 'dark' : m === 'light' ? 'light' : (autoIsDark() ? 'dark' : 'light'));
+  // Resolve to light/dark (auto follows the sun).
+  const theme = (m === 'dark' ? 'dark' : m === 'light' ? 'light' : (autoIsDark() ? 'dark' : 'light'));
   document.documentElement.dataset.theme = theme;
   try { localStorage.setItem('today.theme', theme); } catch {}
   if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
@@ -1832,7 +1833,7 @@ function applyTheme(rerender) {
 // The nav button steps through the four in order; the Settings picker sets one directly.
 function cycleTheme() {
   if (themeLocked()) return;   // members follow day/night automatically; nothing to cycle
-  const order = ['auto', 'light', 'calm', 'dark'];
+  const order = ['auto', 'light', 'dark'];
   const next = order[(order.indexOf(themeMode()) + 1) % order.length];
   try { localStorage.setItem('life.theme.mode', next); } catch {}
   applyTheme(true);
@@ -1840,7 +1841,7 @@ function cycleTheme() {
 }
 function setThemeMode(mode) {
   if (themeLocked()) return;
-  if (!['auto', 'light', 'calm', 'dark'].includes(mode)) return;
+  if (!['auto', 'light', 'dark'].includes(mode)) return;
   try { localStorage.setItem('life.theme.mode', mode); } catch {}
   applyTheme(true);
   // Update the picker's selected state in place (applyTheme re-renders nav, not Settings).
@@ -1851,9 +1852,8 @@ function setThemeMode(mode) {
 function themeSwatches() {
   const cur = themeMode();
   const opts = [
-    ['auto', 'Auto', 'linear-gradient(135deg,#d7dde6 0 50%,#141530 50% 100%)', '#c2703a'],
+    ['auto', 'Auto', 'linear-gradient(135deg,#f8f4ec 0 50%,#13241d 50% 100%)', '#c99a3e'],
     ['light', 'Day', '#f8f4ec', '#c99a3e'],
-    ['calm', 'Calm', '#e9e0ce', '#cf4327'],
     ['dark', 'Night', '#13241d', '#d8b25e'],
   ];
   return opts.map(([mode, label, bg, dot]) => `<button class="theme-swatch-btn ${cur === mode ? 'on' : ''}" data-theme-set="${mode}" type="button" aria-pressed="${cur === mode}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
@@ -3862,7 +3862,7 @@ function renderSettings() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Three worlds to work in. Auto follows your local sunrise &amp; sunset, between Slate and Night.'}</div>
+        <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Two worlds, Day and Night. Auto follows your local sunrise &amp; sunset.'}</div>
           ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☁ Slate'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
         <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
