@@ -1865,10 +1865,12 @@ function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(
 // color-mixed from --accent, so overriding --accent (+ --accent-ink for text
 // on accent) recolours the whole app. Cached in localStorage for instant paint
 // and mirrored to settings (kv_accent) so it follows you across devices.
+// Koyeba has ONE accent: gold (rule 1 - no red/green/blue/orange/purple, ever).
+// The single choice resets to the theme gold, which flips #c99a3e by day /
+// #d8b25e by night on its own. (The old multi-colour presets + custom picker were
+// a latent brand breach; restore the array here if a choice is ever wanted back.)
 const ACCENT_PRESETS = [
-  ['#a8844a', 'Koyeba'], ['#c4412e', 'Rust'], ['#c2703a', 'Amber'],
-  ['#3f7d93', 'Teal'], ['#5a7d5a', 'Forest'], ['#6b5b95', 'Plum'],
-  ['#4f6d9c', 'Indigo'], ['#9c5a6e', 'Rose'], ['#4a4f57', 'Slate'],
+  ['', 'Koyeba gold'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
 function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
@@ -3721,9 +3723,9 @@ function mobileSettingsHtml() {
   </div>`;
 }
 function renderSettings() {
-  const cur = (savedAccent() || '#c4412e').toLowerCase();
+  const cur = (savedAccent() || '').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
-    `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
+    `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex || '#c99a3e'}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
   state.settings = state.settings || {};
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
@@ -3863,11 +3865,10 @@ function renderSettings() {
 
   const appearancePane = `<div class="set-card">
         <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Two worlds, Day and Night. Auto follows your local sunrise &amp; sunset.'}</div>
-          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☁ Slate'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
+          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
-        <div class="set-block"><div class="set-row-t">Accent colour</div><div class="set-row-s">Recolours the whole app. Pick one, or choose your own.</div>
+        <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Koyeba keeps a single gold accent - warm by day, brighter by night.</div>
           <div class="acc-swatches">${swatches}</div>
-          <div class="acc-custom"><label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-accent-custom></label>${savedAccent() ? '<button class="ghost" data-accent="">Reset to default</button>' : ''}</div>
         </div>
         <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Koyeba symbol - the clean octagram, or held in its ring.</div>
           <div class="mark-opts">
@@ -26752,18 +26753,12 @@ function onbDone() {
 function onbIdentity() {
   const a = state.onb.account || state.account || {};
   const card = state.card || {};
-  const cur = (savedAccent() || '').toLowerCase();
-  const swatches = ACCENT_PRESETS.map(([hex, name]) =>
-    `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex}" data-onb-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
   const photo = card.photo
     ? `<span class="dbc-photo sm" style="background-image:url('${card.photo}')"></span>`
-    : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c4412e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
+    : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c99a3e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
   return `<p class="onb-p">A few quick touches to make Koyeba feel like yours - change any of it later.</p>
     <div class="onb-field"><span class="onb-l">Your name</span>
       <span class="onb-inline"><input id="onb-name" class="sel" value="${esc(a.name || '')}" placeholder="What should we call you?" maxlength="60" autocomplete="name"><button class="add-btn wide" data-onb-name-save>Save</button></span></div>
-    <div class="onb-field"><span class="onb-l">Highlight colour <span class="onb-opt">if you like</span></span>
-      <div class="onb-acc">${swatches}</div>
-      <label class="acc-custom-l">Your own<input type="color" class="acc-color" value="${esc(savedAccent() || '#c4412e')}" data-onb-accent-custom></label></div>
     <div class="onb-field"><span class="onb-l">Photo <span class="onb-opt">if you like</span></span>
       <div class="onb-photo-row">${photo}
         <label class="add-btn wide onb-photo-btn"><input type="file" accept="image/*" hidden data-onb-photo><span>${card.photo ? 'Change photo' : 'Add a photo'}</span></label>
