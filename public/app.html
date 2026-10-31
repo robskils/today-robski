@@ -11,7 +11,7 @@
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Koyeba</title>
-<link rel="icon" href="/favicon.svg?v=202610302101">
+<link rel="icon" href="/favicon.svg?v=202610310135">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v14.png">
@@ -22,13 +22,13 @@
 <meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1e2b23" media="(prefers-color-scheme: dark)">
 <!-- Fonts are self-hosted via koyeba.css (@font-face): Cormorant Garamond + Jost only. No Google Fonts link. -->
-<link rel="stylesheet" href="/koyeba.css?v=202610302101">
-<link rel="stylesheet" href="/life.css?v=202610302101">
+<link rel="stylesheet" href="/koyeba.css?v=202610310135">
+<link rel="stylesheet" href="/life.css?v=202610310135">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
-    // Navy 'dark' theme retired in the Koyeba redesign; night returns as body.night (step 2 of the redesign).
-    const theme = t === 'calm' ? 'calm' : 'light';
+    // Day by default; Night is the deep-forest data-theme='dark'. (Koyeba.)
+    const theme = t === 'calm' ? 'calm' : t === 'dark' ? 'dark' : 'light';
     document.documentElement.dataset.theme = theme;
     // Custom accent colour, applied before first paint so there's no red flash.
     const ac = localStorage.getItem('life.accent');
@@ -60,7 +60,7 @@
   <button class="undo-fab" id="undo-fab" data-undo type="button" aria-label="Undo the last change" title="Undo"><span class="uf-ic" aria-hidden="true">↶</span><span class="uf-l">Undo</span></button>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202610302101"></script>
-  <script src="/app.js?v=202610302101"></script>
+  <script src="/qrcode.min.js?v=202610310135"></script>
+  <script src="/app.js?v=202610310135"></script>
 </body>
 </html>

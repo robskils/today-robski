@@ -4,11 +4,12 @@
 :root[data-theme='light'] {
   /* Cool slate neutrals (60%) instead of warm beige - the coral accent (10%) now
      pops against them. (Robin, 2026-10-30: the beige was the problem.) */
-  --paper:#d7dde6; --paper-2:#c7cfda; --card:#eef2f7;
-  --ink:#1a2130; --ink-2:rgba(26,33,48,.64); --ink-3:rgba(26,33,48,.42);
-  --line:rgba(26,33,48,.11); --line-2:rgba(26,33,48,.20); --pat-ink:rgba(26,33,48,.05); --fold-pat:rgba(92,112,140,.42); --body-crease:rgba(42,64,98,.05); --facet-a:rgba(255,255,255,.55); --facet-b:rgba(42,64,98,.055);
-  --accent:#a8844a; --accent-ink:#fff; --gold:#a8844a; --done:#4a7a52;
-  --note-surface:rgba(250,252,255,.60); --note-edge:rgba(26,33,48,.10);
+  /* Koyeba day: warm ivory paper, ink, one gold accent (per the Brand Pack). */
+  --paper:#f8f4ec; --paper-2:#efe9dc; --card:#fdfbf7;
+  --ink:#2a2620; --ink-2:rgba(42,38,32,.62); --ink-3:rgba(42,38,32,.42);
+  --line:rgba(42,38,32,.12); --line-2:rgba(42,38,32,.22); --pat-ink:rgba(42,38,32,.05); --fold-pat:rgba(201,154,62,.34); --body-crease:rgba(42,38,32,.045); --facet-a:rgba(255,255,255,.60); --facet-b:rgba(42,38,32,.05);
+  --accent:#c99a3e; --accent-ink:#2a2620; --gold:#c99a3e; --done:#c99a3e;
+  --note-surface:rgba(253,251,247,.62); --note-edge:rgba(42,38,32,.10);
   --tbl-pink:#cf5b8f;
   --lane-s:46%; --lane-l:42%;
   --shadow:0 1px 2px rgba(26,36,56,.04),0 8px 22px -8px rgba(26,36,56,.10),0 30px 56px -24px rgba(26,36,56,.18);
@@ -19,8 +20,21 @@
   --glass-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 2px 7px rgba(30,45,70,.07), 0 20px 44px -18px rgba(30,45,70,.26);
   --zen-far:#b6c1cb; --zen-mid:#93a2ae; --zen-near:#73838f; --zen-mist:#eef1f4;
 }
-/* The old navy data-theme='dark' palette was removed in the Koyeba redesign.
-   Night is now a deep forest, defined as `body.night` in koyeba.css (§3). */
+/* Koyeba night: deep forest, one gold accent (per the Brand Pack). Never navy. */
+:root[data-theme='dark'] {
+  --paper:#13241d; --paper-2:#1a2b23; --card:#1b2b24;
+  --ink:#ece7df; --ink-2:rgba(236,231,223,.64); --ink-3:rgba(236,231,223,.42);
+  --line:rgba(236,231,223,.14); --line-2:rgba(236,231,223,.24); --pat-ink:rgba(236,231,223,.06); --fold-pat:rgba(216,178,94,.3); --body-crease:rgba(216,178,94,.04); --facet-a:rgba(255,250,240,.04); --facet-b:rgba(0,0,0,.14);
+  --accent:#d8b25e; --accent-ink:#13241d; --gold:#d8b25e; --done:#d8b25e;
+  --note-surface:rgba(10,20,16,.5); --note-edge:rgba(236,231,223,.12);
+  --tbl-pink:#e888b4;
+  --lane-s:48%; --lane-l:66%;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 26px -8px rgba(0,0,0,.46),0 30px 56px -24px rgba(0,0,0,.5);
+  --glass-bg:linear-gradient(158deg, rgba(40,74,58,.5), rgba(27,43,36,.42));
+  --glass-edge:rgba(236,231,223,.1);
+  --glass-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 2px 8px rgba(0,0,0,.4), 0 26px 50px -20px rgba(0,0,0,.6);
+  --zen-far:#1a2b23; --zen-mid:#223a30; --zen-near:#2c4a3a; --zen-mist:#13241d;
+}
 /* Calm - the warm 'washi' world, the third scheme. Ink on sunlit handmade paper,
    with a shu-vermilion (朱) seal as the single warm accent. NOT the old office
    beige Robin hated - a soft, refined kinari cream. (Robin, 2026-10-30: a world
@@ -46,23 +60,12 @@
    warm paper stays everywhere else (it's the brand); this is light theme + the
    Page view only. (Robin: too much grey gets you down; white's better here.) */
 :root[data-theme='light'] body[data-view='area'] {
-  --paper:#e4e9ef; --paper-2:#d4dbe4; --card:#f4f7fb;
+  --paper:#fbf8f1; --paper-2:#efe9dc; --card:#fdfbf7;
 }
 /* The page is aged paper: a whisper of grain and a soft top light, so it reads
    like an almanac, not an office doc. Light theme only. (Robin.) */
-:root[data-theme='light'] body {
-  background:
-    radial-gradient(120% 95% at 12% -14%, rgba(178,204,246,.32), transparent 55%),
-    radial-gradient(95% 85% at 99% 2%, rgba(203,180,236,.17), transparent 55%),
-    radial-gradient(92% 92% at 94% 114%, rgba(126,158,212,.22), transparent 60%),
-    radial-gradient(88% 88% at 2% 116%, rgba(116,184,178,.13), transparent 60%),
-    radial-gradient(140% 120% at 50% -14%, rgba(255,255,255,.5), transparent 56%),
-    repeating-linear-gradient(0deg, rgba(42,64,98,.02) 0 2px, transparent 2px 4px),
-    var(--paper);
-  background-attachment:fixed, fixed, fixed, fixed, fixed, scroll, scroll;
-}
-/* (The navy night-sky body background was removed with the Koyeba redesign;
-   night is now a deep forest via body.night in koyeba.css.) */
+:root[data-theme='light'] body { background:var(--paper); }
+:root[data-theme='dark'] body { background:var(--paper); }
 /* Calm is a sunlit paper day: warm radial washes - low sun, a faint peach edge -
    over the washi, with a whisper of horizontal grain. (Robin, 2026-10-30.) */
 :root[data-theme='calm'] body {

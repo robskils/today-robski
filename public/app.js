@@ -1815,7 +1815,7 @@ function themeLocked() { return !!(state.me && state.me.id !== 1); }
 // plus 'auto', which follows the sun between Slate and Night. 'calm' is always a
 // deliberate pick, never auto-selected. (Robin, 2026-10-30: slate / calm / night.)
 function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' || m === 'calm' ? m : 'auto'; }
-function themeLabel() { const m = themeMode(); return m === 'light' ? '☁ Slate' : m === 'calm' ? '☀ Calm' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☁'} Auto`; }
+function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'calm' ? '✦ Calm' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 function applyTheme(rerender) {
   const m = themeMode();
@@ -1852,9 +1852,9 @@ function themeSwatches() {
   const cur = themeMode();
   const opts = [
     ['auto', 'Auto', 'linear-gradient(135deg,#d7dde6 0 50%,#141530 50% 100%)', '#c2703a'],
-    ['light', 'Slate', '#d7dde6', '#c2703a'],
+    ['light', 'Day', '#f8f4ec', '#c99a3e'],
     ['calm', 'Calm', '#e9e0ce', '#cf4327'],
-    ['dark', 'Night', '#141530', '#c2a05f'],
+    ['dark', 'Night', '#13241d', '#d8b25e'],
   ];
   return opts.map(([mode, label, bg, dot]) => `<button class="theme-swatch-btn ${cur === mode ? 'on' : ''}" data-theme-set="${mode}" type="button" aria-pressed="${cur === mode}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
@@ -6447,7 +6447,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="gs-banner" data-open-getstarted>
       <span class="gs-art">${ORIGAMI_SVG}</span>
-      <span class="gs-body"><span class="gs-t">Welcome to the Fold</span><span class="gs-s">Let's set Koyeba up to fit you. Tap here to begin.</span></span>
+      <span class="gs-body"><span class="gs-t">Welcome to Koyeba</span><span class="gs-s">Let's set Koyeba up to fit you. Tap here to begin.</span></span>
       <span class="gs-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide getting started">✕</button>
