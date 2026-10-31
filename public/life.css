@@ -2562,7 +2562,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (max-width:760px){ .notes-grid { grid-template-columns:1fr; } .notes-side { position:static; } }
 
 /* ── unified app shell ───────────────────────────── */
-.app-shell { display:grid; grid-template-columns:var(--sidebar-w,326px) minmax(0,1fr); min-height:100vh; }
+.app-shell { display:grid; grid-template-columns:clamp(210px,21vw,280px) minmax(0,1fr); min-height:100vh; }
 /* Drag the sidebar's right edge to resize it; the width persists (life.sidebarW). */
 .nav-resize { position:fixed; top:0; bottom:0; left:calc(var(--sidebar-w,326px) - 4px); width:9px; cursor:col-resize; z-index:45; }
 .nav-resize::after { content:""; position:absolute; top:0; bottom:0; left:4px; width:2px; border-radius:0; background:transparent; transition:background .12s; }
@@ -5352,15 +5352,9 @@ body[data-view="area"] .pane {
    right edge so it shows ONLY in the gap - never behind content - and collapses to
    nothing when the window is too narrow to have a gap. (Robin: swap the Moroccan
    lattice for the fold, 2026-10-21.) */
-.main::after { content:''; position:fixed; top:0; bottom:0; right:0;
-  left:calc(var(--sidebar-w,326px) + 1100px); z-index:0; pointer-events:none;
-  background:
-    repeating-linear-gradient(60deg, var(--fold-pat) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(-60deg, var(--fold-pat) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(0deg, var(--fold-pat) 0 1px, transparent 1px 42px);
-  -webkit-mask:linear-gradient(to left,#000 0 55%, transparent);
-          mask:linear-gradient(to left,#000 0 55%, transparent); opacity:.6; }
-:root[data-theme='dark'] .main::after { opacity:.45; }
+/* The origami-crease right-margin tessellation is gone - Robin: redundant, and the
+   prototype has a plain ground. (2026-10-31.) */
+.main::after { content:none; }
 /* Sidebar collapsed: no sidebar width, so the pane sits at the far left - re-anchor
    the pattern to the pane's right edge so it fills the now-wider gap, not a band
    of empty paper the sidebar's width across. */
@@ -6842,7 +6836,9 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* overflow is visible (not a scroll box) so the util icons' hover tips can drop
    below the strip without being clipped; tabs shrink with an ellipsis instead of
    forcing a horizontal scroll. (Robin flagged obscured header tooltips, 2026-10-29.) */
-.tabstrip { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 14px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow:visible; }
+/* Tabs dropped - the prototype navigates through the folds, not a tab strip. (Robin, 2026-10-31.) */
+.tabstrip { display:none; }
+.tabstrip-legacy { position:sticky; top:0; z-index:25; display:flex; align-items:center; gap:4px; height:44px; box-sizing:border-box; padding:6px 14px; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); overflow:visible; }
 .tabstrip::-webkit-scrollbar { display:none; }
 .tabstrip .tab { display:inline-flex; align-items:center; gap:7px; max-width:190px; min-width:0; padding:6px 11px 6px 12px; border-radius:0; border:1px solid var(--line); background:color-mix(in srgb,var(--card) 45%,transparent); color:var(--ink-3); font-size:14px; white-space:nowrap; flex:0 1 auto; transition:background .12s,color .12s,border-color .12s,box-shadow .12s; }
 .tabstrip .tab .tab-t { overflow:hidden; text-overflow:ellipsis; min-width:0; }
@@ -9714,3 +9710,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
   .cap-bar { bottom:74px; width:min(460px,calc(100vw - 24px)); }
   .cap-bar-t { font-size:19px; }
 }
+
+/* ══ Koyeba nav foot + width cleanup (Robin, 2026-10-31) ═══════════════════════
+   The seven folds end in quiet text links (the prototype), not boxed buttons;
+   Admin and Sign out moved into Settings. The sidebar is a fixed clamp width now -
+   no collapse toggle, no drag-resize handle, no origami right-margin. */
+.nav-foldfoot { margin-top:auto; padding-top:16px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px 18px; font-family:var(--k-sans); font-size:13.5px; color:var(--ink-3); }
+.nff { cursor:pointer; transition:color .15s ease; white-space:nowrap; }
+.nff:hover { color:var(--ink); }
+.nff.on { color:var(--accent); }
+.nav-toggle, .nav-resize { display:none !important; }

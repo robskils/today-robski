@@ -4016,7 +4016,7 @@ function renderSettings() {
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span><span class="set-sec-h-r">${tab === 'account' && state.onbSeen ? `<button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Getting started</button>` : ''}${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</span></div>
       ${panes[tab] || ''}
     </section>
-    ${state.me ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || state.me.email || '')}</b> · ${esc(planLabel(state.me.plan))} · <button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
+    ${state.me ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || state.me.email || '')}</b> · ${esc(planLabel(state.me.plan))} · ${state.me.id === 1 ? `<button class="su-signout" data-open-admin>Admin</button> · ` : ''}<button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
 }
 
 // ── Import ────────────────────────────────────────────────────────────────
@@ -4950,15 +4950,11 @@ function renderNav() {
       ${navFoldsHtml(v)}
       ${navMobileListHtml(v)}
       ${navPeopleMobileHtml(v)}
-      <div class="nav-bottom">
-        <div class="nav-bottom-row">
-          <button class="nav-theme nav-guide ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide title="${t('nav.guide')}"><span class="ns-ic">ⓘ</span><span class="ns-lbl"> ${t('nav.guide')}</span></button>
-          ${themeLocked() ? '' : `<button class="nav-theme" data-theme-toggle title="Theme — Auto follows local sunrise &amp; sunset; press to override">${themeLabel()}</button>`}
-          <button class="nav-theme nav-settings ${v.type === 'settings' ? 'on' : ''}" data-open-settings title="${t('nav.settings')}"><span class="ns-ic">⚙</span><span class="ns-lbl"> ${t('nav.settings')}</span></button>
-        </div>
-        ${(state.me && state.me.id === 1) ? `<button class="nav-theme nav-adminlink ${v.type === 'admin' ? 'on' : ''}" data-open-admin title="Admin dashboard"><span class="ns-ic">🛠</span><span class="ns-lbl"> ${t('nav.admin')}</span></button>` : ''}
-        ${state.me ? `<button class="nav-theme nav-signout" data-account-signout title="Sign out of Koyeba on this device"><span class="ns-ic">↪</span><span class="ns-lbl"> ${t('nav.signout')}</span></button>` : ''}
-        <div class="nav-legal"><a href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy</a><span>·</span><a href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms</a><span>·</span><a href="mailto:contact@koyeba.co">Contact</a><span class="nav-legal-c">© ${new Date().getFullYear()} Koyeba</span></div>
+      <div class="nav-foldfoot">
+        ${themeLocked() ? '' : `<span class="nff" data-theme-toggle title="Theme - Auto follows your local sunrise &amp; sunset">${themeLabel()}</span>`}
+        <span class="nff ${v.type === 'settings' ? 'on' : ''}" data-open-settings>${t('nav.settings')}</span>
+        <span class="nff ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide>${t('nav.guide')}</span>
+        <span class="nff" data-open-getstarted>Welcome</span>
       </div>
     </div>
     <div class="nav-drawer-bg" data-nav-drawer-close></div>`;

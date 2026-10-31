@@ -11,7 +11,7 @@
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Koyeba</title>
-<link rel="icon" href="/favicon.svg?v=202610311326">
+<link rel="icon" href="/favicon.svg?v=202610311410">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v14.png">
@@ -22,8 +22,8 @@
 <meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1e2b23" media="(prefers-color-scheme: dark)">
 <!-- Fonts are self-hosted via koyeba.css (@font-face): Cormorant Garamond + Jost only. No Google Fonts link. -->
-<link rel="stylesheet" href="/koyeba.css?v=202610311326">
-<link rel="stylesheet" href="/life.css?v=202610311326">
+<link rel="stylesheet" href="/koyeba.css?v=202610311410">
+<link rel="stylesheet" href="/life.css?v=202610311410">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
@@ -45,12 +45,7 @@
 </script>
 </head>
 <body>
-  <!-- The Koyeba world: a real sumi-e ink painting (Sesshu Toyo, "Autumn and Winter
-       Landscape", 1470s, public domain) as the ground the app floats on - desaturated,
-       blurred and low-opacity in life.css so it reads as atmosphere. Fixed, non-interactive. -->
-  <div class="zen-bg" aria-hidden="true"></div>
   <div class="app-shell">
-    <button class="nav-toggle" data-nav-toggle type="button" aria-label="Hide or show the sidebar" title="Hide / show sidebar"><span class="ntg-c">«</span><span class="ntg-o">»</span></button>
     <aside class="nav" id="nav"></aside>
     <main class="main">
       <div class="tabstrip" id="tabstrip"></div>
@@ -60,7 +55,7 @@
   <button class="undo-fab" id="undo-fab" data-undo type="button" aria-label="Undo the last change" title="Undo"><span class="uf-ic" aria-hidden="true">↶</span><span class="uf-l">Undo</span></button>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202610311326"></script>
-  <script src="/app.js?v=202610311326"></script>
+  <script src="/qrcode.min.js?v=202610311410"></script>
+  <script src="/app.js?v=202610311410"></script>
 </body>
 </html>
