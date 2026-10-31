@@ -287,6 +287,12 @@ document.addEventListener('keydown', (ev) => {
 });
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
+// Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
+document.addEventListener('keydown', (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === '.' || ev.code === 'Period')) {
+    if (!state.me) return; ev.preventDefault(); const c = capState(); c.open = !c.open; renderCapBar(true);
+  } else if (ev.key === 'Escape' && state.cap && state.cap.open) { ev.preventDefault(); capCancel(); }
+});
 document.addEventListener('paste', (ev) => {
   if (!document.getElementById('flyer')) return;
   const items = (ev.clipboardData && ev.clipboardData.items) || [];
@@ -4974,6 +4980,7 @@ function renderNav() {
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
   queueNavH();
+  try { renderCapBar(); } catch (e) {}   // keep the floating "Set it down" bar mounted across views
 }
 // The mobile tools bar (Information, Colour Scheme, Settings) is hidden until you
 // tap the ⋯ toggle on the fixed brand header. Re-measure so the breadcrumb below
@@ -6886,7 +6893,7 @@ function kFoldH(key, title, hint, eyebrow) {
   const body = eyebrow
     ? `<span class="kf-eyebrow">${esc(title)}</span>`
     : `<span class="kf-name">${esc(title)}</span>${hint ? `<span class="kf-hint">${esc(hint)}</span>` : ''}`;
-  return `<div class="kf-h${eyebrow ? ' kf-h-eyebrow' : ''}" data-kfold="${esc(key)}" role="button" tabindex="0">${body}<span class="kf-sign" aria-hidden="true">${kOpen(key) ? '−' : '+'}</span></div>`;
+  return `<div class="kf-h${eyebrow ? ' kf-h-eyebrow' : ''}" data-hfold="${esc(key)}" role="button" tabindex="0">${body}<span class="kf-sign" aria-hidden="true">${kOpen(key) ? '−' : '+'}</span></div>`;
 }
 // A compact money string for the ledger: €540, €1.2k, €12k.
 function kMoneyShort(n) { const c = appCurrency(); n = Math.round(Number(n) || 0); if (n >= 10000) return c[1] + Math.round(n / 1000) + 'k'; if (n >= 1000) return c[1] + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'; return c[1] + n.toLocaleString(c[2]); }
@@ -7007,6 +7014,176 @@ function homeLineEveningHtml() {
     <span class="kline-b"><span class="kline-name">${esc(hex.name)}</span><span class="kline-label">I Ching · ${esc(hex.py)}</span><span class="kline-text">${esc(hex.text)}</span></span>
   </button>`;
 }
+// ── Capture ("Set it down", ⌘.) ─────────────────────────────────────────────
+// The prototype's floating capture bar: write it as you'd say it ("dentist
+// Tuesday at 9am") and a rule-based parser (NOT AI) works out what it is, when,
+// which Space and the reminders, shows a readout you can tap to correct, then
+// files it into the real app - a calendar event, a task, a note or a spend.
+// Speak uses the browser's own speech recognition where available.
+// Reference: design/koyeba/Koyeba App.dc.html. (Robin, 2026-10-31.)
+const CAP_WD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const CAP_TYPES = ['Event', 'Task', 'Note', 'Spend'];
+function capState() { state.cap = state.cap || { open: false, text: '', ov: {}, rec: false, recT: 0 }; return state.cap; }
+function capNextWeekday(wdIdx, next) {
+  const now = new Date(); let add = (wdIdx - now.getDay() + 7) % 7; if (next) add += 7;
+  const d = new Date(now); d.setDate(now.getDate() + add); return d;
+}
+// The rule-based reader. Returns what it made of the line; nothing is sent until
+// you press Set down. Spaces are matched against your own Space names.
+function parseCap(raw0) {
+  const raw = String(raw0 || '').replace(/[‘’]/g, "'");
+  const t = raw.toLowerCase();
+  const nextWk = /\bnext\s+(mon|tue|wed|thu|fri|sat|sun)/.test(t);
+  let date = null, dateLabel = '';
+  const setDay = (d) => { date = dayKey(d); dateLabel = d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' }); };
+  if (/\btoday\b|\btonight\b/.test(t)) setDay(new Date());
+  else if (/\btomorrow\b/.test(t)) { const d = new Date(); d.setDate(d.getDate() + 1); setDay(d); }
+  else { for (let i = 0; i < 7; i++) { if (new RegExp('\\b' + CAP_WD[i].slice(0, 3) + '(\\w*)?\\b').test(t)) { setDay(capNextWeekday(i, nextWk)); break; } } }
+  let time = null, m = t.match(/\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/) || t.match(/\bat\s+(\d{1,2})(?:[:.](\d{2}))?\b/) || t.match(/\b(\d{1,2})[:.](\d{2})\b/);
+  if (m) { let h = +m[1]; const mi = m[2] || '00'; if (m[3] === 'pm' && h < 12) h += 12; if (m[3] === 'am' && h === 12) h = 0; if (!m[3] && h < 8) h += 12; time = String(h).padStart(2, '0') + ':' + mi; }
+  else if (/\bnoon|midday\b/.test(t)) time = '12:00';
+  let amount = null; const am = t.match(/[€£$]\s?(\d+(?:[.,]\d{1,2})?)/) || t.match(/\b(\d+(?:[.,]\d{1,2})?)\s?(?:euros?|quid|pounds?|dollars?)\b/);
+  if (am) amount = parseFloat(am[1].replace(',', '.'));
+  let type = 'Note';
+  if (/[€£$]|\bspent\b|\bpaid\b|\bbought\b/.test(t) && amount != null) type = 'Spend';
+  else if (/remind me|need to|must|don'?t forget|\bbuy\b|\bcall\b|\bbook\b|\bpay\b|\bsend\b|\border\b|\bemail\b|\bfinish\b|\bsort\b/.test(t) && !time) type = 'Task';
+  else if (date || time) type = 'Event';
+  let area = '', areaHit = '';
+  for (const a of (state.areas || [])) {
+    const title = (a.title || '').toLowerCase().trim(); if (!title) continue;
+    const cands = [title, ...title.split(/\s+/)].filter((w) => w.length >= 3);
+    for (const w of cands) { if (new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(t)) { area = a.id; areaHit = w; break; } }
+    if (area) break;
+  }
+  let title = raw.replace(/^\s*(i'?ve got|i have got|i have|i've|ive got|got|remind me to|remind me|i need to|need to|don'?t forget to|don'?t forget)\s+/i, '')
+    .replace(/\s*\b(next\s+)?(on\s+)?(today|tonight|tomorrow|mon(day)?|tue(s|sday)?|wed(nesday)?|thu(rs|rsday)?|fri(day)?|sat(urday)?|sun(day)?)\b/ig, '')
+    .replace(/\s*\bat\s+(\d{1,2}([:.]\d{2})?\s*(am|pm)?|noon|midday)\b/ig, '')
+    .replace(/\s*\b\d{1,2}([:.]\d{2})?\s*(am|pm)\b/ig, '')
+    .replace(/[€£$]\s?\d+(?:[.,]\d{1,2})?/g, '')
+    .replace(/^the\s+/i, '').replace(/\s{2,}/g, ' ').trim();
+  title = title ? title[0].toUpperCase() + title.slice(1) : '';
+  const appt = /dentist|doctor|\bgp\b|vet|hospital|appointment|interview|flight|train|haircut/.test(t);
+  let rem = [], why = '';
+  if (type === 'Event') { if (time) { rem = appt ? ['The evening before', '1 hour before'] : ['30 minutes before']; why = appt ? 'An appointment - a nudge the night before, and one in time to leave.' : 'Half an hour’s notice.'; } else { rem = ['09:00 on the day']; why = 'All day, so a morning nudge.'; } }
+  else if (type === 'Task') { rem = date ? ['09:00 on the day'] : []; why = date ? 'It comes back on the day.' : 'It rests in Tasks until you need it.'; }
+  if (appt && /dentist/.test(t) && !title) title = 'Dentist';
+  return { title, type, date, dateLabel, time, amount, area, areaHit, rem, why };
+}
+const capAreaTitle = (id) => { const a = areaById(id); return a ? (a.title || '') : ''; };
+function capReadoutHtml() {
+  const c = capState(); const raw = (c.text || '').trim();
+  if (!raw) {
+    const ex = ['Dentist on Tuesday at 9am', 'Remind me to call Mum tomorrow', 'Movers quote €640'];
+    return `<div class="cap-hints">Write it, or press Speak and say it. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x)}”</button>`).join('')}</div>`;
+  }
+  const P = parseCap(raw); const type = c.ov.type || P.type; const area = c.ov.area !== undefined ? c.ov.area : P.area;
+  const aName = area ? capAreaTitle(area) : ''; const aNum = area ? areaNumeral(area) : '';
+  const whenTxt = (type === 'Event' || type === 'Task')
+    ? (P.date ? (P.dateLabel + (P.time ? ' · ' + P.time : ' · all day')) : (P.time ? 'Today · ' + P.time : 'No date - it rests until you need it'))
+    : '';
+  const row = (k, v, note, num, attr) => `<div class="cap-row"><span class="cap-rk">${esc(k)}</span><div class="cap-rv${attr ? ' cap-rv-tap' : ''}" ${attr || ''} ${attr ? 'role="button" tabindex="0"' : ''}><span class="cap-rvt">${num ? `<i>${esc(num)}</i> ` : ''}${esc(v)}</span>${note ? `<span class="cap-rnote">${esc(note)}</span>` : ''}</div></div>`;
+  const rows = [row('What', P.title || '…', '', '')];
+  rows.push(row('As', type, c.ov.type ? 'your choice' : '', '', 'data-cap-type'));
+  if (type === 'Event' || type === 'Task') rows.push(row('When', whenTxt, '', ''));
+  if (type === 'Spend') rows.push(row('Amount', kMoneyShort(P.amount || 0), P.amount == null ? 'add a number' : '', ''));
+  rows.push(row('Into', aName || 'Unfiled', (area && c.ov.area === undefined && P.areaHit) ? ('guessed from “' + P.areaHit + '”') : '', aNum, 'data-cap-space'));
+  if (P.rem.length && (type === 'Event' || type === 'Task')) rows.push(row('Remind', P.rem.join(' · '), P.why, ''));
+  const foot = type === 'Spend' ? 'Logged to Money.' : type === 'Event' ? 'Lands in your calendar.' : type === 'Task' ? 'Comes back when it’s due.' : 'Kept as a note, found with ⌘K.';
+  return `<div class="cap-reads-h">Koyeba reads this as - tap a line to change it</div>
+    <div class="cap-reads">${rows.join('')}</div>
+    <div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>Set down ↵</button></div>`;
+}
+function capRecHtml() {
+  const c = capState();
+  const bars = Array.from({ length: 40 }, (_, i) => `<span class="cap-wave" style="height:${18 + Math.round(60 * Math.abs(Math.sin(Date.now() / 300 + i / 3)))}%"></span>`).join('');
+  return `<div class="cap-rec"><span class="cap-rec-l">Listening…</span><div class="cap-waves">${bars}</div><span class="cap-rectime" id="cap-rectime">${capFmtTime(c.recT)}</span><button class="cap-rec-stop" data-cap-recstop><span class="cap-bar-dot"></span>Done</button></div>${c.text ? `<div class="cap-interim" id="cap-interim">${esc(c.text)}</div>` : '<div class="cap-interim" id="cap-interim"></div>'}`;
+}
+function capFmtTime(s) { s = s || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function updateCapReadout() { const el = document.getElementById('cap-readout'); if (el) el.innerHTML = capReadoutHtml(); }
+function renderCapBar(force) {
+  // Only in the signed-in app, and never over a full-screen overlay.
+  if (!state.me || document.getElementById('flyer') || (state.view && /^(onboarding|signin|welcome)$/.test(state.view.type || ''))) { const r = document.getElementById('cap-root'); if (r) r.remove(); return; }
+  let root = document.getElementById('cap-root');
+  if (!root) { root = document.createElement('div'); root.id = 'cap-root'; document.body.appendChild(root); }
+  const c = capState();
+  const sig = JSON.stringify([c.open, c.rec, c.ov, (c.text || '').length > 0]);
+  if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
+  root.dataset.sig = sig;
+  if (!c.open) {
+    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down…</span><span class="cap-bar-speak" data-cap-speak-open><span class="cap-bar-dot"></span>Speak</span><span class="cap-bar-kbd">⌘ .</span></button>`;
+    return;
+  }
+  root.className = 'cap-open';
+  root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set it down">
+    <div class="cap-dh"><span class="cap-rule"></span><span class="cap-eyebrow">Set it down</span><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
+    ${c.rec ? capRecHtml() : `<div class="cap-input-row"><input id="cap-input" class="cap-input" value="${esc(c.text || '')}" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false"><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}
+    <div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>
+  </div>`;
+  if (!c.rec) {
+    const i = document.getElementById('cap-input');
+    if (i) {
+      i.addEventListener('input', () => { capState().text = i.value; updateCapReadout(); });
+      i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });
+      setTimeout(() => { i.focus(); const v = i.value; i.value = ''; i.value = v; }, 60);
+    }
+  }
+}
+function capOpen() { const c = capState(); c.open = true; renderCapBar(true); }
+function capCancel() { const c = capState(); if (c.rec) capStopRec(); c.open = false; renderCapBar(true); }
+function capStartRec() {
+  const c = capState(); if (c.rec) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('Voice input isn’t available in this browser - type it instead.'); const i = document.getElementById('cap-input'); if (i) i.focus(); return; }
+  c.rec = true; c.recT = 0; c.text = ''; renderCapBar(true);
+  const t0 = Date.now();
+  c._recI = setInterval(() => { c.recT = Math.floor((Date.now() - t0) / 1000); const el = document.getElementById('cap-rectime'); if (el) el.textContent = capFmtTime(c.recT); }, 500);
+  try {
+    const r = new SR(); r.lang = 'en-GB'; r.interimResults = true; r.continuous = false; c._sr = r;
+    r.onresult = (e) => { let s = ''; for (const x of e.results) s += x[0].transcript; c.text = s; const el = document.getElementById('cap-interim'); if (el) el.textContent = s; };
+    r.onerror = () => capStopRec();
+    r.onend = () => { if (c.rec) capStopRec(); };
+    r.start();
+  } catch (e) { capStopRec(); toast('Could not start voice input.'); }
+}
+function capStopRec() {
+  const c = capState(); clearInterval(c._recI); try { c._sr && c._sr.stop(); } catch (e) {} c._sr = null; c.rec = false;
+  renderCapBar(true);
+  setTimeout(() => { const i = document.getElementById('cap-input'); if (i) { i.value = c.text || ''; i.focus(); } }, 60);
+}
+function capRefreshHome() {
+  if (!(state.view && state.view.type === 'home')) return;
+  state.home.tomorrow = undefined; state.home._mailAt = 0; if (state.financial) state.financial.txns = null;
+  api('/api/day').then((d) => { if (d) { state.home.events = d.events || []; state.home.slots = d.slots || []; } }).catch(() => {}).finally(() => { if (state.view && state.view.type === 'home') renderHome(); });
+  api('/api/home/alerts').then((a) => { if (a) { state.home.alerts = a; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+}
+async function submitCap() {
+  const c = capState(); const raw = (c.text || '').trim();
+  if (!raw) { capCancel(); return; }
+  const P = parseCap(raw); const type = c.ov.type || P.type; const area = c.ov.area !== undefined ? c.ov.area : P.area;
+  try {
+    if (type === 'Event') {
+      const day = P.date || dayKey(new Date());
+      const body = P.time ? { title: P.title || 'Event', day, start_min: (+P.time.slice(0, 2)) * 60 + (+P.time.slice(3, 5)), duration: 60 } : { title: P.title || 'Event', day, allDay: true };
+      if (area) body.area = area;
+      await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
+      toast(`${P.title || 'Event'} — ${P.date ? P.dateLabel : 'today'}${P.time ? ' at ' + P.time : ''}.`);
+    } else if (type === 'Task') {
+      const props = {}; if (area) props.area = area; if (P.date) props.due = P.date;
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: P.title || raw, props }) });
+      toast(`Task set down${area ? ' in ' + capAreaTitle(area) : ''}.`);
+    } else if (type === 'Spend') {
+      const props = { date: P.date || dayKey(new Date()), amount: -(P.amount || 0), category: area ? capAreaTitle(area) : 'Unfiled' };
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'txn', title: P.title || 'Spend', props }) });
+      toast(`Logged ${kMoneyShort(P.amount || 0)}${area ? ' to ' + capAreaTitle(area) : ''}.`);
+    } else {
+      const props = area ? { area, areas: [area] } : {};
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: P.title || raw, props }) });
+      toast(`Set down${area ? ' in ' + capAreaTitle(area) : ''}. Find it with ⌘K.`);
+    }
+  } catch (e) { toast((e && e.message) || 'Could not set that down.'); return; }
+  c.open = false; c.text = ''; c.ov = {}; c.rec = false; renderCapBar(true);
+  capRefreshHome();
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   if (homeSecDrag) return;   // never rebuild the DOM out from under an in-progress section drag
@@ -7042,7 +7219,7 @@ function renderHome() {
           <div class="home-col home-col-l">${(() => {
             const off = state.home.dayOffset || 0;
             const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-            const todayH = `<div class="kf-h kf-h-today" data-kfold="today" role="button" tabindex="0"><span class="kf-name">${esc(homeDayLabel(off))}</span><span class="kf-hint">Events and plans</span><span class="kf-nav">${dayNav}</span><span class="kf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
+            const todayH = `<div class="kf-h kf-h-today" data-hfold="today" role="button" tabindex="0"><span class="kf-name">${esc(homeDayLabel(off))}</span><span class="kf-hint">Events and plans</span><span class="kf-nav">${dayNav}</span><span class="kf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
             const spacesN = (state.areas || []).length;
             const today = `<section class="khome-sec khome-today">${todayH}${kOpen('today') ? homeTimelineHtml() : ''}</section>`;
             const spaces = modOn('areas') ? `<section class="khome-sec khome-spaces">${kFoldH('kspaces', 'Your spaces', spacesN ? (spacesN + (spacesN === 1 ? ' space' : ' spaces')) : '')}${kOpen('kspaces') ? homeSpacesTilesHtml() : ''}</section>` : '';
@@ -22386,8 +22563,19 @@ document.addEventListener('click', (e) => {
   // Koyeba Home ledger: tapping a cell opens its rows (one open at a time).
   { const kl = t.closest('[data-kled]'); if (kl) { const k = kl.dataset.kled; state.home.ledgerOpen = state.home.ledgerOpen === k ? null : k; renderHome(); return; } }
   // Koyeba Home fold headers (Today / Your spaces / Coming into view / the line /
-  // Notepad): +/− toggle, state kept in the shared collapse store.
-  { const kf = t.closest('[data-kfold]'); if (kf) { kToggle(kf.dataset.kfold); return; } }
+  // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
+  // stay clear of the nav's own data-kfold.)
+  { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
+  // Capture ("Set it down"): the floating bar, the drawer and its readout taps.
+  if (t.closest('[data-cap-speak-open]')) { const c = capState(); if (!c.open) { c.open = true; renderCapBar(true); } capStartRec(); return; }
+  if (t.closest('[data-cap-open]')) { capOpen(); return; }
+  if (t.closest('[data-cap-close]')) { capCancel(); return; }
+  if (t.closest('[data-cap-submit]')) { submitCap(); return; }
+  if (t.closest('[data-cap-speak]')) { capStartRec(); return; }
+  if (t.closest('[data-cap-recstop]')) { capStopRec(); return; }
+  { const eg = t.closest('[data-cap-eg]'); if (eg) { const c = capState(); c.text = eg.dataset.capEg; c.ov = {}; renderCapBar(true); return; } }
+  { const ty = t.closest('[data-cap-type]'); if (ty) { const c = capState(); const cur = c.ov.type || parseCap((c.text || '').trim()).type; c.ov.type = CAP_TYPES[(CAP_TYPES.indexOf(cur) + 1) % CAP_TYPES.length]; updateCapReadout(); return; } }
+  { const sp = t.closest('[data-cap-space]'); if (sp) { const c = capState(); const ids = ['', ...(state.areas || []).map((a) => a.id)]; const cur = c.ov.area !== undefined ? c.ov.area : parseCap((c.text || '').trim()).area; c.ov.area = ids[(ids.indexOf(cur) + 1) % ids.length]; updateCapReadout(); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-import-run]')) { importRun(); return; }
