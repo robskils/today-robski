@@ -30,7 +30,7 @@
 }
 /* Koyeba night: deep forest, one gold accent (per the Brand Pack). Never navy. */
 :root[data-theme='dark'] {
-  --paper:#13241d; --paper-2:#1a2b23; --card:#1b2b24;
+  --paper:oklch(0.23 0.035 158); --paper-2:oklch(0.29 0.035 158); --card:oklch(0.26 0.035 158);   /* v7 night: lighter, warmer deep-forest (§14) */
   --ink:#ece7df; --ink-2:rgba(236,231,223,.64); --ink-3:rgba(236,231,223,.42);
   --line:rgba(236,231,223,.14); --line-2:rgba(236,231,223,.24); --pat-ink:rgba(236,231,223,.06); --fold-pat:rgba(216,178,94,.3); --body-crease:rgba(216,178,94,.04); --facet-a:rgba(255,250,240,.04); --facet-b:rgba(0,0,0,.14);
   --accent:#d8b25e; --accent-ink:#13241d; --gold:#d8b25e; --done:#d8b25e;
@@ -2636,7 +2636,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    swaps to the ivory-stroke version. (Koyeba, 2026-10-30.) */
 .brand-mark { display:inline-block; width:1.22em; height:1em; margin:0 .24em; vertical-align:-.14em;
   background:url(/brand/mandombe-ko-ink.svg) center/contain no-repeat; }
-body.night .brand-mark { background-image:url(/brand/mandombe-ko-ivory.svg); }
+body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:url(/brand/mandombe-ko-ivory.svg); }
 /* The wordmark: "Koyeba" in Cormorant Garamond 500 with a gold full stop. */
 .brand-word { font-family:var(--k-serif); font-style:normal; font-weight:500; letter-spacing:0; text-transform:none; }
 .brand-dot { color:var(--k-gold,#c99a3e); font-style:normal; }

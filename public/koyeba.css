@@ -31,16 +31,20 @@
 }
 
 /* ── Night: deep forest green — never blue-grey, navy or black ────────────── */
-body.night{
-  --k-bg:oklch(0.19 0.02 160);
-  --k-panel:oklch(0.22 0.022 160);
-  --k-soft:oklch(0.25 0.024 160);
+body.night, :root[data-theme='dark']{
+  /* v7 night: a lighter, warmer deep-forest (hue 158, more chroma). Keyed to
+     data-theme='dark' as well as body.night, so these tokens actually swap in
+     the app (which uses data-theme), not just the prototype - the fix behind
+     §14's "night mode across the whole app". (Robin, 2026-11-01.) */
+  --k-bg:oklch(0.23 0.035 158);
+  --k-panel:oklch(0.26 0.035 158);
+  --k-soft:oklch(0.29 0.035 158);
   --k-ink:oklch(0.94 0.012 85);
   --k-mute:oklch(0.74 0.02 80);
-  --k-line:oklch(0.33 0.02 160);
+  --k-line:oklch(0.36 0.03 158);
   --k-gold:oklch(0.74 0.12 76);
   --k-goldt:oklch(0.80 0.11 78);
-  --k-deep:oklch(0.14 0.02 160);
+  --k-deep:oklch(0.18 0.035 158);
   --k-ondeep:oklch(0.94 0.012 85);
   /* --k-ongold stays the day ink: text on gold is always dark. */
 }
