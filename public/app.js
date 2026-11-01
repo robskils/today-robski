@@ -304,6 +304,23 @@ document.addEventListener('keydown', (ev) => {
 document.addEventListener('input', (ev) => { const el = ev.target; if (el && el.matches && el.matches('#notepad-root [data-pad-id]')) { notepadInput(el.dataset.padId, el.value); el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; const line = el.closest('.np-line'); if (line) line.classList.toggle('np-empty', !el.value.trim()); } }, true);
 document.addEventListener('mousedown', (ev) => { const t = ev.target; const sd = t.closest && t.closest('[data-pad-send]'); if (sd) { ev.preventDefault(); notepadSetDown(sd.dataset.padSend); } });
 document.addEventListener('click', (ev) => { const t = ev.target; if (!t.closest) return; if (t.closest('[data-notepad-open]')) { ev.preventDefault(); notepadToggle(); return; } if (t.closest('[data-notepad-close]')) { ev.preventDefault(); notepadClose(); return; } if (t.closest('[data-pad-undo]')) { ev.preventDefault(); notepadUndo(); return; } });
+// §18 Side by side: shift-click opens an item beside (caught in the capture
+// phase, before the normal open); the divider resizes; Esc or Fold away closes.
+document.addEventListener('click', (ev) => {
+  if (ev.shiftKey && !ev.metaKey && !ev.ctrlKey && !ev.altKey && ev.target.closest) {
+    for (const kind of ['note', 'table', 'task', 'goal', 'contact', 'area', 'bookmark']) { const el = ev.target.closest('[data-open-' + kind + ']'); if (el) { const id = el.getAttribute('data-open-' + kind); if (id && !/^#/.test(id)) { ev.preventDefault(); ev.stopPropagation(); openBeside(kind, id); } return; } }
+  }
+  const bc = ev.target.closest && ev.target.closest('[data-beside-close]'); if (bc) { ev.preventDefault(); closeBeside(); }
+}, true);
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.split && !notepadState().open) { closeBeside(); } });
+document.addEventListener('mousedown', (ev) => {
+  const d = ev.target.closest && ev.target.closest('#pane-div'); if (!d || !state.split) return; ev.preventDefault();
+  const main = splitMain(); if (!main) return; const r = main.getBoundingClientRect(); document.body.classList.add('split-dragging');
+  const move = (e) => { let ratio = (e.clientX - r.left) / r.width; ratio = Math.max(0.3, Math.min(0.7, ratio)); state.split.ratio = ratio; main.style.setProperty('--split-ratio', (ratio * 100) + '%'); };
+  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); document.body.classList.remove('split-dragging'); };
+  document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+});
+document.addEventListener('dblclick', (ev) => { const d = ev.target.closest && ev.target.closest('#pane-div'); if (d && state.split) { state.split.ratio = 0.5; const main = splitMain(); if (main) main.style.setProperty('--split-ratio', '50%'); } });
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -7341,6 +7358,48 @@ function renderNotepad() {
   const trigger = `<button class="np-trigger${open ? ' on' : ''}" data-notepad-open title="Notepad (⌘ ;)"><span class="np-trig-t">Notepad</span>${live ? `<span class="np-trig-c">${live}</span>` : ''}</button>`;
   notepadRoot().innerHTML = `${popover}${toastHtml}${trigger}`;
   if (open) { notepadGrow(); const fid = np._focusId; np._focusId = null; if (fid) setTimeout(() => notepadFocus(fid), 15); }
+}
+// ── §18 Side by side: a second, resizable pane (v1) ───────────────────────
+// Opt-in and off by default - single-pane use is untouched. Shift-click any
+// item (or an open email's "Make … beside") opens it in a second pane beside the
+// first, with a draggable 1px divider (30-70%, double-click resets to half).
+// Fold away or Esc closes it. (Drag-to-join, kept pairs and the mobile flip are
+// a later pass; this ships the core two-pane view behind an opt-in.)
+const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'The long game', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Inner life' };
+function splitMain() { return document.querySelector('.main'); }
+function splitEls() {
+  const main = splitMain(); if (!main) return {};
+  let div = document.getElementById('pane-div'); let p2 = document.getElementById('pane2');
+  if (!div) { div = document.createElement('div'); div.id = 'pane-div'; div.className = 'pane-div'; div.title = 'Drag to resize · double-click for half and half'; div.innerHTML = '<span class="pane-div-line"></span>'; main.appendChild(div); }
+  if (!p2) { p2 = document.createElement('div'); p2.id = 'pane2'; p2.className = 'pane pane2'; main.appendChild(p2); }
+  return { main, div, p2 };
+}
+function openBeside(kind, id) {
+  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) { try { Promise.resolve(openView({ type: kind, id })).catch(() => {}); } catch {} return; }  // one pane at a time on mobile (full §18 flip is a later pass)
+  state.split = { kind, id, ratio: (state.split && state.split.ratio) || 0.5 };
+  document.body.classList.add('split');
+  const { main } = splitEls();
+  if (main) main.style.setProperty('--split-ratio', (state.split.ratio * 100) + '%');
+  renderBeside();
+}
+function closeBeside() { state.split = null; document.body.classList.remove('split'); const d = document.getElementById('pane-div'); if (d) d.remove(); const p = document.getElementById('pane2'); if (p) p.remove(); }
+function besideItemHtml(b, kind) {
+  const p = b.props || {};
+  const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Beside')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  let body;
+  if (kind === 'note') body = `<div class="pane2-body prose">${sanitizeProse(b.body || '') || '<p class="pane2-empty">Nothing in this note yet.</p>'}</div>`;
+  else if (kind === 'task') body = `<div class="pane2-body"><div class="pane2-meta">${p.priority ? esc(p.priority) + ' · ' : ''}${p.done ? 'Done' : 'Open'}${p.area && areaById(p.area) ? ' · ' + esc(areaById(p.area).title) : ''}</div>${b.body ? `<div class="prose">${sanitizeProse(b.body)}</div>` : ''}</div>`;
+  else if (kind === 'goal') { const pct = gPct(b); body = `<div class="pane2-body"><div class="pane2-prog"><div class="kg-prog-line"><i style="width:${pct}%"></i></div><div class="kg-prog-pct">${pct}%</div></div><div class="pane2-meta">${esc(gGoalMeta(b))}</div>${p.why ? `<div class="pane2-why">${esc(p.why)}</div>` : ''}</div>`; }
+  else if (kind === 'area') body = `<div class="pane2-body"><div class="pane2-vision">${esc((p.vision || '').trim() || 'No vision yet.')}</div></div>`;
+  else if (kind === 'contact') body = `<div class="pane2-body"><div class="pane2-meta">${esc(p.role || p.email || '')}</div></div>`;
+  else body = `<div class="pane2-body"><div class="pane2-meta">${esc(p.url || '')}</div></div>`;
+  return head + body;
+}
+async function renderBeside() {
+  const s = state.split; if (!s) return; const { p2 } = splitEls(); if (!p2) return;
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Beside')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  try { const b = await api('/api/blocks/' + s.id); if (state.split && state.split.id === s.id) p2.innerHTML = besideItemHtml(b, s.kind); }
+  catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`; }
 }
 // ── Today, by area (Koyeba §19) ─────────────────────────────────────────────
 // A quiet counts line - emails to sort, things to do, events tomorrow. No money
