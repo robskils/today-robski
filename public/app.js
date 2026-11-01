@@ -293,6 +293,17 @@ document.addEventListener('keydown', (ev) => {
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
   ev.preventDefault(); navBack();
 });
+// §20 Notepad: ⌘; toggles it, Esc closes it, and the line keys (↵ / Backspace /
+// ↑ / ↓) are handled per textarea; input autosaves; "Set down →" fires on
+// mousedown so it beats the textarea blur; the trigger / Close / Undo are clicks.
+document.addEventListener('keydown', (ev) => {
+  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && ev.key === ';') { ev.preventDefault(); notepadToggle(); return; }
+  if (ev.key === 'Escape' && notepadState().open) { ev.preventDefault(); notepadClose(); return; }
+  const el = ev.target; if (el && el.matches && el.matches('#notepad-root [data-pad-id]')) notepadKey(ev, el.dataset.padId);
+});
+document.addEventListener('input', (ev) => { const el = ev.target; if (el && el.matches && el.matches('#notepad-root [data-pad-id]')) { notepadInput(el.dataset.padId, el.value); el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; const line = el.closest('.np-line'); if (line) line.classList.toggle('np-empty', !el.value.trim()); } }, true);
+document.addEventListener('mousedown', (ev) => { const t = ev.target; const sd = t.closest && t.closest('[data-pad-send]'); if (sd) { ev.preventDefault(); notepadSetDown(sd.dataset.padSend); } });
+document.addEventListener('click', (ev) => { const t = ev.target; if (!t.closest) return; if (t.closest('[data-notepad-open]')) { ev.preventDefault(); notepadToggle(); return; } if (t.closest('[data-notepad-close]')) { ev.preventDefault(); notepadClose(); return; } if (t.closest('[data-pad-undo]')) { ev.preventDefault(); notepadUndo(); return; } });
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -5083,6 +5094,7 @@ function navGroupsHtml(v) {
     </div>`).join('');
     contents = `<div class="knav-contents">
       <div class="knav-c-head"><span class="eyebrow">Contents</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to find</span></div>
+      <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
         ${themeLocked() ? '' : `<button class="nff" data-theme-toggle title="Theme">${themeLabel()}</button>`}
@@ -5134,6 +5146,7 @@ function renderNav() {
   syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
   queueNavH();
   try { renderCapBar(); } catch (e) {}   // keep the floating "Set it down" bar mounted across views
+  try { renderNotepad(); } catch (e) {}  // and the §20 Notepad trigger/popover
 }
 // The mobile tools bar (Information, Colour Scheme, Settings) is hidden until you
 // tap the ⋯ toggle on the fixed brand header. Re-measure so the breadcrumb below
@@ -7260,6 +7273,75 @@ async function submitCap() {
   c.open = false; c.text = ''; c.ov = {}; c.rec = false; renderCapBar(true);
   capRefreshHome();
 }
+// ── §20 Notepad: a popover, not a Today section ───────────────────────────
+// One running page per person - never sorted, never tidied, always exactly as
+// left. Lines are auto-growing textareas on keylines; autosave, debounced and
+// synced. "Set down →" hands a line to Set something down (§15), keeping it
+// struck through here, with Undo. Opened bottom-left, with ⌘; or from Contents.
+function notepadState() { if (!state.notepad) state.notepad = { open: false, lines: null, savedAt: 0, toast: null, loaded: false }; return state.notepad; }
+function notepadLoad() {
+  const np = notepadState(); if (np.loaded) return; np.loaded = true;
+  api('/api/kv/notepad').then((r) => {
+    let lines = null; if (r && r.value) { try { lines = JSON.parse(r.value); } catch {} }
+    if (!Array.isArray(lines)) { const old = (state.home && state.home.notepad) || ''; lines = old ? old.split(/\n/).map((t, i) => ({ id: 'm' + i, text: t, done: null })) : []; }
+    np.lines = lines; renderNotepad();
+  }).catch(() => { np.lines = np.lines || []; renderNotepad(); });
+}
+function notepadLines() { const np = notepadState(); if (!Array.isArray(np.lines)) np.lines = []; const last = np.lines[np.lines.length - 1]; if (!last || last.text || last.done) np.lines.push({ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), text: '', done: null }); return np.lines; }
+function notepadSave() { const np = notepadState(); const keep = (np.lines || []).filter((l) => (l.text && l.text.trim()) || l.done); clearTimeout(np._t); np._t = setTimeout(() => { api('/api/kv/notepad', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keep) }) }).catch(() => {}); }, 600); np.savedAt = Date.now(); }
+function notepadLiveCount() { const np = notepadState(); return (np.lines || []).filter((l) => l.text && l.text.trim() && !l.done).length; }
+function notepadRoot() { let el = document.getElementById('notepad-root'); if (!el) { el = document.createElement('div'); el.id = 'notepad-root'; document.body.appendChild(el); } return el; }
+function notepadGrow() { document.querySelectorAll('#notepad-root [data-pad-id]').forEach((el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }); }
+function notepadFocus(id, end) { const el = document.querySelector(`#notepad-root [data-pad-id="${id}"]`); if (el) { el.focus(); if (end !== false) { const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } }
+function notepadToggle() { const np = notepadState(); np.open = !np.open; if (np.open) { const ls = notepadLines(); np._focusId = ls[ls.length - 1].id; } renderNotepad(); }
+function notepadClose() { const np = notepadState(); if (!np.open) return; np.open = false; renderNotepad(); }
+function notepadInput(id, val) { const np = notepadState(); const l = (np.lines || []).find((x) => x.id === id); if (l) { l.text = val; notepadSave(); } }
+function notepadKey(ev, id) {
+  const np = notepadState(); const ls = notepadLines(); const i = ls.findIndex((x) => x.id === id); if (i < 0) return; const el = ev.target;
+  if (ev.key === 'Enter') { ev.preventDefault(); const nl = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), text: '', done: null }; ls.splice(i + 1, 0, nl); notepadSave(); np._focusId = nl.id; renderNotepad(); }
+  else if (ev.key === 'Backspace' && !el.value && ls.length > 1) { ev.preventDefault(); const prev = ls[Math.max(0, i - 1)]; ls.splice(i, 1); notepadSave(); np._focusId = prev.id; renderNotepad(); }
+  else if (ev.key === 'ArrowUp' && i > 0 && el.selectionStart === 0) { ev.preventDefault(); notepadFocus(ls[i - 1].id); }
+  else if (ev.key === 'ArrowDown' && i < ls.length - 1 && el.selectionEnd === el.value.length) { ev.preventDefault(); notepadFocus(ls[i + 1].id); }
+}
+async function notepadSetDown(id) {
+  const np = notepadState(); const l = (np.lines || []).find((x) => x.id === id); if (!l || !l.text.trim()) return;
+  const raw = l.text.trim(); const P = parseCap(raw);
+  const typeLabel = { Event: 'an event', Task: 'a task', Spend: 'money', Note: 'a note' }[P.type] || 'a note';
+  try {
+    let created;
+    if (P.type === 'Event') { const day = P.date || dayKey(new Date()); const body = P.time ? { title: P.title || 'Event', day, start_min: (+P.time.slice(0, 2)) * 60 + (+P.time.slice(3, 5)), duration: 60 } : { title: P.title || 'Event', day, allDay: true }; if (P.area) body.area = P.area; created = await api('/api/events', { method: 'POST', body: JSON.stringify(body) }); l.itemKind = 'event'; }
+    else if (P.type === 'Task') { const props = {}; if (P.area) props.area = P.area; if (P.date) props.due = P.date; created = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: P.title || raw, props }) }); l.itemKind = 'task'; }
+    else if (P.type === 'Spend') { const props = { date: P.date || dayKey(new Date()), amount: -(P.amount || 0), category: P.area ? capAreaTitle(P.area) : 'Unfiled' }; created = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'txn', title: P.title || 'Spend', props }) }); l.itemKind = 'txn'; }
+    else { const props = P.area ? { area: P.area, areas: [P.area] } : {}; created = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: P.title || raw, props }) }); l.itemKind = 'note'; }
+    l.done = typeLabel; l.itemId = created && created.id;
+    notepadSave(); np.toast = `Set down as ${typeLabel}. Struck through here, not deleted.`; np._lastSent = id;
+    clearTimeout(np._toastT); np._toastT = setTimeout(() => { np.toast = null; renderNotepad(); }, 6000);
+    renderNotepad(); capRefreshHome();
+  } catch (e) { toast((e && e.message) || 'Could not set that down.'); }
+}
+async function notepadUndo() {
+  const np = notepadState(); const id = np._lastSent; const l = id && (np.lines || []).find((x) => x.id === id);
+  if (l) { try { if (l.itemId && l.itemKind === 'event') await api('/api/events/' + l.itemId, { method: 'DELETE' }).catch(() => {}); else if (l.itemId) await api('/api/blocks/' + l.itemId, { method: 'DELETE' }).catch(() => {}); } catch {} l.done = null; l.itemId = null; l.itemKind = null; notepadSave(); }
+  np.toast = null; renderNotepad(); capRefreshHome();
+}
+function renderNotepad() {
+  if (!state.me || document.getElementById('flyer') || (state.view && /^(onboarding|signin|welcome)$/.test(state.view.type || ''))) { const r = document.getElementById('notepad-root'); if (r) r.remove(); return; }
+  const np = notepadState();
+  if (np.lines == null) { notepadLoad(); return; }
+  const live = notepadLiveCount();
+  const open = np.open;
+  const lines = open ? notepadLines() : (np.lines || []);
+  const popover = open ? `<div class="np-scrim" data-notepad-close></div>
+    <div class="np-pop" role="dialog" aria-label="Notepad">
+      <div class="np-head"><span class="np-title">Notepad</span><span class="np-saved">${np.savedAt ? 'Kept · just now' : 'Kept'}</span><button class="np-close" data-notepad-close>Close · Esc</button></div>
+      <div class="np-list">${lines.map((l, i) => `<div class="np-line${l.done ? ' np-done' : ''}${(l.text && l.text.trim()) ? '' : ' np-empty'}"><textarea class="np-ta" rows="1" data-pad-id="${l.id}" ${l.done ? 'readonly' : ''} placeholder="${(i === lines.length - 1 && !l.done) ? 'Write anything…' : ''}">${esc(l.text || '')}</textarea>${l.done ? `<span class="np-where">→ ${esc(l.done)}</span>` : `<button class="np-send" data-pad-send="${l.id}" tabindex="-1">Set down →</button>`}</div>`).join('')}</div>
+      <div class="np-foot">Never sorted, never tidied. ↵ for a new line. Send any line on with “Set down →”.</div>
+    </div>` : '';
+  const toastHtml = np.toast ? `<div class="np-toast"><span>${esc(np.toast)}</span><button class="np-undo" data-pad-undo>Undo</button></div>` : '';
+  const trigger = `<button class="np-trigger${open ? ' on' : ''}" data-notepad-open title="Notepad (⌘ ;)"><span class="np-trig-t">Notepad</span>${live ? `<span class="np-trig-c">${live}</span>` : ''}</button>`;
+  notepadRoot().innerHTML = `${popover}${toastHtml}${trigger}`;
+  if (open) { notepadGrow(); const fid = np._focusId; np._focusId = null; if (fid) setTimeout(() => notepadFocus(fid), 15); }
+}
 // ── Today, by area (Koyeba §19) ─────────────────────────────────────────────
 // A quiet counts line - emails to sort, things to do, events tomorrow. No money
 // (§17/§19: money is optional and never pushed to Today).
@@ -7378,8 +7460,8 @@ function renderHome() {
   // c: the quiet things - Spaces, Notepad, A reading (folded by default).
   const spacesH = `<div class="home-fold-h" data-hfold="kspaces" role="button" tabindex="0"><span class="hf-name">Spaces</span><span class="hf-hint">Kept close</span><span class="hf-sign" aria-hidden="true">${kOpen('kspaces') ? '−' : '+'}</span></div>`;
   const spaces = modOn('areas') ? `<section class="home-sec2 home-spaces2">${spacesH}${kOpen('kspaces') ? homeSpacesColHtml() : ''}</section>` : '';
-  const padH = `<div class="home-fold-h" data-hfold="notepad" role="button" tabindex="0"><span class="hf-name">Notepad</span><span class="hf-hint">Loose thoughts</span><span class="hf-sign" aria-hidden="true">${kOpen('notepad') ? '−' : '+'}</span></div>`;
-  const pad = modOn('notepad') ? `<section class="home-sec2 home-pad2">${padH}${kOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '';
+  // §20: the Notepad is a popover now (opened bottom-left or with ⌘;), not a
+  // section on Today.
   const readingH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">A reading</span><span class="hf-hint">For today</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
   const reading = reflectOn() ? `<section class="home-sec2 home-reading">${readingH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
   const alerts = `${homeSetupCardHtml()}${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
@@ -7398,7 +7480,7 @@ function renderHome() {
           ${today}
         </div>
         <div class="k-b">${coming}</div>
-        <div class="k-c">${spaces}${pad}${reading}</div>
+        <div class="k-c">${spaces}${reading}</div>
       </div>
       <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
       <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
