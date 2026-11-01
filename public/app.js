@@ -5083,14 +5083,17 @@ function navGroupsHtml(v) {
     return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
   }).join('');
   const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button>`;
-  const crumb = (() => { const g = groups.find((x) => x.id === curGroup); const vt = (v && v.type) || ''; if (vt === 'home' || !g) return 'Today'; return `${g.label}`; })();
+  // Mobile top line (§17): wordmark + a breadcrumb or the date. On Today the
+  // group breadcrumb would just say "Today" (redundant with the wordmark), so show
+  // the date there instead; every other view shows its group.
+  const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${DOW3[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()].slice(0, 3)}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
   const header = `<div class="knav-bar">
       ${wordmark}
       <div class="knav-crumb">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Find <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
-        <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Contents'}</button>
+        <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
     </div>`;
   // ── fold-down sheet (desktop), when a group is open ──
@@ -5145,7 +5148,7 @@ function navGroupsHtml(v) {
       <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
     </div>`).join('');
     contents = `<div class="knav-contents">
-      <div class="knav-c-head"><span class="eyebrow">Contents</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to find</span></div>
+      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to find</span></div>
       <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
@@ -5159,7 +5162,7 @@ function navGroupsHtml(v) {
   }
   // ── mobile bottom bar: Contents · gold + · Find ──
   const bottom = `<div class="knav-bottom">
-      <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Contents</button>
+      <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Menu</button>
       <button class="knav-b-set" data-cap-open title="Set something down">+</button>
       <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Find${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
     </div>`;
@@ -5188,12 +5191,23 @@ function renderNav() {
     // button under your finger re-targets the click (that's the "first Contacts
     // tap goes Home" bug: a data-driven render lands mid-tap). Defer to just after.
     if (navHeld) { navDeferred = true; }
-    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
+    else {
+      nav.innerHTML = navHtml; state.__navHtml = navHtml;
+      // §17/§24: the mobile bottom bar and the full-screen Menu/Find layers are
+      // fixed to the VIEWPORT, but #nav is a containing block for its fixed
+      // children here (so they'd otherwise clip to #nav's box - the "thin strip
+      // with the page showing through" bug). Relocate them onto <body>. Only on a
+      // real rebuild, so a background poll never pulls an open layer out.
+      try { for (const sel of ['.knav-bottom', '.knav-find', '.knav-contents']) { document.querySelectorAll('body > ' + sel).forEach((e) => e.remove()); const el = nav.querySelector(sel); if (el) document.body.appendChild(el); } } catch {}
+    }
   }
-  // §17: the mobile bottom bar must be fixed to the VIEWPORT, but #nav acts as a
-  // containing block for its fixed children here - so relocate it onto <body>.
-  try { const bb = nav && nav.querySelector('.knav-bottom'); if (bb) { document.querySelectorAll('body > .knav-bottom').forEach((e) => e.remove()); document.body.appendChild(bb); } } catch {}
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
+  // §24: lock page scroll behind the full-screen Menu/Find layer (mobile), and
+  // open the keyboard with Find focused the moment it rises.
+  const overlayOpen = !!(state.knav && (state.knav.contents || state.knav.find));
+  document.body.classList.toggle('knav-overlay-open', overlayOpen);
+  if (state.knav && state.knav.find && !state.__knavFindOpen && window.matchMedia('(max-width:820px)').matches) { setTimeout(() => { const i = document.querySelector('.knav-find-q'); if (i) i.focus(); }, 60); }
+  state.__knavFindOpen = !!(state.knav && state.knav.find);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
   queueNavH();

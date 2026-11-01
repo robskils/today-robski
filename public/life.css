@@ -9961,6 +9961,7 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
 
 /* mobile bottom bar - hidden on desktop */
 .knav-bottom { display:none; }
+@keyframes knavrise { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
 
 /* ── collapse the group words below ~1100px (contents does the navigating) ── */
 @media (max-width:1100px) and (min-width:821px){
@@ -9975,7 +9976,13 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
   .knav-groups, .knav-right { display:none; }
   .knav-crumb { display:block; margin-left:auto; }
   .knav-sheet { display:none; }
-  .knav-find, .knav-contents { top:var(--navh,50px); bottom:88px; left:0; right:0; width:auto; max-width:none; max-height:none; border:0; padding:8px 24px 24px; }
+  /* §24: Menu and Find open as full, OPAQUE layers - nothing from the page shows
+     through, and the layer scrolls on its own while the page is locked. */
+  .knav-find, .knav-contents { top:var(--navh,50px); left:0; right:0; width:auto; max-width:none; max-height:none; border:0; background:var(--k-bg); overflow:auto; -webkit-overflow-scrolling:touch; -webkit-backdrop-filter:none; backdrop-filter:none; animation:knavrise .45s cubic-bezier(.2,.7,.2,1); }
+  .knav-contents { bottom:88px; z-index:58; padding:18px 22px 28px; }
+  .knav-find { bottom:0; z-index:62; padding:14px 22px calc(28px + env(safe-area-inset-bottom,0px)); }
+  .knav-c-hint { display:none; }
+  body.knav-overlay-open { overflow:hidden; }
   .knav-c-grid { grid-template-columns:1fr; gap:0; }
   .knav-c-group { border-top:1px solid var(--line); }
   .knav-c-gl { font-size:26px; }
