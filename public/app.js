@@ -7376,7 +7376,7 @@ function renderNotepad() {
 // first, with a draggable 1px divider (30-70%, double-click resets to half).
 // Fold away or Esc closes it. (Drag-to-join, kept pairs and the mobile flip are
 // a later pass; this ships the core two-pane view behind an opt-in.)
-const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'The long game', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Inner life' };
+const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Inner life' };
 function splitMain() { return document.querySelector('.main'); }
 function splitEls() {
   const main = splitMain(); if (!main) return {};
@@ -18693,7 +18693,7 @@ function renderGoals() {
   $('#pane').innerHTML = `<div class="kwrap kpage kpage-goals">
     <div class="kg-title">
       <div class="kg-title-l">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">The long game · Goals</span></div>
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Plans · Goals</span></div>
         <h1 class="kg-h1">${view === 'bucket' ? 'Bucket list' : 'Goals'}</h1>
         <div class="kg-mood">${esc(mood)}</div>
       </div>
