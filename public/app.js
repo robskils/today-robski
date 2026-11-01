@@ -8999,27 +8999,55 @@ async function runCompass() {
     toast(e.message || 'Could not reach Claude.');
   }
 }
+// ── Reflection hub (Koyeba §23) ─────────────────────────────────────────────
+// A title and an italic line, a "Lately" feed of entries as rows (kind in gold ·
+// the text · when, with filters), and a side column of today's card and the
+// practices as a numbered list. No stat boxes and no icon-tile grid.
+const RF_ROM = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+function rfCat(l) { l = (l || '').toLowerCase(); if (l.includes('ching')) return 'ching'; if (l.includes('spirit') || l.includes('card')) return 'cards'; if (l.includes('dream')) return 'dreams'; if (l.includes('journal') || l.includes('coaching') || l.includes('pages') || l.includes('review') || l.includes('insight')) return 'journal'; return 'other'; }
 function renderWellbeing() {
   const entries = (state.journal && state.journal.entries) || [];
   const now = Date.now();
   const whenOf = (n) => Date.parse((n.props && n.props.date) || n.created_at || '') || 0;
-  const weekN = entries.filter((n) => now - whenOf(n) < 7 * 86400000).length;
-  const last = entries.length ? whenOf(entries[0]) : 0;
-  const daysSince = last ? Math.floor((now - last) / 86400000) : null;
-  const lastLbl = last ? (daysSince <= 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince}d ago`) : '—';
-  const stat = (n, l) => `<div class="wb-stat"><b>${n}</b><span>${esc(l)}</span></div>`;
-  const statsHtml = entries.length ? `<div class="wb-stats">${stat(entries.length, entries.length === 1 ? 'entry' : 'entries')}${stat(weekN, 'this week')}${stat(lastLbl, 'last entry')}</div>` : '';
-  // A single feed of everything recent across the tools, newest first.
-  const rel = (ts) => { const dd = Math.floor((now - ts) / 86400000); return dd <= 0 ? 'today' : dd === 1 ? 'yesterday' : dd < 7 ? `${dd}d ago` : new Date(ts).toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); };
-  const items = wbRecentItems();
-  const recent = items.map((x) => `<button class="wb-recent-row" ${x.attr}><span class="wb-rr-ic">${x.ic}</span><span class="wb-rr-body"><span class="wb-rr-t">${esc(x.title || x.label)}</span><span class="wb-rr-k">${esc(x.label)}</span></span><span class="wb-rr-when">${esc(rel(x.ts))}</span></button>`).join('');
-  const recentHtml = items.length ? `<section class="wb-recent"><div class="home-sec-h wb-recent-h"><span>Recent</span></div><div class="wb-recent-list">${recent}</div></section>` : '';
+  const rel = (ts) => { const dd = Math.floor((now - ts) / 86400000); return dd <= 0 ? 'Today' : dd === 1 ? 'Yesterday' : dd < 7 ? `${dd} days ago` : new Date(ts).toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); };
+  // italic lead from the last journal entry
+  const last = entries[0]; const lastTs = last ? whenOf(last) : 0;
+  const lead = lastTs ? `You last wrote ${rel(lastTs).toLowerCase()}.` : 'A quiet corner to reflect, sit, and check in with yourself.';
+  // Lately feed, filtered
+  const filt = state.reflectFilter || 'all';
+  const items = wbRecentItems().map((x) => ({ ...x, cat: rfCat(x.label) }));
+  const shown = filt === 'all' ? items : items.filter((x) => x.cat === filt);
+  const filters = [['all', 'All'], ['journal', 'Journal'], ['dreams', 'Dreams'], ['cards', 'Cards'], ['ching', 'I Ching']].map(([id, label]) => `<button class="rf-filter${filt === id ? ' on' : ''}" data-reflect-filter="${id}">${label}</button>`).join('');
+  const rows = shown.length ? shown.map((x) => { const ital = x.cat === 'journal' || x.cat === 'dreams'; return `<button class="rf-row" ${x.attr}><span class="rf-row-k">${esc(x.label)}</span><span class="rf-row-t${ital ? ' ital' : ''}">${esc(stripEmoji(x.title || ''))}</span><span class="rf-row-when">${esc(rel(x.ts))}</span></button>`; }).join('') : '<div class="rf-empty">Nothing here yet. Start with a practice on the right.</div>';
+  // Side: today's card + the practices numbered list
+  const card = (typeof currentSpirit === 'function') ? currentSpirit() : null;
+  const cardHtml = card ? `<button class="rf-card" data-spirit-open><div class="rf-card-k">Today’s card</div><div class="rf-card-n">${esc(card.name || 'A card')}</div>${card.line ? `<div class="rf-card-l">${esc(card.line)}</div>` : ''}</button>` : '';
+  const liveIch = (typeof currentIching === 'function') && currentIching(), liveHoro = (typeof currentHoro === 'function') && currentHoro(), liveSpirit = !!card;
+  const PRAC = [
+    ['journal', t('wb.journal'), 'data-open-journal', lastTs ? `Last wrote ${rel(lastTs).toLowerCase()}` : 'Write freely, or from a prompt'],
+    ['dreams', t('wb.dreams'), 'data-open-dreams', 'Write a dream, gently read'],
+    ['coaching', t('wb.coaching'), 'data-open-coaching', 'A running conversation'],
+    ['compass', t('wb.compass'), 'data-open-compass', 'Weigh a decision'],
+    ['meditation', t('wb.meditation'), 'data-open-medi', 'A calm sit, with bells'],
+    ['spirit', t('wb.spirit'), 'data-spirit-open', liveSpirit ? `${esc(card.name)}, today` : 'Draw a card'],
+    ['iching', t('wb.iching'), liveIch ? 'data-iching-reopen' : 'data-open-iching', liveIch ? 'A live reading' : 'Cast the coins'],
+    ['horoscope', t('wb.horoscope'), 'data-open-horo', liveHoro ? (liveHoro.sign || 'Today') : 'Your daily horoscope'],
+    ['insights', t('wb.insights'), 'data-open-insights', 'Patterns across your entries'],
+  ].filter((p) => modOn(p[0]));
+  const pracHtml = PRAC.map(([id, label, attr, hint], i) => `<button class="rf-prac" ${attr}><span class="rf-prac-n">${RF_ROM[i] || ''}</span><span class="rf-prac-b"><span class="rf-prac-l">${esc(label)}</span><span class="rf-prac-h">${esc(hint)}</span></span></button>`).join('');
   $('#pane').innerHTML = `
-    ${pageCrumb(t('nav.reflect'))}
-    <div class="pane-head home-head wb-hub-head"><div class="wb-hub-headmain"><h1>${t('nav.reflect')}</h1><p class="wb-hub-sub">A quiet corner to reflect, sit, and check in with yourself.</p></div>${statsHtml}</div>
-    ${wbToolTilesHtml({})}
-    ${spiritPinnedHtml() + reflectPinsHtml()}
-    ${recentHtml}`;
+    <div class="kpage-reflect"><div class="rf-grid">
+      <div class="rf-main">
+        <div class="nx-eyebrow">Inner life · Reflection</div>
+        <h1 class="nx-h1">${t('nav.reflect')}</h1>
+        <div class="nx-lead">${esc(lead)}</div>
+        <div class="rf-lately">
+          <div class="rf-lately-h"><span class="rf-lately-l">Lately</span><div class="rf-filters">${filters}</div></div>
+          <div class="rf-rows">${rows}</div>
+        </div>
+      </div>
+      <aside class="rf-side">${cardHtml}<div class="rf-prac-h2">Practices</div>${pracHtml}</aside>
+    </div></div>`;
 }
 // ── Insights (its own Well-being tool page) ──────────────────────────────
 // Insights read back across your Journal entries. They live on their own page
@@ -23266,6 +23294,7 @@ document.addEventListener('click', (e) => {
   const txGr = t.closest('[data-task-group]'); if (txGr) { const k = txGr.dataset.taskGroup; state.taskShut = state.taskShut || {}; state.taskShut[k] = !state.taskShut[k]; renderTasks(); return; }
   const txSd = t.closest('[data-task-side]'); if (txSd) { const k = txSd.dataset.taskSide; state.taskSide = state.taskSide || {}; state.taskSide[k] = state.taskSide[k] === false ? true : false; renderTasks(); return; }
   const txTk = t.closest('[data-task-tick]'); if (txTk) { e.preventDefault(); e.stopPropagation(); toggleTask(txTk.dataset.taskTick); return; }
+  const rfF = t.closest('[data-reflect-filter]'); if (rfF) { state.reflectFilter = rfF.dataset.reflectFilter; renderWellbeing(); return; }
   const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
   if (t.closest('[data-open-wellbeing]')) { openWellbeing().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
