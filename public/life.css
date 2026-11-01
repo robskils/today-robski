@@ -10146,3 +10146,86 @@ body[data-view="goals"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .kg-side-empty { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); padding-bottom:8px; }
 .kg-empty { padding:28px 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; color:var(--k-mute); }
 .kg-empty .kg-write { font-style:normal; }
+
+/* ══ §19 Today, by area ════════════════════════════════════════════════════
+   Flat ground, the §19 grid: a=the day, b=Coming into view, c=the quiet things.
+   No sub-header, no money, no red, no boxed spirit card. ══ */
+body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
+.kpage-home { padding:clamp(28px,4vw,48px) 0 110px; }
+.kpage-home .home { position:relative; }
+.home-alerts { display:grid; gap:14px; margin-bottom:28px; }
+.home-grid { row-gap:44px; }
+@media (min-width:1600px){ .home-grid > .k-b, .home-grid > .k-c { padding-top:168px; } }
+@media (min-width:2200px){ .home-grid > .k-b, .home-grid > .k-c { padding-top:180px; } }
+.home-greet { font-family:var(--k-serif); font-weight:300; font-size:clamp(56px,4.4vw,80px); line-height:1.02; letter-spacing:-.01em; margin:16px 0 0; color:var(--k-ink); }
+.home-greet .hi-name { color:var(--k-goldt); font-style:italic; }
+.home-greet-sub { color:var(--k-mute); }
+/* counts line (no money) */
+.home-counts { display:flex; flex-wrap:wrap; gap:12px 40px; margin-top:30px; padding:18px 0; border-top:1px solid var(--k-line); border-bottom:1px solid var(--k-line); }
+.home-count { display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
+.home-count .hc-n { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1; color:var(--k-ink); }
+.home-count .hc-l { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); }
+/* What next */
+.home-wn { margin-top:30px; padding:24px 0 22px; border-top:1px solid var(--k-gold); border-bottom:1px solid var(--k-line); }
+.home-wn-top { display:flex; align-items:baseline; gap:14px; }
+.home-wn-eyebrow { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
+.home-wn-hint { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
+.home-wn-whyb { margin-left:auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
+.home-wn-whyb:hover { color:var(--k-goldt); }
+.home-wn-one { font-family:var(--k-serif); font-weight:300; font-size:clamp(28px,2.6vw,34px); line-height:1.2; color:var(--k-ink); margin-top:12px; text-wrap:pretty; }
+.home-wn-because { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; line-height:1.4; color:var(--k-mute); margin-top:8px; text-wrap:pretty; }
+.home-wn-why { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
+.home-wn-why .wn-sep { color:var(--k-line); }
+.home-wn-acts { display:flex; align-items:center; gap:24px; margin-top:18px; }
+.home-wn-do { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.24em; text-transform:uppercase; padding:13px 20px; background:var(--k-gold); color:var(--k-ongold); border:0; cursor:pointer; white-space:nowrap; }
+.home-wn-do:hover { filter:brightness(1.04); }
+.home-wn-skip { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14.5px; color:var(--k-mute); }
+.home-wn-skip:hover { color:var(--k-goldt); }
+/* fold headers (Today / Coming into view / Spaces / Notepad / A reading) */
+.home-sec2 { margin-top:0; }
+.k-a .home-today { margin-top:34px; }
+.home-fold-h { display:flex; align-items:baseline; gap:14px; padding-bottom:12px; border-bottom:1px solid var(--k-ink); cursor:pointer; }
+.home-fold-h .hf-name { font-family:var(--k-serif); font-weight:300; font-size:clamp(28px,2.4vw,32px); line-height:1; color:var(--k-ink); white-space:nowrap; }
+.home-fold-h .hf-hint { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
+.home-fold-h .hf-nav { margin-left:auto; }
+.home-fold-h .hf-sign { margin-left:auto; font-family:var(--k-sans); font-weight:300; font-size:20px; color:var(--k-mute); }
+.home-fold-h .hf-nav + .hf-sign { margin-left:14px; }
+.today-nav { display:inline-flex; align-items:center; gap:4px; }
+.today-nav-btn { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:12px; color:var(--k-goldt); }
+.today-nav-arw { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:18px; color:var(--k-mute); padding:0 2px; }
+.today-nav-arw:hover, .today-nav-btn:hover { color:var(--k-goldt); }
+/* coming into view: shared line + deadlines */
+.home-shared-line { display:flex; align-items:center; gap:10px; padding:14px 0; border-bottom:1px solid var(--k-line); }
+.home-shared-line .hsl-dot { width:6px; height:6px; background:var(--k-gold); flex:none; }
+.home-shared-line .hsl-t { flex:1; min-width:0; font-family:var(--k-sans); font-size:14.5px; color:var(--k-ink); }
+.home-shared-line .hsl-see { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); white-space:nowrap; }
+.home-sub-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-mute); padding:18px 0 4px; }
+.home-due { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:baseline; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:15px 0; cursor:pointer; }
+.home-due-id { min-width:0; }
+.home-due-t { display:block; font-family:var(--k-serif); font-weight:300; font-size:23px; line-height:1.2; color:var(--k-ink); text-wrap:pretty; }
+.home-due:hover .home-due-t { color:var(--k-goldt); }
+.home-due-m { display:block; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); margin-top:3px; }
+.home-due-when { font-family:var(--k-sans); font-weight:400; font-size:13px; color:var(--k-mute); white-space:nowrap; }
+.home-due-when.late { font-weight:500; color:var(--k-goldt); }
+/* Spaces kept close */
+.home-spaces2, .home-pad2, .home-reading { margin-top:0; }
+.home-sp-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:24px; }
+.home-sp { display:flex; align-items:baseline; gap:10px; min-width:0; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:13px 0; cursor:pointer; }
+.home-sp-n { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:15px; color:var(--k-gold); flex:none; }
+.home-sp-l { font-family:var(--k-serif); font-weight:300; font-size:23px; line-height:1.15; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sp:hover .home-sp-l { color:var(--k-goldt); }
+.home-sp-all { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); margin-top:12px; }
+/* Notepad */
+.home-notepad { width:100%; box-sizing:border-box; min-height:120px; margin-top:14px; background:none; border:0; outline:0; resize:vertical; font-family:var(--k-sans); font-size:15.5px; line-height:1.5; color:var(--k-ink); }
+.home-notepad::placeholder { color:var(--k-mute); }
+/* A reading */
+.home-read-row { display:grid; grid-template-columns:auto minmax(0,1fr); gap:18px; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:18px 0; cursor:pointer; animation:kfade .35s ease; }
+.home-read-sym { font-family:Georgia,'Songti SC',serif; font-weight:300; font-size:52px; line-height:1; color:var(--k-ink); }
+.home-read-sym.home-read-word { font-family:var(--k-serif); font-style:italic; font-size:24px; color:var(--k-goldt); width:64px; }
+.home-read-b { min-width:0; }
+.home-read-name { display:block; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; color:var(--k-ink); }
+.home-read-kind { display:block; font-family:var(--k-sans); font-weight:500; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-goldt); margin-top:4px; }
+.home-read-txt { display:block; font-family:var(--k-sans); font-size:14.5px; line-height:1.6; color:var(--k-mute); margin-top:8px; }
+.kpage-home .home-empty { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); padding:14px 0; }
+.kpage-home .home-foot { margin-top:48px; }
+.kpage-home .home-sc-link { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }

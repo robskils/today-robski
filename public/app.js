@@ -7251,57 +7251,149 @@ async function submitCap() {
   c.open = false; c.text = ''; c.ov = {}; c.rec = false; renderCapBar(true);
   capRefreshHome();
 }
+// ── Today, by area (Koyeba §19) ─────────────────────────────────────────────
+// A quiet counts line - emails to sort, things to do, events tomorrow. No money
+// (§17/§19: money is optional and never pushed to Today).
+function homeCountsStrip() {
+  const cells = [];
+  if (modOn('mail')) { const n = state.mailUnreadTotal || 0; cells.push([n, n === 1 ? 'email to sort' : 'emails to sort']); }
+  if (modOn('tasks')) { const n = (state.home.alerts && state.home.alerts.p1) != null ? state.home.alerts.p1 : priorityTasks().length; cells.push([n, n === 1 ? 'thing to do' : 'things to do']); }
+  if (modOn('calendar')) { const tm = state.home.tomorrow; if (tm === undefined) ensureHomeTomorrow(); const n = tm ? (tm.events || []).length : 0; cells.push([tm === undefined ? '·' : n, n === 1 ? 'event tomorrow' : 'events tomorrow']); }
+  if (!cells.length) return '';
+  return `<div class="home-counts">${cells.map(([n, l]) => `<span class="home-count"><span class="hc-n">${esc(String(n))}</span><span class="hc-l">${esc(l)}</span></span>`).join('')}</div>`;
+}
+// What next (§16), rules version: one wise suggestion at a time, chosen roughly
+// late-and-quick, then urgent mail, a priority to-do, a goal gone quiet, someone
+// to reach out to. One at a time, no scores, no guilt. (AI refinement is a later
+// pass; §16 allows a rules fallback.)
+function homeWhatNextCandidates() {
+  const list = [];
+  const todayI = localISO(new Date());
+  const an = (id) => { const a = id ? areaById(id) : null; return a ? a.title : ''; };
+  (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => {
+    const due = goalDueISO(g); if (!due) return;
+    const d = Math.round((Date.parse(due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
+    if (d <= 1) list.push({ pr: d < 0 ? 0 : 1, title: g.title || 'A goal', because: d < 0 ? `It is ${-d} day${d === -1 ? '' : 's'} late now, and it will feel lighter once it is moving.` : 'It comes due today - a small step keeps it alive.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', an(gp(g).area), d < 0 ? `${-d} days late` : 'due today'] });
+  });
+  if (modOn('mail')) { const n = state.mailUnreadTotal || 0; if (n) list.push({ pr: 2, title: n === 1 ? 'Clear the one email waiting in your inbox.' : `Clear the ${n} emails waiting in your inbox.`, because: 'A few quick replies and it is off your mind.', verb: 'Open Mail', attr: 'data-open-mail', why: ['Mail', n + ' to sort'] }); }
+  const p1 = priorityTasks(); if (p1.length) { const tk = p1[0]; list.push({ pr: 3, title: tk.title || 'A task', because: 'You marked this a priority - worth doing first.', verb: 'Open it', attr: `data-open-task="${tk.id}"`, why: ['Task', 'P1', an(tk.props && tk.props.area)] }); }
+  (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').forEach((g) => { const q = gQuietDays(g); if (q >= 14) list.push({ pr: 4, title: `Spend twenty minutes on "${g.title || 'a goal'}".`, because: 'You said this mattered, and it has been quiet for a while.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', `quiet ${q} days`, an(gp(g).area)] }); });
+  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { list.push({ pr: 5, title: `Reach out to ${k.name || 'someone'}.`, because: k.last ? `You last spoke ${kitWhen(k.last)}.` : 'You meant to stay in touch.', verb: 'Open', attr: `data-open-contact="${k.id}"`, why: ['People'] }); });
+  return list.sort((a, b) => a.pr - b.pr);
+}
+function homeWhatNextHtml() {
+  const cands = homeWhatNextCandidates();
+  if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-eyebrow">What next</div><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
+  let idx = state.home.wnIdx || 0; if (idx >= cands.length) idx = 0;
+  const c = cands[idx];
+  const whyOpen = !!state.home.wnWhy;
+  return `<div class="home-wn">
+    <div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><span class="home-wn-hint">one thing at a time</span>${cands.length ? `<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide' : 'Why this?'}</button>` : ''}</div>
+    <div class="home-wn-one">${esc(c.title)}</div>
+    <div class="home-wn-because">${esc(c.because)}</div>
+    ${whyOpen ? `<div class="home-wn-why">${c.why.filter(Boolean).map((w) => `<span>${esc(w)}</span>`).join('<span class="wn-sep">·</span>')}</div>` : ''}
+    <div class="home-wn-acts"><button class="home-wn-do" ${c.attr}>${esc(c.verb)}</button>${cands.length > 1 ? '<button class="home-wn-skip" data-wn-notnow>Not now</button><button class="home-wn-skip" data-wn-else>Something else</button>' : '<button class="home-wn-skip" data-wn-notnow>Not now</button>'}</div>
+  </div>`;
+}
+// §17/§19 shared line: one quiet line on Today, only when something is new.
+function homeSharedLineHtml() {
+  const items = (state.sharedItems || []);
+  const seen = state.sharesSeen || '';
+  const dismissed = new Set((state.sharesDismissed || []).map(String));
+  const fresh = items.filter((i) => i.shared_at && String(i.shared_at) > seen && !dismissed.has(String(i.id)));
+  if (!fresh.length) return '';
+  const who = fresh[0].owner || 'Someone';
+  const n = fresh.length;
+  const txt = n === 1 ? `${who} shared ${fresh[0].title ? `"${fresh[0].title}"` : 'something'} with you.` : `${who} and others shared ${n} things with you.`;
+  return `<div class="home-shared-line"><span class="hsl-dot"></span><span class="hsl-t">${esc(txt)}</span><button class="hsl-see" data-knav-find>See them</button></div>`;
+}
+// Deadlines (§19): goals with a finish-by date and Spaces with a deadline, within
+// a fortnight or already past. Late shows "N days late" in gold; upcoming muted.
+// No red, no target icon.
+function homeDueListHtml() {
+  const todayI = localISO(new Date());
+  const horizon = localISO(new Date(Date.now() + 14 * 86400000));
+  const items = [];
+  (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').forEach((g) => { const due = goalDueISO(g); if (due && due <= horizon) items.push({ kind: 'goal', id: g.id, title: g.title || 'Goal', due, area: gp(g).area, sub: 'goal' }); });
+  (state.areas || []).forEach((a) => { const due = a.props && a.props.due; if (due && due <= horizon) items.push({ kind: 'area', id: a.id, title: a.title || 'Space', due, area: a.id }); });
+  if (!items.length) return '<div class="home-empty">Nothing due in the next while.</div>';
+  items.sort((x, y) => x.due.localeCompare(y.due));
+  return items.slice(0, 6).map((x) => {
+    const a = x.area ? areaById(x.area) : null;
+    const d = Math.round((Date.parse(x.due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
+    const late = d <= 0;
+    const when = d < 0 ? `${-d} day${d === -1 ? '' : 's'} late` : d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : `In ${d} days`;
+    const sub = [a ? a.title : '', x.sub === 'goal' ? 'goal' : ''].filter(Boolean).join(' · ');
+    const attr = x.kind === 'goal' ? `data-open-goal="${x.id}"` : `data-open-area="${x.id}"`;
+    return `<button class="home-due" ${attr}><span class="home-due-id"><span class="home-due-t">${esc(x.title)}</span>${sub ? `<span class="home-due-m">${esc(sub)}</span>` : ''}</span><span class="home-due-when${late ? ' late' : ''}">${esc(when)}</span></button>`;
+  }).join('');
+}
+// Spaces kept close (§19): two columns of numeral + name, then "All N Spaces".
+function homeSpacesColHtml() {
+  const areas = (state.areas || []);
+  if (!areas.length) return '<div class="home-empty">No Spaces yet. Make one from the Spaces section.</div>';
+  const sorted = areas.slice().sort((a, b) => (((b.props && b.props.fav) ? 1 : 0) - ((a.props && a.props.fav) ? 1 : 0)) || (a.title || '').localeCompare(b.title || ''));
+  const rows = sorted.slice(0, 8).map((a) => `<button class="home-sp" data-open-area="${a.id}"><span class="home-sp-n">${areaNumeral(a.id)}</span><span class="home-sp-l">${esc(a.title || 'Untitled')}</span></button>`).join('');
+  return `<div class="home-sp-grid">${rows}</div><button class="home-sp-all" data-open-areas>All ${areas.length} Space${areas.length === 1 ? '' : 's'} →</button>`;
+}
+// A reading (§19): the I Ching reading and the spirit card, quiet rows inside the
+// fold - no box, no sparkle, no ×.
+function homeReadingHtml() {
+  const ic = currentIching();
+  const sp = currentSpirit();
+  if (!ic && !sp) return '<div class="home-empty">Cast the I Ching or pull a card from Inner life, and today\'s reading sits here.</div>';
+  let out = '';
+  if (ic && ic.lines) { const hex = icHexFor(ic.lines, false); if (hex) { const moving = ic.lines.some((l) => l.changing); out += `<button class="home-read-row" data-iching-reopen><span class="home-read-sym">${esc(hex.cn || '')}</span><span class="home-read-b"><span class="home-read-name">${esc(hex.name || '')}</span><span class="home-read-kind">I Ching · ${esc(hex.py || hex.n || '')}${moving ? ' · changing' : ''}</span><span class="home-read-txt">${esc(hex.text || '')}</span></span></button>`; } }
+  if (sp) { out += `<button class="home-read-row" data-spirit-open><span class="home-read-sym home-read-word">${esc(sp.name || '')}</span><span class="home-read-b"><span class="home-read-txt">${esc(sp.message || '')}</span></span></button>`; }
+  return out;
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
+  // "A reading" folds shut by default (§19); seed the collapse store once so the
+  // standard kOpen/kToggle fold mechanism treats it as closed to begin with.
+  try { const _c = homeCollapsed(); if (!('kreading' in _c)) { _c.kreading = true; localStorage.setItem('life.home.collapsed', JSON.stringify(_c)); } } catch {}
   // A rebuild (e.g. collapsing a section) would otherwise jump the page and the
   // rail back to the top. Only when Home is already on screen, remember the page
   // scroll and the rail's own scroll and put them back after the repaint.
   const _homeShown = !!document.querySelector('.home');
   const _prevWinScroll = _homeShown ? window.scrollY : 0;
   const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
+  const off = state.home.dayOffset || 0;
+  const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
+  const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${esc(homeDayLabel(off))}</span><span class="hf-hint">Events and plans</span><span class="hf-nav">${dayNav}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
+  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? homeTimelineHtml() : ''}</section>`;
+  // b: Coming into view - the shared line, then Deadlines.
+  const comingH = `<div class="home-fold-h" data-hfold="lifebook" role="button" tabindex="0"><span class="hf-name">Coming into view</span><span class="hf-hint">As it comes due</span><span class="hf-sign" aria-hidden="true">${kOpen('lifebook') ? '−' : '+'}</span></div>`;
+  const comingBody = kOpen('lifebook') ? `${homeSharedLineHtml()}<div class="home-sub-eyebrow">Deadlines</div>${homeDueListHtml()}` : '';
+  const coming = `<section class="home-sec2 home-coming">${comingH}${comingBody}</section>`;
+  // c: the quiet things - Spaces, Notepad, A reading (folded by default).
+  const spacesH = `<div class="home-fold-h" data-hfold="kspaces" role="button" tabindex="0"><span class="hf-name">Spaces</span><span class="hf-hint">Kept close</span><span class="hf-sign" aria-hidden="true">${kOpen('kspaces') ? '−' : '+'}</span></div>`;
+  const spaces = modOn('areas') ? `<section class="home-sec2 home-spaces2">${spacesH}${kOpen('kspaces') ? homeSpacesColHtml() : ''}</section>` : '';
+  const padH = `<div class="home-fold-h" data-hfold="notepad" role="button" tabindex="0"><span class="hf-name">Notepad</span><span class="hf-hint">Loose thoughts</span><span class="hf-sign" aria-hidden="true">${kOpen('notepad') ? '−' : '+'}</span></div>`;
+  const pad = modOn('notepad') ? `<section class="home-sec2 home-pad2">${padH}${kOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '';
+  const readingH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">A reading</span><span class="hf-hint">For today</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
+  const reading = reflectOn() ? `<section class="home-sec2 home-reading">${readingH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
+  const alerts = `${homeSetupCardHtml()}${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
   $('#pane').innerHTML = `
-    <div class="crumbbar home-crumbbar"><button class="crumb-back" data-nav-back title="Back to where you were" aria-label="Back">←</button><div class="crumbs"><span class="crumb cur">${esc(t('nav.home'))}</span></div>${addNewMenuHtml()}</div>
+    <div class="kwrap kpage kpage-home">
     <div class="home">
       <div class="home-kanji" aria-hidden="true"></div>
-      <div class="home-top">
-      <button class="home-search" data-palette title="Search or jump to anything"><span class="hs-ic">⌕</span><span>Search or jump…</span></button>
-      <div class="home-head">
-        <div class="home-eyebrow">${homeEyebrow()}</div>
-        <div class="home-hi"><h1>${greeting()}${firstName() ? `, <span class="hi-name">${esc(firstName())}</span>` : ''}.</h1><div class="home-hi-sub">${homeSubClause()}</div></div>
-      </div>
-      ${homeLedgerHtml()}
-      ${alertsHtml()}
-      </div>
-      <div class="home-scroll">
-      ${homeSetupCardHtml()}
-      ${homeInvitesHtml()}
-      ${homeSharedAlertHtml()}
-      ${homeMsgAlertHtml()}
-      ${homeReqAlertHtml()}
-      ${homeQuoteHtml()}
-      ${reflectOn() ? spiritPinnedHtml() + reflectPinsHtml() : ''}
+      ${alerts ? `<div class="home-alerts">${alerts}</div>` : ''}
       <div id="qt-wrap"></div>
-        <div class="home-cols">
-          <div class="home-col home-col-l">${(() => {
-            const off = state.home.dayOffset || 0;
-            const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-            const todayH = `<div class="kf-h kf-h-today" data-hfold="today" role="button" tabindex="0"><span class="kf-name">${esc(homeDayLabel(off))}</span><span class="kf-hint">Events and plans</span><span class="kf-nav">${dayNav}</span><span class="kf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
-            const spacesN = (state.areas || []).length;
-            const today = `<section class="khome-sec khome-today">${todayH}${kOpen('today') ? homeTimelineHtml() : ''}</section>`;
-            const spaces = modOn('areas') ? `<section class="khome-sec khome-spaces">${kFoldH('kspaces', 'Your spaces', spacesN ? (spacesN + (spacesN === 1 ? ' space' : ' spaces')) : '')}${kOpen('kspaces') ? homeSpacesTilesHtml() : ''}</section>` : '';
-            return today + spaces;
-          })()}</div>
-          <div class="home-col home-col-r">${(() => {
-            const view = `<section class="khome-sec khome-view">${kFoldH('lifebook', 'Coming into view', 'As it comes due')}${kOpen('lifebook') ? (() => { try { return lifebookFeedInner(); } catch (e) { return '<div class="home-empty">Your feed will appear here.</div>'; } })() : ''}</section>`;
-            const lineInner = homeLineEveningHtml();
-            const line = lineInner ? `<section class="khome-sec khome-line">${kFoldH('kline', 'A line for the evening', '', true)}${kOpen('kline') ? lineInner : ''}</section>` : '';
-            const pad = modOn('notepad') ? `<section class="khome-sec khome-pad">${kFoldH('notepad', 'Notepad', '', true)}${kOpen('notepad') ? `<textarea class="home-notepad" data-home-notepad placeholder="Jot anything here - it's saved automatically and waiting for you next time.">${esc(state.home.notepad || '')}</textarea>` : ''}</section>` : '';
-            return view + line + pad;
-          })()}</div>
+      <div class="kgrid home-grid">
+        <div class="k-a">
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
+          <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
+          ${homeCountsStrip()}
+          ${homeWhatNextHtml()}
+          ${today}
         </div>
-        <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
-        <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
+        <div class="k-b">${coming}</div>
+        <div class="k-c">${spaces}${pad}${reading}</div>
       </div>
+      <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
+      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
+    </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
   startHomeClock();         // keep the time beside the date ticking
@@ -22788,6 +22880,8 @@ document.addEventListener('click', (e) => {
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
+  if (t.closest('[data-wn-why]')) { state.home.wnWhy = !state.home.wnWhy; renderHome(); return; }
+  if (t.closest('[data-wn-notnow]') || t.closest('[data-wn-else]')) { const n = homeWhatNextCandidates().length; state.home.wnIdx = n ? ((state.home.wnIdx || 0) + 1) % n : 0; state.home.wnWhy = false; renderHome(); return; }
   // Capture ("Set it down"): the floating bar, the drawer and its readout taps.
   if (t.closest('[data-cap-speak-open]')) { const c = capState(); if (!c.open) { c.open = true; renderCapBar(true); } capStartRec(); return; }
   if (t.closest('[data-cap-open]')) { capOpen(); return; }
