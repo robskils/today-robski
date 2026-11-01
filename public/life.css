@@ -9631,6 +9631,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .ksp-star { margin-left:auto; color:var(--accent); font-size:12px; }
 .ksp-line { display:block; font-family:var(--k-sans); font-size:13px; line-height:1.45; color:var(--ink-2); margin-top:4px; }
 .ksp-tile:hover .ksp-name { color:var(--accent); }
+/* Quiet gold "View all N / View fewer" link under the Home spaces tiles. */
+.ksp-more { display:inline-block; margin-top:16px; padding:4px 0; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-goldt); }
+.ksp-more:hover { opacity:.72; }
 
 /* ── A line for the evening (I Ching) ───────────────────────────────────────── */
 .kline { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); padding:20px 0; cursor:pointer; }

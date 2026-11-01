@@ -4856,7 +4856,7 @@ function navPeopleMobileHtml() {
 //    only regroups the tools into seven folds, one open at a time.
 const KFOLDS = [
   { id: 'today', label: 'Today', items: [
-      ['Home', 'data-view-home', null], ['Flow', 'data-open-today', 'today'], ['Practices', 'data-open-practices', 'today'] ] },
+      ['Flow', 'data-open-today', 'today'], ['Practices', 'data-open-practices', 'today'] ] },
   { id: 'spaces', label: 'Spaces', spaces: true },
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
@@ -6911,9 +6911,20 @@ function homeTimelineHtml() {
 }
 // Your spaces, as tiles: each Space's numeral and name, with a soft sub-line when
 // there's something to say. Starred first, then alphabetical.
+function homeSpacesAll() { try { return localStorage.getItem('life.home.spacesAll') === '1'; } catch { return false; } }
+function toggleHomeSpacesAll() { try { localStorage.setItem('life.home.spacesAll', homeSpacesAll() ? '0' : '1'); } catch {} renderHome(); }
 function homeSpacesTilesHtml() {
-  const areas = (state.areas || []).slice().sort((x, y) => (((y.props && y.props.fav) ? 1 : 0) - ((x.props && x.props.fav) ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''));
-  if (!areas.length) return '<div class="home-empty">No Spaces yet. Make one from the Spaces section.</div>';
+  // Starred first, then most-recently-touched. A full list of 20-30 looks cluttered
+  // here, so show a handful and tuck the rest behind "View all". (Robin, 2026-11-01.)
+  const all = (state.areas || []).slice().sort((x, y) =>
+    (((y.props && y.props.fav) ? 1 : 0) - ((x.props && x.props.fav) ? 1 : 0))
+    || String(y.updated_at || '').localeCompare(String(x.updated_at || ''))
+    || (x.title || '').localeCompare(y.title || ''));
+  if (!all.length) return '<div class="home-empty">No Spaces yet. Make one from the Spaces section.</div>';
+  const CAP = 6;
+  const showAll = homeSpacesAll();
+  const over = all.length > CAP + 1;   // don't hide just one
+  const areas = (over && !showAll) ? all.slice(0, CAP) : all;
   const tiles = areas.map((a) => {
     const p = a.props || {};
     const sub = (p.sub || p.note || p.desc || '').toString().trim();
@@ -6922,7 +6933,8 @@ function homeSpacesTilesHtml() {
       ${sub ? `<span class="ksp-line">${esc(sub)}</span>` : ''}
     </button>`;
   }).join('');
-  return `<div class="ksp-grid">${tiles}</div>`;
+  const more = over ? `<button class="ksp-more" data-home-spaces-more>${showAll ? 'View fewer' : `View all ${all.length} →`}</button>` : '';
+  return `<div class="ksp-grid">${tiles}</div>${more}`;
 }
 // A line for the evening: the day's I Ching hexagram, chosen deterministically from
 // the date (the same all day), in plain English. Opens the full reading. Only when
@@ -22297,6 +22309,7 @@ document.addEventListener('click', (e) => {
   { const nt = t.closest('[data-navtop]'); if (nt) { setNavTop(nt.dataset.navtop); return; } }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
   if (t.closest('[data-spaces-more]')) { toggleSpacesAll(); return; }
+  if (t.closest('[data-home-spaces-more]')) { toggleHomeSpacesAll(); return; }
 
   { const rx = t.closest('[data-recent-x]'); if (rx) { e.preventDefault(); e.stopPropagation(); const [k, id] = rx.dataset.recentX.split(':'); removeRecent(k, id); return; } }
   { const nu = t.closest('[data-note-unlink]'); if (nu) { e.stopPropagation(); disconnectNote(nu.dataset.noteUnlink); return; } }
