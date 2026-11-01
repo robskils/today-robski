@@ -18295,74 +18295,121 @@ function saveGoalProgress(id, pct) {
   if (state.goal_open) apply(state.goal_open.goal);
   api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v, status } }) }).catch((e) => toast(e.message));
 }
-const goalsView = () => state.goalsView || (state.goalsView = (() => { try { return localStorage.getItem('life.goals.view') || 'areas'; } catch { return 'areas'; } })());
+// ── Goals page (Koyeba §13) ──────────────────────────────────────────────
+// Rebuilt to the prototype: a Mail-style title + mood line, a row of views
+// (By Space / Starred / All goals / Bucket list) as Cormorant counts, an Order
+// line, then the §19 grid - the list in the main column, "Nearly there" and
+// "Gone quiet" in the side column. No coloured bars, boxed cards, ACTIVE chips,
+// ×, "+ Goal", sort dropdown or boxed tabs. One gold accent, square, flat.
+const GOAL_VIEWS = [['areas', 'By Space', 'Visions, then goals'], ['focus', 'Starred', 'What matters most'], ['list', 'All goals', 'Every goal, by when'], ['bucket', 'Bucket list', 'One day']];
+const GOAL_ORDERS = [['starred', 'Starred first'], ['close', 'Closest to done'], ['touched', 'Recently touched']];
+const goalsView = () => state.goalsView || (state.goalsView = (() => { try { const v = localStorage.getItem('life.goals.view') || 'areas'; return ['areas', 'focus', 'list', 'bucket'].includes(v) ? v : 'areas'; } catch { return 'areas'; } })());
+// "Highlight the best bits" is one page-level toggle now (gold square), applied
+// to every vision, rather than a per-Space checkbox. On by default.
+function gBest() { try { return localStorage.getItem('life.goals.best') !== '0'; } catch { return true; } }
+function gOrder() { return state.goalsOrder || (state.goalsOrder = (() => { try { return localStorage.getItem('life.goals.order') || 'starred'; } catch { return 'starred'; } })()); }
+function gActiveGoals() { return (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active'); }
+function gPct(g) { return Math.round(goalProgress(g) * 100); }
+function gQuietDays(g) { const t = g.updated_at || g.created_at; if (!t) return 0; return Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 86400000)); }
+function gTouched(g) { const d = gQuietDays(g); return 'touched ' + (d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + 'd ago'); }
+// Only name a status when the goal isn't active (§13): Done, On hold, Dropped.
+function gGoalStatusLabel(g) { const st = gp(g).status || 'active'; return st === 'active' ? '' : ((GSTATUS.find(([v]) => v === st) || [])[1] || st); }
+function gGoalMeta(g) { const p = gp(g); const hz = (HORIZONS.find(([v]) => v === p.horizon) || [])[1] || ''; return [hz, goalMeasure(g), gTouched(g), gGoalStatusLabel(g)].filter(Boolean).join(' · '); }
+function gSortGoals(arr) {
+  const o = gOrder(); const a = arr.slice();
+  if (o === 'close') a.sort((x, y) => gPct(y) - gPct(x));
+  else if (o === 'touched') a.sort((x, y) => gQuietDays(x) - gQuietDays(y));
+  else a.sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (gPct(y) - gPct(x)));
+  return a;
+}
+// One goal row: a 9px star square (its own hit target, so it stars without
+// opening the goal), the title and meta, and a 150px progress line with %.
+function gGoalRow(g, withSpace) {
+  const p = gp(g); const pct = gPct(g); const starred = !!p.focus; const a = areaById(p.area);
+  const meta = withSpace && a
+    ? `<span class="kg-sp-tag">${esc(a.title)}</span><span class="kg-goal-m"> · ${esc(gGoalMeta(g))}</span>`
+    : `<span class="kg-goal-m">${esc(gGoalMeta(g))}</span>`;
+  return `<div class="kg-goal">
+    <button class="kg-star${starred ? ' on' : ''}" data-goal-star="${g.id}" title="${starred ? 'Starred' : 'Star'}" aria-label="${starred ? 'Starred' : 'Star this goal'}"></button>
+    <button class="kg-goal-hit" data-open-goal="${g.id}">
+      <span class="kg-goal-id"><span class="kg-goal-t${p.status === 'done' ? ' done' : ''}">${esc(g.title || 'Untitled')}</span><span class="kg-goal-meta">${meta}</span></span>
+      <span class="kg-goal-prog"><span class="kg-prog-line"><i style="width:${pct}%"></i></span><span class="kg-prog-pct">${p.status === 'done' ? '✓' : pct + '%'}</span></span>
+    </button>
+  </div>`;
+}
+// Star / unstar from the list (the card's own toggleGoalFocus is card-only).
+function toggleGoalStar(id) { const g = (state.goals || []).find((x) => String(x.id) === String(id)); if (!g) return; g.props = g.props || {}; g.props.focus = !gp(g).focus; patchGoal(id, { focus: gp(g).focus }, true); renderGoals(); }
+// Tick a bucket item done / undone from the list (strikethrough), §13.
+function gBucketTick(id) { const b = (state.bucket || []).find((x) => String(x.id) === String(id)); if (!b) return; b.props = b.props || {}; const done = b.props.status === 'done'; b.props.status = done ? 'someday' : 'done'; b.props.doneDate = done ? null : new Date().toISOString().slice(0, 10); patchBucket(id, { status: b.props.status, doneDate: b.props.doneDate }, true); renderGoals(); }
+function gSideClosed() { try { const a = JSON.parse(localStorage.getItem('life.goals.sideclosed') || '[]'); return new Set(Array.isArray(a) ? a : []); } catch { return new Set(); } }
+function gSideOpen(id) { return !gSideClosed().has(id); }
+function gToggleSide(id) { try { const s = gSideClosed(); if (s.has(id)) s.delete(id); else s.add(id); localStorage.setItem('life.goals.sideclosed', JSON.stringify([...s])); } catch {} renderGoals(); }
+// The side column (§13): "Nearly there" (60%+) and "Gone quiet" (5+ days
+// untouched), each a quiet folding panel.
+function goalsSideCol() {
+  const active = gActiveGoals();
+  const near = active.filter((g) => gp(g).status !== 'done' && gPct(g) >= 60).sort((a, b) => gPct(b) - gPct(a));
+  const quiet = active.filter((g) => gQuietDays(g) >= 5).sort((a, b) => gQuietDays(b) - gQuietDays(a));
+  const panel = (id, title, items, actOf) => {
+    const open = gSideOpen(id);
+    const body = open ? `<div class="kg-side-body">${items.length ? items.map((g) => { const a = areaById(gp(g).area); return `<button class="kg-side-it" data-open-goal="${g.id}"><span class="kg-side-it-t">${esc(g.title || 'Untitled')}</span><span class="kg-side-it-m"><span class="kg-side-from">${a ? esc(a.title) : ''}</span><span class="kg-side-act">${actOf(g)}</span></span></button>`; }).join('') : '<div class="kg-side-empty">Nothing here yet.</div>'}</div>` : '';
+    return `<div class="kg-side-p"><div class="kg-side-h" data-goals-side="${id}" role="button" tabindex="0"><span class="kg-side-l">${title}</span><span class="kg-side-c">${items.length}</span><span class="kg-side-sign">${open ? '−' : '+'}</span></div>${body}</div>`;
+  };
+  return `${panel('soon', 'Nearly there', near, (g) => gPct(g) + '%')}${panel('quiet', 'Gone quiet', quiet, (g) => gQuietDays(g) + ' days')}`;
+}
 function renderGoals() {
   const view = goalsView();
-  const focusN = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus).length;
-  const allN = state.goals.filter((g) => (gp(g).status || 'active') === 'active').length;
-  const tabs = `<div class="goals-tabs">
-    <button class="gtab ${view === 'areas' ? 'on' : ''}" data-goals-view="areas">By Space</button>
-    <button class="gtab ${view === 'focus' ? 'on' : ''}" data-goals-view="focus">★ Starred${focusN ? ` · ${focusN}` : ''}</button>
-    <button class="gtab ${view === 'list' ? 'on' : ''}" data-goals-view="list">Goals${allN ? ` · ${allN}` : ''}</button>
-    <button class="gtab ${view === 'bucket' ? 'on' : ''}" data-goals-view="bucket">✦ Bucket list${(state.bucket || []).length ? ` · ${state.bucket.length}` : ''}</button>
-  </div>`;
-  // Bucket list is its own page now (full width), not a side box on the other
-  // tabs. (Robin, 2026-10-12.)
+  const active = gActiveGoals();
+  const nearN = active.filter((g) => gp(g).status !== 'done' && gPct(g) >= 60).length;
+  const WORDS = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+  const spN = (state.areas || []).length;
+  const mood = view === 'bucket' ? 'The bigger things, for one day.'
+    : `${active.length} goal${active.length === 1 ? '' : 's'} across ${spN} Space${spN === 1 ? '' : 's'}. ${WORDS[nearN] != null ? WORDS[nearN] : nearN} ${nearN === 1 ? 'is' : 'are'} nearly there.`;
+  const counts = { areas: spN, focus: active.filter((g) => gp(g).focus).length, list: active.length, bucket: (state.bucket || []).length };
+  const views = GOAL_VIEWS.map(([id, label, hint]) => `<button class="kg-view${view === id ? ' on' : ''}" data-goals-view="${id}"><span class="kg-view-top"><span class="kg-view-n">${counts[id]}</span><span class="kg-view-l">${label}</span></span><span class="kg-view-h">${hint}</span></button>`).join('');
+  const orders = GOAL_ORDERS.map(([id, label]) => `<span class="kg-order-o${gOrder() === id ? ' on' : ''}" data-goals-order="${id}">${label}</span>`).join('');
+  const best = gBest();
   const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : view === 'bucket' ? bucketBody() : goalsByAreaBody();
-  const pageName = view === 'bucket' ? 'Bucket list' : t('goals.title');
-  $('#pane').innerHTML = `${pageCrumb(view === 'bucket' ? 'Bucket list' : t('nav.goals'))}<div class="pane-head"><h1>${pageName}</h1></div>
-    ${tabs}
-    <div class="goals-main goals-main-full">${body}</div>`;
+  const showOrder = view !== 'bucket';
+  $('#pane').innerHTML = `<div class="kwrap kpage kpage-goals">
+    <div class="kg-title">
+      <div class="kg-title-l">
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">The long game · Goals</span></div>
+        <h1 class="kg-h1">${view === 'bucket' ? 'Bucket list' : 'Goals'}</h1>
+        <div class="kg-mood">${esc(mood)}</div>
+      </div>
+      <div class="kg-title-r">
+        <span class="kg-best${best ? ' on' : ''}" data-goals-best role="button" tabindex="0" title="Pull out the best phrase of each vision"><span class="kg-best-box"></span>Highlight the best bits</span>
+        <button class="kg-newgoal" data-new-goal>+ New goal</button>
+      </div>
+    </div>
+    <div class="kg-views">
+      <div class="kg-views-l">${views}</div>
+      ${showOrder ? `<div class="kg-order"><span class="kg-order-l">Order</span>${orders}</div>` : ''}
+    </div>
+    <div class="kgrid k-mainside">
+      <div class="k-a">${body}</div>
+      <div class="k-c">${goalsSideCol()}</div>
+    </div>
+  </div>`;
   loadVisionThumbs();
 }
-// "This quarter" tab: just the goals you've starred into focus, cross-area.
+// Starred: flat rows, the Space name in gold in the meta.
 function goalsFocusBody() {
-  const focus = state.goals.filter((g) => (gp(g).status || 'active') === 'active' && gp(g).focus);
-  return focus.length
-    ? `<section class="home-sec"><div class="home-sec-h">★ Starred goals · ${focus.length}</div><div class="goal-grid">${focus.map(goalCardMini).join('')}</div></section>`
-    : '<div class="empty" style="padding:28px">No starred goals yet. Tap the ★ on any goal to star it - the ones you want front and centre.</div>';
+  const pool = gSortGoals(gActiveGoals().filter((g) => gp(g).focus));
+  if (!pool.length) return '<div class="kg-empty">Nothing starred yet. Tap the star on any goal to keep it close.</div>';
+  return `<div class="kg-flat">${pool.map((g) => gGoalRow(g, true)).join('')}</div>`;
 }
-// "Goals" tab: every goal across all areas, one per row, sortable and filterable.
+// All goals: flat rows grouped by horizon (This quarter / This year / ...),
+// the Space name in gold in the meta.
 function goalsListBody() {
-  const sort = state.goalsListSort || 'area';
-  const fArea = state.goalsListArea || '';
-  const fStatus = state.goalsListStatus || 'active';
-  const areaName = (g) => { const a = areaById(gp(g).area); return a ? a.title : '￿'; };
-  let goals = state.goals.slice();
-  if (fStatus !== 'all') goals = goals.filter((g) => (gp(g).status || 'active') === fStatus);
-  if (fArea) goals = goals.filter((g) => gp(g).area === fArea);
-  const cmp = {
-    focus: (a, b) => ((gp(b).focus ? 1 : 0) - (gp(a).focus ? 1 : 0)) || areaName(a).localeCompare(areaName(b)) || (a.title || '').localeCompare(b.title || ''),
-    area: (a, b) => areaName(a).localeCompare(areaName(b)) || (a.title || '').localeCompare(b.title || ''),
-    progress: (a, b) => goalProgress(b) - goalProgress(a),
-    due: (a, b) => String(gp(a).targetDate || '9999').localeCompare(String(gp(b).targetDate || '9999')),
-    updated: (a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')),
-    title: (a, b) => (a.title || '').localeCompare(b.title || ''),
-  }[sort] || (() => 0);
-  goals.sort(cmp);
-  const areaOpts = [`<option value="">${t('filter.allareas')}</option>`, ...state.areas.map((a) => `<option value="${a.id}" ${fArea === a.id ? 'selected' : ''}>${esc(a.title)}</option>`)].join('');
-  const controls = `<div class="glist-controls">
-    <select class="sel" data-glist-status><option value="all" ${fStatus === 'all' ? 'selected' : ''}>All statuses</option>${GSTATUS.map(([v, l]) => `<option value="${v}" ${fStatus === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
-    <select class="sel" data-glist-area>${areaOpts}</select>
-    <select class="sel" data-glist-sort>${[['focus', 'Starred first'], ['area', 'Space'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated'], ['title', 'A–Z']].map(([v, l]) => `<option value="${v}" ${sort === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>
-  </div>`;
-  if (!goals.length) return `${controls}<div class="empty" style="padding:28px">No goals match these filters.</div>`;
-  const rows = goals.map((g) => {
-    const p = gp(g); const a = areaById(p.area); const pct = Math.round(goalProgress(g) * 100); const st = p.status || 'active';
-    const measure = goalMeasure(g);
-    const stLabel = (GSTATUS.find(([v]) => v === st) || [])[1] || st;
-    // Every row shows the one progress slider: active goals are grabbable (set how
-    // far along without opening), finished ones sit read-only at 100%. (Robin.)
-    const canSlide = st === 'active';
-    const slider = `<input type="range" class="gc-slider glist-slider${canSlide ? '' : ' ro'}" min="0" max="100" step="5" value="${pct}" ${canSlide ? `data-goal-progress="${g.id}"` : 'tabindex="-1"'} aria-label="Progress: ${pct}%" title="${canSlide ? 'Drag all the way to 100% to mark it achieved' : `${pct}% complete`}">`;
-    return `<div class="glist-row" data-open-goal="${g.id}" role="button" tabindex="0" style="--h:${a ? hueOf(a) : 220}">
-      <span class="glist-star ${p.focus ? 'on' : ''}" title="${p.focus ? 'Starred' : ''}">${p.focus ? '★' : ''}</span>
-      <span class="glist-main"><span class="glist-t ${st === 'done' ? 'is-done' : ''}">${esc(g.title || 'Untitled')}</span><span class="glist-sub">${a ? `<span class="glist-area"><span class="cd"></span>${esc(a.title)}</span>` : ''}${measure ? `<span class="glist-measure" data-goalnum-measure="${g.id}">${esc(measure)}</span>` : ''}${(st !== 'active' && st !== 'done') ? `<span class="glist-st">${esc(stLabel)}</span>` : ''}</span></span>
-      <span class="glist-bar-wrap"><span class="glist-bar"><i${numManual ? ` data-goalnum-fill="${g.id}"` : ''} style="width:${pct}%"></i></span>${slider}</span>
-      <span class="glist-pct"${numManual ? ` data-goalnum-pct="${g.id}"` : ''}>${st === 'done' ? '✓' : pct + '%'}</span>
-    </div>`;
-  }).join('');
-  return `${controls}<div class="glist">${rows}</div>`;
+  const active = gActiveGoals();
+  if (!active.length) return '<div class="kg-empty">No goals yet. Start one with "+ New goal".</div>';
+  const known = new Set(HORIZONS.map(([v]) => v));
+  const groups = HORIZONS.map(([v, l]) => [l, gSortGoals(active.filter((g) => (gp(g).horizon || 'quarter') === v))]).filter(([, a]) => a.length);
+  const other = gSortGoals(active.filter((g) => !known.has(gp(g).horizon || 'quarter')));
+  if (other.length) groups.push(['Someday', other]);
+  return groups.map(([label, arr]) => `<div class="kg-group"><div class="kg-group-h"><span class="kg-group-l">${esc(label)}</span><span class="kg-group-c">${arr.length}</span><span class="kg-group-rule"></span></div><div class="kg-flat">${arr.map((g) => gGoalRow(g, true)).join('')}</div></div>`).join('');
 }
 // Each Page section on Goals collapses on a header tap (remembered per
 // area), like every other titled section in the app. Default open.
@@ -18395,55 +18442,42 @@ function setGoalAreaHidden(id, hidden) {
 const GOAL_AREA_SORTS = [['focus', 'Starred first'], ['title', 'A–Z'], ['progress', 'Progress'], ['due', 'Due date'], ['updated', 'Recently updated']];
 function goalAreaSort() { return state.goalsAreaSort || (state.goalsAreaSort = (() => { try { return localStorage.getItem('life.goals.areasort') || 'focus'; } catch { return 'focus'; } })()); }
 function goalsByAreaBody() {
-  const active = state.goals.filter((g) => (gp(g).status || 'active') === 'active');
-  const done = state.goals.filter((g) => gp(g).status === 'done');
-  const sortMode = goalAreaSort();
-  const gcmp = {
-    focus: (x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (x.title || '').localeCompare(y.title || ''),
-    title: (x, y) => (x.title || '').localeCompare(y.title || ''),
-    progress: (x, y) => goalProgress(y) - goalProgress(x),
-    due: (x, y) => String(gp(x).targetDate || '9999').localeCompare(String(gp(y).targetDate || '9999')),
-    updated: (x, y) => String(y.updated_at || '').localeCompare(String(x.updated_at || '')),
-  }[sortMode] || (() => 0);
-  const hidden = goalAreaHiddenSet();
-  const areaSections = state.areas.filter((a) => !hidden.has(a.id)).map((a) => {
+  const active = gActiveGoals();
+  const best = gBest();
+  const bar = `<div class="kg-foldbar"><span class="kg-foldbar-o" data-goals-openall role="button" tabindex="0">Open all</span><span class="kg-foldbar-o" data-goals-foldall role="button" tabindex="0">Fold all</span></div>`;
+  const rows = (state.areas || []).map((a) => {
     const p = a.props || {};
-    const goals = active.filter((g) => gp(g).area === a.id).sort(gcmp);
-    const imgs = (p.attachments || []).filter((x) => isImgType(x.type)).slice(0, 4);
-    // Vision leads (its standout lines pulled out as a highlight, "Highlight the
-    // best bits" on by default); the full editable text collapses beneath behind a
-    // toggle, so the highlight is all you see until you want to edit. Goals follow.
-    // (Robin, 2026-10-29.)
-    const visionTxt = (p.vision || '').trim();
-    const visionHl = !(p.visionHighlight === false);
-    const hlQuotes = (visionHl && visionTxt) ? visionHighlights(visionTxt) : [];
-    const hlHtml = hlQuotes.length ? `<div class="vision-hl gv-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
-    const hlTog = visionTxt ? `<label class="vision-hl-tog gv-hl-tog"><input type="checkbox" data-area-vision-hl="${a.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
-    const vision = `<button class="vision-card gv-card" data-open-vision="${a.id}" style="--h:${hueOf(a)}">${visionTxt ? `<div class="vc-text">${esc(p.vision)}</div>` : '<div class="vc-empty">Picture this area at its best - tap to write your vision.</div>'}${imgs.length ? `<div class="vc-thumbs">${imgs.map((im) => `<img data-vimg="${a.id}:${im.id}" alt="">`).join('')}</div>` : ''}</button>`;
-    // With a highlight showing, hide the full text behind "Edit"; with no highlight
-    // (toggle off, or nothing to pull out) show the card so there's always a way in.
-    const hasHl = !!hlHtml;
-    const vExpanded = visionEditOpen(a.id);
-    const showCard = !hasHl || vExpanded;
-    const editTog = (hasHl && visionTxt) ? `<button class="gv-edit-tog" data-vision-edit="${a.id}">${vExpanded ? '▾ Hide the full text' : '✎ Edit the vision text'}</button>` : '';
-    const gvInner = `${hlHtml}<div class="gv-togs">${hlTog}${editTog}</div>${showCard ? vision : ''}`;
+    const goals = gSortGoals(active.filter((g) => gp(g).area === a.id));
     const open = goalAreaOpen(a.id);
-    return `<section class="goal-area ${open ? '' : 'collapsed'}" style="--h:${hueOf(a)}">
-      <div class="goal-area-h" data-goal-area-toggle="${a.id}" role="button" title="${open ? 'Collapse' : 'Expand'}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="goal-area-name">${esc(a.title)}</span>${goals.length ? `<span class="goal-area-n">${goals.length}</span>` : ''}<button class="ghost goal-area-add" data-new-goal-area="${a.id}">+ Goal</button><button class="ghost goal-area-x" data-goal-area-hide="${a.id}" title="Hide ${esc(a.title)} from Goals" aria-label="Hide this Space from Goals">×</button></div>
-      ${open ? `<div class="ga-step ga-step-vision"><span class="ga-step-l">Vision</span><div class="gv-vision">${gvInner}</div></div>
-      <div class="ga-flow"><span class="ga-flow-l">Goals</span>${goals.length ? `<span class="ga-flow-n">${goals.length}</span>` : ''}</div>
-      <div class="ga-step">${goals.length ? `<div class="goal-grid">${goals.map((g) => goalCardMini(g)).join('')}</div>` : '<div class="goal-area-empty">No goals yet - add one to work towards this vision.</div>'}</div>` : ''}
-    </section>`;
+    const visionTxt = (p.vision || '').trim();
+    const num = areaNumeral(a.id);
+    const countLbl = goals.length ? `${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}` : 'No goals yet';
+    const glimpse = visionTxt ? (visionTxt.split(/\n+/).map((s) => s.trim()).filter(Boolean)[0] || '') : '';
+    const minis = goals.map((g) => `<span class="kg-mini" title="${esc(g.title || '')} - ${gPct(g)}%"><i style="width:${gPct(g)}%"></i></span>`).join('');
+    const head = `<div class="kg-sp-h" data-goal-area-toggle="${a.id}" role="button" tabindex="0">
+      <span class="kg-sp-num">${num}</span>
+      <span class="kg-sp-id"><span class="kg-sp-top"><span class="kg-sp-name">${esc(a.title)}</span><span class="kg-sp-count">${countLbl}</span></span>${!open && glimpse ? `<span class="kg-sp-glimpse">${esc(glimpse)}</span>` : ''}</span>
+      <span class="kg-sp-minis">${open ? '' : minis}</span>
+      <span class="kg-sp-sign">${open ? '−' : '+'}</span>
+    </div>`;
+    if (!open) return `<div class="kg-sp">${head}</div>`;
+    let visionHtml;
+    if (visionTxt) {
+      const paras = visionTxt.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+      const hls = best ? visionHighlights(visionTxt) : [];
+      visionHtml = `<div class="kg-vision">${paras.map((para) => {
+        const hl = best ? hls.find((h) => para.includes(h)) : null;
+        if (hl) { const i = para.indexOf(hl); return `<p class="kg-vp">${para.slice(0, i) ? `<span class="kg-dim">${esc(para.slice(0, i))}</span>` : ''}<span class="kg-hl">${esc(hl)}</span>${para.slice(i + hl.length) ? `<span class="kg-dim">${esc(para.slice(i + hl.length))}</span>` : ''}</p>`; }
+        return `<p class="kg-vp${best ? ' kg-dim' : ''}">${esc(para)}</p>`;
+      }).join('')}</div><div class="kg-vedit"><span data-open-vision="${a.id}">Edit the vision</span></div>`;
+    } else {
+      visionHtml = `<div class="kg-novision"><span class="kg-novision-t">Picture this part of your life at its best.</span><span class="kg-write" data-open-vision="${a.id}">Write a vision →</span></div>`;
+    }
+    const goalRows = goals.length ? goals.map((g) => gGoalRow(g, false)).join('') : '<div class="kg-nogoals">No goals yet.</div>';
+    const foot = `<div class="kg-sp-foot"><span class="kg-add" data-new-goal-area="${a.id}" role="button" tabindex="0">+ Add a goal</span><span class="kg-openarea" data-open-area="${a.id}" role="button" tabindex="0">Open ${esc(a.title)} →</span></div>`;
+    return `<div class="kg-sp open">${head}<div class="kg-sp-body">${visionHtml}<div class="kg-goals">${goalRows}</div>${foot}</div></div>`;
   }).join('');
-  const noArea = active.filter((g) => !gp(g).area || !areaById(gp(g).area));
-  const noAreaSec = noArea.length ? `<section class="goal-area"><div class="goal-area-h"><span class="goal-area-name">No page</span></div><div class="goal-grid">${noArea.map((g) => goalCardMini(g)).join('')}</div></section>` : '';
-  // Hidden Spaces sit in a quiet strip at the foot; tap one to bring it back.
-  const hiddenAreas = [...hidden].map((id) => areaById(id)).filter(Boolean);
-  const hiddenStrip = hiddenAreas.length ? `<div class="goal-hidden-strip"><span class="ghs-l">Hidden</span>${hiddenAreas.map((a) => `<button class="ghs-chip" data-goal-area-show="${a.id}" title="Show ${esc(a.title)} on Goals again"><span class="cd" style="--h:${hueOf(a)}"></span>${esc(a.title)}<span class="ghs-plus">+</span></button>`).join('')}</div>` : '';
-  // The "this quarter's focus" strip lives on its own tab now, not at the top here.
-  const controls = `<div class="glist-controls glist-controls-area"><select class="sel" data-garea-sort title="Sort goals within each Space">${GOAL_AREA_SORTS.map(([v, l]) => `<option value="${v}" ${sortMode === v ? 'selected' : ''}>Sort: ${esc(l)}</option>`).join('')}</select></div>`;
-  return `${controls}${areaSections}${noAreaSec}${hiddenStrip}
-    ${done.length ? `<details class="goal-done"><summary>Done · ${done.length}</summary><div class="goal-grid">${done.map((g) => goalCardMini(g)).join('')}</div></details>` : ''}`;
+  return `${bar}<div class="kg-spaces">${rows}</div>`;
 }
 // Bucket list: its own box, off to the side of Goals - collapsed by default so
 // those someday-ideas aren't front and centre every time (Robin's call).
@@ -18804,12 +18838,18 @@ async function addGoalTask(goalId, milestoneId) {
   state.goal_open.tasks.push(t); renderGoalCard();
 }
 // bucket list
+// Bucket list (§13): a short italic intro, then a two-column numbered list in
+// Cormorant, no progress bars. Click a line to mark it done (strikethrough).
 function bucketBody() {
-  const byArea = {};
-  state.bucket.forEach((b) => { const k = (b.props && b.props.area) || '_'; (byArea[k] = byArea[k] || []).push(b); });
-  const order = Object.keys(byArea).sort((x, y) => (x === '_' ? 1 : y === '_' ? -1 : (areaById(x) || {}).title?.localeCompare((areaById(y) || {}).title || '') || 0));
-  const groups = order.map((k) => { const a = areaById(k); return `<div class="goal-group"><div class="goal-group-h">${a ? esc(a.title) : 'Unfiled'}</div><div class="bucket-grid">${byArea[k].map(bucketCard).join('')}</div></div>`; }).join('');
-  return `<div class="goals-actions"><button class="add-btn wide" data-new-bucket>+ Add to bucket list</button></div>${groups || '<div class="empty" style="padding:40px">Your bucket list is empty. What do you want to do before you die?</div>'}`;
+  const items = state.bucket || [];
+  const intro = `<div class="kg-bucket-intro">No deadlines, no progress bars. Just the things you'd like to have done, kept where you'll see them again.</div>`;
+  if (!items.length) return `${intro}<div class="kg-empty">Nothing yet. What would you like to do, one day? <span class="kg-write" data-new-bucket role="button" tabindex="0">Add one →</span></div>`;
+  const rows = items.map((b, i) => {
+    const p = b.props || {}; const a = areaById(p.area); const done = p.status === 'done';
+    const meta = [a ? esc(a.title) : '', done ? 'done' : ''].filter(Boolean).join(' · ');
+    return `<div class="kg-bk${done ? ' done' : ''}" data-bucket-tick="${b.id}" role="button" tabindex="0" title="${done ? 'Mark not done' : 'Mark done'}"><span class="kg-bk-num">${roman(i + 1)}</span><span class="kg-bk-id"><span class="kg-bk-t">${esc(b.title || 'Untitled')}</span>${meta ? `<span class="kg-bk-meta">${meta}</span>` : ''}</span></div>`;
+  }).join('');
+  return `${intro}<div class="kg-bucket">${rows}</div><div class="kg-bucket-add"><span class="kg-write" data-new-bucket role="button" tabindex="0">+ Add to the list</span></div>`;
 }
 function bucketCard(b) {
   const p = b.props || {}; const a = areaById(p.area);
@@ -22883,6 +22923,13 @@ document.addEventListener('click', (e) => {
   { const gat = t.closest('[data-goal-area-toggle]'); if (gat) { toggleGoalArea(gat.dataset.goalAreaToggle); return; } }
   if (t.closest('[data-bucket-toggle]') && !t.closest('[data-new-bucket]')) { try { localStorage.setItem('life.goals.bucket', bucketBoxOpen() ? '0' : '1'); } catch {} renderGoals(); return; }
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
+  { const gst = t.closest('[data-goal-star]'); if (gst) { e.stopPropagation(); toggleGoalStar(gst.dataset.goalStar); return; } }
+  if (t.closest('[data-goals-best]')) { try { localStorage.setItem('life.goals.best', gBest() ? '0' : '1'); } catch {} renderGoals(); return; }
+  { const go = t.closest('[data-goals-order]'); if (go) { state.goalsOrder = go.dataset.goalsOrder; try { localStorage.setItem('life.goals.order', state.goalsOrder); } catch {} renderGoals(); return; } }
+  if (t.closest('[data-goals-openall]')) { try { localStorage.setItem('life.goals.acollapse', '[]'); } catch {} renderGoals(); return; }
+  if (t.closest('[data-goals-foldall]')) { try { localStorage.setItem('life.goals.acollapse', JSON.stringify((state.areas || []).map((a) => a.id))); } catch {} renderGoals(); return; }
+  { const gsd = t.closest('[data-goals-side]'); if (gsd) { gToggleSide(gsd.dataset.goalsSide); return; } }
+  { const bkt = t.closest('[data-bucket-tick]'); if (bkt) { gBucketTick(bkt.dataset.bucketTick); return; } }
   { const rdx = t.closest('[data-review-dismiss]'); if (rdx) { e.preventDefault(); e.stopPropagation(); reviewDismiss(rdx.dataset.reviewDismiss); return; } }
   if (t.closest('[data-review-overview]')) { runReviewOverview(); return; }
   const srv = t.closest('[data-start-review]'); if (srv) { startReview(srv.dataset.startReview).catch((x) => toast(x.message)); return; }
