@@ -14895,6 +14895,18 @@ function mailListInner(loading) {
 }
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
+  const m = state.mail;
+  // The Koyeba Mail list (§12) lives in .mail-groups. Refresh it in place, but
+  // never while a message is open (that would reset its body iframe) or while the
+  // search box has focus (would steal it mid-type) - those wait for a full render.
+  const groups = document.querySelector('.mail-groups');
+  if (groups) {
+    if (m && m.open) return;
+    const ae = document.activeElement;
+    if (ae && ae.matches && ae.matches('.mail-search2 input')) return;
+    groups.innerHTML = mailDayGroupsHtml(loading);
+    return;
+  }
   const el = document.querySelector('.mail-list');
   if (el) el.innerHTML = mailListInner(loading);
   else renderMail(loading);
@@ -14917,38 +14929,204 @@ function scrollToMailList() {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
+// ── Koyeba Mail page (§12 of the handover). A piles row of Cormorant numbers,
+// a day-grouped accordion of emails that open in place, and a sticky side of
+// what Koyeba noticed. The model is UNCHANGED: the piles map onto the existing
+// quad labels - To sort = the inbox queue (untriaged), Urgent/Important/Later =
+// urgent/important/chilled, Archive = the IMAP Archive folder - and every action
+// reuses its old handler (data-mail-quad-view/inbox/archive, data-mail-quad-file,
+// data-mail-archive, data-mail-open, data-mail-reply/-forward, data-mail-task/
+// -note/-event, data-mail-compose, data-mail-folder, data-mail-q).
+function mailInInbox() { const f = state.mail.folder || 'inbox'; return f === 'inbox' || f === 'unread' || f === 'starred'; }
+function mailToSortCount() { return mailInInbox() ? buildThreads(state.mail.messages || []).filter((th) => mailQuadOf(th.latest) === 'inbox').length : 0; }
+const MAIL_PILE_HINT = { sort: 'One pass, then it’s clear', urgent: 'Today, or it’s late', important: 'Matters, not rushed', chilled: 'Worth a read, no hurry', archive: 'Done' };
+function mailSelectedPile() {
+  const m = state.mail, qf = m.quadFilter || new Set();
+  if (m.folder === 'archive') return 'archive';
+  if (qf.size === 1) return [...qf][0];   // urgent / important / chilled
+  if (mailInInbox()) return 'sort';
+  return m.folder || 'inbox';   // a plain folder (drafts/sent/spam/trash)
+}
+function mailEyebrow() {
+  const p = mailSelectedPile();
+  const name = { sort: null, urgent: 'Urgent', important: 'Important', chilled: 'Later', archive: 'Archive', drafts: 'Drafts', sent: 'Sent', spam: 'Spam', trash: 'Bin' }[p];
+  return name ? 'Mail · ' + name : 'Tool · Mail';
+}
+function mailMood() {
+  const p = mailSelectedPile();
+  if (p !== 'sort') return (MAIL_PILE_HINT[p] || { drafts: 'Your unsent drafts', sent: 'Everything you’ve sent', spam: 'Flagged as spam', trash: 'In the bin' }[p] || '') + '.';
+  const left = mailToSortCount();
+  if (left === 0) return 'All sorted. Deal with the urgent ones first.';
+  if (left === 1) return 'One left to sort.';
+  const words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+  return (words[left] || left) + ' to sort. Clear them in one pass.';
+}
+// The piles row: five Cormorant numbers, the selected one ink with a gold
+// underline on the keyline. Reuses the quad-selection handlers. Folders sit as
+// quiet text links on the right.
+function mailPilesRowHtml() {
+  const m = state.mail, qf = m.quadFilter || new Set();
+  const sel = mailSelectedPile();
+  const counts = { urgent: mailQuadMsgs('urgent').length, important: mailQuadMsgs('important').length, chilled: mailQuadMsgs('chilled').length };
+  const piles = [
+    { k: 'sort', label: 'To sort', n: mailInInbox() ? mailToSortCount() : null, attr: 'data-mail-quad-inbox' },
+    { k: 'urgent', label: 'Urgent', n: counts.urgent, attr: 'data-mail-quad-view="urgent"' },
+    { k: 'important', label: 'Important', n: counts.important, attr: 'data-mail-quad-view="important"' },
+    { k: 'chilled', label: 'Later', n: counts.chilled, attr: 'data-mail-quad-view="chilled"' },
+    { k: 'archive', label: 'Archive', n: null, attr: 'data-mail-quad-archive' },
+  ];
+  const pileEls = piles.map((p) => `<button class="mail-pile${sel === p.k ? ' on' : ''}" ${p.attr}><span class="mail-pile-top"><span class="mail-pile-n">${p.n == null ? '·' : p.n}</span><span class="mail-pile-l">${p.label}</span></span><span class="mail-pile-h">${esc(MAIL_PILE_HINT[p.k])}</span></button>`).join('');
+  const FOLDS = [['drafts', 'Drafts'], ['sent', 'Sent'], ['spam', 'Spam'], ['trash', 'Bin']];
+  const foldEls = FOLDS.map(([k, l]) => { const dc = k === 'drafts' ? draftCount() : 0; return `<button class="mail-foldlink${m.folder === k ? ' on' : ''}" data-mail-folder="${k}">${l}${dc ? ` ${dc}` : ''}</button>`; }).join('');
+  return `<div class="mail-piles"><div class="mail-piles-row">${pileEls}</div><div class="mail-folds">${foldEls}</div></div>`;
+}
+// Which day-group an email falls in, newest first.
+function mailDayLabel(dateStr) {
+  const d = dateStr ? new Date(dateStr) : null;
+  if (!d || isNaN(d)) return 'Earlier';
+  const now = new Date();
+  const startOf = (x) => { const y = new Date(x); y.setHours(0, 0, 0, 0); return y; };
+  const days = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (days <= 0) { return d.getHours() < 12 ? 'This morning' : 'Today'; }
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return 'Earlier this week';
+  if (days < 14) return 'Last week';
+  return 'Earlier';
+}
+const MAIL_DAY_ORDER = ['This morning', 'Today', 'Yesterday', 'Earlier this week', 'Last week', 'Earlier'];
+// The accordion list: threads for the open pile, grouped by day into folding
+// groups, each row opening IN PLACE (reusing m.open + the body loader).
+function mailDayGroupsHtml(loading) {
+  const m = state.mail;
+  if (m.folder === 'drafts') return draftsListHtml();
+  const threads = mailVisibleThreads();
+  if (!threads.length) return '';   // the empty state is drawn by renderMail
+  const shut = m.groupsShut || (m.groupsShut = {});
+  const groups = [];
+  threads.forEach((th) => { const lab = mailDayLabel(th.latest.date); let g = groups.find((x) => x.label === lab); if (!g) { g = { label: lab, items: [] }; groups.push(g); } g.items.push(th); });
+  groups.sort((a, b) => MAIL_DAY_ORDER.indexOf(a.label) - MAIL_DAY_ORDER.indexOf(b.label));
+  return groups.map((g) => {
+    const open = !shut[g.label];
+    const rows = open ? g.items.map((th) => mailAccordionRow(th.latest, th.count)).join('') : '';
+    return `<div class="mail-group"><button class="mail-group-h" data-mail-group="${esc(g.label)}"><span class="mail-group-l">${esc(g.label)}</span><span class="mail-group-c">${g.items.length}</span><span class="mail-group-rule"></span><span class="mail-group-sign">${open ? '−' : '+'}</span></button>${rows}</div>`;
+  }).join('');
+}
+// One accordion row: time · sender · (account) · subject · preview · gold
+// square if noticed · +/−. Expands to the body + a Noticed line + the action row.
+function mailAccordionRow(x, count) {
+  const m = state.mail;
+  const isOpen = m.open && m.open._key === x._key;
+  const showAcct = m.account === 'all' && (m.accounts || []).length > 1;
+  const acctName = showAcct ? (() => { const a = (m.accounts || []).find((y) => y.id === x._acct); return a ? (a.name || a.email) : (x._acctName || ''); })() : '';
+  const noticed = mailRowNotice(x);
+  const head = `<button class="mail-ar-head" data-mail-open="${esc(x._key)}">`
+    + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
+    + `<span class="mail-ar-main"><span class="mail-ar-top"><span class="mail-ar-from${x.seen ? '' : ' unread'}">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-ar-n">${count}</span>` : ''}</span>${acctName ? `<span class="mail-ar-acct">${esc(acctName)}</span>` : ''}</span>`
+    + `<span class="mail-ar-subj${x.seen ? '' : ' unread'}">${esc(x.subject || '(no subject)')}</span>`
+    + `${!isOpen && x.preview ? `<span class="mail-ar-prev">${esc(x.preview)}</span>` : ''}</span>`
+    + `<span class="mail-ar-sign">${noticed ? '<span class="mail-ar-dot" title="Koyeba noticed something"></span>' : ''}<span class="mail-ar-pm">${isOpen ? '−' : '+'}</span></span>`
+    + `</button>`;
+  const panel = isOpen ? `<div class="mail-ar-panel">${mailOpenPanelHtml(m.open)}</div>` : '';
+  return `<div class="mail-ar${isOpen ? ' open' : ''}">${head}${panel}</div>`;
+}
+// Does Koyeba notice anything in this email? (an invite, a meeting link, or that
+// it's already filed to a task/note). Returns a short italic line or null.
+function mailRowNotice(o) {
+  if (!o) return null;
+  if (o.invite && o.invite.summary) return `${esc(o.invite.summary)}${o.invite.start ? ' · ' + esc(dpLabel ? dpLabel(String(o.invite.start).slice(0, 10)) : String(o.invite.start).slice(0, 10)) : ''}`;
+  return null;
+}
+// The opened message, inline: the body, a Noticed line, then the action row.
+function mailOpenPanelHtml(o) {
+  const m = state.mail, isSort = mailSelectedPile() === 'sort';
+  // Other messages in this conversation, so you can jump between them.
+  const oThread = buildThreads(m.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
+  const convStrip = (oThread && oThread.count > 1)
+    ? `<div class="mail-conv2">${oThread.messages.map((mm) => `<button class="mail-conv2-it${mm._key === o._key ? ' on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mail-conv2-f">${esc(mailFrom(mm) || '?')}</span><span class="mail-conv2-d">${mailDate(mm.date)}</span></button>`).join('')}</div>`
+    : '';
+  const body = o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
+    : o._bodyError ? `<div class="mail-text mail-body-err">${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
+    : (o.html && !m.plain) ? '<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>'
+    : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`;
+  const atts = (o.attachments && o.attachments.length) ? `<div class="mail-att2">${o.attachments.map((a) => `<a class="mail-att2-chip" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer">${esc(a.filename || 'attachment')} <span class="mail-att2-sz">${fmtBytes(a.size)}</span></a>`).join('')}</div>` : '';
+  const ml = mailMeetingLink(o);
+  const join = ml ? `<div class="mail-join2"><button class="mail-join-btn" data-mail-join="${esc(ml)}">Join meeting →</button><span class="mail-join-url">${esc(ml)}</span></div>` : '';
+  const imgs = mailImagesBlocked(o) ? `<div class="mail-imgbar2"><span>Remote images are hidden to protect your privacy.</span><button class="mail-showimg" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button></div>` : '';
+  let noticed = '';
+  if (o.invite) {
+    noticed = `<div class="mail-noticed"><span class="mail-noticed-l">Noticed</span><span class="mail-noticed-t">${esc(o.invite.summary || 'An event')}${o.invite.start ? ' · ' + esc(typeof dpLabel === 'function' ? dpLabel(String(o.invite.start).slice(0, 10)) : '') : ''}</span><span class="mail-noticed-act" data-mail-invite-add>${o.invite._added ? 'Added ✓' : 'Add to calendar →'}</span></div>`;
+  } else {
+    const filed = mailFiledHtml(o);
+    if (filed) noticed = `<div class="mail-noticed mail-noticed-filed">${filed}</div>`;
+  }
+  const sorts = isSort ? `<div class="mail-sorts">`
+    + [['urgent', 'Urgent', 'U', 'ink'], ['important', 'Important', 'I', ''], ['chilled', 'Later', 'L', ''], ['archive', 'Archive', 'A', '']].map(([q, label, key, border]) =>
+        q === 'archive'
+          ? `<button class="mail-sortbtn" data-mail-archive="${esc(o._key)}">${label}<span class="mail-sortkey">${key}</span></button>`
+          : `<button class="mail-sortbtn${border === 'ink' ? ' ink' : ''}" data-mail-quad-file="${q}">${label}<span class="mail-sortkey">${key}</span></button>`
+      ).join('') + `</div>` : '';
+  const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button></div>`;
+  const replyActs = `<div class="mail-replyacts"><button class="mail-reply" data-mail-reply-all>Reply</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
+  return `${convStrip}${body}${atts}${join}${imgs}${noticed}<div class="mail-ar-acts">${sorts}${makeActs}${replyActs}</div>`;
+}
+// The "More" menu in the open row: everything §12 keeps but tucks away - Email
+// Scribe (AI draft), the plain-text view, file in a Space, spam, block, delete.
+// (Robin chose to keep these behind "More" rather than lose them, 2026-11-01.)
+function mailMoreHtml(o) {
+  const m = state.mail;
+  const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
+  const addr = o.from && o.from.address ? esc(o.from.address) : '';
+  const items = [];
+  items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
+  if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
+  items.push(`<button class="mail-more-item" data-mail-area>File in a Space</button>`);
+  items.push(inSpam ? `<button class="mail-more-item" data-mail-notspam="${esc(o._key)}">Not spam</button>` : `<button class="mail-more-item" data-mail-spam="${esc(o._key)}">Mark as spam</button>`);
+  items.push(`<button class="mail-more-item" data-mail-block="${esc(o._key)}" data-mail-from="${addr}">Block this sender</button>`);
+  items.push(`<button class="mail-more-item mail-more-del" data-mail-del="${esc(o._key)}">Delete</button>`);
+  return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
+}
+
+// Side column: what Koyeba noticed, and what you're waiting on.
+function mailNoticedList() {
+  const m = state.mail;
+  return buildThreads(m.messages || []).map((th) => th.latest).filter((o) => o && o.invite).map((o) => ({
+    text: o.invite.summary || 'An event' , from: mailFrom(o) || '', key: o._key,
+  }));
+}
+function mailSideHtml() {
+  const m = state.mail;
+  m.side = m.side || { noticed: true, waiting: false };
+  const noticed = mailNoticedList();
+  const panels = [
+    { id: 'noticed', title: 'Noticed in your mail', count: noticed.length, body: noticed.length
+        ? noticed.map((it) => `<div class="mail-side-it"><div class="mail-side-t">${esc(it.text)}</div><div class="mail-side-m"><span>${esc(it.from)}</span><span class="mail-side-act" data-mail-open="${esc(it.key)}">Open →</span></div></div>`).join('')
+        : '<div class="mail-side-empty">Nothing spotted just now.</div>' },
+    { id: 'waiting', title: 'Waiting on a reply', count: 0, body: '<div class="mail-side-empty">Nothing waiting on a reply.</div>' },
+  ];
+  const html = panels.map((p) => {
+    const open = !!m.side[p.id];
+    return `<div class="mail-side-panel"><button class="mail-side-h" data-mail-side="${p.id}"><span class="mail-side-hl">${esc(p.title)}</span><span class="mail-side-hc">${p.count}</span><span class="mail-side-sign">${open ? '−' : '+'}</span></button>${open ? `<div class="mail-side-body">${p.body}</div>` : ''}</div>`;
+  }).join('');
+  return `${html}<div class="mail-side-keys">Keys while sorting: <b>U</b> urgent · <b>I</b> important · <b>L</b> later · <b>A</b> archive</div>`;
+}
 function renderMail(loading) {
-  // Mail's loads are the slowest in the app (IMAP, over the network, sometimes
-  // seconds), so a response can land long after you've moved on. Painting it then
-  // drops the mail list on top of whatever you're actually looking at. Every mail
-  // render goes through here, so this one guard closes the whole class of it.
+  // Mail's loads are the slowest in the app (IMAP, over the network), so a
+  // response can land long after you've moved on; this guard stops a late render
+  // dropping the mail list over whatever you're now looking at.
   if (!state.view || (state.view.type !== 'mail' && state.view.type !== 'mailaccounts')) return;
   const m = state.mail;
-  document.body.classList.toggle('mail-reading', !!(m && (m.open || m.composing)));   // mobile: full-screen reader
+  document.body.classList.toggle('mail-reading', !!m.composing);
   if (m.accounts && !m.accounts.length) return renderMailAccounts('Add a mailbox to get started.');
   const unseenOf = (id) => (m.unseen && m.unseen[id]) || 0;
-  const badge = (n) => n ? `<span class="mail-unread-b">${n}</span>` : '';
   const totalUnseen = Object.values(m.unseen || {}).reduce((a, b) => a + b, 0);
-  // A "stray" unread: the account's unseen count is higher than the unread you
-  // can actually see in the list (an old message flagged unread, older than the
-  // newest page). Offer to clear it, since it's otherwise unreachable.
-  const liveUnseenOf = (id) => (m.liveUnseen && m.liveUnseen[id]) || 0;
-  const scopeUnseen = m.account === 'all' ? (m.accounts || []).reduce((a, x) => a + liveUnseenOf(x.id), 0) : liveUnseenOf(m.account);
-  const visibleUnread = (m.messages || []).filter((x) => !x.seen).length;
-  const strayUnread = (m.folder || 'inbox') === 'inbox' && !mailSearching() ? Math.max(0, scopeUnseen - visibleUnread) : 0;
-  m._stray = strayUnread;   // remembered so the hide button knows which count was dismissed
-  // One compact dropdown instead of a row of account tabs: defaults to All, pick
-  // a single box only when you want to.
-  const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-acct-scope-sel" data-mail-acct-sel title="Which mailbox">
+  const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-tb-acctsel" data-mail-acct-sel title="Which mailbox">
       <option value="all" ${m.account === 'all' ? 'selected' : ''}>All accounts${totalUnseen ? ` · ${totalUnseen} unread` : ''}</option>
       ${(m.accounts || []).map((a) => `<option value="${a.id}" ${a.id === m.account ? 'selected' : ''}>${esc(a.name || a.email)}${unseenOf(a.id) ? ` · ${unseenOf(a.id)}` : ''}</option>`).join('')}
     </select>` : '';
-  const showAcct = m.account === 'all';
-  const list = `<div class="mail-list">${mailListInner(loading)}</div>`;
-  let reader;
+  // Compose keeps its existing form, as a sub-view with a plain back link.
   if (m.composing) {
     const catts = m.composing.attachments || [];
-    reader = `<form id="mail-compose-form" class="mail-compose">
+    const composeForm = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
@@ -14957,122 +15135,64 @@ function renderMail(loading) {
       ${contactsDatalist()}
       <input id="mc-subject" placeholder="Subject" value="${esc(m.composing.subject || '')}">
       <div class="mail-rt-toolbar">
-        <button type="button" data-rt="bold" title="Bold  ·  ${PK('⌘B')}"><b>B</b></button>
-        <button type="button" data-rt="italic" title="Italic  ·  ${PK('⌘I')}"><i>I</i></button>
-        <button type="button" data-rt="underline" title="Underline  ·  ${PK('⌘U')}"><u>U</u></button>
+        <button type="button" data-rt="bold" title="Bold"><b>B</b></button>
+        <button type="button" data-rt="italic" title="Italic"><i>I</i></button>
+        <button type="button" data-rt="underline" title="Underline"><u>U</u></button>
         <button type="button" data-rt="insertUnorderedList" title="Bullet list">•&nbsp;List</button>
         <button type="button" data-rt="link" title="Add link">🔗</button>
       </div>
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
-      ${(() => { const a = (m.accounts || []).find((x) => x.id === composeAcctId()); return a && a.signature ? `<div class="mail-sig-note">✓ Signature for <b>${esc(a.email)}</b> will be added</div>` : ''; })()}
       <input type="file" id="mc-file" multiple hidden></form>`;
-  } else if (m.open) {
-    const o = m.open;
-    // Order by how often it's reached for: respond, triage, flag, then the two
-    // "capture into Koyeba" actions (file in a page, make a task), the AI
-    // draft, and the rare spam/block last. On mobile the whole bar wraps so none
-    // of these hide off-screen (the life-area button used to scroll out of view).
-    // Reply is a dropdown that defaults to Reply all, with "Reply to sender" and
-    // Forward beneath it. Transform is a dropdown to turn the email into a task or a
-    // note. Both are native <details> so they need no extra state.
-    const replyDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Reply">${MAIL_ICO.replyAll}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-reply-all>${MAIL_ICO.replyAll}<span>Reply to all</span></button><button class="mail-dd-item" data-mail-reply>${MAIL_ICO.reply}<span>Reply to sender</span></button><button class="mail-dd-item" data-mail-forward>${MAIL_ICO.forward}<span>Forward</span></button></div></details>`;
-    const xformDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum" title="Turn this email into…">${MAIL_ICO.transform}${MAIL_ICO.caret}</summary><div class="mail-dd-menu"><button class="mail-dd-item" data-mail-event>${MAIL_ICO.calendar}<span>Add as event</span></button><button class="mail-dd-item" data-mail-note>${MAIL_ICO.note}<span>Add as note</span></button><button class="mail-dd-item" data-mail-task>${MAIL_ICO.task}<span>Add as task</span></button></div></details>`;
-    // File into a priority bucket - the old second row, now one dropdown. Shows a
-    // tick on the current bucket, and "Back to Inbox" once it's been filed.
-    const curQuad = mailQuadOf(o);
-    const fileDD = `<details class="mail-dd"><summary class="ghost mail-act-ic mail-dd-sum${curQuad !== 'inbox' ? ' on' : ''}" title="File into a bucket">${MAIL_ICO.folder}${MAIL_ICO.caret}</summary><div class="mail-dd-menu">${MAIL_QUADS.map((q) => `<button class="mail-dd-item mail-dd-quad mail-quad-${q.key} ${curQuad === q.quad ? 'on' : ''}" data-mail-quad-file="${q.quad}" title="${esc(q.hint)}"><span class="mail-quad-dot"></span><span>${esc(q.label)}${curQuad === q.quad ? ' ✓' : ''}</span></button>`).join('')}${curQuad !== 'inbox' ? `<button class="mail-dd-item" data-mail-quad-file="inbox" title="Back to the inbox queue">${MAIL_ICO.reply}<span>Back to Inbox</span></button>` : ''}</div></details>`;
-    // The rare, sender-level actions live under a More menu so the main bar is one
-    // clean row. "Mark important sender" groups that sender's mail at the top of
-    // the inbox (the ⭐ box). (Robin, 2026-09-28.)
-    const isVip = o.from && isVipAddr(o.from.address);
-    const plainItem = o.html ? `<button class="mail-dd-item" data-mail-plain>${MAIL_ICO.note}<span>${state.mail.plain ? 'Formatted view' : 'Plain-text view (easier to read)'}</span></button>` : '';
-    const vipItem = MAIL_VIP_ON ? `<button class="mail-dd-item" data-mail-vip="${esc(o.from ? o.from.address : '')}">${isVip ? MAIL_ICO.vipOn : MAIL_ICO.vip}<span>${isVip ? 'Remove important sender' : 'Mark important sender'}</span></button>` : '';
-    // In the Spam folder (or on a message that lives in Junk), the spam item flips
-    // to "Not spam" - moves it back to the inbox. (Robin, 2026-10-13.)
-    const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
-    const spamItem = inSpam
-      ? `<button class="mail-dd-item" data-mail-notspam="${esc(o._key)}">${MAIL_ICO.notspam}<span>Not spam</span></button>`
-      : `<button class="mail-dd-item" data-mail-spam="${esc(o._key)}">${MAIL_ICO.spam}<span>Mark as spam</span></button>`;
-    const moreDD = `<details class="mail-dd mail-dd-r"><summary class="ghost mail-act-ic mail-dd-sum" title="More">${MAIL_ICO.more}</summary><div class="mail-dd-menu">${plainItem}${vipItem}${spamItem}<button class="mail-dd-item" data-mail-block="${esc(o._key)}" data-mail-from="${esc(o.from ? o.from.address : '')}">${MAIL_ICO.block}<span>Block this sender</span></button></div></details>`;
-    const msgActs = `${replyDD}${fileDD}<button class="ghost mail-act-ic" data-mail-archive="${esc(o._key)}" title="Archive - done with it, keep it  ·  E">${MAIL_ICO.archive}</button><button class="ghost mail-act-ic" data-mail-del="${esc(o._key)}" title="Delete">${MAIL_ICO.trash}</button><button class="ghost mail-act-ic" data-mail-area title="File this email in a page">${MAIL_ICO.area}</button>${xformDD}<button class="ghost mail-act-ic" data-mail-claudius title="Draft a reply with Email Scribe">${MAIL_ICO.sparkle}</button>${moreDD}`;
-    // The other messages in this conversation, oldest first, so you can jump to
-    // any of them (opening swaps the reader, using the prefetched cache).
-    const oThread = buildThreads(state.mail.messages || []).find((th) => th.messages.some((mm) => mm._key === o._key));
-    const convStrip = (oThread && oThread.count > 1)
-      ? `<div class="mail-conv-strip">${oThread.messages.map((mm) => `<button class="mail-conv-item ${mm._key === o._key ? 'on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mc-from">${esc(mailFrom(mm) || '?')}</span><span class="mc-date">${mailDate(mm.date)}</span>${mm.flagged ? '<span class="mc-star">★</span>' : ''}</button>`).join('')}</div>`
-      : '';
-    reader = `<div class="mail-msg">
-      <div class="mail-reader-head"><button class="ghost mail-back" data-mail-back title="Back" aria-label="Back">←</button>
-        <span class="mail-msg-act">${msgActs}</span></div>
-      <h1 class="mail-subj">${esc(o.subject)}</h1>
-      ${convStrip}
-      <div class="mail-meta"><span class="mail-avatar big">${esc(initial(o.from ? (o.from.name || o.from.address) : '?'))}</span>
-        <span class="mail-meta-lines"><b>${esc(o.from ? (o.from.name || o.from.address) : '')}</b><span class="mail-addr">${esc(o.from ? o.from.address : '')}</span></span>
-        ${o.from && o.from.address ? (() => { const _c = contactByEmail(o.from.address); return _c ? `<button class="mail-contact-have" data-open-contact="${_c.id}" title="Open ${esc(_c.title || 'this contact')}'s card">👤 ${esc(_c.title || 'Contact')}</button>` : `<button class="ghost mail-savecontact" data-save-contact data-c-name="${esc(o.from.name || '')}" data-c-email="${esc(o.from.address)}" title="Save to contacts">＋ Save contact</button>`; })() : ''}
-        ${((state.mail.accounts || []).length > 1) ? (() => { const a = (state.mail.accounts || []).find((x) => x.id === o._acct); const lbl = a ? (a.email || a.name) : (o._acctName || ''); return lbl ? `<span class="mail-acct-chip" title="Received at this mailbox">📥 ${esc(lbl)}</span>` : ''; })() : ''}<span class="mail-when">${o.date ? new Date(o.date).toLocaleString() : ''}</span></div>
-      ${mailFiledHtml(o)}
-      ${o.attachments && o.attachments.length ? `<div class="mail-att">${o.attachments.map((a) => `<a class="mail-att-chip mail-att-dl" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open attachment in your browser">📎 ${esc(a.filename || 'attachment')} <span class="mail-att-sz">${fmtBytes(a.size)}</span> ↗</a>`).join('')}</div>` : ''}
-      ${o.invite ? inviteCardHtml(o.invite) : ''}
-      ${(() => { const ml = mailMeetingLink(o); return ml ? `<div class="mail-join-bar"><button class="add-btn wide" data-mail-join="${esc(ml)}">🎥 Join meeting</button><span class="mail-join-url">${esc(ml)}</span></div>` : ''; })()}
-      ${mailImagesBlocked(o) ? `<div class="mail-imgbar"><span class="mail-imgbar-t">🖼 Remote images are hidden to protect your privacy.</span><span class="mail-imgbar-act"><button class="ghost" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button>${o.from && o.from.address ? '<span class="mail-imgbar-note">and always from this sender</span>' : ''}</span></div>` : ''}
-      ${o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
-        : o._bodyError ? `<div class="mail-text mail-body-err">⚠ ${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
-        : (o.html && !state.mail.plain) ? `<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>` : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`}</div>`;
-  } else {
-    reader = `<div class="mail-empty">${loading ? '' : 'Select a message to read.'}</div>`;
+    $('#pane').innerHTML = `${pageCrumb(t('nav.mail'))}<div class="mail2 mail2-compose">${composeForm}</div>`;
+    return;
   }
-  // Reading a message: the crumb's back arrow returns to the inbox, not Home.
-  const mailCrumb = (m.open || m.composing)
-    ? `<div class="note-crumbs"><button class="crumb-back" data-mail-back title="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-mail-back>Mail</button><span class="crumb-sep">›</span><span class="crumb cur">${m.composing ? 'Compose' : 'Message'}</span></div>`
-    : pageCrumb(t('nav.mail'));
+  const threads = mailVisibleThreads();
+  const isSort = mailSelectedPile() === 'sort';
+  const toSort = mailToSortCount();
+  const sortedPct = (() => { const tot = (m.messages || []).length; return tot ? Math.round(((tot - toSort) / tot) * 100) : 0; })();
+  const progress = isSort ? `<div class="mail-progress"><div class="mail-progress-bar"><i style="width:${sortedPct}%"></i></div><span class="mail-progress-l">${(m.messages || []).length - toSort} of ${(m.messages || []).length} sorted</span></div>` : '';
+  const undo = (m.undo && m.undo.label) ? `<div class="mail-undo"><span>${esc(m.undo.label)}</span><button class="mail-undo-btn" data-mail-undo>Undo</button></div>` : '';
+  const emptyHtml = !threads.length ? (loading ? '<div class="mail-empty2">Loading…</div>'
+    : isSort ? '<div class="mail-empty2"><div class="mail-empty2-t">Nothing left to sort.</div><div class="mail-empty2-s">Start with Urgent – it’s waiting for you.</div></div>'
+    : '<div class="mail-empty2"><div class="mail-empty2-t">Nothing here.</div><div class="mail-empty2-s">Try another word, or another account.</div></div>') : '';
+  const err = m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : '';
   $('#pane').innerHTML = `
-    ${mailCrumb}
-    <div class="pane-head home-head"><h1>${t('nav.mail')}</h1>
-      <div class="mail-head-act"><button class="ghost" data-help-open="mail" title="How Mail works - setup, Gmail, triage">ⓘ Guide</button><button class="ghost" data-mail-shortcuts title="Keyboard shortcuts  ·  ?">⌨</button><button class="ghost" data-mail-accounts title="${t('btn.mailaccounts')}">${t('btn.mailaccounts')}</button><button class="add-btn wide" data-mail-compose>${t('btn.compose')}</button></div></div>
-    ${(m.open || m.composing) ? '' : `
-    ${accScope ? `<div class="mail-acct-scope">${accScope}</div>` : ''}
-    ${mailQuadCardsHtml()}
-    <div class="mail-folders">${(() => {
-      // Inbox and Archive are pots in the strip above, and Unread is just the Inbox
-      // queue by another name - so the folder row holds only Drafts / Sent / Spam /
-      // Trash.
-      const FOLDER_ICO = { drafts: MAIL_ICO.draft, sent: MAIL_ICO.sent, spam: MAIL_ICO.spam, trash: MAIL_ICO.trash };
-      return MAIL_FOLDERS.filter((f) => !['inbox', 'archive', 'unread'].includes(f.key)).map((f) => { const dc = f.key === 'drafts' ? draftCount() : 0; return `<button class="mail-folder mail-folder-${f.key} ${(m.folder || 'inbox') === f.key ? 'on' : ''}" data-mail-folder="${f.key}"><span class="mail-folder-ic">${FOLDER_ICO[f.key] || MAIL_ICO.folder}</span><span class="mail-folder-l">${esc(f.label)}</span>${dc ? `<span class="mail-folder-c">${dc}</span>` : ''}</button>`; }).join('');
-    })()}</div>
-    ${(m.selected && m.selected.size) ? `<div class="mail-bulkbar">
-      <span class="mail-bulk-n">${m.selected.size} selected</span>
-      <button class="ghost" data-mail-bulk="archive">Archive</button>
-      <button class="ghost" data-mail-bulk="read">Mark read</button>
-      <button class="ghost" data-mail-bulk="unread">Mark unread</button>
-      <button class="ghost" data-mail-bulk="move">Move…</button>
-      <button class="ghost" data-mail-bulk="delete">Delete</button>
-      <button class="ghost mail-bulk-x" data-mail-bulk="clear">Cancel</button>
-    </div>` : `<div class="mail-tools">
-      <input class="list-search sel mail-search" data-mail-q placeholder="Search mail…" value="${esc(m.query || '')}" autocomplete="off">
-      ${(m.folder === 'spam' || m.folder === 'trash') ? `<button class="tbl-filter-btn mail-empty-btn" data-mail-empty title="Permanently empty this folder">🗑 Empty</button>` : ''}
-      <button class="tbl-filter-btn mail-refresh" data-mail-refresh title="Refresh">↻</button>
-    </div>`}`}
-${''/* The "older unread sits further down" banner is retired: the background
-       cache sync and the auto-reconcile keep the counts honest, so this nudge
-       was just noise. Left as a no-op rather than reflowing the template. */}
-    ${m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : ''}
-    <div class="mail-layout ${m.open || m.composing ? 'reading' : ''} ${(m.selected && m.selected.size) ? 'selecting' : ''}">
-      <div class="mail-list-col">${list}</div>
-      <div class="mail-reader">${reader}</div>
+    ${pageCrumb(t('nav.mail'))}
+    <div class="mail2">
+      <div class="mail-titleblock">
+        <div class="mail-tb-main">
+          <div class="eyebrow">${mailEyebrow()}</div>
+          <h1 class="mail-h1">Mail</h1>
+          <div class="mail-mood">${esc(mailMood())}</div>
+        </div>
+        <div class="mail-tb-act">
+          ${accScope}
+          <button class="mail-tb-guide" data-help-open="mail">Guide</button>
+          <button class="mail-tb-write" data-mail-compose>Write</button>
+        </div>
+      </div>
+      ${mailPilesRowHtml()}
+      ${err}
+      <div class="mail-cols">
+        <div class="mail-main">
+          <div class="mail-main-top">
+            <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
+            ${progress}
+          </div>
+          ${undo}
+          <div class="mail-groups">${mailDayGroupsHtml(loading)}</div>
+          ${emptyHtml}
+          ${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}
+        </div>
+        <div class="mail-side">${mailSideHtml()}</div>
+      </div>
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}
-    ${m.quadMenu ? mailQuadMenuHtml() : ''}
     ${m.areaMenu ? mailAreaMenuHtml() : ''}
     ${m.taskMenu ? mailTaskMenuHtml() : ''}`;
-  if (m.open && m.open.html) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
-  // Keep keyboard focus on the reader (not the body iframe / a stale button) so
-  // single-key shortcuts - R reply, E archive… - land every time you're reading.
-  if (m.open && !m.composing) { const el = document.querySelector('.mail-msg'); if (el) { el.tabIndex = -1; setTimeout(() => { try { el.focus({ preventScroll: true }); } catch {} }, 0); } }
-  // The reader toolbar sticks below the sticky breadcrumb - measure the crumb so
-  // it pins just under it (desktop) rather than behind it. (See .mail-reader-head.)
-  requestAnimationFrame(() => { const cb = document.querySelector('#pane .note-crumbs'); document.documentElement.style.setProperty('--mail-crumbh', cb ? cb.offsetHeight + 'px' : '0px'); });
+  if (m.open && m.open.html && !m.plain) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
 }
 
 function showQuickTask() {
@@ -21852,6 +21972,14 @@ document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { e.preventDefault(); if (m.shortcuts) m.shortcuts = false; else if (picked) m.selected = new Set(); else m.open = null; renderMail(); return; }
       if (e.key === '/') { e.preventDefault(); const el = $('[data-mail-q]'); if (el) el.focus(); return; }
       if (e.key === 'c' || e.key === 'C') { e.preventDefault(); startCompose(); return; }
+      // §12: in To sort, with a message open, U / I / L / A file it into a pile
+      // (U urgent, I important, L later, A archive) and the next one opens.
+      if (m.open && typeof mailSelectedPile === 'function' && mailSelectedPile() === 'sort') {
+        const kk = e.key.toLowerCase();
+        const qmap = { u: 'urgent', i: 'important', l: 'chilled' };
+        if (qmap[kk]) { e.preventDefault(); mailToQuad(m.open, qmap[kk]); return; }
+        if (kk === 'a') { e.preventDefault(); mailMoveTo(m.open._key, 'Archive', 'Archived'); return; }
+      }
       // With several messages selected, an action key applies to all of them.
       if (picked) {
         if (e.key === 'e' || e.key === 'E') { e.preventDefault(); mailBulk('archive'); return; }
@@ -22784,6 +22912,8 @@ document.addEventListener('click', (e) => {
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
   { const qp = t.closest('[data-mail-quad-pick]'); if (qp) { const mm = state.mail.quadMenu; if (mm) mailToQuad(mm.key, qp.dataset.mailQuadPick); return; } }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
+  { const mg = t.closest('[data-mail-group]'); if (mg) { const k = mg.dataset.mailGroup; state.mail.groupsShut = state.mail.groupsShut || {}; state.mail.groupsShut[k] = !state.mail.groupsShut[k]; renderMail(); return; } }
+  { const msd = t.closest('[data-mail-side]'); if (msd) { const k = msd.dataset.mailSide; state.mail.side = state.mail.side || {}; state.mail.side[k] = !state.mail.side[k]; renderMail(); return; } }
   if (t.closest('[data-mail-empty]')) { mailEmptyFolder(); return; }
   if (t.closest('[data-mail-import-starred]')) { importStarredToImportant({}); return; }
   if (t.closest('[data-mail-refresh]')) { loadMessages(false, true); return; }
