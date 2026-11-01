@@ -22288,7 +22288,7 @@ document.addEventListener('click', (e) => {
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-view-home]')) { openHome().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-view-home]')) { Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
