@@ -285,6 +285,14 @@ document.addEventListener('keydown', (ev) => {
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;  // native text undo wins in a field
   ev.preventDefault(); doUndo();
 });
+// ⌘[ / Ctrl[ steps up one level - the slim breadcrumb's keyboard "up" (§19).
+document.addEventListener('keydown', (ev) => {
+  if (!(ev.metaKey || ev.ctrlKey) || ev.shiftKey || ev.altKey) return;
+  if (ev.key !== '[') return;
+  const el = document.activeElement;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+  ev.preventDefault(); navBack();
+});
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -1495,30 +1503,31 @@ function areaLinkHtml(areaId) {
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
 // connected page when there is one.
 function crumbNav(trail, areaId, backAttr, opts = {}) {
-  // backAttr lets a caller pin the back arrow to a specific action (e.g. closing a
-  // row card back to its table) rather than the generic view-history back, and
-  // always shows it. Otherwise the arrow only appears when there's history to pop.
-  // opts.omitCurrent drops the final crumb (the current item's own title, which is
-  // shown as the editable heading below), leaving just its ancestors - all clickable.
-  // So a note/table doesn't repeat its own title in the breadcrumbs. (Robin.)
-  const items = opts.omitCurrent ? trail.slice(0, -1) : trail;
-  // The back arrow is always present on the bar. With view-history it pops that;
-  // otherwise it steps up one level to the parent crumb (Spaces, Pages, …), so a
-  // directly-opened page (a restored tab, a deep link) is never a dead end. (Robin.)
-  const parentIdx = opts.omitCurrent ? items.length - 1 : items.length - 2;
-  const parent = parentIdx >= 0 ? items[parentIdx] : null;
-  const back = backAttr
-    ? `<button class="crumb-back" ${backAttr} title="Back" aria-label="Back">←</button>`
-    : navHist.length
-      ? '<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>'
-      : (parent && parent.attr)
-        ? `<button class="crumb-back" ${parent.attr} title="Back" aria-label="Back">←</button>`
-        : '<button class="crumb-back" data-view-home title="Back" aria-label="Back">←</button>';
-  const sep = '<span class="crumb-sep">›</span>';
-  const t = items.map((c, i) => ((i === items.length - 1 && !opts.omitCurrent)
+  // §19 slim breadcrumb: an unboxed Jost line - muted links, "/" separators, the
+  // current segment in ink. It starts at the group (the wordmark is home, so a
+  // leading "Home" crumb is dropped and the current view's group prepended), and
+  // is hidden at a tool's top level since the page title already says where you
+  // are - it only shows once you are genuinely deep. On mobile it collapses to
+  // "‹ parent". No back arrow, no "+ New": Set something down and ⌘[ replace them.
+  // (backAttr / areaId kept for callers but no longer drawn.)
+  let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
+  if (items[0] && /data-view-home/.test(items[0].attr || '')) items = items.slice(1);
+  let hadGroup = false;
+  const gid = (typeof KNAV_VIEW !== 'undefined') ? KNAV_VIEW[(state.view && state.view.type) || ''] : null;
+  if (gid && typeof knavGroups === 'function') {
+    const gl = (knavGroups().find((g) => g.id === gid) || {}).label;
+    if (gl && (!items[0] || items[0].label !== gl)) { items = [{ label: gl, attr: `data-knav-group="${gid}"` }, ...items]; hadGroup = true; }
+  }
+  // Show only when deep: group + tool + item (or, with no group, tool + item).
+  if (items.length < (hadGroup ? 3 : 2)) return '';
+  const sep = '<span class="crumb-sep">/</span>';
+  const last = items.length - 1;
+  const row = items.map((c, i) => ((i === last && !opts.omitCurrent)
     ? `<span class="crumb cur">${esc(c.label)}</span>`
     : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
-  return `<div class="crumbbar">${back}<div class="crumbs">${t}</div>${addNewMenuHtml()}${areaLinkHtml(areaId)}</div>`;
+  const parent = items[items.length - (opts.omitCurrent ? 1 : 2)];
+  const mob = parent ? `<button class="crumb crumb-mob" ${parent.attr || ''}>‹ ${esc(parent.label)}</button>` : '';
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${row}</div>${mob}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
