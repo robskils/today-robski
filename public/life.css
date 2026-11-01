@@ -10169,9 +10169,13 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .home-greet-sub { color:var(--k-mute); }
 /* counts line (no money) */
 .home-counts { display:flex; flex-wrap:wrap; gap:12px 40px; margin-top:30px; padding:18px 0; border-top:1px solid var(--k-line); border-bottom:1px solid var(--k-line); }
-.home-count { display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
-.home-count .hc-n { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1; color:var(--k-ink); }
-.home-count .hc-l { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); }
+.home-count { display:flex; align-items:baseline; gap:9px; white-space:nowrap; background:none; border:0; margin:0; padding:0; font:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-appearance:none; appearance:none; }
+.home-count .hc-n { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1; color:var(--k-ink); transition:color .15s ease; }
+.home-count .hc-l { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); transition:color .15s ease; }
+.home-count:hover .hc-n, .home-count:focus-visible .hc-n { color:var(--k-goldt); }
+.home-count:hover .hc-l { color:var(--k-ink); }
+.home-count:focus-visible { outline:1px solid var(--k-gold); outline-offset:4px; }
+.home-count:focus:not(:focus-visible) { outline:none; }
 /* What next */
 .home-wn { margin-top:30px; padding:24px 0 22px; border-top:1px solid var(--k-gold); border-bottom:1px solid var(--k-line); }
 .home-wn-top { display:flex; align-items:baseline; gap:14px; }

@@ -7406,11 +7406,14 @@ async function renderBeside() {
 // (§17/§19: money is optional and never pushed to Today).
 function homeCountsStrip() {
   const cells = [];
-  if (modOn('mail')) { const n = state.mailUnreadTotal || 0; cells.push([n, n === 1 ? 'email to sort' : 'emails to sort']); }
-  if (modOn('tasks')) { const n = (state.home.alerts && state.home.alerts.p1) != null ? state.home.alerts.p1 : priorityTasks().length; cells.push([n, n === 1 ? 'thing to do' : 'things to do']); }
-  if (modOn('calendar')) { const tm = state.home.tomorrow; if (tm === undefined) ensureHomeTomorrow(); const n = tm ? (tm.events || []).length : 0; cells.push([tm === undefined ? '·' : n, n === 1 ? 'event tomorrow' : 'events tomorrow']); }
+  if (modOn('mail')) { const n = state.mailUnreadTotal || 0; cells.push([n, n === 1 ? 'email to sort' : 'emails to sort', 'data-open-mail', 'Open Mail']); }
+  if (modOn('tasks')) { const n = (state.home.alerts && state.home.alerts.p1) != null ? state.home.alerts.p1 : priorityTasks().length; cells.push([n, n === 1 ? 'thing to do' : 'things to do', 'data-view-tasks', 'Open Tasks']); }
+  if (modOn('calendar')) { const tm = state.home.tomorrow; if (tm === undefined) ensureHomeTomorrow(); const n = tm ? (tm.events || []).length : 0; cells.push([tm === undefined ? '·' : n, n === 1 ? 'event tomorrow' : 'events tomorrow', 'data-open-calendar', 'Open Calendar']); }
   if (!cells.length) return '';
-  return `<div class="home-counts">${cells.map(([n, l]) => `<span class="home-count"><span class="hc-n">${esc(String(n))}</span><span class="hc-l">${esc(l)}</span></span>`).join('')}</div>`;
+  // Each count is a clickable button into its surface (mail / tasks / calendar),
+  // reusing the nav handlers. color:inherit on the button keeps the forest hero's
+  // ivory text; the number warms to gold on hover/focus to signal it's tappable.
+  return `<div class="home-counts">${cells.map(([n, l, attr, title]) => `<button type="button" class="home-count" ${attr} title="${esc(title)}"><span class="hc-n">${esc(String(n))}</span><span class="hc-l">${esc(l)}</span></button>`).join('')}</div>`;
 }
 // What next (§16), rules version: one wise suggestion at a time, chosen roughly
 // late-and-quick, then urgent mail, a priority to-do, a goal gone quiet, someone
