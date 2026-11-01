@@ -342,6 +342,7 @@ const state = {
   nav: {
     order: (() => { const def = ['favs', 'notes', 'areas', 'people']; const o = readLS('life.nav.order', null); const c = Array.isArray(o) ? o.filter((k) => def.includes(k)) : []; for (const k of def) if (!c.includes(k)) c.push(k); return c; })(),
     collapsed: (() => { const c = readLS('life.nav.collapsed', {}); return (c && typeof c === 'object' && !Array.isArray(c)) ? c : {}; })(),
+    spacesAll: !!readLS('life.nav.spacesAll', false),
   },
   pal: { open: false, q: '', items: [], sel: 0 },
 };
@@ -4888,6 +4889,7 @@ function kToRoman(n) { const m = [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I
 function kFoldDefault(v) { return KFOLD_VIEW[(v && v.type) || ''] || 'today'; }
 function kOpenFold(v) { try { const x = localStorage.getItem('koyeba.fold'); return x === null ? kFoldDefault(v) : x; } catch { return kFoldDefault(v); } }
 function setKFold(id) { const cur = kOpenFold(state.view); try { localStorage.setItem('koyeba.fold', cur === id ? '' : id); } catch {} renderNav(); }
+function toggleSpacesAll() { state.nav.spacesAll = !state.nav.spacesAll; try { localStorage.setItem('life.nav.spacesAll', JSON.stringify(state.nav.spacesAll)); } catch {} renderNav(); }
 function kItemOn(mod) { return !mod ? true : mod === 'reflect' ? reflectOn() : modOn(mod); }
 function kFoldHint(f) {
   if (f.id === 'today') { try { return new Date().toLocaleDateString('en-GB', { weekday: 'long' }); } catch { return ''; } }
@@ -4905,8 +4907,23 @@ function navFoldsHtml(v) {
     let items = '';
     if (f.spaces) {
       const areas = state.areas || [];
-      items = areas.map((a, i) => `<button class="kfi" data-open-area="${a.id}"><span class="kfi-num">${kToRoman(i + 1)}</span><span class="kfi-l">${esc(a.title || 'Untitled')}</span></button>`).join('')
-        + `<button class="kfi kfi-all" data-open-areas><span class="kfi-num"></span><span class="kfi-l">${areas.length ? 'All spaces' : 'Add a space'}</span></button>`;
+      // A long list of spaces runs the sidebar off the screen, so show a handful
+      // and tuck the rest behind "Show all" (remembered). The open space stays
+      // visible even when it's past the cap, so you never lose your place. (Robin.)
+      const SPACES_CAP = 8;
+      const isOn = (a) => v && v.type === 'area' && state.area_open && state.area_open.area && state.area_open.area.id === a.id;
+      const kfi = (a, i) => `<button class="kfi${isOn(a) ? ' on' : ''}" data-open-area="${a.id}"><span class="kfi-num">${kToRoman(i + 1)}</span><span class="kfi-l">${esc(a.title || 'Untitled')}</span></button>`;
+      const over = areas.length > SPACES_CAP + 1;   // don't hide just one
+      let shown;
+      if (!over || state.nav.spacesAll) { shown = areas.map((a, i) => ({ a, i })); }
+      else {
+        shown = areas.slice(0, SPACES_CAP).map((a, i) => ({ a, i }));
+        const ai = areas.findIndex(isOn);
+        if (ai >= SPACES_CAP) shown.push({ a: areas[ai], i: ai });
+      }
+      items = shown.map((x) => kfi(x.a, x.i)).join('');
+      if (over) items += `<button class="kfi kfi-more" data-spaces-more><span class="kfi-num"></span><span class="kfi-l">${state.nav.spacesAll ? 'Show fewer' : `Show all ${areas.length}`}</span></button>`;
+      items += `<button class="kfi kfi-all" data-open-areas><span class="kfi-num"></span><span class="kfi-l">${areas.length ? 'All spaces' : 'Add a space'}</span></button>`;
     } else {
       items = f.items.filter((it) => kItemOn(it[2])).map((it) => {
         const [label, attrs] = it;
@@ -22282,6 +22299,7 @@ document.addEventListener('click', (e) => {
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
   { const nt = t.closest('[data-navtop]'); if (nt) { setNavTop(nt.dataset.navtop); return; } }
   const st = t.closest('[data-sec-toggle]'); if (st && !t.closest('.nav-add')) { toggleSec(st.dataset.secToggle); return; }
+  if (t.closest('[data-spaces-more]')) { toggleSpacesAll(); return; }
 
   { const rx = t.closest('[data-recent-x]'); if (rx) { e.preventDefault(); e.stopPropagation(); const [k, id] = rx.dataset.recentX.split(':'); removeRecent(k, id); return; } }
   { const nu = t.closest('[data-note-unlink]'); if (nu) { e.stopPropagation(); disconnectNote(nu.dataset.noteUnlink); return; } }
