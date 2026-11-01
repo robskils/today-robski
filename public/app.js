@@ -313,6 +313,8 @@ document.addEventListener('click', (ev) => {
   const bc = ev.target.closest && ev.target.closest('[data-beside-close]'); if (bc) { ev.preventDefault(); closeBeside(); }
 }, true);
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.split && !notepadState().open) { closeBeside(); } });
+// §22: Enter in the Tasks quick-add line creates the task in the open pile.
+document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const qa = ev.target.closest && ev.target.closest('[data-task-quickadd]'); if (qa) { ev.preventDefault(); txQuickAdd(qa); } });
 document.addEventListener('mousedown', (ev) => {
   const d = ev.target.closest && ev.target.closest('#pane-div'); if (!d || !state.split) return; ev.preventDefault();
   const main = splitMain(); if (!main) return; const r = main.getBoundingClientRect(); document.body.classList.add('split-dragging');
@@ -16492,7 +16494,103 @@ function commitTaskView() {
     if (labelChanged) renderTabs();   // keep the tab strip's title in step with the filter
   }
 }
+// ── Tasks index (Koyeba §22) ────────────────────────────────────────────────
+// Piles (By priority: First/Soon/Whenever/Done, grouped by Space · By date:
+// Now/This week/Later/Someday/Done), a quick-add line, and a side By-Space list.
+// Replaces the endless filtered list. The task card stays the detail view.
+function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
+function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
+function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
+function txDue(t) {
+  const d = (t.props && t.props.due) || ''; if (!d) return ''; const today = todayISO();
+  if (d < today) { const days = Math.round((Date.parse(today) - Date.parse(d)) / 86400000); return days <= 1 ? '1 day late' : `${days} days late`; }
+  if (d === today) return 'Today'; if (d === addDayISO(today, 1)) return 'Tomorrow';
+  const [y, m, dd] = d.split('-').map(Number); const dt = new Date(y, m - 1, dd);
+  if (d <= addDayISO(today, 7)) return WEEKDAYS_LONG[dt.getDay()];
+  const md = `${dd} ${MONTHS_LONG[m - 1].slice(0, 3)}`; return dt.getFullYear() === new Date().getFullYear() ? md : `${md} ${dt.getFullYear()}`;
+}
+function txLate(t) { const d = (t.props && t.props.due) || ''; return !!(d && d < todayISO() && !(t.props && t.props.done)); }
+function txPriBucket(t) { const p = (t.props && t.props.priority) || ''; return p === 'P1' ? 0 : p === 'P2' ? 1 : 2; }
+function txDateBucket(t) { const d = (t.props && t.props.due) || ''; const today = todayISO(); if (!d) return 'someday'; if (d < today) return 'late'; if (d === today) return 'today'; return d <= addDayISO(today, 7) ? 'week' : 'later'; }
+function txMood(openT, order) {
+  const W = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+  if (order === 'priority') { const first = openT.filter((t) => txPriBucket(t) === 0); if (!first.length) return 'Nothing pressing. A good day for something from Soon.'; return `${W[first.length] || first.length} ${first.length === 1 ? 'thing comes' : 'things come'} first. Start with “${first[0].title}”.`; }
+  const late = openT.filter((t) => txDateBucket(t) === 'late'), today = openT.filter((t) => txDateBucket(t) === 'today');
+  if (late.length) return `${W[today.length] || today.length} for today. ${W[late.length] || late.length} ${late.length === 1 ? 'is' : 'are'} late - start with “${late[0].title}”.`;
+  return `Nothing late. ${W[today.length] || today.length} for today.`;
+}
+async function txQuickAdd(input) {
+  const title = (input.value || '').trim(); if (!title) return;
+  const order = taskOrder(), pile = state.taskPile || (order === 'priority' ? 'p0' : 'now');
+  const props = { done: false };
+  if (order === 'priority') props.priority = ({ p0: 'P1', p1: 'P2', p2: 'P3' })[pile] || 'P3';
+  else { props.priority = 'P3'; if (pile === 'now') props.due = todayISO(); else if (pile === 'week') props.due = addDayISO(todayISO(), 3); }
+  input.value = '';
+  try {
+    const nt = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props }) });
+    if (nt && nt.id) { state.tasks = state.tasks || []; state.tasks.unshift(nt); if (Array.isArray(state.allTasks)) state.allTasks.unshift(nt); }
+    renderTasks();
+    const i = document.querySelector('[data-task-quickadd]'); if (i) i.focus();
+  } catch (e) { toast(e.message || 'Could not add that.'); input.value = title; }
+}
 function renderTasks() {
+  const order = taskOrder();
+  const all = (state.tasks || []).filter((t) => t && t.props);
+  const openT = all.filter((t) => !t.props.done);
+  const doneT = all.filter((t) => t.props.done);
+  const tq = (state.taskQuery || '').trim().toLowerCase();
+  const matchQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
+  let pileDefs, pileOf, selPile = state.taskPile;
+  if (order === 'priority') {
+    pileDefs = [['p0', 'First', 'What matters most'], ['p1', 'Soon', 'When there is room'], ['p2', 'Whenever', 'No hurry at all'], ['done', 'Done', 'This week']];
+    pileOf = (t) => 'p' + txPriBucket(t);
+    if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'p0';
+  } else {
+    pileDefs = [['now', 'Now', 'Late and today'], ['week', 'This week', 'Before Sunday'], ['later', 'Later', 'Dated, not yet'], ['someday', 'Someday', 'No date at all'], ['done', 'Done', 'This week']];
+    const map = { late: 'now', today: 'now', week: 'week', later: 'later', someday: 'someday' };
+    pileOf = (t) => map[txDateBucket(t)];
+    if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'now';
+  }
+  const pileCount = (id) => id === 'done' ? doneT.length : openT.filter((t) => pileOf(t) === id).length;
+  const piles = pileDefs.map(([id, label, hint]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-n">${pileCount(id)}</span><span class="tx-pile-l">${label}</span></span><span class="tx-pile-h">${esc(hint)}</span></button>`).join('');
+  const orders = [['priority', 'By priority'], ['date', 'By date']].map(([v, l]) => `<button class="tx-order${order === v ? ' on' : ''}" data-task-order="${v}">${l}</button>`).join('');
+  const taskRow = (t) => {
+    const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
+    const due = txDue(t), late = txLate(t);
+    return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button><span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span></div>`;
+  };
+  let groupsHtml = '';
+  if (selPile === 'done') {
+    groupsHtml = `<div class="tx-group"><div class="tx-group-h"><span class="tx-group-l">Done this week</span><span class="tx-group-n">${doneT.length}</span><span class="tx-group-rule"></span></div><div class="tx-rows">${doneT.map(taskRow).join('') || '<div class="tx-empty">Nothing ticked off yet.</div>'}</div></div>`;
+  } else if (order === 'priority') {
+    const inPile = openT.filter((t) => pileOf(t) === selPile && matchQ(t));
+    const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
+    groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+  } else {
+    const buckets = selPile === 'now' ? [['late', 'Late'], ['today', 'Today']] : selPile === 'week' ? [['week', 'This week']] : selPile === 'later' ? [['later', 'Later']] : [['someday', 'Someday']];
+    groupsHtml = buckets.map(([bk, label]) => { const items = openT.filter((t) => txDateBucket(t) === bk && matchQ(t)); if (!items.length) return ''; const key = 'd/' + bk; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l${bk === 'late' ? ' late' : ''}">${esc(label)}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+  }
+  const pileLabel = (pileDefs.find((p) => p[0] === selPile) || [])[1] || '';
+  const addPh = order === 'priority' ? `Add something to ${selPile === 'done' ? 'First' : pileLabel}…` : (selPile === 'someday' ? 'Add a task for someday…' : 'Add a task…');
+  const bySpace = {}; openT.forEach((t) => { const s = txSpaceName(t) || 'No Space'; bySpace[s] = (bySpace[s] || 0) + 1; });
+  const spaceRows = Object.entries(bySpace).sort((a, b) => a[0].localeCompare(b[0]));
+  const sideOpen = (id) => !(state.taskSide && state.taskSide[id] === false);
+  const sidePanel = (id, title, count, body) => `<div class="tx-side-panel"><button class="tx-side-h" data-task-side="${id}"><span class="tx-side-hl">${esc(title)}</span><span class="tx-side-n">${count}</span><span class="tx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
+  const spaceBody = `<div class="tx-side-body">${spaceRows.map(([s, n]) => `<div class="tx-side-row"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></div>`).join('') || '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
+  $('#pane').innerHTML = `<div class="kpage-tasks"><div class="tx-grid">
+    <div class="tx-main">
+      <div class="nx-eyebrow">Plans · Tasks</div>
+      <h1 class="nx-h1">${t('nav.tasks')}</h1>
+      <div class="nx-lead">${esc(txMood(openT, order))}</div>
+      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${orders}</div></div>
+      <div class="tx-add"><span class="tx-add-box"></span><input data-task-quickadd placeholder="${esc(addPh)}" autocomplete="off"><span class="tx-add-k">↵</span></div>
+      <div class="tx-groups">${groupsHtml}</div>
+    </div>
+    <aside class="tx-side">${sidePanel('space', 'By Space', spaceRows.length, spaceBody)}</aside>
+  </div></div>`;
+  if (state.taskAdding) { state.taskAdding = false; const i = document.querySelector('[data-task-quickadd]'); if (i) i.focus(); }
+}
+function renderTasksLegacy() {
   loadTaskFilters();
   commitTaskView();
   const conds = state.taskFilters || [];
@@ -23163,6 +23261,11 @@ document.addEventListener('click', (e) => {
   const nxSp = t.closest('[data-notes-space]'); if (nxSp) { state.notesArea = nxSp.dataset.notesSpace || ''; renderNotesList(); return; }
   const nxGr = t.closest('[data-notes-group]'); if (nxGr) { const k = nxGr.dataset.notesGroup; state.notesShut = state.notesShut || {}; state.notesShut[k] = !state.notesShut[k]; renderNotesList(); return; }
   const nxSd = t.closest('[data-notes-side]'); if (nxSd) { const k = nxSd.dataset.notesSide; state.notesSide = state.notesSide || {}; state.notesSide[k] = state.notesSide[k] === false ? true : false; renderNotesList(); return; }
+  const txOrd = t.closest('[data-task-order]'); if (txOrd) { state.taskOrder = txOrd.dataset.taskOrder; try { localStorage.setItem('life.taskOrder', state.taskOrder); } catch {} state.taskPile = null; renderTasks(); return; }
+  const txPl = t.closest('[data-task-pile]'); if (txPl) { state.taskPile = txPl.dataset.taskPile; renderTasks(); return; }
+  const txGr = t.closest('[data-task-group]'); if (txGr) { const k = txGr.dataset.taskGroup; state.taskShut = state.taskShut || {}; state.taskShut[k] = !state.taskShut[k]; renderTasks(); return; }
+  const txSd = t.closest('[data-task-side]'); if (txSd) { const k = txSd.dataset.taskSide; state.taskSide = state.taskSide || {}; state.taskSide[k] = state.taskSide[k] === false ? true : false; renderTasks(); return; }
+  const txTk = t.closest('[data-task-tick]'); if (txTk) { e.preventDefault(); e.stopPropagation(); toggleTask(txTk.dataset.taskTick); return; }
   const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
   if (t.closest('[data-open-wellbeing]')) { openWellbeing().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
