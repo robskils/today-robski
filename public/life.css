@@ -5337,12 +5337,19 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 [data-sub-id].drop-before { box-shadow:inset 0 3px 0 var(--accent); }
 [data-sub-id].drop-after { box-shadow:inset 0 -3px 0 var(--accent); }
 
-.pane { min-width:0; padding:30px clamp(20px,4vw,52px) 90px; max-width:1100px; position:relative; z-index:1; }
-/* Page views get a translucent shoji sheet so their content floats on the painting
-   like Home's cards do (Home itself + detail cards keep their own surfaces). (Robin.) */
+/* §19: the content shares the header's container - capped at 2240 and centred,
+   with the same side gutter, so the wordmark lines up with the content and the
+   old fixed left column is gone. Gridded pages (home / goals / area) override
+   this to drive their own .kwrap/.kgrid. */
+.pane { min-width:0; padding:30px clamp(20px,4vw,48px) 90px; max-width:2240px; margin:0 auto; position:relative; z-index:1; box-sizing:border-box; }
+@media (min-width:1600px){ .pane { padding-left:64px; padding-right:64px; } }
+@media (min-width:2200px){ .pane { padding-left:80px; padding-right:80px; } }
+/* §14: a flat ground - no translucent inset sheet behind page content. */
 body[data-view="calendar"] .pane, body[data-view="tasks"] .pane, body[data-view="notes"] .pane, body[data-view="tables"] .pane, body[data-view="goals"] .pane, body[data-view="contacts"] .pane, body[data-view="reviews"] .pane, body[data-view="discover"] .pane, body[data-view="readwatch"] .pane, body[data-view="shared"] .pane, body[data-view="areas"] .pane, body[data-view="money"] .pane, body[data-view="financial"] .pane, body[data-view="messages"] .pane, body[data-view="connect"] .pane, body[data-view="insights"] .pane, body[data-view="mailaccounts"] .pane {
-  background:var(--glass-bg); -webkit-backdrop-filter:blur(18px) saturate(1.2); backdrop-filter:blur(18px) saturate(1.2); border:1px solid var(--glass-edge); border-radius:0; box-shadow:var(--glass-shadow); margin-top:4px;
+  background:none; -webkit-backdrop-filter:none; backdrop-filter:none; border:0; border-radius:0; box-shadow:none; margin-top:0;
 }
+/* Notes & tables keep a readable reading measure rather than running full width. */
+body[data-view="note"] .pane, body[data-view="table"] .pane { max-width:1500px; }
 /* The whole Space page carries a faint origami fold in its own colour: a quiet
    crease tessellation behind the content, tinting per space off --area-h (set in
    renderArea). The cover band above is the statement; this is the paper it sits on.
