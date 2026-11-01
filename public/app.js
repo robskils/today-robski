@@ -9969,6 +9969,15 @@ function invalidateAreaWeek() { if (state.area_open) state.area_open.week = null
 const isPrivateBlock = (b) => !!(b && b.props && b.props.private);
 const privChip = (b) => isPrivateBlock(b) ? '<span class="priv-chip" title="Private - only you can see this, even inside a shared Space">🔒 Private</span>' : '';
 const privCls = (b) => isPrivateBlock(b) ? ' is-private' : '';
+// §11 Space section folds: per-Space, per-section, in localStorage. Vision &
+// goals and Tasks (and the first two side panels) start open; the rest folded.
+const KSP_DEFOPEN = new Set(['vision', 'tasks', 'side-view', 'side-lately']);
+function kspFoldStore(aid) { try { const v = JSON.parse(localStorage.getItem('life.space.fold.' + (aid || '')) || '{}'); return (v && typeof v === 'object') ? v : {}; } catch { return {}; } }
+function kspOpen(aid, key, defOpen) { const s = kspFoldStore(aid); return (key in s) ? !s[key] : (defOpen !== undefined ? !!defOpen : KSP_DEFOPEN.has(key)); }
+function kspTog(aid, key) { const s = kspFoldStore(aid); s[key] = kspOpen(aid, key); try { localStorage.setItem('life.space.fold.' + aid, JSON.stringify(s)); } catch {} if (state.view && state.view.type === 'area') renderArea(); }
+function kspSetOpen(aid, key) { const s = kspFoldStore(aid); s[key] = false; try { localStorage.setItem('life.space.fold.' + aid, JSON.stringify(s)); } catch {} if (state.view && state.view.type === 'area') renderArea(); }
+function kspSetAll(aid, open) { const s = {}; ['vision', 'tasks', 'notes', 'tables', 'emails', 'files', 'people', 'books'].forEach((k) => { s[k] = !open; }); try { localStorage.setItem('life.space.fold.' + aid, JSON.stringify(s)); } catch {} if (state.view && state.view.type === 'area') renderArea(); }
+function kFileSize(n) { n = +n || 0; if (n >= 1048576) return (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB'; if (n >= 1024) return Math.round(n / 1024) + ' KB'; return n + ' B'; }
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -10355,36 +10364,90 @@ function renderArea() {
   const updMore = updList.length > 6 ? `<button class="area-seemore" data-upd-all>${state.area_open.updAll ? '− Show fewer' : `See all ${updList.length} →`}</button>` : '';
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
+  // ── §11 Space page ─────────────────────────────────────────────────────
+  const total = (state.areas || []).length || 1;
+  const spNum = areaNumeral(area.id) || roman(1);
+  const fav = !!(area.props && area.props.fav);
+  const attFiles = ((area.props && area.props.attachments) || []).filter((x) => !isImgType(x.type));
+  const q = ((state.area_open && state.area_open.q) || '').trim().toLowerCase();
+  const matchRows = (arr, txt) => q ? arr.filter((o) => txt(o).toLowerCase().includes(q)) : arr;
+  // Each section: key, title, count-label, "All →" link, "+ New", default-open,
+  // and a rows() renderer over its (search-filtered) items.
+  const rowOpen = (title, sub, meta, attr, lead) => `<div class="ksp-row" ${attr} role="button" tabindex="0"><div class="ksp-row-main">${lead || ''}<span class="ksp-row-id"><span class="ksp-row-t">${esc(title || 'Untitled')}</span>${sub ? `<span class="ksp-row-sub">${esc(sub)}</span>` : ''}</span></div>${meta ? `<span class="ksp-row-m">${esc(meta)}</span>` : ''}</div>`;
+  const tLabel = (tk) => { const p = tk.props || {}; return [p.priority || '', p.snooze ? dpLabel(p.snooze) : (p.due ? dpLabel(p.due) : '')].filter(Boolean).join(' · '); };
+  const SEC = [];
+  SEC.push({ k: 'tasks', title: 'Tasks', count: `${openTs.length}${doneN ? ` · ${doneN} done` : ''}`, hint: openTs[0] ? openTs[0].title : '', def: true, items: matchRows(openTs, (t) => t.title || '').slice(0, 8).map((tk) => { const p = tk.props || {}; return `<div class="ksp-row ksp-taskrow"><button class="ksp-check${p.done ? ' on' : ''}" data-check="${tk.id}" aria-label="Done"></button><button class="ksp-row-hit" data-open-task="${tk.id}"><span class="ksp-row-id"><span class="ksp-row-t">${esc(tk.title || 'Untitled')}</span></span><span class="ksp-row-m">${esc(tLabel(tk))}</span></button></div>`; }), all: ['data-view-tasks', 'All tasks'], add: ['data-area-add-task', '+ Add a task'] });
+  SEC.push({ k: 'notes', title: 'Notes', count: String(notes.length), hint: notes[0] ? notes[0].title : '', items: matchRows(notes, (n) => n.title || '').slice(0, 8).map((n) => rowOpen(n.title, '', timeAgo(new Date(n.updated_at || n.created_at || Date.now()).getTime()), `data-open-note="${n.id}"`)), all: ['data-open-notes', 'All notes'], add: ['data-area-add-note', '+ New note'] });
+  SEC.push({ k: 'tables', title: 'Tables', count: String(tables.length), hint: tables[0] ? tables[0].title : '', items: matchRows(tables, (t) => t.title || '').slice(0, 8).map((t) => rowOpen(t.title, '', timeAgo(new Date(t.updated_at || t.created_at || Date.now()).getTime()), `data-open-table="${t.id}"`)), all: ['data-open-tables', 'All tables'], add: ['data-new-table', '+ New table'] });
+  SEC.push({ k: 'emails', title: 'Emails', count: String(emails.length), hint: emails[0] ? emails[0].title : '', items: matchRows(emails, (n) => n.title || '').slice(0, 8).map((n) => rowOpen(n.title, '', timeAgo(new Date(n.updated_at || n.created_at || Date.now()).getTime()), `data-open-note="${n.id}"`)), all: ['data-open-mail', 'Open Mail'], add: null });
+  SEC.push({ k: 'files', title: 'Files', count: String(attFiles.length), hint: attFiles[0] ? attFiles[0].name : '', items: attFiles.slice(0, 8).map((f) => `<div class="ksp-row ksp-row-static"><span class="ksp-row-id"><span class="ksp-row-t">${esc(f.name || 'File')}</span></span>${f.size ? `<span class="ksp-row-m">${esc(kFileSize(f.size))}</span>` : ''}</div>`), all: null, add: null });
+  SEC.push({ k: 'people', title: 'Contacts', count: String(contacts.length), hint: contacts[0] ? contacts[0].title : '', items: matchRows(contacts, (c) => c.title || '').slice(0, 8).map((c) => rowOpen(c.title, (c.props && c.props.role) || '', '', `data-open-contact="${c.id}"`)), all: ['data-open-contacts', 'Open Contacts'], add: ['data-area-add-contact', '+ Add a person'] });
+  SEC.push({ k: 'books', title: 'Books & films', count: String(bookmarks.length), hint: bookmarks[0] ? bookmarks[0].title : '', items: matchRows(bookmarks, (b) => b.title || '').slice(0, 8).map((b) => { const u = (b.props && b.props.url) || ''; return u ? `<a class="ksp-row ksp-row-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="ksp-row-id"><span class="ksp-row-t">${esc(b.title || u)}</span></span></a>` : `<div class="ksp-row ksp-row-static"><span class="ksp-row-id"><span class="ksp-row-t">${esc(b.title || 'Saved')}</span></span></div>`; }), all: ['data-open-readwatch', 'Open Read & Watch'], add: null });
+  const liveSecs = SEC.filter((s) => s.items.length || s.def);
+  // "Vision & goals" is always I; the rest number from II in the order shown.
+  const visGoalsN = activeGoals.length;
+  const contents = [{ k: 'vision', n: visGoalsN, label: visGoalsN === 1 ? 'goal' : 'goals' }].concat(liveSecs.filter((s) => s.items.length).map((s) => ({ k: s.k, n: Number(String(s.count).split(' ')[0]) || s.items.length, label: s.title.toLowerCase() })));
+  const countsLine = contents.map((c) => `<span class="ksp-count" data-ksp-go="sec-${c.k}"><span class="ksp-count-n">${c.n}</span><span class="ksp-count-l">${esc(c.label)}</span></span>`).join('');
+  const kspSectionHtml = (s, num) => {
+    const open = q ? true : kspOpen(area.id, s.k, !!s.def);
+    const head = `<div class="ksp-sec-h" data-ksp-fold="${s.k}" role="button" tabindex="0"><span class="ksp-sec-num">${num}</span><span class="ksp-sec-title">${esc(s.title)}</span><span class="ksp-sec-count">${esc(s.count)}</span>${!open && s.hint ? `<span class="ksp-sec-hint">${esc(s.hint)}</span>` : ''}<span class="ksp-sec-sign">${open ? '−' : '+'}</span></div>`;
+    if (!open) return `<div id="sec-${s.k}" class="ksp-sec">${head}</div>`;
+    const rows = s.items.length ? s.items.join('') : `<div class="ksp-sec-empty">${q ? 'Nothing here matches.' : 'Nothing here yet.'}</div>`;
+    const foot = (s.all || s.add) ? `<div class="ksp-sec-foot">${s.all ? `<span class="ksp-sec-all" ${s.all[0]}>${esc(s.all[1])} →</span>` : ''}${s.add ? `<span class="ksp-sec-add" ${s.add[0]}>${esc(s.add[1])}</span>` : ''}</div>` : '';
+    return `<div id="sec-${s.k}" class="ksp-sec ksp-sec-open">${head}<div class="ksp-sec-body">${rows}${foot}</div></div>`;
+  };
+  // Vision & goals (I): the vision in a forest panel, goals with a thin gold
+  // progress line, then the bucket list as "One day".
+  const visOpen = q ? true : kspOpen(area.id, 'vision', true);
+  const visHead = `<div id="sec-vision" class="ksp-sec-h" data-ksp-fold="vision" role="button" tabindex="0"><span class="ksp-sec-num">I</span><span class="ksp-sec-title">Vision &amp; goals</span><span class="ksp-sec-count">${visGoalsN} ${visGoalsN === 1 ? 'goal' : 'goals'}</span>${!visOpen && activeGoals[0] ? `<span class="ksp-sec-hint">${esc(activeGoals[0].title || '')}</span>` : ''}<span class="ksp-sec-sign">${visOpen ? '−' : '+'}</span></div>`;
+  const visGoalRows = activeGoals.slice(0, 6).map((g) => { const pct = gPct(g); return `<div class="ksp-goal" data-open-goal="${g.id}" role="button" tabindex="0"><div class="ksp-goal-id"><div class="ksp-goal-t">${esc(g.title || 'Goal')}</div><div class="ksp-goal-meta">${esc(gGoalMeta(g))}</div></div><div class="ksp-goal-prog"><div class="ksp-prog-line"><i style="width:${pct}%"></i></div><div class="ksp-prog-pct">${gp(g).status === 'done' ? '✓' : pct + '%'}</div></div></div>`; }).join('');
+  const visPanel = visionSnip ? `<div class="ksp-vision"><div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Vision</span></div><div class="ksp-vision-t">${esc(visionSnip)}</div></div>` : (canEditArea ? `<div class="ksp-vision ksp-vision-empty" data-open-vision="${area.id}" role="button" tabindex="0"><div class="ksp-vision-t">Picture this part of your life at its best. <span class="ksp-write">Write a vision →</span></div></div>` : '');
+  const oneDay = bucket.length ? `<div class="ksp-oneday"><span class="ksp-oneday-l">One day</span>${bucket.slice(0, 4).map((b, i) => `${i ? '<span class="ksp-oneday-sep">·</span>' : ''}<span class="ksp-oneday-i">${esc(b.title || '')}</span>`).join('')}</div>` : '';
+  const visBody = visOpen ? `<div class="ksp-sec-body">${visPanel}${activeGoals.length ? `<div class="ksp-goals">${visGoalRows}</div>` : ''}${oneDay}<div class="ksp-sec-foot"><span class="ksp-sec-all" data-open-goals>All goals →</span>${canEditArea ? '<span class="ksp-sec-add" data-area-add-goal>+ Add a goal</span>' : ''}</div></div>` : '';
+  const visionGoals = `<div class="ksp-sec ksp-sec-open">${visHead}${visBody}</div>`;
+  const sectionsHtml = liveSecs.map((s, i) => kspSectionHtml(s, roman(i + 2))).join('');
+  // Side column: Coming into view, Lately, In this Space.
+  const soonTasks = openTs.filter((t) => t.props && (t.props.due || t.props.snooze)).sort((a, b) => String((a.props.due || a.props.snooze)).localeCompare(String((b.props.due || b.props.snooze)))).slice(0, 4);
+  const comingItems = soonTasks.length ? soonTasks.map((t) => { const w = t.props.due || t.props.snooze; return `<div class="ksp-side-row"><span class="ksp-side-when">${esc(dpLabel(w))}</span><div class="ksp-side-b"><button class="ksp-side-t" data-open-task="${t.id}">${esc(t.title || 'A task')}</button></div></div>`; }).join('') : '<div class="ksp-side-empty">Nothing dated.</div>';
+  const latelyItems = updList.length ? updShown.map((e) => { const who = (updData && updData.me != null && String(e.uid) === String(updData.me)) ? 'You' : esc(e.name || 'Someone'); const ts = e.ts ? new Date(e.ts).getTime() : 0; return `<div class="ksp-side-row"><span class="ksp-side-when">${ts ? esc(timeAgo(ts)) : ''}</span><div class="ksp-side-b"><span class="ksp-side-txt">${who} ${esc(e.verb || 'updated')} ${esc((UPD_THING[e.kind] || 'an item'))}${e.title ? ` · ${esc(e.title)}` : ''}.</span></div></div>`; }).join('') + (updMore ? `<button class="ksp-side-all" data-upd-all>${state.area_open.updAll ? 'Show fewer' : `See all ${updList.length} →`}</button>` : '') : '<div class="ksp-side-empty">Nothing yet.</div>';
+  const memberItems = `<div class="ksp-members">${areaFacesRow(area)}</div><button class="ksp-side-all" data-area-invite>+ Invite someone</button>`;
+  const kspSide = [
+    { k: 'view', title: 'Coming into view', body: comingItems },
+    { k: 'lately', title: 'Lately', body: latelyItems },
+    { k: 'members', title: 'In this Space', body: memberItems },
+  ].map((p) => { const open = kspOpen(area.id, 'side-' + p.k, p.k !== 'members'); return `<div class="ksp-side-p"><div class="ksp-side-h" data-ksp-fold="side-${p.k}" role="button" tabindex="0"><span class="ksp-side-l">${esc(p.title)}</span><span class="ksp-side-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="ksp-side-body">${p.body}</div>` : ''}</div>`; }).join('');
+  const coverHtml = (cover && !coverHidden) ? `<div class="ksp-cover"><div class="ksp-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div></div>` : '';
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Spaces', attr: 'data-open-areas' }, { label: area.title }])}
-    <div class="area-body" style="--h:${h}">
-    <header class="area-hero area-mast ${cover && !coverHidden ? 'has-cover' : 'no-cover'}" style="--h:${h}">
-      ${coverHidden
-        ? (canEditArea ? `<button class="am-add-cover" data-area-cover-show title="Show the cover">＋ Cover</button>` : '')
-        : cover
-        ? `<div class="am-cover">
-        <div class="am-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div>
-        <span class="am-cover-scrim"></span>
-        ${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover-adjust title="Reposition & zoom"><span class="amc-ic">⤢</span>Adjust</button><button class="am-cover-btn" data-area-cover title="Change cover image"><span class="amc-ic">❏</span>Change</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}
-        ${(cover.by && cover.src === 'unsplash') ? `<a class="am-credit" href="${esc((cover.byUrl || 'https://unsplash.com') + '?utm_source=Koyeba&utm_medium=referral')}" target="_blank" rel="noopener noreferrer">Photo · ${esc(cover.by)} / Unsplash</a>` : ''}
-      </div>`
-        : `<div class="am-cover">${canEditArea ? `<div class="am-cover-tools"><button class="am-cover-btn" data-area-cover title="Add a cover image"><span class="amc-ic">❏</span>Image</button><button class="am-cover-btn" data-area-cover-hide title="Hide the cover"><span class="amc-ic">⌄</span>Hide</button></div>` : ''}</div>`}
-      <div class="am-plate">
-        <div class="am-kicker">Space</div>
-        <h1>${area.sharedBy ? '<span class="ac-dot"></span>' : '<button class="ac-dot ac-dot-btn" data-area-color title="Change this space colour" aria-label="Change space colour"></button>'}<input class="area-title-edit" id="area-title" value="${esc(area.title)}" placeholder="Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
-        ${(area.props && area.props.due) ? (() => { const r = deadlineRel(area.props.due); return `<div class="area-deadline gc-due-${r.c || 'ok'}">🎯 ${esc(r.t)} · ${esc(dpLabel(area.props.due))}</div>`; })() : ''}
-        <div class="am-searchrow">${pagesCount ? `<div class="am-search"><span class="am-search-ic" aria-hidden="true">🔎</span><input class="am-search-in" data-area-q type="search" placeholder="Search notes in this Space…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>` : ''}${areaAddBtn}${areaFacesRow(area)}${areaSentimentHtml(area)}<span class="area-h1-tools am-rowtools">${canPreviewMember ? `<button class="area-asmember-btn ${asMember ? 'on' : ''}" data-area-asmember title="${asMember ? 'Stop previewing' : 'See what the people you share with can see'}" aria-pressed="${asMember}">👁</button>` : ''}<button class="star ${area.props && area.props.fav ? 'on' : ''}" data-fav="${area.id}" title="Favourite">${area.props && area.props.fav ? '★' : '☆'}</button><button class="area-ov-toggle ${areaOvOpen() ? 'on' : ''}" data-area-ov aria-label="Space settings and overview" title="Settings &amp; overview">▾</button></span></div>
+    <div class="kwrap kpage kpage-space area-body" style="--h:${h}">
+      ${coverHtml}
+      <div class="ksp-title">
+        <div class="ksp-title-l">
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Space · ${spNum} of ${total}</span></div>
+          <h1 class="ksp-h1">${area.sharedBy ? '' : '<button class="ac-dot ac-dot-btn ksp-dot" data-area-color title="Change this space colour" aria-label="Change space colour"></button>'}<input class="ksp-title-in" id="area-title" value="${esc(area.title)}" placeholder="Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
+          ${visionSnip ? `<div class="ksp-vision-line">${esc(visionSnip)}</div>` : ''}
+        </div>
+        <div class="ksp-title-r">
+          ${areaFacesRow(area)}
+          <button class="ksp-kept${fav ? ' on' : ''}" data-fav="${area.id}" title="${fav ? 'Kept close' : 'Keep close'}"><span class="ksp-kept-box"></span>${fav ? 'Kept close' : 'Keep close'}</button>
+          ${areaAddBtn}
+          <button class="ksp-dots${areaOvOpen() ? ' on' : ''}" data-area-ov title="Settings &amp; overview" aria-label="Settings and overview">···</button>
+        </div>
       </div>
       ${sharedBanner(area)}
-      ${areaOvOpen() ? areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks) : ''}
-    </header>
-    ${asMember ? `<div class="area-preview-bar"><span class="apb-ic">👁</span><span class="apb-t">You're seeing this space as the ${memberCount === 1 ? 'person' : 'people'} you share with. The dimmed, marked items are private - only you see them.</span><button class="apb-exit" data-area-asmember>Exit preview</button></div>` : ''}
-    ${areaDash ? '<div class="area-recent-h area-tabs-kick">Metrics</div>' : ''}
-    ${areaDash}
-    ${areaVisionGoals}
-    ${latestUpdates}
-    ${areaTools}
-    ${notepadFull}
+      ${areaOvOpen() ? `<div class="ksp-ov">${areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks)}</div>` : ''}
+      <div class="ksp-contents">
+        <div class="ksp-counts">${countsLine}</div>
+        <div class="ksp-search"><input class="ksp-search-in" data-area-q type="search" placeholder="Search this Space" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>
+      </div>
+      <div class="kgrid k-mainside ksp-grid">
+        <div class="k-a">
+          <div class="ksp-foldbar"><span class="ksp-foldbar-o" data-ksp-openall role="button" tabindex="0">Open all</span><span class="ksp-foldbar-o" data-ksp-foldall role="button" tabindex="0">Fold all</span></div>
+          ${visionGoals}${sectionsHtml}
+        </div>
+        <div class="k-c">${kspSide}</div>
+      </div>
+      <a class="ksp-foot" data-guide-home role="button" tabindex="0" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba"><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba"></a>
     </div>`;
   visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
   loadThumbs();   // area file/photo thumbnails (dashboard + overview)
@@ -23411,6 +23474,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-ov-colour-toggle]')) { try { localStorage.setItem('life.ovcolour', localStorage.getItem('life.ovcolour') === '1' ? '0' : '1'); } catch {} renderArea(); return; }
   { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
+  { const kf = t.closest('[data-ksp-fold]'); if (kf) { const a = state.area_open && state.area_open.area; if (a) kspTog(a.id, kf.dataset.kspFold); return; } }
+  if (t.closest('[data-ksp-openall]')) { const a = state.area_open && state.area_open.area; if (a) kspSetAll(a.id, true); return; }
+  if (t.closest('[data-ksp-foldall]')) { const a = state.area_open && state.area_open.area; if (a) kspSetAll(a.id, false); return; }
+  { const kg = t.closest('[data-ksp-go]'); if (kg) { const a = state.area_open && state.area_open.area; const key = kg.dataset.kspGo.replace(/^sec-/, ''); if (a) { kspSetOpen(a.id, key); requestAnimationFrame(() => { const el = document.getElementById('sec-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); } return; } }
   if (t.closest('[data-area-invite]')) { const a = state.area_open && state.area_open.area; if (a) openShare(a.id, a.title, 'area'); return; }
   if (t.closest('[data-area-members-more]')) { if (state.area_open) state.area_open.membersExpanded = true; renderArea(); return; }
   if (t.closest('[data-area-share-optin]')) { areaShareStartOptin(); return; }
