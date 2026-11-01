@@ -11754,6 +11754,13 @@ function weekDays(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: DOW3[x.getDay()], today: di === todayISO() }; });
 }
+// The Monday-first week containing `iso` (Koyeba §25 Week view): seven columns,
+// Mon-Sun, whichever week the selected day falls in.
+function weekMon(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const base = new Date(y, m - 1, d); base.setDate(base.getDate() - ((base.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(base); x.setDate(base.getDate() + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: DOW3[x.getDay()], today: di === todayISO() }; });
+}
 async function openCalendar(dateStr) {
   const base = dateStr || (state.cal && state.cal.selected) || todayISO();
   const [y, m] = base.split('-').map(Number);
@@ -11761,7 +11768,8 @@ async function openCalendar(dateStr) {
   // kept separate from `selected` so clicking a day doesn't shift the window.
   // Modes are now Day (a scrollable list) and Month. Old saved 'week' maps to Day.
   const savedMode = localStorage.getItem('life.calMode');
-  const startMode = savedMode === 'month' ? 'month' : 'agenda';
+  // §25: the three views are List · Week · Month. Old saved 'agenda'/'day' -> List.
+  const startMode = savedMode === 'month' ? 'month' : savedMode === 'week' ? 'week' : 'list';
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, agendaBack: 0, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
@@ -11779,8 +11787,8 @@ async function openCalendar(dateStr) {
 }
 async function loadCalendar() {
   let from, to;
-  if (state.cal.mode === 'agenda') { from = addDayISO(todayISO(), -(state.cal.agendaBack || 0)); to = addDayISO(todayISO(), state.cal.agendaDays || 30); }
-  else if (state.cal.mode === 'week') { const wk = weekDays(state.cal.weekAnchor || todayISO()); from = wk[0].iso; to = wk[6].iso; }
+  if (state.cal.mode === 'list') { from = state.cal.selected || todayISO(); to = addDayISO(from, 15); }
+  else if (state.cal.mode === 'week') { const wk = weekMon(state.cal.selected || todayISO()); from = wk[0].iso; to = addDayISO(wk[6].iso, 1); }
   else { const weeks = monthWeeks(state.cal.y, state.cal.m); from = weeks[0][0].iso; to = weeks[5][6].iso; }
   try {
     const r = await api(`/api/calendar?from=${from}&to=${to}`);
@@ -11928,123 +11936,106 @@ async function ownerGcalPause(off) {
 }
 function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
-  if (state.cal.mode === 'week') { state.cal.weekAnchor = addDayISO(state.cal.weekAnchor || todayISO(), delta * 7); state.cal.selected = state.cal.weekAnchor; const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
+  if (state.cal.mode === 'week') { state.cal.selected = addDayISO(state.cal.selected || todayISO(), delta * 7); state.cal.weekAnchor = state.cal.selected; const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
+  else if (state.cal.mode === 'list') { state.cal.selected = addDayISO(state.cal.selected || todayISO(), delta * 14); const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
   else { let m = state.cal.m + delta, y = state.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.cal.y = y; state.cal.m = m; }
   state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar();
 }
+// §25: Quieten repeats is on by default (muting weekly repeats and sorting them
+// below the one-offs). Kept per person in life.calQuiet.
+function calQuiet() { if (state.cal.quiet == null) state.cal.quiet = (localStorage.getItem('life.calQuiet') !== '0'); return state.cal.quiet; }
+// Titles carry no emoji, flags or ↻ repeat marks (§25): repeats read as muting,
+// and "Repeats weekly" appears in the side panel instead.
+function stripEmoji(s) { return String(s || '').replace(/[←-⇿⌀-➿⬀-⯿\u{1F000}-\u{1FAFF}️⃣™ℹ]/gu, '').replace(/\s{2,}/g, ' ').trim(); }
+// The one italic line under the title: how many things today, then the first
+// timed one in words ("at three") or 24-hour when not on the hour.
+function calMood(byDay, todayI) {
+  const W = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+  const HR = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven'];
+  const all = (byDay[todayI] || []);
+  const real = all.filter((e) => !e.feed);
+  const n = real.length;
+  const count = (W[n] != null ? W[n] : n) + (n === 1 ? ' thing today.' : ' things today.');
+  const timed = all.filter((e) => !e.allDay && !e.feed && !e.recurringId && e.start_min != null).sort((a, b) => a.start_min - b.start_min)[0];
+  if (!timed) return count + (n ? '' : ' A clear day.');
+  const h = Math.floor(timed.start_min / 60), m = timed.start_min % 60;
+  const when = m === 0 ? `at ${HR[h % 12]}` : `at ${minToLabel(timed.start_min)}`;
+  const place = timed.location ? `, in ${stripEmoji(timed.location).split(', ').pop()}` : '';
+  return `${count} ${stripEmoji(timed.title)} ${when}${place}.`;
+}
+// Per-kind event type (§25): holidays/feeds muted Cormorant italic; all-day gold
+// Cormorant italic; quietened weekly repeats muted Jost; everything else ink Jost.
+// `big` is the list and side-panel size; month and week are the small size.
+function evStyle(e, big) {
+  if (e.feed) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${big ? 21 : 15}px;color:var(--k-mute)`;
+  if (e.allDay) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${big ? 23 : 16}px;line-height:1.2;color:var(--k-goldt)`;
+  if (e.recurringId && calQuiet()) return `font-family:var(--k-sans);font-weight:400;font-size:${big ? 15 : 12.5}px;color:var(--k-mute)`;
+  return `font-family:var(--k-sans);font-weight:400;font-size:${big ? 16 : 13}px;line-height:1.4;color:var(--k-ink)`;
+}
 function renderCalendar() {
   const c = state.cal, byDay = eventsByDay();
-  // Never rebuild the event form out from under an active edit: a background
-  // re-render (contacts/gcal/events landing) while you're setting the end time -
-  // its native picker still open - would snap your pick back to the default. If a
-  // field inside the open form has focus, skip this paint; a later one catches up.
+  // Never rebuild the event form out from under an active edit (its native picker
+  // may be open); if a field in the open form has focus, skip this paint.
   if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
-  _calFormSnap = snapshotCalForm();   // keep any unsaved edits across this rebuild
-  let title, body;
-  if (c.mode === 'agenda') { title = 'Calendar Day View'; body = ''; }
-  else if (c.mode === 'week') {
-    const wk = weekDays(c.weekAnchor || todayISO()), a = wk[0], b = wk[6];
-    title = `${a.day} ${MONTHS_LONG[a.mon].slice(0, 3)} – ${b.day} ${MONTHS_LONG[b.mon].slice(0, 3)}`;
-    // The day shown in full up top (today by default) isn't repeated in the strip
-    // below - otherwise you see it twice. (Robin.) When the selected day sits
-    // outside the shown week, nothing is filtered, so it stays a full seven.
-    // Every day of the week reads the same - today is not styled apart from the
-    // rest; only the day you've selected gets a quiet highlight. (Robin.)
-    const strip = wk;
-    body = `<div class="cal-week" style="--cwn:${strip.length}">${strip.map((d) => {
-      const evs = byDay[d.iso] || [];
-      return `<div class="cw-day ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
-        <div class="cw-head"><span class="cw-dow">${d.dow}</span><span class="cw-num">${d.day}</span><button class="cal-add-day cw-add" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div>
-        <div class="cw-evs">${evs.map((e) => `<button class="cw-ev ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}${e.acctColor ? ' acct-ev' : ''}" data-cal-ev="${e.id}"${e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : ''}>${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</button>`).join('')}</div></div>`;
-    }).join('')}</div>`;
-  } else {
-    title = `All of ${MONTHS_LONG[c.m]} <span class="cal-yr">${c.y}</span>`;
+  _calFormSnap = snapshotCalForm();
+  const quiet = calQuiet(), todayI = todayISO(), narrow = window.matchMedia('(max-width:1100px)').matches;
+  const cq = (state.calQuery || '').trim().toLowerCase();
+  // A day's events: search-filtered, and (when quiet) repeats sorted below one-offs.
+  const dayEvs = (iso) => { let evs = (byDay[iso] || []); if (cq) evs = evs.filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq)); return quiet ? [...evs.filter((e) => !e.recurringId), ...evs.filter((e) => !!e.recurringId)] : evs; };
+  const evRange = (e) => e.allDay ? (e.feed ? 'Holiday' : 'All day') : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}–${minToLabel(e.end_min)}` : minToLabel(e.start_min));
+  const evT = (e) => (e.allDay || e.start_min == null) ? '' : minToLabel(e.start_min);
+  // ── Month ──
+  let main = '';
+  if (c.mode === 'month') {
     const nowMin = (() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); })();
     const cell = (d) => {
-      let evs = byDay[d.iso] || [];
-      // On today, when there are more than fit, drop what's already happened and
-      // lead with what's still to come - a glance should show the next thing, not
-      // this morning's done meetings. (Keep all-day events; never blank the day.)
-      if (d.today && evs.length > 3) { const upcoming = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (upcoming.length) evs = upcoming; }
-      const shown = evs.slice(0, 3).map((e) => `<span class="cal-chip ${e.allDay ? 'allday' : ''}${e.feed ? ' feed' : ''}${e.acctColor ? ' acct-ev' : ''}" data-cal-ev="${e.id}"${e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : ''} title="${esc(e.title)}">${e.allDay ? '' : `<b>${minToLabel(e.start_min)}</b> `}${esc(e.title)}</span>`).join('');
-      const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : '';
-      const dots = evs.slice(0, 5).map((e) => `<span class="cal-dot ${e.allDay ? 'allday' : ''}"></span>`).join('');
-      return `<div class="cal-cell ${d.inMonth ? '' : 'dim'} ${d.today ? 'today' : ''} ${d.iso === c.selected ? 'csel' : ''}" data-cal-day="${d.iso}">
-        <div class="cal-cell-top"><span class="cal-daynum">${d.day}</span><button class="cal-add-day" data-cal-add-day="${d.iso}" title="Add an event on this day" aria-label="Add an event on this day">＋</button></div><div class="cal-evs">${shown}${more}</div><div class="cal-dots">${dots}</div></div>`;
+      let evs = dayEvs(d.iso);
+      if (d.today && evs.length > 3) { const up = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (up.length) evs = up; }
+      const shown = evs.slice(0, 3).map((e) => { const tt = evT(e); return `<div class="cx-ev" data-cal-ev="${e.id}">${tt && !narrow ? `<span class="cx-ev-t">${tt}</span>` : ''}<span class="cx-ev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</span></div>`; }).join('');
+      const more = evs.length > 3 ? `<span class="cx-more">+${evs.length - 3} more</span>` : '';
+      return `<div class="cx-cell${d.inMonth ? '' : ' out'}${d.iso === c.selected ? ' sel' : ''}" data-cal-day="${d.iso}"><div class="cx-cell-top"><span class="cx-num${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-cell-evs">${shown}${more}</div></div>`;
     };
-    body = `<div class="cal-grid">${WEEKDAYS.map((w) => `<div class="cal-dow">${w}</div>`).join('')}${monthWeeks(c.y, c.m).map((w) => w.map(cell).join('')).join('')}</div>`;
+    main = `<div class="cx-month"><div class="cx-dows">${WEEKDAYS.map((w) => `<div class="cx-dow">${w}</div>`).join('')}</div><div class="cx-cells">${monthWeeks(c.y, c.m).flat().map(cell).join('')}</div></div>`;
+  } else if (c.mode === 'week') {
+    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev" data-cal-ev="${e.id}"><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
+  } else {
+    const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
+    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span></div>${evs.map((e) => `<div class="cx-lrow" data-cal-ev="${e.id}"><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span></div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
   }
-  const dayEvents = (byDay[c.selected] || []);
-  const agTime = (e) => e.allDay ? 'all day'
-    : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}-${minToLabel(e.end_min)}` : minToLabel(e.start_min));
-  const agendaRows = dayEvents.length ? dayEvents.map((e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); return `<div class="cal-ag-row" data-cal-ev="${e.id}" role="button" tabindex="0">
-      <span class="cal-ag-time">${agTime(e)}</span>
-      <span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; }).join('')
-    : '<div class="home-empty">Nothing on this day.</div>';
-  // Rolling agenda: today, then every day forward for the loaded window, each in
-  // one uniform style. Empty days stay as a slim date line so the scroll never
-  // dead-ends; days with events list them. Extend with "Show more days".
-  const agRow = (e) => { const ct = e.contact ? findContact(e.contact) : null; const ju = eventJoinUrl(e); const a = e.area ? areaById(e.area) : null; return `<div class="cal-ag-row${a ? ' has-area' : ''}${e.allDay ? ' allday' : ''}${e.acctColor ? ' acct-ev' : ''}"${a ? ` style="--h:${hueOf(a)}"` : (e.acctColor ? ` style="--acct:hsl(${Number(e.acctColor)} 62% 52%)"` : '')} data-cal-ev="${e.id}" role="button" tabindex="0"><span class="cal-ag-time">${agTime(e)}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}${a ? `<span class="cal-ag-area"><span class="cal-ag-adot"></span>${esc(a.title)}</span>` : ''}${e.acctLabel ? `<span class="cal-ag-area cal-ag-acct"><span class="cal-ag-adot" style="background:hsl(${Number(e.acctColor) || 210} 62% 52%)"></span>${esc(e.acctLabel)}</span>` : ''}${ct ? `<span class="ev-with" title="With ${esc(ct.title || '')}">· ${esc(ct.title || '')}</span>` : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}${ju ? `<a class="ev-join-btn" href="${esc(ju)}" target="_blank" rel="noopener noreferrer" title="Open the link">Open ↗</a>` : ''}</div>`; };
-  const cq = (state.calQuery || '').trim().toLowerCase();
-  const isAgenda = c.mode === 'agenda' && !cq;
-  let rollHtml = '';
-  if (isAgenda) {
-    const agN = c.agendaDays || 30; const back = c.agendaBack || 0; const t0 = todayISO();
-    const days = []; for (let i = -back; i <= agN; i++) days.push(addDayISO(t0, i));
-    rollHtml = days.map((iso) => {
-      const evs = byDay[iso] || [];
-      const rel = iso < t0 ? ' roll-past' : iso === t0 ? ' roll-today' : '';
-      return `<section class="roll-day${evs.length ? '' : ' roll-empty-day'}${rel}" data-roll-iso="${iso}">
-        <div class="roll-day-h" data-cal-add-day="${iso}" role="button" tabindex="0"><span class="roll-day-date">${esc(prettyDate(iso))}</span><span class="roll-day-yr">${iso.slice(0, 4)}</span><span class="roll-add" aria-hidden="true">＋</span></div>
-        ${evs.length ? `<div class="roll-evs">${evs.map(agRow).join('')}</div>` : ''}
-      </section>`;
-    }).join('');
-  }
-  const matches = cq ? state.cal.events
-    .filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq))
-    .sort((a, b) => `${a.date}${a.allDay ? '' : p2(Math.floor((a.start_min || 0) / 60))}`.localeCompare(`${b.date}${b.allDay ? '' : p2(Math.floor((b.start_min || 0) / 60))}`)) : [];
-  const searchBlock = `<section class="cal-search">
-      <div class="cal-search-h"><h2>Results · ${matches.length}</h2><span class="cal-search-note">in the loaded range</span></div>
-      ${matches.length ? matches.map((e) => `<button class="cal-ag-row" data-cal-ev="${e.id}"><span class="cal-ag-time">${esc(prettyDate(e.date))}${e.allDay ? '' : ` · ${minToLabel(e.start_min)}`}</span><span class="cal-ag-t">${esc(e.title)}${e.recurringId ? '<span class="cal-recur" title="Repeats - part of a series">↻</span>' : ''}</span>${e.location ? `<span class="cal-ag-loc">${esc(e.location)}</span>` : ''}</button>`).join('') : '<div class="home-empty">No events match. Move to another month to search it.</div>'}</section>`;
+  // ── Selected-day side panel ──
+  const [sy, sm, sd] = (c.selected || todayI).split('-').map(Number);
+  const sideEyebrow = (c.selected || todayI) === todayI ? 'Today' : WEEKDAYS_LONG[new Date(sy, sm - 1, sd).getDay()];
+  const sideDate = `${sd} ${MONTHS_LONG[sm - 1]}`;
+  const sevs = dayEvs(c.selected || todayI);
+  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow" data-cal-ev="${e.id}"><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
+  const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
   $('#pane').innerHTML = `
-    ${pageCrumb('Calendar')}
-    <div class="pane-head home-head cal-pagehead"><h1>${t('nav.calendar')}</h1></div>
-    <div class="cal-head">
-      <div class="cal-head-l"><h1>${title}</h1><span class="cal-now" id="cal-now"></span></div>
-      <div class="cal-nav">
-        <div class="cal-modes"><button class="cal-mode ${c.mode === 'agenda' ? 'on' : ''}" data-cal-mode="agenda">Day</button><button class="cal-mode ${c.mode === 'month' ? 'on' : ''}" data-cal-mode="month">Month</button></div>
-        <button class="cal-btn" data-cal-today>Today</button>
-        ${c.mode === 'week' ? '<button class="cal-btn ic" data-cal-prev title="Previous">‹</button><button class="cal-btn ic" data-cal-next title="Next">›</button>' : ''}
-        <button class="cal-btn ic" data-open-feeds title="Calendar settings - holidays &amp; fixtures">⚙</button>
-        <button class="cal-btn cal-nav-add" data-cal-add title="Add an event">+ Event</button>
-        ${modOn('calendar') ? '<button class="cal-btn cal-flyerbtn" data-open-flyer title="Add from a file - a flyer, photo, screenshot or webpage link">📄 Add from file</button>' : ''}
-        ${modOn('discover') ? '<button class="cal-btn cal-discbtn" data-open-discover data-tip="See what\'s on near you">✦ Discover</button>' : ''}
+    <div class="kpage-cal">
+      <div class="cx-eyebrow">Plans · Calendar</div>
+      <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
+      <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
+      <div class="cx-controls">
+        <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today>Today</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
+        <div class="cx-views">${views}</div>
+        <button class="cx-quiet${quiet ? ' on' : ''}" data-cal-quiet><span class="cx-quiet-box"></span>Quieten repeats</button>
+        <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
+        <button class="cx-new" data-cal-add>New event</button>
       </div>
-    </div>
-    ${gcalBarHtml()}
-    <input class="list-search sel" data-cal-q placeholder="Search calendar…" value="${esc(state.calQuery || '')}" autocomplete="off">
-    ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
-    ${cq ? searchBlock : (isAgenda ? `<section class="cal-agenda cal-agenda-top">
-      <div id="cal-form"></div>
-      <button class="cal-loadmore cal-loadmore-up" data-cal-agenda-earlier>← Show earlier days</button>
-      <div class="cal-roll">${rollHtml}</div>
-      <button class="cal-loadmore" data-cal-agenda-more>Show more days →</button>
-    </section>` : `<section class="cal-agenda cal-agenda-top">
-      <div class="cal-ag-head"><div class="cal-ag-when"><h2>${calDayLabel(c.selected)}</h2></div></div>
-      <div id="cal-form"></div>
-      <div class="cal-ag-list">${agendaRows}</div>
-    </section>
-    <div class="cal-upcoming-h${c.mode === 'month' ? ' cal-monthnav' : ''}">${c.mode === 'month'
-      ? `<button class="cal-btn ic cal-mn-btn" data-cal-prev title="Previous month" aria-label="Previous month">‹</button><span class="cal-ag-eyebrow cal-monthname">${esc(MONTHS_LONG[c.m])} <span class="cal-yr">${c.y}</span></span><button class="cal-btn ic cal-mn-btn" data-cal-next title="Next month" aria-label="Next month">›</button>`
-      : `<span class="cal-ag-eyebrow">${c.mode === 'week' ? 'Upcoming' : esc(MONTHS_LONG[c.m])}</span>`}</div>
-    ${body}`)}`;
+      ${gcalBarHtml()}
+      ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
+      <div class="cx-grid">
+        <div class="cx-col"><div id="cal-form"></div>${main}</div>
+        <aside class="cx-side">
+          <div class="cx-side-head"><div class="cx-side-eyebrow">${esc(sideEyebrow)}</div><div class="cx-side-date">${esc(sideDate)}</div></div>
+          <div class="cx-side-rows">${sideRows}</div>
+          <button class="cx-side-add" data-cal-add-day="${c.selected || todayI}">+ Add to this day</button>
+        </aside>
+      </div>
+    </div>`;
   if (c.adding) showCalForm();
   else if (c.editing) showCalForm(c.editing);
   else if (c.viewing) showCalView(c.viewing);
   restoreCalForm(_calFormSnap); _calFormSnap = null;
-  // Measure the breadcrumb so the sticky day-header (mobile) pins right below it.
-  { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--cal-crumbh', cb.offsetHeight + 'px'); }
-  startCalClock();
 }
 // A live clock on the calendar, in relation to the day's agenda: the time, and
 // the next timed event still to come today. (Robin: time is important.)
@@ -23815,6 +23806,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-today]')) { state.cal.selected = todayISO(); state.cal.weekAnchor = todayISO(); state.cal.agendaBack = 0; const d = new Date(); state.cal.y = d.getFullYear(); state.cal.m = d.getMonth(); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar().then(() => requestAnimationFrame(() => { const el = document.querySelector('.roll-day.roll-today'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); })); return; }
   if (t.closest('[data-cal-prev]')) { stepCal(-1); return; }
   if (t.closest('[data-cal-next]')) { stepCal(1); return; }
+  if (t.closest('[data-cal-quiet]')) { state.cal.quiet = !calQuiet(); try { localStorage.setItem('life.calQuiet', state.cal.quiet ? '1' : '0'); } catch {} renderCalendar(); return; }
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a
   // select - so the chip both shows the value and edits it in one tap.
   { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const tgt = jmp.dataset.ceJump; if (tgt === '#ce-area') { const lab = document.querySelector('.ce-arealab'); if (lab) lab.classList.add('ce-area-reveal'); } const el = document.querySelector(tgt); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
