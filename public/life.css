@@ -9870,3 +9870,121 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .nff:hover { color:var(--ink); }
 .nff.on { color:var(--accent); }
 .nav-toggle, .nav-resize { display:none !important; }
+
+/* ══ §17 navigation: top line of seven groups, a fold-down sheet, Contents and
+   Find; on mobile a slim wordmark + a three-item bottom bar. Replaces the
+   sidebar. Colours from the data-theme tokens so night is correct. ══ */
+.app-shell { display:block; min-height:100vh; }
+body.nav-collapsed .app-shell { grid-template-columns:none; }
+.nav { position:sticky; top:0; z-index:60; height:auto; max-height:none; overflow:visible; width:auto; background:var(--paper); border-bottom:1px solid var(--line); border-right:0; padding:0; }
+.main { min-width:0; display:block; }
+.knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); }
+.knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; }
+.knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
+.knav-brand .brand-dot { color:var(--accent); font-style:normal; }
+.knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
+.knav-groups { display:flex; gap:clamp(14px,1.8vw,24px); height:100%; align-items:stretch; min-width:0; }
+.knav-g { display:flex; align-items:center; gap:5px; height:100%; box-sizing:border-box; border:0; border-bottom:1px solid transparent; margin-bottom:-1px; background:none; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:400; font-size:15px; white-space:nowrap; color:var(--ink-2); transition:color .16s; }
+.knav-g:hover { color:var(--k-goldt); }
+.knav-g.here { color:var(--ink); }
+.knav-g.open { color:var(--ink); border-bottom-color:var(--accent); }
+.knav-g-b { font-family:'Jost',system-ui,sans-serif; font-size:11.5px; color:var(--k-goldt); }
+.knav-right { margin-left:auto; display:flex; align-items:center; gap:22px; flex:none; }
+.knav-find-btn, .knav-contents-btn { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; gap:6px; padding:6px 0; }
+.knav-find-btn kbd { font:inherit; font-size:11px; letter-spacing:.08em; color:var(--ink-3); }
+.knav-find-btn:hover, .knav-contents-btn:hover { color:var(--k-goldt); }
+.knav-find-btn.on { color:var(--ink); border-bottom:1px solid var(--accent); }
+.knav-contents-btn { padding-bottom:3px; border-bottom:1px solid var(--accent); color:var(--ink); }
+.knav-contents-btn.on { color:var(--k-goldt); }
+
+/* fold-down sheet (desktop) */
+.knav-sheet { position:fixed; top:var(--tabstrip-h,68px); left:0; right:0; z-index:58; background:var(--paper-2); border-bottom:1px solid var(--line); padding:26px clamp(20px,4vw,40px) 30px; animation:kfade .4s cubic-bezier(.2,.7,.2,1); }
+.knav-sheet-h { display:flex; align-items:baseline; gap:14px; margin-bottom:16px; }
+.knav-sheet-t { font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:34px; line-height:1; white-space:nowrap; color:var(--ink); }
+.knav-sheet-a { font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; }
+.knav-sheet-x { margin-left:auto; background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap; }
+.knav-sheet-x:hover { color:var(--k-goldt); }
+.knav-sheet-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0 26px; }
+.knav-tool { text-align:left; background:none; border:0; border-top:1px solid var(--line); padding:13px 0; cursor:pointer; }
+.knav-tool-top { display:flex; align-items:baseline; gap:8px; }
+.knav-tool-n { font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:300; font-size:16px; color:var(--k-goldt); }
+.knav-tool-l { font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:24px; line-height:1.1; color:var(--ink); }
+.knav-tool:hover .knav-tool-l { color:var(--k-goldt); }
+.knav-tool-h { display:block; font-family:'Jost',system-ui,sans-serif; font-size:13px; line-height:1.4; color:var(--ink-2); margin-top:3px; }
+
+/* Find panel */
+.knav-find { position:fixed; top:calc(var(--tabstrip-h,68px) + 8px); right:clamp(20px,4vw,40px); width:520px; max-width:calc(100% - 40px); max-height:min(600px,calc(100vh - var(--tabstrip-h,68px) - 40px)); overflow:auto; z-index:59; background:var(--card); border:1px solid var(--line); padding:8px 26px 16px; animation:kfade .35s cubic-bezier(.2,.7,.2,1); }
+.knav-find-top { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--ink); }
+.knav-find-q { flex:1; min-width:0; background:transparent; border:0; outline:0; font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:26px; color:var(--ink); }
+.knav-find-q::placeholder { color:var(--ink-3); }
+.knav-find-close, .knav-find-sh { background:none; border:0; cursor:pointer; }
+.knav-find-close { font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; }
+.knav-find-sec { border-bottom:1px solid var(--line); }
+.knav-find-sh { display:flex; align-items:center; gap:10px; width:100%; padding:14px 0; text-align:left; }
+.knav-find-sl { font-family:'Jost',system-ui,sans-serif; font-weight:600; font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink); white-space:nowrap; }
+.knav-find-sb { font-family:'Jost',system-ui,sans-serif; font-size:12px; color:var(--k-goldt); }
+.knav-find-ss { margin-left:auto; font-family:'Jost',system-ui,sans-serif; font-weight:300; font-size:18px; color:var(--ink-3); }
+.knav-find-it { display:flex; align-items:baseline; gap:12px; width:100%; min-height:44px; box-sizing:border-box; padding:10px 0; text-align:left; background:none; border:0; border-top:1px solid var(--line); cursor:pointer; }
+.knav-find-ia { flex:1; min-width:0; }
+.knav-find-ititle { display:block; font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:21px; line-height:1.2; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.knav-find-it:hover .knav-find-ititle { color:var(--k-goldt); }
+.knav-find-isub { display:block; font-family:'Jost',system-ui,sans-serif; font-size:12.5px; color:var(--ink-2); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.knav-find-ib { font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:12px; color:var(--k-goldt); }
+.knav-find-empty { padding:18px 0; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:300; font-size:20px; color:var(--ink-2); }
+
+/* Contents overlay */
+.knav-contents { position:fixed; top:var(--tabstrip-h,68px); left:0; right:0; bottom:0; z-index:57; background:var(--paper); padding:36px clamp(20px,4vw,56px); overflow:auto; animation:kfade .45s cubic-bezier(.2,.7,.2,1); }
+.knav-c-head { display:flex; align-items:center; gap:12px; }
+.knav-c-hint { margin-left:auto; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
+.knav-c-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 64px; margin-top:20px; }
+.knav-c-group { padding:12px 0; border-top:1px solid var(--ink); }
+.knav-c-gh { display:flex; align-items:baseline; gap:12px; }
+.knav-c-gn { width:34px; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:300; font-size:18px; color:var(--accent); }
+.knav-c-gl { font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:28px; line-height:1.1; color:var(--ink); }
+.knav-c-tools { display:flex; flex-wrap:wrap; gap:4px 18px; padding:6px 0 0 46px; }
+.knav-c-tool { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink); white-space:nowrap; padding:2px 0; }
+.knav-c-tool:hover { color:var(--k-goldt); }
+.knav-c-foot { display:flex; flex-wrap:wrap; align-items:center; gap:8px 26px; margin-top:28px; padding-top:16px; border-top:1px solid var(--line); }
+.knav-c-foot .nff { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); }
+.knav-c-foot .nff:hover, .knav-c-foot .nff.on { color:var(--k-goldt); }
+.knav-c-name { margin-left:auto; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); }
+
+/* mobile bottom bar - hidden on desktop */
+.knav-bottom { display:none; }
+
+/* ── collapse the group words below ~1100px (contents does the navigating) ── */
+@media (max-width:1100px) and (min-width:821px){
+  .knav-groups { display:none; }
+  .knav-crumb { display:block; }
+}
+
+/* ── mobile (≤820px): wordmark on top, three-item bottom bar ── */
+@media (max-width:820px){
+  .knav-bar { height:50px; padding:0 20px; gap:12px; }
+  .knav-brand .brand-word { font-size:24px; }
+  .knav-groups, .knav-right { display:none; }
+  .knav-crumb { display:block; margin-left:auto; }
+  .knav-sheet { display:none; }
+  .knav-find, .knav-contents { top:var(--navh,50px); bottom:88px; left:0; right:0; width:auto; max-width:none; max-height:none; border:0; padding:8px 24px 24px; }
+  .knav-c-grid { grid-template-columns:1fr; gap:0; }
+  .knav-c-group { border-top:1px solid var(--line); }
+  .knav-c-gl { font-size:26px; }
+  .knav-bottom { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; position:fixed; left:0; right:0; bottom:0; z-index:60; height:88px; padding:10px 28px 0; box-sizing:border-box; border-top:1px solid var(--line); background:var(--paper); }
+  .knav-b-contents, .knav-b-find { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:16px; padding:12px 0; align-self:start; color:var(--ink); }
+  .knav-b-contents { justify-self:start; }
+  .knav-b-find { justify-self:end; color:var(--ink-2); }
+  .knav-b-contents.on, .knav-b-find.on { color:var(--k-goldt); }
+  .knav-b-set { justify-self:center; width:52px; height:52px; margin-top:-4px; display:flex; align-items:center; justify-content:center; background:var(--accent); color:var(--accent-ink); border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:300; font-size:30px; line-height:1; }
+  /* the folded capture tab is replaced by the bottom + on mobile (the drawer in
+     #cap-root still opens from it), so hide only the tab, never #cap-root. */
+  .cap-bar { display:none !important; }
+  /* keep screen content clear of the fixed bottom bar */
+  .main { padding-bottom:96px; }
+}
+
+/* §17: the old mobile icon tab bar is replaced by the nav's bottom bar. */
+.tabbar, #tabbar { display:none !important; }
+/* §15: the folded capture is a small tab (bottom centre), not a full-width bar. */
+.cap-bar { width:auto; max-width:calc(100vw - 32px); padding:10px 18px; gap:10px; }
+.cap-bar .cap-bar-t { font-size:19px; }
+.cap-bar .cap-bar-speak { display:none; }

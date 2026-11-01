@@ -4942,39 +4942,167 @@ function navFoldsHtml(v) {
     + `<button type="button" class="kfind" data-palette aria-label="${t('nav.search')}"><span class="kfind-l">Find…</span><kbd class="kfind-k">${PK('⌘K')}</kbd></button>`
     + `<div class="kfolds">${KFOLDS.map(foldHtml).join('')}</div></div>`;
 }
+// ── Koyeba navigation (§17, V9): seven groups along the top on desktop, each
+// folding a sheet down; a Contents overlay (⌘/, groups only); and a Find panel
+// (⌘K) that shows Shared-with-you + Recent before you type, results after. On
+// mobile: a slim wordmark + a three-item bottom bar (Contents · gold + · Find),
+// a full-screen Contents, and Set-something-down as a bottom sheet. Today is not
+// a group - the wordmark goes Home. Replaces the sidebar and the mobile icon bars.
+const KNAV_R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+// Each tool: [label, handler-attrs, view-key-for-live-hint]. Handlers are the app's
+// existing ones, so navigation is unchanged - only the chrome is new.
+function knavGroups() {
+  const areaTools = (state.areas || []).map((a) => [esc(a.title || 'Untitled'), `data-open-area="${a.id}"`, '']);
+  return [
+    { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
+    { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
+      ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
+    { id: 'plans', label: 'Plans', about: 'What’s coming, and what’s on', tools: [
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''] ] },
+    { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
+      ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
+    { id: 'long', label: 'The long game', about: 'Where you’re heading, and how it’s going', tools: [
+      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-goals', ''], ['Reviews', 'data-open-reviews', ''] ] },
+    { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
+      ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''], ['Practices', 'data-open-practices', ''] ] },
+    { id: 'money', label: 'Money', about: 'Optional – only if you want it', tools: [
+      ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Money', 'data-open-money', ''] ] },
+  ];
+}
+// Which group the current view belongs to, so its name shows ink in the top line.
+const KNAV_VIEW = {
+  area: 'spaces', areas: 'spaces',
+  mail: 'conv', mailaccounts: 'conv', messages: 'conv', contacts: 'conv', contactcard: 'conv', connect: 'conv', friends: 'conv', daybookpeople: 'conv', shared: 'conv',
+  calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans',
+  notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
+  goals: 'long', goalcard: 'long', bucketcard: 'long', reviews: 'long', reviewcard: 'long',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', practices: 'inner', tracker: 'inner',
+  money: 'money', financial: 'money',
+};
+// A cheap live hint for a tool, where we have the number to hand (never an amount).
+function knavHint(viewKey) {
+  if (viewKey === 'mail') { const n = state.mailUnreadTotal || 0; return n ? `${n} to sort` : ''; }
+  if (viewKey === 'messages') { const n = (typeof unreadMsgs === 'function' ? unreadMsgs() : 0); return n ? `${n} new` : ''; }
+  if (viewKey === 'tasks') { const n = (state.home && state.home.alerts && state.home.alerts.p1) || 0; return n ? `${n} for today` : ''; }
+  return '';
+}
+function knavGroupBadge(g) {
+  if (g.id === 'conv') { const n = state.mailUnreadTotal || 0; return n ? n : ''; }
+  return '';
+}
+// Find panel sections before typing: Shared with you (new first), then Recent -
+// from the app's own data, with a quiet fallback.
+function knavShared() {
+  return (state.sharedItems || []).slice(0, 8).map((it) => {
+    const who = it.sharedByName || it.by || 'someone';
+    const kind = (it.kind || 'item'); const label = kind === 'area' ? 'Space' : kind.charAt(0).toUpperCase() + kind.slice(1);
+    return { a: it.title || 'Untitled', b: `${label} · ${esc(who)}${it.when ? ' · ' + esc(it.when) : ''}`, badge: it.isNew ? 'new' : '', kind, id: it.id };
+  });
+}
+function knavRecent() {
+  return (typeof recentItems === 'function' ? recentItems() : []).filter((r) => r && r.id && r.kind).slice(0, 8).map((n) => {
+    const a = n.kind === 'area' ? null : (n.area ? areaById(n.area) : null);
+    const kindL = ({ note: 'Note', table: 'Table', area: 'Space', task: 'Task', taskcard: 'Task', goal: 'Goal', review: 'Review', bookmark: 'Saved' })[n.kind] || 'Item';
+    return { a: n.title || 'Untitled', b: `${kindL}${a ? ' · ' + esc(a.title) : ''}`, badge: '', kind: n.kind, id: n.id };
+  });
+}
+function knavSharedNew() { return (state.sharedItems || []).some((it) => it && it.isNew); }
+// Whether a new-shared notice is worth a gold count: new AND not yet seen this session.
+function knavFindBadge() { return (!state.knav || !state.knav.findSeen) && knavSharedNew() ? '·' : ''; }
+function navGroupsHtml(v) {
+  state.knav = state.knav || { group: null, contents: false, find: false, findSeen: false, mGroup: null, q: '', fShut: {} };
+  const kn = state.knav;
+  const groups = knavGroups();
+  const curGroup = KNAV_VIEW[(v && v.type) || ''] || '';
+  const q = (kn.q || '').trim().toLowerCase();
+  // ── group names in the top line (desktop) ──
+  const groupTabs = groups.map((g) => {
+    const open = kn.group === g.id && !kn.contents && !kn.find;
+    const here = curGroup === g.id;
+    const badge = knavGroupBadge(g);
+    return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
+  }).join('');
+  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button>`;
+  const crumb = (() => { const g = groups.find((x) => x.id === curGroup); const vt = (v && v.type) || ''; if (vt === 'home' || !g) return 'Today'; return `${g.label}`; })();
+  const header = `<div class="knav-bar">
+      ${wordmark}
+      <div class="knav-crumb">${esc(crumb)}</div>
+      <div class="knav-groups">${groupTabs}</div>
+      <div class="knav-right">
+        <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Find <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
+        <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Contents'}</button>
+      </div>
+    </div>`;
+  // ── fold-down sheet (desktop), when a group is open ──
+  let sheet = '';
+  if (kn.group && !kn.contents && !kn.find) {
+    const g = groups.find((x) => x.id === kn.group);
+    if (g) sheet = `<div class="knav-sheet">
+      <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close>Fold away</button></div>
+      <div class="knav-sheet-grid">${g.tools.map((tItem, i) => { const [label, attrs, vk] = tItem; const hint = vk ? knavHint(vk) : ''; return `<button class="knav-tool" ${attrs} data-knav-pick><span class="knav-tool-top"><span class="knav-tool-n">${KNAV_R[i] || ''}</span><span class="knav-tool-l">${label}</span></span>${hint ? `<span class="knav-tool-h">${esc(hint)}</span>` : ''}</button>`; }).join('')}</div>
+    </div>`;
+  }
+  // ── Find panel (shared + recent before typing; results after) ──
+  let find = '';
+  if (kn.find) {
+    let sections;
+    if (q) {
+      const all = groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: g.label, attrs, isTool: true }))).filter((x) => (x.a + ' ' + x.b).toLowerCase().includes(q));
+      sections = all.length ? [{ label: 'Found', badge: String(all.length), open: true, items: all }] : [];
+    } else {
+      const sh = knavShared(); const rc = knavRecent();
+      sections = [];
+      if (sh.length) sections.push({ id: 'shared', label: 'Shared with you', badge: knavSharedNew() && !kn.findSeen ? `${sh.filter((x) => x.badge).length || ''} new`.trim() : '', open: !kn.fShut.shared, items: sh });
+      sections.push({ id: 'recent', label: 'Recent', badge: '', open: !kn.fShut.recent, items: rc });
+    }
+    const secHtml = sections.map((s) => `<div class="knav-find-sec">
+      <button class="knav-find-sh"${s.id ? ` data-knav-fsec="${s.id}"` : ''}><span class="knav-find-sl">${s.label}</span>${s.badge ? `<span class="knav-find-sb">${esc(s.badge)}</span>` : ''}<span class="knav-find-ss">${s.id ? (s.open ? '−' : '+') : ''}</span></button>
+      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
+    </div>`).join('');
+    const empty = q && sections.length === 0 ? `<div class="knav-find-empty">Nothing by that name yet.</div>` : '';
+    find = `<div class="knav-find">
+      <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Find anything" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
+      ${secHtml}${empty}
+    </div>`;
+  }
+  // ── Contents overlay (groups only; a quiet utility footer) ──
+  let contents = '';
+  if (kn.contents) {
+    const cols = groups.map((g, i) => `<div class="knav-c-group">
+      <div class="knav-c-gh"><span class="knav-c-gn">${KNAV_R[i] || ''}</span><span class="knav-c-gl">${g.label}</span></div>
+      <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
+    </div>`).join('');
+    contents = `<div class="knav-contents">
+      <div class="knav-c-head"><span class="eyebrow">Contents</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to find</span></div>
+      <div class="knav-c-grid">${cols}</div>
+      <div class="knav-c-foot">
+        ${themeLocked() ? '' : `<button class="nff" data-theme-toggle title="Theme">${themeLabel()}</button>`}
+        <button class="nff ${v.type === 'settings' ? 'on' : ''}" data-open-settings>${t('nav.settings')}</button>
+        <button class="nff" data-open-guide>${t('nav.guide')}</button>
+        <button class="nff" data-open-getstarted>Welcome</button>
+        <span class="knav-c-name">${esc((state.me && (state.me.name || state.me.email)) || '')}</span>
+      </div>
+    </div>`;
+  }
+  // ── mobile bottom bar: Contents · gold + · Find ──
+  const bottom = `<div class="knav-bottom">
+      <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Contents</button>
+      <button class="knav-b-set" data-cap-open title="Set something down">+</button>
+      <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Find${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
+    </div>`;
+  return `${header}${sheet}${find}${contents}${bottom}`;
+}
+
 function renderNav() {
   const v = state.view;
+  if (state.knav && state.__knavView !== ((v && v.type) || '')) { state.knav.group = null; state.knav.contents = false; state.knav.find = false; state.__knavView = ((v && v.type) || ''); }
   document.body.dataset.view = (v && v.type) || '';   // lets CSS tailor per view (e.g. hide ⌘K on Mail)
   // The mobile nav drawer closes itself the moment you navigate to a new view.
   if (document.body.classList.contains('nav-drawer-open') && ((v && v.type) || '') !== state.__drawerView) closeNavDrawer();
   if ((v && v.type) !== 'mail') document.body.classList.remove('mail-reading');
   if ((v && v.type) !== 'area') document.body.classList.remove('area-as-member');   // leave the 'preview as member' mode with the space
   const dark = document.documentElement.dataset.theme === 'dark';
-  const navHtml = `
-    <div class="nav-topline" title="Home">
-      <button class="nav-menu-toggle" data-nav-drawer aria-label="Menu${navReq() ? ` — ${navReq()} connection request${navReq() === 1 ? '' : 's'}` : ''}" title="Menu">☰${navReq() ? `<span class="nav-menu-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>
-      <button type="button" class="nav-brand" data-view-home title="Home" aria-label="Home">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button>
-      ${unreadMsgs() ? `<button class="nav-msgbtn" data-open-messages aria-label="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}" title="${unreadMsgs()} new message${unreadMsgs() === 1 ? '' : 's'}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.4a7.4 7.4 0 0 1-10.8 6.6L4.5 19.5l1.4-4.3A7.4 7.4 0 1 1 20 11.4z"/></svg><span class="nav-msgbtn-c">${unreadMsgs() > 99 ? '99+' : unreadMsgs()}</span></button>` : '<span class="nav-topline-sp" aria-hidden="true"></span>'}
-    </div>
-    <div class="nav-msearch-row"><button class="nav-msearch" data-palette title="${t('nav.search')}"><span class="hs-ic">⌕</span><span>${t('nav.search')}</span></button></div>
-    <div class="nav-new">${addNewMenuHtml()}</div>
-    <div class="nav-drawer">
-      <div class="nav-drawer-head"><button type="button" class="nav-drawer-brand" data-view-home aria-label="Home">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button><button class="nav-drawer-x" data-nav-drawer-close aria-label="Close menu">✕</button></div>
-      <div class="nav-foot">
-        <button class="foot-search" data-palette title="Search">⌕</button>
-      </div>
-      <button class="nav-k" data-palette><span>${t('nav.search')}</span><kbd>${PK('⌘K')}</kbd></button>
-      ${navFoldsHtml(v)}
-      ${navMobileListHtml(v)}
-      ${navPeopleMobileHtml(v)}
-      <div class="nav-foldfoot">
-        ${themeLocked() ? '' : `<span class="nff" data-theme-toggle title="Theme - Auto follows your local sunrise &amp; sunset">${themeLabel()}</span>`}
-        <span class="nff ${v.type === 'settings' ? 'on' : ''}" data-open-settings>${t('nav.settings')}</span>
-        <span class="nff ${state.view && state.view.type === 'help' ? 'on' : ''}" data-open-guide>${t('nav.guide')}</span>
-        <span class="nff" data-open-getstarted>Welcome</span>
-      </div>
-    </div>
-    <div class="nav-drawer-bg" data-nav-drawer-close></div>`;
+  const navHtml = navGroupsHtml(v);
   // Only touch the DOM when the markup actually changed. Background polls (friend
   // status every 90s, chat, presence) call renderNav often; rebuilding #nav out
   // from under a tap re-targets the click - which is how a Contacts tap sometimes
@@ -4987,8 +5115,11 @@ function renderNav() {
     // button under your finger re-targets the click (that's the "first Contacts
     // tap goes Home" bug: a data-driven render lands mid-tap). Defer to just after.
     if (navHeld) { navDeferred = true; }
-    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; nav.querySelectorAll('[data-kfold]').forEach((b) => { b.onclick = () => setKFold(b.dataset.kfold); }); }
+    else { nav.innerHTML = navHtml; state.__navHtml = navHtml; }
   }
+  // §17: the mobile bottom bar must be fixed to the VIEWPORT, but #nav acts as a
+  // containing block for its fixed children here - so relocate it onto <body>.
+  try { const bb = nav && nav.querySelector('.knav-bottom'); if (bb) { document.querySelectorAll('body > .knav-bottom').forEach((e) => e.remove()); document.body.appendChild(bb); } } catch {}
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
@@ -5010,13 +5141,14 @@ function toggleNavDrawer() { if (document.body.classList.contains('nav-drawer-op
 // it (see .crumbbar in the mobile CSS). Desktop ignores --navh.
 function setNavH() {
   const nav = document.getElementById('nav');
-  const h = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+  // §17: the top header (.knav-bar) is the sticky bar; measure it into --navh AND
+  // --tabstrip-h so every sticky breadcrumb/toolbar (which anchors on --tabstrip-h
+  // on desktop, --navh on mobile) pins just below it, on every screen width.
+  const bar = nav && nav.querySelector('.knav-bar');
+  const h = bar ? Math.round(bar.getBoundingClientRect().height) : (nav ? Math.round(nav.getBoundingClientRect().height) : 0);
   document.documentElement.style.setProperty('--navh', (h || 56) + 'px');
-  // Desktop: the brand header sticks at the top of the scrolling sidebar, and the
-  // search box sticks right under it - so measure the header's height for the
-  // search box's sticky offset.
-  const tl = nav && nav.querySelector('.nav-topline');
-  if (tl) document.documentElement.style.setProperty('--nav-headh', Math.round(tl.getBoundingClientRect().height) + 'px');
+  document.documentElement.style.setProperty('--tabstrip-h', (h || 56) + 'px');
+  document.documentElement.style.setProperty('--nav-headh', (h || 56) + 'px');
 }
 let _navHBound = false;
 function queueNavH() {
@@ -21945,8 +22077,9 @@ document.addEventListener('keydown', (e) => {
       }
     }
   }
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.pal.open ? closePalette() : openPalette(); return; }
-  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); state.shortcutsOpen ? closeShortcuts() : openShortcuts(); return; }
+  if (e.key === 'Escape' && state.knav && (state.knav.group || state.knav.contents || state.knav.find)) { e.preventDefault(); state.knav.group = null; state.knav.contents = false; state.knav.find = false; renderNav(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
   // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
   // as a fallback for any window that still reserves the plain keys. ⌘W closes
@@ -22069,6 +22202,7 @@ function looksMarkdown(t) {
 // list, like a Markdown editor. Done on `input` (fires reliably on every phone
 // and desktop keyboard, and outside the beforeinput dispatch where execCommand
 // is inert), detecting the moment the line reads exactly "- ".
+document.addEventListener('input', (e) => { if (e.target && e.target.matches && e.target.matches('[data-knav-q]')) { const kn = state.knav || (state.knav = {}); kn.q = e.target.value; renderNav(); const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } });
 document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!ed || ed.__autobullet) return;   // guard: our own execCommands re-fire input
@@ -22444,6 +22578,12 @@ document.addEventListener('click', (e) => {
   const on = t.closest('[data-open-note]'); if (on) { openNote(on.dataset.openNote).catch((x) => toast(x.message)); return; }
   const ot = t.closest('[data-open-table]'); if (ot) { openTable(ot.dataset.openTable).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
+  { const kg = t.closest('[data-knav-group]'); if (kg) { const kn = state.knav || (state.knav = {}); const id = kg.dataset.knavGroup; const was = kn.group === id && !kn.contents && !kn.find; kn.group = was ? null : id; kn.contents = false; kn.find = false; renderNav(); return; } }
+  if (t.closest('[data-knav-contents]')) { const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
+  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
+  if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
+  { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }
   if (t.closest('[data-view-home]')) { Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
