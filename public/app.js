@@ -4994,12 +4994,11 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'What’s coming, and what’s on', tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''] ] },
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 3]], tools: [
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''],
+      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-goals', ''], ['Reviews', 'data-open-reviews', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
-    { id: 'long', label: 'The long game', about: 'Where you’re heading, and how it’s going', tools: [
-      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-goals', ''], ['Reviews', 'data-open-reviews', ''] ] },
     { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
       ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''], ['Practices', 'data-open-practices', ''] ] },
     { id: 'money', label: 'Money', about: 'Optional – only if you want it', tools: [
@@ -5012,7 +5011,7 @@ const KNAV_VIEW = {
   mail: 'conv', mailaccounts: 'conv', messages: 'conv', contacts: 'conv', contactcard: 'conv', connect: 'conv', friends: 'conv', daybookpeople: 'conv', shared: 'conv',
   calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans',
   notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
-  goals: 'long', goalcard: 'long', bucketcard: 'long', reviews: 'long', reviewcard: 'long',
+  goals: 'plans', goalcard: 'plans', bucketcard: 'plans', reviews: 'plans', reviewcard: 'plans',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', practices: 'inner', tracker: 'inner',
   money: 'money', financial: 'money',
 };
@@ -5074,10 +5073,22 @@ function navGroupsHtml(v) {
   let sheet = '';
   if (kn.group && !kn.contents && !kn.find) {
     const g = groups.find((x) => x.id === kn.group);
-    if (g) sheet = `<div class="knav-sheet">
+    if (g) {
+      const toolBtn = (tItem, i) => { const [label, attrs, vk] = tItem; const hint = vk ? knavHint(vk) : ''; return `<button class="knav-tool" ${attrs} data-knav-pick><span class="knav-tool-top"><span class="knav-tool-n">${KNAV_R[i] || ''}</span><span class="knav-tool-l">${label}</span></span>${hint ? `<span class="knav-tool-h">${esc(hint)}</span>` : ''}</button>`; };
+      let body;
+      if (g.rows && g.rows.length) {
+        // §17/V12: Plans folds Soon (Calendar/Tasks/Discover) and Further off
+        // (Goals/Bucket/Reviews) into two labelled rows; numerals stay continuous.
+        let s = 0;
+        body = g.rows.map(([rlabel, n]) => { const html = `<div class="knav-sheet-row"><span class="knav-sheet-rl">${esc(rlabel)}</span><div class="knav-sheet-grid">${g.tools.slice(s, s + n).map((tItem, j) => toolBtn(tItem, s + j)).join('')}</div></div>`; s += n; return html; }).join('');
+      } else {
+        body = `<div class="knav-sheet-grid">${g.tools.map((tItem, i) => toolBtn(tItem, i)).join('')}</div>`;
+      }
+      sheet = `<div class="knav-sheet">
       <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close>Fold away</button></div>
-      <div class="knav-sheet-grid">${g.tools.map((tItem, i) => { const [label, attrs, vk] = tItem; const hint = vk ? knavHint(vk) : ''; return `<button class="knav-tool" ${attrs} data-knav-pick><span class="knav-tool-top"><span class="knav-tool-n">${KNAV_R[i] || ''}</span><span class="knav-tool-l">${label}</span></span>${hint ? `<span class="knav-tool-h">${esc(hint)}</span>` : ''}</button>`; }).join('')}</div>
+      ${body}
     </div>`;
+    }
   }
   // ── Find panel (shared + recent before typing; results after) ──
   let find = '';
