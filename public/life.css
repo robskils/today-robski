@@ -10216,6 +10216,7 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .home-due-when.late { font-weight:500; color:var(--k-goldt); }
 /* Spaces kept close */
 .home-spaces2, .home-pad2, .home-reading { margin-top:0; }
+.home-spaces2 + .home-reading { margin-top:44px; }
 .home-sp-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:24px; }
 .home-sp { display:flex; align-items:baseline; gap:10px; min-width:0; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:13px 0; cursor:pointer; }
 .home-sp-n { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:15px; color:var(--k-gold); flex:none; }
