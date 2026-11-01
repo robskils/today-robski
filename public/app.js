@@ -321,6 +321,30 @@ document.addEventListener('mousedown', (ev) => {
   document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
 });
 document.addEventListener('dblclick', (ev) => { const d = ev.target.closest && ev.target.closest('#pane-div'); if (d && state.split) { state.split.ratio = 0.5; const main = splitMain(); if (main) main.style.setProperty('--split-ratio', '50%'); } });
+// §18 tool mode: switch the second pane's tool, keep the pair, the Open-beside
+// picker, row expand/tick, Undo, and dragging an email across to make a linked
+// note or task.
+function besideDropHint() { const o = besideMailByKey(state.besideDragKey); const first = o ? besideFirstName(o) : 'this'; return ((state.split && state.split.tool === 'tasks') ? 'Drop to make a task from ' : 'Drop to make a note from ') + first + "'s email"; }
+document.addEventListener('click', (ev) => {
+  const t = ev.target; if (!t.closest) return;
+  const sw = t.closest('[data-beside-tool]'); if (sw) { ev.preventDefault(); if (state.split) { state.split.tool = sw.getAttribute('data-beside-tool'); state.split.openItem = null; } renderBesideTool(); return; }
+  if (t.closest('[data-beside-pair]')) { ev.preventDefault(); besideTogglePair(); return; }
+  const op = t.closest('[data-beside-open-picker]'); if (op) { ev.preventDefault(); besideOpenPicker(op); return; }
+  const ot = t.closest('[data-beside-open-tool]'); if (ot) { ev.preventDefault(); document.querySelectorAll('.beside-picker').forEach((n) => n.remove()); openBesideTool(ot.getAttribute('data-beside-open-tool')); return; }
+  const tk = t.closest('[data-beside-tick]'); if (tk) { ev.preventDefault(); ev.stopPropagation(); besideTickRow(tk.getAttribute('data-beside-tick')); return; }
+  const row = t.closest('[data-beside-row]'); if (row) { ev.preventDefault(); besideToggleRow(row.getAttribute('data-beside-row')); return; }
+  if (t.closest('[data-beside-undo]')) { ev.preventDefault(); besideUndoLast(); return; }
+});
+document.addEventListener('dragstart', (ev) => {
+  const row = ev.target.closest && ev.target.closest('[data-mail-drag]'); if (!row) return;
+  const key = row.getAttribute('data-mail-drag'); state.besideDragKey = key;
+  try { ev.dataTransfer.setData('text/plain', key); ev.dataTransfer.effectAllowed = 'copy'; } catch {}
+  if (!(state.split && state.split.tool) && !(window.matchMedia && window.matchMedia('(max-width:820px)').matches)) { const pairs = besidePairsLoad(); openBesideTool(Object.keys(pairs)[0] || 'notes'); }
+});
+document.addEventListener('dragend', () => { state.besideDragKey = null; const p = document.getElementById('pane2'); if (p) { p.classList.remove('beside-over'); p.removeAttribute('data-drop-hint'); } });
+document.addEventListener('dragover', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && state.split && state.split.tool && state.besideDragKey) { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch {} if (!p2.classList.contains('beside-over')) { p2.classList.add('beside-over'); p2.setAttribute('data-drop-hint', besideDropHint()); } } });
+document.addEventListener('dragleave', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && !p2.contains(ev.relatedTarget)) { p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); } });
+document.addEventListener('drop', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (!p2 || !state.split || !state.split.tool) return; ev.preventDefault(); p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); let key = state.besideDragKey; try { key = ev.dataTransfer.getData('text/plain') || key; } catch {} state.besideDragKey = null; if (key) besideMakeFromMail(state.split.tool, key); });
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -7407,11 +7431,181 @@ function besideItemHtml(b, kind) {
   return head + body;
 }
 async function renderBeside() {
-  const s = state.split; if (!s) return; const { p2 } = splitEls(); if (!p2) return;
+  const s = state.split; if (!s || s.tool) return; const { p2 } = splitEls(); if (!p2) return;
   p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Beside')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
   try { const b = await api('/api/blocks/' + s.id); if (state.split && state.split.id === s.id) p2.innerHTML = besideItemHtml(b, s.kind); }
   catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`; }
 }
+
+// ── §18 Side by side: tool mode (Mail beside Notes/Tasks) ────────────────────
+// The join-the-dots half of §18. From Mail you open a Notes or Tasks list in the
+// second pane (the switcher swaps between them), then make a *linked* note or
+// task from an email - by the "Make … beside" actions or by dragging the email
+// across. The new item fades in at the top with a gold "From …'s email" line,
+// the mail row shows "note linked", and a forest toast offers Undo for 5s.
+// "Keep pair" remembers the combination so Koyeba offers it again.
+const BESIDE_TOOLS = { notes: { group: 'Keep', title: 'Notes', kind: 'note' }, tasks: { group: 'Plans', title: 'Tasks', kind: 'task' } };
+function besidePairsLoad() { try { return JSON.parse(localStorage.getItem('koyeba.beside.pairs') || '{}') || {}; } catch { return {}; } }
+function besidePairsSave(p) { try { localStorage.setItem('koyeba.beside.pairs', JSON.stringify(p)); } catch {} }
+const PAIR_WHEN = { notes: 'Most mornings', tasks: 'Mondays' };
+function besideMailByKey(key) { const m = state.mail; if (!m) return null; return key ? (m.messages || []).find((x) => x._key === key) || (m.open && m.open._key === key ? m.open : null) : m.open; }
+function besideFirstName(o) { const n = o && o.from ? (o.from.name || o.from.address || '') : ''; return (String(n).split(/[\s@]+/)[0] || n || 'the email'); }
+// Build a note/task body from an email, exactly as mailToNote does, so a "beside"
+// item carries the same cleaned content as the proven "Make a note" path.
+function besideEmailBody(o) {
+  const name = o.from ? (o.from.name || o.from.address || '') : '';
+  const addr = o.from ? (o.from.address || '') : '';
+  const when = o.date ? new Date(o.date).toLocaleString() : '';
+  const fromLine = (name || addr) ? `From: ${esc(name || addr)}${name && addr ? ` &lt;${esc(addr)}&gt;` : ''}` : '';
+  const hdr = (fromLine || when) ? `<p>${fromLine}${fromLine && when ? ' · ' : ''}${when ? esc(when) : ''}</p>` : '';
+  const content = sanitizeProse(emailToProse(emailSourceHtml(o))) || '<p></p>';
+  return hdr + content;
+}
+function openBesideTool(tool) {
+  if (!BESIDE_TOOLS[tool]) return;
+  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) return;   // mobile uses the flip line (set up by besideMakeFromMail)
+  const prev = (state.split && state.split.tool) ? state.split : null;
+  state.split = { tool, ratio: (state.split && state.split.ratio) || 0.5, linked: (prev && prev.linked) || { notes: [], tasks: [] }, src: 'mail', openItem: null };
+  document.body.classList.add('split');
+  const { main } = splitEls();
+  if (main) main.style.setProperty('--split-ratio', (state.split.ratio * 100) + '%');
+  renderBesideTool();
+}
+function besideToolHeadHtml(tool) {
+  const meta = BESIDE_TOOLS[tool], pairs = besidePairsLoad(), paired = !!pairs[tool];
+  const sw = Object.keys(BESIDE_TOOLS).map((k) => `<button type="button" class="pane2-swap${k === tool ? ' on' : ''}" data-beside-tool="${k}">${esc(BESIDE_TOOLS[k].title)}</button>`).join('');
+  const keep = `<button type="button" class="pane2-keep${paired ? ' on' : ''}" data-beside-pair title="${paired ? 'Kept as a pair' : 'Keep this pair'} - Koyeba will offer it again"><span class="pane2-keepbox"></span>${paired ? 'Pair kept' : 'Keep pair'}</button>`;
+  return `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(meta.group)}</div><div class="pane2-title">${esc(meta.title)}</div></div><div class="pane2-acts">${sw}${keep}<span class="pane2-sep">|</span><button type="button" class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+}
+async function besideLoadToolItems(tool) {
+  try {
+    if (tool === 'notes') { if (!Array.isArray(state.noteTops)) state.noteTops = await api('/api/blocks?kind=note').catch(() => []); }
+    else if (!Array.isArray(state.besideTasks)) state.besideTasks = await api('/api/tasks').then((r) => (r.tasks || [])).catch(() => []);
+  } catch {}
+}
+function besideToolRowHtml(it, tool) {
+  const s = state.split, open = s && s.openItem === it.id, isTask = tool === 'tasks';
+  const done = isTask && it.props && it.props.done;
+  const tick = isTask ? `<span class="beside-tick${done ? ' on' : ''}" data-beside-tick="${esc(it.id)}"></span>` : '';
+  const from = it._from ? `<div class="beside-from">${esc(it._from)}</div>` : '';
+  const meta = esc(it._meta || '');
+  const bodyHtml = open ? `<div class="beside-rowbody prose">${isTask ? (it.body ? sanitizeProse(it.body) : '<p class="pane2-empty">No notes on this task.</p>') : (sanitizeProse(it.body || '') || '<p class="pane2-empty">Nothing in this note yet.</p>')}</div>` : '';
+  return `<div class="beside-row${it._new ? ' beside-new' : ''}${isTask ? ' beside-row-task' : ''}">
+    <div class="beside-rowhead" data-beside-row="${esc(it.id)}">${tick}<div class="beside-rowmain"><div class="beside-title${done ? ' done' : ''}">${esc(it.title || 'Untitled')}</div>${from}</div><span class="beside-meta">${meta}</span></div>${bodyHtml}</div>`;
+}
+function besideToolListHtml(tool, loading) {
+  const s = state.split; if (!s) return '';
+  const linked = (s.linked && s.linked[tool]) || [];
+  const base = tool === 'notes'
+    ? (state.noteTops || []).filter((n) => !linked.some((l) => l.id === n.id)).slice(0, 40).map((n) => ({ id: n.id, title: n.title || 'Untitled', body: n.body || '', props: n.props || {}, _meta: besideTimeAgo(n.updated_at || n.created_at) }))
+    : (state.besideTasks || []).filter((tk) => !(tk.props && tk.props.done)).filter((tk) => !linked.some((l) => l.id === tk.id)).slice(0, 40).map((tk) => ({ id: tk.id, title: tk.title || 'Untitled', body: tk.body || '', props: tk.props || {}, _meta: besideTaskMeta(tk) }));
+  const linkedRows = linked.map((l) => besideToolRowHtml({ ...l, _new: true, _from: l.from, _meta: 'Just now' }, tool)).join('');
+  if (loading && !base.length && !linkedRows) return `${linkedRows}<div class="beside-loading">Loading…</div>`;
+  const rows = linkedRows + base.map((it) => besideToolRowHtml(it, tool)).join('');
+  return rows || '<div class="pane2-empty beside-empty">Nothing here yet. Drag an email across, or make one beside.</div>';
+}
+function besideTimeAgo(iso) { const t = Date.parse(iso || ''); return isNaN(t) ? '' : timeAgo(t); }
+function besideTaskMeta(tk) {
+  const p = tk.props || {};
+  if (p.due) { try { return typeof dpLabel === 'function' ? dpLabel(String(p.due).slice(0, 10)) : String(p.due).slice(0, 10); } catch {} }
+  if (p.area && areaById(p.area)) return areaById(p.area).title;
+  return p.priority || '';
+}
+async function renderBesideTool() {
+  const s = state.split; if (!s || !s.tool) return; const { p2 } = splitEls(); if (!p2) return;
+  const tool = s.tool;
+  p2.innerHTML = besideToolHeadHtml(tool) + `<div class="pane2-list" id="beside-list">${besideToolListHtml(tool, true)}</div>`;
+  await besideLoadToolItems(tool);
+  if (state.split && state.split.tool === tool) { const el = document.getElementById('beside-list'); if (el) el.innerHTML = besideToolListHtml(tool, false); }
+}
+async function besideMakeFromMail(tool, key) {
+  if (!BESIDE_TOOLS[tool]) return;
+  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) { besideMobileMake(tool, key); return; }
+  const o = besideMailByKey(key); if (!o) { toast('Open an email first.'); return; }
+  const kind = BESIDE_TOOLS[tool].kind, first = besideFirstName(o);
+  if (!(state.split && state.split.tool)) openBesideTool(tool); else if (state.split.tool !== tool) { state.split.tool = tool; }
+  const title = ((o.subject || '').trim()) || '(no subject)';
+  try {
+    const body = besideEmailBody(o);
+    const block = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind, title, body, props: { fromEmail: true, besideFrom: first } }) });
+    const entry = { id: block.id, title, from: 'From ' + first + "'s email", body, props: block.props || { fromEmail: true } };
+    state.split.linked = state.split.linked || { notes: [], tasks: [] };
+    state.split.linked[tool] = [entry, ...(state.split.linked[tool] || [])];
+    state.split.tool = tool;
+    const bl = (state.mail.besideLinked = state.mail.besideLinked || {}); bl[o._key] = bl[o._key] || { name: first }; bl[o._key][kind] = true;
+    if (kind === 'note' && Array.isArray(state.noteTops)) state.noteTops.unshift(block);
+    if (kind === 'task' && Array.isArray(state.besideTasks)) state.besideTasks.unshift(block);
+    renderBesideTool();
+    renderMail();
+    besideToast((kind === 'task' ? 'A linked task' : 'A linked note') + ' from ' + first + "'s email.", { id: block.id, kind, tool, mailKey: o._key });
+  } catch (e) { toast(e.message || 'Could not make that.'); }
+}
+let besideToastTimer = null;
+function besideToast(text, undoInfo) {
+  let el = document.getElementById('beside-toast'); if (el) el.remove();
+  el = document.createElement('div'); el.id = 'beside-toast'; el.className = 'beside-toast';
+  el.innerHTML = `<span>${esc(text)}</span><button type="button" class="beside-undo" data-beside-undo>Undo</button>`;
+  document.body.appendChild(el); state.besideUndo = undoInfo;
+  clearTimeout(besideToastTimer); besideToastTimer = setTimeout(() => { const t = document.getElementById('beside-toast'); if (t) t.remove(); state.besideUndo = null; }, 5000);
+}
+async function besideUndoLast() {
+  const u = state.besideUndo; if (!u) return; state.besideUndo = null;
+  const t = document.getElementById('beside-toast'); if (t) t.remove(); clearTimeout(besideToastTimer);
+  try { await api('/api/blocks/' + u.id, { method: 'DELETE' }); } catch {}
+  if (state.split && state.split.linked && state.split.linked[u.tool]) state.split.linked[u.tool] = state.split.linked[u.tool].filter((l) => l.id !== u.id);
+  if (Array.isArray(state.noteTops)) state.noteTops = state.noteTops.filter((n) => n.id !== u.id);
+  if (Array.isArray(state.besideTasks)) state.besideTasks = state.besideTasks.filter((n) => n.id !== u.id);
+  const bl = state.mail && state.mail.besideLinked && state.mail.besideLinked[u.mailKey]; if (bl) { delete bl[u.kind]; }
+  if (state.split && state.split.tool) renderBesideTool();
+  if (state.view && state.view.type === 'mail') renderMail();
+}
+function besideTickRow(id) {
+  const tk = (state.besideTasks || []).find((x) => x.id === id) || (state.split && state.split.linked && (state.split.linked.tasks || []).find((x) => x.id === id));
+  if (tk) { tk.props = tk.props || {}; tk.props.done = !tk.props.done; }
+  try { if (typeof toggleTask === 'function') toggleTask(id); } catch {}
+  renderBesideTool();
+}
+function besideToggleRow(id) { if (!state.split) return; state.split.openItem = state.split.openItem === id ? null : id; const el = document.getElementById('beside-list'); if (el && state.split.tool) el.innerHTML = besideToolListHtml(state.split.tool, false); }
+function besideTogglePair() {
+  if (!state.split || !state.split.tool) return; const tool = state.split.tool; const pairs = besidePairsLoad();
+  if (pairs[tool]) delete pairs[tool]; else pairs[tool] = { when: PAIR_WHEN[tool] || '' };
+  besidePairsSave(pairs); renderBesideTool();
+}
+// "Open beside…" picker (shown on the Mail header when no pane is open): Your
+// pairs first, then the tools you can open beside Mail.
+function besideOpenPicker(anchor) {
+  document.querySelectorAll('.beside-picker').forEach((n) => n.remove());
+  const pairs = besidePairsLoad(), pairKeys = Object.keys(pairs).filter((k) => BESIDE_TOOLS[k]);
+  const pop = document.createElement('div'); pop.className = 'beside-picker';
+  const r = anchor.getBoundingClientRect(); pop.style.top = (r.bottom + 8) + 'px'; pop.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+  const pairsHtml = pairKeys.length ? `<div class="beside-pick-h gold">Your pairs</div>${pairKeys.map((k) => `<button type="button" class="beside-pick-it pair" data-beside-open-tool="${k}"><span class="bp-label it">Mail with ${esc(BESIDE_TOOLS[k].title)}</span><span class="bp-when">${esc(pairs[k].when || '')}</span></button>`).join('')}` : '';
+  const toolsHtml = `<div class="beside-pick-h">Open beside Mail</div>${Object.keys(BESIDE_TOOLS).map((k) => `<button type="button" class="beside-pick-it" data-beside-open-tool="${k}"><span class="bp-label">${esc(BESIDE_TOOLS[k].title)}</span><span class="bp-when">${esc(BESIDE_TOOLS[k].group)}</span></button>`).join('')}`;
+  pop.innerHTML = `${pairsHtml}${toolsHtml}<div class="beside-pick-tip">Tip: shift-click anything to open it beside.</div>`;
+  document.body.appendChild(pop);
+  const off = (e) => { if (!pop.contains(e.target) && e.target !== anchor) { pop.remove(); document.removeEventListener('mousedown', off, true); } };
+  setTimeout(() => document.addEventListener('mousedown', off, true), 0);
+}
+// Mobile §18: one pane at a time. Making something beside creates it, then shows
+// a flip line under the header to slide between Mail and the new item.
+function besideMobileMake(tool, key) {
+  const o = besideMailByKey(key); if (!o) { toast('Open an email first.'); return; }
+  const kind = BESIDE_TOOLS[tool].kind, first = besideFirstName(o), title = ((o.subject || '').trim()) || '(no subject)';
+  api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind, title, body: besideEmailBody(o), props: { fromEmail: true, besideFrom: first } }) })
+    .then((block) => {
+      const bl = (state.mail.besideLinked = state.mail.besideLinked || {}); bl[o._key] = bl[o._key] || { name: first }; bl[o._key][kind] = true;
+      if (kind === 'note' && Array.isArray(state.noteTops)) state.noteTops.unshift(block);
+      state.besidePair = { tool, otherLabel: BESIDE_TOOLS[tool].title, backLabel: 'Mail', itemId: block.id, kind };
+      renderMail();
+      besideToast((kind === 'task' ? 'A linked task' : 'A linked note') + ' from ' + first + "'s email.", { id: block.id, kind, tool, mailKey: o._key });
+    })
+    .catch((e) => toast(e.message || 'Could not make that.'));
+}
+function mailBesideLinkedChip(x) {
+  const bl = state.mail && state.mail.besideLinked && state.mail.besideLinked[x._key]; if (!bl) return '';
+  const parts = [bl.note ? 'note' : '', bl.task ? 'task' : ''].filter(Boolean); if (!parts.length) return '';
+  return `<span class="mail-row-linked">${parts.join(' · ')} linked</span>`;
+}
+
 // ── Today, by area (Koyeba §19) ─────────────────────────────────────────────
 // A quiet counts line - emails to sort, things to do, events tomorrow. No money
 // (§17/§19: money is optional and never pushed to Today).
@@ -15071,11 +15265,11 @@ const mailSearching = () => !!(state.mail && state.mail.query && state.mail.quer
 const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._mailbox)) ? `<span class="mail-folder-chip">${esc(prettyMailbox(x._mailbox))}</span>` : '';
 // One message row. `count` (>1) shows a quiet conversation tally, Spark-style -
 // no chevrons or badges, the thread just reads as one row.
-const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.pending && state.mail.pending.has(x._key) ? 'mail-pending' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" data-mail-open="${esc(x._key)}">
+const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.pending && state.mail.pending.has(x._key) ? 'mail-pending' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" draggable="true" data-mail-drag="${esc(x._key)}" data-mail-open="${esc(x._key)}">
     <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
     <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
     <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${esc(x.subject)}</span>
+    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${mailBesideLinkedChip(x)}${esc(x.subject)}</span>
     ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
     <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span>
     <span class="mail-rowact mail-rowarch" data-mail-archive="${esc(x._key)}" title="Archive - done with it, take it out">${MAIL_ICO.archive}</span>
@@ -15516,7 +15710,12 @@ function mailOpenPanelHtml(o) {
           ? `<button class="mail-sortbtn" data-mail-archive="${esc(o._key)}">${label}<span class="mail-sortkey">${key}</span></button>`
           : `<button class="mail-sortbtn${border === 'ink' ? ' ink' : ''}" data-mail-quad-file="${q}">${label}<span class="mail-sortkey">${key}</span></button>`
       ).join('') + `</div>` : '';
-  const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button></div>`;
+  const bl = (state.mail.besideLinked && state.mail.besideLinked[o._key]) || null;
+  const besideMobile = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
+  // §18: make a *linked* note/task that opens in the second pane (or, on mobile, a
+  // flip line). Reflects the linked state once made ("Note linked").
+  const besideActs = `<button class="mail-make mail-make-beside${bl && bl.note ? ' linked' : ''}" data-mail-note-beside>${bl && bl.note ? 'Note linked' : 'Make a note beside →'}</button><button class="mail-make mail-make-beside${bl && bl.task ? ' linked' : ''}" data-mail-task-beside>${bl && bl.task ? 'Task linked' : 'Make a task beside →'}</button>${besideMobile ? '' : '<span class="mail-make-hint">Or drag it across.</span>'}`;
+  const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${besideActs}</div>`;
   const replyActs = `<div class="mail-replyacts"><button class="mail-reply" data-mail-reply-all>Reply</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
   return `${convStrip}${body}${atts}${join}${imgs}${noticed}<div class="mail-ar-acts">${sorts}${makeActs}${replyActs}</div>`;
 }
@@ -15619,6 +15818,7 @@ function renderMail(loading) {
         </div>
         <div class="mail-tb-act">
           ${accScope}
+          ${(!(state.split && state.split.tool) && !(window.matchMedia && window.matchMedia('(max-width:820px)').matches)) ? '<button class="mail-tb-beside" data-beside-open-picker>Open beside…</button>' : ''}
           <button class="mail-tb-guide" data-help-open="mail">Guide</button>
           <button class="mail-tb-write" data-mail-compose>Write</button>
         </div>
@@ -23465,6 +23665,8 @@ document.addEventListener('click', (e) => {
   { const mt = t.closest('[data-mail-task]'); if (mt) { openMailTaskMenu(mt); return; } }
   if (t.closest('[data-mail-event]')) { mailToEvent(); return; }
   if (t.closest('[data-mail-note]')) { mailToNote(); return; }
+  if (t.closest('[data-mail-note-beside]')) { besideMakeFromMail('notes'); return; }
+  if (t.closest('[data-mail-task-beside]')) { besideMakeFromMail('tasks'); return; }
   if (t.closest('[data-mail-task-add]')) { mailTaskCreate(); return; }
   if (t.closest('[data-mail-task-close]') || t.matches('[data-mail-task-bg]')) { state.mail.taskMenu = null; renderMail(); return; }
   { const ma = t.closest('[data-mail-area]'); if (ma) { openMailAreaMenu(ma); return; } }
