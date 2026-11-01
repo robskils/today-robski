@@ -5630,6 +5630,9 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .home-notepad { width:100%; min-height:360px; resize:vertical; padding:15px 17px; font-size:15.5px; line-height:1.65; font-family:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:0; box-shadow:var(--shadow); }
 .home-notepad::placeholder { color:var(--ink-3); }
 .home-notepad:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+/* The Home notepad is a daily scratch space, so give it more room than the shared
+   area/note walls that reuse .home-notepad. Still resize:vertical if you want more. */
+[data-home-notepad] { min-height:480px; }
 /* Recently viewed: a compact tap-list of the last things you opened. */
 /* Recently viewed reads as cards (matching the Starred section next to it), not
    a plain word list: bordered chips on the card ground, wrapping across the row,

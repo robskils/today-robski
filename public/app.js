@@ -20008,23 +20008,20 @@ function weeklyGoalsGlance() {
   const gr = (r && r.props && r.props.goalReview) || {};   // reuse the goal-review note store
   const rows = list.map((g) => {
     const p = gp(g); const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
-    const gtype = p.gtype === 'number' ? 'number' : 'done';
     const note = (gr[g.id] || {}).note || '';
-    // Right here in the review you update where each goal is at - a number goal's
-    // current value, or ticking a "mark it done" goal off.
-    const control = gtype === 'number'
-      ? `<div class="rvg-num"><span class="rvg-num-l">Now at</span><input class="sel rvg-cur" type="number" inputmode="decimal" data-rvg-current="${g.id}" value="${esc(p.current ?? '')}" placeholder="0"><span class="rvg-of">of ${esc(p.target ?? '—')}${p.unit ? ' ' + esc(p.unit) : ''}</span></div>`
-      : `<label class="rvg-donerow"><input type="checkbox" data-rvg-done="${g.id}" ${p.status === 'done' ? 'checked' : ''}><span>${p.status === 'done' ? 'Achieved ✓' : 'Mark as achieved'}</span></label>`;
+    // Every goal is tracked by the one 0-100% slider now, never a typed number; the
+    // quick "mark as achieved" tick stays alongside it. (Robin, 2026-11-01.)
+    const control = `<label class="rvg-donerow"><input type="checkbox" data-rvg-done="${g.id}" ${p.status === 'done' ? 'checked' : ''}><span>${p.status === 'done' ? 'Achieved ✓' : 'Mark as achieved'}</span></label>`;
     return `<div class="rvg-goal" style="--h:${hueOf(a)}">
       <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct" data-rvg-pct="${g.id}">${pct}%</span></div>
       ${a ? `<div class="rvg-goal-m">${esc(a.title)}</div>` : ''}
-      <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span>${gtype !== 'number' ? `<input type="range" class="gc-slider rvg-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Slide to set how far along this goal is">` : ''}</span>
+      <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span><input type="range" class="gc-slider rvg-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Slide to set how far along this goal is"></span>
       ${control}
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
   }).join('');
   return `<section class="rv-goals-glance"><div class="home-sec-h">Your goals${focused.length ? ` <span class="rvg-hcount">· ${focused.length} starred first</span>` : ''}</div>
-    <p class="rvg-intro">The bar is how far along each goal is. Move it right here - slide it, type the new number, or tick a simple goal done - and add a line on how it went.</p>
+    <p class="rvg-intro">The bar is how far along each goal is. Slide it right here, or tick one off when it's done - and add a line on how it went.</p>
     <div class="rvg-list rvg-goals">${rows}</div></section>`;
 }
 // Update a goal's current number from inside a review: patch it (debounced) and
@@ -20066,7 +20063,7 @@ function goalReviewSection(r) {
       const live = (state.goals || []).find((x) => String(x.id) === String(g.id));
       const lp = live ? gp(live) : {};
       const pct = live ? Math.round(goalProgress(live) * 100) : (g.progress != null ? g.progress : 0);
-      const canSlide = live && (lp.status || 'active') === 'active' && lp.gtype !== 'number';
+      const canSlide = live && (lp.status || 'active') === 'active';
       const tasksBlock = (dn.length || op.length) ? `<div class="gr-tasks">
         ${dn.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Moved it · ${dn.length}</span><div class="gr-chips">${dn.slice(0, 8).map((t) => chip(t, true)).join('')}</div></div>` : ''}
         ${op.length ? `<div class="gr-taskline"><span class="gr-taskline-k">Still open · ${op.length}</span><div class="gr-chips">${op.slice(0, 8).map((t) => chip(t, false)).join('')}</div></div>` : ''}
