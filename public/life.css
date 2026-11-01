@@ -10151,7 +10151,7 @@ body[data-view="goals"] .pane { max-width:none; padding:0; margin-top:0; backgro
    Flat ground, the §19 grid: a=the day, b=Coming into view, c=the quiet things.
    No sub-header, no money, no red, no boxed spirit card. ══ */
 body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
-.kpage-home { padding:clamp(28px,4vw,48px) 0 110px; }
+.kpage-home { padding-top:clamp(28px,4vw,48px); padding-bottom:110px; }
 .kpage-home .home { position:relative; }
 .home-alerts { display:grid; gap:14px; margin-bottom:28px; }
 .home-grid { row-gap:44px; }
