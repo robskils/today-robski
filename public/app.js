@@ -7884,85 +7884,92 @@ async function setNoteType(id, type) {
     toast(type === 'table' ? 'Now a table' : 'Now a plain note');
   } catch (e) { toast(e.message); }
 }
+// ── Notes index (Koyeba §21) ────────────────────────────────────────────────
+// Notes only (Tables are their own Keep tool, openTablesList). A grouped list of
+// rows on the §19 grid, with a side column of Kept close + By Space. Replaces the
+// old six-across card grid, the type chips, the area dropdown and the sort menu.
+function notesOrder() { return state.notesOrder || (state.notesOrder = localStorage.getItem('life.notesOrder') || 'recent'); }
+function nxSnippet(n) { return ((n.body || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim()).slice(0, 110); }
+function nxSpaceName(n) { const a = blockAreas(n).map((id) => areaById(id)).filter(Boolean); return a.length ? a[0].title + (a.length > 1 ? ` +${a.length - 1}` : '') : ''; }
+function nxStamp(n) { const t = Date.parse(n.updated_at || n.created_at || ''); return isNaN(t) ? 0 : t; }
+function nxSortRecent(list) { return list.slice().sort((a, b) => nxStamp(b) - nxStamp(a)); }
+const NX_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function nxWhen(n) {
+  const t = nxStamp(n); if (!t) return ''; const d = new Date(t), now = new Date();
+  const days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (days <= 0) return 'Today'; if (days === 1) return 'Yesterday';
+  if (days < 7) return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()];
+  const md = `${d.getDate()} ${NX_MONTHS[d.getMonth()].slice(0, 3)}`; return d.getFullYear() === now.getFullYear() ? md : `${md} ${d.getFullYear()}`;
+}
+function nxBucket(n) {
+  const t = nxStamp(n); if (!t) return 'Undated'; const d = new Date(t), now = new Date();
+  const days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (days <= 0) return 'Today'; if (days < 7) return 'This week';
+  if (d.getFullYear() === now.getFullYear()) return d.getMonth() === now.getMonth() ? `Earlier in ${NX_MONTHS[d.getMonth()]}` : NX_MONTHS[d.getMonth()];
+  return `${NX_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
 function renderNotesList() {
   const q = (state.notesQuery || '').trim().toLowerCase();
-  const mode = notesSortMode();
-  const type = notesTypeMode();
-  const fArea = notesAreaMode();
-  const typed = (list) => type === 'all' ? list : list.filter((n) => (isTableNote(n) ? 'table' : 'note') === type);
-  const base = typed(noteEntries()).filter((n) => !fArea || blockAreas(n).includes(fArea));
-  const favNotes = sortNotes(base.filter((n) => n.props && n.props.fav));
-  // Recently opened notes/tables, newest first, mapped back to the live entries
-  // (so a deleted or type-filtered-out one drops off). Capped for a tidy strip.
-  const byId = new Map(base.map((n) => [n.id, n]));
-  const recentNotes = recentItems()
-    .filter((x) => x && (x.kind === 'note' || x.kind === 'table'))
-    .map((x) => byId.get(x.id)).filter(Boolean).slice(0, 12);
-  const all = sortNotes(q ? base.filter((n) => (n.title || '').toLowerCase().includes(q)) : base);
-  const cards = (list) => list.map(noteCard).join('');
-  const noun = type === 'table' ? 'tables' : type === 'note' ? 'notes' : 'notes';
-  const areaLbl = fArea ? ` in ${esc((areaById(fArea) || {}).title || 'this space')}` : '';
-  // In "Page" order (unfiltered), split into a section per area.
-  let listHtml;
-  if (mode === 'area' && !q) {
-    const groups = new Map();
-    // A note in several areas shows under each of them; one with none groups
-    // under "No page".
-    for (const n of all) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }); }
-    const keys = [...groups.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    listHtml = keys.map((k) => `<section class="home-sec"><div class="home-sec-h">${k ? esc((areaById(k) || {}).title || 'Space') : 'No space'} · ${groups.get(k).length}</div><div class="tbl-cards">${cards(groups.get(k))}</div></section>`).join('') || `<div class="empty">Nothing here yet.</div>`;
+  const order = notesOrder();
+  const fSpace = state.notesArea || '';
+  const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note');
+  const list = notes.filter((n) => (!fSpace || blockAreas(n).includes(fSpace)) && (!q || ((n.title || '') + ' ' + nxSnippet(n) + ' ' + nxSpaceName(n)).toLowerCase().includes(q)));
+  const lastRec = recentItems().find((x) => x && x.kind === 'note');
+  const lastNote = lastRec ? notes.find((n) => n.id === lastRec.id) : null;
+  // Build the folded groups for the chosen order.
+  let groups = [];
+  if (order === 'space') {
+    const by = new Map();
+    for (const n of list) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!by.has(k)) by.set(k, []); by.get(k).push(n); }); }
+    const keys = [...by.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
+    groups = keys.map((k) => [k ? ((areaById(k) || {}).title || 'Space') : 'No Space', nxSortRecent(by.get(k))]);
+  } else if (order === 'az') {
+    groups = [['A – Z', list.slice().sort((a, b) => (a.title || 'Untitled').localeCompare(b.title || 'Untitled'))]];
   } else {
-    listHtml = `<section class="home-sec"><div class="home-sec-h">${q ? `Results · ${all.length}` : `All ${noun}${areaLbl} · ${base.length}`}</div><div class="tbl-cards">${cards(all) || `<div class="empty">${q ? 'Nothing matches.' : 'Nothing here yet.'}</div>`}</div></section>`;
+    const buckets = new Map();
+    for (const n of nxSortRecent(list)) { const key = nxBucket(n); if (!buckets.has(key)) buckets.set(key, []); buckets.get(key).push(n); }
+    groups = [...buckets.entries()];
   }
-  // The "Shared" view replaces the normal body with two groups: notes shared WITH
-  // you, and notes you've shared out (with a friend, or via a public link).
-  let sharedBody = '';
-  if (type === 'shared') {
-    const isNT = (k) => k === 'note' || k === 'table';
-    const withMe = (state.sharedWithMe || []).filter((s) => isNT(s.kind));
-    // sharedByMe now also carries Spaces (for the Shared hub); the Notes
-    // view only wants notes & tables. undefined while still loading.
-    const byMe = state.sharedByMe === undefined ? undefined : (state.sharedByMe || []).filter((s) => s.kind === 'note' || s.kind === 'table');
-    const entries = noteEntries();
-    // Your own face, for the "shared by you" stacks (photo if you've set one).
-    const myFace = () => { const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You'; const photo = state.card && state.card.photo; return photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`; };
-    // Shared WITH me: lead with the sharer's face, then name them plainly.
-    const wmRow = (s) => `<button class="shared-row sww-row" data-open-shared="${esc(s.id)}" data-shared-kind="${esc(s.kind)}">${personAvatar(s.ownerId, s.owner, '')}<span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">from <b>${esc(s.owner || 'someone')}</b> · ${s.kind === 'table' ? 'Table' : 'Note'}${s.canEdit ? '' : ' · view only'}</span></span><span class="sh-go" aria-hidden="true">→</span></button>`;
-    // Shared BY me: a note card carrying a face stack (you + who you shared with)
-    // and a line naming them, so you can see at a glance who's on each one.
-    const bmCard = (s) => {
-      const n = entries.find((x) => x.id === s.id);
-      const areas = n ? blockAreas(n).map((id) => areaById(id)).filter(Boolean) : [];
-      const a0 = areas[0];
-      const sub = a0 ? `<span class="nt-sub"><span class="nt-sub-dot"></span><span class="nt-sub-t">${esc(a0.title)}${areas.length > 1 ? ` +${areas.length - 1}` : ''}</span></span>` : '';
-      const isTbl = s.kind === 'table';
-      const recips = s.shares || [];
-      const faces = [`<span class="aface aface-me" title="You">${myFace()}</span>`];
-      recips.slice(0, 5).forEach((r) => faces.push(`<span class="aface" title="${esc(r.name || 'Someone')}${r.canEdit === false ? ' · view only' : ''}">${personAvatar(r.id, r.name, '')}</span>`));
-      const moreN = recips.length - 5;
-      const more = moreN > 0 ? `<span class="aface aface-more">+${moreN}</span>` : '';
-      const nm = recips.map((r) => esc(r.name || r.subdomain || 'someone'));
-      let whom = '';
-      if (nm.length === 1) whom = `Shared with ${nm[0]}`;
-      else if (nm.length === 2) whom = `Shared with ${nm[0]} & ${nm[1]}`;
-      else if (nm.length > 2) whom = `Shared with ${nm[0]}, ${nm[1]} & ${nm.length - 2} more`;
-      const meta = [s.public ? '🔗 Public link' : '', whom].filter(Boolean).join(' · ');
-      return `<button class="tbl-card nt-card sby-card ${a0 ? 'has-area' : ''}" ${a0 ? `style="--h:${hueOf(a0)}"` : ''} data-open-${isTbl ? 'table' : 'note'}="${esc(s.id)}">${sub}<span class="nt-name">${isTbl ? '<span class="tc-ic ico-tbl">▦</span>' : ''}<span class="tc-t">${esc((n && n.title) || s.title || 'Untitled')}</span></span><span class="sby-foot"><span class="area-faces sby-faces">${faces.join('')}${more}</span>${meta ? `<span class="sby-with">${meta}</span>` : ''}</span></button>`;
-    };
-    sharedBody = `<div class="notes-shared-view"><section class="home-sec"><div class="home-sec-h">Shared with you${withMe.length ? ` · ${withMe.length}` : ''}</div>${withMe.length ? `<div class="notes-shared-rows">${withMe.map(wmRow).join('')}</div>` : '<div class="empty">Nobody has shared a note with you yet.</div>'}</section>
-      <section class="home-sec"><div class="home-sec-h">Shared by you${(byMe && byMe.length) ? ` · ${byMe.length}` : ''}</div>${byMe === undefined ? '<div class="empty">Loading…</div>' : byMe.length ? `<div class="tbl-cards">${byMe.map(bmCard).join('')}</div>` : "<div class=\"empty\">You haven't shared any notes yet. Open a note, tap Share, then pick a friend or create a public link.</div>"}</section></div>`;
-  }
-  const normalBody = `${!q && recentNotes.length ? `<section class="home-sec"><div class="home-sec-h">Recent notes</div><div class="tbl-cards">${cards(recentNotes)}</div></section>` : ''}${!q && favNotes.length ? `<section class="home-sec"><div class="home-sec-h">Starred notes</div><div class="tbl-cards">${cards(favNotes)}</div></section>` : ''}${listHtml}`;
-  // The controls bar is sticky (below the breadcrumb), so the search + filters + sort
-  // stay in reach however far you scroll the list. Everything below scrolls under it.
+  const groupsHtml = groups.map(([label, items]) => {
+    const closed = state.notesShut && state.notesShut[label];
+    const rows = items.map((n) => {
+      const sp = nxSpaceName(n), snip = nxSnippet(n);
+      return `<button class="nx-row" data-open-note="${n.id}"><span class="nx-row-t">${esc(n.title || 'Untitled')}</span><span class="nx-row-when">${esc(nxWhen(n))}</span><span class="nx-row-sub">${sp ? `<span class="nx-row-sp">${esc(sp)}</span>` : ''}${snip ? `<span class="nx-row-snip">${esc(snip)}</span>` : ''}</span></button>`;
+    }).join('');
+    return `<div class="nx-group"><button class="nx-group-h" data-notes-group="${esc(label)}"><span class="nx-group-l">${esc(label)}</span><span class="nx-group-n">${items.length}</span><span class="nx-group-rule"></span><span class="nx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="nx-rows">${rows}</div>`}</div>`;
+  }).join('') || `<div class="nx-empty">${q ? 'Nothing matches.' : fSpace ? 'No notes in this Space yet.' : 'No notes yet. Start one with New note.'}</div>`;
+  const orders = [['recent', 'Recent'], ['space', 'By Space'], ['az', 'A – Z']].map(([v, l]) => `<button class="nx-order${order === v ? ' on' : ''}" data-notes-order="${v}">${l}</button>`).join('');
+  // Side column: Kept close (favourites) and By Space (counts, click to filter).
+  const favs = notes.filter((n) => n.props && n.props.fav);
+  const spaceCounts = new Map();
+  for (const n of notes) for (const k of blockAreas(n)) spaceCounts.set(k, (spaceCounts.get(k) || 0) + 1);
+  const spaceRows = [...spaceCounts.entries()].map(([k, c]) => [areaById(k), c]).filter(([a]) => a).sort((x, y) => (x[0].title || '').localeCompare(y[0].title || ''));
+  const sideOpen = (id) => !(state.notesSide && state.notesSide[id] === false);
+  const sidePanel = (id, title, count, body) => `<div class="nx-side-panel"><button class="nx-side-h" data-notes-side="${id}"><span class="nx-side-hl">${esc(title)}</span><span class="nx-side-n">${count}</span><span class="nx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
+  const keptBody = `<div class="nx-side-body">${favs.length ? favs.map((n) => `<button class="nx-side-row" data-open-note="${n.id}"><span class="nx-side-rt">${esc(n.title || 'Untitled')}</span></button>`).join('') : '<div class="nx-side-empty">Nothing kept close yet.</div>'}</div>`;
+  const spaceBody = `<div class="nx-side-body">${spaceRows.map(([a, c]) => `<button class="nx-side-row${fSpace === a.id ? ' on' : ''}" data-notes-space="${a.id}"><span class="nx-side-rt">${esc(a.title)}</span><span class="nx-side-rn">${c}</span></button>`).join('') || '<div class="nx-side-empty">No Spaces yet.</div>'}</div>`;
+  const lead = `${notes.length} note${notes.length === 1 ? '' : 's'}.${lastNote ? ` You were last in <span class="nx-last">${esc(lastNote.title || 'Untitled')}</span>.` : ''}`;
   $('#pane').innerHTML = `
-    ${pageCrumb(t('nav.notes'))}
-    <div class="pane-head home-head"><h1>${t('nav.notes')} &amp; ${t('notes.type.table')}</h1></div>
-    ${notesControlsHtml(true)}
-    ${type === 'shared' ? sharedBody : normalBody}
-    ${noteMenuHtml()}`;
-  // Measure the sticky breadcrumb so the toolbar pins just beneath it.
-  requestAnimationFrame(() => { try { const cb = document.querySelector('#pane .crumbbar'); if (cb) document.documentElement.style.setProperty('--notes-crumbh', cb.offsetHeight + 'px'); } catch {} });
+    <div class="kpage-notes">
+      <div class="nx-grid">
+        <div class="nx-main">
+          <div class="nx-eyebrow">Keep · Notes</div>
+          <h1 class="nx-h1">${t('nav.notes')}</h1>
+          <div class="nx-lead">${lead}</div>
+          <div class="nx-controls">
+            <div class="nx-search"><input data-notes-q placeholder="Search notes - titles, words, links" value="${esc(state.notesQuery || '')}" autocomplete="off"><span class="nx-search-k">/</span></div>
+            <div class="nx-orders">${orders}</div>
+            <button class="nx-new" data-new-note>New note</button>
+          </div>
+          ${fSpace ? `<div class="nx-only"><span class="nx-only-l">Only</span><span class="nx-only-sp">${esc((areaById(fSpace) || {}).title || 'this Space')}</span><button class="nx-only-clear" data-notes-space="">Show all</button></div>` : ''}
+          <div class="nx-groups">${groupsHtml}</div>
+        </div>
+        <aside class="nx-side">
+          ${sidePanel('pinned', 'Kept close', favs.length, keptBody)}
+          ${sidePanel('spaces', 'By Space', spaceRows.length, spaceBody)}
+        </aside>
+      </div>
+    </div>`;
 }
 // Right-click a note (or table) in the list to file it into pages - the same
 // checkbox menu as contacts. Left-click still opens; this is the quick filer.
@@ -23147,6 +23154,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
+  const nxOrd = t.closest('[data-notes-order]'); if (nxOrd) { state.notesOrder = nxOrd.dataset.notesOrder; try { localStorage.setItem('life.notesOrder', state.notesOrder); } catch {} renderNotesList(); return; }
+  const nxSp = t.closest('[data-notes-space]'); if (nxSp) { state.notesArea = nxSp.dataset.notesSpace || ''; renderNotesList(); return; }
+  const nxGr = t.closest('[data-notes-group]'); if (nxGr) { const k = nxGr.dataset.notesGroup; state.notesShut = state.notesShut || {}; state.notesShut[k] = !state.notesShut[k]; renderNotesList(); return; }
+  const nxSd = t.closest('[data-notes-side]'); if (nxSd) { const k = nxSd.dataset.notesSide; state.notesSide = state.notesSide || {}; state.notesSide[k] = state.notesSide[k] === false ? true : false; renderNotesList(); return; }
   const snt = t.closest('[data-set-note-type]'); if (snt) { const [id, type] = snt.dataset.setNoteType.split(':'); setNoteType(id, type); return; }
   if (t.closest('[data-open-wellbeing]')) { openWellbeing().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-journal]')) { openJournal().catch((x) => toast(x.message)); return; }
