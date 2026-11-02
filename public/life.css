@@ -11265,6 +11265,9 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-foldall { font-family:var(--k-sans); font-weight:500; font-size:12px; letter-spacing:.06em; color:var(--k-mute); cursor:pointer; white-space:nowrap; }
 .home-foldall:hover { color:var(--k-goldt); }
 .home-sec2-b { padding:2px 0 6px; animation:kfade .35s cubic-bezier(.2,.7,.2,1); }
+/* breathing room between Today's folding sections (Robin: not cramped) */
+.home-cols-v3 .home-main .home-sec2 { margin-top:36px; }
+.home-cols-v3 .home-main .home-sec2:first-of-type { margin-top:10px; }
 /* Calendar section */
 .home-cal-tabs { display:flex; gap:20px; margin:4px 0 10px; }
 .home-cal-tab { font-family:var(--k-sans); font-weight:500; font-size:15px; color:var(--k-mute); cursor:pointer; padding-bottom:4px; border-bottom:2px solid transparent; }

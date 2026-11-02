@@ -8717,7 +8717,21 @@ function homeGlancePanelHtml(tool) {
     }).join('') || '<div class="gln-empty">Nothing to sort.</div>';
     link = 'data-open-mail';
   }
-  else if (tool === 'messages') { label = 'Messages'; const by = (state.friendStatus && state.friendStatus.unreadBy) || {}; const ids = Object.keys(by); rows = ids.slice(0, 4).map((id) => { const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id)); return open(`data-friend-chat="${id}"`, 'msg', (f && f.name) || 'Someone', `${by[id]} new`, ''); }).join('') || '<div class="gln-empty">No unread messages.</div>'; link = 'data-open-messages'; }
+  else if (tool === 'messages') {
+    label = 'Messages'; link = 'data-open-messages';
+    const by = (state.friendStatus && state.friendStatus.unreadBy) || {};
+    const ids = Object.keys(by).filter((k) => by[k]);
+    if (ids.length) {
+      rows = ids.slice(0, 4).map((id) => { const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id)); return open(`data-friend-chat="${id}"`, 'msg', (f && f.name) || 'Someone', `${by[id]} new`, ''); }).join('');
+    } else {
+      // No unread: show the last few conversations rather than an empty state.
+      if (state.threads === undefined) { state.threads = null; api('/api/messages/threads').then((r) => { state.threads = (r && r.threads) || []; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.threads = []; }); }
+      const th = (state.threads || []).slice().sort((a, b) => (Date.parse(b.ts) || 0) - (Date.parse(a.ts) || 0)).slice(0, 3);
+      rows = th.length
+        ? th.map((t) => open(`data-friend-chat="${t.id}"`, 'msg', t.name || 'Someone', `${t.mine ? 'You: ' : ''}${t.body || ''}`, t.ts ? timeAgo(Date.parse(t.ts)) : '')).join('')
+        : (state.threads === null ? '<div class="gln-empty">Loading…</div>' : '<div class="gln-empty">No conversations yet.</div>');
+    }
+  }
   else if (tool === 'tasks') { label = 'Tasks'; const ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).slice(0, 4); rows = ts.map((t) => open(`data-open-task="${t.id}"`, 'task', t.title || 'A task', '', '')).join('') || '<div class="gln-empty">Nothing to do.</div>'; link = 'data-view-tasks'; }
   else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', e.location || '', e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
   else if (tool === 'notes') { label = 'Notes'; const ns = (state.noteTops || []).slice(0, 4); rows = ns.map((n) => open(`data-open-note="${n.id}"`, 'note', n.title || 'Untitled', '', '')).join('') || '<div class="gln-empty">No notes yet.</div>'; link = 'data-open-notes'; }
