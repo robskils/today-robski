@@ -12079,18 +12079,18 @@ function av3Due(iso) {
 }
 async function areaV3Rename() {
   const a = state.area_open && state.area_open.area; if (!a) return;
-  if (state.areaV3) state.areaV3.menu = false;
+  if (state.areaV4) state.areaV4.menu = false;
   const name = (window.prompt('Rename this Space', a.title || '') || '').trim();
-  if (!name || name === a.title) { renderAreaV3(); return; }
+  if (!name || name === a.title) { renderArea(); return; }
   a.title = name;
   const inList = (state.areas || []).find((x) => x.id === a.id); if (inList) inList.title = name;
-  renderAreaV3(); renderNav();
+  renderArea(); renderNav();
   try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ title: name }) }); } catch (e) { toast(e.message); }
 }
 async function areaV3Archive() {
   const a = state.area_open && state.area_open.area; if (!a) return;
-  if (state.areaV3) state.areaV3.menu = false;
-  if (!window.confirm(`Archive “${a.title || 'this Space'}”? You can restore it later.`)) { renderAreaV3(); return; }
+  if (state.areaV4) state.areaV4.menu = false;
+  if (!window.confirm(`Archive “${a.title || 'this Space'}”? You can restore it later.`)) { renderArea(); return; }
   try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ archived: 1 }) }); state.areas = (state.areas || []).filter((x) => x.id !== a.id); toast('Space archived'); openAreasList(); }
   catch (e) { toast(e.message); }
 }
@@ -12102,11 +12102,212 @@ async function av3TaskTick(id) {
   const now = !(b.props && b.props.done);
   b.props = { ...(b.props || {}), done: now };
   const g = (state.tasks || []).find((x) => x.id === id); if (g) g.props = { ...(g.props || {}), done: now };
-  renderAreaV3();
+  renderArea();
   try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: now }) }); }
-  catch (e) { b.props.done = !now; if (g) g.props.done = !now; renderAreaV3(); toast((e && e.message) || 'Could not update that.'); }
+  catch (e) { b.props.done = !now; if (g) g.props.done = !now; renderArea(); toast((e && e.message) || 'Could not update that.'); }
 }
-function renderArea() { return renderAreaV3(); }
+function renderArea() { return renderAreaV4(); }
+// §63: a human name for a view, for the "← {where from}" back label.
+function viewLabel(v) {
+  if (!v) return 'Today';
+  const T = v.type;
+  if (T === 'home') return 'Today';
+  if (T === 'mail' || T === 'mailaccounts') return 'Mail';
+  if (T === 'areas') return 'Spaces';
+  if (T === 'area') { const a = v.id && areaById(v.id); return a ? (a.title || 'Space') : 'Space'; }
+  if (T === 'contacts' || T === 'friends') return 'People';
+  if (T === 'contactcard') return 'Contact';
+  if (T === 'messages') return 'Messages';
+  if (T === 'calendar') return 'Calendar';
+  if (T === 'tasks') return 'Tasks';
+  if (T === 'notes' || T === 'note') return T === 'note' ? 'Note' : 'Notes';
+  if (T === 'goals' || T === 'goalcard') return 'Goals';
+  return 'Today';
+}
+function navBackLabel() { return viewLabel(navHist.length ? navHist[navHist.length - 1] : null); }
+// §65 Space v4 live inputs: search filters as you type (keeping focus); goal
+// edit fields save on change.
+document.addEventListener('input', (e) => {
+  const s = e.target.closest && e.target.closest('[data-av4-search]');
+  if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; renderArea(); }
+});
+document.addEventListener('change', (e) => {
+  const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
+  const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
+  const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
+  const gt = e.target.closest && e.target.closest('[data-av4-goal-title]'); if (gt) { const id = gt.dataset.av4GoalTitle; const v = gt.value.trim(); const b = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (b) b.title = v; const gg = (state.goals || []).find((x) => x.id === id); if (gg) gg.title = v; api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }).catch(() => {}); renderArea(); return; }
+});
+// ── §65 Space v4: the tabbed Space ───────────────────────────────────────────
+const AV4_TABS = [['overview', 'Overview'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['mail', 'Mail'], ['vision', 'Vision & goals']];
+function av4MonthEnd() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10); }
+function av4QuarterEnd() { const d = new Date(); const q = Math.floor(d.getMonth() / 3); return new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10); }
+function av4YearEnd() { return new Date(new Date().getFullYear(), 11, 31).toISOString().slice(0, 10); }
+async function av4GoalSet(id, patch) {
+  const g = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (!g) return;
+  g.props = { ...(g.props || {}), ...patch };
+  const gg = (state.goals || []).find((x) => x.id === id); if (gg) gg.props = { ...(gg.props || {}), ...patch };
+  renderArea();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: patch }) }); } catch (e) { toast((e && e.message) || 'Could not save that.'); }
+}
+function renderAreaV4() {
+  const { area, blocks } = state.area_open;
+  const h = hueOf(area);
+  try { document.body.style.setProperty('--area-h', h); } catch {}
+  const canEdit = !(area.sharedBy && !area.canEdit);
+  const st = state.areaV4 = state.areaV4 || {};
+  if (st.aid !== area.id) { st.aid = area.id; st.tab = 'overview'; st.note = null; st.peek = null; st.q = ''; st.goalEdit = null; st.sort = { key: 'new', dir: 1 }; }
+  st.sort = st.sort || { key: 'new', dir: 1 };
+  // Data
+  const tasksAll = blocks.filter((b) => b.kind === 'task' && !(b.props && b.props.kit));
+  const openTs = tasksAll.filter((t) => !(t.props && t.props.done) && !(t.props && t.props.hideUntil && isSnoozed(t)))
+    .sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5) || String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const doneTs = tasksAll.filter((t) => t.props && t.props.done);
+  const notesAll = blocks.filter((b) => b.kind === 'note');
+  const emails = notesAll.filter((n) => n.props && n.props.fromEmail);
+  const notes = notesAll.filter((n) => !(n.props && n.props.fromEmail));
+  const events = blocks.filter((b) => b.kind === 'event');
+  const goals = blocks.filter((b) => b.kind === 'goal' && (gp(b).status || 'active') !== 'done');
+  const contacts = blocks.filter((b) => b.kind === 'contact');
+  const num = areaNumeral(area.id);
+
+  // Shared builders
+  const taskCard = (t) => {
+    const p = t.props || {}; const d = av3Due(p.due); const prio = AV3_PRIO[p.priority || ''] || 'Whenever'; const first = prio === 'First';
+    const from = (() => { const a2 = blockAreas(t).filter((x) => x !== area.id).map((x) => areaById(x)).filter(Boolean)[0]; return a2 ? a2.title : ''; })();
+    return `<div class="av3-tcard${p.done ? ' done' : ''}" data-open-task="${t.id}"><div class="av3-tc-top"><span class="av3-tc-box${p.done ? ' on' : ''}" data-av3-tick="${t.id}" role="button" tabindex="0"></span><span class="av3-tc-prio${first ? ' first' : ''}">${esc(prio)}</span>${d.t ? `<span class="av3-tc-due${d.gold ? ' gold' : ''}">${esc(d.t)}</span>` : ''}</div><div class="av3-tc-title">${esc(t.title || 'Untitled')}</div>${from ? `<div class="av3-tc-from">${esc(from)}</div>` : ''}</div>`;
+  };
+  const noteCard = (n) => {
+    const p = n.props || {}; const tag = (p.tag || '').trim() || 'Note';
+    const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
+    return `<div class="av3-ncard${st.note === n.id ? ' sel' : ''}" data-av4-note="${n.id}"><div class="av3-nc-top"><span class="av3-nc-tag">${esc(tag)}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(n.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(av3Text(n.body).slice(0, 180))}</div></div>`;
+  };
+  const noteReaderHtml = () => {
+    if (!st.note) return ''; const n = notes.find((x) => x.id === st.note); if (!n) return '';
+    const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
+    return `<div class="av3-nreader"><div class="av3-nr-head"><span class="av3-nr-title">${esc(n.title || 'Untitled')}</span><span class="av3-nr-when">${esc(when)}</span></div><div class="av3-nr-body prose">${sanitizeProse(n.body || '') || '<p class="av3-nr-empty">Nothing in this note yet.</p>'}</div><div class="av3-nr-acts"><span class="av3-nr-open" data-open-note="${n.id}">Open note →</span><span class="av3-nr-pin" data-fav="${n.id}">${(n.props && n.props.fav) ? 'Pinned' : 'Pin'}</span><span class="av3-nr-close" data-av4-noteclose>Close</span></div></div>`;
+  };
+  const streamItems = () => [
+    ...emails.map((n) => ({ id: n.id, kind: 'Mail', from: (n.props && n.props.fromName) || '', title: n.title || '(no subject)', sub: av3Text(n.body).slice(0, 90), when: Date.parse(n.updated_at || n.created_at || '') || 0, open: 'note', block: n })),
+  ].sort((a, b) => b.when - a.when);
+  const streamRow = (it) => {
+    const open = st.peek === it.id;
+    const acts = `<span class="av3-st-act gold" data-open-note="${it.id}">Open note →</span>`;
+    const body = open ? `<div class="av3-st-panel"><p class="av3-st-body">${esc(av3Text(it.block.body).slice(0, 400) || it.sub)}</p><div class="av3-st-acts">${acts}<span class="av3-st-not" data-area-remove="note:${it.id}:${area.id}">Not this Space</span></div></div>` : '';
+    return `<div class="av3-st"><div class="av3-st-row" data-av4-peek="${it.id}" role="button" tabindex="0"><span class="av3-st-kind mail">${esc(it.kind)}</span><div class="av3-st-b">${it.from ? `<div class="av3-st-from">${esc(it.from)}</div>` : ''}<div class="av3-st-title">${esc(it.title)}</div>${it.sub ? `<div class="av3-st-sub">${esc(it.sub)}</div>` : ''}</div><span class="av3-st-when">${it.when ? timeAgo(it.when) : ''}</span></div>${body}</div>`;
+  };
+  const eventRow = (e) => {
+    const p = e.props || {}; const d = av3Due(p.date); const time = (p.allDay || p.start_min == null) ? 'all day' : hhmm(p.start_min);
+    return `<div class="av4-evrow" data-open-calendar role="button" tabindex="0"><span class="av4-ev-day${d.gold ? ' gold' : ''}">${esc(d.t || '—')}</span><span class="av4-ev-dot"></span><div class="av4-ev-b"><div class="av4-ev-t">${esc(e.title || 'Event')}</div>${p.location ? `<div class="av4-ev-sub">${esc(p.location)}</div>` : ''}</div><span class="av4-ev-time">${esc(time)}</span></div>`;
+  };
+
+  // Notes sort
+  const nsort = (() => {
+    const arr = notes.slice(); const dir = st.sort.dir;
+    if (st.sort.key === 'az') arr.sort((a, b) => (a.title || '').localeCompare(b.title || '') * dir);
+    else if (st.sort.key === 'tag') arr.sort((a, b) => ((a.props && a.props.tag || '').localeCompare(b.props && b.props.tag || '')) * dir || String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+    else arr.sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')) * dir);
+    return arr;
+  })();
+
+  // Goal card (with the edit expand: slider, by-when, custom date, why)
+  const goalCard = (g) => {
+    const p = gp(g); const pct = Math.max(0, Math.min(100, Number(p.pct || p.progress || 0)));
+    const due = goalDueISO(g); const dueLbl = due ? av3Due(due) : null;
+    const whenLabel = due ? (due === av4MonthEnd() ? 'This month' : due === av4QuarterEnd() ? 'This quarter' : due === av4YearEnd() ? 'This year' : `By ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short', year: 'numeric' })}`) : 'No date';
+    const editing = st.goalEdit === g.id;
+    const whenChips = [['This month', av4MonthEnd()], ['This quarter', av4QuarterEnd()], ['This year', av4YearEnd()], ['Custom date…', 'custom'], ['No date', '']];
+    const isStd = due && [av4MonthEnd(), av4QuarterEnd(), av4YearEnd()].includes(due);
+    const isCustom = st.goalCustom === g.id || (!!due && !isStd);
+    const whensHtml = whenChips.map(([label, val]) => {
+      const on = val === 'custom' ? isCustom : val === '' ? !due : due === val;
+      return `<span class="av4-when${on ? ' on' : ''}" data-av4-goal-when="${g.id}:${val === 'custom' ? 'custom' : val}">${esc(label)}</span>`;
+    }).join('');
+    const editBlock = editing ? `<div class="av4-goal-edit">
+      <input class="av4-goal-title" value="${esc(g.title || '')}" data-av4-goal-title="${g.id}" placeholder="What is the goal?">
+      <div class="av4-goal-slidewrap"><div class="av4-goal-slidehd"><span class="av4-lbl">How far along</span><span class="av4-goal-pctbig">${pct}%</span></div><input type="range" min="0" max="100" step="5" value="${pct}" class="av4-goal-slider" data-av4-goal-slide="${g.id}"><div class="av4-goal-slidelabels"><span>Just begun</span><span>Halfway</span><span>Done</span></div></div>
+      <div class="av4-goal-whens"><span class="av4-lbl">By when</span>${whensHtml}${isCustom ? `<input type="date" class="av4-goal-date" value="${esc(due || '')}" data-av4-goal-date="${g.id}">` : ''}</div>
+      <textarea class="av4-goal-why" rows="3" placeholder="Why it matters, how you’ll know…" data-av4-goal-why="${g.id}">${esc(p.why || '')}</textarea>
+      <div class="av4-goal-eacts"><span class="av4-goal-done gold" data-av4-goal="${g.id}">Done editing</span><span class="av4-goal-addtask" data-area-add-task>Add a task towards it</span><span class="av4-goal-arch" data-av4-goal-archive="${g.id}">Archive goal</span></div>
+    </div>` : '';
+    return `<div class="av4-goalcard${editing ? ' editing' : ''}">
+      <div class="av4-goal-head" data-av4-goal="${g.id}"><div class="av4-goal-hrow"><span class="av4-goal-when">${esc(whenLabel)}</span><span class="av4-goal-edit-l">${editing ? '' : 'Edit'}</span></div>
+      <div class="av4-goal-main"><span class="av4-goal-t">${esc(g.title || 'A goal')}</span><span class="av4-goal-pct">${pct}%</span></div>
+      <div class="av4-goal-bar"><span style="width:${pct}%"></span></div>${p.why ? `<div class="av4-goal-why-view">${esc(p.why)}</div>` : ''}</div>${editBlock}</div>`;
+  };
+
+  // ── Tab content ──
+  let content = '';
+  const q = (st.q || '').trim().toLowerCase();
+  if (q) {
+    const match = (s) => (s || '').toLowerCase().includes(q);
+    const rg = [];
+    const evM = events.filter((e) => match(e.title)); if (evM.length) rg.push({ label: 'Calendar', items: evM.map((e) => ({ t: e.title || 'Event', w: '', s: (e.props && e.props.location) || '', attr: 'data-open-calendar' })) });
+    const tM = tasksAll.filter((t) => match(t.title)); if (tM.length) rg.push({ label: 'Tasks', items: tM.map((t) => ({ t: t.title || 'Task', w: AV3_PRIO[t.props.priority || ''] || '', s: '', attr: `data-open-task="${t.id}"` })) });
+    const nM = notes.filter((n) => match(n.title) || match(av3Text(n.body))); if (nM.length) rg.push({ label: 'Notes', items: nM.map((n) => ({ t: n.title || 'Note', w: '', s: av3Text(n.body).slice(0, 80), attr: `data-open-note="${n.id}"` })) });
+    const mM = emails.filter((n) => match(n.title)); if (mM.length) rg.push({ label: 'Mail', items: mM.map((n) => ({ t: n.title || '(no subject)', w: '', s: (n.props && n.props.fromName) || '', attr: `data-open-note="${n.id}"` })) });
+    const total = rg.reduce((s, g2) => s + g2.items.length, 0);
+    content = `<div class="av4-results"><div class="av4-res-count">${total} ${total === 1 ? 'thing' : 'things'} matching “${esc(st.q.trim())}”</div>${rg.map((g2) => `<div class="av4-res-g"><div class="av4-res-gl">${esc(g2.label)}</div>${g2.items.map((it) => `<div class="av4-res-row" ${it.attr} role="button" tabindex="0"><span class="av4-res-t">${esc(it.t)}</span>${it.w ? `<span class="av4-res-w">${esc(it.w)}</span>` : ''}${it.s ? `<span class="av4-res-s">${esc(it.s)}</span>` : ''}</div>`).join('')}</div>`).join('') || '<div class="av3-empty">Nothing matches that.</div>'}</div>`;
+  } else if (st.tab === 'overview') {
+    const card = (kind, count, title, sub, act, tab, white) => `<div class="av4-glance${white ? ' white' : ''}" data-av4-tab="${tab}"><div class="av4-gl-top"><span class="av4-gl-kind">${esc(kind)}</span><span class="av4-gl-count">${esc(count)}</span></div><div class="av4-gl-title">${esc(title)}</div><div class="av4-gl-sub">${esc(sub)}</div><div class="av4-gl-act">${esc(act)} →</div></div>`;
+    const topTask = openTs[0]; const topNote = nsort[0]; const topMail = streamItems()[0]; const topEvent = events[0];
+    content = `<div class="av4-glances">
+      ${card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? topTask.title : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'tasks', false)}
+      ${card('Calendar', `${events.length}`, topEvent ? topEvent.title : 'Nothing in the diary', topEvent ? (av3Due(topEvent.props && topEvent.props.date).t || '') : 'No events here', 'See the calendar', 'calendar', false)}
+      ${card('Notes', `${notes.length}`, topNote ? topNote.title : 'Nothing written', topNote ? av3Text(topNote.body).slice(0, 70) : 'Start a note', 'See all notes', 'notes', false)}
+      ${card('Mail', `${emails.length}`, topMail ? topMail.title : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'mail', true)}
+    </div>`;
+  } else if (st.tab === 'calendar') {
+    content = `<div class="av4-pane">${events.length ? events.map(eventRow).join('') : '<div class="av3-empty">Nothing in the diary for this Space.</div>'}<button class="av3-all" data-open-calendar>Open in Calendar →</button></div>`;
+  } else if (st.tab === 'tasks') {
+    const list = [...openTs, ...doneTs];
+    content = `<div class="av4-pane">${list.length ? `<div class="av3-cards">${list.map(taskCard).join('')}</div>` : `<div class="av3-empty">No tasks here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-task>+ Task</span>' : ''}</div>`}</div>`;
+  } else if (st.tab === 'notes') {
+    const sortChip = (key, label) => { const on = st.sort.key === key; const arrow = on ? (st.sort.dir === 1 ? '↓' : '↑') : ''; return `<span class="av4-nsort${on ? ' on' : ''}" data-av4-sort="${key}">${label} <span class="av4-nsort-a">${arrow}</span></span>`; };
+    content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Newest first')}${sortChip('az', 'A to Z')}${sortChip('tag', 'By tag')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
+  } else if (st.tab === 'mail') {
+    const s = streamItems();
+    content = `<div class="av4-pane">${s.length ? s.map(streamRow).join('') : '<div class="av3-empty">No mail filed to this Space.</div>'}</div>`;
+  } else if (st.tab === 'vision') {
+    const vision = (area.props && (area.props.vision || '').trim()) || '';
+    content = `<div class="av4-pane av4-vision">
+      <div class="av4-vis-block"><div class="av4-lbl gold">Vision</div><p class="av4-vis-text${vision ? '' : ' empty'}">${vision ? esc(vision) : 'No vision set yet.'}</p>${canEdit ? `<span class="av4-vis-edit" data-open-vision="${area.id}">Edit the vision</span>` : ''}</div>
+      <div class="av4-goals-hd"><span class="av4-lbl gold">Goals</span><span class="av4-goals-n">${goals.length}</span>${canEdit ? '<span class="av4-goals-add" data-area-add-goal>+ Add a goal</span>' : ''}</div>
+      ${goals.length ? `<div class="av4-goalgrid">${goals.map(goalCard).join('')}</div>` : '<div class="av3-empty">No goals in this Space yet.</div>'}</div>`;
+  }
+
+  // Tabs row
+  const tabCount = { calendar: events.length, tasks: openTs.length, notes: notes.length, mail: emails.length };
+  const tabsHtml = AV4_TABS.map(([k, label], i) => {
+    const on = st.tab === k && !q; const n = tabCount[k];
+    return `<div class="av4-tab${on ? ' on' : ''}" data-av4-tab="${k}"><span class="av4-tab-num">${kToRoman(i + 1)}</span><span class="av4-tab-l">${esc(label)}</span>${n ? `<span class="av4-tab-n">${n}</span>` : ''}</div>`;
+  }).join('');
+
+  // Strip
+  const upcoming = [...goals.map((g) => ({ t: g.title || 'A goal', iso: goalDueISO(g) })), ...openTs.filter((t) => t.props && t.props.due).map((t) => ({ t: t.title || 'A task', iso: t.props.due }))].filter((x) => x.iso).sort((a, b) => String(a.iso).localeCompare(String(b.iso))).slice(0, 2);
+  const stripB = [];
+  if (upcoming.length) stripB.push(`<div class="av3-strip-b"><span class="av3-strip-l">Coming up</span>${upcoming.map((u) => { const d = av3Due(u.iso); return `<span class="av3-strip-it"><span class="av3-strip-t">${esc(u.t)}</span> <span class="av3-strip-s${d.gold ? ' gold' : ''}">${esc(d.t)}</span></span>`; }).join('')}</div>`);
+  if (contacts.length) stripB.push(`<div class="av3-strip-b"><span class="av3-strip-l">People</span>${contacts.slice(0, 3).map((c) => `<span class="av3-strip-it"><span class="av3-strip-t" ${c.id ? `data-open-contact="${c.id}"` : ''} role="button">${esc(c.title || 'Someone')}</span></span>`).join('')}</div>`);
+  const strip = stripB.length ? `<div class="av3-strip">${stripB.join('')}</div>` : '';
+
+  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
+  const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, cover, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-area-cover>Change cover</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
+
+  $('#pane').innerHTML = `
+    <div class="kwrap kpage kpage-area av3 av4">
+      <div class="av4-crumb"><span class="av4-back" data-nav-back role="button" tabindex="0"><span class="av4-back-a">←</span> ${esc(navBackLabel())}</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-up" data-open-areas role="button" tabindex="0">Spaces</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-nm">${esc(area.title || 'Space')}</span></div>
+      <div class="av3-head">
+        <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
+        <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
+      </div>
+      ${strip}
+      <div class="av4-search${q ? ' active' : ''}"><span class="av4-search-ic">⌕</span><input class="av4-search-in" data-av4-search placeholder="Search everything in ${esc(area.title || 'this Space')} – mail, notes, tasks, events" value="${esc(st.q || '')}">${q ? '<span class="av4-search-clear" data-av4-search-clear>Clear</span>' : ''}<span class="av4-search-k">${esc(PK('⌘F'))}</span></div>
+      ${q ? '' : `<div class="av4-tabs">${tabsHtml}</div>`}
+      <div class="av4-content">${content}</div>
+    </div>`;
+  renderNav();
+  // keep focus in the search box while typing
+  if (st._focusSearch) { st._focusSearch = false; const i = document.querySelector('[data-av4-search]'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch {} } }
+}
 function renderAreaV3() {
   const { area, blocks } = state.area_open;
   const h = hueOf(area);
@@ -25898,11 +26099,21 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
   { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
   { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
-  if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderAreaV3(); return; }
+  if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderArea(); return; }
   { const atb = t.closest('[data-av3-tab]'); if (atb) { const st = state.areaV3 = state.areaV3 || {}; st.tab = atb.dataset.av3Tab; st.peek = null; renderAreaV3(); return; } }
   { const ap = t.closest('[data-av3-peek]'); if (ap) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.peek = st.peek === ap.dataset.av3Peek ? null : ap.dataset.av3Peek; renderAreaV3(); return; } }
   { const avt = t.closest('[data-av3-tick]'); if (avt) { e.preventDefault(); e.stopPropagation(); av3TaskTick(avt.dataset.av3Tick); return; } }
-  if (t.closest('[data-av3-more]')) { e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.menu = !st.menu; renderAreaV3(); return; }
+  // §65 Space v4 tabbed
+  { const v4t = t.closest('[data-av4-tab]'); if (v4t) { const st = state.areaV4 = state.areaV4 || {}; st.tab = v4t.dataset.av4Tab; st.q = ''; st.note = null; st.peek = null; renderArea(); return; } }
+  { const v4n = t.closest('[data-av4-note]'); if (v4n) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.note = st.note === v4n.dataset.av4Note ? null : v4n.dataset.av4Note; renderArea(); return; } }
+  if (t.closest('[data-av4-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV4) state.areaV4.note = null; renderArea(); return; }
+  { const v4p = t.closest('[data-av4-peek]'); if (v4p) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.peek = st.peek === v4p.dataset.av4Peek ? null : v4p.dataset.av4Peek; renderArea(); return; } }
+  { const v4s = t.closest('[data-av4-sort]'); if (v4s) { const st = state.areaV4 = state.areaV4 || {}; const k = v4s.dataset.av4Sort; st.sort = st.sort || { key: 'new', dir: 1 }; if (st.sort.key === k) st.sort.dir *= -1; else st.sort = { key: k, dir: 1 }; renderArea(); return; } }
+  if (t.closest('[data-av4-search-clear]')) { if (state.areaV4) state.areaV4.q = ''; renderArea(); return; }
+  { const v4g = t.closest('[data-av4-goal]'); if (v4g) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.goalEdit = st.goalEdit === v4g.dataset.av4Goal ? null : v4g.dataset.av4Goal; if (st.goalEdit !== v4g.dataset.av4Goal) st.goalCustom = null; renderArea(); return; } }
+  { const v4gw = t.closest('[data-av4-goal-when]'); if (v4gw) { e.preventDefault(); e.stopPropagation(); const [id, val] = v4gw.dataset.av4GoalWhen.split(':'); const st = state.areaV4 = state.areaV4 || {}; if (val === 'custom') { st.goalCustom = id; renderArea(); } else { st.goalCustom = null; av4GoalSet(id, { due: val || null }); } return; } }
+  { const v4ga = t.closest('[data-av4-goal-archive]'); if (v4ga) { e.preventDefault(); e.stopPropagation(); av4GoalSet(v4ga.dataset.av4GoalArchive, { status: 'done' }); if (state.areaV4) state.areaV4.goalEdit = null; return; } }
+  if (t.closest('[data-av3-more]')) { e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.menu = !st.menu; renderArea(); return; }
   if (t.closest('[data-av3-rename]')) { areaV3Rename(); return; }
   if (t.closest('[data-av3-archive]')) { areaV3Archive(); return; }
   // §64: the readings' "Open" must open the tool on today's reading, not just
