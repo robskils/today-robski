@@ -11916,7 +11916,7 @@ function removeNoteArea(id, areaId) { const cur = blockAreas(state.note && state
 const AREA_HOSTS = {
   note:    { copies: () => [state.note && state.note.current, ...(state.noteTops || [])], render: () => { if (state.view.type === 'note') renderNote(); } },
   task:    { copies: () => [state.task_open && state.task_open.task, ...(state.tasks || [])], render: () => { if (state.view.type === 'taskcard') renderTaskCard(); } },
-  contact: { copies: () => [state.contact_open && state.contact_open.contact, ...(state.contacts || [])], render: () => { if (state.view.type === 'contactcard') renderContactCard(); } },
+  contact: { copies: () => [state.contact_open && state.contact_open.contact, ...(state.contacts || [])], render: () => { if (state.view.type === 'contactcard' || state.view.type === 'contacts') renderContactCard(); } },
   table:   { copies: () => [state.tables_open, ...(state.tables || [])], render: () => { if (state.view.type === 'table') renderTable(); } },
   goal:    { copies: () => [state.goal_open && state.goal_open.goal, ...(state.goals || [])], render: () => { if (state.view.type === 'goalcard') renderGoalCard(); } },
   bucket:  { copies: () => [state.bucket_open && state.bucket_open.item, ...(state.bucket || [])], render: () => { if (state.view.type === 'bucketcard') renderBucketCard(); } },
@@ -17734,13 +17734,10 @@ function readCardAddresses() {
 async function openContacts() {
   const gen = bumpNav();
   state.view = { type: 'contacts' };
+  cvState();
   renderNav();
-  // Paint the pane straight away, from whatever's cached (even nothing - it renders
-  // an empty state), so tapping Contacts leaves Home at once.
-  if (state.contactsKitDue === undefined && state.home && state.home.alerts) state.contactsKitDue = state.home.alerts.keepInTouch || [];
-  renderContacts();
-  // Who you're due a catch-up with - refresh the list for the Contacts section.
-  api('/api/home/alerts').then((a) => { if (gen === navGen && a && state.view.type === 'contacts') { state.contactsKitDue = a.keepInTouch || []; renderContacts(); } }).catch(() => {});
+  renderContacts();   // paint at once from cache
+  cvLoadKit();         // keep-in-touch tasks for the list (re-renders when in)
   const [, , friends, shared, areas] = await Promise.all([
     loadContacts(true).catch(() => state.contacts || []),
     loadContactGroups(true).catch(() => state.contactGroups || []),
@@ -17751,6 +17748,11 @@ async function openContacts() {
   if (gen !== navGen) return;   // navigated away while contacts loaded
   state.friends = friends; state.sharedWithMe = shared;
   if (Array.isArray(areas)) state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  // Open a contact so the right column isn't blank on desktop: the one you had,
+  // else the first. On a phone the list leads.
+  const cv = cvState();
+  if (cv.cur != null) cvSelect(cv.cur);
+  else if ((state.contacts || []).length && !window.matchMedia('(max-width:899px)').matches) { const first = sortContacts(state.contacts.slice())[0]; if (first) cvSelect(first.id); }
   renderContacts();
 }
 function contactCardHtml(c) {
@@ -17919,61 +17921,103 @@ function renderKoyebaPeople() {
     <section class="home-sec"><div class="home-sec-h">Your Koyeba card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
+// ── §34 Contacts + Keep in touch: one two-column 100vh page ────────────────
+function cvState() { if (!state.cv) state.cv = { view: 'keep', q: '', folds: { details: true, together: true, notes: false, spaces: false } }; return state.cv; }
+// The keep-in-touch tasks, mapped by contact, so the list can show "last in
+// touch" and "due" without opening each card. Loaded once per Contacts open.
+async function cvLoadKit() {
+  try { const tasks = await api('/api/blocks?kind=task'); const m = {}; (tasks || []).forEach((tk) => { const p = tk.props || {}; if (p.kit && p.contact != null) m[String(p.contact)] = { last: p.last || '', snooze: p.snooze || '', every: p.repeat || '' }; }); state.cvKit = m; } catch { state.cvKit = state.cvKit || {}; }
+  if (state.view && state.view.type === 'contacts') renderContacts();
+}
+// Select a contact: load its full props + keep-in-touch task + linked items, and
+// paint the selection at once. Shared by list taps and external deep-links.
+async function cvSelect(id) {
+  recordRecentContact(id);
+  cvState().cur = id;
+  if (state.view && state.view.type === 'contacts') renderContacts();
+  const cached = (state.contacts || []).find((x) => String(x.id) === String(id)) || null;
+  let full = cached, kt = null;
+  try { full = await api(`/api/blocks/${id}`); } catch {}
+  if (full && full.props && full.props.kitTask) { try { kt = await api(`/api/blocks/${full.props.kitTask}`); } catch {} }
+  state.contact_open = { contact: full || cached, kitTask: kt };
+  if (state.view && state.view.type === 'contacts' && String(cvState().cur) === String(id)) renderContacts();
+  loadContactLinks(id);
+}
+async function cvNewContact() {
+  try {
+    const c = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: '', props: {} }) });
+    state.contacts = state.contacts || []; state.contacts.unshift(c);
+    state.contact_open = { contact: c, kitTask: null, editDetails: true };
+    const cv = cvState(); cv.cur = c.id; cv.view = 'all';
+    renderContacts();
+    setTimeout(() => { const el = document.getElementById('contactcard-name'); if (el) el.focus(); }, 40);
+  } catch (e) { toast(e.message); }
+}
+const CV_FREQ = [['weekly', 'Every week'], ['fortnightly', 'Fortnight'], ['monthly', 'Month'], ['quarterly', 'Quarter'], ['', 'Off']];
+function cvDueText(snooze) { if (!snooze) return ''; const n = daysBetween(todayISO(), snooze); return n < 0 ? `overdue by ${-n} day${-n === 1 ? '' : 's'}` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`; }
 function renderContacts() {
-  const q = (state.contactsQuery || '').trim().toLowerCase();
-  // A deleted/renamed area can't stay selected as the filter.
-  if (state.contactsArea && !areaById(state.contactsArea)) state.contactsArea = null;
-  const af = state.contactsArea;
-  const match = (c) => {
-    if (af && !blockAreas(c).includes(af)) return false;
-    if (!q) return true; const p = c.props || {}; return [c.title, p.email, p.phone].some((v) => (v || '').toLowerCase().includes(q));
+  const cv = cvState();
+  const kitMap = state.cvKit || {};
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const friendByEmail = {}; ((state.friends && state.friends.friends) || []).forEach((f) => { (f.email ? [f.email] : []).forEach((e) => { friendByEmail[String(e).toLowerCase()] = f; }); });
+  const P = (state.contacts || []).map((c) => {
+    const p = c.props || {}; const kit = kitMap[String(c.id)] || {};
+    const emails = contactEmails(p); const phones = contactPhones(p);
+    const fr = emails.map((e) => friendByEmail[String(e).toLowerCase()]).find(Boolean) || null;
+    const onK = fr ? (onSet.has(fr.id) ? 1 : 2) : 0;   // 1 here now, 2 on Koyeba, 0 not
+    return { c, p, id: c.id, name: c.title || 'Unnamed', spaces: blockAreas(c).map((id) => (areaById(id) || {}).title).filter(Boolean), star: !!p.starred, email: emails[0] || '', phone: (phones[0] || {}), every: p.kitEvery || kit.every || '', last: kit.last || '', snooze: kit.snooze || '', onK, recentTs: Date.parse(kit.last || c.updated_at || c.created_at || 0) || 0 };
+  });
+  const ql = (cv.q || '').trim().toLowerCase();
+  const F = ql ? P.filter((x) => x.name.toLowerCase().includes(ql) || x.spaces.join(' ').toLowerCase().includes(ql) || (x.email || '').toLowerCase().includes(ql)) : P;
+  const counts = { keep: P.filter((x) => x.every && cvDueText(x.snooze) && daysBetween(todayISO(), x.snooze) <= 1).length, star: P.filter((x) => x.star).length, recent: P.filter((x) => x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000).length, onk: P.filter((x) => x.onK).length, all: P.length };
+  const VIEWS = [['keep', 'Keep in touch'], ['star', 'Starred'], ['recent', 'Recent'], ['onk', 'On Koyeba'], ['all', 'All']];
+  if (!VIEWS.some(([k]) => k === cv.view)) cv.view = 'keep';
+  const row = (x, right, rightGold, subOverride) => {
+    const sel = String(cv.cur) === String(x.id);
+    return `<button class="cv-row${sel ? ' sel' : ''}" data-cv-open="${x.id}"><span class="cv-row-sq${x.star ? ' on' : ''}"></span><span class="cv-row-main"><span class="cv-row-nm">${esc(x.name)}</span>${(subOverride || x.spaces.join(' · ')) ? `<span class="cv-row-sub">${esc(subOverride || x.spaces.join(' · '))}</span>` : ''}</span>${right ? `<span class="cv-row-r${rightGold ? ' gold' : ''}">${esc(right)}</span>` : ''}</button>`;
   };
-  const list = sortContacts((state.contacts || []).filter(match));
-  const area = af && areaById(af);
-  const emptyMsg = q ? 'No contacts match.'
-    : area ? `No contacts in ${esc(area.title)} yet. Open a contact and add this space.`
-    : 'No contacts yet. Add one, or import a vCard (.vcf) from Google, Outlook, your phone or any address book.';
-  // While searching, strip the page back to just the search box and the matching
-  // contacts - no Add/Import, no "Contacts on Koyeba", no group bar. Just results.
-  const searching = !!q;
+  let groups = [];
+  if (cv.view === 'keep') {
+    const keep = F.filter((x) => x.every).map((x) => ({ x, n: x.snooze ? daysBetween(todayISO(), x.snooze) : 9999 })).sort((a, b) => a.n - b.n);
+    const now = keep.filter((k) => k.n <= 1), soon = keep.filter((k) => k.n > 1);
+    groups = [
+      now.length && { label: 'Now', items: now.map((k) => row(k.x, cvDueText(k.x.snooze), true, 'Last in touch ' + (k.x.last ? kitWhen(k.x.last) : 'not yet'))) },
+      soon.length && { label: 'Coming up', items: soon.map((k) => row(k.x, cvDueText(k.x.snooze), false, 'Last in touch ' + (k.x.last ? kitWhen(k.x.last) : 'not yet'))) },
+    ].filter(Boolean);
+    if (!keep.length) groups = [{ label: '', items: [], empty: 'No keep-in-touch set. Open anyone and choose how often.' }];
+  } else if (cv.view === 'star') {
+    groups = [{ label: 'Starred', items: F.filter((x) => x.star).map((x) => row(x, x.last ? kitWhen(x.last) : '')) }];
+  } else if (cv.view === 'recent') {
+    const wk = F.filter((x) => x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000).sort((a, b) => b.recentTs - a.recentTs);
+    const earlier = F.filter((x) => !(x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000)).sort((a, b) => b.recentTs - a.recentTs);
+    groups = [wk.length && { label: 'This week', items: wk.map((x) => row(x, x.last ? kitWhen(x.last) : '')) }, earlier.length && { label: 'Earlier', items: earlier.map((x) => row(x, x.last ? kitWhen(x.last) : '')) }].filter(Boolean);
+  } else if (cv.view === 'onk') {
+    const here = F.filter((x) => x.onK === 1), away = F.filter((x) => x.onK === 2);
+    groups = [here.length && { label: 'Here now', items: here.map((x) => row(x, 'here now', true)) }, away.length && { label: 'On Koyeba', items: away.map((x) => row(x, 'away')) }].filter(Boolean);
+    if (!here.length && !away.length) groups = [{ label: '', items: [], empty: 'None of your contacts are on Koyeba yet.' }];
+  } else {
+    const by = {}; F.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((x) => { const L = (x.name[0] || '#').toUpperCase(); (by[L] = by[L] || []).push(x); });
+    groups = Object.keys(by).map((L) => ({ label: L, items: by[L].map((x) => row(x, x.onK ? 'on Koyeba' : '')) }));
+  }
+  const viewsBar = VIEWS.map(([k, l]) => `<button class="cv-v${cv.view === k ? ' on' : ''}" data-cv-view="${k}"><span class="cv-v-n">${counts[k]}</span><span class="cv-v-l">${l}</span></button>`).join('');
+  const keepHint = cv.view === 'keep' ? '<p class="cv-keep-hint">A quiet nudge when it has been too long. The clock restarts only when you say you have been in touch.</p>' : '';
+  const listBody = groups.length && groups.some((g) => g.items.length || g.empty) ? groups.map((g) => `${g.label ? `<div class="cv-grp-h"><span>${esc(g.label)}</span></div>` : ''}${g.items.length ? g.items.join('') : `<div class="cv-empty">${esc(g.empty || 'Nobody here.')}</div>`}`).join('') : `<div class="cv-empty">${ql ? 'No one matches.' : 'No contacts yet.'}</div>`;
+  const curContact = (state.contact_open && state.contact_open.contact && String(state.contact_open.contact.id) === String(cv.cur)) ? state.contact_open.contact : null;
+  const card = cv.cur ? (curContact ? contactCardInner(curContact) : '<div class="cv-loading">Loading…</div>') : '<div class="cv-pick">Pick someone.</div>';
   $('#pane').innerHTML = `
-    ${pageCrumb(t('nav.contacts'))}
-    <div class="pane-head"><h1>${t('nav.contacts')}</h1></div>
-    ${searching ? `
-    <div class="list-head">
-      <input class="list-search sel" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-    </div>
-    <section class="home-sec">
-      <div class="contact-grid">${list.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>
-    </section>` : `
-    <section class="home-sec contacts-mine">
-      <div class="cts-head">
-        <input class="list-search sel cts-search" data-contacts-q placeholder="${t('ct.search')}" value="${esc(state.contactsQuery || '')}" autocomplete="off">
-        ${contactAreaBarHtml()}
-        <div class="cts-acts">${state.contactAdding ? '' : `<button class="add-btn wide" data-contact-add>${t('ct.add')}</button>`}<button class="ghost contact-import-btn" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud, Android or any address book">${t('ct.import')}</button><button class="ghost cts-daybook-link" data-open-daybook title="Your people on Koyeba - connect and share">❖ Koyeba Contacts</button><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+    <div class="kwrap cv-page${cv.cur ? ' cv-has-cur' : ''}">
+      <div class="cv-list-col">
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
+        <div class="cv-title-row"><h1 class="cv-title">Contacts</h1><span class="cv-new" data-cv-new>+ New</span><span class="cv-import" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud or any address book">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+        <div class="cv-search"><input class="cv-q" id="cv-q" type="search" placeholder="Look for a person…" value="${esc(cv.q || '')}" autocomplete="off"></div>
+        <div class="cv-views">${viewsBar}</div>
+        ${keepHint}
+        <div class="cv-list">${listBody}</div>
       </div>
-      ${contactsKoyebaBannerHtml()}
-      ${contactSelBarHtml()}
-      ${state.contactAdding ? contactAddForm() : ''}
-      ${(() => {
-        // On the default "All" view, lift starred and recently-opened contacts into
-        // their own sections at the top; the grid below then holds the rest, A-Z.
-        const starred = (!af) ? list.filter((c) => c.props && c.props.starred) : [];
-        const starIds = new Set(starred.map((c) => c.id));
-        const recent = (!af) ? recentContactIds().map((id) => list.find((c) => c.id === id)).filter(Boolean).filter((c) => !starIds.has(c.id)).slice(0, 6) : [];
-        const special = new Set([...starIds, ...recent.map((c) => c.id)]);
-        const rest = special.size ? list.filter((c) => !special.has(c.id)) : list;
-        const starH = starred.length ? `<div class="cts-sec-h">★ Starred <span class="muted">${starred.length}</span></div><div class="contact-grid cts-starred">${starred.map(contactCardHtml).join('')}</div>` : '';
-        const recentH = recent.length ? `<div class="cts-sec-h">🕘 Recent <span class="muted">${recent.length}</span></div><div class="contact-grid cts-recent">${recent.map(contactCardHtml).join('')}</div>` : '';
-        const allH = (special.size && rest.length) ? '<div class="cts-sec-h">All contacts</div>' : '';
-        return `${starH}${recentH}${allH}<div class="contact-grid">${rest.map(contactCardHtml).join('') || `<div class="empty">${emptyMsg}</div>`}</div>`;
-      })()}
-    </section>
-
-    ${friendsPaneHtml({ skipSuggest: true })}`}
-
+      <div class="cv-card-col">${card}</div>
+    </div>
     ${contactMenuHtml()}`;
-  alignConnectRow();
+  if (cv.cur) autoGrowSoon($('#contactcard-name'));
 }
 // Line the connect row's right edge (the Invite button) up with the right edge
 // of the "Search your contacts" box above it. The two rows carry different
@@ -18034,18 +18078,17 @@ function recordRecentContact(id) {
   list.unshift(id);
   try { localStorage.setItem('life.recentContacts', JSON.stringify(list.slice(0, 10))); } catch {}
 }
+// A deep-link to one contact now opens the Contacts two-column focused on them
+// (§34 folds the old standalone card into that page).
 async function openContactCard(id) {
-  recordRecentContact(id);
-  const [c] = await Promise.all([api(`/api/blocks/${id}`), loadContacts(), loadContactGroups()]);
-  // The keep-in-touch task holds the dates (next nudge, last contact). A missing
-  // one just reads as "off": a contact whose task was deleted elsewhere shouldn't
-  // fail to open, it should offer to start again.
-  let kt = null;
-  if (c && c.props && c.props.kitTask) { try { kt = await api(`/api/blocks/${c.props.kitTask}`); } catch {} }
-  state.contact_open = { contact: c, kitTask: kt };
-  state.view = { type: 'contactcard', id };
-  renderNav(); renderContactCard();
-  loadContactLinks(id);
+  await loadContactGroups().catch(() => {});
+  cvState().cur = id;
+  state.view = { type: 'contacts' };
+  renderNav();
+  if (state.contacts === undefined) await loadContacts().catch(() => {});
+  if (state.friends === undefined) api('/api/friends').then((f) => { state.friends = f; if (state.view && state.view.type === 'contacts') renderContacts(); }).catch(() => {});
+  cvLoadKit();
+  cvSelect(id);
 }
 // Notes and tasks that name this contact (props.contacts) - the "connected" list,
 // loaded in the background and painted when it lands.
@@ -18070,7 +18113,7 @@ async function loadContactLinks(id) {
     const pool = ((cal && cal.events) || []).filter((e) => { if (!e || !e.id || !e.title || e.feed) return false; const b = String(e.id || '').split('::')[0]; if (seen.has(b)) return false; seen.add(b); return true; });
     state.contact_open.eventPool = pool;
     state.contact_open.linkedEvents = pool.filter((e) => e.contact && String(e.contact) === String(id)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-    if (state.view.type === 'contactcard') renderContactCard();
+    if (state.view.type === 'contactcard' || state.view.type === 'contacts') renderContactCard();
   } catch {}
 }
 // ── Keep in touch ─────────────────────────────────────────────────────
@@ -18362,69 +18405,85 @@ async function kitSetLast(iso) {
     renderContactCard();
   } catch (e) { toast(e.message); }
 }
+// §34: the contact card. Rendered in the right pane of the two-column Contacts
+// page (view 'contacts'), and standalone for a direct contactcard deep-link.
 function renderContactCard() {
-  const c = state.contact_open.contact; const p = c.props || {};
+  if (state.view && state.view.type === 'contacts') { renderContacts(); return; }
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-contacts>Contacts</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(c.title || 'Unnamed')}</span>
-      <span class="crumb-tools"><button class="star ${p.starred ? 'on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star this contact'}">${p.starred ? '★' : '☆'}</button><button class="note-del ghost" data-del-contact="${c.id}" title="Delete this contact">Delete</button></span></div>
-    ${(() => {
-      const areas = blockAreas(c).map((id) => areaById(id)).filter(Boolean);
-      const a0 = areas[0]; const hue = a0 ? hueOf(a0) : null;
-      const firstEmail = contactEmails(p)[0];
-      const ph = contactPhones(p)[0]; const num = ph ? `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}` : '';
-      const addr = formatAddress(contactAddresses(p)[0]);
-      const kit = p.kitEvery ? kitWhen((kitTaskOf() || {}).props ? (kitTaskOf().props.snooze) : '') : '';
-      const areaChips = areas.map((a) => `<button class="cc-area-chip" data-open-area="${a.id}" style="--h:${hueOf(a)}" title="Open ${esc(a.title)}"><span class="cd"></span>${esc(a.title)}</button>`).join('');
-      const act = (cls, ic, label, attrs, tag) => `<${tag || 'a'} class="cc-act${cls ? ' ' + cls : ''}" ${attrs}><span class="cc-act-ic">${ic}</span><span class="cc-act-l">${label}</span></${tag || 'a'}>`;
-      const links = [
-        firstEmail ? act('', CICO.mail, 'Email', `data-contact-mail="${esc(firstEmail)}" title="Email ${esc(firstEmail)}"`, 'button') : '',
-        num ? act('', CICO.call, 'Call', `href="tel:${esc(num)}" title="Call"`) : '',
-        num ? act('', CICO.msg, 'Message', `href="sms:${esc(num)}" title="Message"`) : '',
-        (() => { const wa = num.replace(/[^\d]/g, ''); return wa.length >= 8 ? act('cc-act-wa', CICO.wa, 'WhatsApp', `href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer" title="Message on WhatsApp"`) : ''; })(),
-        p.telegram ? act('cc-act-tg', CICO.msg, 'Telegram', `href="${esc(socialUrl('telegram', p.telegram))}" target="_blank" rel="noopener noreferrer" title="Telegram"`) : '',
-        p.instagram ? act('cc-act-ig', CICO.msg, 'Instagram', `href="${esc(socialUrl('instagram', p.instagram))}" target="_blank" rel="noopener noreferrer" title="Instagram"`) : '',
-        p.signal ? act('cc-act-sig', CICO.msg, 'Signal', `href="${esc(socialUrl('signal', p.signal))}" target="_blank" rel="noopener noreferrer" title="Signal"`) : '',
-        addr ? act('', CICO.map, 'Map', `href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="${esc(addr)}"`) : '',
-        addr ? act('', CICO.nav, 'Directions', `href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" title="Directions to ${esc(addr)}"`) : '',
-        act('cc-act-invite', CICO.invite, 'Invite', `data-cc-invite="${esc(firstEmail || '')}" title="Invite to Koyeba"`, 'button'),
-      ].filter(Boolean).join('');
-      return `<div class="task-focus cc-focus${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''}>
-      <span class="cc-av-wrap">
-        <label class="contact-av big cc-av-edit${p.photo ? ' has-photo' : ''}${hue != null ? ' has-area' : ''}"${(hue != null || p.photo) ? ` style="${hue != null ? `--h:${hue};` : ''}${p.photo ? `background-image:url('${esc(p.photo)}')` : ''}"` : ''} title="Upload a photo"><input type="file" accept="image/*" hidden data-contact-photo>${p.photo ? '' : esc(initial(c.title || '?'))}<span class="cc-av-cam" aria-hidden="true">⬆</span></label>
-        ${p.photo ? '<button class="cc-av-x" type="button" data-contact-photo-rm title="Remove photo">×</button>' : ''}
-      </span>
-      <div class="cc-headmain">
-        <textarea class="note-title cc-name" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea>
-        ${(areaChips || kit) ? `<div class="cc-sub">${areaChips}${kit ? `<span class="cc-kit-chip" title="Keep in touch">🤝 ${esc(kit)}</span>` : ''}</div>` : ''}
-        <div class="cc-quick">${links}</div>
-      </div>
-    </div>`;
-    })()}
-    <div class="cc-sec">
-      <div class="cc-sec-h">Details ${state.contact_open && state.contact_open.editDetails ? '<button type="button" class="cc-edit-btn cc-details-done" data-cc-details-done>Done</button>' : '<button type="button" class="cc-edit-btn" data-cc-edit-details>✎ Edit</button>'}</div>
-      ${(state.contact_open && state.contact_open.editDetails)
-        ? `<div class="tf-meta">
-        ${contactEmailFields(p)}
-        ${contactPhoneFields(p)}
-        ${contactSocialFields(p)}
-        <label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>
-        ${p.birthday ? (() => { const lead = p.bdayLead === 0 ? 0 : (Number(p.bdayLead) || 7); const OPTS = [[7, 'A week before'], [14, 'Two weeks before'], [30, 'A month before'], [60, 'Two months before'], [90, 'Three months before'], [0, 'No reminder']]; return `<label class="tf-field"><span class="tf-label">Remind me</span><select id="contactcard-bdaylead" class="sel">${OPTS.map(([v, l]) => `<option value="${v}" ${lead === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`; })() : ''}
-        ${contactAddressFields(p)}
-        <div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div>
-      </div>`
-        : `<div class="cc-facts">${contactDetailsView(c, p)}</div>`}
-    </div>
-    <div class="cc-sec">
-      <div class="cc-sec-h">Organise</div>
-      <div class="tf-meta">
-        <div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div>
-      </div>
-    </div>
-    ${keepInTouchSection(c)}
-    ${contactBoxesHtml(c)}
-    <div class="cc-group-h">Spaces</div>
-    ${notesSection(c.body, 'contact', c.id, false, 'Notes to self')}`;
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts'), attr: 'data-open-contacts' }, { label: c.title || 'Unnamed' }])}
+    <div class="kwrap cv-card-solo">${contactCardInner(c)}</div>`;
   autoGrowSoon($('#contactcard-name'));
+}
+// Word-actions for a contact, only the ones that are possible, Message first.
+function contactActionsHtml(c, p) {
+  const firstEmail = contactEmails(p)[0];
+  const ph = contactPhones(p)[0]; const num = ph ? `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}` : '';
+  const wa = num.replace(/[^\d]/g, '');
+  const addr = formatAddress(contactAddresses(p)[0]);
+  const fr = firstEmail ? (((state.friends && state.friends.friends) || []).find((f) => (f.email || '').toLowerCase() === firstEmail.toLowerCase())) : null;
+  const A = [];
+  if (fr) A.push(`<button class="cv-act gold" data-friend-chat="${fr.id}" data-friend-name="${esc(c.title || '')}">Message</button>`);
+  if (firstEmail) A.push(`<button class="cv-act" data-contact-mail="${esc(firstEmail)}">Email</button>`);
+  if (num) A.push(`<a class="cv-act" href="tel:${esc(num)}">Call</a>`);
+  if (wa.length >= 8) A.push(`<a class="cv-act" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`);
+  if (addr) A.push(`<a class="cv-act" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Directions</a>`);
+  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Koyeba</button>`);
+  return A.join('<span class="cv-act-sep">·</span>');
+}
+// The keep-in-touch band: one sentence, the frequency as words, and the manual
+// "I've just been in touch". The clock resets only on that (Robin, §34).
+function cvKeepBand(c) {
+  const p = c.props || {}; const kt = (state.contact_open && state.contact_open.kitTask) || null;
+  const every = p.kitEvery || (kt && kt.props && kt.props.repeat) || '';
+  const last = kt && kt.props && kt.props.last; const snooze = kt && kt.props && kt.props.snooze;
+  const first = (c.title || 'them').split(' ')[0];
+  let line;
+  if (!every) line = `No nudges for ${esc(first)} yet. Choose how often you’d like to be in touch.`;
+  else { const n = snooze ? daysBetween(todayISO(), snooze) : null; line = `${last ? 'You were last in touch ' + esc(kitWhen(last)) : 'You haven’t noted being in touch yet'}. ${n == null ? '' : n <= 1 ? 'A good moment to say hello.' : 'Next nudge ' + cvDueText(snooze) + '.'}`; }
+  const freqs = CV_FREQ.map(([v, l]) => `<span class="cv-freq${every === v ? ' on' : ''}" data-cv-freq="${v}">${l}</span>`).join('');
+  return `<div class="cv-keep">
+    <p class="cv-keep-line">${line}</p>
+    <div class="cv-keep-row"><div class="cv-freqs">${freqs}</div>${every ? '<button class="cv-touched" data-cv-touched>I’ve just been in touch</button>' : ''}</div>
+    ${every ? `<label class="cv-last"><span class="cv-last-l">Last in touch</span>${dateFieldHtml('kit-last', last || '')}${last ? `<span class="cv-last-ago">${esc(kitWhen(last))}</span>` : ''}</label>` : ''}
+  </div>`;
+}
+function cvFold(c, key, title, hint, bodyHtml) {
+  const open = !!cvState().folds[key];
+  return `<section class="cv-sec"><div class="cv-sec-h" data-cv-fold="${key}" role="button" tabindex="0"><span class="cv-sec-t">${esc(title)}</span>${!open && hint ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${bodyHtml()}</div>` : ''}</section>`;
+}
+function contactCardInner(c) {
+  const p = c.props || {};
+  const spaces = blockAreas(c).map((id) => (areaById(id) || {}).title).filter(Boolean);
+  const firstEmail = contactEmails(p)[0];
+  const fr = firstEmail ? (((state.friends && state.friends.friends) || []).find((f) => (f.email || '').toLowerCase() === firstEmail.toLowerCase())) : null;
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const here = fr && onSet.has(fr.id);
+  const presence = fr ? `<span class="cv-pres"><span class="cv-pres-dot${here ? ' on' : ''}"></span>On Koyeba · ${here ? 'here now' : 'away'}</span>` : '';
+  // Coming up: next birthday.
+  let bday = '';
+  if (p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)) {
+    const [by, bm, bd] = p.birthday.split('-').map(Number); const t = new Date(); let nx = new Date(t.getFullYear(), bm - 1, bd); if (nx < new Date(t.getFullYear(), t.getMonth(), t.getDate())) nx.setFullYear(nx.getFullYear() + 1);
+    const days = Math.round((nx - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5); const turns = nx.getFullYear() - by;
+    bday = `<div class="cv-coming"><span class="cv-coming-l">Coming up</span><span class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</span></div>`;
+  }
+  const editing = !!(state.contact_open && state.contact_open.editDetails);
+  const detailsBody = () => editing
+    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div></div>`
+    : `<div class="cc-facts">${contactDetailsView(c, p)}</div><button type="button" class="cv-edit" data-cc-edit-details>Edit details</button>`;
+  return `
+    <div class="cv-card-head">
+      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact${spaces[0] ? ' · ' + esc(spaces[0]) : ''}</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}">${p.starred ? '★' : '☆'}</button></div>
+      <h1 class="cv-name"><textarea class="cv-name-in" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea></h1>
+      <div class="cv-head-meta">${presence}${spaces.length ? `<span class="cv-spaces">In ${esc(spaces.join(', '))}</span>` : ''}</div>
+      <div class="cv-acts">${contactActionsHtml(c, p)}</div>
+    </div>
+    ${cvKeepBand(c)}
+    ${bday}
+    ${cvFold(c, 'details', 'Details', contactEmails(p).map(() => 'email').concat(contactPhones(p).length ? ['phone'] : [], p.birthday ? ['birthday'] : []).join(' · ') || 'Nothing saved yet', detailsBody)}
+    ${cvFold(c, 'together', 'Together', 'Messages, events and notes', () => contactBoxesHtml(c))}
+    ${cvFold(c, 'notes', 'Notes to self', (c.body || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 60) || 'Nothing written', () => notesSection(c.body, 'contact', c.id, false, ''))}
+    ${cvFold(c, 'spaces', 'Spaces and settings', spaces.join(' · ') || 'No spaces', () => `<div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div><div class="cv-settings-acts"><button class="cv-del" data-del-contact="${c.id}">Delete contact…</button></div>`)}`;
 }
 // Groups on the contact card: current groups as removable chips, plus a picker
 // to add one (or make a new one). The universal, tap-friendly path (drag-drop
@@ -23721,6 +23780,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-area-q]')) { if (state.area_open) { state.area_open.q = e.target.value; if ((e.target.value || '').trim()) state.area_open.toolTile = 'pages'; renderAreaKeepQ(); } return; }
   if (e.target && e.target.matches && e.target.matches('#mp-q')) { if (state.mp) { state.mp.q = e.target.value; mpRenderList(); } return; }
+  if (e.target && e.target.matches && e.target.matches('#cv-q')) { cvState().q = e.target.value; renderContacts(); const el = document.getElementById('cv-q'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } return; }
   if (e.target && e.target.matches && e.target.matches('[data-conn-q]')) { connSearch(e.target.value); return; }
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
   if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
@@ -24472,6 +24532,13 @@ document.addEventListener('click', (e) => {
       else if (key === 'remind') patch = { remind: val };
       if (patch) { Object.assign(gp(state.goal_open.goal), patch); patchGoal(gid, patch, true); renderGoalCard(); } return; } }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
+  // §34 Contacts two-column
+  if (t.closest('[data-cv-new]')) { cvNewContact(); return; }
+  { const cvo = t.closest('[data-cv-open]'); if (cvo) { cvSelect(cvo.dataset.cvOpen); return; } }
+  { const cvv = t.closest('[data-cv-view]'); if (cvv) { cvState().view = cvv.dataset.cvView; renderContacts(); return; } }
+  { const cvf = t.closest('[data-cv-fold]'); if (cvf) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
+  if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }
+  { const cvfr = t.closest('[data-cv-freq]'); if (cvfr) { const v = cvfr.dataset.cvFreq; if (v) kitSetEvery(v); else kitToggle(false); return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
   { const cpr = t.closest('[data-contact-photo-rm]'); if (cpr) { e.preventDefault(); e.stopPropagation(); contactRemovePhoto(); return; } }
   if (t.closest('[data-self-hide]')) { try { localStorage.setItem('life.contacts.selfHidden', '1'); } catch {} renderContacts(); return; }
