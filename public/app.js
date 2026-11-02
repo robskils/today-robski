@@ -293,17 +293,14 @@ document.addEventListener('keydown', (ev) => {
   if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
   ev.preventDefault(); navBack();
 });
-// §20 Notepad: ⌘; toggles it, Esc closes it, and the line keys (↵ / Backspace /
-// ↑ / ↓) are handled per textarea; input autosaves; "Set down →" fires on
-// mousedown so it beats the textarea blur; the trigger / Close / Undo are clicks.
+// §31 Notepad: it lives inside Set something down now (second mode). ⌘J (and the
+// old ⌘;) open the drawer in Notepad; Esc folds it away. The floating popover is
+// gone - anything with data-notepad-open opens the drawer in Notepad instead.
 document.addEventListener('keydown', (ev) => {
-  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && ev.key === ';') { ev.preventDefault(); notepadToggle(); return; }
-  if (ev.key === 'Escape' && notepadState().open) { ev.preventDefault(); notepadClose(); return; }
-  const el = ev.target; if (el && el.matches && el.matches('#notepad-root [data-pad-id]')) notepadKey(ev, el.dataset.padId);
+  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === 'j' || ev.key === 'J' || ev.key === ';')) { ev.preventDefault(); const c = capState(); capSetMode('pad'); c.open = true; renderCapBar(true); return; }
+  if (ev.key === 'Escape' && capState().open && !document.getElementById('flyer')) { ev.preventDefault(); capCancel(); return; }
 });
-document.addEventListener('input', (ev) => { const el = ev.target; if (el && el.matches && el.matches('#notepad-root [data-pad-id]')) { notepadInput(el.dataset.padId, el.value); el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; const line = el.closest('.np-line'); if (line) line.classList.toggle('np-empty', !el.value.trim()); } }, true);
-document.addEventListener('mousedown', (ev) => { const t = ev.target; const sd = t.closest && t.closest('[data-pad-send]'); if (sd) { ev.preventDefault(); notepadSetDown(sd.dataset.padSend); } });
-document.addEventListener('click', (ev) => { const t = ev.target; if (!t.closest) return; if (t.closest('[data-notepad-open]')) { ev.preventDefault(); notepadToggle(); return; } if (t.closest('[data-notepad-close]')) { ev.preventDefault(); notepadClose(); return; } if (t.closest('[data-pad-undo]')) { ev.preventDefault(); notepadUndo(); return; } });
+document.addEventListener('click', (ev) => { const t = ev.target; if (!t.closest) return; if (t.closest('[data-notepad-open]')) { ev.preventDefault(); const c = capState(); capSetMode('pad'); c.open = true; renderCapBar(true); return; } });
 // §18 Side by side: shift-click opens an item beside (caught in the capture
 // phase, before the normal open); the divider resizes; Esc or Fold away closes.
 document.addEventListener('click', (ev) => {
@@ -352,7 +349,7 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && docume
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
 document.addEventListener('keydown', (ev) => {
   if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === '.' || ev.code === 'Period')) {
-    if (!state.me) return; ev.preventDefault(); const c = capState(); c.open = !c.open; renderCapBar(true);
+    if (!state.me) return; ev.preventDefault(); const c = capState(); if (c.open && c.mode === 'set') { c.open = false; } else { capSetMode('set'); c.open = true; } renderCapBar(true);
   } else if (ev.key === 'Escape' && state.cap && state.cap.open) { ev.preventDefault(); capCancel(); }
 });
 document.addEventListener('paste', (ev) => {
@@ -5269,7 +5266,7 @@ function navGroupsHtml(v) {
       <div class="knav-crumb">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
-        <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Find <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
+        <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
     </div>`;
@@ -5313,7 +5310,7 @@ function navGroupsHtml(v) {
     </div>`).join('');
     const empty = q && sections.length === 0 ? `<div class="knav-find-empty">Nothing by that name yet.</div>` : '';
     find = `<div class="knav-find">
-      <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Find anything" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
+      <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Search" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
       ${secHtml}${empty}
     </div>`;
   }
@@ -5325,7 +5322,7 @@ function navGroupsHtml(v) {
       <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
     </div>`).join('');
     contents = `<div class="knav-contents">
-      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to find</span></div>
+      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to search</span></div>
       <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
@@ -5341,7 +5338,7 @@ function navGroupsHtml(v) {
   const bottom = `<div class="knav-bottom">
       <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Menu</button>
       <button class="knav-b-set" data-cap-open title="Set something down">+</button>
-      <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Find${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
+      <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Search${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
     </div>`;
   return `${header}${sheet}${find}${contents}${bottom}`;
 }
@@ -7355,7 +7352,8 @@ function homeLineEveningHtml() {
 // Reference: design/koyeba/Koyeba App.dc.html. (Robin, 2026-10-31.)
 const CAP_WD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const CAP_TYPES = ['Event', 'Task', 'Note', 'Spend'];
-function capState() { state.cap = state.cap || { open: false, text: '', ov: {}, rec: false, recT: 0 }; return state.cap; }
+function capState() { if (!state.cap) { let mode = 'set'; try { const m = localStorage.getItem('life.cap.mode'); if (m === 'set' || m === 'pad') mode = m; } catch {} state.cap = { open: false, text: '', kind: null, ans: {}, rec: false, recT: 0, mode }; } return state.cap; }
+function capSetMode(m) { const c = capState(); c.mode = m; try { localStorage.setItem('life.cap.mode', m); } catch {} if (m === 'pad' && notepadState().lines == null) notepadLoad(); }
 function capNextWeekday(wdIdx, next) {
   const now = new Date(); let add = (wdIdx - now.getDay() + 7) % 7; if (next) add += 7;
   const d = new Date(now); d.setDate(now.getDate() + add); return d;
@@ -7504,6 +7502,17 @@ function capReadoutHtml() {
   const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? 'Gold lines say where each detail came from. Tap any to change it.' : 'Not sure what this is - choose a kind above, or just set it down.';
   return `${kindRow}${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
 }
+// §31 Notepad mode: a plain scratch page inside the drawer. Never parsed or
+// filed. Its text is the existing Notepad's lines, joined; typing saves back.
+function capPadText() { return (notepadState().lines || []).map((l) => l.text || '').join('\n'); }
+function capPadBodyHtml() {
+  const np = notepadState();
+  if (np.lines == null) { notepadLoad(); }
+  const note = np.savedAt ? 'Kept as you write · just now' : 'Kept as you write';
+  return `<textarea id="cap-pad" class="cap-pad" rows="7" placeholder="Jot anything. Nothing is filed - it just stays here." spellcheck="true">${esc(capPadText())}</textarea>
+    <div class="cap-pad-foot"><span class="cap-pad-note">${esc(note)}</span><span class="cap-pad-link" data-cap-pad-set role="button" tabindex="0">Set the selected line down →</span><span class="cap-pad-link cap-pad-clear" data-cap-pad-clear role="button" tabindex="0">Clear the page</span></div>`;
+}
+function capPadSave(v) { const np = notepadState(); np.lines = String(v || '').split('\n').map((t, i) => ({ id: 'p' + i, text: t, done: null })); np.savedAt = Date.now(); notepadSave(); }
 function capRecHtml() {
   const c = capState();
   const bars = Array.from({ length: 40 }, (_, i) => `<span class="cap-wave" style="height:${18 + Math.round(60 * Math.abs(Math.sin(Date.now() / 300 + i / 3)))}%"></span>`).join('');
@@ -7517,7 +7526,7 @@ function renderCapBar(force) {
   let root = document.getElementById('cap-root');
   if (!root) { root = document.createElement('div'); root.id = 'cap-root'; document.body.appendChild(root); }
   const c = capState();
-  const sig = JSON.stringify([c.open, c.rec, c.ov, (c.text || '').length > 0]);
+  const sig = JSON.stringify([c.open, c.rec, c.mode, (c.text || '').length > 0]);
   if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
   root.dataset.sig = sig;
   if (!c.open) {
@@ -7525,12 +7534,21 @@ function renderCapBar(force) {
     return;
   }
   root.className = 'cap-open';
-  root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set it down">
-    <div class="cap-dh"><span class="cap-rule"></span><span class="cap-eyebrow">Set it down</span><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
-    ${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}
-    <div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>
+  const modeTabs = [['set', 'Set down', '⌘.'], ['pad', 'Notepad', '⌘J']].map(([id, label, key]) => `<span class="cap-mode${c.mode === id ? ' on' : ''}" data-cap-mode="${id}" role="button" tabindex="0">${label}<span class="cap-mode-k">${esc(PK(key))}</span></span>`).join('');
+  const bodyHtml = c.mode === 'pad'
+    ? capPadBodyHtml()
+    : `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
+  root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
+    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
+    ${bodyHtml}
   </div>`;
-  if (!c.rec) {
+  if (c.mode === 'pad') {
+    const p = document.getElementById('cap-pad');
+    if (p) {
+      p.addEventListener('input', () => { capPadSave(p.value); });
+      setTimeout(() => { p.focus(); const n = p.value.length; try { p.setSelectionRange(n, n); } catch {} }, 60);
+    }
+  } else if (!c.rec) {
     const i = document.getElementById('cap-input');
     if (i) {
       i.addEventListener('input', () => { const cc = capState(); cc.text = i.value; cc.kind = null; cc.ans = {}; capGrow(i); updateCapReadout(); });
@@ -7622,8 +7640,8 @@ function notepadLoad() {
   api('/api/kv/notepad').then((r) => {
     let lines = null; if (r && r.value) { try { lines = JSON.parse(r.value); } catch {} }
     if (!Array.isArray(lines)) { const old = (state.home && state.home.notepad) || ''; lines = old ? old.split(/\n/).map((t, i) => ({ id: 'm' + i, text: t, done: null })) : []; }
-    np.lines = lines; renderNotepad();
-  }).catch(() => { np.lines = np.lines || []; renderNotepad(); });
+    np.lines = lines; if (capState().open && capState().mode === 'pad') renderCapBar(true);
+  }).catch(() => { np.lines = np.lines || []; if (capState().open && capState().mode === 'pad') renderCapBar(true); });
 }
 function notepadLines() { const np = notepadState(); if (!Array.isArray(np.lines)) np.lines = []; const last = np.lines[np.lines.length - 1]; if (!last || last.text || last.done) np.lines.push({ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), text: '', done: null }); return np.lines; }
 function notepadSave() { const np = notepadState(); const keep = (np.lines || []).filter((l) => (l.text && l.text.trim()) || l.done); clearTimeout(np._t); np._t = setTimeout(() => { api('/api/kv/notepad', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keep) }) }).catch(() => {}); }, 600); np.savedAt = Date.now(); }
@@ -7662,24 +7680,10 @@ async function notepadUndo() {
   if (l) { try { if (l.itemId && l.itemKind === 'event') await api('/api/events/' + l.itemId, { method: 'DELETE' }).catch(() => {}); else if (l.itemId) await api('/api/blocks/' + l.itemId, { method: 'DELETE' }).catch(() => {}); } catch {} l.done = null; l.itemId = null; l.itemKind = null; notepadSave(); }
   np.toast = null; renderNotepad(); capRefreshHome();
 }
-function renderNotepad() {
-  if (!state.me || document.getElementById('flyer') || (state.view && /^(onboarding|signin|welcome)$/.test(state.view.type || ''))) { const r = document.getElementById('notepad-root'); if (r) r.remove(); return; }
-  const np = notepadState();
-  if (np.lines == null) { notepadLoad(); return; }
-  const live = notepadLiveCount();
-  const open = np.open;
-  const lines = open ? notepadLines() : (np.lines || []);
-  const popover = open ? `<div class="np-scrim" data-notepad-close></div>
-    <div class="np-pop" role="dialog" aria-label="Notepad">
-      <div class="np-head"><span class="np-title">Notepad</span><span class="np-saved">${np.savedAt ? 'Kept · just now' : 'Kept'}</span><button class="np-close" data-notepad-close>Close · Esc</button></div>
-      <div class="np-list">${lines.map((l, i) => `<div class="np-line${l.done ? ' np-done' : ''}${(l.text && l.text.trim()) ? '' : ' np-empty'}"><textarea class="np-ta" rows="1" data-pad-id="${l.id}" ${l.done ? 'readonly' : ''} placeholder="${(i === lines.length - 1 && !l.done) ? 'Write anything…' : ''}">${esc(l.text || '')}</textarea>${l.done ? `<span class="np-where">→ ${esc(l.done)}</span>` : `<button class="np-send" data-pad-send="${l.id}" tabindex="-1">Set down →</button>`}</div>`).join('')}</div>
-      <div class="np-foot">Never sorted, never tidied. ↵ for a new line. Send any line on with “Set down →”.</div>
-    </div>` : '';
-  const toastHtml = np.toast ? `<div class="np-toast"><span>${esc(np.toast)}</span><button class="np-undo" data-pad-undo>Undo</button></div>` : '';
-  const trigger = `<button class="np-trigger${open ? ' on' : ''}" data-notepad-open title="Notepad (⌘ ;)"><span class="np-trig-t">Notepad</span>${live ? `<span class="np-trig-c">${live}</span>` : ''}</button>`;
-  notepadRoot().innerHTML = `${popover}${toastHtml}${trigger}`;
-  if (open) { notepadGrow(); const fid = np._focusId; np._focusId = null; if (fid) setTimeout(() => notepadFocus(fid), 15); }
-}
+// §31: the floating Notepad popover is gone - Notepad is a mode inside Set
+// something down now. This just clears any leftover root; the data lives on in
+// notepadState/notepadLoad/notepadSave, used by the drawer's Notepad mode.
+function renderNotepad() { const r = document.getElementById('notepad-root'); if (r) r.remove(); }
 // ── §18 Side by side: a second, resizable pane (v1) ───────────────────────
 // Opt-in and off by default - single-pane use is untouched. Shift-click any
 // item (or an open email's "Make … beside") opens it in a second pane beside the
@@ -23754,6 +23758,9 @@ document.addEventListener('click', (e) => {
   { const kd = t.closest('[data-cap-kind]'); if (kd) { const c = capState(); const id = kd.dataset.capKind; c.kind = c.kind === id ? null : id; updateCapReadout(); return; } }
   { const aq = t.closest('[data-cap-askq]'); if (aq) { const c = capState(); c.kind = aq.dataset.capAskq; updateCapReadout(); return; } }
   { const pk = t.closest('[data-cap-pick]'); if (pk) { const c = capState(); const s = pk.dataset.capPick; const i = s.indexOf(':'); c.ans = c.ans || {}; c.ans[s.slice(0, i)] = s.slice(i + 1); updateCapReadout(); return; } }
+  { const md = t.closest('[data-cap-mode]'); if (md) { capSetMode(md.dataset.capMode); renderCapBar(true); return; } }
+  { const ps = t.closest('[data-cap-pad-set]'); if (ps) { const line = (capPadText().split('\n').find((l) => l.trim()) || '').trim(); const c = capState(); c.text = line; c.kind = null; c.ans = {}; capSetMode('set'); renderCapBar(true); return; } }
+  { const pc = t.closest('[data-cap-pad-clear]'); if (pc) { uiConfirm('Clear the whole notepad page? This can\'t be undone.', { danger: true, okLabel: 'Clear the page' }).then((ok) => { if (ok) { const np = notepadState(); np.lines = []; np.savedAt = Date.now(); notepadSave(); renderCapBar(true); } }); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-import-run]')) { importRun(); return; }
