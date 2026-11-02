@@ -18,23 +18,19 @@ Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole l
 7. **No full-width buttons.** Buttons are small: Jost 500, 11px, uppercase, 0.22em tracking, padding `11px 22px`.
 8. **Large, legible text.** Body text is never under 13px; list rows are 15–17px.
 9. **No icon libraries and no emoji.** Unicode glyphs only: `+ − → ✓ ✕ ⌘ · ‹ › ▶ ▼ ⌄`.
-10. **Type:** Cormorant Garamond 300 for anything that speaks (headings, names, numbers, quotes); Jost for anything that labels. Eyebrows are Jost 500, 11px, uppercase, 0.28em tracking, in gold text, after a 28×1px gold rule.
+10. **Type is system 1a (§59).** Cormorant Garamond **500** for display only - page titles, section titles (30px), an opened item's title, big readings and glyphs. Cormorant **300 italic** only for the quote of the day and one-line reading texts. **Jost does all the rest**, in five levels: Item 17-18/500 · Body 16-16.5/1.65 · Meta 14/muted · Label 11/600 caps · the sender/person over an item 15/600. **Never set list rows, body or meta in Cormorant, and never Cormorant 300 upright.** Emails and other people's words go on **white paper in Source Serif 4**. Eyebrows are Jost 500, 11px, uppercase, 0.28em tracking, gold, after a 28×1px gold rule.
 11. **Connections stay subtle:** an italic Cormorant line, a gold dot, a Roman numeral for the Space. Never connector lines or "linked" badges.
 12. **Night mode is deep forest green.** Never blue-grey, navy or black.
 13. **Use the tokens** (`--k-bg`, `--k-panel`, `--k-soft`, `--k-ink`, `--k-mute`, `--k-line`, `--k-gold`, `--k-goldt`, `--k-deep`, `--k-ondeep`). Their values for both themes are in the README, §3. Don't hard-code new colours.
 14. **No new visual elements.** Build anything new from the existing parts: folding sections, a ledger of Cormorant numbers, keyline rows, Space numerals, and gold only where something needs you.
 15. **Eyebrow above the grid (two-column bands).** In a two-column section the eyebrow - the 28×1px gold rule and its Jost label - sits ABOVE the grid, full-width, never inside the left column. Both columns then begin level at the heading or lead, so the right column aligns with the heading (e.g. "Yours. Securely."), not with the eyebrow above it. Top-aligned two-column bands only; centred bands are exempt. (Robin's house style, 2026-10-31.)
 
-## Type — exact, no substitutes
-- **Only two fonts exist:** Cormorant Garamond and Jost, self-hosted from `design/koyeba/fonts/` with `@font-face`. **Never** Inter, Fraunces, Georgia, system-ui or a Google Fonts link. If a font fails to load, fix the `@font-face`; don't swap the font.
-- **Weights:** Cormorant 300 (and 300 italic), plus 500 for the wordmark only. Jost 400, 500 and 600. Nothing else, and no faux bold.
-- **Italic is allowed in only four places,** always Cormorant 300 italic:
-  1. the one gold word in a heading ("Good evening, *Robin.*");
-  2. Roman numerals for Spaces (I, II, III);
-  3. quiet connection lines ("Already a task: …", "Nothing yet. Just this.");
-  4. quotations and the daily question.
-- **Never italicise Jost. Never italicise whole headings, buttons, labels or body text.** If the prototype isn't italic there, you don't make it italic.
-- After any UI change, check in DevTools (Computed → Rendered Fonts) that the text really is rendering in Cormorant Garamond or Jost.
+## Type — three fonts, self-hosted (type system 1a, §59)
+- **Three fonts, self-hosted from `public/fonts/` with `@font-face` in `public/koyeba.css`:** Cormorant Garamond, Jost, and **Source Serif 4** (someone else's words, on white paper - email bodies, opened messages, shared notes; token `--k-read`). The prototype loads Source Serif from Google Fonts; we self-host it because the app CSP blocks the link. **Never** Inter, Fraunces, Georgia (except as the Source Serif fallback stack), system-ui or a Google Fonts link. If a font fails to load, fix the `@font-face`; don't swap the font.
+- **Weights:** Cormorant 300, 300 italic and 500. Jost 400, 500 and 600. Source Serif 4 400 (+ the 600 axis) and 400 italic. No faux bold.
+- **Cormorant 500** is display only (titles, section headings, opened-item titles, big readings/glyphs, the wordmark). **Cormorant 300 italic** is only for the quote of the day and one-line reading texts, plus the one gold word in a heading, Space Roman numerals, and quiet connection lines. **Never Cormorant 300 upright, and never Cormorant for list rows, body or meta** - that's Jost (§59).
+- **Never italicise Jost or Source Serif.** If the prototype isn't italic there, you don't make it italic.
+- After any UI change, check in DevTools (Computed → Rendered Fonts) that text is rendering in the intended face (Cormorant, Jost, or Source Serif 4 for others' words).
 
 ## When unsure
 - **Don't use your initiative on look or wording.** Find the nearest example in `Koyeba App.dc.html` or `Koyeba Brand Pack.dc.html` and copy it exactly.

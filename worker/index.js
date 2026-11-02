@@ -3385,17 +3385,23 @@ async function connectList(request, env, json) {
 // to compute live; the page shows it as counts and an "how active" indicator.
 async function areasSummary(request, env) {
   const { results } = await env.DB.prepare(
-    "SELECT kind, props, updated_at FROM blocks WHERE user_id=? AND archived=0 AND kind IN ('task','goal','note','table','contact','bookmark','journal','bucket')",
+    "SELECT kind, title, props, updated_at FROM blocks WHERE user_id=? AND archived=0 AND kind IN ('task','goal','note','table','contact','bookmark','journal','bucket','event')",
   ).bind(env.uid).all().catch(() => ({ results: [] }));
   const sum = {};
-  const S = (aid) => sum[aid] || (sum[aid] = { tasks: 0, goals: 0, notes: 0, contacts: 0, saved: 0, reflections: 0, bucket: 0, members: 0, last: 0 });
+  // `latest` is the single most-recent item in the Space (§61: "the latest
+  // thing", shown as "{Kind} · {title}" on Today). Mail lives in IMAP, not in
+  // blocks, so it can't appear here; everything stored as a block can.
+  const S = (aid) => sum[aid] || (sum[aid] = { tasks: 0, goals: 0, notes: 0, contacts: 0, saved: 0, reflections: 0, bucket: 0, members: 0, last: 0, latest: null });
+  const KLAB = { task: 'Task', goal: 'Goal', note: 'Note', table: 'Note', contact: 'Contact', bookmark: 'Saved', journal: 'Reflection', bucket: 'Bucket', event: 'Event' };
   for (const r of results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     const areas = (Array.isArray(p.areas) && p.areas.length) ? p.areas : (p.area ? [p.area] : []);
     if (!areas.length) continue;
     const when = Date.parse(r.updated_at || '') || 0;
+    const kitTask = r.kind === 'task' && p.kit;   // keep-in-touch nudges are never "the latest thing"
     for (const aid of areas) {
       const s = S(aid); if (when > s.last) s.last = when;
+      if (!kitTask && (!s.latest || when > s.latest.when)) s.latest = { kind: KLAB[r.kind] || '', title: String(r.title || '').slice(0, 120), when };
       if (r.kind === 'task') { if (!p.done && !p.kit) s.tasks++; }
       else if (r.kind === 'goal') { if ((p.status || 'active') === 'active') s.goals++; }
       else if (r.kind === 'note' || r.kind === 'table') s.notes++;

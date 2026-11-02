@@ -8481,11 +8481,14 @@ function homeSpacesAsideHtml() {
   // best-effort client-side: the top open task, else the deadline/activity line.
   // A Space with nothing at all is hidden.
   const scored2 = scored.map((x) => {
-    const top = homeSpaceItems(x.a)[0] || null;
-    const item = top ? { kind: 'Task', text: top.t }
-      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line } : null;
     const s = sum[x.a.id] || {};
-    const hasAnything = !!top || !!s.last || (s.tasks | 0) > 0 || (s.notes | 0) > 0 || (s.goals | 0) > 0;
+    const top = homeSpaceItems(x.a)[0] || null;
+    // §61: the single latest item - from the summary (any block kind, including
+    // events), falling back to the top open task or the deadline/activity line.
+    const item = (s.latest && s.latest.title) ? { kind: s.latest.kind, text: s.latest.title }
+      : top ? { kind: 'Task', text: top.t }
+      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line } : null;
+    const hasAnything = !!item || !!s.last || (s.tasks | 0) > 0 || (s.notes | 0) > 0 || (s.goals | 0) > 0;
     return { ...x, item, hasAnything };
   }).filter((x) => x.hasAnything);
   const need = scored2.filter((x) => x.needs).length;
