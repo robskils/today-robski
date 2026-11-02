@@ -18600,25 +18600,16 @@ function fmtBirthday(iso) {
 // The Details block read-only: the facts as text and tappable links. Phone dials,
 // email composes, the address carries its Maps links. An Edit flips to the form.
 function contactDetailsView(c, p) {
-  // The value is a link (mailto/tel) but the row is a plain div, so a tap on the
-  // row's copy button never fires the link. Copy sits quietly to the right of
-  // each contactable detail - click to copy the raw value. (Robin.)
-  const COPY_IC = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>';
-  const copyBtn = (val) => val ? `<button type="button" class="cc-copy" data-copy-val="${esc(val)}" title="Copy" aria-label="Copy">${COPY_IC}</button>` : '';
-  const fact = (icon, inner, href, cls, copyVal) => {
-    const val = href
-      ? `<a class="cc-fact-link" href="${href}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}>${inner}</a>`
-      : inner;
-    return `<div class="cc-fact ${cls || ''}"><span class="cc-fact-ic">${icon}</span><span class="cc-fact-v">${val}</span>${copyBtn(copyVal)}</div>`;
-  };
+  // §48: an uppercase label, the value, and Copy or Map as text. No icon tiles,
+  // no boxed copy buttons. Birthday has its own section, so it's not repeated.
+  const copy = (val) => val ? `<button type="button" class="cvx-detail-act" data-copy-val="${esc(val)}">Copy</button>` : '';
+  const row = (label, valueHtml, actions) => `<div class="cvx-detail"><span class="cvx-detail-l">${esc(label)}</span><span class="cvx-detail-v">${valueHtml}</span><span class="cvx-detail-acts">${actions || ''}</span></div>`;
   const rows = [];
-  contactEmails(p).forEach((em) => rows.push(fact(CICO.mail, esc(em), 'mailto:' + encodeURIComponent(em).replace(/%40/g, '@'), '', em)));
-  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(fact(CICO.call, esc(disp), 'tel:' + esc(tel), '', disp)); });
-  if (p.birthday) rows.push(fact(CICO.cake, esc(fmtBirthday(p.birthday))));
+  contactEmails(p).forEach((em) => rows.push(row('Email', `<a href="mailto:${encodeURIComponent(em).replace(/%40/g, '@')}">${esc(em)}</a>`, copy(em))));
+  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(row('Phone', `<a href="tel:${esc(tel)}">${esc(disp)}</a>`, copy(disp))); });
   const addrs = contactAddresses(p);
-  let body = rows.join('');
-  if (addrs.length) body += `<div class="cc-fact cc-fact-addr"><span class="cc-fact-ic">${CICO.map}</span><div class="cc-fact-v">${contactAddressViewBlocks(addrs)}</div>${copyBtn(formatAddress(addrs[0]))}</div>`;
-  return body || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone, birthday or an address.</p>';
+  if (addrs.length) { const a = formatAddress(addrs[0]); rows.push(row('Address', contactAddressViewBlocks(addrs), `<a class="cvx-detail-act" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}" target="_blank" rel="noopener noreferrer">Map</a>${copy(a)}`)); }
+  return rows.join('') || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone or an address.</p>';
 }
 // Gather every address row on the open card into the array + the mirrored primary.
 function readCardAddresses() {
@@ -18821,7 +18812,7 @@ function renderKoyebaPeople() {
     ${friendsPaneHtml()}`;
 }
 // ── §34 Contacts + Keep in touch: one two-column 100vh page ────────────────
-function cvState() { if (!state.cv) state.cv = { view: 'keep', q: '', folds: { details: true, together: true, notes: false, spaces: false } }; return state.cv; }
+function cvState() { if (!state.cv) state.cv = { cur: null, q: '', kitOpen: false, folds: { details: true } }; return state.cv; }
 // The usual birthday reminder lead (days before), set in Settings › Notifications.
 // Default: a day before (§42). 'off' switches reminders off everywhere unless a
 // contact sets its own. Mirrors the worker's resolution in homeAlerts.
@@ -18849,7 +18840,8 @@ async function cvLoadKit() {
 // paint the selection at once. Shared by list taps and external deep-links.
 async function cvSelect(id) {
   recordRecentContact(id);
-  cvState().cur = id;
+  const cv = cvState(); cv.cur = id; cv.folds = { details: true };   // each contact opens with Details first (§48)
+  try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {}
   if (state.view && state.view.type === 'contacts') renderContacts();
   const cached = (state.contacts || []).find((x) => String(x.id) === String(id)) || null;
   let full = cached, kt = null;
@@ -18859,81 +18851,124 @@ async function cvSelect(id) {
   if (state.view && state.view.type === 'contacts' && String(cvState().cur) === String(id)) renderContacts();
   loadContactLinks(id);
 }
-async function cvNewContact() {
+async function cvNewContact(name) {
   try {
-    const c = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: '', props: {} }) });
+    const c = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: name || '', props: {} }) });
     state.contacts = state.contacts || []; state.contacts.unshift(c);
     state.contact_open = { contact: c, kitTask: null, editDetails: true };
-    const cv = cvState(); cv.cur = c.id; cv.view = 'all';
+    const cv = cvState(); cv.cur = c.id; cv.q = '';
     renderContacts();
     setTimeout(() => { const el = document.getElementById('contactcard-name'); if (el) el.focus(); }, 40);
   } catch (e) { toast(e.message); }
 }
 const CV_FREQ = [['weekly', 'Every week'], ['fortnightly', 'Fortnight'], ['monthly', 'Month'], ['quarterly', 'Quarter'], ['', 'Off']];
 function cvDueText(snooze) { if (!snooze) return ''; const n = daysBetween(todayISO(), snooze); return n < 0 ? `overdue by ${-n} day${-n === 1 ? '' : 's'}` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`; }
+// §48: plain contacts first. A big search, then Starred and Recently-in-touch
+// card shelves, a quiet Keep-in-touch line, and everyone A-Z. A contact opens
+// on its own page (renderContactPage). No five-view bar, no two-column card.
+const CV_TITLES = /^(mr|mrs|ms|miss|mx|dr|sir|prof|rev|lord|lady|dame)\.?\s+/i;
+function cvSortName(n) { return String(n || '').replace(CV_TITLES, '').trim().toLowerCase(); }
+function cvInitials(n) { const parts = String(n || '').replace(CV_TITLES, '').trim().split(/\s+/).filter(Boolean); if (!parts.length) return '?'; return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase(); }
+function cvPlace(p) { const a = contactAddresses(p)[0]; return a ? (a.city || a.town || a.locality || '') : ''; }
+function cvPeople() {
+  const kitMap = state.cvKit || {};
+  const friendByEmail = {}; ((state.friends && state.friends.friends) || []).forEach((f) => { (f.email ? [f.email] : []).forEach((e) => { friendByEmail[String(e).toLowerCase()] = f; }); });
+  return (state.contacts || []).map((c) => {
+    const p = c.props || {}; const kit = kitMap[String(c.id)] || {};
+    const emails = contactEmails(p);
+    return { c, p, id: c.id, name: c.title || 'Unnamed', sortName: cvSortName(c.title), spaces: blockAreas(c).map((id) => (areaById(id) || {}).title).filter(Boolean), place: cvPlace(p), star: !!p.starred, photo: p.photo || '', email: emails[0] || '', every: p.kitEvery || kit.every || '', last: kit.last || '', snooze: kit.snooze || '', lastTs: Date.parse(kit.last || 0) || 0, recentTs: Date.parse(kit.last || c.updated_at || c.created_at || 0) || 0 };
+  });
+}
 function renderContacts() {
   const cv = cvState();
-  const kitMap = state.cvKit || {};
-  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
-  const friendByEmail = {}; ((state.friends && state.friends.friends) || []).forEach((f) => { (f.email ? [f.email] : []).forEach((e) => { friendByEmail[String(e).toLowerCase()] = f; }); });
-  const P = (state.contacts || []).map((c) => {
-    const p = c.props || {}; const kit = kitMap[String(c.id)] || {};
-    const emails = contactEmails(p); const phones = contactPhones(p);
-    const fr = emails.map((e) => friendByEmail[String(e).toLowerCase()]).find(Boolean) || null;
-    const onK = fr ? (onSet.has(fr.id) ? 1 : 2) : 0;   // 1 here now, 2 on Koyeba, 0 not
-    return { c, p, id: c.id, name: c.title || 'Unnamed', spaces: blockAreas(c).map((id) => (areaById(id) || {}).title).filter(Boolean), star: !!p.starred, email: emails[0] || '', phone: (phones[0] || {}), every: p.kitEvery || kit.every || '', last: kit.last || '', snooze: kit.snooze || '', onK, recentTs: Date.parse(kit.last || c.updated_at || c.created_at || 0) || 0 };
-  });
-  const ql = (cv.q || '').trim().toLowerCase();
-  const F = ql ? P.filter((x) => x.name.toLowerCase().includes(ql) || x.spaces.join(' ').toLowerCase().includes(ql) || (x.email || '').toLowerCase().includes(ql)) : P;
-  const counts = { keep: P.filter((x) => x.every && cvDueText(x.snooze) && daysBetween(todayISO(), x.snooze) <= 1).length, star: P.filter((x) => x.star).length, recent: P.filter((x) => x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000).length, onk: P.filter((x) => x.onK).length, all: P.length };
-  const VIEWS = [['keep', 'Keep in touch'], ['star', 'Starred'], ['recent', 'Recent'], ['onk', 'On Koyeba'], ['all', 'All']];
-  if (!VIEWS.some(([k]) => k === cv.view)) cv.view = 'keep';
-  const row = (x, right, rightGold, subOverride) => {
-    const sel = String(cv.cur) === String(x.id);
-    return `<button class="cv-row${sel ? ' sel' : ''}" data-cv-open="${x.id}"><span class="cv-row-sq${x.star ? ' on' : ''}"></span><span class="cv-row-main"><span class="cv-row-nm">${esc(x.name)}</span>${(subOverride || x.spaces.join(' · ')) ? `<span class="cv-row-sub">${esc(subOverride || x.spaces.join(' · '))}</span>` : ''}</span>${right ? `<span class="cv-row-r${rightGold ? ' gold' : ''}">${esc(right)}</span>` : ''}</button>`;
-  };
-  let groups = [];
-  if (cv.view === 'keep') {
-    const keep = F.filter((x) => x.every).map((x) => ({ x, n: x.snooze ? daysBetween(todayISO(), x.snooze) : 9999 })).sort((a, b) => a.n - b.n);
-    const now = keep.filter((k) => k.n <= 1), soon = keep.filter((k) => k.n > 1);
-    groups = [
-      now.length && { label: 'Now', items: now.map((k) => row(k.x, cvDueText(k.x.snooze), true, 'Last in touch ' + (k.x.last ? kitWhen(k.x.last) : 'not yet'))) },
-      soon.length && { label: 'Coming up', items: soon.map((k) => row(k.x, cvDueText(k.x.snooze), false, 'Last in touch ' + (k.x.last ? kitWhen(k.x.last) : 'not yet'))) },
-    ].filter(Boolean);
-    if (!keep.length) groups = [{ label: '', items: [], empty: 'No keep-in-touch set. Open anyone and choose how often.' }];
-  } else if (cv.view === 'star') {
-    groups = [{ label: 'Starred', items: F.filter((x) => x.star).map((x) => row(x, x.last ? kitWhen(x.last) : '')) }];
-  } else if (cv.view === 'recent') {
-    const wk = F.filter((x) => x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000).sort((a, b) => b.recentTs - a.recentTs);
-    const earlier = F.filter((x) => !(x.recentTs && (Date.now() - x.recentTs) <= 7 * 86400000)).sort((a, b) => b.recentTs - a.recentTs);
-    groups = [wk.length && { label: 'This week', items: wk.map((x) => row(x, x.last ? kitWhen(x.last) : '')) }, earlier.length && { label: 'Earlier', items: earlier.map((x) => row(x, x.last ? kitWhen(x.last) : '')) }].filter(Boolean);
-  } else if (cv.view === 'onk') {
-    const here = F.filter((x) => x.onK === 1), away = F.filter((x) => x.onK === 2);
-    groups = [here.length && { label: 'Here now', items: here.map((x) => row(x, 'here now', true)) }, away.length && { label: 'On Koyeba', items: away.map((x) => row(x, 'away')) }].filter(Boolean);
-    if (!here.length && !away.length) groups = [{ label: '', items: [], empty: 'None of your contacts are on Koyeba yet.' }];
+  if (cv.cur) { renderContactPage(); return; }
+  const P = cvPeople();
+  const q = (cv.q || '').trim(); const ql = q.toLowerCase();
+  const cardFor = (x) => `<button class="cvx-card" data-cv-open="${x.id}"><span class="cvx-ava${x.photo ? ' has-photo' : ''}"${x.photo ? ` style="background-image:url('${esc(x.photo)}')"` : ''}>${x.photo ? '' : esc(cvInitials(x.name))}${x.star ? '<span class="cvx-card-star"></span>' : ''}</span><span class="cvx-card-nm">${esc(x.name)}</span>${(x.spaces[0] || x.place) ? `<span class="cvx-card-sub">${esc([x.spaces[0], x.place].filter(Boolean).join(' · '))}</span>` : ''}</button>`;
+  let body = '';
+  if (q) {
+    const F = P.filter((x) => x.sortName.includes(ql) || x.name.toLowerCase().includes(ql) || x.spaces.join(' ').toLowerCase().includes(ql) || x.place.toLowerCase().includes(ql) || (x.email || '').toLowerCase().includes(ql)).sort((a, b) => a.sortName.localeCompare(b.sortName));
+    body = F.length
+      ? `<div class="cvx-results">${F.map((x) => `<button class="cvx-azrow" data-cv-open="${x.id}"><span class="cvx-az-nm">${esc(x.name)}</span>${x.spaces[0] ? `<span class="cvx-az-sp">${esc(x.spaces[0])}</span>` : ''}</button>`).join('')}</div>`
+      : `<div class="cvx-none"><p class="cvx-none-l">No one by that name.</p><button class="cvx-none-add" data-cv-new-named="${esc(q)}">Add “${esc(q)}” as a new contact</button></div>`;
   } else {
-    const by = {}; F.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((x) => { const L = (x.name[0] || '#').toUpperCase(); (by[L] = by[L] || []).push(x); });
-    groups = Object.keys(by).map((L) => ({ label: L, items: by[L].map((x) => row(x, x.onK ? 'on Koyeba' : '')) }));
+    const starred = P.filter((x) => x.star).sort((a, b) => a.sortName.localeCompare(b.sortName)).slice(0, 8);
+    const recent = P.filter((x) => x.recentTs).sort((a, b) => b.recentTs - a.recentTs).slice(0, 6);
+    const shelves = `${starred.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Starred</div><div class="cvx-cards">${starred.map(cardFor).join('')}</div></div>` : ''}${recent.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Recently in touch</div><div class="cvx-cards">${recent.map(cardFor).join('')}</div></div>` : ''}`;
+    // Keep in touch: one quiet line, only when someone is due.
+    const due = P.filter((x) => x.every && x.snooze && daysBetween(todayISO(), x.snooze) <= 1).sort((a, b) => daysBetween(todayISO(), a.snooze) - daysBetween(todayISO(), b.snooze));
+    const kitOpen = !!cv.kitOpen;
+    const kitLine = due.length ? `<div class="cvx-kit"><div class="cvx-kit-line" data-cv-kitline role="button" tabindex="0"><span class="cvx-kit-sq"></span><span class="cvx-kit-t">${due.length} ${due.length === 1 ? 'person' : 'people'} you wanted to keep up with ${due.length === 1 ? 'is' : 'are'} due.</span><span class="cvx-kit-see">${kitOpen ? 'Hide' : 'See who'}</span></div>${kitOpen ? `<div class="cvx-kit-list">${due.map((x) => `<button class="cvx-kit-row" data-cv-open="${x.id}"><span class="cvx-kit-nm">${esc(x.name)}</span><span class="cvx-kit-due">${esc(cvDueText(x.snooze))}</span><span class="cvx-kit-ago">Last in touch ${esc(x.last ? kitWhen(x.last) : 'not yet')}</span></button>`).join('')}</div>` : ''}</div>` : '';
+    // Everyone A-Z.
+    const by = {}; P.slice().sort((a, b) => a.sortName.localeCompare(b.sortName)).forEach((x) => { const L = (x.sortName[0] || '#').toUpperCase(); (by[L] = by[L] || []).push(x); });
+    const az = Object.keys(by).length ? `<div class="cvx-az-wrap"><div class="home-sub-eyebrow">Everyone</div><div class="cvx-az">${Object.keys(by).map((L) => `<div class="cvx-az-grp"><div class="cvx-az-letter">${esc(L)}</div>${by[L].map((x) => `<button class="cvx-azrow" data-cv-open="${x.id}"><span class="cvx-az-nm">${esc(x.name)}</span>${x.spaces[0] ? `<span class="cvx-az-sp">${esc(x.spaces[0])}</span>` : ''}</button>`).join('')}</div>`).join('')}</div></div>` : `<div class="cv-empty">No contacts yet. Add your first above.</div>`;
+    body = `${shelves}${kitLine}${az}`;
   }
-  const viewsBar = VIEWS.map(([k, l]) => `<button class="cv-v${cv.view === k ? ' on' : ''}" data-cv-view="${k}"><span class="cv-v-n">${counts[k]}</span><span class="cv-v-l">${l}</span></button>`).join('');
-  const keepHint = cv.view === 'keep' ? '<p class="cv-keep-hint">A quiet nudge when it has been too long. The clock restarts whenever you are in touch, by any means.</p>' : '';
-  const listBody = groups.length && groups.some((g) => g.items.length || g.empty) ? groups.map((g) => `${g.label ? `<div class="cv-grp-h"><span>${esc(g.label)}</span></div>` : ''}${g.items.length ? g.items.join('') : `<div class="cv-empty">${esc(g.empty || 'Nobody here.')}</div>`}`).join('') : `<div class="cv-empty">${ql ? 'No one matches.' : 'No contacts yet.'}</div>`;
-  const curContact = (state.contact_open && state.contact_open.contact && String(state.contact_open.contact.id) === String(cv.cur)) ? state.contact_open.contact : null;
-  const card = cv.cur ? (curContact ? contactCardInner(curContact) : '<div class="cv-loading">Loading…</div>') : '<div class="cv-pick">Pick someone.</div>';
   $('#pane').innerHTML = `
-    <div class="kwrap cv-page${cv.cur ? ' cv-has-cur' : ''}">
-      <div class="cv-list-col">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
-        <div class="cv-title-row"><h1 class="cv-title">Contacts</h1><span class="cv-new" data-cv-new>+ New</span><span class="cv-import" data-contact-import title="Import a vCard (.vcf) from Google, Outlook, iCloud or any address book">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
-        <div class="cv-search"><input class="cv-q" id="cv-q" type="search" placeholder="Look for a person…" value="${esc(cv.q || '')}" autocomplete="off"></div>
-        <div class="cv-views">${viewsBar}</div>
-        ${keepHint}
-        <div class="cv-list">${listBody}</div>
-      </div>
-      <div class="cv-card-col">${card}</div>
+    <div class="kwrap cvx-page">
+      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
+      <div class="cvx-titlerow"><h1 class="cvx-title">Contacts</h1><span class="cvx-count">${P.length}</span><span class="cvx-new" data-cv-new>+ New contact</span><span class="cvx-import" data-contact-import title="Import a vCard (.vcf)">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
+      <div class="cvx-searchrow"><input class="cvx-search" id="cv-q" type="search" placeholder="Search by name, place, email or Space" value="${esc(cv.q || '')}" autocomplete="off"></div>
+      ${body}
     </div>
     ${contactMenuHtml()}`;
-  if (cv.cur) autoGrowSoon($('#contactcard-name'));
+}
+// Keep-in-touch fold state is remembered per contact (§48): closed/Off by default.
+function cvKitFoldOpen(id) { try { return !!(JSON.parse(localStorage.getItem('life.cv.kitfold') || '{}'))[id]; } catch { return false; } }
+function cvKitFoldSet(id, open) { try { const m = JSON.parse(localStorage.getItem('life.cv.kitfold') || '{}'); if (open) m[id] = true; else delete m[id]; localStorage.setItem('life.cv.kitfold', JSON.stringify(m)); } catch {} }
+function cvKitSection(c) {
+  const p = c.props || {}; const kt = (state.contact_open && state.contact_open.kitTask) || null;
+  const every = p.kitEvery || (kt && kt.props && kt.props.repeat) || '';
+  const open = cvKitFoldOpen(c.id);
+  const first = esc((c.title || 'them').split(' ')[0]);
+  const hint = every ? ((CV_FREQ.find(([v]) => v === every) || [])[1] || 'On') : 'Off';
+  const body = every ? cvKeepBand(c) : `<div class="cv-kitoff"><p class="cv-kitoff-l">Off for ${first}. Koyeba won’t nudge you.</p><button class="cv-kiton" data-cv-kit-on>Keep in touch with ${first}</button></div>`;
+  return `<section class="cv-sec"><div class="cv-sec-h" data-cv-kitfold="${c.id}" role="button" tabindex="0"><span class="cv-sec-t">Keep in touch</span>${!open ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${body}</div>` : ''}</section>`;
+}
+function cvBirthdayHtml(c) {
+  const p = c.props || {};
+  if (!(p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday))) return `<div class="cv-coming-body"><button class="cv-addbday" data-cc-edit-details>Add a birthday</button></div>`;
+  const [by, bm, bd] = p.birthday.split('-').map(Number); const t = new Date(); let nx = new Date(t.getFullYear(), bm - 1, bd); if (nx < new Date(t.getFullYear(), t.getMonth(), t.getDate())) nx.setFullYear(nx.getFullYear() + 1);
+  const days = Math.round((nx - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5); const turns = nx.getFullYear() - by;
+  const usual = bdayUsual();
+  const cur = (p.bdayLead === 'off' || p.bdayLead === -1) ? 'off' : (p.bdayLead == null || p.bdayLead === '') ? usual : Number(p.bdayLead);
+  const opts = [[0, 'On the day'], [1, '1 day before'], [3, '3 days'], [7, 'A week'], ['off', 'Off']].map(([v, l]) => `<span class="cv-bl${cur === v ? ' on' : ''}" data-cc-bdaylead="${v}">${l}</span>`).join('');
+  const note = (p.bdayLead == null || p.bdayLead === '') ? 'your usual' : 'just for ' + esc((c.title || 'them').split(' ')[0]);
+  return `<div class="cv-coming-body"><div class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</div><div class="cv-remind"><span class="cv-remind-l">Remind me</span><span class="cv-bls">${opts}</span><span class="cv-remind-note">${note}</span></div></div>`;
+}
+function renderContactPage() {
+  const cv = cvState();
+  const c = (state.contact_open && state.contact_open.contact && String(state.contact_open.contact.id) === String(cv.cur)) ? state.contact_open.contact : null;
+  if (!c) { $('#pane').innerHTML = `<div class="kwrap cvx-cpage"><button class="cvx-back" data-cv-back>← Contacts</button><div class="cv-loading">Loading…</div></div>`; return; }
+  const p = c.props || {};
+  const spaces = blockAreas(c).map((id) => (areaById(id) || {}).title).filter(Boolean);
+  const place = cvPlace(p);
+  const inLine = [spaces.length ? 'In ' + spaces.join(', ') : '', place].filter(Boolean).join(' · ');
+  const editing = !!(state.contact_open && state.contact_open.editDetails);
+  const detailsBody = () => editing
+    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div></div>`
+    : `<div class="cc-facts">${contactDetailsView(c, p)}</div>`;
+  const fold = (key, title, hint, bodyHtml, openDefault) => {
+    const f = cvState().folds; if (!(key in f)) f[key] = openDefault;   // persist the default so the toggle flips the real state
+    const open = f[key];
+    return `<section class="cv-sec"><div class="cv-sec-h" data-cv-fold="${key}" role="button" tabindex="0"><span class="cv-sec-t">${esc(title)}</span>${!open && hint ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${bodyHtml()}</div>` : ''}</section>`;
+  };
+  $('#pane').innerHTML = `
+    <div class="kwrap cvx-cpage">
+      <div class="cvx-cback"><button class="cvx-back" data-cv-back>← Contacts</button><span class="cvx-back-sep">·</span><span class="cvx-back-nm">${esc(c.title || 'Contact')}</span></div>
+      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}"><span class="cv-star-sq"></span>${p.starred ? 'Starred' : 'Star'}</button></div>
+      <h1 class="cv-name"><textarea class="cv-name-in" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea></h1>
+      ${inLine ? `<div class="cvx-inline">${esc(inLine)}</div>` : ''}
+      <div class="cv-acts">${contactActionsHtml(c, p)}</div>
+      ${fold('details', 'Details', contactEmails(p).map(() => 'email').concat(contactPhones(p).length ? ['phone'] : []).join(' · ') || 'Nothing saved yet', detailsBody, true)}
+      ${fold('birthday', 'Birthday', p.birthday ? '' : 'None yet', () => cvBirthdayHtml(c), !!(p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)))}
+      ${fold('together', 'Together', 'Messages, events and notes', () => contactBoxesHtml(c), false)}
+      ${cvKitSection(c)}
+      ${fold('notes', 'Notes to self', (c.body || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 60) || 'Nothing written', () => notesSection(c.body, 'contact', c.id, false, ''), false)}
+      <div class="cvx-cfoot"><button class="cvx-foot-a" data-cc-edit-details>Edit details</button><button class="cvx-foot-a" data-cc-merge="${c.id}">Merge with…</button><button class="cvx-foot-a cvx-foot-del" data-del-contact="${c.id}">Delete contact…</button></div>
+      <div class="cvx-cfoot2"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div>
+    </div>`;
+  autoGrowSoon($('#contactcard-name'));
 }
 // Line the connect row's right edge (the Invite button) up with the right edge
 // of the "Search your contacts" box above it. The two rows carry different
@@ -25481,11 +25516,16 @@ document.addEventListener('click', (e) => {
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
   // §34 Contacts two-column
   if (t.closest('[data-cv-new]')) { cvNewContact(); return; }
+  { const cvn = t.closest('[data-cv-new-named]'); if (cvn) { cvNewContact(cvn.dataset.cvNewNamed); return; } }
+  if (t.closest('[data-cv-back]')) { const cv = cvState(); cv.cur = null; cv.folds = { details: true }; state.contact_open = null; renderContacts(); try { window.scrollTo(0, 0); document.querySelector('.main')?.scrollTo(0, 0); } catch {} return; }
+  if (t.closest('[data-cv-kitline]')) { const cv = cvState(); cv.kitOpen = !cv.kitOpen; renderContacts(); return; }
+  { const kf = t.closest('[data-cv-kitfold]'); if (kf) { const id = kf.dataset.cvKitfold; cvKitFoldSet(id, !cvKitFoldOpen(id)); renderContacts(); return; } }
+  if (t.closest('[data-cv-kit-on]')) { if (cvState().cur) cvKitFoldSet(cvState().cur, true); kitSetEvery('monthly'); return; }
+  if (t.closest('[data-cc-merge]')) { toast('Merging contacts is coming soon.'); return; }
   { const cvo = t.closest('[data-cv-open]'); if (cvo) { cvSelect(cvo.dataset.cvOpen); return; } }
-  { const cvv = t.closest('[data-cv-view]'); if (cvv) { cvState().view = cvv.dataset.cvView; renderContacts(); return; } }
   { const cvf = t.closest('[data-cv-fold]'); if (cvf) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
   if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }
-  { const cvfr = t.closest('[data-cv-freq]'); if (cvfr) { const v = cvfr.dataset.cvFreq; if (v) kitSetEvery(v); else kitToggle(false); return; } }
+  { const cvfr = t.closest('[data-cv-freq]'); if (cvfr) { const v = cvfr.dataset.cvFreq; if (v) kitSetEvery(v); else { if (cvState().cur) cvKitFoldSet(cvState().cur, false); kitToggle(false); } return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
   { const cbl = t.closest('[data-cc-bdaylead]'); if (cbl) { ccSetBdayLead(cbl.dataset.ccBdaylead); return; } }
   { const cpr = t.closest('[data-contact-photo-rm]'); if (cpr) { e.preventDefault(); e.stopPropagation(); contactRemovePhoto(); return; } }

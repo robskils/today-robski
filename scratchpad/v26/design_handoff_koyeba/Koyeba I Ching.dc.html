@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>I Ching – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:100px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:400 14px Jost;display:flex;gap:8px;align-items:baseline"><span style="color:var(--k-gold)">←</span><a href="#">Reflection</a><span style="color:var(--k-mute)">·</span><span>I Ching</span></div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:clamp(40px,5vw,96px);align-items:start">
+<div style="min-width:0;max-width:900px">
+<div style="padding:34px 0 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Reflection · VI</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:12px 0 0">I Ching</h1>
+<div style="font:italic 300 24px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px;max-width:640px;text-wrap:pretty">Hold an open question in mind – not yes or no. Cast the coins six times, and read what the moment reflects back.</div>
+</div>
+<input value="{{ question }}" onChange="{{ onQuestion }}" placeholder="What would you like to understand?" style="display:block;width:100%;box-sizing:border-box;margin-top:34px;border:0;border-bottom:1px solid var(--k-ink);background:transparent;outline:none;padding:10px 0 14px;font:300 clamp(26px,2.6vw,34px)/1.2 'Cormorant Garamond',serif;color:var(--k-ink)">
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:32px clamp(28px,4vw,64px);margin-top:36px;align-items:start">
+<div>
+<div style="display:flex;flex-direction:column-reverse;gap:14px">
+<sc-for list="{{ lines }}" as="l" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:14px minmax(0,1fr);gap:12px;align-items:center;height:14px">
+<span style="font:italic 300 13px 'Cormorant Garamond',serif;color:var(--k-mute)">{{ l.n }}</span>
+<sc-if value="{{ l.empty }}"><div style="height:1px;background:var(--k-line)"></div></sc-if>
+<sc-if value="{{ l.yang }}"><div style="height:10px;background:{{ l.color }};animation:kfade .4s ease"></div></sc-if>
+<sc-if value="{{ l.yin }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:22%;animation:kfade .4s ease"><div style="height:10px;background:{{ l.color }}"></div><div style="height:10px;background:{{ l.color }}"></div></div></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="font:400 12.5px/1.5 Jost;color:var(--k-mute);margin-top:18px">{{ castNote }}</div>
+</div>
+<div>
+<sc-if value="{{ casting }}" hint-placeholder-val="{{ true }}">
+<div style="font:300 34px/1.2 'Cormorant Garamond',serif">{{ castTitle }}</div>
+<div style="font:400 14px/1.6 Jost;color:var(--k-mute);margin-top:8px">{{ lastThrow }}</div>
+<div style="display:flex;align-items:center;gap:22px;margin-top:22px">
+<span onClick="{{ cast }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">{{ castLabel }}</span>
+<sc-if value="{{ started }}"><span onClick="{{ reset }}" style="font:400 13.5px Jost;color:var(--k-mute);cursor:pointer">Start again</span></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ done }}">
+<div style="animation:kfade .5s ease">
+<div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font:300 64px/1 'Cormorant Garamond',serif">噬嗑</span><span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-goldt)">Hexagram 21</span></div>
+<div style="font:300 40px/1.1 'Cormorant Garamond',serif;margin-top:8px">Biting Through</div>
+<p style="margin:14px 0 0;font:italic 300 24px/1.5 'Cormorant Garamond',serif;text-wrap:pretty">Something stands in the way, and it won’t dissolve by waiting. Name it, and bite through it – clearly, fairly, once.</p>
+<div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--k-line)">
+<div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt)">The fifth line is changing</div>
+<p style="margin:8px 0 0;font:400 15.5px/1.6 Jost;text-wrap:pretty">The hard part is softer than it looks. Stay steady and honest, and the difficulty yields.</p>
+</div>
+<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--k-line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">Becoming</span><span style="font:300 30px 'Cormorant Garamond',serif">无妄 Innocence</span><span style="font:400 13px Jost;color:var(--k-mute)">Hexagram 25</span></div>
+<p style="margin:8px 0 0;font:italic 300 21px/1.5 'Cormorant Garamond',serif;color:var(--k-mute);text-wrap:pretty">Act without scheming. What is natural will be enough.</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:24px;font:400 14px Jost"><span style="color:var(--k-goldt);cursor:pointer">Write about it in the Journal</span><span style="color:var(--k-mute);cursor:pointer">Ask the companion</span><span onClick="{{ reset }}" style="color:var(--k-mute);cursor:pointer">Cast again</span></div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:34px">
+<div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--k-ink)"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase">Past readings</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ pastCount }}</span></div>
+<sc-for list="{{ months }}" as="m" hint-placeholder-count="2">
+<div onClick="{{ m.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0 4px;cursor:pointer"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);white-space:nowrap">{{ m.label }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:400 13px Jost;color:var(--k-mute)">{{ m.sign }}</span></div>
+<sc-if value="{{ m.open }}">
+<sc-for list="{{ m.items }}" as="r">
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);cursor:pointer">
+<span style="font:300 26px/1 'Cormorant Garamond',serif;white-space:nowrap;min-width:56px">{{ r.ch }}</span>
+<div style="min-width:0"><div style="display:flex;gap:10px;align-items:baseline"><span style="font:300 21px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ r.name }}</span><span style="margin-left:auto;font:400 12px Jost;color:var(--k-mute);white-space:nowrap">{{ r.date }}</span></div>
+<sc-if value="{{ r.hasQ }}"><div style="font:italic 300 17px 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.q }}</div></sc-if></div>
+</div>
+</sc-for>
+</sc-if>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const SEQ=[7,8,8,7,6,7];
+const THROW={6:'Tails, tails, tails – an old yin line, changing',7:'Heads, tails, tails – a young yang line',8:'Heads, heads, tails – a young yin line',9:'Heads, heads, heads – an old yang line, changing'};
+const ORD=['first','second','third','fourth','fifth','sixth'];
+const PAST=[['October',[['噬嗑','Biting Through → Innocence','29 Oct',''],['革','Revolution → Following','27 Oct','Ok, as I start the new chapter…'],['未濟','Before Completion → Conflict','26 Oct',''],['晉','Progress','24 Oct','Apparently good times ahead?'],['臨','Approach → Great Possession','23 Oct',''],['豐','Abundance → Revolution','11 Oct','Will the business…'],['巽','The Gentle Wind → Inner Truth','5 Oct','']]],
+ ['September',[['解','Deliverance → Dispersion','30 Sep','How do I let this go?'],['咸','Influence','8 Sep','How is Daybook going?'],['隨','Following → Enthusiasm','8 Sep',''],['萃','Gathering Together → Oppression','6 Sep',''],['賁','Grace → Fellowship','6 Sep','How is Daybook going?']]]];
+class Component extends DCLogic {
+  state={n:0,question:'',mo:{October:true},night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),n=st.n;
+    const lines=SEQ.map((v,i)=>{const cast=i<n,yang=v===7||v===9;return {n:i+1,empty:!cast,yang:cast&&yang,yin:cast&&!yang,color:(v===6||v===9)?'var(--k-gold)':'var(--k-ink)'};});
+    const months=PAST.map(([label,a])=>({label,open:!!st.mo[label],sign:st.mo[label]?'−':'+',toggle:()=>set({mo:{...st.mo,[label]:!st.mo[label]}}),items:a.map(([ch,name,date,q])=>({ch,name,date,q:q?'“'+q+'”':'',hasQ:!!q}))}));
+    return {question:st.question,onQuestion:e=>set({question:e.target.value}),lines,
+      castNote:n===0?'Lines build from the bottom up. Gold lines are changing.':n<6?n+' of 6 lines cast':'Gold marks the changing line.',
+      casting:n<6,done:n>=6,started:n>0,castTitle:n===0?'Six throws of three coins.':'The '+ORD[n]+' line',lastThrow:n===0?'Each throw makes one line. Take a breath between them if you like.':'Last throw: '+THROW[SEQ[n-1]]+'.',
+      castLabel:n===0?'Cast the coins':'Cast line '+(n+1)+' of 6',cast:()=>set({n:Math.min(6,n+1)}),reset:()=>set({n:0}),
+      months,pastCount:String(PAST.reduce((s,[,a])=>s+a.length,0)),dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

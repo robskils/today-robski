@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Koyeba – a calm home for your whole life</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+html{scroll-behavior:smooth}
+body{margin:0;background:oklch(0.975 0.012 85);color:oklch(0.22 0.018 60);font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.22 0.018 60);text-decoration:none}a:hover{color:oklch(0.55 0.11 70)}
+</style></helmet>
+<div id="top" style="min-height:100vh;background:oklch(0.975 0.012 85)">
+
+<div style="border-bottom:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:1240px;margin:0 auto;padding:0 clamp(20px,4vw,48px);height:84px;display:flex;align-items:center;gap:clamp(16px,3vw,40px)">
+<a href="#top" style="display:flex;align-items:center;gap:12px"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span></a>
+<div style="display:flex;gap:clamp(16px,2.4vw,32px);margin-left:clamp(0px,4vw,56px);font:400 15px Jost;white-space:nowrap;min-width:0;overflow:hidden">
+<a href="#idea">The idea</a><a href="#tools">Tools</a><a href="#private">Privacy</a><a href="#">Journal</a>
+</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:22px">
+<a href="#" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">Sign in</a>
+<a href="#invite" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;background:oklch(0.72 0.13 75);color:oklch(0.22 0.018 60);white-space:nowrap">Request an invite</a>
+</div>
+</div>
+</div>
+
+<div style="max-width:1240px;margin:0 auto;padding:clamp(56px,8vw,112px) clamp(20px,4vw,48px) clamp(64px,8vw,120px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:clamp(40px,6vw,88px);align-items:center">
+<div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">Invite-only · early access</span></div>
+<h1 style="font:300 clamp(52px,6.4vw,86px)/1 'Cormorant Garamond',serif;margin:22px 0 0;letter-spacing:-.01em;text-wrap:balance">Set it down.<br><i style="color:oklch(0.72 0.13 75)">It comes back</i> when you need it.</h1>
+<p style="font:400 18px/1.65 Jost;color:oklch(0.46 0.022 70);max-width:500px;margin:28px 0 0;text-wrap:pretty">A calm, private home for your mail, calendar, tasks, notes and the rest of your life – joined up through Spaces, so things find their own place and return at the right moment.</p>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:28px;margin-top:40px">
+<a href="#invite" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:17px 26px;background:oklch(0.22 0.018 60);color:oklch(0.975 0.012 85);white-space:nowrap">Request an invite</a>
+<a href="#idea" style="font:500 14px Jost;color:oklch(0.55 0.11 70)">How it works →</a>
+</div>
+</div>
+
+<div style="background:oklch(0.99 0.006 85);border:1px solid oklch(0.88 0.014 80);padding:30px 32px 28px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Set something down</span></div>
+<div style="font:300 clamp(28px,3vw,38px)/1.2 'Cormorant Garamond',serif;padding:22px 0 14px;border-bottom:1px solid oklch(0.22 0.018 60);min-height:46px;display:flex;align-items:flex-end"><span>{{ demoTyped }}</span><span style="width:2px;height:34px;margin-left:3px;margin-bottom:4px;background:oklch(0.72 0.13 75);opacity:{{ caretOp }}"></span></div>
+<div style="display:grid;padding-top:8px;opacity:{{ rowsOp }};transform:translateY({{ rowsY }});transition:opacity .7s ease,transform .7s cubic-bezier(0.2,0.7,0.2,1)">
+<sc-for list="{{ demoRows }}" as="r" hint-placeholder-count="3">
+<div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70)">{{ r.k }}</span><span style="font:400 15px/1.45 Jost">{{ r.v }}</span></div>
+</sc-for>
+<div style="display:flex;align-items:center;gap:14px;padding-top:18px"><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">{{ demoFoot }}</span><span style="margin-left:auto;font:500 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding:10px 16px;background:oklch(0.72 0.13 75);white-space:nowrap">Set down ↵</span></div>
+</div>
+</div>
+</div>
+
+<div id="idea" style="border-top:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(40px,6vw,96px)">
+<div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">The idea</span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.05 'Cormorant Garamond',serif;margin:20px 0 0;text-wrap:balance">We carry too much at once.</h2>
+</div>
+<div style="font:400 17px/1.7 Jost;color:oklch(0.46 0.022 70);display:grid;gap:18px;padding-top:8px">
+<p style="margin:0;text-wrap:pretty">Tasks half-remembered, ideas we meant to keep, money we meant to watch. Held loosely, it leaks – onto scraps of paper, into ten different apps, or just quietly lost.</p>
+<p style="margin:0;text-wrap:pretty">Koyeba is Lingala for <i style="font:italic 300 21px 'Cormorant Garamond',serif;color:oklch(0.22 0.018 60)">to know</i>. Put something down once and you’ll always know where it is – the task when the day calls for it, the page when you’re planning, the thought when you pause.</p>
+</div>
+</div>
+</div>
+
+<div id="tools" style="border-top:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px)">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Tools</span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.05 'Cormorant Garamond',serif;margin:20px 0 0;max-width:760px;text-wrap:balance">Everything you use, <i style="color:oklch(0.72 0.13 75)">talking to each other.</i></h2>
+<p style="font:400 17px/1.65 Jost;color:oklch(0.46 0.022 70);max-width:620px;margin:20px 0 56px;text-wrap:pretty">Open any one to see what it does, and where it leads.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:0 clamp(40px,5vw,80px)">
+<sc-for list="{{ toolGroups }}" as="g" hint-placeholder-count="2">
+<div>
+<div style="display:flex;align-items:baseline;gap:14px;padding-bottom:14px;border-bottom:1px solid oklch(0.22 0.018 60)"><span style="font:600 11px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:oklch(0.46 0.022 70)">{{ g.count }}</span></div>
+<sc-for list="{{ g.items }}" as="t">
+<div style="border-bottom:1px solid oklch(0.88 0.014 80)">
+<div onClick="{{ t.toggle }}" style="display:flex;align-items:baseline;gap:18px;padding:18px 0;cursor:pointer">
+<span style="font:300 28px/1.1 'Cormorant Garamond',serif;min-width:150px">{{ t.name }}</span>
+<span style="flex:1;font:400 14px/1.45 Jost;color:oklch(0.46 0.022 70)">{{ t.line }}</span>
+<span style="font:300 22px Jost;color:oklch(0.46 0.022 70)">{{ t.sign }}</span>
+</div>
+<sc-if value="{{ t.open }}">
+<div style="padding:0 0 22px 168px;display:grid;gap:10px">
+<div style="font:400 15px/1.6 Jost;text-wrap:pretty">{{ t.body }}</div>
+<div style="font:400 13px/1.5 Jost;color:oklch(0.55 0.11 70)">{{ t.joins }}</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div id="spaces" style="background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85)">
+<div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:clamp(40px,6vw,96px);align-items:start">
+<div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.72 0.13 75)">Spaces</span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.05 'Cormorant Garamond',serif;margin:20px 0 0;text-wrap:balance">Each part of your life <i style="color:oklch(0.72 0.13 75)">gets a Space.</i></h2>
+<p style="font:400 17px/1.7 Jost;opacity:.8;margin:24px 0 0;max-width:500px;text-wrap:pretty">The kids, the house, the dog, the business. An email becomes a task, a payment files itself, an event finds its people – and all of it gathers in the Space it belongs to.</p>
+<div style="margin-top:40px;border-top:1px solid rgba(255,255,255,.16)">
+<div onClick="{{ toggleShare }}" style="display:flex;align-items:baseline;gap:16px;padding:18px 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.16)"><span style="font:300 26px 'Cormorant Garamond',serif">Share a Space with the people in it</span><span style="margin-left:auto;font:300 22px Jost;opacity:.7">{{ shareSign }}</span></div>
+<sc-if value="{{ shareOpen }}">
+<div style="padding:18px 0 4px;display:grid;gap:14px">
+<p style="margin:0;font:400 15px/1.6 Jost;opacity:.8;text-wrap:pretty">Open one part of your life to the people who live it with you – and only that part.</p>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px;font:400 14px Jost">
+<span><span style="color:oklch(0.72 0.13 75)">Co-parents</span> on the kids</span><span><span style="color:oklch(0.72 0.13 75)">A family</span> on the move</span><span><span style="color:oklch(0.72 0.13 75)">Friends</span> on a weekend away</span><span><span style="color:oklch(0.72 0.13 75)">A couple</span> on the money</span>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="border:1px solid rgba(255,255,255,.16);padding:30px 32px">
+<div style="display:flex;align-items:baseline;gap:14px"><span style="font:italic 300 20px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">II</span><span style="font:300 38px/1 'Cormorant Garamond',serif">The kids</span><span style="margin-left:auto;font:400 12.5px Jost;opacity:.7">Ada &amp; Tom</span></div>
+<div style="margin-top:22px">
+<sc-for list="{{ spaceGroups }}" as="g" hint-placeholder-count="4">
+<div style="border-top:1px solid rgba(255,255,255,.14)">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:12px;padding:14px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.22em;text-transform:uppercase">{{ g.label }}</span><span style="font:400 12px Jost;opacity:.6">{{ g.count }}</span><span style="margin-left:auto;font:300 18px Jost;opacity:.7">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<div style="display:grid;gap:10px;padding:0 0 16px">
+<sc-for list="{{ g.items }}" as="it"><div style="display:flex;gap:14px;align-items:baseline;font:400 14.5px/1.4 Jost"><span style="flex:1">{{ it.t }}</span><span style="font-size:12.5px;opacity:.65;white-space:nowrap">{{ it.m }}</span></div></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,.14);padding-top:16px;font:400 13px/1.5 Jost;color:oklch(0.72 0.13 75)">Mrs Okafor’s email → Sign the trip form, due Monday</div>
+</div>
+</div>
+</div>
+
+<div id="inner" style="border-bottom:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:880px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px);text-align:center">
+<div style="display:flex;align-items:center;justify-content:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">The inner life</span><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.08 'Cormorant Garamond',serif;margin:20px 0 0;text-wrap:balance">Room for the doing, <i style="color:oklch(0.72 0.13 75)">and for the rest of you.</i></h2>
+<p style="font:400 17px/1.7 Jost;color:oklch(0.46 0.022 70);margin:24px auto 0;max-width:620px;text-wrap:pretty">Journalling, reviews, goals and gentle coaching sit beside your tasks and plans, so each makes more sense of the other. There when you want them, out of the way when you don’t.</p>
+<sc-if value="{{ innerClosed }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ toggleInner }}" style="margin-top:28px;font:500 14px Jost;color:oklch(0.55 0.11 70);cursor:pointer">Read more +</div>
+</sc-if>
+<sc-if value="{{ innerOpen }}">
+<p style="font:400 17px/1.7 Jost;color:oklch(0.46 0.022 70);margin:18px auto 0;max-width:620px;text-wrap:pretty">Most tools look after the outer life and leave the rest outside. Koyeba keeps a quiet place for thoughts, feelings and what it all means – a little awareness for ordinary days, and a way to notice the life you’re actually living.</p>
+<div onClick="{{ toggleInner }}" style="margin-top:20px;font:500 14px Jost;color:oklch(0.55 0.11 70);cursor:pointer">Fold away −</div>
+</sc-if>
+</div>
+</div>
+
+<div id="private">
+<div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(40px,6vw,96px)">
+<div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Private by design</span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.05 'Cormorant Garamond',serif;margin:20px 0 0;text-wrap:balance">Yours. <i style="color:oklch(0.72 0.13 75)">Properly.</i></h2>
+<p style="font:400 17px/1.7 Jost;color:oklch(0.46 0.022 70);margin:24px 0 0;max-width:460px;text-wrap:pretty">Koyeba holds the most personal parts of your life, so we built a business on trust, not on selling you.</p>
+</div>
+<div style="border-top:1px solid oklch(0.88 0.014 80)">
+<sc-for list="{{ privacy }}" as="p" hint-placeholder-count="5">
+<div style="border-bottom:1px solid oklch(0.88 0.014 80)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:baseline;gap:18px;padding:18px 0;cursor:pointer"><span style="width:26px;font:italic 300 19px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">{{ p.num }}</span><span style="flex:1;font:300 25px/1.2 'Cormorant Garamond',serif">{{ p.title }}</span><span style="font:300 22px Jost;color:oklch(0.46 0.022 70)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}"><div style="padding:0 0 20px 44px;font:400 15px/1.6 Jost;color:oklch(0.46 0.022 70);text-wrap:pretty">{{ p.body }}</div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="border-top:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:1240px;margin:0 auto;padding:clamp(64px,8vw,112px) clamp(20px,4vw,48px)">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Made to be quick</span></div>
+<h2 style="font:300 clamp(40px,4.4vw,58px)/1.05 'Cormorant Garamond',serif;margin:20px 0 48px">Two taps, then <i style="color:oklch(0.72 0.13 75)">let it go.</i></h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:clamp(28px,4vw,56px)">
+<div style="border-top:1px solid oklch(0.22 0.018 60);padding-top:22px"><div style="font:italic 300 26px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">I</div><div style="font:300 30px/1.15 'Cormorant Garamond',serif;margin-top:10px">Open and jot</div><p style="font:400 15px/1.6 Jost;color:oklch(0.46 0.022 70);margin:10px 0 0">A task, a date, a number, a feeling – whatever you’re holding.</p></div>
+<div style="border-top:1px solid oklch(0.22 0.018 60);padding-top:22px"><div style="font:italic 300 26px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">II</div><div style="font:300 30px/1.15 'Cormorant Garamond',serif;margin-top:10px">It finds its place</div><p style="font:400 15px/1.6 Jost;color:oklch(0.46 0.022 70);margin:10px 0 0">Into the right tool, tagged to the Space it belongs to.</p></div>
+<div style="border-top:1px solid oklch(0.22 0.018 60);padding-top:22px"><div style="font:italic 300 26px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">III</div><div style="font:300 30px/1.15 'Cormorant Garamond',serif;margin-top:10px">It comes into view</div><p style="font:400 15px/1.6 Jost;color:oklch(0.46 0.022 70);margin:10px 0 0">In your day, your plans or your review – when it’s useful, not before.</p></div>
+</div>
+</div>
+</div>
+
+<div id="invite" style="background:oklch(0.23 0.035 158);color:oklch(0.975 0.012 85)">
+<div style="max-width:760px;margin:0 auto;padding:clamp(72px,9vw,128px) clamp(20px,4vw,48px);text-align:center;display:flex;flex-direction:column;align-items:center">
+<img src="assets/mandombe-koyeba-ivory.svg" alt="Koyeba, written in Mandombe" style="width:220px;height:auto;display:block;opacity:.9">
+<div style="display:flex;align-items:center;gap:12px;margin-top:44px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.72 0.13 75)">Early access</span><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span></div>
+<h2 style="font:300 clamp(44px,5vw,66px)/1.05 'Cormorant Garamond',serif;margin:20px 0 0">Come and set it down.</h2>
+<p style="font:400 17px/1.7 Jost;opacity:.8;margin:22px 0 0;max-width:520px;text-wrap:pretty">Koyeba is growing gently, by word of mouth, so it stays calm and well cared for. Tell us a little about you and we’ll make a space for you.</p>
+<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin-top:40px;width:min(100%,520px);border-bottom:1px solid rgba(255,255,255,.4)">
+<span style="flex:1;min-width:220px;text-align:left;padding:14px 0;font:400 16px Jost;opacity:.6">Your email</span>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;margin-bottom:8px;background:oklch(0.72 0.13 75);color:oklch(0.22 0.018 60);white-space:nowrap">Request an invite</span>
+</div>
+<a href="#" style="margin-top:22px;font:400 14px Jost;color:oklch(0.975 0.012 85);opacity:.75">I already have an account</a>
+</div>
+</div>
+
+<div style="max-width:1240px;margin:0 auto;padding:56px clamp(20px,4vw,48px) 40px">
+<div style="display:flex;flex-wrap:wrap;gap:32px 64px;align-items:flex-start">
+<div style="display:grid;gap:10px"><a href="#top" style="display:flex;align-items:center;gap:12px"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:22px;width:auto;display:block"><span style="font:500 26px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span></a><span style="font:italic 300 19px 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70)">For a life well lived</span></div>
+<div style="display:grid;gap:10px;font:400 14px Jost"><a href="#idea">The idea</a><a href="#tools">Tools</a><a href="#private">Privacy</a><a href="#">Journal</a></div>
+<div style="display:grid;gap:10px;font:400 14px Jost"><a href="#">Privacy policy</a><a href="#">Terms</a><a href="#">Cookie settings</a><a href="#">contact@koyeba.co</a></div>
+<div style="margin-left:auto;font:400 13px/1.7 Jost;color:oklch(0.46 0.022 70);text-align:right">Feito em Lisboa<br>© 2026 Koyeba</div>
+</div>
+<a href="#top" title="Back to the top" style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:80px;opacity:.5;transition:opacity .6s ease" style-hover="opacity:1">
+<img src="assets/mandombe-koyeba-ink.svg" alt="Koyeba" style="width:240px;height:auto;display:block">
+</a>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:26px;text-align:center">
+<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:6px 14px"><span style="font:500 24px/1 'Cormorant Garamond',serif">Koyeba</span><span style="font:400 14px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">koh-YEH-bah</span><span style="font:italic 300 18px 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70);white-space:nowrap">verb, Lingala</span></div>
+<div style="font:300 20px/1.3 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70)">To know – facts, places, people.</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;heroDemo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;animated&quot;,&quot;still&quot;],&quot;default&quot;:&quot;animated&quot;,&quot;tsType&quot;:&quot;'animated'|'still'&quot;}}">
+const DEMOS=[
+ {text:'Dentist on Tuesday at nine',rows:[['Into','Me'],['As','Calendar · Tue 3 Nov, 09:00'],['Reminds','Monday evening, and 08:15 on the day']],foot:'Nothing else to do.'},
+ {text:'Ada’s trip form is due Monday',rows:[['Into','The kids'],['As','Task · due Mon 2 Nov'],['Joins','Mrs Okafor’s email · “Year 4 trip”']],foot:'Linked to the email it came from.'},
+ {text:'Biscuit’s flea drops, €18.40',rows:[['Into','Biscuit'],['As','Money · spent today'],['Joins','Pet costs this month · €46.20']],foot:'Filed against the right Space.'}
+];
+const TOOLS=[
+ {label:'For the doing',items:[
+  ['Mail','Triage in one pass','Mark each email urgent, important or later and your inbox is clear. Turn any message into a task, a note or an event.','Joins Tasks, Calendar, Spaces'],
+  ['Calendar','Your days, joined up','Events arrive from mail and from what you set down, each with the notes and people it needs.','Joins Mail, Tasks, Contacts'],
+  ['Tasks','Urgent now, and the long game','What needs doing today comes forward; the rest waits quietly in its Space.','Joins Mail, Calendar, Goals'],
+  ['Notes','Pages and tables','Write freely, or turn a page into a table when it needs columns.','Joins Spaces, Tasks'],
+  ['Messaging','Know when someone writes','Conversations with the people in your Spaces, with a gentle word when one arrives.','Joins Contacts, Sharing'],
+  ['Money','Spending, filed for you','Payments land against the right Space, so you can see what the house or the dog really costs.','Joins Spaces, Mail'],
+  ['Contacts','The people you keep close','Everyone you write to, meet and share with, in one place.','Joins Mail, Messaging, Sharing']]},
+ {label:'For the inner life',items:[
+  ['Journal','A page for each day','Write a line or a page. It sits alongside what actually happened that day.','Joins Calendar, Reviews'],
+  ['Reflection','Sit with what matters','Gentle prompts for when you want to think something through.','Joins Journal, Goals'],
+  ['Reviews','Look back, then forward','A weekly and monthly look at what moved, what didn’t, and what’s next.','Joins Tasks, Goals, Journal'],
+  ['Goals','The long game','Hold a few things you’re working towards, broken into steps that turn into tasks.','Joins Tasks, Reviews'],
+  ['Coaching','A quiet nudge','Optional guidance with your own AI key – never ours, never trained on you.','Joins Reflection, Goals'],
+  ['Read & Watch','What you mean to get to','Books, films and articles, kept until you have the evening for them.','Joins Notes, Spaces'],
+  ['Bucket list','One day','The bigger things, kept somewhere you’ll see them again.','Joins Goals']]}
+];
+const SPACE=[['Mail',[['Mrs Okafor – Year 4 trip','Thu'],['Swim club – new times','Tue']]],['Tasks',[['Sign Ada’s trip form','Mon'],['Tom: costume for Friday','Next wk']]],['Calendar',[['Ada swimming','Fri 16:00'],['Parents’ evening','Wed 18:30']]],['Notes',[['Swimming kit list',''],['Half-term ideas','']]]];
+const PRIV=[
+ ['Two-factor sign-in','Your Koyeba is properly locked, and your data is encrypted at rest.'],
+ ['Never mined, never sold','Nothing of yours is used for adverts or fed to anyone’s model.'],
+ ['Bring your own AI','AI is opt-in, with your own key. Leave it off and Koyeba works just the same.'],
+ ['Export everything','Take it all in one tap, any time – or keep it on your own storage.'],
+ ['Leave whenever you like','Close your account and take everything with you.']
+];
+const ROMAN=['I','II','III','IV','V'];
+class Component extends DCLogic {
+  state={d:0,n:0,phase:'type',tool:'Mail',sg:{Mail:true,Tasks:true},priv:0,share:false,inner:false};
+  componentDidMount(){
+    if((this.props.heroDemo??'animated')==='still'){this.setState({n:DEMOS[0].text.length,phase:'show'});return;}
+    this.tick=()=>{const s=this.state,demo=DEMOS[s.d];
+      if(s.phase==='type'){if(s.n<demo.text.length){this.setState({n:s.n+1});this.t=setTimeout(this.tick,55+Math.random()*50);}else{this.t=setTimeout(()=>{this.setState({phase:'show'});this.t=setTimeout(this.tick,3800);},500);}}
+      else{this.setState({phase:'type',n:0,d:(s.d+1)%DEMOS.length});this.t=setTimeout(this.tick,700);}};
+    this.t=setTimeout(this.tick,900);
+  }
+  componentWillUnmount(){clearTimeout(this.t);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),demo=DEMOS[st.d],show=st.phase==='show';
+    const toolGroups=TOOLS.map(g=>({label:g.label,count:g.items.length,items:g.items.map(([name,line,body,joins])=>{const open=st.tool===name;return {name,line,body,joins,open,sign:open?'−':'+',toggle:()=>set({tool:open?null:name})};})}));
+    const spaceGroups=SPACE.map(([label,items])=>{const open=!!st.sg[label];return {label,count:items.length,open,sign:open?'−':'+',items:items.map(([t,m])=>({t,m})),toggle:()=>set({sg:{...st.sg,[label]:!open}})};});
+    const privacy=PRIV.map(([title,body],i)=>{const open=st.priv===i;return {num:ROMAN[i],title,body,open,sign:open?'−':'+',toggle:()=>set({priv:open?null:i})};});
+    return {demoTyped:demo.text.slice(0,st.n),caretOp:show?0:1,rowsOp:show?1:0,rowsY:show?'0':'8px',demoRows:demo.rows.map(([k,v])=>({k,v})),demoFoot:demo.foot,
+      toolGroups,spaceGroups,privacy,shareOpen:st.share,shareSign:st.share?'−':'+',toggleShare:()=>set({share:!st.share}),
+      innerOpen:st.inner,innerClosed:!st.inner,toggleInner:()=>set({inner:!st.inner})};
+  }
+}
+</script>
+</body>
+</html>

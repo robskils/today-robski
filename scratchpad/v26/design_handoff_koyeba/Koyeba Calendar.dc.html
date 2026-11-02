@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Calendar – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+input{font:inherit;color:inherit;background:transparent;border:0;outline:0}input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1760px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span style="color:var(--k-ink);border-bottom:1px solid var(--k-gold);padding-bottom:4px">Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span onClick="{{ toggleNight }}" style="color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1760px;margin:0 auto;padding:44px clamp(24px,3.5vw,64px) 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Plans · Calendar</span></div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 22px;margin-top:12px"><h1 style="margin:0;font:300 clamp(60px,6vw,96px)/.95 'Cormorant Garamond',serif">{{ title }}</h1><span style="font:300 40px 'Cormorant Garamond',serif;color:var(--k-mute)">{{ year }}</span></div>
+<div style="font:italic 300 24px/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:10px">{{ mood }}</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 30px;margin-top:34px;padding:14px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line)">
+<div style="display:flex;align-items:baseline;gap:18px;font:400 15px Jost;white-space:nowrap"><span onClick="{{ prev }}" style="cursor:pointer;color:var(--k-mute);padding:4px">‹</span><span onClick="{{ goToday }}" style="cursor:pointer">Today</span><span onClick="{{ next }}" style="cursor:pointer;color:var(--k-mute);padding:4px">›</span></div>
+<div style="display:flex;gap:22px;font:400 15px Jost;white-space:nowrap"><sc-for list="{{ views }}" as="v"><span onClick="{{ v.pick }}" style="cursor:pointer;color:{{ v.color }};padding-bottom:3px;border-bottom:1px solid {{ v.line }}">{{ v.label }}</span></sc-for></div>
+<span onClick="{{ toggleQuiet }}" style="display:flex;align-items:center;gap:8px;font:400 14px Jost;color:{{ quietColor }};cursor:pointer;white-space:nowrap"><span style="width:8px;height:8px;border:1px solid var(--k-gold);background:{{ quietFill }}"></span>Quieten repeats</span>
+<div style="flex:1;min-width:200px;display:flex;align-items:center;gap:10px;padding:4px 0"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Search the calendar" style="flex:1;min-width:0;font:400 15px Jost"></div>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:12px 18px;background:var(--k-gold);color:oklch(0.22 0.018 60);white-space:nowrap;cursor:pointer">New event</span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));grid-template-columns:{{ cols }};gap:clamp(32px,4vw,72px);margin-top:26px;align-items:start">
+<div style="min-width:0">
+<sc-if value="{{ isMonth }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--k-line);border-left:1px solid var(--k-line)">
+<sc-for list="{{ dows }}" as="d"><div style="padding:10px 12px;font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);border-right:1px solid var(--k-line);border-bottom:1px solid var(--k-line)">{{ d }}</div></sc-for>
+<sc-for list="{{ cells }}" as="c">
+<div onClick="{{ c.pick }}" style="min-height:128px;padding:10px 10px 8px;border-right:1px solid var(--k-line);border-bottom:1px solid var(--k-line);cursor:pointer;background:{{ c.bg }};opacity:{{ c.op }};min-width:0;transition:background .25s ease">
+<div style="display:flex;justify-content:flex-end"><span style="font:300 21px/1 'Cormorant Garamond',serif;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:{{ c.numBg }};color:{{ c.numColor }}">{{ c.n }}</span></div>
+<div style="display:grid;gap:3px;margin-top:6px">
+<sc-for list="{{ c.ev }}" as="e"><div style="display:flex;gap:6px;align-items:baseline;min-width:0;font:{{ e.font }};color:{{ e.color }}"><sc-if value="{{ e.showT }}"><span style="font:400 11.5px Jost;color:var(--k-mute);flex:none">{{ e.t }}</span></sc-if><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.title }}</span></div></sc-for>
+<sc-if value="{{ c.more }}"><span style="font:400 11.5px Jost;color:var(--k-goldt)">{{ c.moreLabel }}</span></sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ isWeek }}">
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 18px">
+<sc-for list="{{ week }}" as="d"><div onClick="{{ d.pick }}" style="min-width:0;cursor:pointer"><div style="display:flex;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:1px solid {{ d.rule }}"><span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">{{ d.dow }}</span><span style="font:300 28px/1 'Cormorant Garamond',serif;color:{{ d.numColor }}">{{ d.n }}</span></div>
+<sc-for list="{{ d.ev }}" as="e"><div style="padding:10px 0;border-bottom:1px solid var(--k-line);min-width:0"><div style="font:400 12px Jost;color:var(--k-mute)">{{ e.t }}</div><div style="font:{{ e.font }};color:{{ e.color }};margin-top:2px;text-wrap:pretty">{{ e.title }}</div></div></sc-for></div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ isList }}">
+<sc-for list="{{ list }}" as="d"><div style="margin-bottom:18px"><div style="display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid var(--k-ink)"><span style="font:300 28px/1 'Cormorant Garamond',serif;color:{{ d.numColor }}">{{ d.label }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ d.sub }}</span></div>
+<sc-for list="{{ d.ev }}" as="e"><div style="display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--k-line)"><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ e.range }}</span><span style="font:{{ e.font }};color:{{ e.color }}">{{ e.title }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ e.place }}</span></div></sc-for></div></sc-for>
+</sc-if>
+</div>
+
+<div style="position:{{ sidePos }};top:24px">
+<div style="padding-bottom:14px;border-bottom:1px solid var(--k-gold)"><div style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:var(--k-goldt)">{{ sel.eyebrow }}</div><div style="font:300 40px/1.05 'Cormorant Garamond',serif;margin-top:8px">{{ sel.label }}</div></div>
+<sc-for list="{{ sel.ev }}" as="e"><div style="display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--k-line);animation:kfade .35s ease"><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ e.range }}</span><div><div style="font:{{ e.bigFont }};color:{{ e.color }}">{{ e.title }}</div><sc-if value="{{ e.hasPlace }}"><div style="font:400 13px Jost;color:var(--k-mute);margin-top:3px">{{ e.place }}</div></sc-if><sc-if value="{{ e.hasNote }}"><div style="font:400 12.5px Jost;color:var(--k-goldt);margin-top:3px">{{ e.note }}</div></sc-if></div></div></sc-for>
+<sc-if value="{{ sel.empty }}"><div style="padding:18px 0;font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-mute)">Nothing planned. A clear day.</div></sc-if>
+<div style="padding:14px 0;font:500 13px Jost;color:var(--k-goldt);cursor:pointer">+ Add to this day</div>
+</div>
+</div>
+</div>
+
+<div style="position:fixed;left:32px;bottom:24px;z-index:26;padding:9px 16px;white-space:nowrap;background:var(--k-bg);border:1px solid var(--k-line);font:italic 300 20px 'Cormorant Garamond',serif">Notepad</div>
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--k-deep);color:var(--k-ondeep);white-space:nowrap"><span style="font:300 20px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const REP=[[2,'07:15','07:15–09:00','Zazen','Rua Luciano Cordeiro 49'],[4,'07:15','07:15–09:00','Zazen','Rua Luciano Cordeiro 49'],[5,'07:15','07:15–09:00','Zazen',''],[6,'11:00','11:00–12:30','Zazen',''],[1,'18:30','18:30–19:30','Maya – climbing class',''],[1,'19:00','19:00–22:00','Aguarela II','NextArt'],[0,'11:30','11:30–13:00','Maya – skateboarding class',''],[6,'11:30','11:30–12:30','Maya – singing with Vijay','Almoçageme'],[3,'15:00','15:00–16:00','Personal training','Holmes Place']];
+const ONE={'2026-11-01':[['','All day','Claire Moore’s birthday','',''],['h','All day','Dia de Todos-os-Santos','','Holiday'],['','15:00–20:00','Yves’ 80th birthday party','Quinta do Pisão, Cascais',''],['','19:45–21:45','Juventus v Napoli','','']],'2026-11-02':[['','20:15–22:15','Benfica v Alverca','','']],'2026-11-03':[['','All day','Aarathi’s birthday','','']],'2026-11-05':[['a','All day','Mike and Paul’s 50th','Porto','Until Monday']],'2026-11-06':[['a','All day','Mike and Paul’s 50th','Porto','']],'2026-11-07':[['a','All day','Mike and Paul’s 50th','Porto',''],['','16:00–22:00','Big league poker','Campo de Ourique','']],'2026-11-08':[['a','All day','Mike and Paul’s 50th','Porto','']],'2026-11-09':[['a','All day','Mike and Paul’s 50th','Porto','Last day'],['','10:45–11:45','Aula – Robin, PT B2-C1','','']],'2026-11-14':[['','All day','Porangui','República da Música',''],['','All day','Dia de Zazen','Dojo Zen Lisboa','']],'2026-11-17':[['','All day','Take the book back to the library','','Books / Reading']],'2026-11-20':[['','14:00–15:00','Dentist','São Bento','']],'2026-11-27':[['','All day','Zouk Machine – 40 anos','LAV, Lisboa ao Vivo','']],'2026-11-28':[['','All day','Dave Folkman’s birthday','','']],'2026-11-29':[['','All day','Murmuration, level 2','',''],['','All day','Lisboa Intensive','','']],'2026-11-30':[['h','All day','Saint Andrew’s Day','','Holiday']],'2026-12-01':[['h','All day','Restauração da Independência','','Holiday']]};
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOWL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const TODAY=new Date(2026,10,1);
+class Component extends DCLogic {
+  state={view:'month',cur:new Date(2026,10,1),sel:new Date(2026,10,1),quiet:true,q:'',night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);this.rs=()=>this.setState({w:window.innerWidth,narrow:window.innerWidth<1100});this.rs();window.addEventListener('resize',this.rs);}
+  componentWillUnmount(){window.removeEventListener('resize',this.rs);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  events(d){const st=this.state,q=st.q.trim().toLowerCase();
+    const one=(ONE[key(d)]||[]).map(([k,range,title,place,note])=>({all:range==='All day',hol:k==='h',rep:false,range,t:range==='All day'?'':range.slice(0,5),title,place,note}));
+    const rep=REP.filter(r=>r[0]===d.getDay()).map(([,t,range,title,place])=>({all:false,hol:false,rep:true,range,t,title,place,note:'Repeats weekly'}));
+    return [...one.filter(e=>e.all),...[...one.filter(e=>!e.all),...rep].sort((a,b)=>a.t.localeCompare(b.t))].filter(e=>!q||(e.title+' '+e.place).toLowerCase().includes(q));}
+  style(e,big){const st=this.state;
+    if(e.hol)return {font:big?"italic 300 21px 'Cormorant Garamond',serif":"italic 300 15px 'Cormorant Garamond',serif",color:'var(--k-mute)'};
+    if(e.all)return {font:big?"italic 300 23px 'Cormorant Garamond',serif":"italic 300 16px/1.2 'Cormorant Garamond',serif",color:'var(--k-goldt)'};
+    if(e.rep&&st.quiet)return {font:big?'400 15px Jost':'400 12.5px Jost',color:'var(--k-mute)'};
+    return {font:big?'400 16px/1.4 Jost':'400 13px Jost',color:'var(--k-ink)'};}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),cur=st.cur;
+    const pick=d=>()=>set({sel:new Date(d)});
+    const sameDay=(a,b)=>key(a)===key(b);
+    const start=new Date(cur.getFullYear(),cur.getMonth(),1);const off=(start.getDay()+6)%7;start.setDate(1-off);
+    const cells=[];for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);
+      let ev=this.events(d);if(st.quiet)ev=[...ev.filter(e=>!e.rep),...ev.filter(e=>e.rep)];
+      const shown=ev.slice(0,3),isT=sameDay(d,TODAY),isS=sameDay(d,st.sel);
+      cells.push({n:d.getDate(),pick:pick(d),bg:isS?'var(--k-soft)':'transparent',op:d.getMonth()===cur.getMonth()?1:.45,numBg:isT?'var(--k-gold)':'transparent',numColor:isT?'oklch(0.22 0.018 60)':'var(--k-ink)',
+        ev:shown.map(e=>({...e,showT:!!e.t&&!this.state.narrow,...this.style(e,false)})),more:ev.length>3,moreLabel:'+'+(ev.length-3)+' more'});}
+    const wk=new Date(st.sel);wk.setDate(wk.getDate()-((wk.getDay()+6)%7));
+    const week=[...Array(7)].map((_,i)=>{const d=new Date(wk);d.setDate(wk.getDate()+i);const isT=sameDay(d,TODAY);return {dow:DOW[d.getDay()],n:d.getDate(),pick:pick(d),numColor:isT?'var(--k-goldt)':'var(--k-ink)',rule:sameDay(d,st.sel)?'var(--k-gold)':'var(--k-ink)',ev:this.events(d).map(e=>({...e,t:e.all?(e.hol?'Holiday':'All day'):e.range,...this.style(e,false)}))};});
+    const list=[...Array(14)].map((_,i)=>{const d=new Date(st.sel);d.setDate(d.getDate()+i);const isT=sameDay(d,TODAY);return {label:DOWL[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()],sub:isT?'Today':(i===1?'Tomorrow':''),numColor:isT?'var(--k-goldt)':'var(--k-ink)',ev:this.events(d).map(e=>({...e,...this.style(e,true)}))};}).filter(d=>d.ev.length);
+    const se=this.events(st.sel);const sToday=sameDay(st.sel,TODAY);
+    const timed=this.events(TODAY).filter(e=>!e.all&&!e.rep);
+    const W=['No','One','Two','Three','Four','Five','Six','Seven'];
+    const nT=this.events(TODAY).filter(e=>!e.hol).length;
+    const shift=n=>()=>{const c=new Date(cur);if(st.view==='month')c.setMonth(c.getMonth()+n);else{c.setDate(c.getDate()+n*(st.view==='week'?7:14));set({sel:new Date(c)});}set({cur:c});};
+    const wide=(st.w||1400)>=1200;
+    return {cols:wide?'minmax(0,1fr) minmax(300px,360px)':'minmax(0,1fr)',sidePos:wide?'sticky':'static',title:MON[cur.getMonth()],year:String(cur.getFullYear()),mood:(W[nT]||nT)+' things today. '+(timed.length?timed[0].title.replace('’ 80th birthday party','’ 80th')+' at '+(()=>{const h=+timed[0].t.slice(0,2),m=timed[0].t.slice(3);const w=['twelve','one','two','three','four','five','six','seven','eight','nine','ten','eleven'][h%12];return m==='00'?w:timed[0].t;})()+(timed[0].place?', in '+timed[0].place.split(', ').pop():'')+'.':''),
+      views:[['day','List'],['week','Week'],['month','Month']].map(([id,label])=>({label,color:st.view===id?'var(--k-ink)':'var(--k-mute)',line:st.view===id?'var(--k-gold)':'transparent',pick:()=>set({view:id})})),
+      isMonth:st.view==='month',isWeek:st.view==='week',isList:st.view==='day',dows:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],cells,week,list,
+      sel:{eyebrow:sToday?'Today':DOWL[st.sel.getDay()],label:st.sel.getDate()+' '+MON[st.sel.getMonth()],empty:!se.length,ev:se.map(e=>({...e,...this.style(e,true),bigFont:this.style(e,true).font,hasPlace:!!e.place,hasNote:!!e.note&&!e.rep}))},
+      prev:shift(-1),next:shift(1),goToday:()=>set({cur:new Date(TODAY),sel:new Date(TODAY)}),
+      toggleQuiet:()=>set({quiet:!st.quiet}),quietFill:st.quiet?'var(--k-gold)':'transparent',quietColor:st.quiet?'var(--k-goldt)':'var(--k-mute)',
+      q:st.q,onQ:e=>set({q:e.target.value}),
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

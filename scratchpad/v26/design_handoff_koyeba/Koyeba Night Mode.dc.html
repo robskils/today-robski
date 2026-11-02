@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Koyeba – night mode</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;background:oklch(0.975 0.012 85);color:oklch(0.22 0.018 60);font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+</style></helmet>
+<div style="max-width:1320px;margin:0 auto;padding:56px clamp(20px,4vw,48px) 96px">
+
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">Handover · night mode</span></div>
+<h1 style="font:300 clamp(56px,6vw,84px)/1 'Cormorant Garamond',serif;margin:16px 0 0">Night, <i style="color:oklch(0.55 0.11 70)">done properly.</i></h1>
+<p style="font:400 17px/1.7 Jost;color:oklch(0.46 0.022 70);max-width:760px;margin:20px 0 0;text-wrap:pretty">Night is the same page with the lights low: deep forest ground, ivory ink, the same single gold. Nothing changes shape. If a colour is written as a literal anywhere in the app, night breaks – every colour must come from the tokens below.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:clamp(32px,4vw,64px);margin-top:56px">
+
+<div>
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60)">What’s wrong in the current build</div>
+<sc-for list="{{ wrongs }}" as="w" hint-placeholder-count="8">
+<div style="display:grid;grid-template-columns:30px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="font:italic 300 19px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">{{ w.n }}</span><div><div style="font:400 15.5px/1.45 Jost">{{ w.bad }}</div><div style="font:400 14px/1.5 Jost;color:oklch(0.55 0.11 70);margin-top:3px">{{ w.fix }}</div></div></div>
+</sc-for>
+</div>
+
+<div>
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60)">Tokens – day and night</div>
+<sc-for list="{{ tokens }}" as="t" hint-placeholder-count="10">
+<div style="display:grid;grid-template-columns:110px 34px 34px minmax(0,1fr);gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid oklch(0.88 0.014 80)">
+<span style="font:500 12.5px ui-monospace,Menlo,monospace">{{ t.name }}</span>
+<span title="{{ t.day }}" style="width:34px;height:24px;background:{{ t.day }};border:1px solid oklch(0.88 0.014 80)"></span>
+<span title="{{ t.night }}" style="width:34px;height:24px;background:{{ t.night }};border:1px solid oklch(0.36 0.03 158)"></span>
+<div style="min-width:0"><div style="font:400 14px Jost">{{ t.use }}</div><div style="font:400 11.5px ui-monospace,Menlo,monospace;color:oklch(0.46 0.022 70);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.night }}</div></div>
+</div>
+</sc-for>
+<div style="font:400 13px/1.6 Jost;color:oklch(0.46 0.022 70);margin-top:12px">Left swatch day, right swatch night. Gold-button text stays dark ink <span style="font-family:ui-monospace,Menlo,monospace">oklch(0.22 0.018 60)</span> in both.</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:12px;margin-top:72px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">The same Messages screen, at night</span></div>
+
+<div style="margin-top:22px;background:oklch(0.23 0.035 158);color:oklch(0.94 0.012 85);display:grid;grid-template-columns:270px minmax(0,1fr);min-height:760px;position:relative;overflow:hidden">
+
+<div style="border-right:1px solid oklch(0.36 0.03 158);padding:30px 28px 100px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:12px"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:28px;width:auto;display:block"><span style="font:500 32px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.74 0.12 76)">.</span></span></div>
+<div style="display:flex;align-items:center;gap:12px;margin:26px 0 22px;padding:10px 0;border-bottom:1px solid oklch(0.36 0.03 158)"><span style="font:400 15px Jost;color:oklch(0.74 0.02 80)">Find…</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:oklch(0.74 0.02 80)">⌘K</span></div>
+<sc-for list="{{ folds }}" as="f" hint-placeholder-count="7">
+<div style="border-top:1px solid oklch(0.36 0.03 158)">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:baseline;gap:10px;padding:13px 0;cursor:pointer"><div style="flex:1;min-width:0"><div style="font:300 23px/1.15 'Cormorant Garamond',serif;color:{{ f.color }}">{{ f.label }}</div><sc-if value="{{ f.closed }}"><div style="font:400 13px Jost;color:oklch(0.74 0.02 80);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.hint }}</div></sc-if></div><span style="font:300 18px Jost;color:oklch(0.74 0.02 80)">{{ f.sign }}</span></div>
+<sc-if value="{{ f.open }}">
+<div style="padding:0 0 14px;display:grid">
+<sc-for list="{{ f.items }}" as="it"><div style="display:flex;align-items:baseline;gap:10px;padding:6px 0;font:400 16px Jost;color:{{ it.color }}"><span style="flex:1">{{ it.label }}</span><span style="font:500 12.5px Jost;color:oklch(0.8 0.11 78)">{{ it.badge }}</span></div></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid oklch(0.36 0.03 158);margin-top:auto;padding-top:16px;display:flex;gap:18px;font:400 13.5px Jost;color:oklch(0.74 0.02 80)"><span style="color:oklch(0.94 0.012 85)">Day</span><span>Settings</span><span>Guide</span></div>
+</div>
+
+<div style="padding:44px clamp(28px,4vw,56px) 140px">
+<div style="display:flex;align-items:baseline;gap:12px;font:400 15px Jost;color:oklch(0.74 0.02 80)"><span>People</span><span style="color:oklch(0.36 0.03 158)">/</span><span style="color:oklch(0.94 0.012 85)">Messages</span></div>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px;margin-top:26px">
+<div style="flex:1;min-width:260px"><h2 style="font:300 clamp(60px,6vw,88px)/.9 'Cormorant Garamond',serif;margin:0">Messages</h2><div style="font:italic 300 24px 'Cormorant Garamond',serif;color:oklch(0.74 0.02 80);margin-top:12px">Ines wrote yesterday. Nothing else waiting.</div></div>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;background:oklch(0.74 0.12 76);color:oklch(0.22 0.018 60);white-space:nowrap">Write</span>
+</div>
+<div style="margin-top:40px;border-top:1px solid oklch(0.94 0.012 85)">
+<sc-for list="{{ threads }}" as="t" hint-placeholder-count="5">
+<div style="display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:20px 0;border-bottom:1px solid oklch(0.36 0.03 158)">
+<span style="width:6px;height:6px;background:{{ t.dot }};align-self:center"></span>
+<div style="min-width:0"><div style="font:{{ t.font }};color:oklch(0.94 0.012 85)">{{ t.name }}</div><div style="font:400 15px/1.5 Jost;color:oklch(0.74 0.02 80);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.last }}</div></div>
+<span style="font:400 13px Jost;color:oklch(0.74 0.02 80);white-space:nowrap">{{ t.when }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="position:absolute;left:calc(270px + (100% - 270px)/2);bottom:28px;transform:translateX(-50%);width:min(680px,calc(100% - 330px));background:oklch(0.18 0.035 158);border:1px solid oklch(0.36 0.03 158);color:oklch(0.94 0.012 85);display:flex;align-items:center;gap:18px;padding:16px 24px;box-sizing:border-box">
+<span style="font:300 24px Jost;color:oklch(0.74 0.12 76)">+</span><span style="flex:1;font:italic 300 22px 'Cormorant Garamond',serif;color:oklch(0.74 0.02 80);white-space:nowrap;overflow:hidden">Set something down…</span><span style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid oklch(0.36 0.03 158);font:500 10px Jost;letter-spacing:.24em"><span style="width:6px;height:6px;background:oklch(0.74 0.12 76)"></span>SPEAK</span>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const WRONGS=[
+ ['Sidebar titles (Today, Spaces, Tools…) are dark ink on dark green – almost invisible.','Titles use var(--k-ink). Only the open fold turns var(--k-goldt).'],
+ ['Keylines are near-white and heavy; they shout.','All rules use var(--k-line) – a green barely lighter than the ground. Ink rules only under section headers.'],
+ ['The Mandombe mark renders in the wrong colours at night.','Keep the mark – swap to mandombe-ko-ivory.svg on body.night, mandombe-ko-ink.svg by day.'],
+ ['Gradient ground and a lighter green rectangle behind the content.','One flat ground: var(--k-bg). No gradients, no inset panel behind the page.'],
+ ['Each conversation is a boxed card with a letter avatar.','Plain rows on keylines, no avatars. Name in Cormorant 23, last line muted, a 6px gold square if unread.'],
+ ['Set something down sits in the same green as the page.','Night bar: var(--k-deep) – darker than the ground – with a 1px var(--k-line) border.'],
+ ['Header “+ New” and back arrow are boxed buttons.','Breadcrumb as text. One gold button per page, and nothing else boxed.'],
+ ['Emoji in previews.','Render emoji as sent in the thread itself, but strip them from list previews.']
+];
+const TOKENS=[
+ ['--k-bg','oklch(0.975 0.012 85)','oklch(0.23 0.035 158)','Page ground'],
+ ['--k-panel','oklch(0.99 0.006 85)','oklch(0.26 0.035 158)','Opened row, dropdowns'],
+ ['--k-soft','oklch(0.94 0.016 82)','oklch(0.29 0.035 158)','Folded-open sheets'],
+ ['--k-ink','oklch(0.22 0.018 60)','oklch(0.94 0.012 85)','All text, titles, header rules'],
+ ['--k-mute','oklch(0.46 0.022 70)','oklch(0.74 0.02 80)','Hints, times, previews'],
+ ['--k-line','oklch(0.88 0.014 80)','oklch(0.36 0.03 158)','Every keyline'],
+ ['--k-gold','oklch(0.72 0.13 75)','oklch(0.74 0.12 76)','Buttons, marks, progress'],
+ ['--k-goldt','oklch(0.55 0.11 70)','oklch(0.8 0.11 78)','Gold text, links, open fold'],
+ ['--k-deep','oklch(0.28 0.04 155)','oklch(0.18 0.035 158)','Forest panels, Set down bar'],
+ ['--k-ondeep','oklch(0.975 0.012 85)','oklch(0.94 0.012 85)','Text on forest panels']
+];
+const FOLDS=[['today','Today','Sunday',[]],['spaces','Spaces','34 spaces',[]],['tools','Tools','Mail 21 to sort',[]],['people','People','Ines wrote',[['Messages','1',true],['Contacts',''],['Sharing','']]],['money','Money','',[]],['inner','Reflection','',[]],['reviews','Reviews','Weekly, on Sunday',[]]];
+const THREADS=[['Ines','You: People are saying they don’t like the name LifeFold for an app. I need a beautiful new name… maybe something Italian.','1d',true],['Peter','You: ez big boi','1d',false],['Helena','Hey, I love the journal, I am using it all the time!','4d',false],['Sofia','You: Hello!','2w',false],['Carolina','Oi!','1mo',false]];
+class Component extends DCLogic {
+  state={open:'people'};
+  renderVals(){
+    const st=this.state;
+    return {
+      wrongs:WRONGS.map(([bad,fix],i)=>({n:['I','II','III','IV','V','VI','VII','VIII'][i],bad,fix})),
+      tokens:TOKENS.map(([name,day,night,use])=>({name,day,night,use})),
+      folds:FOLDS.map(([id,label,hint,items])=>{const open=st.open===id;return {label,hint,open,closed:!open,sign:open?'−':'+',color:open?'oklch(0.8 0.11 78)':'oklch(0.94 0.012 85)',toggle:()=>this.setState({open:open?null:id}),items:items.map(([l,b,on])=>({label:l,badge:b,color:on?'oklch(0.8 0.11 78)':'oklch(0.94 0.012 85)'}))};}),
+      threads:THREADS.map(([name,last,when,unread])=>({name,last,when,dot:unread?'oklch(0.74 0.12 76)':'transparent',font:unread?"500 23px/1.15 'Cormorant Garamond',serif":"300 23px/1.15 'Cormorant Garamond',serif"}))
+    };
+  }
+}
+</script>
+</body>
+</html>

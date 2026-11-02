@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Messages – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);--k-mine:oklch(0.92 0.03 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158);--k-mine:oklch(0.31 0.04 150)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="height:100vh;display:flex;flex-direction:column;background:var(--k-bg);color:var(--k-ink)">
+<div style="border-bottom:1px solid var(--k-line);flex:none">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">People <span style="color:var(--k-gold);font-size:12px">{{ unreadAll }}</span></span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;max-width:1600px;width:100%;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);box-sizing:border-box;display:grid;grid-template-columns:minmax(280px,400px) minmax(0,1fr);gap:clamp(32px,4vw,72px)">
+
+<div style="min-height:0;overflow:auto;padding:36px 0 40px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">People</span></div>
+<h1 style="font:300 64px/1 'Cormorant Garamond',serif;margin:12px 0 0">Messages</h1>
+<div style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 0;border-bottom:1px solid var(--k-line)"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Look for a person or a word…" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 15px Jost;color:var(--k-ink)"><span style="font:500 13px Jost;color:var(--k-goldt);white-space:nowrap;cursor:pointer">+ New</span></div>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+<div style="margin-top:24px">
+<div style="display:flex;align-items:center;gap:12px;padding-bottom:4px"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div>
+<sc-for list="{{ g.items }}" as="c">
+<div onClick="{{ c.open }}" style="display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;padding:14px 12px 14px 10px;margin:0 -12px 0 -10px;border-bottom:1px solid var(--k-line);cursor:pointer;background:{{ c.bg }}">
+<span style="width:6px;height:6px;background:{{ c.dot }};align-self:center"></span>
+<span style="font:{{ c.nameFont }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+<span style="font:400 12.5px Jost;color:{{ c.timeColor }};white-space:nowrap">{{ c.when }}</span>
+<span></span>
+<span style="grid-column:2/4;font:400 14px/1.45 Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.last }}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="min-height:0;display:flex;flex-direction:column;border-left:1px solid var(--k-line);padding-left:clamp(32px,4vw,72px);margin-left:calc(-1 * clamp(16px,2vw,36px))">
+<div style="flex:none;display:flex;align-items:baseline;gap:18px;padding:36px 0 18px;border-bottom:1px solid var(--k-line)">
+<span style="font:300 48px/1 'Cormorant Garamond',serif">{{ cur.name }}</span>
+<span style="display:flex;align-items:center;gap:8px;font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:{{ cur.presDot }}"></span>{{ cur.presence }}</span>
+<span style="margin-left:auto;display:flex;gap:20px;font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap"><span style="cursor:pointer">{{ cur.space }}</span><span style="cursor:pointer">Contact</span><span style="cursor:pointer">Mute</span></span>
+</div>
+
+<div style="flex:1;min-height:0;overflow:auto;padding:12px 0 20px;display:flex;flex-direction:column-reverse">
+<div>
+<sc-for list="{{ thread }}" as="r" hint-placeholder-count="6">
+<sc-if value="{{ r.isDay }}"><div style="display:flex;align-items:center;gap:14px;padding:26px 0 10px"><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">{{ r.day }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div></sc-if>
+<sc-if value="{{ r.isMsg }}">
+<div style="display:flex;flex-direction:column;align-items:{{ r.align }};padding-top:{{ r.gap }}">
+<sc-if value="{{ r.showWho }}"><div style="font:500 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-mute);margin:0 0 6px">{{ r.who }} · {{ r.time }}</div></sc-if>
+<div style="max-width:min(560px,80%);padding:{{ r.pad }};background:{{ r.bg }};font:400 17px/1.5 Jost;text-wrap:pretty">{{ r.text }}</div>
+</div>
+</sc-if>
+</sc-for>
+<sc-if value="{{ cur.typing }}"><div style="padding-top:16px;font:italic 300 19px 'Cormorant Garamond',serif;color:var(--k-mute)">{{ cur.name }} is writing…</div></sc-if>
+</div>
+</div>
+
+<div style="flex:none;padding:14px 0 28px;border-top:1px solid var(--k-line)">
+<div style="display:flex;align-items:center;gap:20px">
+<input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="{{ cur.ph }}" style="flex:1;min-width:0;border:0;border-bottom:1px solid var(--k-ink);background:transparent;outline:none;padding:10px 0;font:300 24px 'Cormorant Garamond',serif;color:var(--k-ink)">
+<span onClick="{{ send }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:{{ sendColor }};cursor:pointer;white-space:nowrap">Send ↵</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px;font:400 13px Jost;color:var(--k-mute)"><span>Turn the last message into</span><span style="color:var(--k-goldt);cursor:pointer">a task</span><span style="color:var(--k-goldt);cursor:pointer">a note</span><span style="color:var(--k-goldt);cursor:pointer">an event</span></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const P='peter',CONV=[
+ {id:'helena',name:'Helena',space:'Me',online:false,seen:'Seen 2 hours ago',unread:1,msgs:[['Tue',[['h','Hey, I love the journal, I am using it all the time!','18:40']]]],when:'5d'},
+ {id:'carolina',name:'Carolina',space:'Língua Portuguesa',online:true,unread:1,msgs:[['3 Oct',[['h','Oi!','10:02']]]],when:'1mo'},
+ {id:P,name:'Peter',space:'Business',online:true,typing:true,unread:0,when:'2d',msgs:[
+  ['Thursday',[['h','where did you get the Spirit cards / i ching from?','21:02'],['h','I’m not sure Life Spaces is the best name for Projects. I think Projects is better.','21:03'],
+   ['me','Projects suggest it’s a finite thing','21:10'],['me','Life Spaces can be ongoing – Maya, Tara, Family etc','21:10'],['me','Hardly a project','21:11'],['me','I looked at lots of names','21:11'],['me','It’s basically a Life Area, but that’s boring','21:12'],
+   ['h','How about just Area','21:20'],['h','I’m still not getting notified when I get a message','21:21'],['me','refresh and you will do','21:30']]],
+  ['Saturday',[['h','hello?','09:14'],['h','Yo','09:15'],['me','ez big boi','09:40']]]]},
+ {id:'ines',name:'Ines',space:'Business',online:false,seen:'Seen yesterday',unread:0,when:'2d',msgs:[['Thursday',[['me','People are saying they don’t like the name LifeFold for an app. I need a beautiful new name… maybe something Italian….','19:05']]]]},
+ {id:'sofia',name:'Sofia',space:'Me',online:false,seen:'Seen last week',unread:0,when:'2w',msgs:[['19 Oct',[['me','Hello!','12:00']]]]}];
+class Component extends DCLogic {
+  state={cur:P,read:{},added:{},draft:'',q:'',night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const msgsOf=c=>{const m=c.msgs.map(([d,a])=>[d,a.slice()]);const ad=st.added[c.id]||[];if(ad.length){if(m[m.length-1][0]!=='Today')m.push(['Today',[]]);m[m.length-1][1].push(...ad.map(t=>['me',t,'now']));}return m;};
+    const unread=c=>st.read[c.id]||c.id===st.cur?0:c.unread;
+    const last=c=>{const m=msgsOf(c);const a=m[m.length-1][1];const x=a[a.length-1];return (x[0]==='me'?'You: ':'')+x[1];};
+    const ql=st.q.trim().toLowerCase();
+    const list=CONV.filter(c=>!ql||c.name.toLowerCase().includes(ql)||c.msgs.some(([,a])=>a.some(x=>x[1].toLowerCase().includes(ql))));
+    const row=c=>{const u=unread(c),on=c.id===st.cur;return {name:c.name,when:(st.added[c.id]||[]).length?'now':c.when,last:last(c),dot:u?'var(--k-gold)':'transparent',
+      nameFont:u?"500 24px/1.15 'Cormorant Garamond',serif":"300 24px/1.15 'Cormorant Garamond',serif",timeColor:u?'var(--k-goldt)':'var(--k-mute)',bg:on?'var(--k-soft)':'transparent',
+      open:()=>set({cur:c.id,read:{...st.read,[c.id]:true},draft:''})};};
+    const waiting=list.filter(c=>unread(c)),rest=list.filter(c=>!unread(c));
+    const groups=[waiting.length&&{label:'Waiting on you',count:waiting.length,items:waiting.map(row)},rest.length&&{label:waiting.length?'Everyone else':'All',count:rest.length,items:rest.map(row)}].filter(Boolean);
+    const c=CONV.find(x=>x.id===st.cur);
+    const thread=[];msgsOf(c).forEach(([day,a])=>{thread.push({isDay:true,isMsg:false,day});a.forEach((x,i)=>{const mine=x[0]==='me',prev=a[i-1],first=!prev||prev[0]!==x[0];
+      thread.push({isDay:false,isMsg:true,text:x[1],who:mine?'You':c.name,time:x[2],showWho:first,align:mine?'flex-end':'flex-start',gap:first?'18px':'6px',bg:mine?'var(--k-mine)':'transparent',pad:mine?'10px 16px':'2px 0'});});});
+    const send=()=>{const t=st.draft.trim();if(!t)return;set({added:{...st.added,[c.id]:[...(st.added[c.id]||[]),t]},draft:''});};
+    return {groups,thread,unreadAll:String(CONV.reduce((s,x)=>s+unread(x),0)||''),
+      cur:{name:c.name,space:'In '+c.space,presence:c.online?'Here now':c.seen,presDot:c.online?'var(--k-gold)':'var(--k-line)',typing:!!c.typing&&!(st.added[c.id]||[]).length,ph:'Write to '+c.name+'…'},
+      draft:st.draft,onDraft:e=>set({draft:e.target.value}),onKey:e=>{if(e.key==='Enter'){e.preventDefault();send();}},send,sendColor:st.draft.trim()?'var(--k-goldt)':'var(--k-mute)',
+      q:st.q,onQ:e=>set({q:e.target.value}),dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

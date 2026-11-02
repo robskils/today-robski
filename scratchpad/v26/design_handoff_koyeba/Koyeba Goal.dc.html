@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Goal – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+textarea::placeholder,input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:100px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:400 14px Jost;display:flex;gap:8px;align-items:baseline;min-width:0"><span style="color:var(--k-gold)">←</span><a href="#">Goals</a><span style="color:var(--k-mute)">·</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Take Tara on a zen retreat at Seikuji</span></div>
+
+<div style="padding:36px 0 34px;border-bottom:1px solid var(--k-line)">
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+<span style="width:28px;height:1px;background:var(--k-gold)"></span>
+<span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Goal · Tara · This quarter</span>
+<span onClick="{{ toggleStar }}" style="display:flex;align-items:center;gap:8px;margin-left:8px;cursor:pointer;font:400 13px Jost;color:{{ starColor }}"><span style="width:9px;height:9px;border:1px solid var(--k-gold);background:{{ starFill }}"></span>{{ starLabel }}</span>
+</div>
+<h1 style="font:300 clamp(52px,5.6vw,88px)/1 'Cormorant Garamond',serif;margin:16px 0 0;max-width:1100px;text-wrap:balance;letter-spacing:-.01em">Take Tara on a zen retreat at Seikuji</h1>
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px 56px;margin-top:30px">
+<div style="flex:1;min-width:300px;max-width:640px">
+<div style="display:flex;align-items:baseline;gap:16px"><span style="font:300 64px/1 'Cormorant Garamond',serif">{{ pct }}</span><span style="font:400 14px Jost;color:var(--k-mute)">{{ pctNote }}</span></div>
+<div onPointerDown="{{ pDown }}" onPointerMove="{{ pMove }}" onPointerUp="{{ pUp }}" onPointerCancel="{{ pUp }}" style="position:relative;height:28px;margin-top:10px;cursor:{{ barCursor }};touch-action:none;user-select:none">
+<div style="position:absolute;left:0;right:0;top:13px;height:1px;background:var(--k-line)"></div>
+<div style="position:absolute;left:0;top:12px;height:3px;width:{{ pct }};background:var(--k-gold);transition:{{ barEase }}"></div>
+<sc-for list="{{ ticks }}" as="t"><div style="position:absolute;top:9px;left:{{ t.at }};width:1px;height:9px;background:var(--k-line)"></div></sc-for>
+<sc-if value="{{ hasHandle }}"><div style="position:absolute;top:6px;left:{{ pct }};width:14px;height:14px;margin-left:-7px;background:var(--k-gold);box-sizing:border-box;border:1px solid var(--k-bg);outline:1px solid var(--k-gold);transform:scale({{ handleScale }});transition:{{ handleEase }};cursor:grab"></div></sc-if>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font:400 13.5px Jost">
+<span onClick="{{ achieve }}" style="white-space:nowrap;margin-left:auto;color:var(--k-goldt);cursor:pointer">Mark achieved</span>
+</div>
+</div>
+<div style="display:flex;gap:clamp(24px,3vw,48px)">
+<div><div style="font:300 34px/1 'Cormorant Garamond',serif">59 days</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:6px;white-space:nowrap">By Thu 31 December</div></div>
+<div><div style="font:300 34px/1 'Cormorant Garamond',serif">{{ stepsLeft }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:6px;white-space:nowrap">Steps to go</div></div>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:clamp(40px,5vw,96px);align-items:start">
+<div style="min-width:0;max-width:980px">
+
+<sc-if value="{{ hasNudge }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-top:28px;padding:16px 20px;background:var(--k-soft)">
+<span style="flex-basis:100%;white-space:nowrap;font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt)">Coming into view</span>
+<span style="font:italic 300 22px/1.35 'Cormorant Garamond',serif;flex:1;min-width:260px">Seikuji’s winter sesshin runs 7–13 December – before your deadline. Hold the week?</span>
+<span onClick="{{ holdWeek }}" style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Hold it</span>
+<span onClick="{{ skipNudge }}" style="font:400 13px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Not now</span>
+</div>
+</sc-if>
+
+<sc-for list="{{ folds }}" as="f" hint-placeholder-count="3">
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:baseline;gap:16px;padding:28px 0 12px;cursor:pointer"><span style="font:300 36px/1 'Cormorant Garamond',serif;white-space:nowrap">{{ f.title }}</span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ f.hint }}</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ f.sign }}</span></div>
+<sc-if value="{{ f.open }}">
+<div style="padding:0 0 28px;animation:kfade .4s ease">
+
+<sc-if value="{{ f.isWhy }}">
+<textarea value="{{ why }}" onChange="{{ onWhy }}" placeholder="The reason that carries it through the hard weeks…" rows="3" style="display:block;width:100%;box-sizing:border-box;border:0;background:transparent;outline:none;resize:none;font:italic 300 clamp(24px,2.3vw,29px)/1.45 'Cormorant Garamond',serif;color:var(--k-ink);padding:0"></textarea>
+</sc-if>
+
+<sc-if value="{{ f.isSteps }}">
+<sc-for list="{{ steps }}" as="s">
+<div style="display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:14px 0;border-top:1px solid var(--k-line)">
+<span onClick="{{ s.tick }}" style="width:10px;height:10px;border:1px solid var(--k-gold);background:{{ s.fill }};cursor:pointer;align-self:center"></span>
+<div style="min-width:0"><div style="font:300 24px/1.25 'Cormorant Garamond',serif;color:{{ s.color }};text-decoration:{{ s.strike }}">{{ s.title }}</div><sc-if value="{{ s.hasMeta }}"><div style="font:400 13px Jost;color:var(--k-mute);margin-top:3px">{{ s.meta }}</div></sc-if></div>
+<span style="font:400 13px Jost;color:{{ s.pColor }};white-space:nowrap">{{ s.pri }}</span>
+</div>
+</sc-for>
+<div style="display:flex;align-items:center;gap:16px;padding:14px 0 0;border-top:1px solid var(--k-line)"><span style="font:300 22px Jost;color:var(--k-gold)">+</span><input value="{{ newStep }}" onChange="{{ onStep }}" onKeyDown="{{ onStepKey }}" placeholder="Add a step – it becomes a task in Tara" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 15.5px Jost;color:var(--k-ink)"></div>
+</sc-if>
+
+<sc-if value="{{ f.isThink }}">
+<div style="display:flex;align-items:center;gap:16px;padding:4px 0 14px"><input value="{{ newThought }}" onChange="{{ onThought }}" onKeyDown="{{ onThoughtKey }}" placeholder="Add a thought…" style="flex:1;min-width:0;border:0;border-bottom:1px solid var(--k-line);background:transparent;outline:none;padding:8px 0;font:italic 300 22px 'Cormorant Garamond',serif;color:var(--k-ink)"></div>
+<sc-for list="{{ thoughts }}" as="t">
+<div style="display:grid;grid-template-columns:84px minmax(0,1fr);gap:18px;align-items:baseline;padding:12px 0">
+<span style="font:500 12px Jost;letter-spacing:.06em;color:var(--k-mute)">{{ t.when }}</span>
+<span style="font:300 22px/1.4 'Cormorant Garamond',serif;text-wrap:pretty">{{ t.text }}</span>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{ f.isTiming }}">
+<sc-for list="{{ settings }}" as="r">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 24px;align-items:baseline;padding:14px 0;border-top:1px solid var(--k-line)">
+<div><div style="font:400 16px Jost">{{ r.label }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:3px">{{ r.sub }}</div></div>
+<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 18px;font:400 14.5px Jost;white-space:nowrap"><sc-for list="{{ r.opts }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;color:{{ o.color }};padding-bottom:2px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for></div>
+</div>
+</sc-for>
+<div style="padding:18px 0 0;border-top:1px solid var(--k-line);font:400 14px Jost;color:var(--k-goldt);cursor:pointer">Delete this goal…</div>
+</sc-if>
+
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:28px">
+<div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--k-ink)"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase">Connected</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ connCount }}</span></div>
+<sc-for list="{{ conn }}" as="c" hint-placeholder-count="4">
+<div>
+<div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);padding:16px 0 4px">{{ c.label }}</div>
+<sc-for list="{{ c.items }}" as="it">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="font:300 21px/1.25 'Cormorant Garamond',serif">{{ it.a }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.b }}</span></div>
+</sc-for>
+</div>
+</sc-for>
+<div style="display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 0;border-bottom:1px solid var(--k-line)"><span style="font:300 20px Jost;color:var(--k-gold)">+</span><span style="font:400 14px Jost;color:var(--k-mute)">Connect a note, person, event or link…</span></div>
+<div style="font:400 12.5px/1.5 Jost;color:var(--k-mute);margin-top:10px">Paste a link, or type a name – Koyeba finds it.</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const STEPS=[
+ ['Find Seikuji’s retreat dates','seikuji.pt · winter sesshin 7–13 Dec','',1],
+ ['Ask Tara which week suits','','First',0],
+ ['Book the retreat and pay the deposit','€120 each · after Tara says yes','First',0],
+ ['Arrange the kids for the week','Ask Mum, or Ana as a back-up','Soon',0],
+ ['Book the train to Saboia','Lisbon – Funcheira, then a taxi','Soon',0]];
+class Component extends DCLogic {
+  state={star:true,mode:'feel',feel:15,done:{0:true},added:[],newStep:'',why:'Tara has wanted this for years. A week of quiet together, before the busy spring – and a chance to practise the way we keep saying we will.',
+    thoughts:[['28 Oct','Tara said she’d rather go before Christmas than after.'],['14 Oct','Seikuji is a Sōtō temple in the hills near Saboia. Simple rooms, early mornings.']],newThought:'',
+    o:{why:true,steps:true,think:true,timing:false},nudge:true,held:false,set:{dl:0,check:0,remind:1},night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const all=[...STEPS,...st.added.map(t=>[t,'','Whenever',0])];
+    const doneN=all.filter((_,i)=>st.done[i]).length;
+    const pctN=st.feel;
+    const steps=all.map(([title,meta,pri],i)=>{const d=!!st.done[i];return {title,meta,hasMeta:!!meta,pri:d?'Done':pri,pColor:pri==='First'&&!d?'var(--k-goldt)':'var(--k-mute)',fill:d?'var(--k-gold)':'transparent',color:d?'var(--k-mute)':'var(--k-ink)',strike:d?'line-through':'none',tick:()=>set({done:{...st.done,[i]:!d}})};});
+    const tg=k=>()=>set({o:{...st.o,[k]:!st.o[k]}});
+    const folds=[
+     {id:'why',title:'Why this matters',hint:st.why?'':'Not written yet'},
+     {id:'steps',title:'How I’ll get there',hint:doneN+' of '+all.length+' steps done · each one is a task in Tara'},
+     {id:'think',title:'Thinking',hint:st.thoughts.length+' thoughts, newest first'},
+     {id:'timing',title:'Timing and settings',hint:['End of quarter, 31 December','A date you pick','No deadline'][st.set.dl]+' · checked in the weekly review'}
+    ].map(f=>({...f,hint:st.o[f.id]&&f.id==='why'?'':f.hint,open:!!st.o[f.id],sign:st.o[f.id]?'−':'+',toggle:tg(f.id),isWhy:f.id==='why',isSteps:f.id==='steps',isThink:f.id==='think',isTiming:f.id==='timing'}));
+    const opt=(k,labels)=>labels.map((l,i)=>({label:l,color:st.set[k]===i?'var(--k-ink)':'var(--k-mute)',line:st.set[k]===i?'var(--k-gold)':'transparent',pick:()=>set({set:{...st.set,[k]:i}})}));
+    const settings=[
+     {label:'Deadline',sub:'Thu 31 December – 59 days from today',opts:opt('dl',['End of quarter','Pick a date','None'])},
+     {label:'Check in',sub:'Where Koyeba asks how it’s going',opts:opt('check',['Weekly review','Monthly review','Never'])},
+     {label:'Remind me',sub:'Before the deadline',opts:opt('remind',['Off','A week before','A month before'])},
+     {label:'Spaces',sub:'Where this goal shows up',opts:[{label:'Tara',color:'var(--k-ink)',line:'var(--k-gold)',pick:()=>{}},{label:'+ Add',color:'var(--k-goldt)',line:'transparent',pick:()=>{}}]}];
+    const conn=[
+     {label:'People',items:[['Tara','Tara Space']]},
+     {label:'Events',items:st.held?[['Winter sesshin, Seikuji','7–13 Dec · held']]:[['Ask Tara over dinner','Fri 6 Nov']]},
+     {label:'Notes',items:[['Seikuji – what to bring','Note · 14 Oct'],['Zazen at home','Note · Zen']]},
+     {label:'Links',items:[['seikuji.pt','Retreat dates']]}];
+    return {starFill:st.star?'var(--k-gold)':'transparent',starColor:st.star?'var(--k-goldt)':'var(--k-mute)',starLabel:st.star?'Starred':'Star',toggleStar:()=>set({star:!st.star}),
+      pct:pctN+'%',pctNote:st.drag?'Let go to set it':'Drag the slider',barCursor:st.mode==='feel'?(st.drag?'grabbing':'pointer'):'default',
+      hasHandle:st.mode==='feel',handleScale:st.drag?'1.25':'1',handleEase:st.drag?'transform .15s ease':'left .4s ease, transform .15s ease',barEase:st.drag?'none':'width .4s ease',
+      pDown:e=>{if(st.mode!=='feel')return;e.currentTarget.setPointerCapture(e.pointerId);const r=e.currentTarget.getBoundingClientRect();set({drag:true,feel:Math.max(0,Math.min(100,Math.round((e.clientX-r.left)/r.width*20)*5))});},
+      pMove:e=>{if(!this.state.drag)return;const r=e.currentTarget.getBoundingClientRect();const v=Math.max(0,Math.min(100,Math.round((e.clientX-r.left)/r.width*20)*5));if(v!==this.state.feel)set({feel:v});},
+      pUp:()=>{if(this.state.drag)set({drag:false});},
+      ticks:[25,50,75].map(x=>({at:x+'%'})),
+      modes:[['feel','By feel'],['steps','By steps']].map(([id,l])=>({label:l,color:st.mode===id?'var(--k-ink)':'var(--k-mute)',line:st.mode===id?'var(--k-gold)':'transparent',pick:()=>set({mode:id})})),
+      achieve:()=>set({mode:'feel',feel:100}),stepsLeft:String(all.length-doneN),
+      hasNudge:st.nudge,holdWeek:()=>set({nudge:false,held:true}),skipNudge:()=>set({nudge:false}),
+      folds,why:st.why,onWhy:e=>set({why:e.target.value}),steps,newStep:st.newStep,onStep:e=>set({newStep:e.target.value}),
+      onStepKey:e=>{if(e.key==='Enter'&&st.newStep.trim())set({added:[...st.added,st.newStep.trim()],newStep:''});},
+      thoughts:st.thoughts.map(([when,text])=>({when,text})),newThought:st.newThought,onThought:e=>set({newThought:e.target.value}),
+      onThoughtKey:e=>{if(e.key==='Enter'&&st.newThought.trim())set({thoughts:[['Today',st.newThought.trim()],...st.thoughts],newThought:''});},
+      settings,conn:conn.map(c=>({label:c.label,items:c.items.map(([a,b])=>({a,b}))})),connCount:conn.reduce((s,c)=>s+c.items.length,0),dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>
