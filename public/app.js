@@ -8266,16 +8266,67 @@ function homeSpacesColHtml() {
   const rows = sorted.slice(0, 8).map((a) => `<button class="home-sp" data-open-area="${a.id}"><span class="home-sp-n">${areaNumeral(a.id)}</span><span class="home-sp-l">${esc(a.title || 'Untitled')}</span></button>`).join('');
   return `<div class="home-sp-grid">${rows}</div><button class="home-sp-all" data-open-areas>All ${areas.length} Space${areas.length === 1 ? '' : 's'} →</button>`;
 }
-// A reading (§19): the I Ching reading and the spirit card, quiet rows inside the
-// fold - no box, no sparkle, no ×.
-function homeReadingHtml() {
+// §41 Your Spaces (the sticky right column on Today): each Space with its
+// numeral, a live line, a gold "needs you" square when a deadline is close or
+// past, and the top couple of open items when unfolded.
+function homeSpaceLine(a) {
+  const due = a.props && a.props.due;
+  if (due && /^\d{4}-\d{2}-\d{2}$/.test(due)) {
+    const d = daysBetween(todayISO(), due);
+    const line = d < 0 ? `${-d} day${d === -1 ? '' : 's'} past` : d === 0 ? 'Due today' : d === 1 ? 'Due tomorrow' : `Due in ${d} days`;
+    return { line, needs: d <= 1 };
+  }
+  const n = areaOpenTaskCount(a.id);
+  return { line: n ? `${n} to do` : 'Quiet just now', needs: false };
+}
+function homeSpaceItems(a) {
+  return (state.tasks || []).filter((t) => t.props && !t.props.done && !(t.props.hideUntil && isSnoozed(t)) && blockAreas(t).includes(a.id)).slice(0, 3)
+    .map((t) => ({ k: 'Task', t: t.title || 'Untitled', attr: `data-open-task="${t.id}"` }));
+}
+function homeSpacesAsideHtml() {
+  const areas = (state.areas || []);
+  if (!areas.length) return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span></div><button class="home-sa-new" data-new-area>+ New Space</button>`;
+  const sorted = areas.slice().sort((a, b) => (((b.props && b.props.fav) ? 1 : 0) - ((a.props && a.props.fav) ? 1 : 0)) || (a.title || '').localeCompare(b.title || ''));
+  const open = (state.home && state.home.spacesOpen) || {};
+  let need = 0;
+  const rows = sorted.map((a) => {
+    const { line, needs } = homeSpaceLine(a); if (needs) need++;
+    const isOpen = !!open[a.id];
+    const items = isOpen ? homeSpaceItems(a) : [];
+    return `<div class="home-sa-sp">
+      <div class="home-sa-h" data-home-space="${a.id}" role="button" tabindex="0">
+        <span class="home-sa-n">${areaNumeral(a.id)}</span>
+        <span class="home-sa-nm">${esc(a.title || 'Untitled')}</span>
+        <span class="home-sa-rt"><span class="home-sa-dot${needs ? ' on' : ''}"></span><span class="home-sa-sign">${isOpen ? '−' : '+'}</span></span>
+        <span class="home-sa-line${needs ? ' needs' : ''}">${esc(line)}</span>
+      </div>
+      ${isOpen ? `<div class="home-sa-body">${items.map((it) => `<div class="home-sa-it" ${it.attr} role="button" tabindex="0"><span class="home-sa-k">${esc(it.k)}</span><span class="home-sa-t">${esc(it.t)}</span></div>`).join('') || '<div class="home-sa-none">Nothing open here.</div>'}<button class="home-sa-open" data-open-area="${a.id}">Open ${esc(a.title || 'Space')} →</button></div>` : ''}
+    </div>`;
+  }).join('');
+  const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
+  return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><button class="home-sa-all" data-open-areas>All →</button></div>${rows}<button class="home-sa-new" data-new-area>+ New Space</button>`;
+}
+// §35 Reflections on Today: anything drawn or cast today - a Spirit card, an I
+// Ching reading, the horoscope, a Compass check-in - each staying until the next
+// morning or until put away, then living on in its tool's history. Open reopens
+// it; Put away dismisses it for the day only.
+function reflAwayKey() { return 'life.refl.away.' + todayISO(); }
+function reflAwaySet() { try { return new Set(JSON.parse(localStorage.getItem(reflAwayKey()) || '[]')); } catch { return new Set(); } }
+function reflPutAway(key) { const s = reflAwaySet(); s.add(key); try { localStorage.setItem(reflAwayKey(), JSON.stringify([...s])); } catch {} if (state.view && state.view.type === 'home') renderHome(); }
+function homeReadingItems() {
+  const away = reflAwaySet(); const out = [];
   const ic = currentIching();
-  const sp = currentSpirit();
-  if (!ic && !sp) return '<div class="home-empty">Cast the I Ching or pull a card from Reflection, and today\'s reading sits here.</div>';
-  let out = '';
-  if (ic && ic.lines) { const hex = icHexFor(ic.lines, false); if (hex) { const moving = ic.lines.some((l) => l.changing); out += `<button class="home-read-row" data-iching-reopen><span class="home-read-sym">${esc(hex.cn || '')}</span><span class="home-read-b"><span class="home-read-name">${esc(hex.name || '')}</span><span class="home-read-kind">I Ching · ${esc(hex.py || hex.n || '')}${moving ? ' · changing' : ''}</span><span class="home-read-txt">${esc(hex.text || '')}</span></span></button>`; } }
-  if (sp) { out += `<button class="home-read-row" data-spirit-open><span class="home-read-sym home-read-word">${esc(sp.name || '')}</span><span class="home-read-b"><span class="home-read-txt">${esc(sp.message || '')}</span></span></button>`; }
-  return out;
+  if (ic && ic.lines) { const hex = icHexFor(ic.lines, false); if (hex) { const moving = ic.lines.some((l) => l.changing); out.push({ key: 'iching', kind: 'I Ching', title: `${hex.cn || ''} ${hex.name || ''}`.trim() || 'A reading', line: `${hex.text || ''}${moving ? ' · changing' : ''}`.trim(), open: 'data-iching-reopen' }); } }
+  const sp = currentSpirit(); if (sp) out.push({ key: 'spirit', kind: 'Spirit card', title: sp.name || 'A card', line: sp.message || '', open: 'data-spirit-open' });
+  const ho = currentHoro(); if (ho) out.push({ key: 'horo', kind: 'Horoscope', title: ho.sign || 'Today', line: (ho.text || '').replace(/\s+/g, ' ').slice(0, 130), open: 'data-horo-reopen' });
+  const co = currentCompass(); if (co && (co.question || co.bearing || co.summary)) out.push({ key: 'compass', kind: 'Compass', title: co.question || 'A decision', line: co.bearing || co.summary || '', open: 'data-open-compass' });
+  return out.filter((r) => !away.has(r.key));
+}
+function homeReadingSummary() { return homeReadingItems().map((r) => r.title).join(' · '); }
+function homeReadingHtml() {
+  const items = homeReadingItems();
+  if (!items.length) return `<div class="home-refl-empty"><span class="home-refl-none">Nothing drawn yet today.</span><span class="home-refl-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-refl-link" data-open-iching role="button" tabindex="0">Cast the coins</span>${modOn('tarot') ? '<span class="home-refl-link" data-open-tarot role="button" tabindex="0">Three cards</span>' : ''}</div>`;
+  return items.map((r) => `<div class="home-refl-row"><span class="home-refl-kind">${esc(r.kind)}</span><div class="home-refl-b"><div class="home-refl-t">${esc(r.title)}</div>${r.line ? `<div class="home-refl-line">${esc(r.line)}</div>` : ''}</div><span class="home-refl-acts"><span class="home-refl-open" ${r.open} role="button" tabindex="0">Open</span><span class="home-refl-away" data-refl-away="${r.key}" role="button" tabindex="0">Put away</span></span></div>`).join('');
 }
 // ── §39 Quote of the day ───────────────────────────────────────────────────
 // A quiet closing line (end of Today, top of Reflection Overview). One a day
@@ -8304,7 +8355,7 @@ async function keepQuote() {
   } catch (e) { toast(e.message); }
 }
 // ── §41/§42 Today sections ─────────────────────────────────────────────────
-function homeReadingCount() { return (currentIching() ? 1 : 0) + (currentSpirit() ? 1 : 0); }
+function homeReadingCount() { return homeReadingItems().length; }
 function homeBirthdaysHtml() {
   const bd = (state.home.alerts && state.home.alerts.birthdays) || [];
   if (!bd.length || (state.home.dayOffset || 0) !== 0) return '';
@@ -8353,8 +8404,11 @@ function renderHome() {
   const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
   const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${esc(homeDayLabel(off))}</span><span class="hf-hint">Events and plans</span><span class="hf-nav">${dayNav}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
   const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${homeBirthdaysHtml()}${homeTimelineHtml()}` : ''}</section>`;
-  // §35 Reflections: anything drawn or cast today, newest first.
-  const reflH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">Reflections</span><span class="hf-hint">${homeReadingCount() ? `${homeReadingCount()} today` : 'For today'}</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
+  // §35 Reflections: anything drawn or cast today, newest first. Folded shows a
+  // one-line summary of what's in it.
+  const reflCount = homeReadingCount();
+  const reflHint = kOpen('kreading') ? (reflCount ? `${reflCount} today` : 'For today') : (homeReadingSummary() || 'Nothing drawn yet');
+  const reflH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">Reflections</span><span class="hf-hint">${esc(reflHint)}</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
   const reflections = reflectOn() ? `<section class="home-sec2 home-reading">${reflH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
   // §41 Keep in touch (folded by default).
   const kitDue = ((state.home.alerts && state.home.alerts.keepInTouch) || []).length;
@@ -8371,11 +8425,16 @@ function renderHome() {
       <div class="home-flow">
         <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
         <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
-        ${homeWhatNextHtml()}
-        ${today}
-        ${reflections}
-        ${kit}
-        ${homeNotepadLineHtml()}
+        <div class="home-cols">
+          <div class="home-main">
+            ${homeWhatNextHtml()}
+            ${today}
+            ${reflections}
+            ${kit}
+            ${homeNotepadLineHtml()}
+          </div>
+          <aside class="home-aside">${homeSpacesAsideHtml()}</aside>
+        </div>
         ${quoteOfDayHtml()}
       </div>
       <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
@@ -24885,6 +24944,8 @@ document.addEventListener('click', (e) => {
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
+  { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
+  { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
   if (t.closest('[data-wn-why]')) { state.home.wnWhy = !state.home.wnWhy; renderHome(); return; }
   if (t.closest('[data-wn-notnow]') || t.closest('[data-wn-else]')) { const n = homeWhatNextCandidates().length; state.home.wnIdx = n ? ((state.home.wnIdx || 0) + 1) % n : 0; state.home.wnWhy = false; renderHome(); return; }
