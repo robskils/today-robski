@@ -9001,6 +9001,12 @@ function renderHome() {
   const _homeShown = !!document.querySelector('.home');
   const _prevWinScroll = _homeShown ? window.scrollY : 0;
   const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
+  // Anchor the viewport to the left tab band (Robin: triaging an email from Today
+  // must not shift the view). When the glance list below changes height, we re-scroll
+  // so the tab band stays at the same place on screen, instead of restoring an
+  // absolute pixel that now shows different content.
+  const _anchorEl = _homeShown ? document.querySelector('.home-ltabwrap') : null;
+  const _anchorTop = _anchorEl ? _anchorEl.getBoundingClientRect().top : null;
   const off = state.home.dayOffset || 0;
   const isTom = off >= 1;   // §45: Today (0) · Tomorrow (1), no further ahead here
   homeMaybePrefetchTomorrow();
@@ -9058,7 +9064,11 @@ function renderHome() {
   startHomeClock();         // keep the time beside the date ticking
   // Restore the scroll (see the capture at the top): a header tap that
   // collapses/expands a section should leave you exactly where you were.
-  if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
+  if (_anchorTop != null) {
+    const a = document.querySelector('.home-ltabwrap');
+    if (a) { const delta = a.getBoundingClientRect().top - _anchorTop; if (Math.abs(delta) > 0.5) window.scrollBy(0, delta); }
+    else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
+  } else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
   if (_prevSideScroll) { const el = document.querySelector('.home-side'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
@@ -22016,7 +22026,7 @@ function renderGoalCard() {
       <div class="gx-prog-top"><span class="gx-pct">${isDone ? '100%' : pctNum + '%'}</span><span class="gx-prog-state"><span class="gx-state">${esc(goalStateLine(isDone ? 100 : pctNum))}</span><span class="gx-drag">Drag to update</span></span></div>
       <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
       <div class="gx-slide-labels"><span>Just begun</span><span>Halfway</span><span>Done</span></div>
-      <div class="gx-facts">${daysFact}<div class="gx-fact"><div class="gx-fact-n">${doneN} of ${gtasks.length} done</div><div class="gx-fact-l">Steps towards it</div></div><div class="gx-fact"><div class="gx-fact-n">${esc(goalCadenceLabel(p.checkin))}</div><div class="gx-fact-l">Looked at in your review</div></div></div>`;
+      <div class="gx-facts">${daysFact}${gtasks.length ? `<div class="gx-fact"><div class="gx-fact-n">${doneN} of ${gtasks.length} done</div><div class="gx-fact-l">Steps towards it</div></div>` : ''}<div class="gx-fact"><div class="gx-fact-n">${esc(goalCadenceLabel(p.checkin))}</div><div class="gx-fact-l">Looked at in your review</div></div></div>`;
   const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in your ' + esc(spaceName) + ' space' : ''}" autocomplete="off"></div>`;
   const thinkBody = `<div class="gx-think-add"><input class="gx-think-input" data-goal-thought="${g.id}" placeholder="Add a thought…" autocomplete="off"></div>${thoughts.map((th) => `<div class="gx-thought"><span class="gx-thought-when">${esc(gcThoughtWhen(th.at))}</span><span class="gx-thought-t">${esc(th.text || '')}</span></div>`).join('')}`;
   // §67: title lives in the LEFT column (not full-width over both), so the right
