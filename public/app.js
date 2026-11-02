@@ -302,6 +302,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' && capState().open && !document.getElementById('flyer')) { ev.preventDefault(); capCancel(); return; }
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.notepad && state.notepad.open) { ev.preventDefault(); toggleNotepad(false); } });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.cv && state.cv.merge) { ev.preventDefault(); cvMergeClose(); } });
 document.addEventListener('click', (ev) => {
   const t = ev.target; if (!t.closest) return;
   if (t.closest('[data-notepad-open]')) { ev.preventDefault(); toggleNotepad(); return; }
@@ -18851,6 +18852,63 @@ async function cvSelect(id) {
   if (state.view && state.view.type === 'contacts' && String(cvState().cur) === String(id)) renderContacts();
   loadContactLinks(id);
 }
+// §48 Merge: fold one contact into another. The one you're on survives; the
+// other's details (emails, phones, addresses, birthday, star, Spaces, notes and
+// any keep-in-touch cadence) are folded in and it is removed. Linked items in
+// "Together" stay with whichever contact they were filed on.
+function cvMergeOpen() { const cv = cvState(); if (!cv.cur) return; cv.merge = { q: '', drop: null }; renderMergePicker(); }
+function cvMergeClose() { const cv = cvState(); cv.merge = null; const el = document.getElementById('cv-merge'); if (el) el.remove(); }
+function renderMergePicker() {
+  const cv = cvState(); const m = cv.merge; if (!m) { const el = document.getElementById('cv-merge'); if (el) el.remove(); return; }
+  const keep = (state.contact_open && state.contact_open.contact) || null; if (!keep) return;
+  let el = document.getElementById('cv-merge'); if (!el) { el = document.createElement('div'); el.id = 'cv-merge'; document.body.appendChild(el); }
+  const keepName = esc(keep.title || 'this contact');
+  if (m.drop) {
+    const d = (state.contacts || []).find((x) => String(x.id) === String(m.drop));
+    el.innerHTML = `<div class="cvm-scrim" data-cv-merge-cancel></div><div class="cvm-panel"><div class="cvm-title">Merge into ${keepName}?</div><p class="cvm-conf">${esc((d && d.title) || 'That contact')} will be folded in and removed. Its details join ${keepName}.</p><div class="cvm-acts"><button class="cvm-do" data-cv-merge-do>Merge</button><button class="cvm-cancel" data-cv-merge-back>Back</button></div></div>`;
+    return;
+  }
+  const ql = (m.q || '').trim().toLowerCase();
+  const others = (state.contacts || []).filter((x) => String(x.id) !== String(keep.id) && (!ql || cvSortName(x.title).includes(ql) || (x.title || '').toLowerCase().includes(ql))).sort((a, b) => cvSortName(a.title).localeCompare(cvSortName(b.title))).slice(0, 40);
+  const rows = others.map((x) => `<button class="cvm-row" data-cv-merge-pick="${x.id}">${esc(x.title || 'Unnamed')}</button>`).join('') || '<div class="cvm-empty">No other contacts to merge.</div>';
+  el.innerHTML = `<div class="cvm-scrim" data-cv-merge-cancel></div><div class="cvm-panel"><div class="cvm-title">Merge ${keepName} with…</div><input class="cvm-search" id="cv-merge-q" placeholder="Search for the other contact" value="${esc(m.q || '')}" autocomplete="off"><div class="cvm-list">${rows}</div><button class="cvm-cancel" data-cv-merge-cancel>Cancel</button></div>`;
+  setTimeout(() => { const i = document.getElementById('cv-merge-q'); if (i) i.focus(); }, 40);
+}
+async function cvMergeDo() {
+  const cv = cvState(); const m = cv.merge; if (!m || !m.drop || !cv.cur) return;
+  const keepId = cv.cur, dropId = m.drop;
+  try {
+    const [keep, drop] = await Promise.all([api(`/api/blocks/${keepId}`), api(`/api/blocks/${dropId}`)]);
+    const kp = keep.props || {}, dp = drop.props || {};
+    const emails = [...new Set([...contactEmails(kp), ...contactEmails(dp)].map((e) => String(e).trim()).filter(Boolean))];
+    const phones = []; const seenPh = new Set();
+    [...contactPhones(kp), ...contactPhones(dp)].forEach((ph) => { const key = `${ph.cc || ''}|${(ph.number || '').replace(/\s+/g, '')}`; if (ph.number && !seenPh.has(key)) { seenPh.add(key); phones.push({ cc: ph.cc || '', number: ph.number || '' }); } });
+    const addresses = []; const seenAd = new Set();
+    [...contactAddresses(kp), ...contactAddresses(dp)].forEach((a) => { const key = formatAddress(a); if (key && !seenAd.has(key)) { seenAd.add(key); addresses.push(a); } });
+    const areas = [...new Set([...blockAreas(keep), ...blockAreas(drop)])];
+    const props = Object.assign({}, dp, kp, {
+      emails, phones, addresses, areas,
+      email: undefined, phone: undefined, address: undefined,
+      birthday: kp.birthday || dp.birthday || null,
+      starred: !!(kp.starred || dp.starred),
+      kitEvery: kp.kitEvery || dp.kitEvery || '',
+      kitTask: kp.kitTask || dp.kitTask || null,
+    });
+    const kb = String(keep.body || '').trim(), db = String(drop.body || '').trim();
+    const body = kb && db ? `${kb}<hr>${db}` : (kb || db);
+    await api(`/api/blocks/${keepId}`, { method: 'PATCH', body: JSON.stringify({ props, ...(body ? { body } : {}) }) });
+    // Re-point the dropped contact's keep-in-touch task, or drop it if the keeper
+    // already has one, so a cadence isn't orphaned or duplicated.
+    if (dp.kitTask) { if (!kp.kitTask) { try { await api(`/api/blocks/${dp.kitTask}`, { method: 'PATCH', body: JSON.stringify({ props: { contact: keepId } }) }); } catch {} } else { try { await api(`/api/blocks/${dp.kitTask}`, { method: 'DELETE' }); } catch {} } }
+    await api(`/api/blocks/${dropId}`, { method: 'DELETE' }).catch(() => {});
+    state.contacts = (state.contacts || []).filter((x) => String(x.id) !== String(dropId));
+    const ki = state.contacts.findIndex((x) => String(x.id) === String(keepId)); if (ki >= 0) state.contacts[ki].props = props;
+    cvMergeClose();
+    toast('Merged');
+    await cvLoadKit();
+    await cvSelect(keepId);
+  } catch (e) { toast((e && e.message) || 'Could not merge.'); }
+}
 async function cvNewContact(name) {
   try {
     const c = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: name || '', props: {} }) });
@@ -24748,6 +24806,7 @@ document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-area-q]')) { if (state.area_open) { state.area_open.q = e.target.value; if ((e.target.value || '').trim()) state.area_open.toolTile = 'pages'; renderAreaKeepQ(); } return; }
   if (e.target && e.target.matches && e.target.matches('#mp-q')) { if (state.mp) { state.mp.q = e.target.value; mpRenderList(); } return; }
   if (e.target && e.target.matches && e.target.matches('#cv-q')) { cvState().q = e.target.value; renderContacts(); const el = document.getElementById('cv-q'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } return; }
+  if (e.target && e.target.matches && e.target.matches('#cv-merge-q')) { const cv = cvState(); if (cv.merge) { cv.merge.q = e.target.value; renderMergePicker(); } return; }
   if (e.target && e.target.matches && e.target.matches('[data-conn-q]')) { connSearch(e.target.value); return; }
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
   if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
@@ -25521,7 +25580,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cv-kitline]')) { const cv = cvState(); cv.kitOpen = !cv.kitOpen; renderContacts(); return; }
   { const kf = t.closest('[data-cv-kitfold]'); if (kf) { const id = kf.dataset.cvKitfold; cvKitFoldSet(id, !cvKitFoldOpen(id)); renderContacts(); return; } }
   if (t.closest('[data-cv-kit-on]')) { if (cvState().cur) cvKitFoldSet(cvState().cur, true); kitSetEvery('monthly'); return; }
-  if (t.closest('[data-cc-merge]')) { toast('Merging contacts is coming soon.'); return; }
+  if (t.closest('[data-cc-merge]')) { cvMergeOpen(); return; }
+  { const mp = t.closest('[data-cv-merge-pick]'); if (mp) { const cv = cvState(); if (cv.merge) { cv.merge.drop = mp.dataset.cvMergePick; renderMergePicker(); } return; } }
+  if (t.closest('[data-cv-merge-do]')) { cvMergeDo(); return; }
+  if (t.closest('[data-cv-merge-back]')) { const cv = cvState(); if (cv.merge) { cv.merge.drop = null; renderMergePicker(); } return; }
+  if (t.closest('[data-cv-merge-cancel]')) { cvMergeClose(); return; }
   { const cvo = t.closest('[data-cv-open]'); if (cvo) { cvSelect(cvo.dataset.cvOpen); return; } }
   { const cvf = t.closest('[data-cv-fold]'); if (cvf) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
   if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }

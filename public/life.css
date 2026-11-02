@@ -11814,3 +11814,20 @@ body.mailsheet-open { overflow:hidden; }
 .cvx-detail-act { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); padding:0; text-decoration:none; }
 .cvx-detail-act:hover { color:var(--k-ink); }
 .cvx-cpage .cv-edit { margin-top:12px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); padding:0; }
+/* §48 Merge picker overlay */
+#cv-merge { position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center; }
+.cvm-scrim { position:absolute; inset:0; background:color-mix(in srgb, var(--k-ink) 35%, transparent); }
+.cvm-panel { position:relative; z-index:1; width:min(520px,calc(100vw - 32px)); box-sizing:border-box; margin-top:12vh; max-height:76vh; display:flex; flex-direction:column; background:var(--k-panel); border:1px solid var(--k-line); padding:24px 26px 20px; animation:kfade .35s cubic-bezier(.2,.7,.2,1); }
+.cvm-title { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1; color:var(--k-ink); }
+.cvm-conf { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; line-height:1.4; color:var(--k-mute); margin:14px 0 0; }
+.cvm-search { margin-top:16px; width:100%; box-sizing:border-box; border:0; border-bottom:1px solid var(--k-ink); outline:none; background:transparent; padding:6px 0 10px; font-family:var(--k-serif); font-weight:300; font-size:24px; color:var(--k-ink); }
+.cvm-search::placeholder { color:var(--k-mute); }
+.cvm-list { margin-top:10px; overflow:auto; flex:1; min-height:0; }
+.cvm-row { display:block; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:12px 0; cursor:pointer; font-family:var(--k-serif); font-weight:300; font-size:21px; color:var(--k-ink); }
+.cvm-row:hover { color:var(--k-goldt); }
+.cvm-empty { padding:16px 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-mute); }
+.cvm-acts { display:flex; gap:22px; align-items:center; margin-top:22px; }
+.cvm-do { background:var(--k-gold); color:var(--k-deep); border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.24em; text-transform:uppercase; padding:12px 22px; }
+.cvm-cancel { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); margin-top:16px; align-self:flex-start; }
+.cvm-acts .cvm-cancel { margin-top:0; }
+.cvm-cancel:hover { color:var(--k-goldt); }
