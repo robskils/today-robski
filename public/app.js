@@ -16429,7 +16429,10 @@ function mailSheetHtml() {
 }
 function renderMailArrival() {
   let el = document.getElementById('mail-arrival-wrap');
-  const html = (modOn('mail') && !state.mailSheet) ? mailArrivalLine() : '';
+  // On Today the arrival line is rendered inline (homeArrivalHtml, left-aligned),
+  // so suppress this global floating one there to avoid a duplicate. (Robin.)
+  const onHome = state.view && state.view.type === 'home';
+  const html = (modOn('mail') && !state.mailSheet && !onHome) ? mailArrivalLine() : '';
   if (!html) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement('div'); el.id = 'mail-arrival-wrap'; document.body.appendChild(el); }
   el.innerHTML = html;
