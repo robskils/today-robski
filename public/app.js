@@ -18287,12 +18287,10 @@ function mailOpenPanelHtml(o) {
     const filed = mailFiledHtml(o);
     if (filed) noticed = `<div class="mail-noticed mail-noticed-filed">${filed}</div>`;
   }
-  const sorts = isSort ? `<div class="mail-sorts">`
-    + [['urgent', 'Urgent', 'U', 'ink'], ['important', 'Important', 'I', ''], ['chilled', 'Later', 'L', ''], ['archive', 'Archive', 'A', '']].map(([q, label, key, border]) =>
-        q === 'archive'
-          ? `<button class="mail-sortbtn" data-mail-archive="${esc(o._key)}">${label}<span class="mail-sortkey">${key}</span></button>`
-          : `<button class="mail-sortbtn${border === 'ink' ? ' ink' : ''}" data-mail-quad-file="${q}">${label}<span class="mail-sortkey">${key}</span></button>`
-      ).join('') + `</div>` : '';
+  // Triage (Urgent/Important/Later/Archive) now lives only in the sticky "Move to"
+  // bar at the top of the open email - dropped from this lower row to avoid the
+  // double-up. The U/I/L/A keyboard shortcuts still work. (Robin.)
+  const sorts = '';
   const bl = (state.mail.besideLinked && state.mail.besideLinked[o._key]) || null;
   const besideMobile = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
   // §18: make a *linked* note/task that opens in the second pane (or, on mobile, a
