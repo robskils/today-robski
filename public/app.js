@@ -5494,7 +5494,7 @@ const KNAV_VIEW = {
 function knavHint(viewKey) {
   if (viewKey === 'mail') { const n = state.mailUnreadTotal || 0; return n ? `${n} to sort` : ''; }
   if (viewKey === 'messages') { const n = (typeof unreadMsgs === 'function' ? unreadMsgs() : 0); return n ? `${n} new` : ''; }
-  if (viewKey === 'tasks') { const n = (state.home && state.home.alerts && state.home.alerts.p1) || 0; return n ? `${n} for today` : ''; }
+  // Tasks no longer shows a "N for today" hint in the menu (Robin: don't need it).
   return '';
 }
 function knavGroupBadge(g) {
