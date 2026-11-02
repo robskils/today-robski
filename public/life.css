@@ -11223,11 +11223,12 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-main { min-width:0; }
 /* Robin: Calendar · On your radar · Mail as a tabbed band. The active tab is
    gold-underlined (the top-nav / mail-pile pattern); its content sits below. */
-.home-ltabs { display:flex; flex-wrap:wrap; gap:clamp(18px,2.6vw,34px); align-items:flex-end; border-bottom:1px solid var(--k-line); }
-.home-ltab { background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; padding:6px 0 12px; font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1; color:var(--k-mute); cursor:pointer; display:inline-flex; align-items:baseline; gap:8px; transition:color .16s; }
+.home-ltabs { display:flex; flex-wrap:wrap; gap:clamp(20px,2.8vw,38px); align-items:flex-end; border-bottom:1px solid var(--k-line); }
+/* Robin: the tab labels match the Messages/Readings headers - Cormorant 500, 26-30. */
+.home-ltab { background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; padding:4px 0 12px; font-family:var(--k-serif); font-weight:500; font-size:clamp(26px,2.2vw,30px); line-height:1.05; color:var(--k-mute); cursor:pointer; display:inline-flex; align-items:baseline; gap:9px; transition:color .16s; }
 .home-ltab:hover { color:var(--k-goldt); }
 .home-ltab.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
-.home-ltab-n { font-family:var(--k-sans); font-weight:600; font-size:12.5px; font-style:normal; color:var(--k-mute); }
+.home-ltab-n { font-family:var(--k-sans); font-weight:600; font-size:13px; font-style:normal; color:var(--k-mute); }
 .home-ltab-n.hot { color:var(--k-goldt); }
 .home-ltab-body { padding:18px 0 4px; animation:kfade .35s cubic-bezier(.2,.7,.2,1); }
 .home-ltab-body .rdr-grp { margin-top:8px; }
