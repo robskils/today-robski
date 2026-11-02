@@ -19815,9 +19815,9 @@ function renderContactPage() {
       <div class="cv-acts">${contactActionsHtml(c, p)}</div>
       ${fold('details', 'Details', contactEmails(p).map(() => 'email').concat(contactPhones(p).length ? ['phone'] : []).join(' · ') || 'Nothing saved yet', detailsBody, true)}
       ${fold('birthday', 'Birthday', p.birthday ? '' : 'None yet', () => cvBirthdayHtml(c), !!(p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)))}
-      ${fold('together', 'Together', 'Messages, events and notes', () => contactBoxesHtml(c), false)}
       ${cvKitSection(c)}
       ${fold('notes', 'Notes to self', (c.body || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 60) || 'Nothing written', () => notesSection(c.body, 'contact', c.id, false, ''), false)}
+      ${fold('together', 'Connected Content', 'Messages, events and notes', () => contactBoxesHtml(c), false)}
       <div class="cvx-cfoot"><button class="cvx-foot-a" data-cc-edit-details>Edit details</button><button class="cvx-foot-a" data-cc-merge="${c.id}">Merge with…</button><button class="cvx-foot-a cvx-foot-del" data-del-contact="${c.id}">Delete contact…</button></div>
       <div class="cvx-cfoot2"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div>
     </div>`;
