@@ -5429,8 +5429,8 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''],
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 6], ['Further off', 2], ['Looking back', 5]], tools: [
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''], ['What next', 'data-wn-open', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
       ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
@@ -5537,7 +5537,7 @@ function navGroupsHtml(v) {
       <div class="knav-crumb">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
-        ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New since you looked (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
+        ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
@@ -6107,6 +6107,9 @@ async function openHome() {
   state.navUtilOpen = false;
   // Landing on Home always opens on the Today tile (not the last one you left on).
   if (state.home) state.home.tileOpen = 'today';
+  // §44: What next starts folded every time you land on Today. §45: the day
+  // starts on Today, not wherever Tomorrow was left.
+  if (state.home) { state.home.wnOpen = false; state.home.dayWhen = 'today'; }
   renderNav();
   // Instant paint: if we already have Home data from a previous visit, show it
   // right away so tapping the wordmark feels immediate, then refresh behind it.
@@ -7820,7 +7823,7 @@ function renderCapBar(force) {
   const modeTabs = [['set', 'Set down', '⌘.'], ['pad', 'Notepad', '⌘J']].map(([id, label, key]) => `<span class="cap-mode${c.mode === id ? ' on' : ''}" data-cap-mode="${id}" role="button" tabindex="0">${label}<span class="cap-mode-k">${esc(PK(key))}</span></span>`).join('');
   const bodyHtml = c.mode === 'pad'
     ? capPadBodyHtml()
-    : `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
+    : `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>${c.rec ? '' : '<div class="cap-wn-row"><span class="cap-wn" data-wn-open role="button" tabindex="0">What should I do next?</span></div>'}`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
     <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
     ${bodyHtml}
@@ -8218,7 +8221,25 @@ function homeWhatNextCandidates() {
   });
   return list.sort((a, b) => a.pr - b.pr);
 }
+// §44: What next is no longer front-and-centre. On Today it's a quiet line that
+// unfolds the forest band on click (or ⌘/). Starts folded every time.
 function homeWhatNextHtml() {
+  const open = !!(state.home && state.home.wnOpen);
+  const line = `<div class="home-wn-line${open ? ' open' : ''}" data-wn-toggle role="button" tabindex="0"><span class="home-wn-sq"></span><span class="home-wn-ask">${open ? 'Fold it away' : 'What should I do next?'}</span><span class="home-wn-kbd">${PK('⌘/')}</span></div>`;
+  return `${line}${open ? homeWhatNextBandHtml() : ''}`;
+}
+// Open/close the What next band. From anywhere (⌘/, the Plans tool, Search),
+// it lands on Today with the band open; on Today it toggles.
+function wnToggle(force) {
+  if (!(state.view && state.view.type === 'home')) {
+    openHome().then(() => { state.home = state.home || {}; state.home.wnOpen = true; renderHome(); setTimeout(() => { const b = document.querySelector('.home-wn-line'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); }).catch(() => {});
+    return;
+  }
+  state.home = state.home || {};
+  state.home.wnOpen = force == null ? !state.home.wnOpen : !!force;
+  renderHome();
+}
+function homeWhatNextBandHtml() {
   const cands = homeWhatNextCandidates();
   if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-eyebrow">What next</div><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
   let idx = state.home.wnIdx || 0; if (idx >= cands.length) idx = 0;
@@ -15526,7 +15547,7 @@ function mailSheetHtml() {
   const items = mailNewItems();
   const looked = mailLookedTs();
   const countTxt = items.length ? `${items.length} to sort · open one, or sort each` : (state.__mailListLoaded ? 'Nothing to sort' : 'Looking…');
-  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New since you looked</span><span class="mail-sheet-count">${countTxt}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
+  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New mail</span><span class="mail-sheet-count">${countTxt}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
   if (!items.length) {
     if (!state.__mailListLoaded) return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">Looking for new mail…</div></div>`;
     const t = looked ? new Date(looked).toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : '';
@@ -24096,6 +24117,7 @@ function palNavTargets() {
   const T = [];
   const add = (title, run, kw) => T.push({ kind: 'nav', title, run, kw: `${title} ${kw || ''}`.toLowerCase() });
   add('Home', () => openHome(), 'start');
+  add('What next', () => wnToggle(true), 'what now next do suggestion');   // §44
   if (modOn('today')) add('Flow', () => openToday(), 'flow day plan today');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
@@ -24408,7 +24430,9 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape' && state.knav && (state.knav.group || state.knav.contents || state.knav.find)) { e.preventDefault(); state.knav.group = null; state.knav.contents = false; state.knav.find = false; renderNav(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
-  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
+  // §44: ⌘/ opens the What next band anywhere (it used to open the Menu, which
+  // still has its button in the header).
+  if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); wnToggle(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e' && !e.shiftKey && !e.altKey && modOn('mail')) { e.preventDefault(); toggleMailSheet(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
   // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
@@ -25118,6 +25142,8 @@ document.addEventListener('click', (e) => {
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
+  if (t.closest('[data-wn-toggle]')) { wnToggle(); return; }
+  if (t.closest('[data-wn-open]')) { wnToggle(true); return; }
   if (t.closest('[data-wn-why]')) { state.home.wnWhy = !state.home.wnWhy; renderHome(); return; }
   if (t.closest('[data-wn-notnow]') || t.closest('[data-wn-else]')) { const n = homeWhatNextCandidates().length; state.home.wnIdx = n ? ((state.home.wnIdx || 0) + 1) % n : 0; state.home.wnWhy = false; renderHome(); return; }
   // Capture ("Set it down"): the floating bar, the drawer and its readout taps.
