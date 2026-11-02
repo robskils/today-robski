@@ -9830,7 +9830,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .cap-eyebrow { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--accent); }
 .cap-esc { margin-left:auto; background:none; border:0; font-family:var(--k-sans); font-weight:500; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3); cursor:pointer; white-space:nowrap; }
 .cap-input-row { display:flex; align-items:flex-end; gap:18px; border-bottom:1px solid var(--ink); }
-.cap-input { flex:1; min-width:0; box-sizing:border-box; border:0; outline:none; background:transparent; padding:4px 0 12px; font-family:var(--k-serif); font-weight:300; font-size:clamp(26px,4vw,38px); line-height:1.2; color:var(--ink); }
+.cap-input { flex:1; min-width:0; box-sizing:border-box; border:0; outline:none; background:transparent; padding:4px 0 12px; font-family:var(--k-serif); font-weight:300; font-size:clamp(26px,4vw,38px); line-height:1.2; color:var(--ink); display:block; resize:none; overflow-y:auto; max-height:40vh; overflow-wrap:break-word; }
 .cap-input::placeholder { color:var(--ink-3); }
 .cap-speak { flex:none; display:flex; align-items:center; gap:8px; margin-bottom:14px; padding:8px 14px; border:1px solid var(--line); background:none; font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink); cursor:pointer; white-space:nowrap; }
 .cap-speak:hover { border-color:var(--accent); }

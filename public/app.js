@@ -7273,15 +7273,17 @@ function renderCapBar(force) {
   root.className = 'cap-open';
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set it down">
     <div class="cap-dh"><span class="cap-rule"></span><span class="cap-eyebrow">Set it down</span><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
-    ${c.rec ? capRecHtml() : `<div class="cap-input-row"><input id="cap-input" class="cap-input" value="${esc(c.text || '')}" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false"><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}
+    ${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}
     <div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>
   </div>`;
   if (!c.rec) {
     const i = document.getElementById('cap-input');
     if (i) {
-      i.addEventListener('input', () => { capState().text = i.value; updateCapReadout(); });
-      i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });
-      setTimeout(() => { i.focus(); const v = i.value; i.value = ''; i.value = v; }, 60);
+      i.addEventListener('input', () => { capState().text = i.value; capGrow(i); updateCapReadout(); });
+      // Enter sends it (like a message); Shift+Enter drops to a new line. A long
+      // line now wraps and the box grows instead of running off the side.
+      i.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });
+      setTimeout(() => { i.focus(); const v = i.value; i.value = ''; i.value = v; capGrow(i); }, 60);
     }
   }
 }
@@ -7305,8 +7307,12 @@ function capStartRec() {
 function capStopRec() {
   const c = capState(); clearInterval(c._recI); try { c._sr && c._sr.stop(); } catch (e) {} c._sr = null; c.rec = false;
   renderCapBar(true);
-  setTimeout(() => { const i = document.getElementById('cap-input'); if (i) { i.value = c.text || ''; i.focus(); } }, 60);
+  setTimeout(() => { const i = document.getElementById('cap-input'); if (i) { i.value = c.text || ''; i.focus(); capGrow(i); } }, 60);
 }
+// Grow the "Set it down" field to fit what's typed, so a long line wraps and
+// stays visible instead of scrolling off the side. Capped at ~40vh, then it
+// scrolls inside the box.
+function capGrow(i) { if (!i) return; i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, Math.round(window.innerHeight * 0.4)) + 'px'; }
 function capRefreshHome() {
   if (!(state.view && state.view.type === 'home')) return;
   state.home.tomorrow = undefined; state.home._mailAt = 0; if (state.financial) state.financial.txns = null;
