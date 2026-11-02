@@ -11250,6 +11250,8 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-greetrow { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 32px; }
 .home-greetmain { flex:1; min-width:300px; }
 .home-v3 .home-greet { font-family:var(--k-serif); font-weight:500; font-size:clamp(44px,5vw,64px); line-height:1.02; letter-spacing:-.01em; margin:8px 0 0; }
+.home-v3 .home-tw { display:block; margin-top:10px; padding-top:0; border-top:0; max-width:none; font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }
+.home-v3 .home-tw .home-time { font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }
 .home-foldall-row { display:flex; justify-content:flex-end; padding:0 0 4px; }
 .home-foldall { font-family:var(--k-sans); font-weight:500; font-size:12px; letter-spacing:.06em; color:var(--k-mute); cursor:pointer; white-space:nowrap; }
 .home-foldall:hover { color:var(--k-goldt); }

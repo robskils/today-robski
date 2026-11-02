@@ -1230,7 +1230,7 @@ async function weatherNow(request, env, json, err) {
   const u = new URL(request.url);
   const lat = Number(u.searchParams.get('lat')); const lon = Number(u.searchParams.get('lon'));
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return err('lat/lon required', request);
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,sunset&timezone=auto&forecast_days=2`;
   try {
     const res = await fetch(url, { cf: { cacheTtl: 1800, cacheEverything: true } });
     if (!res.ok) return err('weather unavailable', request, 502);
@@ -1240,6 +1240,8 @@ async function weatherNow(request, env, json, err) {
     return json({
       temp: r(c.temperature_2m), code: c.weather_code ?? null, isDay: c.is_day !== 0,
       high: r((day.temperature_2m_max || [])[0]), low: r((day.temperature_2m_min || [])[0]),
+      tHigh: r((day.temperature_2m_max || [])[1]), tCode: (day.weather_code || [])[1] ?? null,
+      sunset: (day.sunset || [])[0] || null,
       unit: (d.current_units && d.current_units.temperature_2m) || '°C', at: Date.now(),
     }, request);
   } catch { return err('weather unavailable', request, 502); }

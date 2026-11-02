@@ -8631,10 +8631,20 @@ function homeRadarHtml() {
 // the eyebrow and the row stays a quiet number. One row under the greeting.
 function homeTimeWeatherHtml() {
   loadWeather();
-  const place = (state.account && (state.account.place || state.account.city)) || '';
   const w = state.weather;
-  const wx = (w && typeof w === 'object' && w.temp != null) ? `<span class="home-tw-wx">${w.temp}°</span>` : '';
-  return `<div class="home-tw"><span class="home-tw-time home-time">${esc(homeTimeStr())}</span>${place ? `<span class="home-tw-place">${esc(place)}</span>` : ''}${wx}</div>`;
+  const wxWord = (code) => { try { const m = WMO_WX(code); return m && m[1] ? m[1].toLowerCase() : ''; } catch { return ''; } };
+  // Place: the account's own, else the city from the timezone (free, no lookup).
+  let place = (state.account && (state.account.place || state.account.city)) || '';
+  if (!place) { try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; const city = tz.split('/').pop(); if (city) place = city.replace(/_/g, ' '); } catch {} }
+  // §62: one quiet line - time · now° condition, place · tomorrow N° condition · sunset.
+  const segs = [];
+  if (w && typeof w === 'object' && w.temp != null) {
+    const word = wxWord(w.code);
+    segs.push(`${w.temp}°${word ? ' ' + word : ''}${place ? ', ' + place : ''}`);
+    if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push(`tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}`); }
+    if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push(`sunset ${sm[1]}`); }
+  } else if (place) { segs.push(place); }
+  return `<div class="home-tw"><span class="home-time">${esc(homeTimeStr())}</span>${segs.map((s) => ` · ${esc(s)}`).join('')}</div>`;
 }
 // §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
 // a count word unfolds a panel of that tool's top few items in place.
