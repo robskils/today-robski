@@ -10818,6 +10818,87 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
   .icx-side { position:static; }
 }
 
+/* ══ §36 Journal v2 ═════════════════════════════════════════════════════════
+   Today's page at the top (one question at a time, an unboxed page that keeps
+   itself as you write), then your pages grouped by month, and a sticky right
+   column. Reference: Koyeba Journal.dc.html. */
+.jx-head { padding:6px 0 0; }
+.jx-eyebrow { display:flex; align-items:center; gap:12px; }
+.jx-eyebrow-rule { width:28px; height:1px; background:var(--k-gold); }
+.jx-eyebrow-lbl { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
+.jx-title { font-family:var(--k-serif); font-weight:300; font-size:clamp(52px,6.5vw,88px); line-height:.98; margin:12px 0 0; color:var(--k-ink); }
+.jx-sub { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(20px,2.1vw,26px); line-height:1.3; color:var(--k-mute); margin-top:10px; }
+.jx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,340px); gap:clamp(40px,5vw,88px); align-items:start; margin-top:30px; }
+.jx-main { min-width:0; max-width:980px; }
+.jx-newrow { margin:24px 0 10px; }
+/* Today's page */
+.jx-compose { padding-top:18px; border-top:1px solid var(--k-ink); }
+.jx-starts { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 22px; }
+.jx-starts-lbl { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
+.jx-kind { cursor:pointer; white-space:nowrap; font-family:var(--k-sans); font-size:15px; color:var(--k-mute); padding-bottom:3px; border-bottom:1px solid transparent; }
+.jx-kind:hover { color:var(--k-ink); }
+.jx-kind.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.jx-prompt-row { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 20px; margin-top:22px; animation:kfade .35s ease; }
+.jx-prompt { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(26px,2.6vw,34px); line-height:1.3; color:var(--k-goldt); flex:1; min-width:280px; text-wrap:pretty; }
+.jx-another { font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); cursor:pointer; white-space:nowrap; }
+.jx-another:hover { color:var(--k-goldt); }
+.jx-text { display:block; width:100%; box-sizing:border-box; margin-top:16px; border:0; background:transparent; outline:none; resize:vertical; padding:0; font-family:var(--k-serif); font-weight:300; font-size:clamp(23px,2.2vw,27px); line-height:1.6; color:var(--k-ink); }
+.jx-text::placeholder { color:var(--k-mute); }
+.jx-foot { display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px; padding:14px 0; margin-top:4px; border-top:1px solid var(--k-line); border-bottom:1px solid var(--k-line); }
+.jx-foot-status { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); flex:1; min-width:200px; }
+.jx-speak { display:inline-flex; align-items:center; gap:8px; font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.24em; color:var(--k-mute); cursor:pointer; }
+.jx-speak:hover { color:var(--k-ink); }
+.jx-speak-dot { width:6px; height:6px; background:var(--k-gold); }
+.jx-speak.on { color:var(--k-goldt); }
+.jx-speak.on .jx-speak-dot { animation:kblink 1s steps(2,start) infinite; }
+@keyframes kblink { 50% { opacity:.25; } }
+.jx-keep { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.24em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
+/* Your pages */
+.jx-pages { margin-top:44px; }
+.jx-pages-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 24px; }
+.jx-pages-title { font-family:var(--k-serif); font-weight:300; font-size:40px; line-height:1; color:var(--k-ink); }
+.jx-pages-count { font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); }
+.jx-search { margin-left:auto; display:flex; align-items:center; min-width:220px; border-bottom:1px solid var(--k-line); padding:6px 0; }
+.jx-search input { flex:1; min-width:0; border:0; background:transparent; outline:none; font-family:var(--k-sans); font-size:14.5px; color:var(--k-ink); }
+.jx-search input::placeholder { color:var(--k-mute); }
+.jx-filters { display:flex; flex-wrap:wrap; gap:6px 20px; margin-top:16px; }
+.jx-filter { cursor:pointer; white-space:nowrap; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); padding-bottom:3px; border-bottom:1px solid transparent; }
+.jx-filter:hover { color:var(--k-ink); }
+.jx-filter.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.jx-months { margin-top:6px; }
+.jx-month { margin-top:26px; }
+.jx-month-head { display:flex; align-items:center; gap:12px; padding-bottom:4px; cursor:pointer; }
+.jx-month-lbl { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); white-space:nowrap; }
+.jx-month-count { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); white-space:nowrap; }
+.jx-month-rule { flex:1; height:1px; background:var(--k-line); }
+.jx-month-sign { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); }
+.jx-month-body { margin-top:2px; }
+.jx-page { display:grid; grid-template-columns:96px minmax(0,1fr); gap:20px; align-items:baseline; padding:16px 0; border-bottom:1px solid var(--k-line); cursor:pointer; }
+.jx-page-day { font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-ink); }
+.jx-page-kind { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); margin-top:3px; }
+.jx-page-text { min-width:0; font-family:var(--k-serif); font-weight:300; font-size:22px; line-height:1.5; color:var(--k-ink); text-wrap:pretty; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.jx-page.open .jx-page-text { display:block; -webkit-line-clamp:unset; overflow:visible; white-space:pre-wrap; }
+.jx-page-open { grid-column:2; margin-top:10px; }
+.jx-open-link { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); padding:0; }
+.jx-open-link:hover { color:var(--k-ink); }
+/* Right column */
+.jx-side { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); padding-top:4px; }
+.jx-side-sec { border-top:1px solid var(--k-ink); }
+.jx-side-head { display:flex; align-items:center; gap:12px; padding:16px 0; cursor:pointer; }
+.jx-side-title { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); white-space:nowrap; }
+.jx-side-sign { margin-left:auto; font-family:var(--k-sans); font-weight:300; font-size:20px; color:var(--k-mute); }
+.jx-side-body { padding:0 0 22px; display:grid; gap:14px; animation:kfade .4s ease; }
+.jx-side-a { font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); }
+.jx-side-b { font-family:var(--k-serif); font-weight:300; font-size:20px; line-height:1.35; color:var(--k-ink); margin-top:3px; text-wrap:pretty; }
+.jx-side-empty { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-mute); padding:0 0 22px; }
+.jx-side-rule { border-top:1px solid var(--k-line); }
+.jx-side-note { font-family:var(--k-sans); font-size:12.5px; line-height:1.5; color:var(--k-mute); margin-top:12px; }
+@media (max-width:899px){
+  .jx-grid { grid-template-columns:1fr; gap:40px; }
+  .jx-side { position:static; }
+  .jx-page { grid-template-columns:80px minmax(0,1fr); gap:14px; }
+}
+
 /* ══ §40 Admin v2 ══════════════════════════════════════════════════════════
    One folding page (like Settings): a top band of figures, seven keyline
    sections, a sticky index. No boxed tabs, no coloured labels - green and the

@@ -9571,10 +9571,20 @@ async function openJournal(mode) {
   // All three share one list renderer; each shows only its own entries.
   state.view = { type: 'journal', mode: mode || null };
   renderNav();
+  // Fresh today's page each visit; the kept pages live in the list below.
+  const prevKind = (state.journal && state.journal.compose && state.journal.compose.kind) || 'free';
   try {
     const entries = await fetchJournalEntries();
     state.journal = Object.assign({}, state.journal, { entries, picking: false });
   } catch (e) { state.journal = Object.assign({}, state.journal, { entries: (state.journal && state.journal.entries) || [], picking: false }); toast(e.message); }
+  state.journal.compose = { kind: prevKind, pi: 0, entryId: null, text: '', creating: false, saveT: null };
+  // Keep an in-progress page safe if the tab is hidden or closed mid-write.
+  if (!state.__jcFlush) {
+    state.__jcFlush = true;
+    const flush = () => { try { const c = state.journal && state.journal.compose; if (c && c.text && c.text.trim()) jcSave(); } catch {} };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+  }
   renderJournalList();
   landReflContent();   // land at the top of the content (below the tool tiles on mobile)
   // Load the history of generated insights (each is a dated 'insight' block) -
@@ -9954,51 +9964,353 @@ async function delInsight(id) {
   if (state.journal.readingInsight === id) state.journal.readingInsight = null;
   renderInsights();
 }
-function renderJournalList() {
+// ── §36 Journal (V21) ───────────────────────────────────────────────────────
+// One question at a time, an unboxed page that keeps itself as you write, and
+// your past pages grouped by month. Reference: Koyeba Journal.dc.html.
+// The six kinds reuse JOURNAL_MODES' keys (so a page's props.mode stays in step
+// with the rest of the app) but show the handover's short labels.
+const JK36_LABEL = { free: 'Free write', reflect: 'Reflect on the day', gratitude: 'Gratitude', 'work-through': 'Work through something', intention: 'Set an intention', dreams: 'A dream' };
+const JK36_ORDER = ['free', 'reflect', 'gratitude', 'work-through', 'intention', 'dreams'];
+// Words too ordinary to count as a theme in "What keeps coming up".
+const JTHEME_STOP = new Set('the a an and or but of to in on at for with from into about over under their there they them that this these those what which who whom whose when while because been being just really very much more most some many such only even still then than also here into your theyre have has had having will would could should cant dont wont whats thats theres youre about around again against because before being below between both does doing down during each from further here itself more most other over same some such only once onto upon with without you your yours thing things today tonight tomorrow yesterday really maybe might must need want know feel felt going went come came back good well like love make made take time day days week month year life self'.split(/\s+/));
+function journalKindLabel(mode) {
+  if (JK36_LABEL[mode]) return JK36_LABEL[mode];
+  const m = journalModeMeta(mode); return m ? m.label : 'Journal';
+}
+// The person's own words from a page (prompts and headings stripped).
+function journalPlainText(n) {
+  const d = document.createElement('div');
+  d.innerHTML = String((n && n.body) || '').replace(/<blockquote[\s\S]*?<\/blockquote>/gi, ' ').replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
+  return (d.textContent || '').replace(/\s+/g, ' ').trim();
+}
+function journalDayLabel(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  return isNaN(d) ? '' : d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
+}
+// Group pages into months, newest first → [{ym, label, items}].
+function journalMonths(entries) {
+  const by = new Map();
+  (entries || []).forEach((n) => {
+    const iso = (n.props && n.props.date) || n.created_at || '';
+    const d = iso ? new Date(iso) : null; if (!d || isNaN(d)) return;
+    const ym = d.getFullYear() * 12 + d.getMonth();
+    if (!by.has(ym)) by.set(ym, { ym, label: d.toLocaleDateString(dloc(), { month: 'long', year: 'numeric' }), items: [] });
+    by.get(ym).items.push(n);
+  });
+  return [...by.values()].sort((a, b) => b.ym - a.ym);
+}
+// Collapse exact duplicate pages (same day AND same words), keeping the longer
+// body. §36: "16 Aug appears twice and overlaps; fix the data or the rendering."
+// Conservative: only identical text is merged, so two genuine same-day pages
+// (a free write and a reflection) are never lost.
+function journalDedupe(entries) {
+  const seen = new Set(); const out = [];
+  (entries || []).forEach((n) => {
+    const day = String((n.props && n.props.date) || n.created_at || '').slice(0, 10);
+    const key = day + '|' + journalPlainText(n).toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key); out.push(n);
+  });
+  return out;
+}
+// "On this day": the nearest page to a month ago and three months ago (±4 days).
+function journalOnThisDay(entries) {
+  const now = new Date(); const out = [];
+  [['A month ago', 1], ['Three months ago', 3]].forEach(([lbl, mo]) => {
+    const target = new Date(now); target.setMonth(target.getMonth() - mo);
+    let best = null, bestD = 1e9;
+    (entries || []).forEach((n) => {
+      const iso = (n.props && n.props.date) || n.created_at; const d = iso ? new Date(iso) : null; if (!d || isNaN(d)) return;
+      const diff = Math.abs(d - target) / 86400000; if (diff <= 4 && diff < bestD) { bestD = diff; best = n; }
+    });
+    if (best) { const iso = (best.props && best.props.date) || best.created_at; const txt = journalPlainText(best); out.push({ a: `${lbl} · ${journalDayLabel(iso)}`, b: '“' + txt.slice(0, 90) + (txt.length > 90 ? '…' : '') + '”' }); }
+  });
+  return out;
+}
+// "What keeps coming up": recurring words, by how many pages each appears on.
+// A gentle, non-diagnostic tally - not AI. Needs a bit of history to mean
+// anything, and only words on four or more pages qualify.
+function journalThemes(entries) {
+  const list = entries || []; if (list.length < 8) return [];
+  const tally = new Map();
+  list.forEach((n) => {
+    const words = new Set(journalPlainText(n).toLowerCase().replace(/[^a-z\s'’-]/g, ' ').split(/\s+/).filter((w) => w.length >= 4 && !JTHEME_STOP.has(w.replace(/['’]/g, ''))));
+    words.forEach((w) => tally.set(w, (tally.get(w) || 0) + 1));
+  });
+  return [...tally.entries()].filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([w, c]) => ({ a: `${w[0].toUpperCase() + w.slice(1)} · ${c} pages`, b: 'A thread through your writing.' }));
+}
+
+// ── Today's page: compose + autosave ────────────────────────────────────────
+function jcState() {
+  state.journal = state.journal || { entries: [] };
+  if (!state.journal.compose) state.journal.compose = { kind: 'free', pi: 0, entryId: null, text: '', creating: false, saveT: null };
+  return state.journal.compose;
+}
+const jcBodyHtml = (text) => {
+  const s = String(text || '').replace(/\r\n/g, '\n').trim();
+  if (!s) return '<p><br></p>';
+  return s.split(/\n{2,}/).map((p) => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
+};
+const jcWords = (text) => { const s = String(text || '').trim(); return s ? s.split(/\s+/).length : 0; };
+function jcStatusText(c) {
+  const n = jcWords(c.text);
+  if (n) return `Kept as you write · ${n} ${n === 1 ? 'word' : 'words'}`;
+  if (c.entryId) return 'Kept. Start another, or close the page.';
+  return 'Nothing yet - one line is enough.';
+}
+// Update just the live status + the Keep colour, so the caret never jumps.
+function jcPaintStatus() {
+  const c = jcState();
+  const s = document.getElementById('jx-status'); if (s) s.textContent = jcStatusText(c);
+  const k = document.getElementById('jx-keep'); if (k) k.style.color = c.text.trim() ? 'var(--k-goldt)' : 'var(--k-mute)';
+}
+function jcOnText(val) {
+  const c = jcState(); c.text = val; jcPaintStatus();
+  if (c.saveT) clearTimeout(c.saveT);
+  c.saveT = setTimeout(() => jcSave(), 800);
+}
+async function jcSave() {
+  const c = jcState();
+  if (c.saveT) { clearTimeout(c.saveT); c.saveT = null; }
+  const text = c.text.trim();
+  const body = jcBodyHtml(text);
+  try {
+    if (!c.entryId) {
+      if (!text || c.creating) return;
+      c.creating = true;
+      const date = new Date().toISOString();
+      const entry = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'journal', title: journalDateLabel(date), body, props: { date, mode: c.kind } }) });
+      c.creating = false; c.entryId = entry.id;
+      state.journal.entries = state.journal.entries || []; state.journal.entries.unshift(entry);
+      jcRefreshPages();
+      // The page grew while we were creating it - flush the latest once.
+      if (jcBodyHtml(c.text) !== body) jcSave();
+    } else {
+      await api(`/api/blocks/${c.entryId}`, { method: 'PATCH', body: JSON.stringify({ body, props: { mode: c.kind } }) });
+      const i = (state.journal.entries || []).findIndex((e) => e.id === c.entryId);
+      if (i >= 0) { state.journal.entries[i].body = body; state.journal.entries[i].props = Object.assign({}, state.journal.entries[i].props, { mode: c.kind }); }
+      jcRefreshPages();
+    }
+  } catch (e) { c.creating = false; const s = document.getElementById('jx-status'); if (s) s.textContent = 'Not saved yet - keep typing to retry.'; }
+}
+// Repaint the pages list + count + right column after a save, WITHOUT touching
+// the textarea or the search box the person may be using.
+function jcRefreshPages() {
+  const m = document.getElementById('jx-months'); if (m) m.innerHTML = journalMonthsHtml();
+  const c = document.querySelector('.jx-pages-count'); if (c) { const sc = journalScoped(); const am = journalMonths(sc); const earliest = am.length ? am[am.length - 1].label.split(' ')[0] : ''; c.textContent = `${sc.length} ${sc.length === 1 ? 'page' : 'pages'}${earliest ? ` since ${earliest}` : ''}`; }
+  const side = document.getElementById('jx-side'); if (side) side.innerHTML = journalSideHtml();
+}
+function jcSetKind(key) {
+  const c = jcState(); c.kind = key; c.pi = 0;
+  const host = document.getElementById('jx-compose'); if (host) host.innerHTML = journalComposeInner();
+  jcBindCompose(); const ta = document.getElementById('jx-text'); if (ta) ta.focus();
+  if (c.entryId && c.text.trim()) jcSave();
+}
+function jcNextPrompt() {
+  const c = jcState(); c.pi = (c.pi || 0) + 1;
+  const host = document.getElementById('jx-compose'); if (host) host.innerHTML = journalComposeInner();
+  jcBindCompose();
+  const ta = document.getElementById('jx-text'); if (ta) { ta.focus(); try { const r = document.createRange(); r.selectNodeContents(ta); r.collapse(false); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch {} }
+}
+async function jcKeep() {
+  const c = jcState(); if (!c.text.trim()) return;
+  await jcSave();
+  c.entryId = null; c.text = ''; c.pi = 0;
+  const host = document.getElementById('jx-compose'); if (host) host.innerHTML = journalComposeInner();
+  jcBindCompose(); jcRefreshPages();
+  const ta = document.getElementById('jx-text'); if (ta) ta.focus();
+  toast('Kept');
+}
+function jcBindCompose() {
+  const ta = document.getElementById('jx-text'); if (!ta || ta.__bound) return; ta.__bound = true;
+  ta.addEventListener('input', () => jcOnText(ta.value));
+  ta.addEventListener('blur', () => { try { jcSave(); } catch {} });
+  ta.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); jcKeep(); } });
+}
+function jcBindPages() {
+  const q = document.getElementById('jx-q'); if (!q || q.__bound) return; q.__bound = true;
+  q.addEventListener('input', () => { state.journal = state.journal || {}; state.journal.q = q.value; const m = document.getElementById('jx-months'); if (m) m.innerHTML = journalMonthsHtml(); });
+}
+
+// Speak a page: record, transcribe (/api/journal/voice), drop the words in.
+let jcrec = null;
+async function jcSpeak(btn) {
+  if (jcrec) { jcStopSpeak(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { toast('Recording is not available on this device.'); return; }
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { toast('Microphone blocked. Allow mic access to record.'); return; }
+  let mime = ''; for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/mpeg']) { try { if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) { mime = m; break; } } catch {} }
+  let mr; try { mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); } catch { try { mr = new MediaRecorder(stream); } catch { stream.getTracks().forEach((x) => x.stop()); toast('Could not start recording.'); return; } }
+  const chunks = [];
+  mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = () => { try { stream.getTracks().forEach((x) => x.stop()); } catch {} const type = (mr.mimeType || mime || 'audio/webm').split(';')[0]; const blob = new Blob(chunks, { type }); jcrec = null; jcVoiceSend(blob, btn); };
+  jcrec = { mr, stream, btn, t0: Date.now(), timer: null };
+  try { mr.start(); } catch { try { stream.getTracks().forEach((x) => x.stop()); } catch {} jcrec = null; toast('Could not start recording.'); return; }
+  jcSpeakPaint(btn, 'rec'); jcrec.timer = setInterval(() => jcSpeakPaint(btn, 'rec'), 1000);
+}
+function jcStopSpeak() { const d = jcrec; if (!d) return; if (d.timer) clearInterval(d.timer); jcSpeakPaint(d.btn, 'proc'); try { if (d.mr && d.mr.state !== 'inactive') d.mr.stop(); else { if (d.stream) d.stream.getTracks().forEach((x) => x.stop()); jcrec = null; } } catch { jcrec = null; } }
+function jcSpeakPaint(btn, phase) {
+  if (!btn) return; btn.classList.toggle('on', phase === 'rec');
+  const l = btn.querySelector('.jx-speak-txt'); if (!l) return;
+  if (phase === 'rec') { const s = Math.max(0, Math.floor((Date.now() - (jcrec ? jcrec.t0 : Date.now())) / 1000)); l.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} · STOP`; }
+  else if (phase === 'proc') l.textContent = 'WRITING…'; else l.textContent = 'SPEAK';
+}
+async function jcVoiceSend(blob, btn) {
+  if (!blob || blob.size < 1400) { jcSpeakPaint(btn, 'idle'); toast('That recording was too short.'); return; }
+  if (blob.size > 22 * 1024 * 1024) { jcSpeakPaint(btn, 'idle'); toast('That recording is a bit long - keep it under about ten minutes.'); return; }
+  jcSpeakPaint(btn, 'proc');
+  let b64; try { b64 = await audioToBase64(blob); } catch { jcSpeakPaint(btn, 'idle'); toast('Could not read the recording.'); return; }
+  const c = jcState();
+  try {
+    const r = await api('/api/journal/voice', { method: 'POST', body: JSON.stringify({ audio: b64, mime: blob.type || 'audio/webm', prompt: '', mode: c.kind, questions: '' }) });
+    const tmp = document.createElement('div'); tmp.innerHTML = String((r && r.entry) || '');
+    const txt = (tmp.textContent || '').replace(/\s+\n/g, '\n').trim();
+    if (txt) { c.text = (c.text.trim() ? c.text.trim() + '\n\n' : '') + txt; const ta = document.getElementById('jx-text'); if (ta) ta.value = c.text; jcPaintStatus(); jcSave(); }
+    else toast('Nothing came back - try again.');
+  } catch (e) { toast((e && e.message) || 'Could not transcribe that recording.'); }
+  jcSpeakPaint(btn, 'idle');
+}
+
+// ── §36 render builders ──────────────────────────────────────────────────────
+function journalComposeInner() {
+  const c = jcState();
+  const kinds = JK36_ORDER.map((id) => `<span class="jx-kind${c.kind === id ? ' on' : ''}" data-jkind="${id}">${esc(JK36_LABEL[id])}</span>`).join('');
+  const mode = journalModeOf(c.kind); const prompts = (mode && mode.prompts) || [];
+  const isFree = c.kind === 'free';
+  const pos = prompts.length ? (c.pi % prompts.length) : 0;
+  const promptText = isFree ? (prompts[0] || '') : (prompts[pos] || '');
+  const hasMore = !isFree && prompts.length > 1;
+  return `
+    <div class="jx-starts">
+      <span class="jx-starts-lbl">Start with</span>
+      ${kinds}
+    </div>
+    <div class="jx-prompt-row">
+      <span class="jx-prompt">${esc(promptText)}</span>
+      ${hasMore ? `<span class="jx-another" data-jnext>Another question · ${pos + 1} of ${prompts.length}</span>` : ''}
+    </div>
+    <textarea id="jx-text" class="jx-text" rows="6" placeholder="Begin anywhere…">${esc(c.text)}</textarea>
+    <div class="jx-foot">
+      <span id="jx-status" class="jx-foot-status">${esc(jcStatusText(c))}</span>
+      <span class="jx-speak" data-jspeak><span class="jx-speak-dot"></span><span class="jx-speak-txt">SPEAK</span></span>
+      <span id="jx-keep" class="jx-keep" data-jkeep style="color:${c.text.trim() ? 'var(--k-goldt)' : 'var(--k-mute)'}">Keep this page ↵</span>
+    </div>`;
+}
+// The pages, scoped to the current tool (general = everything but coaching/dreams).
+function journalScoped() {
   const j = state.journal || { entries: [] };
+  const mode = (state.view && state.view.mode) || null; const cfg = mode ? WB_TOOL[mode] : null;
+  const all = j.entries || [];
+  return journalDedupe(cfg ? all.filter((n) => cfg.match((n.props && n.props.mode) || ''))
+    : all.filter((n) => { const m = (n.props && n.props.mode) || ''; return m !== 'coaching' && m !== 'dreams'; }));
+}
+function journalMatched(scoped) {
+  const j = state.journal || {}; const q = (j.q || '').trim().toLowerCase(); const filt = j.filter || 'all';
+  const cfg = (state.view && state.view.mode) ? WB_TOOL[state.view.mode] : null;
+  const kindOf = (n) => ((n.props && n.props.mode) || '') || 'free';
+  return (scoped || []).filter((n) => {
+    const m = kindOf(n);
+    if (!cfg && filt !== 'all') { if (filt === 'free') { if (!(m === 'free' || m === 'morning')) return false; } else if (m !== filt) return false; }
+    if (q && !journalPlainText(n).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function journalMonthsHtml() {
+  const j = state.journal || {}; const q = (j.q || '').trim();
+  const months = journalMonths(journalMatched(journalScoped()));
+  if (!j.monthsOpen) j.monthsOpen = {};
+  const defaultOpen = new Set(months.slice(0, 2).map((m) => m.ym));
+  const html = months.map((m) => {
+    // Persist each month's natural open state so the fold toggle flips the real
+    // value (the newest two months open by default). A search forces open for
+    // view only - it must not overwrite that stored state.
+    if (!(m.ym in j.monthsOpen)) j.monthsOpen[m.ym] = defaultOpen.has(m.ym);
+    const open = !!q || j.monthsOpen[m.ym];
+    const rows = m.items.map((n) => {
+      const iso = (n.props && n.props.date) || n.created_at;
+      const expanded = j.openPage === n.id;
+      const txt = journalPlainText(n) || 'Empty page';
+      return `<div class="jx-page${expanded ? ' open' : ''}" data-jexpand="${n.id}">
+        <div class="jx-page-meta"><div class="jx-page-day">${esc(journalDayLabel(iso))}</div><div class="jx-page-kind">${esc(journalKindLabel((n.props && n.props.mode) || 'free'))}</div></div>
+        <div class="jx-page-text">${esc(txt)}</div>
+        ${expanded ? `<div class="jx-page-open"><button class="jx-open-link" data-open-jentry="${n.id}">Open page →</button></div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="jx-month">
+      <div class="jx-month-head" data-jmonth="${m.ym}"><span class="jx-month-lbl">${esc(m.label)}</span><span class="jx-month-count">${m.items.length} ${m.items.length === 1 ? 'page' : 'pages'}</span><span class="jx-month-rule"></span><span class="jx-month-sign">${open ? '−' : '+'}</span></div>
+      ${open ? `<div class="jx-month-body">${rows}</div>` : ''}
+    </div>`;
+  }).join('');
+  return html || `<div class="empty">${q ? 'Nothing matches that.' : 'No pages yet. Your first one starts above.'}</div>`;
+}
+function journalFiltersHtml() {
+  const filt = (state.journal && state.journal.filter) || 'all';
+  return [['all', 'All'], ...JK36_ORDER.map((k) => [k, JK36_LABEL[k]])].map(([id, label]) => `<span class="jx-filter${filt === id ? ' on' : ''}" data-jfilter="${id}">${esc(label)}</span>`).join('');
+}
+function journalPagesHtml() {
+  const cfg = (state.view && state.view.mode) ? WB_TOOL[state.view.mode] : null;
+  const scoped = journalScoped(); const total = scoped.length; const am = journalMonths(scoped);
+  const earliest = am.length ? am[am.length - 1].label.split(' ')[0] : '';
+  return `
+    <div class="jx-pages-head">
+      <span class="jx-pages-title">Your pages</span>
+      <span class="jx-pages-count">${total} ${total === 1 ? 'page' : 'pages'}${earliest ? ` since ${esc(earliest)}` : ''}</span>
+      <span class="jx-search"><input id="jx-q" type="text" value="${esc((state.journal && state.journal.q) || '')}" placeholder="Look through your pages…"></span>
+    </div>
+    ${!cfg ? `<div id="jx-filters" class="jx-filters">${journalFiltersHtml()}</div>` : ''}
+    <div id="jx-months" class="jx-months">${journalMonthsHtml()}</div>`;
+}
+function journalSideHtml() {
+  const j = state.journal || {}; if (!j.sideOpen) j.sideOpen = { otd: true, threads: true };
+  const scoped = journalScoped();
+  const sec = (id, title, items, empty) => {
+    const open = j.sideOpen[id] !== false;
+    const body = open ? `<div class="jx-side-body">${items.length ? items.map((it) => `<div class="jx-side-item"><div class="jx-side-a">${esc(it.a)}</div><div class="jx-side-b">${esc(it.b)}</div></div>`).join('') : `<div class="jx-side-empty">${esc(empty)}</div>`}</div>` : '';
+    return `<div class="jx-side-sec"><div class="jx-side-head" data-jside="${id}"><span class="jx-side-title">${esc(title)}</span><span class="jx-side-sign">${open ? '−' : '+'}</span></div>${body}</div>`;
+  };
+  return `
+    ${sec('otd', 'On this day', journalOnThisDay(scoped), 'Nothing from a month or three months ago - yet.')}
+    ${sec('threads', 'What keeps coming up', journalThemes(scoped), 'Patterns will surface here as you keep writing.')}
+    <div class="jx-side-rule"></div>
+    <div class="jx-side-note">Only you can read these pages.</div>`;
+}
+function renderJournalList() {
   const mode = (state.view && state.view.mode) || null;   // null | 'coaching' | 'dreams'
   const cfg = mode ? WB_TOOL[mode] : null;
-  const selKey = mode || 'journal';
-  const all = j.entries || [];
-  // The general Journal shows everything that isn't a coaching session or a
-  // dream (those have their own tools); each tool page shows only its own.
-  const entries = cfg ? all.filter((n) => cfg.match((n.props && n.props.mode) || ''))
-    : all.filter((n) => { const m = (n.props && n.props.mode) || ''; return m !== 'coaching' && m !== 'dreams'; });
   const title = cfg ? cfg.label() : t('wb.journal');
-  const picking = j.picking && !mode;
-  const picker = picking ? `<div class="j-picker">
-    <div class="j-picker-h">How do you want to start?</div>
-    ${JOURNAL_MODES.map((m) => `<div class="j-mode">
-      <div class="j-mode-h"><span class="j-mode-ic">${m.icon}</span>${esc(m.label)}</div>
-      <div class="j-prompts">${m.prompts.map((p) => `<button class="j-prompt-chip" data-journal-new="${esc(m.key)}" data-journal-prompt="${esc(p)}">${esc(p)}</button>`).join('')}</div>
-    </div>`).join('')}
-    <button class="ghost j-picker-cancel" data-journal-pick-cancel>Cancel</button>
-  </div>` : '';
-  const cards = entries.map((n) => {
-    const mode = journalModeMeta(n.props && n.props.mode);
-    const modeLabel = mode ? `${mode.icon} ${esc(mode.label)}` : '';
-    return `<button class="j-card" data-open-jentry="${n.id}">
-      <span class="j-card-date">${esc(journalDateLabel((n.props && n.props.date) || n.created_at))}</span>
-      <span class="j-card-snip">${esc(journalSnippet(n))}</span>
-      ${modeLabel ? `<span class="j-card-mode">${modeLabel}</span>` : ''}</button>`;
-  }).join('');
-  const startBtn = cfg
-    ? `<button class="add-btn wide j-new-btn" ${cfg.newAttr}>＋ ${esc(cfg.newBtn)}</button>`
-    : `<button class="add-btn wide j-new-btn" data-journal-start>＋ New entry</button>`;
-  const emptyMsg = cfg ? cfg.empty : 'No entries yet. Start your first one above.';
-  $('#pane').innerHTML = `
+  const today = new Date();
+  const sub = cfg ? '' : `${today.toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' })} - today’s page`;
+  const head = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: title }])}
-    <div class="pane-head home-head"><h1>${esc(title)}</h1></div>
-    ${picking ? '' : wbToolTilesHtml({ sel: selKey })}
-    ${picker}
-    ${picking ? '' : `<div class="j-list-head">${startBtn}</div>`}
-    <div class="j-list">${cards || (picking ? '' : `<div class="empty">${esc(emptyMsg)}</div>`)}</div>`;
+    <div class="jx-head">
+      <div class="jx-eyebrow"><span class="jx-eyebrow-rule"></span><span class="jx-eyebrow-lbl">${esc(t('nav.reflect'))} · ${esc(title)}</span></div>
+      <h1 class="jx-title">${esc(title)}</h1>
+      ${sub ? `<div class="jx-sub">${esc(sub)}</div>` : ''}
+    </div>`;
+  if (cfg) {
+    $('#pane').innerHTML = `${head}
+      <div class="jx-newrow"><button class="add-btn wide" ${cfg.newAttr}>＋ ${esc(cfg.newBtn)}</button></div>
+      <div id="jx-pages" class="jx-pages">${journalPagesHtml()}</div>`;
+    jcBindPages();
+    return;
+  }
+  $('#pane').innerHTML = `${head}
+    <div class="jx-grid">
+      <div class="jx-main">
+        <div id="jx-compose" class="jx-compose">${journalComposeInner()}</div>
+        <div id="jx-pages" class="jx-pages">${journalPagesHtml()}</div>
+      </div>
+      <aside id="jx-side" class="jx-side">${journalSideHtml()}</aside>
+    </div>`;
+  jcBindCompose(); jcBindPages();
 }
 async function startJournalEntry() {
-  if (!state.journal) await openJournal();
-  state.journal.picking = true; renderJournalList();
-  // Land at the top of the options, not wherever the entry list was scrolled to.
+  // §36: there's no picker any more - the journal opens on today's page, ready
+  // to write. Open it (if need be), land at the top, and focus the page.
+  if (!state.journal || !(state.view && state.view.type === 'journal' && !state.view.mode)) await openJournal();
+  else renderJournalList();
   try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {}
+  const ta = document.getElementById('jx-text'); if (ta) ta.focus();
 }
 async function newJournalEntry(modeKey, prompt) {
   const date = new Date().toISOString();
@@ -24338,6 +24650,15 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-coaching]')) { openJournal('coaching').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-dreams]')) { openJournal('dreams').catch((x) => toast(x.message)); return; }
   const oje = t.closest('[data-open-jentry]'); if (oje) { openJournalEntry(oje.dataset.openJentry).catch((x) => toast(x.message)); return; }
+  // §36 Journal: today's page + the pages list.
+  { const el = t.closest('[data-jkind]'); if (el) { jcSetKind(el.dataset.jkind); return; } }
+  if (t.closest('[data-jnext]')) { jcNextPrompt(); return; }
+  if (t.closest('[data-jkeep]')) { jcKeep(); return; }
+  { const el = t.closest('[data-jspeak]'); if (el) { jcSpeak(el); return; } }
+  { const el = t.closest('[data-jfilter]'); if (el) { state.journal = state.journal || {}; state.journal.filter = el.dataset.jfilter; const f = document.getElementById('jx-filters'); if (f) f.innerHTML = journalFiltersHtml(); const m = document.getElementById('jx-months'); if (m) m.innerHTML = journalMonthsHtml(); return; } }
+  { const el = t.closest('[data-jmonth]'); if (el) { const ym = Number(el.dataset.jmonth); state.journal = state.journal || {}; state.journal.monthsOpen = state.journal.monthsOpen || {}; const cur = (ym in state.journal.monthsOpen) ? state.journal.monthsOpen[ym] : true; state.journal.monthsOpen[ym] = !cur; const m = document.getElementById('jx-months'); if (m) m.innerHTML = journalMonthsHtml(); return; } }
+  { const el = t.closest('[data-jexpand]'); if (el) { const id = el.dataset.jexpand; state.journal = state.journal || {}; state.journal.openPage = state.journal.openPage === id ? null : id; const m = document.getElementById('jx-months'); if (m) m.innerHTML = journalMonthsHtml(); return; } }
+  { const el = t.closest('[data-jside]'); if (el) { state.journal = state.journal || {}; state.journal.sideOpen = state.journal.sideOpen || { otd: true, threads: true }; const id = el.dataset.jside; state.journal.sideOpen[id] = state.journal.sideOpen[id] === false ? true : false; const s = document.getElementById('jx-side'); if (s) s.innerHTML = journalSideHtml(); return; } }
   if (t.closest('[data-journal-start]')) { startJournalEntry(); return; }
   if (t.closest('[data-journal-dailyreview]')) { newDailyReview(); return; }
   if (t.closest('[data-journal-coaching]')) { newCoachingSession(); return; }
