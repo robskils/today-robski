@@ -5192,9 +5192,10 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 3]], tools: [
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 2], ['Looking back', 4]], tools: [
       ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''],
-      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-goals', ''], ['Reviews', 'data-open-reviews', ''] ] },
+      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
+      ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
