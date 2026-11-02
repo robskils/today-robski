@@ -8567,6 +8567,82 @@ function homeNotepadLineHtml() {
   try { const np = notepadState && notepadState(); if (np && Array.isArray(np.lines)) { const l = np.lines.find((x) => x && (x.text || '').trim() && !x.done); first = l ? l.text.trim() : ''; } } catch {}
   return `<button class="home-np-line" data-notepad-open><span class="home-np-l">Notepad</span><span class="home-np-prev">${first ? esc(first.slice(0, 60)) : (n ? `${n} line${n === 1 ? '' : 's'}` : 'Jot something down')}</span><span class="home-np-open">Open ⌘J</span></button>`;
 }
+// §49 On your radar: everything with a date or a nudge, from every tool, in one
+// folding feed - Overdue, the next few days, further ahead. Birthdays and keep
+// in touch live here now. "Later" hides a row until tomorrow.
+function radarLaterKey() { return 'life.radar.later.' + todayISO(); }
+function radarLaterSet() { try { return new Set(JSON.parse(localStorage.getItem(radarLaterKey()) || '[]')); } catch { return new Set(); } }
+function radarLater(id) { const s = radarLaterSet(); s.add(id); try { localStorage.setItem(radarLaterKey(), JSON.stringify([...s])); } catch {} if (state.view && state.view.type === 'home') renderHome(); }
+function homeRadarItems() {
+  const today = todayISO(); const later = radarLaterSet(); const out = { overdue: [], soon: [], ahead: [] };
+  const dd = (iso) => Math.round((Date.parse(iso + 'T00:00') - Date.parse(today + 'T00:00')) / 86400000);
+  const an = (id) => { const a = id ? areaById(id) : null; return a ? a.title : ''; };
+  const whenText = (n) => n < 0 ? `${-n} day${n === -1 ? '' : 's'} past` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
+  const push = (g, o) => { if (!later.has(o.id)) out[g].push(o); };
+  (state.tasks || []).forEach((t) => { const p = t.props || {}; if (p.done || p.kit) return; const due = p.due; if (!due || !/^\d{4}-\d{2}-\d{2}$/.test(due)) return; const n = dd(due); if (n > 7) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Task', id: 't:' + t.id, text: t.title || 'A task', when: whenText(n), overdue: n < 0, n, attr: `data-open-task="${t.id}"`, act: 'Open', space: an(p.area) }); });
+  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, act: 'Message', space: '' }); });
+  ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => { push('soon', { kind: 'Birthday', id: 'b:' + b.id, text: `${b.name}${b.turns ? ` turns ${b.turns}` : ''}`, when: b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`, overdue: false, n: b.inDays, attr: `data-open-contact="${b.id}"`, act: 'Message', space: '' }); });
+  (state.goals || []).forEach((g) => { if ((gp(g).status || 'active') === 'done') return; const due = goalDueISO(g); if (!due) return; const n = dd(due); push(n < 0 ? 'overdue' : n <= 7 ? 'soon' : 'ahead', { kind: 'Goal', id: 'g:' + g.id, text: g.title || 'A goal', when: n < 0 ? whenText(n) : `due ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`, overdue: n < 0, n, attr: `data-open-goal="${g.id}"`, act: 'Open', space: an(gp(g).area) }); });
+  out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
+  return out;
+}
+function homeRadarHtml() {
+  const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
+  const open = kOpen('radar');
+  const rowHtml = (o) => `<div class="rdr-row"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act" ${o.attr} role="button" tabindex="0">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
+  const grp = (label, items, gold) => { if (!items.length) return ''; const shown = items.slice(0, 4); const more = items.length > 4 ? `<button class="rdr-more" data-open-tasks>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
+  const wn = `<div class="rdr-wn" data-wn-toggle role="button" tabindex="0">Or ask: what should I do next? <span class="rdr-wn-k">${esc(PK('⌘/'))}</span></div>${(state.home && state.home.wnOpen) ? homeWhatNextBandHtml() : ''}`;
+  const body = total ? `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}${wn}` : `<div class="rdr-empty">Nothing pressing. A clear run.</div>${wn}`;
+  const sum = total ? [r.overdue.length ? `${r.overdue.length} overdue` : '', r.soon.length ? `${r.soon.length} soon` : '', r.ahead.length ? `${r.ahead.length} ahead` : ''].filter(Boolean).join(' · ') : 'Nothing pressing. A clear run.';
+  const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">On your radar</span><span class="hf-hint">${esc(sum)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2 home-radar">${h}${open ? body : ''}</section>`;
+}
+// §49: the time (live) and, when we have it, the weather. No weather source is
+// wired, so this shows the live time and the place from settings; weather is a
+// later add. One row under the greeting.
+function homeTimeWeatherHtml() {
+  const place = (state.account && (state.account.place || state.account.city)) || '';
+  return `<div class="home-tw"><span class="home-tw-time home-time">${esc(homeTimeStr())}</span>${place ? `<span class="home-tw-place">${esc(place)}</span>` : ''}</div>`;
+}
+// §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
+// a count word unfolds a panel of that tool's top few items in place.
+const HOME_NEW = [['journal', 'Note', '⌥N'], ['task', 'Task', '⌥T'], ['event', 'Event', '⌥E'], ['email', 'Email', '⌥M'], ['message', 'Message', ''], ['table', 'Table', ''], ['goal', 'Goal', ''], ['contact', 'Contact', ''], ['space', 'Space', ''], ['review', 'Review', '']];
+function homeNewMake(kind) {
+  if (state.home) state.home.newMenu = false;
+  try {
+    if (kind === 'task') { openTasks(); }
+    else if (kind === 'event') { openCalendar().then(() => { state.cal.adding = true; state.cal.editing = null; renderCalendar(); }); }
+    else if (kind === 'email') { openMail().then(() => { state.mail.composing = { to: '', subject: '', body: '' }; renderMail(); }).catch(() => {}); }
+    else if (kind === 'message') { openMessages(); }
+    else if (kind === 'table') { openNotesList(); }
+    else if (kind === 'goal') { openGoals('goals'); }
+    else if (kind === 'contact') { openContacts().then(() => cvNewContact()); }
+    else if (kind === 'space') { const b = document.querySelector('[data-new-area]'); if (b) b.click(); else openAreasList(); }
+    else if (kind === 'review') { openReviews(); }
+    else { openJournal(); }   // Note -> a journal page / note
+  } catch (e) { toast((e && e.message) || 'Could not start that.'); }
+}
+function homeGlancePanelHtml(tool) {
+  const open = (attr, k, title, sub, when) => `<button class="gln-item" ${attr}><span class="gln-item-b"><span class="gln-item-t">${esc(title)}</span>${sub ? `<span class="gln-item-s">${esc(sub)}</span>` : ''}</span>${when ? `<span class="gln-item-w">${esc(when)}</span>` : ''}</button>`;
+  let rows = '', link = '', label = '';
+  if (tool === 'mail') { label = 'Mail'; const items = mailNewItems().slice(0, 4); rows = items.map((m) => open(`data-mail-open-glance="${esc(m._key)}"`, 'mail', mailSenderClean(m), mailCleanSubject(m.subject), '')).join('') || '<div class="gln-empty">Nothing to sort.</div>'; link = 'data-open-mail'; }
+  else if (tool === 'messages') { label = 'Messages'; const by = (state.friendStatus && state.friendStatus.unreadBy) || {}; const ids = Object.keys(by); rows = ids.slice(0, 4).map((id) => { const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id)); return open(`data-friend-chat="${id}"`, 'msg', (f && f.name) || 'Someone', `${by[id]} new`, ''); }).join('') || '<div class="gln-empty">No unread messages.</div>'; link = 'data-open-messages'; }
+  else if (tool === 'tasks') { label = 'Tasks'; const ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).slice(0, 4); rows = ts.map((t) => open(`data-open-task="${t.id}"`, 'task', t.title || 'A task', '', '')).join('') || '<div class="gln-empty">Nothing to do.</div>'; link = 'data-view-tasks'; }
+  else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', e.location || '', e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
+  else if (tool === 'notes') { label = 'Notes'; const ns = (state.noteTops || []).slice(0, 4); rows = ns.map((n) => open(`data-open-note="${n.id}"`, 'note', n.title || 'Untitled', '', '')).join('') || '<div class="gln-empty">No notes yet.</div>'; link = 'data-open-notes'; }
+  else { label = 'Goals'; const gs = (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').slice(0, 4); rows = gs.map((g) => open(`data-open-goal="${g.id}"`, 'goal', g.title || 'A goal', '', '')).join('') || '<div class="gln-empty">No goals yet.</div>'; link = 'data-open-goals'; }
+  return `<div class="gln-panel-rows">${rows}</div><div class="gln-panel-foot"><button class="gln-open" ${link}>Open ${esc(label)} →</button><button class="gln-fold" data-glance-fold>Fold away</button></div>`;
+}
+function homeGlanceHtml() {
+  const newOpen = !!(state.home && state.home.newMenu);
+  const newItems = HOME_NEW.map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}<div class="gln-new-foot">Or just write it – Set something down ${esc(PK('⌘.'))}</div></div></div>` : '';
+  const words = [['mail', 'Mail', modOn('mail'), mailHeaderCount()], ['messages', 'Messages', modOn('contacts'), unreadMsgs()], ['tasks', 'Tasks', true, (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).length], ['calendar', 'Calendar', modOn('calendar'), 0], ['notes', 'Notes', modOn('notes'), 0], ['goals', 'Goals', modOn('goals'), 0]].filter((w) => w[2]);
+  const glance = state.home && state.home.glance;
+  const wordHtml = words.map(([k, l, , n]) => `<span class="gln-word${glance === k ? ' on' : ''}" data-glance="${k}" role="button" tabindex="0">${esc(l)}${n ? `<i class="gln-n">${n}</i>` : ''}</span>`).join('');
+  const panel = glance ? `<div class="gln-panel">${homeGlancePanelHtml(glance)}</div>` : '';
+  return `<div class="home-glance"><div class="gln-row"><span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${newMenu}</span><span class="gln-words">${wordHtml}</span></div>${panel}</div>`;
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   // §41: "Keep in touch" folds shut by default; Reflections and the day stay
@@ -8583,7 +8659,8 @@ function renderHome() {
   homeMaybePrefetchTomorrow();
   const dayTog = `<span class="home-daytog"><span class="home-daytog-o${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-daytog-s">·</span><span class="home-daytog-o${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span></span>`;
   const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${isTom ? 'Tomorrow' : 'The day'}</span>${dayTog}<span class="hf-hint">${esc(homeDaySummary(off))}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
-  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${off === 0 ? homeBirthdaysHtml() : ''}${homeDayGroupedHtml(off)}${homeTomorrowTeaseHtml(off)}` : ''}</section>`;
+  // §49: birthdays moved to On your radar, so the day no longer lists them.
+  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${homeDayGroupedHtml(off)}${homeTomorrowTeaseHtml(off)}` : ''}</section>`;
   // §35 Reflections: anything drawn or cast today, newest first. Folded shows a
   // one-line summary of what's in it.
   const reflCount = homeReadingCount();
@@ -8605,12 +8682,13 @@ function renderHome() {
       <div class="home-flow">
         <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
         <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
+        ${homeTimeWeatherHtml()}
+        ${homeGlanceHtml()}
         <div class="home-cols">
           <div class="home-main">
-            ${homeWhatNextHtml()}
+            ${homeRadarHtml()}
             ${today}
             ${reflections}
-            ${kit}
           </div>
           <aside class="home-aside">${homeSpacesAsideHtml()}</aside>
         </div>
@@ -25420,6 +25498,13 @@ document.addEventListener('click', (e) => {
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.today === true) { c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
+  { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
+  if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
+  if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderHome(); return; }
+  { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); return; } }
+  if (t.closest('[data-glance-fold]')) { if (state.home) state.home.glance = null; renderHome(); return; }
+  { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
+  { const mog = t.closest('[data-mail-open-glance]'); if (mog) { openMail(mog.dataset.mailOpenGlance).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
   if (t.closest('[data-wn-toggle]')) { wnToggle(); return; }
