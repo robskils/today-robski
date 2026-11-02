@@ -2665,6 +2665,11 @@ function adminAcctRow(u) {
   const emailLine = email && esc(email) !== primary ? `<span class="aa-email">${esc(email)}</span>` : '';
   return `<div class="adm-acct-row"><span class="aa-who"><span class="aa-dot ${online ? 'on' : ''}" aria-hidden="true"></span><span class="aa-id"><span class="aa-top"><span class="aa-name">${primary}</span>${subPill}</span>${emailLine}</span></span><span class="aa-joined">${esc(joined)}</span><span class="aa-seen ${online ? 'on' : ''}">${esc(seen)}</span><span class="aa-plan">${esc(PLAN_LABEL[normPlan(u.plan)] || u.plan || '-')}</span></div>`;
 }
+// §40: Admin is one folding page now (like Settings), not boxed tabs. Fold state
+// per section in localStorage; Members opens by default.
+function admOpen(key, def) { try { const s = JSON.parse(localStorage.getItem('life.admin.fold') || '{}'); return (key in s) ? !s[key] : !!def; } catch { return !!def; } }
+function admTog(key) { try { const s = JSON.parse(localStorage.getItem('life.admin.fold') || '{}'); s[key] = admOpen(key, false); localStorage.setItem('life.admin.fold', JSON.stringify(s)); } catch {} renderAdmin(); }
+function admGoto(key) { const s = state.admin || (state.admin = {}); try { const st = JSON.parse(localStorage.getItem('life.admin.fold') || '{}'); st[key] = false; localStorage.setItem('life.admin.fold', JSON.stringify(st)); } catch {} renderAdmin(); requestAnimationFrame(() => { const el = document.getElementById('adm-sec-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }
 function renderAdmin() {
   const a = state.admin = state.admin || {};
   const ov = a.overview || {};
@@ -2841,14 +2846,38 @@ function renderAdmin() {
     brand: 'The Koyeba logo, icons and colours',
   };
 
+  // §40: one folding page. A top band (eyebrow + Admin + a one-line state +
+  // four figures), then the seven sections as folding keyline sections with a
+  // sticky index on the right. No boxed tabs, no coloured labels.
+  const figures = [
+    ['Members', admN(users.length)],
+    ['Here this week', admN(users.filter(BUCKET.week).length)],
+    ['This month', admN(users.filter(BUCKET.month).length)],
+    ['Services', svcList.length ? `${svcList.length - svcDown}/${svcList.length}` : '—'],
+  ];
+  const waiting = requests.length;
+  const stateSentence = `${svcList.length ? (svcDown === 0 ? 'Everything is running.' : `${svcDown} service${svcDown === 1 ? '' : 's'} need${svcDown === 1 ? 's' : ''} looking at.`) : 'Koyeba is running.'}${waiting ? ` ${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting to join.` : ''}`;
+  const sectionHtml = ([key, label], i) => {
+    const open = admOpen(key, key === 'members');
+    return `<section class="adm2-sec" id="adm-sec-${key}">
+      <div class="adm2-h" data-adm-fold="${key}" role="button" tabindex="0"><span class="adm2-num">${KNAV_R[i] || ''}</span><span class="adm2-t">${esc(label)}</span>${!open ? `<span class="adm2-sub">${esc(subs[key] || '')}</span>` : ''}<span class="adm2-sign">${open ? '−' : '+'}</span></div>
+      ${open ? `<div class="adm2-body">${panes[key] || ''}</div>` : ''}
+    </section>`;
+  };
   $('#pane').innerHTML = `
     ${pageCrumb('Admin')}
-    <div class="pane-head home-head"><h1>Admin</h1></div>
-    ${seg}
-    <section class="home-sec">
-      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1]}<span class="muted">${esc(subs[tab] || '')}</span></div>
-      ${panes[tab] || ''}
-    </section>`;
+    <div class="kwrap adm2-page">
+      <div class="adm2-top">
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Only you and Peter see this</span></div>
+        <h1 class="adm2-h1">Admin</h1>
+        <p class="adm2-state">${esc(stateSentence)}</p>
+        <div class="adm2-figs">${figures.map(([l, v]) => `<div class="adm2-fig"><div class="adm2-fig-n">${esc(String(v))}</div><div class="adm2-fig-l">${esc(l)}</div></div>`).join('')}</div>
+      </div>
+      <div class="adm2-grid">
+        <div class="adm2-main">${TABS.map(sectionHtml).join('')}</div>
+        <div class="adm2-index">${TABS.map(([key, label]) => `<button class="adm2-ix" data-adm-goto="${key}">${esc(label)}</button>`).join('')}</div>
+      </div>
+    </div>`;
 }
 // Re-probe the integrations on demand and repaint the Health panel.
 async function runHealthCheckNow() {
@@ -24309,6 +24338,8 @@ document.addEventListener('click', (e) => {
   const rd = t.closest('[data-req-dismiss]'); if (rd) { dismissRequest(rd.dataset.reqDismiss); return; }
   { const rs = t.closest('[data-invite-resend]'); if (rs) { resendInvitation(rs.dataset.inviteResend); return; } }
   { const at = t.closest('[data-adm-tab]'); if (at) { state.admin = state.admin || {}; state.admin.tab = at.dataset.admTab; renderAdmin(); return; } }
+  { const af = t.closest('[data-adm-fold]'); if (af) { admTog(af.dataset.admFold); return; } }
+  { const ag = t.closest('[data-adm-goto]'); if (ag) { admGoto(ag.dataset.admGoto); return; } }
   { const fbd = t.closest('[data-fb-del]'); if (fbd) { const id = fbd.dataset.fbDel; if (state.admin) state.admin.feedback = (state.admin.feedback || []).filter((f) => String(f.id) !== String(id)); renderAdmin(); api('/api/admin/feedback', { method: 'DELETE', body: JSON.stringify({ id: Number(id) }) }).catch((e) => toast(e.message)); return; } }
   if (t.closest('[data-health-check]')) { runHealthCheckNow(); return; }
   { const am = t.closest('[data-adm-member]'); if (am) { state.admin = state.admin || {}; const id = Number(am.dataset.admMember); state.admin.openMember = (state.admin.openMember === id) ? null : id; state.admin.freeEdit = null; renderAdmin(); return; } }
