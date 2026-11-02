@@ -10073,6 +10073,9 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
    only rule never fired and the bar stayed #fff with near-white text on it. */
 body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.145 0.028 158); border-bottom-color:oklch(0.26 0.03 158); }
 .knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; }
+/* Persistent back arrow in the top bar (Robin: a normal, always-there back button). */
+.knav-back { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:400; font-size:23px; line-height:1; color:var(--k-goldt); padding:0 6px; margin:0 2px 0 -2px; flex:none; align-self:center; }
+.knav-back:hover { color:var(--k-gold); }
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
 .knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
@@ -11496,6 +11499,9 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .av4-glances { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:16px; padding:30px 0; }
 .av4-glance { border:1px solid var(--k-line); padding:22px 22px 18px; display:flex; flex-direction:column; gap:10px; min-height:190px; box-sizing:border-box; cursor:pointer; transition:border-color .25s ease; }
 .av4-glance.white { background:#fff; }
+/* Night: a white Mail card kept the theme's light text and was unreadable. Lift it
+   to a lighter forest instead, so the normal ivory text stays legible. (Robin.) */
+body.night .av4-glance.white, :root[data-theme='dark'] .av4-glance.white { background:var(--k-soft); }
 .av4-glance:hover { border-color:var(--k-gold); }
 .av4-gl-top { display:flex; align-items:baseline; gap:10px; }
 .av4-gl-kind { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }

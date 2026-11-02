@@ -5571,8 +5571,13 @@ function navGroupsHtml(v) {
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
   const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${DOW3[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()].slice(0, 3)}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
+  // A persistent back arrow in the sticky top bar - always visible on any sub-page,
+  // always in the same place, wired to navBack (proper history-back). This is the
+  // "normal back button" Robin keeps asking for; the in-page crumb back stays too.
+  const backBtn = (v && v.type && v.type !== 'home') ? `<button class="knav-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
   const header = `<div class="knav-bar">
       ${wordmark}
+      ${backBtn}
       <div class="knav-crumb">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
