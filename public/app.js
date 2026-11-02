@@ -6227,7 +6227,7 @@ function homeTodayItems() {
     const tasks = (s.tasks || []).filter((t) => t && t.title);
     if (!s.practice && tasks.length) {
       // One row per task the slot carries, so a busy block reads as its tasks.
-      tasks.forEach((t) => items.push({ kind: 'slot', start_min: s.start_min ?? null, sort: s.start_min ?? 100000, hue, title: t.title, done: !!t.done }));
+      tasks.forEach((t) => items.push({ kind: 'slot', taskId: t.tana_id || t.id, start_min: s.start_min ?? null, sort: s.start_min ?? 100000, hue, title: t.title, done: !!t.done }));
     } else {
       items.push({ kind: 'slot', start_min: s.start_min ?? null, sort: s.start_min ?? 100000, hue, title: s.title || 'Block', done: !!s.done, badge: s.practice ? 'practice' : null });
     }
@@ -7629,11 +7629,26 @@ function homeDayRowHtml(it) {
   const meta = [];
   if (it.kind === 'event') { if (ct && ct.title) meta.push(esc(ct.title)); if (it.location) meta.push(esc(it.location)); }
   else if (it.badge) meta.push(esc(it.badge));
-  return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar">
+  // §41/§45: a task carried on the day gets a 9px gold tick square - tick it to
+  // strike it through. Events have no square; practices are ticked in Flow.
+  const tickable = it.kind === 'slot' && it.taskId;
+  const box = tickable
+    ? `<span class="ktl-box${it.done ? ' on' : ''}" data-day-tick="${esc(it.taskId)}" role="button" tabindex="0" title="${it.done ? 'Done' : 'Tick it off'}" aria-pressed="${it.done ? 'true' : 'false'}"></span>`
+    : '<span class="ktl-rail"><span class="ktl-dot"></span></span>';
+  return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}${tickable ? ' ktl-tickable' : ''}"${tickable ? '' : ' data-home-cal role="button" tabindex="0" title="Open in the calendar"'}>
     <span class="ktl-time">${time}</span>
-    <span class="ktl-rail"><span class="ktl-dot"></span></span>
-    <span class="ktl-body"><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}</span>
+    ${box}
+    <span class="ktl-body"${tickable ? ' data-home-cal role="button" tabindex="0" title="Open in the calendar"' : ''}><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}</span>
   </div>`;
+}
+async function homeDayTick(id) {
+  const off = state.home.dayOffset || 0;
+  const src = off === 0 ? state.home : state.home.dayData; if (!src) return;
+  let found = null; for (const s of (src.slots || [])) for (const t of (s.tasks || [])) if (String(t.tana_id || t.id) === String(id)) found = t;
+  const now = !(found && found.done);
+  if (found) { found.done = now; renderHome(); }
+  try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: now }) }); }
+  catch (e) { if (found) { found.done = !now; renderHome(); } toast((e && e.message) || 'Could not update that.'); }
 }
 function homeDayGroupedHtml(off) {
   if (state.home.dayLoading) return '<div class="home-empty">Loading…</div>';
@@ -26056,6 +26071,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
+  { const dt = t.closest('[data-day-tick]'); if (dt) { e.preventDefault(); e.stopPropagation(); homeDayTick(dt.dataset.dayTick); return; } }
   if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }

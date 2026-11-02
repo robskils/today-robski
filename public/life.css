@@ -9620,6 +9620,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .ktl-time { font-family:var(--k-sans); font-weight:500; font-size:12.5px; letter-spacing:.03em; color:var(--ink-3); padding-top:3px; white-space:nowrap; }
 .ktl-rail { display:flex; flex-direction:column; align-items:center; align-self:stretch; }
 .ktl-dot { width:7px; height:7px; margin-top:7px; box-sizing:border-box; border:1px solid var(--accent); background:transparent; flex:none; }
+.ktl-box { width:9px; height:9px; margin-top:6px; box-sizing:border-box; border:1px solid var(--k-gold); background:transparent; cursor:pointer; flex:none; }
+.ktl-box.on { background:var(--k-gold); }
+.ktl-box:hover { border-color:var(--k-goldt); }
+.ktl-row.done .ktl-t { text-decoration:line-through; }
 .ktl-rail::after { content:""; flex:1; width:1px; min-height:14px; background:var(--line); margin-top:2px; }
 .ktl-body { padding-bottom:22px; min-width:0; }
 .ktl-row.done .ktl-body { opacity:.55; }
