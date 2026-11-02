@@ -5200,8 +5200,8 @@ function knavGroups() {
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
       ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''], ['Practices', 'data-open-practices', ''] ] },
-    { id: 'money', label: 'Money', about: 'Optional – only if you want it', tools: [
-      ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Money', 'data-open-money', ''] ] },
+    { id: 'money', label: 'Money', about: "What things cost, and what's growing", tools: [
+      ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
   ];
 }
 // Which group the current view belongs to, so its name shows ink in the top line.
