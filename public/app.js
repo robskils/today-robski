@@ -8612,12 +8612,18 @@ function homeRadarHtml() {
   const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">On your radar</span><span class="hf-hint">${esc(sum)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<section class="home-sec2 home-radar">${h}${open ? body : ''}</section>`;
 }
-// §49: the time (live) and, when we have it, the weather. No weather source is
-// wired, so this shows the live time and the place from settings; weather is a
-// later add. One row under the greeting.
+// §49: the time (live) and, when we have it, the weather. loadWeather() is
+// self-guarding (fetches once off the device's cached location via Open-Meteo,
+// keyless, and re-renders Home when it lands); we show the current temperature -
+// the one number the hero eyebrow doesn't carry, so no word is rinsed twice. No
+// emoji: the WMO glyphs break the no-icon rule, so the condition word stays in
+// the eyebrow and the row stays a quiet number. One row under the greeting.
 function homeTimeWeatherHtml() {
+  loadWeather();
   const place = (state.account && (state.account.place || state.account.city)) || '';
-  return `<div class="home-tw"><span class="home-tw-time home-time">${esc(homeTimeStr())}</span>${place ? `<span class="home-tw-place">${esc(place)}</span>` : ''}</div>`;
+  const w = state.weather;
+  const wx = (w && typeof w === 'object' && w.temp != null) ? `<span class="home-tw-wx">${w.temp}°</span>` : '';
+  return `<div class="home-tw"><span class="home-tw-time home-time">${esc(homeTimeStr())}</span>${place ? `<span class="home-tw-place">${esc(place)}</span>` : ''}${wx}</div>`;
 }
 // §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
 // a count word unfolds a panel of that tool's top few items in place.

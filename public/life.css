@@ -11891,6 +11891,7 @@ body.mailsheet-open { overflow:hidden; }
 .home-tw { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; margin-top:18px; padding-top:16px; border-top:1px solid var(--k-line); max-width:760px; }
 .home-tw-time { font-family:var(--k-serif); font-weight:300; font-size:34px; line-height:1; color:var(--k-ink); }
 .home-tw-place { font-family:var(--k-serif); font-weight:300; font-size:34px; line-height:1; color:var(--k-mute); }
+.home-tw-wx { font-family:var(--k-serif); font-weight:300; font-size:34px; line-height:1; color:var(--k-mute); font-variant-numeric:tabular-nums; }
 /* §50 +New + at a glance */
 .home-glance { margin-top:16px; padding:14px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
 .gln-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px 22px; }
