@@ -8615,7 +8615,8 @@ function homeRadarItems() {
 function homeRadarHtml() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
   const open = kOpen('radar');
-  const rowHtml = (o) => `<div class="rdr-row"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act" ${o.attr} role="button" tabindex="0">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
+  // The whole row opens the item (Later is handled first, so it still snoozes).
+  const rowHtml = (o) => `<div class="rdr-row" ${o.attr} role="button" tabindex="0"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
   const grp = (label, items, gold) => { if (!items.length) return ''; const shown = items.slice(0, 4); const more = items.length > 4 ? `<button class="rdr-more" data-open-tasks>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
   const wn = `<div class="rdr-wn" data-wn-toggle role="button" tabindex="0">Or ask: what should I do next? <span class="rdr-wn-k">${esc(PK('⌘/'))}</span></div>${(state.home && state.home.wnOpen) ? homeWhatNextBandHtml() : ''}`;
   const body = total ? `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}${wn}` : `<div class="rdr-empty">Nothing pressing. A clear run.</div>${wn}`;
@@ -8775,9 +8776,9 @@ function homeArrivalHtml() {
   const who = `<span class="home-arr-who">${esc(mailSenderClean(m))}</span>`;
   const subj = m.subject ? ` – “${esc(mailCleanSubject(m.subject))}”` : '';
   const lead = items.length === 1
-    ? `A letter from ${who}, just now${subj}`
-    : `${items.length} new letters – ${who} and ${items.length - 1} more`;
-  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><span class="home-arr-later" data-mail-arrival-later role="button" tabindex="0">Later</span></div>`;
+    ? `A new email from ${who}, just now${subj}`
+    : `${items.length} new emails – ${who} and ${items.length - 1} more`;
+  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><span class="home-arr-later" data-mail-arrival-later role="button" tabindex="0">Later</span></div>`;
 }
 // §62 Calendar section: confirmed events (and plain slots), Today · Tomorrow;
 // never tasks - those live in On your radar. Practices sit as a tick row at the
@@ -8831,20 +8832,24 @@ function homeReadGlyph(r) {
 // the hexagram drawn as six bars (yang solid, yin broken, changing in gold).
 function homeZodiacGlyph(sign) { const s = String(sign || '').toLowerCase(); const z = (typeof ZODIAC !== 'undefined' ? ZODIAC : []).find((x) => String(x[0]).toLowerCase() === s); return z ? z[1] : ''; }
 function homeReadCardHtml(r) {
+  // §64 + Robin: the card image opens its reading when clicked (handled by
+  // data-home-read-open, which runs before the row's expand).
+  const open = `data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading"`;
   if (r.key === 'spirit') {
-    const sp = currentSpirit() || {}; const init = esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase());
-    return `<div class="home-rd-card rc-spirit"><span class="rc-in"></span><svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${init}</span><span class="rc-foot">${esc(String(sp.name || 'Spirit').slice(0, 14))}</span></div>`;
+    const sp = currentSpirit() || {}; const sym = String(sp.symbol || '').trim();
+    const face = sym ? `<span class="rc-sym">${esc(sym)}</span>` : `<svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase())}</span>`;
+    return `<div class="home-rd-card rc-spirit" ${open}><span class="rc-in"></span>${face}<span class="rc-foot">${esc(String(sp.name || 'Spirit').slice(0, 14))}</span></div>`;
   }
   if (r.key === 'horo') {
     const ho = currentHoro() || {}; const sign = String(ho.sign || '').trim(); const g = homeZodiacGlyph(sign);
-    return `<div class="home-rd-card rc-horo"><span class="rc-in"></span><span class="rc-ring"></span><span class="rc-zc">${g ? g + '︎' : esc(sign.charAt(0) || '?')}</span><span class="rc-foot rc-foot-gold">${esc(sign || 'Horoscope')}</span></div>`;
+    return `<div class="home-rd-card rc-horo" ${open}><span class="rc-in"></span><span class="rc-ring"></span><span class="rc-zc">${g ? g + '︎' : esc(sign.charAt(0) || '?')}</span><span class="rc-foot rc-foot-gold">${esc(sign || 'Horoscope')}</span></div>`;
   }
   if (r.key === 'iching') {
     const ic = currentIching(); const lines = (ic && ic.lines) || []; const hex = lines.length ? icHexFor(lines, false) : null;
     const bars = lines.slice().reverse().map((l) => l.yin ? `<span class="rc-bar yin${l.changing ? ' ch' : ''}"><i></i><i></i></span>` : `<span class="rc-bar yang${l.changing ? ' ch' : ''}"></span>`).join('');
-    return `<div class="home-rd-card rc-ich"><span class="rc-in"></span><span class="rc-bars">${bars}</span><span class="rc-foot">${hex ? hex.n : ''}</span></div>`;
+    return `<div class="home-rd-card rc-ich" ${open}><span class="rc-in"></span><span class="rc-bars">${bars}</span><span class="rc-foot">${hex ? hex.n : ''}</span></div>`;
   }
-  return `<div class="home-rd-card rc-plain"><span class="rc-in"></span><span class="rc-init">${esc((r.kind || '?').charAt(0))}</span></div>`;
+  return `<div class="home-rd-card rc-plain" ${open}><span class="rc-in"></span><span class="rc-init">${esc((r.kind || '?').charAt(0))}</span></div>`;
 }
 function homeReadingsSectionHtml() {
   if (!reflectOn()) return '';
@@ -16327,10 +16332,10 @@ function mailSenderName(m) {
 function mailArrivalLine() {
   const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
   if (!items.length || state.mailSheet || state.mailArrivalHidden) return '';
-  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A letter from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`; }
+  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A new email from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`; }
   const names = items.slice(0, 3).map(mailSenderName);
-  const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new letters`;
-  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new letters – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`;
+  const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new emails`;
+  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new emails – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`;
 }
 // §51: the "New mail" sheet is gone. "Mail {count}" and ⌘E just open the Mail
 // page (on the New/to-sort list, newest first). Kept the name so existing
@@ -16368,6 +16373,9 @@ async function warmMailForSheet() {
     state.mail.messages = all.filter((m) => !gone.has(m._key));
     state.__mailListLoaded = true;
     renderNav(); if (state.mailSheet) renderMailSheet();
+    // Today's Mail section (and arrival line) read this; repaint them once the
+    // mail lands, or they'd keep showing the empty "nothing to sort" state.
+    if (state.view && state.view.type === 'home') renderHome();
   } catch {} finally { state.__mailWarming = false; }
 }
 function mailSheetHtml() {
