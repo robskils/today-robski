@@ -11746,11 +11746,16 @@ body[data-view="notes"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .nx-h1 { font-family:var(--k-serif); font-weight:300; font-size:clamp(64px,6vw,96px); line-height:.95; margin:14px 0 0; color:var(--k-ink); }
 .nx-lead { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; line-height:1.35; color:var(--k-mute); margin-top:12px; }
 .nx-lead .nx-last { color:var(--k-ink); }
-.nx-controls { display:flex; flex-wrap:wrap; align-items:center; gap:14px 34px; margin-top:36px; padding:14px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
-.nx-search { flex:1; min-width:240px; display:flex; align-items:center; gap:12px; }
-.nx-search input { flex:1; min-width:0; font-family:var(--k-sans); font-size:16px; color:var(--k-ink); background:transparent; border:0; outline:0; }
-.nx-search input::placeholder { color:var(--k-mute); }
-.nx-search-k { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.2em; color:var(--k-mute); }
+/* Robin: the Notes page needs a real search BOX (it was transparent text). Match
+   the Space search bar - a prominent keyline box, dark forest in night, gold ⌕. */
+.nx-searchbar { display:flex; align-items:center; gap:14px; margin-top:28px; padding:14px 20px; background:#fff; border:1px solid var(--k-line); transition:border-color .2s ease; }
+body.night .nx-searchbar, :root[data-theme='dark'] .nx-searchbar { background:var(--k-panel); }
+.nx-searchbar.active { border-color:var(--k-gold); }
+.nx-sb-ic { font-family:var(--k-sans); font-weight:400; font-size:20px; line-height:1; color:var(--k-goldt); flex:none; }
+.nx-searchbar input { flex:1; min-width:0; font-family:var(--k-sans); font-size:18px; color:var(--k-ink); background:transparent; border:0; outline:0; }
+.nx-searchbar input::placeholder { color:var(--k-mute); }
+.nx-sb-k { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.14em; color:var(--k-mute); flex:none; }
+.nx-controls { display:flex; flex-wrap:wrap; align-items:center; gap:14px 34px; margin-top:18px; padding:14px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
 .nx-orders { display:flex; gap:22px; }
 .nx-order { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14.5px; color:var(--k-mute); padding-bottom:3px; border-bottom:1px solid transparent; white-space:nowrap; }
 .nx-order.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }

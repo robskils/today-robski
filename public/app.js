@@ -6146,9 +6146,9 @@ async function openHome() {
   state.navUtilOpen = false;
   // Landing on Home always opens on the Today tile (not the last one you left on).
   if (state.home) state.home.tileOpen = 'today';
-  // §44: What next starts folded every time you land on Today. §45: the day
-  // starts on Today, not wherever Tomorrow was left.
-  if (state.home) { state.home.wnOpen = false; state.home.dayWhen = 'today'; }
+  // What next follows the saved fold choice (open by default). §45: the day starts
+  // on Today, not wherever Tomorrow was left.
+  if (state.home) { state.home.wnOpen = wnOpenPref(); state.home.dayWhen = 'today'; }
   renderNav();
   // Instant paint: if we already have Home data from a previous visit, show it
   // right away so tapping the wordmark feels immediate, then refresh behind it.
@@ -8365,7 +8365,7 @@ function homeWhatNextCandidates() {
     const d = Math.round((Date.parse(due + 'T00:00') - Date.parse(todayI + 'T00:00')) / 86400000);
     if (d <= 1) list.push({ pr: d < 0 ? 0 : 1, title: g.title || 'A goal', because: d < 0 ? `It is ${-d} day${d === -1 ? '' : 's'} late now, and it will feel lighter once it is moving.` : 'It comes due today - a small step keeps it alive.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', an(gp(g).area), d < 0 ? `${-d} days late` : 'due today'] });
   });
-  if (modOn('mail')) { const n = state.mailUnreadTotal || 0; if (n) list.push({ pr: 2, title: n === 1 ? 'Clear the one email waiting in your inbox.' : `Clear the ${n} emails waiting in your inbox.`, because: 'A few quick replies and it is off your mind.', verb: 'Open Mail', attr: 'data-open-mail', why: ['Mail', n + ' to sort'] }); }
+  if (modOn('mail')) { const n = mailHeaderCount(); if (n) list.push({ pr: 2, title: n === 1 ? 'Clear the one email waiting in your inbox.' : `Clear the ${n} emails waiting in your inbox.`, because: 'A few quick replies and it is off your mind.', verb: 'Open Mail', attr: 'data-open-mail', why: ['Mail', n + ' to sort'] }); }
   const p1 = priorityTasks(); if (p1.length) { const tk = p1[0]; list.push({ pr: 3, title: tk.title || 'A task', because: 'You marked this a priority - worth doing first.', verb: 'Open it', attr: `data-open-task="${tk.id}"`, why: ['Task', 'P1', an(tk.props && tk.props.area)] }); }
   (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').forEach((g) => { const q = gQuietDays(g); if (q >= 14) list.push({ pr: 4, title: `Spend twenty minutes on "${g.title || 'a goal'}".`, because: 'You said this mattered, and it has been quiet for a while.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', `quiet ${q} days`, an(gp(g).area)] }); });
   ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { list.push({ pr: 5, title: `Reach out to ${k.name || 'someone'}.`, because: k.last ? `You last spoke ${kitWhen(k.last)}.` : 'You meant to stay in touch.', verb: 'Open', attr: `data-open-contact="${k.id}"`, why: ['People'] }); });
@@ -8377,10 +8377,10 @@ function homeWhatNextCandidates() {
   });
   return list.sort((a, b) => a.pr - b.pr);
 }
-// §44: What next is no longer front-and-centre. On Today it's a quiet line that
-// unfolds the forest band on click (or ⌘/). Starts folded every time.
+// Robin: What next is open by default on Today; the fold choice persists.
+function wnOpenPref() { try { return localStorage.getItem('life.home.wnOpen') !== '0'; } catch { return true; } }
 function homeWhatNextHtml() {
-  const open = !!(state.home && state.home.wnOpen);
+  const open = (state.home && state.home.wnOpen !== undefined) ? !!state.home.wnOpen : wnOpenPref();
   // Robin: a plain folding section under Messages, styled exactly like it - a
   // Cormorant "What next" header, a muted hint, a +/- fold. No gold rule, no eyebrow.
   const hint = open ? '' : 'What should I do next?';
@@ -8395,7 +8395,9 @@ function wnToggle(force) {
     return;
   }
   state.home = state.home || {};
-  state.home.wnOpen = force == null ? !state.home.wnOpen : !!force;
+  const cur = state.home.wnOpen !== undefined ? state.home.wnOpen : wnOpenPref();
+  state.home.wnOpen = force == null ? !cur : !!force;
+  try { localStorage.setItem('life.home.wnOpen', state.home.wnOpen ? '1' : '0'); } catch {}
   renderHome();
 }
 function homeWhatNextBandHtml() {
@@ -9221,7 +9223,7 @@ function renderNotesList() {
   const spaceRows = [...spaceCounts.entries()].map(([k, c]) => [areaById(k), c]).filter(([a]) => a).sort((x, y) => (x[0].title || '').localeCompare(y[0].title || ''));
   const sideOpen = (id) => !(state.notesSide && state.notesSide[id] === false);
   const sidePanel = (id, title, count, body) => `<div class="nx-side-panel"><button class="nx-side-h" data-notes-side="${id}"><span class="nx-side-hl">${esc(title)}</span><span class="nx-side-n">${count}</span><span class="nx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
-  const keptBody = `<div class="nx-side-body">${favs.length ? favs.map((n) => `<button class="nx-side-row" data-open-note="${n.id}"><span class="nx-side-rt">${esc(n.title || 'Untitled')}</span></button>`).join('') : '<div class="nx-side-empty">Nothing kept close yet.</div>'}</div>`;
+  const keptBody = `<div class="nx-side-body">${favs.length ? favs.map((n) => `<button class="nx-side-row" data-open-note="${n.id}"><span class="nx-side-rt">${esc(n.title || 'Untitled')}</span></button>`).join('') : '<div class="nx-side-empty">No starred notes yet.</div>'}</div>`;
   const spaceBody = `<div class="nx-side-body">${spaceRows.map(([a, c]) => `<button class="nx-side-row${fSpace === a.id ? ' on' : ''}" data-notes-space="${a.id}"><span class="nx-side-rt">${esc(a.title)}</span><span class="nx-side-rn">${c}</span></button>`).join('') || '<div class="nx-side-empty">No Spaces yet.</div>'}</div>`;
   const lead = `${notes.length} note${notes.length === 1 ? '' : 's'}.${lastNote ? ` You were last in <span class="nx-last">${esc(lastNote.title || 'Untitled')}</span>.` : ''}`;
   $('#pane').innerHTML = `
@@ -9231,8 +9233,8 @@ function renderNotesList() {
           <div class="nx-eyebrow">Keep · Notes</div>
           <h1 class="nx-h1">${t('nav.notes')}</h1>
           <div class="nx-lead">${lead}</div>
+          <div class="nx-searchbar${state.notesQuery ? ' active' : ''}"><span class="nx-sb-ic">⌕</span><input data-notes-q placeholder="Search your notes - titles, words, links" value="${esc(state.notesQuery || '')}" autocomplete="off"><span class="nx-sb-k">/</span></div>
           <div class="nx-controls">
-            <div class="nx-search"><input data-notes-q placeholder="Search notes - titles, words, links" value="${esc(state.notesQuery || '')}" autocomplete="off"><span class="nx-search-k">/</span></div>
             <div class="nx-orders">${orders}</div>
             <button class="nx-new" data-new-note>New note</button>
           </div>
@@ -9240,7 +9242,7 @@ function renderNotesList() {
           <div class="nx-groups">${groupsHtml}</div>
         </div>
         <aside class="nx-side">
-          ${sidePanel('pinned', 'Kept close', favs.length, keptBody)}
+          ${sidePanel('pinned', 'Starred Notes', favs.length, keptBody)}
           ${sidePanel('spaces', 'By Space', spaceRows.length, spaceBody)}
         </aside>
       </div>
@@ -17553,13 +17555,23 @@ function hasRemoteImages(html) {
   return /<img\b[^>]*\bsrc\s*=\s*["']?\s*https?:/i.test(html || '') || /url\(\s*["']?\s*https?:/i.test(html || '');
 }
 function mailTrusted(addr) { return !!(state.mailTrust && addr && state.mailTrust.has(addr.toLowerCase())); }
-// True when a message has remote images we're holding back (not trusted, not yet
-// shown for this open message).
+// "Seems dodgy": in the Spam/Junk box, or the spam view - where a remote image is
+// most likely a tracking pixel. Everything else is treated as ordinary mail.
+function mailSeemsDodgy(o) {
+  const box = ((o && (o._mailbox || o.mailbox)) || '').toLowerCase();
+  if (/spam|junk|bulk/.test(box)) return true;
+  if (state.mail && state.mail.folder === 'spam') return true;
+  return false;
+}
+// Robin: show images BY DEFAULT; only hold them back when the email seems dodgy.
+// (Trusted senders and a message you've explicitly "shown" always display; a dodgy
+// one stays blocked until you tap Show images.)
 function mailImagesBlocked(o) {
   if (!o || !o.html || !hasRemoteImages(o.html)) return false;
   const sender = o.from && o.from.address ? o.from.address.toLowerCase() : '';
   if (mailTrusted(sender)) return false;
-  return !(state.mail && state.mail.showImgKey === o._key);
+  if (state.mail && state.mail.showImgKey === o._key) return false;
+  return mailSeemsDodgy(o);
 }
 async function trustSender(addr) {
   addr = (addr || '').toLowerCase(); if (!addr) return;
