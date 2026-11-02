@@ -1619,18 +1619,11 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // (backAttr / areaId kept for callers but no longer drawn.)
   let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
   if (items[0] && /data-view-home/.test(items[0].attr || '')) items = items.slice(1);
-  let hadGroup = false;
-  const gid = (typeof KNAV_VIEW !== 'undefined') ? KNAV_VIEW[(state.view && state.view.type) || ''] : null;
-  if (gid && typeof knavGroups === 'function') {
-    const gl = (knavGroups().find((g) => g.id === gid) || {}).label;
-    if (gl && (!items[0] || items[0].label !== gl)) { items = [{ label: gl, attr: `data-knav-group="${gid}"` }, ...items]; hadGroup = true; }
-  }
-  // Show only when deep: group + tool + item (or, with no group, tool + item).
-  if (items.length < (hadGroup ? 3 : 2)) return '';
-  // §28 back link: "← parent · current". The gold arrow and the parent's name
-  // are one link to the logical parent (the second-to-last crumb); the current
-  // item follows in ink. Plain text, no box. Hidden at a tool's top level (the
-  // length gate above). Mobile collapses to "‹ parent" top-left.
+  // §63 (Robin, repeatedly): the ← back arrow is ALWAYS shown on a sub-page - never
+  // hidden at a tool's top level, so Mail/Notes/etc. always have a way back. No nav
+  // group is prepended (it read as "Plans · Goals · …" noise); the crumb is just
+  // "← {where you came from}" then the trail the caller passed.
+  if (!items.length) return '';
   // §63: ← is proper history-back (navBack), labelled with where you came from.
   // The hierarchy that follows is "up" - separate plain links. If the back target
   // is the same as the first hierarchy link, drop the duplicate.
@@ -8389,14 +8382,17 @@ function homeWhatNextCandidates() {
 // unfolds the forest band on click (or ⌘/). Starts folded every time.
 function homeWhatNextHtml() {
   const open = !!(state.home && state.home.wnOpen);
-  const line = `<div class="home-wn-line${open ? ' open' : ''}" data-wn-toggle role="button" tabindex="0"><span class="home-wn-sq"></span><span class="home-wn-ask">${open ? 'Fold it away' : 'What should I do next?'}</span><span class="home-wn-kbd">${PK('⌘/')}</span></div>`;
-  return `${line}${open ? homeWhatNextBandHtml() : ''}`;
+  // Open: the suggestion is the point, so show the band on its own with only a
+  // small "Fold away" tucked into its top row. Closed: the quiet ask line. (Robin:
+  // "fold it away isn't the most important thing here".)
+  if (open) return homeWhatNextBandHtml();
+  return `<div class="home-wn-line" data-wn-toggle role="button" tabindex="0"><span class="home-wn-sq"></span><span class="home-wn-ask">What should I do next?</span><span class="home-wn-kbd">${PK('⌘/')}</span></div>`;
 }
 // Open/close the What next band. From anywhere (⌘/, the Plans tool, Search),
 // it lands on Today with the band open; on Today it toggles.
 function wnToggle(force) {
   if (!(state.view && state.view.type === 'home')) {
-    openHome().then(() => { state.home = state.home || {}; state.home.wnOpen = true; renderHome(); setTimeout(() => { const b = document.querySelector('.home-wn-line'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); }).catch(() => {});
+    openHome().then(() => { state.home = state.home || {}; state.home.wnOpen = true; renderHome(); setTimeout(() => { const b = document.querySelector('.home-wn'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); }).catch(() => {});
     return;
   }
   state.home = state.home || {};
@@ -8405,12 +8401,12 @@ function wnToggle(force) {
 }
 function homeWhatNextBandHtml() {
   const cands = homeWhatNextCandidates();
-  if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-eyebrow">What next</div><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
+  if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><button class="home-wn-fold" data-wn-toggle aria-label="Fold away" title="Fold away">×</button></div><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
   let idx = state.home.wnIdx || 0; if (idx >= cands.length) idx = 0;
   const c = cands[idx];
   const whyOpen = !!state.home.wnWhy;
   return `<div class="home-wn">
-    <div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><span class="home-wn-hint">one thing at a time</span>${cands.length ? `<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide' : 'Why this?'}</button>` : ''}</div>
+    <div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><span class="home-wn-hint">one thing at a time</span>${cands.length ? `<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide' : 'Why this?'}</button>` : ''}<button class="home-wn-fold" data-wn-toggle aria-label="Fold away" title="Fold away ${esc(PK('⌘/'))}">×</button></div>
     <div class="home-wn-one">${esc(c.title)}</div>
     <div class="home-wn-because">${esc(c.because)}</div>
     ${whyOpen ? `<div class="home-wn-why">${c.why.filter(Boolean).map((w) => `<span>${esc(w)}</span>`).join('<span class="wn-sep">·</span>')}</div>` : ''}
@@ -8575,7 +8571,7 @@ function quoteOfDayHtml() {
   if (!dailyQuoteOn()) return '';
   const q = dayQuote(); if (!q || !q.text) return '';
   const kept = quoteKept(q.text);
-  return `<div class="qod"><span class="qod-rule"></span><p class="qod-text">${esc(q.text)}</p>${q.author ? `<div class="qod-author">${esc(q.author)}</div>` : ''}<button class="qod-keep${kept ? ' on' : ''}" data-quote-keep>${kept ? 'Kept in your Notes' : 'Keep it'}</button></div>`;
+  return `<div class="qod"><span class="qod-rule"></span><p class="qod-text">${esc(q.text)}</p>${q.author ? `<div class="qod-author">${esc(q.author)}</div>` : ''}</div>`;
 }
 async function keepQuote() {
   const q = dayQuote(); if (!q || !q.text || quoteKept(q.text)) return;
@@ -8961,11 +8957,14 @@ function homeReadingsSectionHtml() {
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}</div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
+// Whether today's quote has been hidden (keyed to its text, so a new day's quote
+// returns on its own). Robin: no "keep in notes" - just a small × to hide it.
+function quoteHidden() { try { const q = dayQuote(); return !!(q && q.text) && localStorage.getItem('life.quoteHidden') === q.text; } catch { return false; } }
 function homeQuoteLineHtml() {
   if (!dailyQuoteOn()) return '';
   const q = dayQuote(); if (!q || !q.text) return '';
-  const kept = quoteKept(q.text);
-  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-keep${kept ? ' on' : ''}" data-quote-keep title="${kept ? 'Saved in your “Quotes I’ve kept” note' : 'Keep this quote in a note'}">${kept ? '✓ Kept in Notes' : 'Keep this quote'}</button></div>`;
+  if (quoteHidden()) return '';
+  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div>`;
 }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
@@ -18176,7 +18175,21 @@ function mailAccordionRow(x, count) {
   // action row sit BELOW it, outside the card, in Koyeba's own Jost.
   if (!isOpen) return `<div class="mail-ar">${head}</div>`;
   const parts = mailOpenPanelHtml(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  // Robin: a long email buries the triage row at the bottom, so repeat the moves
+  // as a bar that sticks to the top of the card while you read it.
+  const triage = mailOpenTriageBar(m.open);
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+}
+// §58 + Robin: the sticky triage bar at the top of an open email - the same four
+// moves as the action row, reachable without scrolling to the end.
+function mailOpenTriageBar(o) {
+  const k = esc(o._key);
+  return `<div class="mail-ar-triage"><span class="mail-ar-triage-l">Move to</span>`
+    + `<button class="mail-trg" data-mail-quad-file="urgent">Urgent</button>`
+    + `<button class="mail-trg" data-mail-quad-file="important">Important</button>`
+    + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
+    + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
+    + `</div>`;
 }
 // Does Koyeba notice anything in this email? (an invite, a meeting link, or that
 // it's already filed to a task/note). Returns a short italic line or null.
@@ -18323,8 +18336,14 @@ function renderMail(loading) {
     : isSort ? '<div class="mail-empty2"><div class="mail-empty2-t">Nothing left to sort.</div><div class="mail-empty2-s">Start with Urgent – it’s waiting for you.</div></div>'
     : '<div class="mail-empty2"><div class="mail-empty2-t">Nothing here.</div><div class="mail-empty2-s">Try another word, or another account.</div></div>') : '';
   const err = m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : '';
+  // §63: reading an email, ← returns to the pile list you came from (navBack closes
+  // it), labelled with that pile; otherwise the normal "← {back} · Mail".
+  const MAIL_PILE_LABEL = { sort: 'Inbox', urgent: 'Urgent', important: 'Important', chilled: 'Later', archive: 'Archive', drafts: 'Drafts', sent: 'Sent', spam: 'Spam', trash: 'Bin' };
+  const mailCrumb = m.open
+    ? `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(MAIL_PILE_LABEL[mailSelectedPile()] || 'Inbox')}</span></button><span class="crumb-dot">·</span><button class="crumb" data-open-mail>Mail</button></div></div>`
+    : pageCrumb(t('nav.mail'));
   $('#pane').innerHTML = `
-    ${pageCrumb(t('nav.mail'))}
+    ${mailCrumb}
     <div class="mail2">
       <div class="mail-titleblock">
         <div class="mail-tb-main">
@@ -27017,7 +27036,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   { const dsh = t.closest('[data-del-spirit-hist]'); if (dsh) { delSpiritHist(Number(dsh.dataset.delSpiritHist)); return; } }
   { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
-  if (t.closest('[data-quote-keep]')) { keepQuote(); return; }
+  if (t.closest('[data-quote-hide]')) { try { const q = dayQuote(); if (q && q.text) localStorage.setItem('life.quoteHidden', q.text); } catch {} if (state.view && state.view.type === 'home') renderHome(); else rerenderCurrent(); return; }
   if (t.closest('[data-open-tarot]')) { openTarot(); return; }
   { const tsp = t.closest('[data-tarot-spread]'); if (tsp) { tarotSetSpread(tsp.dataset.tarotSpread); return; } }
   if (t.closest('[data-tarot-draw]')) { tarotDraw(); return; }

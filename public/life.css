@@ -9659,7 +9659,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .mail2 { --mserif:'Cormorant Garamond',Georgia,serif; --msans:'Jost',system-ui,sans-serif; }
 .mail-titleblock { display:flex; flex-wrap:wrap; align-items:flex-end; gap:20px 40px; padding:4px 0 0; }
 .mail-tb-main { flex:1; min-width:280px; }
-.mail-h1 { font-family:var(--mserif); font-weight:300; font-size:clamp(60px,8vw,104px); line-height:.9; letter-spacing:-.015em; margin:12px 0 0; color:var(--ink); }
+.mail-h1 { font-family:var(--mserif); font-weight:500; font-size:clamp(40px,4.6vw,60px); line-height:1; letter-spacing:-.01em; margin:10px 0 0; color:var(--ink); }
 .mail-mood { font-family:var(--mserif); font-style:italic; font-weight:300; font-size:clamp(21px,2.2vw,27px); line-height:1.3; color:var(--ink-2); margin-top:14px; text-wrap:pretty; }
 .mail-tb-act { display:flex; align-items:center; gap:22px; padding-bottom:6px; }
 .mail-tb-acctsel { border:0; border-bottom:1px solid var(--line); background:none; padding:8px 18px 8px 2px; font-family:var(--msans); font-size:15px; color:var(--ink); cursor:pointer; max-width:220px; }
@@ -9711,6 +9711,13 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .mail-ar-card { background:#fff; border:1px solid oklch(0.85 0.014 80); margin:12px 0 2px; padding:0 24px; }
 body.night .mail-ar-card, :root[data-theme='dark'] .mail-ar-card { background:oklch(0.96 0.006 85); }
 .mail-ar-card .mail-ar-head { padding:20px 0 14px; }
+/* Robin: triage moves stuck to the top of an open email (white card, so dark text
+   in both themes). */
+.mail-ar-triage { position:sticky; top:var(--tabstrip-h,68px); z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:10px 0 12px; margin:0 -24px; padding-left:24px; padding-right:24px; background:#fff; border-top:1px solid oklch(0.9 0.012 80); border-bottom:1px solid oklch(0.9 0.012 80); }
+body.night .mail-ar-triage, :root[data-theme='dark'] .mail-ar-triage { background:oklch(0.96 0.006 85); }
+.mail-ar-triage-l { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:oklch(0.46 0.02 70); margin-right:4px; }
+.mail-trg { background:transparent; border:1px solid oklch(0.85 0.014 80); padding:6px 13px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; }
+.mail-trg:hover { border-color:var(--k-gold); color:var(--k-goldt); }
 .mail-ar.open .mail-ar-subj { font-family:var(--k-read); font-weight:600; font-size:24px; line-height:1.3; color:oklch(0.2 0.01 60); white-space:normal; margin-top:6px; }
 .mail-ar-below { padding:12px 2px 8px; }
 .mail-ar-card .mail-text.mail-text-plain { font-family:var(--k-read); font-size:17px; line-height:1.7; max-width:680px; color:oklch(0.2 0.01 60); }
@@ -10373,6 +10380,10 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .home-wn-hint { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
 .home-wn-whyb { margin-left:auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .home-wn-whyb:hover { color:var(--k-goldt); }
+/* A small, quiet "Fold away" × - not the headline (Robin). */
+.home-wn-fold { margin-left:auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:300; font-size:20px; line-height:1; color:var(--k-mute); padding:0 2px; align-self:center; }
+.home-wn-whyb + .home-wn-fold { margin-left:14px; }
+.home-wn-fold:hover { color:var(--k-goldt); }
 .home-wn-one { font-family:var(--k-serif); font-weight:300; font-size:clamp(28px,2.6vw,34px); line-height:1.2; color:var(--k-ink); margin-top:12px; text-wrap:pretty; }
 .home-wn-because { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; line-height:1.4; color:var(--k-mute); margin-top:8px; text-wrap:pretty; }
 .home-wn-why { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
@@ -11283,6 +11294,9 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-qline-a { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-mute); white-space:nowrap; }
 .home-qline-keep { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); white-space:nowrap; }
 .home-qline-keep.on { color:var(--k-mute); }
+/* A small, quiet × to hide today's quote (Robin: no "keep in notes"). */
+.home-qline-x { margin-left:2px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:300; font-size:17px; line-height:1; color:var(--k-mute); padding:0 3px; opacity:.6; transition:opacity .12s, color .12s; }
+.home-qline-x:hover { opacity:1; color:var(--k-goldt); }
 .home-foldall-row { display:flex; justify-content:flex-end; padding:0 0 4px; }
 .home-foldall { font-family:var(--k-sans); font-weight:500; font-size:12px; letter-spacing:.06em; color:var(--k-mute); cursor:pointer; white-space:nowrap; }
 .home-foldall:hover { color:var(--k-goldt); }
