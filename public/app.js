@@ -8527,7 +8527,6 @@ function homeSpacesAsideHtml() {
     // Two targets: the name opens the Space; the item line deep-links to that item.
     const itemAttr = (item && item.attr) ? item.attr : `data-open-area="${a.id}"`;
     return `<div class="home-sa-row">
-      <span class="home-sa-n">${areaNumeral(a.id)}</span>
       <button class="home-sa-nm2" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>
       <span class="home-sa-rt">${needs ? '<span class="home-sa-dot on"></span>' : ''}<span class="home-sa-when">${esc(when)}</span></span>
       <button class="home-sa-item${needs ? ' needs' : ''}" ${itemAttr}>${itemInner}</button>
