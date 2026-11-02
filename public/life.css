@@ -11207,6 +11207,21 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 /* §41 two columns: the day on the left, a sticky Your Spaces column on the right. */
 .home-cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,400px); gap:clamp(40px,5vw,88px); align-items:start; margin-top:40px; }
 .home-main { min-width:0; }
+/* Robin: Calendar · On your radar · Mail as a tabbed band. The active tab is
+   gold-underlined (the top-nav / mail-pile pattern); its content sits below. */
+.home-ltabs { display:flex; flex-wrap:wrap; gap:clamp(18px,2.6vw,34px); align-items:flex-end; border-bottom:1px solid var(--k-line); }
+.home-ltab { background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; padding:6px 0 12px; font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1; color:var(--k-mute); cursor:pointer; display:inline-flex; align-items:baseline; gap:8px; transition:color .16s; }
+.home-ltab:hover { color:var(--k-goldt); }
+.home-ltab.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.home-ltab-n { font-family:var(--k-sans); font-weight:600; font-size:12.5px; font-style:normal; color:var(--k-mute); }
+.home-ltab-n.hot { color:var(--k-goldt); }
+.home-ltab-body { padding:18px 0 4px; animation:kfade .35s cubic-bezier(.2,.7,.2,1); }
+.home-ltab-body .rdr-grp { margin-top:8px; }
+.home-ltab-body .rdr-grp:first-child { margin-top:0; }
+.home-ltab-body .rdr-grp:first-child .rdr-grp-h { padding-top:0; }
+.home-ltab-body .rdr-grp:first-child .rdr-row:first-of-type { border-top:0; }
+/* The quieter pair below the tabs: Messages, then What next. */
+.home-below2 { margin-top:30px; padding-top:6px; border-top:1px solid var(--k-line); display:flex; flex-direction:column; gap:6px; }
 .home-aside { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); }
 .home-sa-head { display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--k-ink); }
 .home-sa-title { font-family:var(--k-serif); font-weight:500; font-size:clamp(26px,2.2vw,30px); line-height:1.05; color:var(--k-ink); white-space:nowrap; }
@@ -12179,7 +12194,14 @@ body.mailsheet-open { overflow:hidden; }
 
 /* §51 inbox accordion head: the same three-level hierarchy. */
 .mail-ar-head.mailv2ar { display:grid; grid-template-columns:14px minmax(0,1fr) auto; gap:3px 14px; align-items:baseline; width:100%; text-align:left; background:none; border:0; padding:14px 20px; cursor:pointer; }
-.mail-ar.open .mail-ar-head.mailv2ar, .mail-ar-head.mailv2ar:hover { background:var(--k-soft); }
+.mail-ar-head.mailv2ar:hover { background:var(--k-soft); }
+/* §58: open, the header sits ON the white-paper card - transparent (the card shows
+   through) with dark text in BOTH themes. The page's light night ink vanished on
+   the white card, which is what read as "fugly in dark mode". (Robin.) */
+.mail-ar.open .mail-ar-head.mailv2ar, .mail-ar.open .mail-ar-head.mailv2ar:hover { background:transparent; }
+.mail-ar.open .mailv2ar .mail-ar-from { color:oklch(0.22 0.012 60); }
+.mail-ar.open .mailv2ar .mail-ar-time, .mail-ar.open .mailv2ar .mail-ar-acct, .mail-ar.open .mailv2ar .mail-ar-n { color:oklch(0.46 0.02 70); }
+.mail-ar.open .mailv2ar.unread .mail-ar-time { color:oklch(0.5 0.11 68); }
 .mailv2ar .mail-ar-dot { grid-column:1; width:6px; height:6px; border-radius:50%; background:transparent; align-self:center; }
 .mailv2ar.unread .mail-ar-dot { background:var(--k-gold); }
 .mailv2ar .mail-ar-main { grid-column:2; min-width:0; display:flex; flex-direction:column; gap:1px; }

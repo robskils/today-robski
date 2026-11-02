@@ -8644,17 +8644,22 @@ function homeRadarItems() {
   out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
   return out;
 }
-function homeRadarHtml() {
+function homeRadarBodyHtml() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
-  const open = kOpen('radar');
   // The whole row opens the item (Later is handled first, so it still snoozes).
   const rowHtml = (o) => `<div class="rdr-row" ${o.attr} role="button" tabindex="0"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
   const grp = (label, items, gold) => { if (!items.length) return ''; const shown = items.slice(0, 4); const more = items.length > 4 ? `<button class="rdr-more" data-open-tasks>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
+  return total ? `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}` : `<div class="rdr-empty">Nothing pressing. A clear run.</div>`;
+}
+function homeRadarSummary() {
+  const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
+  return total ? [r.overdue.length ? `${r.overdue.length} overdue` : '', r.soon.length ? `${r.soon.length} soon` : '', r.ahead.length ? `${r.ahead.length} ahead` : ''].filter(Boolean).join(' · ') : 'Nothing pressing. A clear run.';
+}
+function homeRadarHtml() {
+  const open = kOpen('radar');
   const wn = `<div class="rdr-wn" data-wn-toggle role="button" tabindex="0"><span class="rdr-wn-q">What should I do next?</span><span class="rdr-wn-k">${esc(PK('⌘/'))}</span></div>${(state.home && state.home.wnOpen) ? homeWhatNextBandHtml() : ''}`;
-  const body = total ? `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}${wn}` : `<div class="rdr-empty">Nothing pressing. A clear run.</div>${wn}`;
-  const sum = total ? [r.overdue.length ? `${r.overdue.length} overdue` : '', r.soon.length ? `${r.soon.length} soon` : '', r.ahead.length ? `${r.ahead.length} ahead` : ''].filter(Boolean).join(' · ') : 'Nothing pressing. A clear run.';
-  const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">On your radar</span><span class="hf-hint">${esc(sum)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
-  return `<section class="home-sec2 home-radar">${h}${open ? body : ''}</section>`;
+  const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">On your radar</span><span class="hf-hint">${esc(homeRadarSummary())}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2 home-radar">${h}${open ? `${homeRadarBodyHtml()}${wn}` : ''}</section>`;
 }
 // §49: the time (live) and, when we have it, the weather. loadWeather() is
 // self-guarding (fetches once off the device's cached location via Open-Meteo,
@@ -8799,11 +8804,10 @@ async function glanceMailFile(key, target, label) {
 async function glanceMailOpenIn(key) {
   const row = mailMsgByKey(key);
   try {
-    await openMail(key);
-    if (state.view && state.view.type === 'mail' && (!state.mail.open || state.mail.open._key !== key)) {
-      if (!(state.mail.messages || []).some((m) => m._key === key) && row) { state.mail.messages = state.mail.messages || []; state.mail.messages.unshift(row); }
-      if ((state.mail.messages || []).some((m) => m._key === key)) openMessage(key);
-    }
+    // Explicit deep-link: openMail now keeps the key and opens the reader itself
+    // (snap-backed), so this lands on the exact email, not just the Mail tool.
+    await openMail(key, { explicit: true, row });
+    if (state.view && state.view.type === 'mail' && (!state.mail.open || state.mail.open._key !== key)) openMessage(key);
   } catch (e) { toast((e && e.message) || 'Could not open it.'); }
 }
 function homeGlanceHtml() {
@@ -8852,8 +8856,7 @@ function homeArrivalHtml() {
 // never tasks - those live in On your radar. Practices sit as a tick row at the
 // foot, then Open Calendar →.
 function homeCalItems() { return homeTodayItems().filter((it) => it.kind === 'event' || (it.kind === 'slot' && !it.taskId)); }
-function homeCalSectionHtml(off) {
-  const open = kOpen('cal');
+function homeCalBodyHtml(off) {
   const items = homeCalItems();
   const pracs = items.filter((it) => it.badge === 'practice');
   const events = items.filter((it) => it.badge !== 'practice');
@@ -8866,10 +8869,14 @@ function homeCalSectionHtml(off) {
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
   const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
-  const body = `${tabs}${evHtml}${pracHtml}<button class="home-cal-open" data-open-calendar>Open Calendar →</button>`;
+  return `${tabs}${evHtml}${pracHtml}<button class="home-cal-open" data-open-calendar>Open Calendar →</button>`;
+}
+function homeCalSectionHtml(off) {
+  const open = kOpen('cal');
+  const events = homeCalItems().filter((it) => it.badge !== 'practice');
   const hint = `${events.length} ${events.length === 1 ? 'thing' : 'things'} in the diary`;
   const h = `<div class="home-fold-h" data-hfold="cal" role="button" tabindex="0"><span class="hf-name">Calendar</span><span class="hf-hint">${esc(hint)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
-  return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${body}</div>` : ''}</section>`;
+  return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${homeCalBodyHtml(off)}</div>` : ''}</section>`;
 }
 // §62 Mail / Messages as left folding sections. The bodies reuse the in-place
 // openers built for the at-a-glance panel (§51/§58).
@@ -8886,6 +8893,27 @@ function homeMsgsSectionHtml() {
   const n = unreadMsgs();
   const h = `<div class="home-fold-h" data-hfold="msgs" role="button" tabindex="0"><span class="hf-name">Messages</span>${n ? `<span class="hf-count hot">${n}</span>` : ''}<span class="hf-hint">${n ? `${n} new` : 'Nothing new'}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${homeGlancePanelHtml('messages')}</div>` : ''}</section>`;
+}
+// Robin: Calendar · On your radar · Mail as one tabbed band - click a tab, its
+// content shows below. (Messages and What next sit under it, as quieter things.)
+function homeLeftTab() {
+  if (!state.home) return 'cal';
+  if (!state.home.ltab) { let v = 'cal'; try { v = localStorage.getItem('life.home.ltab') || 'cal'; } catch {} state.home.ltab = v; }
+  let cur = state.home.ltab;
+  if (cur === 'mail' && !modOn('mail')) cur = 'cal';
+  if (!['cal', 'radar', 'mail'].includes(cur)) cur = 'cal';
+  return cur;
+}
+function homeLeftTabsHtml(off) {
+  const cur = homeLeftTab();
+  const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
+  const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
+  const mailN = modOn('mail') ? mailHeaderCount() : 0;
+  const defs = [['cal', 'Calendar', evN, false], ['radar', 'On your radar', radN, r.overdue.length > 0]];
+  if (modOn('mail')) defs.push(['mail', 'Mail', mailN, mailN > 0]);
+  const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-ltab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
+  const body = cur === 'mail' ? homeGlancePanelHtml('mail') : cur === 'radar' ? homeRadarBodyHtml() : homeCalBodyHtml(off);
+  return `<div class="home-ltabwrap"><div class="home-ltabs" role="tablist">${strip}</div><div class="home-ltab-body home-ltab-${cur}">${body}</div></div>`;
 }
 // §62 right column: Today's readings (I Ching · Horoscope · Spirit) as compact
 // glyph rows, with the quote of the day at their foot. No emoji - the I Ching
@@ -8988,11 +9016,11 @@ function renderHome() {
         </div>
         <div class="home-cols home-cols-v3">
           <div class="home-main">
-            <div class="home-foldall-row"><span class="home-foldall" data-home-foldall role="button" tabindex="0">Fold all</span></div>
-            ${homeCalSectionHtml(off)}
-            ${homeRadarHtml()}
-            ${homeMailSectionHtml()}
-            ${homeMsgsSectionHtml()}
+            ${homeLeftTabsHtml(off)}
+            <div class="home-below2">
+              ${homeMsgsSectionHtml()}
+              ${homeWhatNextHtml()}
+            </div>
           </div>
           <aside class="home-aside">
             ${homeReadingsSectionHtml()}
@@ -16516,7 +16544,7 @@ async function mailSheetTriage(key, pile) {
   try { await mailToQuad(key, quad); } catch {}
   renderNav(); renderMailSheet();
 }
-async function openMail(openKey) {
+async function openMail(openKey, opts = {}) {
   startMailUnreadPoll();
   // Which tab asked for this. Fetching accounts and a message list takes real
   // time, and anything after an await must check the answer is still wanted:
@@ -16535,7 +16563,12 @@ async function openMail(openKey) {
   // Away a while (over an hour): drop the reopened message AND reset the scope to
   // all accounts, so a fresh visit shows everything, not whichever single mailbox
   // you last narrowed to. (Robin.)
-  if (mailReopenStale() && !state.mail.composing) { state.mail.open = null; openKey = null; state.mail.account = 'all'; }
+  // An explicit deep-link (opts.explicit, e.g. "Open this in Mail") must land on
+  // that exact message: carry its row so the reader can open even when it isn't in
+  // the freshly-loaded inbox, and don't let the "reopen where you left off"
+  // staleness reset throw the key away. (Robin: open-in-mail opened only the tool.)
+  if (openKey && opts.row) { state.mail.snapMsgs = state.mail.snapMsgs || {}; state.mail.snapMsgs[openKey] = opts.row; }
+  if (mailReopenStale() && !state.mail.composing && !opts.explicit) { state.mail.open = null; openKey = null; state.mail.account = 'all'; }
   if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
   // Fresh entry into Mail: no box history yet, so the first Back leaves Mail.
@@ -16615,7 +16648,7 @@ async function openMail(openKey) {
     if (openKey && !state.mail.composing) {
       if (!(state.mail.messages || []).some((m) => m._key === openKey)) await loadMessages().catch(() => {});
       if (!mine()) return;
-      if ((state.mail.messages || []).some((m) => m._key === openKey)) openMessage(openKey);
+      if ((state.mail.messages || []).some((m) => m._key === openKey) || (state.mail.snapMsgs && state.mail.snapMsgs[openKey])) openMessage(openKey);
     }
   } catch (e) { if (!mine()) return; state.mail.error = e.message; renderMail(); }
 }
@@ -18046,7 +18079,7 @@ function mailPilesRowHtml() {
   const sel = mailSelectedPile();
   const counts = { urgent: mailQuadMsgs('urgent').length, important: mailQuadMsgs('important').length, chilled: mailQuadMsgs('chilled').length };
   const piles = [
-    { k: 'sort', label: 'To sort', n: mailInInbox() ? mailToSortCount() : null, attr: 'data-mail-quad-inbox' },
+    { k: 'sort', label: 'Inbox', n: mailInInbox() ? mailToSortCount() : null, attr: 'data-mail-quad-inbox' },
     { k: 'urgent', label: 'Urgent', n: counts.urgent, attr: 'data-mail-quad-view="urgent"' },
     { k: 'important', label: 'Important', n: counts.important, attr: 'data-mail-quad-view="important"' },
     { k: 'chilled', label: 'Later', n: counts.chilled, attr: 'data-mail-quad-view="chilled"' },
@@ -18084,15 +18117,10 @@ function mailDayGroupsHtml(loading) {
   if (m.folder === 'drafts') return draftsListHtml();
   const threads = mailVisibleThreads();
   if (!threads.length) return '';   // the empty state is drawn by renderMail
-  const shut = m.groupsShut || (m.groupsShut = {});
-  const groups = [];
-  threads.forEach((th) => { const lab = mailDayLabel(th.latest.date); let g = groups.find((x) => x.label === lab); if (!g) { g = { label: lab, items: [] }; groups.push(g); } g.items.push(th); });
-  groups.sort((a, b) => MAIL_DAY_ORDER.indexOf(a.label) - MAIL_DAY_ORDER.indexOf(b.label));
-  return groups.map((g) => {
-    const open = !shut[g.label];
-    const rows = open ? g.items.map((th) => mailAccordionRow(th.latest, th.count)).join('') : '';
-    return `<div class="mail-group"><button class="mail-group-h" data-mail-group="${esc(g.label)}"><span class="mail-group-l">${esc(g.label)}</span><span class="mail-group-c">${g.items.length}</span><span class="mail-group-rule"></span><span class="mail-group-sign">${open ? '−' : '+'}</span></button>${rows}</div>`;
-  }).join('');
+  // Robin: no day-group headers - one list, newest first. The per-row time is
+  // enough, and this morning's mail simply sinks down the list as the day goes on.
+  const sorted = threads.slice().sort((a, b) => (new Date(b.latest.date) - new Date(a.latest.date)) || 0);
+  return sorted.map((th) => mailAccordionRow(th.latest, th.count)).join('');
 }
 // One accordion row: time · sender · (account) · subject · preview · gold
 // square if noticed · +/−. Expands to the body + a Noticed line + the action row.
@@ -26197,6 +26225,7 @@ document.addEventListener('click', (e) => {
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
+  { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} renderHome(); return; } }
   { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
   { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
   if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderArea(); return; }
@@ -26234,7 +26263,7 @@ document.addEventListener('click', (e) => {
   { const gma = t.closest('[data-glance-mail-arch]'); if (gma) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gma.dataset.glanceMailArch, 'Archive', 'Archived'); return; } }
   { const gmd = t.closest('[data-glance-mail-del]'); if (gmd) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gmd.dataset.glanceMailDel, 'Trash', 'Moved to Trash'); return; } }
   { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailToggle(gm.dataset.glanceMail); return; } }
-  { const mog = t.closest('[data-mail-open-glance]'); if (mog) { openMail(mog.dataset.mailOpenGlance).catch((x) => toast(x.message)); return; } }
+  { const mog = t.closest('[data-mail-open-glance]'); if (mog) { const k = mog.dataset.mailOpenGlance; openMail(k, { explicit: true, row: mailMsgByKey(k) }).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
   if (t.closest('[data-wn-toggle]')) { wnToggle(); return; }
@@ -26584,7 +26613,7 @@ document.addEventListener('click', (e) => {
   { const qs = t.closest('[data-mail-quad-set]'); if (qs) { e.preventDefault(); e.stopPropagation(); const s = qs.dataset.mailQuadSet, i = s.lastIndexOf(':'); mailToQuad(s.slice(0, i), s.slice(i + 1)); return; } }
   // §43 New-mail sheet + arrival line.
   if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }   // §51: opens the Mail page
-  { const mar = t.closest('[data-mail-arrival-read]'); if (mar) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key).catch((x) => toast(x.message)); return; } }
+  { const mar = t.closest('[data-mail-arrival-read]'); if (mar) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key, { explicit: true, row: items[0] }).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   { const mg = t.closest('[data-mail-group]'); if (mg) { const k = mg.dataset.mailGroup; state.mail.groupsShut = state.mail.groupsShut || {}; state.mail.groupsShut[k] = !state.mail.groupsShut[k]; renderMail(); return; } }
