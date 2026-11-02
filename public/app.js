@@ -26373,7 +26373,7 @@ document.addEventListener('click', (e) => {
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
-  { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} renderHome(); return; } }
+  { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} if (lt.dataset.homeLtab === 'mail') state.home.glanceMail = null; renderHome(); return; } }
   { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
   { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
   if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderArea(); return; }
