@@ -16,6 +16,7 @@
   --k-bg:oklch(0.975 0.012 85);      /* ≈#f8f4ec  page (ivory) */
   --k-panel:oklch(0.99 0.006 85);    /* ≈#fdfbf7  cards, drawer, inputs-in-panels */
   --k-soft:oklch(0.94 0.016 82);     /* ≈#efe9dc  selected row, inner dividers, open sheet */
+  --k-mine:oklch(0.92 0.03 82);      /* my own chat messages' soft fill (never solid gold) */
   --k-ink:oklch(0.22 0.018 60);      /* ≈#2a2620  text */
   --k-mute:oklch(0.46 0.022 70);     /* ≈#6b6357  secondary text */
   --k-line:oklch(0.88 0.014 80);     /* ≈#e0d9cc  1px keylines */
@@ -39,6 +40,7 @@ body.night, :root[data-theme='dark']{
   --k-bg:oklch(0.23 0.035 158);
   --k-panel:oklch(0.26 0.035 158);
   --k-soft:oklch(0.29 0.035 158);
+  --k-mine:oklch(0.31 0.04 150);
   --k-ink:oklch(0.94 0.012 85);
   --k-mute:oklch(0.74 0.02 80);
   --k-line:oklch(0.36 0.03 158);

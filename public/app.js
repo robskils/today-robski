@@ -3520,47 +3520,200 @@ function renderSharedHub() {
 async function openMessagesPage() {
   const gen = bumpNav();
   state.view = { type: 'messages' };
+  state.mp = state.mp || { cur: null, name: '', q: '', messages: [], sig: '' };
   renderNav();
-  renderMessagesPage();   // paint at once from cache (Loading / empty / last list)
+  renderMessagesPage();   // paint at once from cache
+  startMsgPoll();
   try {
     const r = await api('/api/messages/threads');
     if (gen !== navGen) return;
     state.threads = r.threads || [];
     if (state.threads.length) loadCards(state.threads.map((x) => x.id));
+    // Desktop opens a conversation so the right column isn't blank: the one
+    // waiting on you, else the most recent. On a phone the list leads.
+    if (state.mp.cur == null && state.threads.length && !window.matchMedia('(max-width:899px)').matches) {
+      const first = state.threads.find((t) => t.unread && !t.mine) || state.threads[0];
+      state.mp.cur = first.id; state.mp.name = first.name || '';
+    }
     renderMessagesPage();
+    if (state.mp.cur != null) mpLoad();
   } catch { if (gen === navGen) { state.threads = state.threads || []; renderMessagesPage(); } }
 }
-async function refreshMessages() {
-  try { const r = await api('/api/messages/threads'); state.threads = r.threads || []; if (state.view && state.view.type === 'messages') renderMessagesPage(); } catch {}
+// A light live refresh while Messages is open and in the foreground: the list
+// AND the open conversation update without a manual reload - the cure for "only
+// notified after a refresh". A true websocket/SSE push is the next step; Web
+// Push (verified) already covers a backgrounded tab. (Robin, §33.)
+function startMsgPoll() {
+  if (window.__mpPollT) return;
+  state.__mpTick = 0; state.__mpFail = 0;
+  window.__mpPollT = setInterval(() => {
+    if (document.hidden) return;
+    if (!(state.view && state.view.type === 'messages')) { clearInterval(window.__mpPollT); window.__mpPollT = null; return; }
+    state.__mpTick++;
+    // Back off a failing endpoint: after 3 straight misses, poll ~1/5 as often
+    // (so a server error never turns into a 4s hammer).
+    if ((state.__mpFail || 0) >= 3 && (state.__mpTick % 5 !== 0)) return;
+    mpRefreshThreads();
+    if (state.mp && state.mp.cur != null) mpLoad();
+  }, 4000);
+}
+function mpThreads() {
+  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
+  const liveUnread = (state.friendStatus && state.friendStatus.unreadBy) || {};
+  return (state.threads || []).map((th) => ({ ...th, online: onSet.has(th.id) || !!th.online, unread: (String(th.id) in liveUnread) ? liveUnread[th.id] : th.unread }));
+}
+async function mpRefreshThreads() {
+  try {
+    const r = await api('/api/messages/threads');
+    state.__mpFail = 0;
+    if (!(state.view && state.view.type === 'messages')) return;
+    const sig = JSON.stringify((r.threads || []).map((t) => [t.id, t.body, t.ts, t.unread, !!t.online, !!t.mine]));
+    if (sig === state.__mpThreadSig && state.threads) return;
+    state.__mpThreadSig = sig; state.threads = r.threads || [];
+    mpRenderList();
+  } catch { state.__mpFail = (state.__mpFail || 0) + 1; }
+}
+function refreshMessages() { mpRefreshThreads(); }
+function mpSelect(id, name) {
+  id = Number(id);
+  state.mp = state.mp || {};
+  state.mp.cur = id; state.mp.name = name || friendName(id) || ''; state.mp.messages = []; state.mp.sig = ''; state.mp.freshScroll = true;
+  if (state.friendStatus && unreadFrom(id)) { state.friendStatus.unread = Math.max(0, state.friendStatus.unread - unreadFrom(id)); delete state.friendStatus.unreadBy[id]; renderNav(); }
+  renderMessagesPage(); mpLoad();
+}
+function mpBack() { if (state.mp) state.mp.cur = null; renderMessagesPage(); }
+async function mpLoad() {
+  if (!(state.mp && state.mp.cur != null)) return;
+  const to = state.mp.cur;
+  try {
+    const r = await api(`/api/messages?with=${to}`);
+    if (!(state.mp && state.mp.cur === to)) return;
+    const sig = (r.messages || []).map((m) => `${m.id}:${m.body}:${m.reaction || ''}`).join('\u0000');
+    if (sig !== state.mp.sig) { state.mp.sig = sig; state.mp.messages = r.messages || []; mpRenderThread(); mpRefreshThreads(); }
+  } catch {}
+}
+async function mpSend() {
+  const inp = document.getElementById('mp-input'); if (!inp || !(state.mp && state.mp.cur != null)) return;
+  const body = (inp.value || '').trim(); if (!body) return;
+  const to = state.mp.cur;
+  inp.value = ''; mpGrow(inp); mpSyncSend();
+  const pending = { body, mine: true, pending: true, id: 'pending-' + Date.now(), ts: new Date().toISOString() };
+  state.mp.messages = [...state.mp.messages, pending]; state.mp.freshScroll = true; mpRenderThread();
+  try {
+    const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to, body }) });
+    if (!(state.mp && state.mp.cur === to)) return;
+    state.mp.sig = (r.messages || []).map((m) => `${m.id}:${m.body}:${m.reaction || ''}`).join('\u0000');
+    state.mp.messages = r.messages || []; state.mp.freshScroll = true; mpRenderThread(); mpRefreshThreads();
+  } catch (err) { if (state.mp && state.mp.cur === to) { inp.value = body; mpGrow(inp); mpSyncSend(); state.mp.messages = (state.mp.messages || []).filter((m) => !m.pending); mpRenderThread(); } toast((err && err.message) || 'Message not sent.'); }
+}
+async function mpReact(id) {
+  if (!(state.mp && state.mp.cur != null)) return;
+  const msg = (state.mp.messages || []).find((m) => Number(m.id) === Number(id)); if (!msg || !/^\d+$/.test(String(msg.id))) return;
+  const prev = msg.reaction || null; const on = !prev; msg.reaction = on ? '❤️' : null; mpRenderThread();
+  try { const r = await api('/api/messages/react', { method: 'POST', body: JSON.stringify({ id: Number(id), on }) }); if (state.mp && state.mp.cur != null && r && r.messages) { state.mp.sig = r.messages.map((m) => `${m.id}:${m.body}:${m.reaction || ''}`).join('\u0000'); state.mp.messages = r.messages; mpRenderThread(); } }
+  catch (e) { if (state.mp) { const mm = (state.mp.messages || []).find((m) => Number(m.id) === Number(id)); if (mm) { mm.reaction = prev; mpRenderThread(); } } toast((e && e.message) || 'Could not update the heart.'); }
+}
+// Hand the last message to Set something down (§27) with the kind pre-chosen.
+function mpTurnInto(kind) {
+  if (!(state.mp && state.mp.messages && state.mp.messages.length)) return;
+  const last = state.mp.messages[state.mp.messages.length - 1];
+  const c = capState(); c.text = last.body || ''; c.kind = kind; c.ans = {}; capSetMode('set'); c.open = true; renderCapBar(true);
+}
+function mpGrow(el) { el = el || document.getElementById('mp-input'); if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; }
+function mpSyncSend() { const inp = document.getElementById('mp-input'); const btn = document.querySelector('.mp-send'); if (inp && btn) btn.classList.toggle('ready', !!(inp.value || '').trim()); }
+const mpDayKey = (iso) => (iso || '').slice(0, 10);
+function mpDayLabel(iso) {
+  const di = mpDayKey(iso); const t0 = todayISO();
+  if (di === t0) return 'TODAY';
+  if (di === addDayISO(t0, -1)) return 'YESTERDAY';
+  const d = new Date(iso); const diff = (Date.now() - d.getTime()) / 86400000;
+  try { return d.toLocaleDateString('en-GB', (diff >= 0 && diff < 7) ? { weekday: 'long' } : { day: 'numeric', month: 'long' }).toUpperCase(); } catch { return di; }
+}
+function mpTime(iso) { try { return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } }
+function mpThreadHtml(msgs, name) {
+  if (!msgs.length) return '<div class="mp-say">Say hello.</div>';
+  let out = ''; let lastDay = ''; let prevFrom = null;
+  msgs.forEach((m) => {
+    const day = mpDayKey(m.ts);
+    if (day !== lastDay) { out += `<div class="mp-day"><span class="mp-day-l">${esc(mpDayLabel(m.ts))}</span></div>`; lastDay = day; prevFrom = null; }
+    const from = m.mine ? 'me' : 'them'; const first = prevFrom !== from; prevFrom = from;
+    const who = m.mine ? 'You' : (name || 'Them');
+    const canReact = /^\d+$/.test(String(m.id || ''));
+    const heart = m.reaction ? `<span class="mp-heart">${esc(m.reaction)}</span>` : '';
+    const reactBtn = canReact ? `<button class="mp-react" type="button" data-mp-react="${m.id}" aria-label="${m.reaction ? 'Remove heart' : 'Heart'}" title="${m.reaction ? 'Remove heart' : 'Heart'}">${m.reaction ? '❤️' : '♡'}</button>` : '';
+    out += `<div class="mp-run ${m.mine ? 'mine' : 'theirs'}${first ? ' first' : ''}">`;
+    if (first) out += `<div class="mp-who">${esc(who)} · ${esc(mpTime(m.ts))}</div>`;
+    out += `<div class="mp-msg${m.mine ? ' mine' : ''}${m.pending ? ' pending' : ''}" data-mid="${esc(String(m.id || ''))}"><span class="mp-msg-b">${esc(m.body)}</span>${reactBtn}${heart}</div></div>`;
+  });
+  return out;
+}
+function mpRenderList() {
+  const el = document.getElementById('mp-list'); if (!el) return;
+  const q = ((state.mp && state.mp.q) || '').trim().toLowerCase();
+  let threads = mpThreads();
+  if (q) threads = threads.filter((th) => (th.name || '').toLowerCase().includes(q) || (th.body || '').toLowerCase().includes(q));
+  const waiting = threads.filter((th) => th.unread && !th.mine);
+  const rest = threads.filter((th) => !(th.unread && !th.mine));
+  const rowH = (th) => {
+    const sel = state.mp && Number(state.mp.cur) === Number(th.id);
+    const un = th.unread && !th.mine;
+    const when = th.ts ? timeAgo(Date.parse(th.ts)) : '';
+    const last = (th.mine ? 'You: ' : '') + (th.body || '');
+    return `<button class="mp-row${sel ? ' sel' : ''}${un ? ' unread' : ''}" data-mp-open="${th.id}" data-mp-name="${esc(th.name || '')}"><span class="mp-row-dot"></span><span class="mp-row-name">${esc(th.name || 'Someone')}</span><span class="mp-row-when">${esc(when)}</span><span class="mp-row-last">${esc(last)}</span></button>`;
+  };
+  const grp = (label, arr) => arr.length ? `<div class="mp-grp"><div class="mp-grp-h"><span class="mp-grp-l">${esc(label)}</span><span class="mp-grp-n">${arr.length}</span><span class="mp-grp-rule"></span></div>${arr.map(rowH).join('')}</div>` : '';
+  el.innerHTML = threads.length ? `${grp('Waiting on you', waiting)}${grp(waiting.length ? 'Everyone else' : 'All', rest)}`
+    : (state.threads == null ? '<div class="mp-empty muted">Loading…</div>' : `<div class="mp-empty">No messages yet. <button class="link-btn" data-open-contacts>Say hello to someone</button>.</div>`);
+}
+function mpRenderThread() {
+  const box = document.getElementById('mp-thread'); if (!box || !(state.mp && state.mp.cur != null)) return;
+  const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = mpThreadHtml(state.mp.messages || [], state.mp.name || '');
+  if (state.mp.freshScroll || atEnd) { box.scrollTop = box.scrollHeight; state.mp.freshScroll = false; }
 }
 function renderMessagesPage() {
   if (!(state.view && state.view.type === 'messages')) return;
-  const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
-  const liveUnread = (state.friendStatus && state.friendStatus.unreadBy) || {};
-  // Merge live presence + unread from the 90s status poll so dots and badges stay
-  // current without re-fetching the whole list.
-  const threads = (state.threads || []).map((th) => ({
-    ...th,
-    online: onSet.has(th.id) || !!th.online,
-    unread: (String(th.id) in liveUnread) ? liveUnread[th.id] : th.unread,
-  }));
-  const rows = threads.map((th) => {
-    const when = th.ts ? timeAgo(Date.parse(th.ts)) : '';
-    const snippet = (th.mine ? 'You: ' : '') + (th.body || '');
-    const un = th.unread || 0;
-    return `<button class="msg-thread${un ? ' unread' : ''}" data-friend-chat="${th.id}" data-friend-name="${esc(th.name || '')}">
-      ${personAvatar(th.id, th.name, th.online ? 'online' : '')}
-      <span class="mt-body"><span class="mt-top"><span class="mt-name">${esc(th.name || 'Someone')}</span><span class="mt-time">${esc(when)}</span></span><span class="mt-snippet">${esc(snippet)}</span></span>
-      ${un ? `<span class="mt-badge" aria-label="${un} unread">${un > 99 ? '99+' : un}</span>` : ''}
-    </button>`;
-  }).join('');
-  const body = threads.length ? `<div class="msg-threads">${rows}</div>`
-    : (state.threads == null ? '<div class="msg-empty muted">Loading…</div>'
-      : `<div class="msg-empty"><p>No messages yet.</p><p class="muted">Say hello to someone from <button class="link-btn" data-open-daybook>Koyeba Contacts</button>.</p></div>`);
+  const mp = state.mp || (state.mp = { cur: null, name: '', q: '', messages: [], sig: '' });
+  const hasCur = mp.cur != null;
+  const cur = hasCur ? mpThreads().find((t) => Number(t.id) === Number(mp.cur)) : null;
+  const name = (cur && cur.name) || mp.name || '';
+  const online = cur ? cur.online : false;
+  const convo = hasCur ? `
+      <div class="mp-convo-head">
+        <button class="mp-back" data-mp-back aria-label="Back to messages">‹ Messages</button>
+        <span class="mp-convo-name">${esc(name || 'Conversation')}</span>
+        <span class="mp-pres"><span class="mp-pres-dot${online ? ' on' : ''}"></span>${online ? 'Here now' : 'Away'}</span>
+        <span class="mp-convo-links"><button class="mp-convo-link" data-open-personcard="${cur ? cur.id : ''}">Contact</button></span>
+      </div>
+      <div class="mp-thread" id="mp-thread"></div>
+      <div class="mp-compose">
+        <div class="mp-compose-row">
+          <textarea id="mp-input" class="mp-input" rows="1" placeholder="Write to ${esc(name || 'them')}…"></textarea>
+          <button class="mp-send" data-mp-send>Send ↵</button>
+        </div>
+        <div class="mp-turn">Turn the last message into <button class="mp-turn-b" data-mp-turn="task">a task</button> · <button class="mp-turn-b" data-mp-turn="note">a note</button> · <button class="mp-turn-b" data-mp-turn="event">an event</button></div>
+      </div>` : '<div class="mp-pick">Pick a conversation.</div>';
   $('#pane').innerHTML = `
-    ${pageCrumb('Messages')}
-    <div class="pane-head"><h1>Messages</h1></div>
-    ${body}`;
+    <div class="mp-page${hasCur ? ' mp-has-cur' : ''}">
+      <div class="mp-list-col">
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Conversations</span></div>
+        <h1 class="mp-title">Messages</h1>
+        <div class="mp-search"><input class="mp-q" id="mp-q" type="search" placeholder="Look for a person or a word…" value="${esc(mp.q || '')}" autocomplete="off"><button class="mp-new" data-open-contacts>+ New</button></div>
+        <div class="mp-list" id="mp-list"></div>
+      </div>
+      <div class="mp-convo-col">${convo}</div>
+    </div>`;
+  mpRenderList();
+  if (hasCur) {
+    mpRenderThread();
+    const inp = document.getElementById('mp-input');
+    if (inp) {
+      mpGrow(inp); mpSyncSend();
+      inp.addEventListener('input', () => { mpGrow(inp); mpSyncSend(); });
+      inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); mpSend(); } });
+      if (!window.matchMedia('(max-width:899px)').matches) inp.focus();
+    }
+  }
 }
 // ── Sharing a note/task with friends (Friends phase 3a) ───────────────
 async function openShare(id, title, kind) {
@@ -23462,6 +23615,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-area-q]')) { if (state.area_open) { state.area_open.q = e.target.value; if ((e.target.value || '').trim()) state.area_open.toolTile = 'pages'; renderAreaKeepQ(); } return; }
+  if (e.target && e.target.matches && e.target.matches('#mp-q')) { if (state.mp) { state.mp.q = e.target.value; mpRenderList(); } return; }
   if (e.target && e.target.matches && e.target.matches('[data-conn-q]')) { connSearch(e.target.value); return; }
   if (e.target && e.target.id === 'feed-team-q') feedTeamSearchInput(e.target.value);
   if (e.target && e.target.id === 'feed-country-q') feedCountrySearchInput(e.target.value);
@@ -23874,6 +24028,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
   if (t.closest('[data-open-daybook]')) { openKoyebaPeople().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-messages-page]')) { openMessagesPage().catch((x) => toast(x.message)); return; }
+  // §33 Messages page
+  { const mo = t.closest('[data-mp-open]'); if (mo) { mpSelect(mo.dataset.mpOpen, mo.dataset.mpName || ''); return; } }
+  if (t.closest('[data-mp-back]')) { mpBack(); return; }
+  if (t.closest('[data-mp-send]')) { mpSend(); return; }
+  { const mr = t.closest('[data-mp-react]'); if (mr) { mpReact(mr.dataset.mpReact); return; } }
+  { const mt = t.closest('[data-mp-turn]'); if (mt) { mpTurnInto(mt.dataset.mpTurn); return; } }
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
   { const dz = t.closest('[data-shared-dismiss]'); if (dz) { const id = dz.getAttribute('data-shared-dismiss'); const arr = state.sharesDismissed = (state.sharesDismissed || []); if (!arr.map(String).includes(String(id))) arr.push(id); renderHome(); api('/api/shared/dismiss', { method: 'POST', body: JSON.stringify({ id }) }).catch(() => {}); return; } }
