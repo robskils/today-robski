@@ -8387,11 +8387,11 @@ function homeWhatNextCandidates() {
 // unfolds the forest band on click (or ⌘/). Starts folded every time.
 function homeWhatNextHtml() {
   const open = !!(state.home && state.home.wnOpen);
-  // Open: the suggestion is the point, so show the band on its own with only a
-  // small "Fold away" tucked into its top row. Closed: the quiet ask line. (Robin:
-  // "fold it away isn't the most important thing here".)
-  if (open) return homeWhatNextBandHtml();
-  return `<div class="home-wn-line" data-wn-toggle role="button" tabindex="0"><span class="home-wn-sq"></span><span class="home-wn-ask">What should I do next?</span><span class="home-wn-kbd">${PK('⌘/')}</span></div>`;
+  // Robin: a plain folding section under Messages, styled exactly like it - a
+  // Cormorant "What next" header, a muted hint, a +/- fold. No gold rule, no eyebrow.
+  const hint = open ? 'one thing at a time' : 'What should I do next?';
+  const header = `<div class="home-fold-h" data-wn-toggle role="button" tabindex="0"><span class="hf-name">What next</span><span class="hf-hint">${esc(hint)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2 home-wn-sec">${header}${open ? `<div class="home-sec2-b">${homeWhatNextBandHtml()}</div>` : ''}</section>`;
 }
 // Open/close the What next band. From anywhere (⌘/, the Plans tool, Search),
 // it lands on Today with the band open; on Today it toggles.
@@ -8406,16 +8406,15 @@ function wnToggle(force) {
 }
 function homeWhatNextBandHtml() {
   const cands = homeWhatNextCandidates();
-  if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><button class="home-wn-fold" data-wn-toggle aria-label="Fold away" title="Fold away">×</button></div><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
+  if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
   let idx = state.home.wnIdx || 0; if (idx >= cands.length) idx = 0;
   const c = cands[idx];
   const whyOpen = !!state.home.wnWhy;
   return `<div class="home-wn">
-    <div class="home-wn-top"><span class="home-wn-eyebrow">What next</span><span class="home-wn-hint">one thing at a time</span>${cands.length ? `<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide' : 'Why this?'}</button>` : ''}<button class="home-wn-fold" data-wn-toggle aria-label="Fold away" title="Fold away ${esc(PK('⌘/'))}">×</button></div>
     <div class="home-wn-one">${esc(c.title)}</div>
     <div class="home-wn-because">${esc(c.because)}</div>
     ${whyOpen ? `<div class="home-wn-why">${c.why.filter(Boolean).map((w) => `<span>${esc(w)}</span>`).join('<span class="wn-sep">·</span>')}</div>` : ''}
-    <div class="home-wn-acts"><button class="home-wn-do" ${c.attr}>${esc(c.verb)}</button>${cands.length > 1 ? '<button class="home-wn-skip" data-wn-notnow>Not now</button><button class="home-wn-skip" data-wn-else>Something else</button>' : '<button class="home-wn-skip" data-wn-notnow>Not now</button>'}</div>
+    <div class="home-wn-acts"><button class="home-wn-do" ${c.attr}>${esc(c.verb)}</button>${cands.length > 1 ? '<button class="home-wn-skip" data-wn-notnow>Not now</button><button class="home-wn-skip" data-wn-else>Something else</button>' : '<button class="home-wn-skip" data-wn-notnow>Not now</button>'}<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide why' : 'Why this?'}</button></div>
   </div>`;
 }
 // §17/§19 shared line: one quiet line on Today, only when something is new.
@@ -26325,7 +26324,7 @@ document.addEventListener('click', (e) => {
   // toggle the row - so it's handled before the row's expand (data-home-read).
   { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
-  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); const c = homeCollapsed(); c.mail = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} mailMarkLooked(); state.mailArrivalHidden = true; glanceMailToggle(har.dataset.homeArrRead); setTimeout(() => { const el = document.querySelector('.gln-mail.on'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); return; } }
+  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab = 'mail'; try { localStorage.setItem('life.home.ltab', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-ltabwrap'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
