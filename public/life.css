@@ -12001,6 +12001,16 @@ body[data-view="wellbeing"] .pane { max-width:none; padding:0; margin-top:0; bac
 .rf-card-k { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-gold); }
 .rf-card-n { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1.1; margin-top:8px; }
 .rf-card-l { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:17px; line-height:1.4; margin-top:8px; color:var(--k-ondeep); opacity:.85; }
+/* Today's cards on the Reflection side - the same card images as Today. (Robin.) */
+.rf-cards { margin-bottom:26px; }
+.rf-cards .rf-card-k { color:var(--k-goldt); margin-bottom:14px; }
+.rf-cards-list { display:flex; flex-direction:column; gap:16px; }
+.rf-rdcard { display:flex; gap:14px; align-items:flex-start; width:100%; background:none; border:0; padding:0; text-align:left; cursor:pointer; }
+.rf-rdcard-tx { display:flex; flex-direction:column; gap:3px; min-width:0; padding-top:2px; }
+.rf-rdcard-kind { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--k-mute); }
+.rf-rdcard-t { font-family:var(--k-serif); font-weight:500; font-size:18px; line-height:1.2; color:var(--k-ink); text-wrap:pretty; }
+.rf-rdcard-l { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:14px; line-height:1.35; color:var(--k-mute); }
+.rf-rdcard:hover .rf-rdcard-t { color:var(--k-goldt); }
 .rf-prac-h2 { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); padding:16px 0 4px; border-top:1px solid var(--k-ink); }
 .rf-prac { display:flex; align-items:baseline; gap:14px; width:100%; padding:12px 0; background:none; border:0; border-bottom:1px solid var(--k-line); cursor:pointer; text-align:left; }
 .rf-prac-n { width:30px; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-goldt); flex:none; }

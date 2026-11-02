@@ -10510,9 +10510,13 @@ function renderWellbeing() {
   const shown = filt === 'all' ? items : items.filter((x) => x.cat === filt);
   const filters = [['all', 'All'], ['journal', 'Journal'], ['dreams', 'Dreams'], ['cards', 'Cards'], ['ching', 'I Ching']].map(([id, label]) => `<button class="rf-filter${filt === id ? ' on' : ''}" data-reflect-filter="${id}">${label}</button>`).join('');
   const rows = shown.length ? shown.map((x) => { const ital = x.cat === 'journal' || x.cat === 'dreams'; return `<button class="rf-row" ${x.attr}><span class="rf-row-k">${esc(x.label)}</span><span class="rf-row-t${ital ? ' ital' : ''}">${esc(stripEmoji(x.title || ''))}</span><span class="rf-row-when">${esc(rel(x.ts))}</span></button>`; }).join('') : '<div class="rf-empty">Nothing here yet. Start with a practice on the right.</div>';
-  // Side: today's card + the practices numbered list
+  // Side: today's cards (with the same card images as the Today page) + the
+  // practices list. (Robin: show the reading images here too, plural "cards".)
   const card = (typeof currentSpirit === 'function') ? currentSpirit() : null;
-  const cardHtml = card ? `<button class="rf-card" data-spirit-open><div class="rf-card-k">Today’s card</div><div class="rf-card-n">${esc(card.name || 'A card')}</div>${card.line ? `<div class="rf-card-l">${esc(card.line)}</div>` : ''}</button>` : '';
+  const readings = (typeof homeReadingItems === 'function') ? homeReadingItems() : [];
+  const cardHtml = readings.length
+    ? `<div class="rf-cards"><div class="rf-card-k">Today’s cards</div><div class="rf-cards-list">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`
+    : '';
   const liveIch = (typeof currentIching === 'function') && currentIching(), liveHoro = (typeof currentHoro === 'function') && currentHoro(), liveSpirit = !!card;
   const PRAC = [
     ['journal', t('wb.journal'), 'data-open-journal', lastTs ? `Last wrote ${rel(lastTs).toLowerCase()}` : 'Write freely, or from a prompt'],
