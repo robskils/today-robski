@@ -8973,15 +8973,16 @@ function openTarot() {
 }
 function tarotReadQ() { const el = document.getElementById('tarot-q'); return el ? el.value : ((state.tarot && state.tarot.q) || ''); }
 function tarotSetSpread(sp) { if (!TAROT_SPREADS[sp]) return; state.tarot.spread = sp; state.tarot.q = tarotReadQ().trim(); if (state.tarot.drawn) { state.tarot.drawn = false; state.tarot.cards = []; } renderTarot(); }
-function tarotDraw() {
+// Lay the cards face-down for the current spread (no render) - like a spirit
+// card waiting to be turned. No "shuffle and draw" step. (Robin, 2026-11-02.)
+function tarotFill() {
   const sp = state.tarot.spread; const n = TAROT_SPREADS[sp].pos.length; const idxs = [];
   while (idxs.length < n) { const i = Math.floor(Math.random() * TAROT_DECK.length); if (!idxs.includes(i)) idxs.push(i); }
-  state.tarot.q = tarotReadQ().trim();
   state.tarot.cards = idxs.map((di) => ({ di, reversed: Math.random() < 0.25, turned: false }));
   state.tarot.drawn = true; state.tarot.synth = ''; state.tarot.sit = ''; state.tarot.saved = false; state.tarot.enhancing = false;
-  renderTarot();
 }
-function tarotTurn(i) { const c = state.tarot && state.tarot.cards[i]; if (!c || c.turned) return; c.turned = true; renderTarot(); if (state.tarot.cards.every((x) => x.turned)) tarotComplete(); }
+function tarotDraw() { state.tarot.q = tarotReadQ().trim(); tarotFill(); renderTarot(); }
+function tarotTurn(i) { const c = state.tarot && state.tarot.cards[i]; if (!c || c.turned) return; try { state.tarot.q = tarotReadQ().trim(); } catch {} c.turned = true; renderTarot(); if (state.tarot.cards.every((x) => x.turned)) tarotComplete(); }
 function tarotTemplate(t) {
   const pos = TAROT_SPREADS[t.spread].pos;
   const parts = t.cards.map((c, i) => { const d = TAROT_DECK[c.di]; return `${d[0]}${c.reversed ? ' reversed' : ''} sits in ${pos[i][0].toLowerCase()}`; });
@@ -9027,6 +9028,7 @@ function tarotCardFront(c, i) {
 }
 function renderTarot() {
   const tr = state.tarot || (state.tarot = { q: '', spread: 'one', cards: [], drawn: false });
+  if (!tr.drawn || !(tr.cards && tr.cards.length)) tarotFill();   // §38/Robin: cards wait face-down, click to turn (no draw button)
   const sp = TAROT_SPREADS[tr.spread]; const pos = sp.pos;
   const spreads = Object.keys(TAROT_SPREADS).map((k) => `<span class="tr-spread${tr.spread === k ? ' on' : ''}" data-tarot-spread="${k}">${TAROT_SPREADS[k].label} <span class="tr-spread-n">${TAROT_SPREADS[k].pos.length}</span></span>`).join('');
   const cardW = tr.spread === 'five' ? '170px' : '230px';
@@ -9055,7 +9057,7 @@ function renderTarot() {
           <h1 class="tr-h1">Tarot</h1>
           <p class="tr-lede">Not a forecast - a mirror. Pictures to think with, offered gently.</p>
           <input class="tr-q" id="tarot-q" placeholder="What’s on your mind?" value="${esc(tr.q || '')}" maxlength="200" autocomplete="off">
-          <div class="tr-spreads"><span class="tr-spreads-l">Spread</span>${spreads}<button class="tr-draw" data-tarot-draw>Shuffle and draw</button></div>
+          <div class="tr-spreads"><span class="tr-spreads-l">Spread</span>${spreads}</div>
           <div class="tr-table tr-n${pos.length}">${cardsHtml}</div>
           ${tr.drawn && !allTurned ? '<div class="tr-tablenote">Turn each card when you’re ready.</div>' : ''}
           ${readingRows ? `<div class="tr-reading">${readingRows}${together}</div>` : ''}
