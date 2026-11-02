@@ -3732,7 +3732,7 @@ function renderMessagesPage() {
   $('#pane').innerHTML = `
     <div class="mp-page${hasCur ? ' mp-has-cur' : ''}">
       <div class="mp-list-col">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Conversations</span></div>
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
         <h1 class="mp-title">Messages</h1>
         <div class="mp-search"><input class="mp-q" id="mp-q" type="search" placeholder="Look for a person or a word…" value="${esc(mp.q || '')}" autocomplete="off"><button class="mp-new" data-open-contacts>+ New</button></div>
         <div class="mp-list" id="mp-list"></div>
@@ -4096,7 +4096,7 @@ function renderSettingsSix() {
     + row('Dates read as', '', choices([{ label: '23 October', on: ds === 'uk', act: 'date:uk' }, { label: 'October 23', on: ds === 'us', act: 'date:us' }]))
     + grp('Tools you use')
     + TOOL_KEYS.map((k) => row(esc(MOD_LABEL[k] || k), '', toggle(modOn(k), 'mod:' + k))).join('')
-    + grp('Reflection practices')
+    + grp('Reflection tools')
     + REFLECT_MODULES.map(([k, lbl]) => row(esc(lbl), '', toggle(modOn(k), 'mod:' + k))).join('')
     + grp("Your phone's Today")
     + row('Notepad · Kept close · First tasks · Keep in touch · People online', 'Today and What next always stay at the top', links([{ label: 'Rearrange', open: 'mobile' }]))
@@ -5387,15 +5387,15 @@ function navFoldsHtml(v) {
 // mobile: a slim wordmark + a three-item bottom bar (Contents · gold + · Find),
 // a full-screen Contents, and Set-something-down as a bottom sheet. Today is not
 // a group - the wordmark goes Home. Replaces the sidebar and the mobile icon bars.
-const KNAV_R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+const KNAV_R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
 // Each tool: [label, handler-attrs, view-key-for-live-hint]. Handlers are the app's
 // existing ones, so navigation is unchanged - only the chrome is new.
 function knavGroups() {
   const areaTools = (state.areas || []).map((a) => [esc(a.title || 'Untitled'), `data-open-area="${a.id}"`, '']);
   return [
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
-    { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
-      ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
+    { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
+      ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
     { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
       ['Flow', 'data-open-today', ''], ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
@@ -7934,7 +7934,7 @@ function renderNotepad() { const r = document.getElementById('notepad-root'); if
 // first, with a draggable 1px divider (30-70%, double-click resets to half).
 // Fold away or Esc closes it. (Drag-to-join, kept pairs and the mobile flip are
 // a later pass; this ships the core two-pane view behind an opt-in.)
-const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Reflection' };
+const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'People', area: 'Spaces', bookmark: 'Keep', journal: 'Reflection' };
 function splitMain() { return document.querySelector('.main'); }
 function splitEls() {
   const main = splitMain(); if (!main) return {};
