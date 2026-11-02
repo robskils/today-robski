@@ -8200,6 +8200,12 @@ function homeWhatNextCandidates() {
   const p1 = priorityTasks(); if (p1.length) { const tk = p1[0]; list.push({ pr: 3, title: tk.title || 'A task', because: 'You marked this a priority - worth doing first.', verb: 'Open it', attr: `data-open-task="${tk.id}"`, why: ['Task', 'P1', an(tk.props && tk.props.area)] }); }
   (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').forEach((g) => { const q = gQuietDays(g); if (q >= 14) list.push({ pr: 4, title: `Spend twenty minutes on "${g.title || 'a goal'}".`, because: 'You said this mattered, and it has been quiet for a while.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', `quiet ${q} days`, an(gp(g).area)] }); });
   ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { list.push({ pr: 5, title: `Reach out to ${k.name || 'someone'}.`, because: k.last ? `You last spoke ${kitWhen(k.last)}.` : 'You meant to stay in touch.', verb: 'Open', attr: `data-open-contact="${k.id}"`, why: ['People'] }); });
+  // §42: a birthday today is worth a nudge near the top; an upcoming one is a
+  // gentler mention so there's time to do something.
+  ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => {
+    const today = b.inDays === 0;
+    list.push({ pr: today ? 1.5 : 6, title: today ? `Wish ${b.name || 'someone'} a happy birthday.` : `${b.name || 'Someone'}’s birthday is ${b.inDays === 1 ? 'tomorrow' : 'in ' + b.inDays + ' days'}.`, because: today ? 'It is today - a quick word means a lot.' : 'A little notice, so you have time to do something.', verb: 'Open', attr: `data-open-contact="${b.id}"`, why: ['People', today ? 'today' : `in ${b.inDays}d`] });
+  });
   return list.sort((a, b) => a.pr - b.pr);
 }
 function homeWhatNextHtml() {

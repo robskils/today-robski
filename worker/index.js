@@ -2757,6 +2757,55 @@ async function runSurfaceAlertsForUser(env, user) {
   return due.length;
 }
 
+// §42 Birthday reminders: one in-app push on the birthday morning, in the same
+// 09:00 window as the surface alerts and on the user's own clock. A contact
+// with reminders switched off (props.bdayLead === 0) is skipped. Self-gates to
+// a single pass a day per member via the same conditional-UPDATE lock, so two
+// ticks a minute apart can't both fire. (Robin, §42.)
+async function runBirthdayAlertsAll(env) {
+  let sent = 0;
+  for (const u of await activeUsers(env)) {
+    sent += await runBirthdayAlertsForUser(env, u)
+      .catch((e) => { console.error('birthdayAlerts', u.id, e.message); return 0; });
+  }
+  return { sent };
+}
+async function runBirthdayAlertsForUser(env, user) {
+  const uid = user.id;
+  const now = localParts(new Date(), await tzForUser(env, uid));   // the morning window is on the user's clock
+  const last = await getSetting(env, 'last_birthday_day', uid);
+  if (!briefDue(now.min, now.date, last)) return 0;                 // once, in the morning window
+  const claim = await env.DB.prepare(
+    `INSERT INTO settings (user_id, key, value) VALUES (?, 'last_birthday_day', ?)
+       ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value
+        WHERE settings.value <> excluded.value`,
+  ).bind(uid, now.date).run();
+  if (!claim.meta?.changes) return 0;
+
+  const md = now.date.slice(5);   // MM-DD today, on the user's clock
+  const { results } = await env.DB.prepare(
+    "SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?",
+  ).bind(uid).all().catch(() => ({ results: [] }));
+  const today = [];
+  for (const r of results || []) {
+    let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
+    if (!p.birthday || p.bdayLead === 0) continue;                 // no date, or reminders off for this person
+    // slice(-5) takes MM-DD from a full date and a yearless --MM-DD alike.
+    if (String(p.birthday).slice(-5) === md) today.push({ id: r.id, name: r.title || 'A contact' });
+  }
+  if (!today.length) return 0;
+
+  const names = today.map((b) => b.name);
+  await pushAll(env, {
+    type: 'birthday',
+    target: 'contacts',
+    title: today.length === 1 ? `It is ${names[0]}'s birthday today` : `${today.length} birthdays today`,
+    body: today.length === 1 ? 'Wish them a happy birthday.' : names.slice(0, 3).join(', ') + (today.length > 3 ? '…' : ''),
+    url: '/today',
+  }, uid).catch(() => {});
+  return today.length;
+}
+
 // The house style for every small system email (surface note, review reminder),
 // held to the same standard as the morning brief: the Koyeba mark, a Cormorant
 // headline on warm paper, a proper gold button, the tagline. Never a bare
@@ -4630,6 +4679,8 @@ export default {
     // Tell members a "surface on" task has come due, once, the morning it does.
     // Self-gates to one pass a day per member, like the brief.
     ctx.waitUntil(runSurfaceAlertsAll(env).catch((e) => console.error('surfaceAlerts:', e.message)));
+    // §42: one birthday push on the morning of, per member, on their own clock.
+    ctx.waitUntil(runBirthdayAlertsAll(env).catch((e) => console.error('birthdayAlerts:', e.message)));
     // Keep the inbox cache warm so opening Mail is instant (gated to ~2 min),
     // then push an icon badge if the unread total just rose.
     ctx.waitUntil((env.MAIL_QUEUE ? enqueueMailSync(env) : syncMailCache(env).then((res) => maybePushMail(env, res))).catch((e) => console.error('mailSync:', e.message)));
