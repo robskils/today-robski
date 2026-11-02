@@ -1574,14 +1574,16 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   }
   // Show only when deep: group + tool + item (or, with no group, tool + item).
   if (items.length < (hadGroup ? 3 : 2)) return '';
-  const sep = '<span class="crumb-sep">/</span>';
-  const last = items.length - 1;
-  const row = items.map((c, i) => ((i === last && !opts.omitCurrent)
-    ? `<span class="crumb cur">${esc(c.label)}</span>`
-    : `<button class="crumb" ${c.attr || ''}>${esc(c.label)}</button>`)).join(sep);
+  // §28 back link: "← parent · current". The gold arrow and the parent's name
+  // are one link to the logical parent (the second-to-last crumb); the current
+  // item follows in ink. Plain text, no box. Hidden at a tool's top level (the
+  // length gate above). Mobile collapses to "‹ parent" top-left.
   const parent = items[items.length - (opts.omitCurrent ? 1 : 2)];
+  const cur = opts.omitCurrent ? null : items[items.length - 1];
+  const back = parent ? `<button class="crumb-up" ${parent.attr || ''} aria-label="Back to ${esc(parent.label)}"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(parent.label)}</span></button>` : '';
+  const curHtml = cur ? `<span class="crumb-dot">·</span><span class="crumb cur">${esc(cur.label)}</span>` : '';
   const mob = parent ? `<button class="crumb crumb-mob" ${parent.attr || ''}>‹ ${esc(parent.label)}</button>` : '';
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${row}</div>${mob}</div>`;
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${back}${curHtml}</div>${mob}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
