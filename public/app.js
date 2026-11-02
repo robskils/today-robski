@@ -8475,29 +8475,35 @@ function homeSpacesAsideHtml() {
     const act = s.last ? new Date(s.last).getTime() : (a.updated_at ? new Date(a.updated_at).getTime() : 0);
     return { a, line, needs, act, inactive: act ? (now - act) / 86400000 : 9999, pinned: !!(a.props && a.props.pinToday) };
   });
-  const need = scored.filter((x) => x.needs).length;
-  const primary = scored.filter((x) => x.needs || x.pinned).sort((x, y) => ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
-  const rest = scored.filter((x) => !(x.needs || x.pinned) && x.inactive < 30).sort((x, y) => y.act - x.act);
-  const ordered = [...primary, ...rest];
+  // §61: each Space is a plain LINK to its page - never a fold, never empty.
+  // The row shows the name and when the latest thing happened, then one line for
+  // that latest item. Today doesn't load every Space's mail/notes, so the item is
+  // best-effort client-side: the top open task, else the deadline/activity line.
+  // A Space with nothing at all is hidden.
+  const scored2 = scored.map((x) => {
+    const top = homeSpaceItems(x.a)[0] || null;
+    const item = top ? { kind: 'Task', text: top.t }
+      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line } : null;
+    const s = sum[x.a.id] || {};
+    const hasAnything = !!top || !!s.last || (s.tasks | 0) > 0 || (s.notes | 0) > 0 || (s.goals | 0) > 0;
+    return { ...x, item, hasAnything };
+  }).filter((x) => x.hasAnything);
+  const need = scored2.filter((x) => x.needs).length;
+  scored2.sort((x, y) => ((y.pinned ? 1 : 0) - (x.pinned ? 1 : 0)) || ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
   const CAP = (window.matchMedia && window.matchMedia('(max-width:999px)').matches) ? 5 : 8;
-  const shown = ordered.slice(0, CAP);
-  const quieter = areas.length - shown.length;
-  const open = (state.home && state.home.spacesOpen) || {};
-  const rows = shown.map(({ a, line, needs }) => {
-    const isOpen = !!open[a.id];
-    const items = isOpen ? homeSpaceItems(a) : [];
-    return `<div class="home-sa-sp">
-      <div class="home-sa-h" data-home-space="${a.id}" role="button" tabindex="0">
-        <span class="home-sa-n">${areaNumeral(a.id)}</span>
-        <span class="home-sa-nm">${esc(a.title || 'Untitled')}</span>
-        <span class="home-sa-rt"><span class="home-sa-dot${needs ? ' on' : ''}"></span><span class="home-sa-sign">${isOpen ? '−' : '+'}</span></span>
-        <span class="home-sa-line${needs ? ' needs' : ''}">${esc(line)}</span>
-      </div>
-      ${isOpen ? `<div class="home-sa-body">${items.map((it) => `<div class="home-sa-it" ${it.attr} role="button" tabindex="0"><span class="home-sa-k">${esc(it.k)}</span><span class="home-sa-t">${esc(it.t)}</span></div>`).join('') || '<div class="home-sa-none">Nothing open here.</div>'}<button class="home-sa-open" data-open-area="${a.id}">Open ${esc(a.title || 'Space')} →</button></div>` : ''}
-    </div>`;
+  const shown = scored2.slice(0, CAP);
+  const rows = shown.map(({ a, needs, act, item }) => {
+    const when = act ? timeAgo(act) : '';
+    const itemLine = item
+      ? `${item.kind ? `<span class="home-sa-k2">${esc(item.kind)}</span> · ` : ''}${esc(item.text)}`
+      : 'Open it →';
+    return `<button class="home-sa-row" data-open-area="${a.id}">
+      <span class="home-sa-row-top"><span class="home-sa-n">${areaNumeral(a.id)}</span><span class="home-sa-nm2">${esc(a.title || 'Untitled')}</span>${needs ? '<span class="home-sa-dot on"></span>' : ''}<span class="home-sa-when">${esc(when)}</span></span>
+      <span class="home-sa-item${needs ? ' needs' : ''}">${itemLine}</span>
+    </button>`;
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
-  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span>${quieter > 0 ? `<span class="home-sa-quiet">${quieter} quieter ${quieter === 1 ? 'one lives' : 'ones live'} there</span>` : ''}</button>`;
+  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span></button>`;
   return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span></div>${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button>`;
 }
 // §35 Reflections on Today: anything drawn or cast today - a Spirit card, an I

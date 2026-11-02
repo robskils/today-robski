@@ -11228,6 +11228,16 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-sa-open { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); margin-top:4px; text-align:left; padding:0; }
 .home-sa-new { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); padding-top:12px; }
 .home-sa-new:hover { color:var(--k-goldt); }
+/* §61: Your Spaces rows are plain links, never folds. Name + when on top, the
+   single latest item below. Type 1a (Jost). */
+.home-sa-row { display:block; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:13px 0; cursor:pointer; }
+.home-sa-row-top { display:flex; align-items:baseline; gap:8px; }
+.home-sa-nm2 { font-family:var(--k-sans); font-weight:500; font-size:16px; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sa-row:hover .home-sa-nm2 { color:var(--k-goldt); }
+.home-sa-when { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-mute); white-space:nowrap; }
+.home-sa-item { display:block; margin-top:3px; font-family:var(--k-sans); font-weight:400; font-size:14px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sa-item.needs { color:var(--k-goldt); }
+.home-sa-k2 { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--k-mute); }
 /* §35 Reflections rows: kind · title+line · Open / Put away. */
 .home-refl-row { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:16px; align-items:baseline; padding:14px 0; border-top:1px solid var(--k-line); }
 .home-refl-kind { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-goldt); }
