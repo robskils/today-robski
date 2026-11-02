@@ -5492,7 +5492,8 @@ function knavHint(viewKey) {
   return '';
 }
 function knavGroupBadge(g) {
-  if (g.id === 'conv') { const n = state.mailUnreadTotal || 0; return n ? n : ''; }
+  // No number next to People - the mail count is already shown as "Mail N" on the
+  // top right, so it would just duplicate it. (Robin.)
   return '';
 }
 // Find panel sections before typing: Shared with you (new first), then Recent -
