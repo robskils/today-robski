@@ -12393,10 +12393,12 @@ function renderAreaV4() {
       <textarea class="av4-goal-why" rows="3" placeholder="Why it matters, how you’ll know…" data-av4-goal-why="${g.id}">${esc(p.why || '')}</textarea>
       <div class="av4-goal-eacts"><span class="av4-goal-done gold" data-av4-goal="${g.id}">Done editing</span><span class="av4-goal-addtask" data-area-add-task>Add a task towards it</span><span class="av4-goal-arch" data-av4-goal-archive="${g.id}">Archive goal</span></div>
     </div>` : '';
+    // Editing shows the title input + the one "How far along" slider, so the head's
+    // static title / % / progress bar are hidden - one clear control, no double-up.
     return `<div class="av4-goalcard${editing ? ' editing' : ''}">
       <div class="av4-goal-head" data-av4-goal="${g.id}"><div class="av4-goal-hrow"><span class="av4-goal-when">${esc(whenLabel)}</span><span class="av4-goal-edit-l">${editing ? '' : 'Edit'}</span></div>
-      <div class="av4-goal-main"><span class="av4-goal-t">${esc(g.title || 'A goal')}</span><span class="av4-goal-pct">${pct}%</span></div>
-      <div class="av4-goal-bar"><span style="width:${pct}%"></span></div>${p.why ? `<div class="av4-goal-why-view">${esc(p.why)}</div>` : ''}</div>${editBlock}</div>`;
+      ${editing ? '' : `<div class="av4-goal-main"><span class="av4-goal-t">${esc(g.title || 'A goal')}</span><span class="av4-goal-pct">${pct}%</span></div>
+      <div class="av4-goal-bar"><span style="width:${pct}%"></span></div>${p.why ? `<div class="av4-goal-why-view">${esc(p.why)}</div>` : ''}`}</div>${editBlock}</div>`;
   };
 
   // ── Tab content ──
