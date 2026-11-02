@@ -1617,24 +1617,18 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // are - it only shows once you are genuinely deep. On mobile it collapses to
   // "‹ parent". No back arrow, no "+ New": Set something down and ⌘[ replace them.
   // (backAttr / areaId kept for callers but no longer drawn.)
+  // Robin: no back ARROW in the breadcrumb bar - the persistent one in the menubar
+  // does back. This bar is just the hierarchy, starting at "Today" (the home crumb,
+  // relabelled), then the trail the caller passed, the last segment in ink.
   let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
-  if (items[0] && /data-view-home/.test(items[0].attr || '')) items = items.slice(1);
-  // §63 (Robin, repeatedly): the ← back arrow is ALWAYS shown on a sub-page - never
-  // hidden at a tool's top level, so Mail/Notes/etc. always have a way back. No nav
-  // group is prepended (it read as "Plans · Goals · …" noise); the crumb is just
-  // "← {where you came from}" then the trail the caller passed.
+  if (items[0] && /data-view-home/.test(items[0].attr || '')) items[0] = { label: 'Today', attr: 'data-view-home' };
   if (!items.length) return '';
-  // §63: ← is proper history-back (navBack), labelled with where you came from.
-  // The hierarchy that follows is "up" - separate plain links. If the back target
-  // is the same as the first hierarchy link, drop the duplicate.
   const cur = opts.omitCurrent ? null : items[items.length - 1];
-  const hierItems = (opts.omitCurrent ? items : items.slice(0, -1));
-  const backLbl = navBackLabel();
-  const hier = hierItems.filter((it) => it.label !== backLbl);
-  const back = `<button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(backLbl)}</span></button>`;
-  const links = hier.map((it) => `<span class="crumb-dot">·</span><button class="crumb" ${it.attr || ''}>${esc(it.label)}</button>`).join('');
-  const curHtml = cur ? `<span class="crumb-dot">·</span><span class="crumb cur">${esc(cur.label)}</span>` : '';
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${back}${links}${curHtml}</div></div>`;
+  const hier = opts.omitCurrent ? items : items.slice(0, -1);
+  const parts = hier.map((it) => `<button class="crumb" ${it.attr || ''}>${esc(it.label)}</button>`);
+  if (cur) parts.push(`<span class="crumb cur">${esc(cur.label)}</span>`);
+  if (!parts.length) return '';
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">·</span>')}</div></div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -8389,8 +8383,8 @@ function homeWhatNextHtml() {
   const open = !!(state.home && state.home.wnOpen);
   // Robin: a plain folding section under Messages, styled exactly like it - a
   // Cormorant "What next" header, a muted hint, a +/- fold. No gold rule, no eyebrow.
-  const hint = open ? 'one thing at a time' : 'What should I do next?';
-  const header = `<div class="home-fold-h" data-wn-toggle role="button" tabindex="0"><span class="hf-name">What next</span><span class="hf-hint">${esc(hint)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const hint = open ? '' : 'What should I do next?';
+  const header = `<div class="home-fold-h" data-wn-toggle role="button" tabindex="0"><span class="hf-name">What next</span>${hint ? `<span class="hf-hint">${esc(hint)}</span>` : ''}<span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<section class="home-sec2 home-wn-sec">${header}${open ? `<div class="home-sec2-b">${homeWhatNextBandHtml()}</div>` : ''}</section>`;
 }
 // Open/close the What next band. From anywhere (⌘/, the Plans tool, Search),
@@ -8850,7 +8844,7 @@ function homeArrivalHtml() {
   const lead = items.length === 1
     ? `A new email from ${who}, just now${subj}`
     : `${items.length} new emails – ${who} and ${items.length - 1} more`;
-  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><span class="home-arr-later" data-mail-arrival-later role="button" tabindex="0">Later</span></div>`;
+  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><button class="home-arr-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
 }
 // §62 Calendar section: confirmed events (and plain slots), Today · Tomorrow;
 // never tasks - those live in On your radar. Practices sit as a tick row at the
@@ -8891,7 +8885,7 @@ function homeMsgsSectionHtml() {
   if (!modOn('contacts')) return '';
   const open = kOpen('msgs');
   const n = unreadMsgs();
-  const h = `<div class="home-fold-h" data-hfold="msgs" role="button" tabindex="0"><span class="hf-name">Messages</span>${n ? `<span class="hf-count hot">${n}</span>` : ''}<span class="hf-hint">${n ? `${n} new` : 'Nothing new'}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = `<div class="home-fold-h" data-hfold="msgs" role="button" tabindex="0"><span class="hf-name">Messages</span>${n ? `<span class="hf-count hot">${n}</span>` : ''}${n ? `<span class="hf-hint">${n} new</span>` : ''}<span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${homeGlancePanelHtml('messages')}</div>` : ''}</section>`;
 }
 // Robin: Calendar · On your radar · Mail as one tabbed band - click a tab, its
@@ -12419,7 +12413,7 @@ function renderAreaV4() {
 
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-area av3 av4">
-      <div class="av4-crumb"><span class="av4-back" data-nav-back role="button" tabindex="0"><span class="av4-back-a">←</span> ${esc(navBackLabel())}</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-up" data-open-areas role="button" tabindex="0">Spaces</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-nm">${esc(area.title || 'Space')}</span></div>
+      <div class="av4-crumb"><span class="av4-crumb-up" data-view-home role="button" tabindex="0">Today</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-up" data-open-areas role="button" tabindex="0">Spaces</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-nm">${esc(area.title || 'Space')}</span></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
         <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
@@ -16431,10 +16425,10 @@ function mailSenderName(m) {
 function mailArrivalLine() {
   const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
   if (!items.length || state.mailSheet || state.mailArrivalHidden) return '';
-  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A new email from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`; }
+  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A new email from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`; }
   const names = items.slice(0, 3).map(mailSenderName);
   const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new emails`;
-  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new emails – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`;
+  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new emails – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
 }
 // §51: the "New mail" sheet is gone. "Mail {count}" and ⌘E just open the Mail
 // page (on the New/to-sort list, newest first). Kept the name so existing
@@ -18340,12 +18334,9 @@ function renderMail(loading) {
     : isSort ? '<div class="mail-empty2"><div class="mail-empty2-t">Nothing left to sort.</div><div class="mail-empty2-s">Start with Urgent – it’s waiting for you.</div></div>'
     : '<div class="mail-empty2"><div class="mail-empty2-t">Nothing here.</div><div class="mail-empty2-s">Try another word, or another account.</div></div>') : '';
   const err = m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : '';
-  // §63: reading an email, ← returns to the pile list you came from (navBack closes
-  // it), labelled with that pile; otherwise the normal "← {back} · Mail".
-  const MAIL_PILE_LABEL = { sort: 'Inbox', urgent: 'Urgent', important: 'Important', chilled: 'Later', archive: 'Archive', drafts: 'Drafts', sent: 'Sent', spam: 'Spam', trash: 'Bin' };
-  const mailCrumb = m.open
-    ? `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(MAIL_PILE_LABEL[mailSelectedPile()] || 'Inbox')}</span></button><span class="crumb-dot">·</span><button class="crumb" data-open-mail>Mail</button></div></div>`
-    : pageCrumb(t('nav.mail'));
+  // The breadcrumb is just "Today · Mail"; the menubar ← closes an open email
+  // (navBack) and leaves Mail.
+  const mailCrumb = pageCrumb(t('nav.mail'));
   $('#pane').innerHTML = `
     ${mailCrumb}
     <div class="mail2">
@@ -21982,7 +21973,7 @@ function renderGoalCard() {
   // §67: title lives in the LEFT column (not full-width over both), so the right
   // column can never overlap it. The crumb is exactly "← {where you came from} ·
   // {Space}" (§63 back + the Space as the up-link), not the nav group/Goals/title.
-  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(navBackLabel())}</span></button>${a ? `<span class="crumb-dot">·</span><button class="crumb" data-open-area="${a.id}">${esc(a.title)}</button>` : `<span class="crumb-dot">·</span><button class="crumb" data-open-goals>Goals</button>`}</div></div>`;
+  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span>${a ? `<button class="crumb" data-open-area="${a.id}">${esc(a.title)}</button>` : `<button class="crumb" data-open-goals>Goals</button>`}</div></div>`;
   $('#pane').innerHTML = `
     <div class="gx-page">
       ${goalCrumb}
@@ -26692,7 +26683,10 @@ document.addEventListener('click', (e) => {
   // §43 New-mail sheet + arrival line.
   if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }   // §51: opens the Mail page
   { const mar = t.closest('[data-mail-arrival-read]'); if (mar) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key, { explicit: true, row: items[0] }).catch((x) => toast(x.message)); return; } }
-  if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
+  // The × just closes the banner and marks the new mail as "seen the alert" - it
+  // leaves every email exactly where it is, in the Inbox. (Robin: don't move them
+  // all to read later.)
+  if (t.closest('[data-mail-arrival-dismiss]')) { mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); if (state.view && state.view.type === 'home') renderHome(); return; }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   { const mg = t.closest('[data-mail-group]'); if (mg) { const k = mg.dataset.mailGroup; state.mail.groupsShut = state.mail.groupsShut || {}; state.mail.groupsShut[k] = !state.mail.groupsShut[k]; renderMail(); return; } }
   { const msd = t.closest('[data-mail-side]'); if (msd) { const k = msd.dataset.mailSide; state.mail.side = state.mail.side || {}; state.mail.side[k] = !state.mail.side[k]; renderMail(); return; } }
