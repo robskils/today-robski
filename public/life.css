@@ -9918,17 +9918,20 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 .gx-prog-state { display:flex; flex-direction:column; gap:3px; }
 .gx-state { font-family:var(--k-sans); font-weight:500; font-size:16px; color:var(--k-ink); }
 .gx-drag { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
-.gx-slide { position:relative; height:28px; margin-top:20px; }
-.gx-track { position:absolute; left:0; right:0; top:11px; height:6px; background:var(--k-soft); }
-.gx-slide .gc-bar { position:absolute; left:0; right:0; top:11px; height:6px; background:transparent; border:0; }
+/* §67 slider: the 22px gold thumb sits dead-centre on the 6px track. The track and
+   the thumb share one vertical centre (y=11 in a 22px-tall row); the ring is a
+   box-shadow so it never shifts the thumb. (Robin: centre the box on the line.) */
+.gx-slide { position:relative; height:22px; margin-top:22px; }
+.gx-track { position:absolute; left:0; right:0; top:8px; height:6px; background:var(--k-soft); }
+.gx-slide .gc-bar { position:absolute; left:0; right:0; top:8px; height:6px; background:transparent; border:0; }
 .gx-slide .gc-bar > i { display:block; height:100%; background:var(--k-gold); }
-.gx-slider { position:absolute; left:0; top:0; width:100%; height:28px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; }
+.gx-slider { position:absolute; left:0; top:0; width:100%; height:22px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; }
 .gx-slider:focus { outline:none; }
-.gx-slider::-webkit-slider-runnable-track { background:transparent; height:28px; border:0; }
-.gx-slider::-moz-range-track { background:transparent; height:28px; border:0; }
-.gx-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; margin-top:3px; background:var(--k-gold); border:3px solid var(--k-panel); box-shadow:0 0 0 1px var(--k-gold); cursor:grab; transition:transform .12s ease; }
-.gx-slider:active::-webkit-slider-thumb { transform:scale(1.1); }
-.gx-slider::-moz-range-thumb { width:22px; height:22px; background:var(--k-gold); border:3px solid var(--k-panel); box-shadow:0 0 0 1px var(--k-gold); border-radius:0; cursor:grab; }
+.gx-slider::-webkit-slider-runnable-track { background:transparent; height:6px; border:0; }
+.gx-slider::-moz-range-track { background:transparent; height:6px; border:0; }
+.gx-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; margin-top:-8px; background:var(--k-gold); box-shadow:0 0 0 3px var(--k-panel),0 0 0 4px var(--k-gold); cursor:grab; transition:transform .12s ease; }
+.gx-slider:active::-webkit-slider-thumb { transform:scale(1.08); }
+.gx-slider::-moz-range-thumb { box-sizing:border-box; width:22px; height:22px; background:var(--k-gold); border:3px solid var(--k-panel); box-shadow:0 0 0 1px var(--k-gold); border-radius:0; cursor:grab; }
 .gx-slider:focus-visible::-webkit-slider-thumb { outline:2px solid var(--k-gold); outline-offset:3px; }
 .gx-slide-labels { display:flex; justify-content:space-between; margin-top:9px; font-family:var(--k-sans); font-size:12px; color:var(--k-mute); }
 .gx-facts { display:flex; flex-wrap:wrap; gap:18px clamp(28px,4vw,56px); margin-top:22px; padding-top:20px; border-top:1px solid var(--k-line); }
@@ -10090,8 +10093,9 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-find-btn kbd { font:inherit; font-size:11px; letter-spacing:.08em; color:var(--ink-3); }
 .knav-find-btn:hover, .knav-contents-btn:hover { color:var(--k-goldt); }
 .knav-find-btn.on { color:var(--ink); border-bottom:1px solid var(--accent); }
-.knav-contents-btn { padding-bottom:3px; border-bottom:1px solid var(--accent); color:var(--ink); }
-.knav-contents-btn.on { color:var(--k-goldt); }
+/* Menu matches the other top-right items - no permanent underline; only the gold
+   underline when the menu is actually open (like Search). (Robin.) */
+.knav-contents-btn.on { color:var(--ink); border-bottom:1px solid var(--accent); padding-bottom:3px; }
 
 /* fold-down sheet (desktop) */
 .knav-sheet { position:fixed; top:var(--tabstrip-h,68px); left:0; right:0; z-index:58; background:var(--paper-2); border-bottom:1px solid var(--line); padding:26px clamp(20px,4vw,40px) 30px; animation:kfade .4s cubic-bezier(.2,.7,.2,1); }
@@ -10482,11 +10486,12 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
    Unboxed Jost line, muted links, "/" separators, the current segment in ink.
    No box, no arrow, no background. Ancestors truncate before the current one;
    never wraps. On mobile just "‹ parent". ══ */
-.crumbbar-slim { position:static; display:flex; align-items:baseline; gap:12px; min-height:0; margin:0 0 20px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
-.crumbbar-slim .crumbs { display:flex; align-items:baseline; flex-wrap:nowrap; gap:9px; min-width:0; }
-.crumbbar-slim .crumb { font-family:var(--k-sans); font-size:14px; line-height:1.3; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:2px 0 24px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
+.crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
-.crumbbar-slim .crumb.cur { color:var(--k-ink); max-width:48ch; cursor:default; }
+.crumbbar-slim .crumb.cur { color:var(--k-ink); font-weight:500; max-width:48ch; cursor:default; }
+.crumbbar-slim .crumb-dot { color:var(--k-line); font-size:12px; line-height:1; flex:none; }
 .crumbbar-slim .crumb-sep { color:var(--k-line); font-size:14px; opacity:1; flex:none; }
 .crumbbar-slim .crumb-up { display:inline-flex; align-items:baseline; gap:6px; background:none; border:0; padding:0; font-family:var(--k-sans); font-size:14px; line-height:1.3; cursor:pointer; max-width:34ch; overflow:hidden; white-space:nowrap; flex:none; }
 .crumbbar-slim .crumb-up-a { color:var(--k-gold); flex:none; }
@@ -12311,7 +12316,8 @@ body.mailsheet-open { overflow:hidden; }
 .home-radar .rdr-grp { margin-top:8px; }
 .rdr-grp-h { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-mute); padding:16px 0 4px; }
 .rdr-grp-h.over { color:var(--k-goldt); }
-.rdr-row { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:4px 16px; align-items:baseline; padding:12px 0; border-top:1px solid var(--k-line); }
+.rdr-row { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:4px 16px; align-items:baseline; padding:12px 0; border-top:1px solid var(--k-line); cursor:pointer; transition:color .15s ease; }
+.rdr-row:hover .rdr-t { color:var(--k-goldt); }
 .rdr-kind { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-mute); }
 .rdr-b { min-width:0; }
 .rdr-t { font-family:var(--k-serif); font-weight:300; font-size:23px; line-height:1.25; color:var(--k-ink); text-wrap:pretty; }

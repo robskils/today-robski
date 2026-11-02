@@ -8949,11 +8949,11 @@ function homeReadingsSectionHtml() {
   const items = homeReadingItems();
   const rows = items.length ? items.map((r) => {
     const exp = state.home && state.home.readOpen === r.key;
-    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0">${homeReadCardHtml(r)}<div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
+    return `<div class="home-rd-row" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">${homeReadCardHtml(r)}<div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div></div></div>`;
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.
-  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Readings</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Reflections</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}</div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
@@ -25761,8 +25761,8 @@ document.addEventListener('input', (e) => {
   if (e.target && e.target.matches && e.target.matches('[data-goal-progress]')) {
     const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
     // Works for a goal card (.gc-progress) and a Goals-tab list row (.glist-row).
-    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal, .gr-goal');
-    if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct'); if (lab) lab.textContent = v + '%'; }
+    const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal, .gr-goal, .gx-prog');
+    if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct, .gx-pct'); if (lab) lab.textContent = v + '%'; const stl = wrap.querySelector('.gx-state'); if (stl && typeof goalStateLine === 'function') stl.textContent = goalStateLine(v); }
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
   }
