@@ -8902,7 +8902,7 @@ function homeReadingsSectionHtml() {
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.
-  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Today’s readings</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Readings</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}</div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
