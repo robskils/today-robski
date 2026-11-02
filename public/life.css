@@ -11682,27 +11682,23 @@ body[data-view="settings"].sx-six .pane { max-width:none; padding:0; margin-top:
 .mail-sheet-close { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); white-space:nowrap; }
 .mail-sheet-close:hover, .mail-sheet-open:hover { color:var(--k-ink); }
 .mail-sheet-allclear { padding:28px 0 8px; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; color:var(--k-mute); }
-.mail-sheet-row { border-bottom:1px solid var(--k-line); }
-.mail-sheet-rowh { display:grid; grid-template-columns:14px minmax(120px,0.9fr) minmax(0,2fr) auto; gap:14px; align-items:baseline; width:100%; text-align:left; background:none; border:0; padding:15px 0; cursor:pointer; }
+.mail-sheet-row { border-bottom:1px solid var(--k-line); padding:14px 0 12px; }
+.mail-sheet-rowh { display:grid; grid-template-columns:14px minmax(0,1fr) auto; gap:14px; align-items:baseline; width:100%; text-align:left; background:none; border:0; padding:0; cursor:pointer; }
 .mail-sheet-dot { width:6px; height:6px; border-radius:50%; background:transparent; align-self:center; }
 .mail-sheet-dot.on { background:var(--k-gold); }
-.mail-sheet-from { font-family:var(--k-serif); font-weight:300; font-size:23px; line-height:1.1; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mail-sheet-subj { min-width:0; display:flex; gap:10px; align-items:baseline; white-space:nowrap; overflow:hidden; }
-.mail-sheet-sj { font-family:var(--k-sans); font-size:15px; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:none; max-width:60%; }
-.mail-sheet-sn { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-sheet-main { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mail-sheet-from { font-family:var(--k-serif); font-weight:300; font-size:24px; line-height:1.15; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-sheet-rowh:hover .mail-sheet-from { color:var(--k-goldt); }
+.mail-sheet-sub { min-width:0; font-family:var(--k-sans); font-size:14px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-sheet-sj { color:var(--k-ink); }
 .mail-sheet-time { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .mail-sheet-time.on { color:var(--k-goldt); }
-.mail-sheet-read { padding:4px 0 20px 28px; animation:kfade .35s ease; }
-.mail-sheet-rtext { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; line-height:1.5; color:var(--k-ink); max-width:760px; text-wrap:pretty; }
-.mail-sheet-loading { color:var(--k-mute); }
-.mail-sheet-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; margin-top:18px; font-family:var(--k-sans); font-size:13.5px; }
-.mail-sheet-actions .msa-reply { color:var(--k-goldt); font-weight:500; cursor:pointer; }
-.mail-sheet-actions .msa-tri, .mail-sheet-actions .msa-turn { color:var(--k-ink); cursor:pointer; }
-.mail-sheet-actions .msa-tri:hover, .mail-sheet-actions .msa-turn:hover, .mail-sheet-actions .msa-reply:hover { color:var(--k-goldt); }
-.mail-sheet-actions .msa-sep { width:1px; height:14px; background:var(--k-line); }
+/* Triage: a quiet secondary line, clearly below the email's own content. */
+.mail-sheet-tri { display:flex; flex-wrap:wrap; gap:16px; align-items:baseline; margin:8px 0 0 28px; }
+.mail-sheet-sort { font-family:var(--k-sans); font-weight:600; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-mute); }
+.mail-sheet-tri .mst { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); cursor:pointer; }
+.mail-sheet-tri .mst:hover { color:var(--k-goldt); }
 body.mailsheet-open { overflow:hidden; }
 @media (max-width:720px){
-  .mail-sheet-rowh { grid-template-columns:14px minmax(0,1fr) auto; }
-  .mail-sheet-subj { grid-column:2/4; }
   .mail-sheet-title { font-size:28px; }
 }

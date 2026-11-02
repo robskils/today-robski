@@ -15528,14 +15528,16 @@ async function warmMailForSheet() {
     let accts = state.mail.accounts || null;
     if (!accts) { const r = await mailApi('/accounts').catch(() => null); accts = Array.isArray(r) ? r : ((r && r.accounts) || []); state.mail.accounts = accts; }
     if (!accts || !accts.length) { state.__mailListLoaded = true; return; }
-    const all = [];
+    const all = []; let ok = 0;
     for (const a of accts.slice(0, 5)) {
       const r = await mailApi(`/messages?account=${a.id}&mailbox=INBOX&limit=200`).catch(() => null);
+      if (r && Array.isArray(r.messages)) ok++;   // a genuine response (even if empty)
       // Normalise exactly like the main inbox load, so each message carries the
       // _acct / _mailbox / _key the rest of the mail system keys off - without
       // these the sheet rows have no id and can't be opened or triaged.
       for (const x of ((r && r.messages) || [])) { const mb = x.mailbox || 'INBOX'; all.push({ ...x, _acct: x.account || a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${x.account || a.id}:${mb}:${x.uid}` }); }
     }
+    if (!ok) return;   // every fetch failed - keep what we had, retry next time (never blank a real inbox)
     const gone = state.mail.gone;
     state.mail.messages = all.filter((m) => !gone.has(m._key));
     state.__mailListLoaded = true;
@@ -15553,38 +15555,22 @@ function mailSheetHtml() {
     const t = looked ? new Date(looked).toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : '';
     return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">All sorted. Nothing new${t ? ` since ${esc(t)}` : ''}.</div></div>`;
   }
+  // A clean list - the sender leads, subject and snippet sit quietly beneath,
+  // triage is a small muted line. Clicking a row opens the real Mail reader, so
+  // the email is shown as it was meant to be seen, not as flattened text.
   const rows = items.map((m) => {
-    const isOpen = state.mailSheetOpen === m._key;
     const fresh = mailMsgTs(m) > looked;
     const tLabel = (() => { const ts = mailMsgTs(m); if (!ts) return ''; const d = new Date(ts); const today = new Date(); return (d.toDateString() === today.toDateString()) ? d.toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); })();
-    const snip = esc(String(m.snippet || m.preview || '').replace(/\s+/g, ' ').slice(0, 90));
-    let body = '';
-    if (isOpen) {
-      const full = (state.mailSheetBody && state.mailSheetBody[m._key]);
-      const text = full != null ? full : (m.snippet || m.preview || '');
-      body = `<div class="mail-sheet-read">
-        <div class="mail-sheet-rtext">${full == null ? '<span class="mail-sheet-loading">Opening…</span>' : esc(String(text).replace(/\s+/g, ' ').slice(0, 1400))}</div>
-        <div class="mail-sheet-actions">
-          <span class="msa-reply" data-mail-sheet-reply="${esc(m._key)}">Reply</span>
-          <span class="msa-sep"></span>
-          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:urgent">Urgent</span>
-          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:important">Important</span>
-          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:later">Read later</span>
-          <span class="msa-sep"></span>
-          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:task">Make a task</span>
-          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:event">Add as event</span>
-          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:note">Keep as note</span>
-        </div>
-      </div>`;
-    }
-    return `<div class="mail-sheet-row${isOpen ? ' open' : ''}">
-      <div class="mail-sheet-rowh" data-mail-sheet-row="${esc(m._key)}" role="button" tabindex="0">
+    const snip = esc(String(m.snippet || m.preview || '').replace(/\s+/g, ' ').slice(0, 100));
+    const subj = esc(String(m.subject || '(no subject)').slice(0, 90));
+    const k = esc(m._key);
+    return `<div class="mail-sheet-row">
+      <button class="mail-sheet-rowh" data-mail-open-full="${k}" title="Open this email">
         <span class="mail-sheet-dot${fresh ? ' on' : ''}"></span>
-        <span class="mail-sheet-from">${esc(mailSenderName(m))}</span>
-        <span class="mail-sheet-subj"><span class="mail-sheet-sj">${esc(String(m.subject || '(no subject)').slice(0, 70))}</span>${snip ? `<span class="mail-sheet-sn">${snip}</span>` : ''}</span>
+        <span class="mail-sheet-main"><span class="mail-sheet-from">${esc(mailSenderName(m))}</span><span class="mail-sheet-sub"><span class="mail-sheet-sj">${subj}</span>${snip ? `<span class="mail-sheet-sn"> — ${snip}</span>` : ''}</span></span>
         <span class="mail-sheet-time${fresh ? ' on' : ''}">${esc(tLabel)}</span>
-      </div>
-      ${body}
+      </button>
+      <div class="mail-sheet-tri"><span class="mail-sheet-sort">Sort</span><span class="mst" data-mail-sheet-tri="${k}:urgent">Urgent</span><span class="mst" data-mail-sheet-tri="${k}:important">Important</span><span class="mst" data-mail-sheet-tri="${k}:later">Read later</span></div>
     </div>`;
   }).join('');
   return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-list">${rows}</div></div>`;
@@ -25480,9 +25466,8 @@ document.addEventListener('click', (e) => {
   // §43 New-mail sheet + arrival line.
   if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }
   if (t.closest('[data-mail-sheet-close]')) { toggleMailSheet(false); return; }
-  { const mr = t.closest('[data-mail-sheet-row]'); if (mr) { mailSheetReadRow(mr.dataset.mailSheetRow); return; } }
+  { const mr = t.closest('[data-mail-open-full]'); if (mr) { toggleMailSheet(false); openMail(mr.dataset.mailOpenFull).catch((x) => toast(x.message)); return; } }
   { const mt = t.closest('[data-mail-sheet-tri]'); if (mt) { const s = mt.dataset.mailSheetTri, i = s.lastIndexOf(':'); mailSheetTriage(s.slice(0, i), s.slice(i + 1)); return; } }
-  { const mu = t.closest('[data-mail-sheet-turn]'); if (mu) { const s = mu.dataset.mailSheetTurn, i = s.lastIndexOf(':'); toggleMailSheet(false); openMail(s.slice(0, i)).catch((x) => toast(x.message)); return; } }
   { const mre = t.closest('[data-mail-sheet-reply]'); if (mre) { toggleMailSheet(false); openMail(mre.dataset.mailSheetReply).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-mail-arrival-read]')) { toggleMailSheet(true); return; }
   if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
