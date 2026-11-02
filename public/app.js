@@ -311,6 +311,26 @@ document.addEventListener('click', (ev) => {
 }, true);
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.split && !notepadState().open) { closeBeside(); } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.mailSheet) { ev.preventDefault(); toggleMailSheet(false); } });
+// §45: the T key toggles Today / Tomorrow on Home, when you're not typing.
+document.addEventListener('keydown', (ev) => {
+  if ((ev.key !== 't' && ev.key !== 'T') || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  const a = document.activeElement; if (a && (a.isContentEditable || /^(input|textarea|select)$/i.test(a.tagName))) return;
+  if (!(state.view && state.view.type === 'home')) return;
+  ev.preventDefault();
+  const c = homeCollapsed(); if (c.today === true) { c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} }
+  homeDaySet((state.home.dayOffset || 0) >= 1 ? 0 : 1);
+});
+// §45: swipe left/right on the day list to move between Today and Tomorrow (mobile).
+let _homeSwipe = null;
+document.addEventListener('touchstart', (ev) => { const sec = ev.target.closest && ev.target.closest('.home-today'); if (!sec || ev.touches.length !== 1) { _homeSwipe = null; return; } const t = ev.touches[0]; _homeSwipe = { x: t.clientX, y: t.clientY }; }, { passive: true });
+document.addEventListener('touchend', (ev) => {
+  const s = _homeSwipe; _homeSwipe = null; if (!s || !(state.view && state.view.type === 'home')) return;
+  const t = (ev.changedTouches && ev.changedTouches[0]); if (!t) return;
+  const dx = t.clientX - s.x, dy = t.clientY - s.y;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;   // not a clear horizontal swipe
+  const c = homeCollapsed(); if (c.today === true) { c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} }
+  homeDaySet(dx < 0 ? 1 : 0);   // left → Tomorrow, right → Today
+}, { passive: true });
 // §22: Enter in the Tasks quick-add line creates the task in the open pile.
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const qa = ev.target.closest && ev.target.closest('[data-task-quickadd]'); if (qa) { ev.preventDefault(); txQuickAdd(qa); } });
 // §30 Goal page: Enter in the step / thought / connect inputs.
@@ -7589,6 +7609,63 @@ function homeTimelineHtml() {
   if (!rows) return `<div class="ktl"><div class="home-empty" style="padding:4px 0 18px">Nothing booked ${off === 0 ? 'today' : 'this day'}.</div>${now}</div>`;
   return `<div class="ktl">${rows}${now}</div>`;
 }
+// §45: the day, grouped Morning · Afternoon · Evening · Anytime, for today
+// (offset 0) or tomorrow (offset 1). Same rows as the timeline, with a gold
+// now-line on today.
+function homeDayRowHtml(it) {
+  const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
+  const ct = (it.kind === 'event' && it.contact) ? findContact(it.contact) : null;
+  const meta = [];
+  if (it.kind === 'event') { if (ct && ct.title) meta.push(esc(ct.title)); if (it.location) meta.push(esc(it.location)); }
+  else if (it.badge) meta.push(esc(it.badge));
+  return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar">
+    <span class="ktl-time">${time}</span>
+    <span class="ktl-rail"><span class="ktl-dot"></span></span>
+    <span class="ktl-body"><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}</span>
+  </div>`;
+}
+function homeDayGroupedHtml(off) {
+  if (state.home.dayLoading) return '<div class="home-empty">Loading…</div>';
+  const items = homeTodayItems();
+  const grp = { Morning: [], Afternoon: [], Evening: [], Anytime: [] };
+  for (const it of items) { const sm = it.start_min; if (sm == null) grp.Anytime.push(it); else if (sm < 720) grp.Morning.push(it); else if (sm < 1080) grp.Afternoon.push(it); else grp.Evening.push(it); }
+  let out = '';
+  for (const label of ['Morning', 'Afternoon', 'Evening', 'Anytime']) { const g = grp[label]; if (!g.length) continue; out += `<div class="home-daygrp"><div class="home-sub-eyebrow">${label}</div>${g.map(homeDayRowHtml).join('')}</div>`; }
+  let now = '';
+  if (off === 0) { const tail = { night: 'The rest of the night is yours.', morning: 'The morning is yours.', afternoon: 'The rest of the afternoon is yours.', evening: 'The rest of the evening is yours.' }[homePartOfDay()]; now = `<div class="ktl-now"><span class="ktl-now-time home-time">${homeTimeStr()}</span><span class="ktl-now-rule"></span><span class="ktl-now-t">Now. ${tail}</span></div>`; }
+  if (!out && !now) return `<div class="home-empty">${off === 0 ? 'Nothing in your calendar today.' : 'Nothing on this day.'}</div>`;
+  return `<div class="ktl ktl-grouped">${out}${now}</div>`;
+}
+function homeDaySummary(off) {
+  if (state.home.dayLoading) return '…';
+  const n = homeTodayItems().length;
+  const things = `${n} ${n === 1 ? 'thing' : 'things'} in the diary`;
+  if (off === 0) return n ? things : 'Events and plans';
+  const ds = homeViewDay(); const d = new Date(ds + 'T00:00');
+  const lbl = isNaN(d) ? 'Tomorrow' : d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
+  return `${lbl} · ${n ? things : 'a clear day'}`;
+}
+// After 18:00, a quiet line at the foot of today's list pointing at tomorrow's
+// first timed thing (when tomorrow's data has been fetched), else a plain link.
+function homeTomorrowTeaseHtml(off) {
+  if (off !== 0) return '';
+  const now = new Date(); if (now.getHours() < 18) return '';
+  const td = state.home.tomData;
+  let lead = '';
+  if (td) { const evs = [...((td.events || []).filter((e) => !e.allDay && e.start_min != null).map((e) => ({ t: e.title, m: e.start_min }))), ...((td.slots || []).filter((s) => s.start_min != null).map((s) => ({ t: s.title || (s.tasks && s.tasks[0] && s.tasks[0].title) || 'Something', m: s.start_min })))].sort((a, b) => a.m - b.m); if (evs[0]) lead = `${esc(evs[0].t)} at ${hhmm(evs[0].m)}`; }
+  const txt = lead ? `Tomorrow starts with ${lead}` : 'Tomorrow';
+  return `<div class="home-tomtease" data-home-when="tomorrow" role="button" tabindex="0"><span class="home-tomtease-t">${txt}</span><span class="home-tomtease-l">see it all →</span></div>`;
+}
+// Fetch tomorrow's day quietly (after 18:00) so the tease can name its first
+// thing, without disturbing whichever day is on screen.
+function homeMaybePrefetchTomorrow() {
+  if ((state.home.dayOffset || 0) !== 0) return;
+  if (new Date().getHours() < 18) return;
+  if (state.home.tomData || state.home.__tomLoading) return;
+  state.home.__tomLoading = true;
+  const ds = addDaysStr(state.home.today || dayKey(new Date()), 1);
+  api(`/api/day?date=${ds}`).then((d) => { state.home.tomData = d || { events: [], slots: [] }; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}).finally(() => { state.home.__tomLoading = false; });
+}
 // Your spaces, as tiles: each Space's numeral and name, with a soft sub-line when
 // there's something to say. Starred first, then alphabetical.
 function homeSpacesAll() { try { return localStorage.getItem('life.home.spacesAll') === '1'; } catch { return false; } }
@@ -8429,9 +8506,11 @@ function renderHome() {
   const _prevWinScroll = _homeShown ? window.scrollY : 0;
   const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
   const off = state.home.dayOffset || 0;
-  const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
-  const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${esc(homeDayLabel(off))}</span><span class="hf-hint">Events and plans</span><span class="hf-nav">${dayNav}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
-  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${homeBirthdaysHtml()}${homeTimelineHtml()}` : ''}</section>`;
+  const isTom = off >= 1;   // §45: Today (0) · Tomorrow (1), no further ahead here
+  homeMaybePrefetchTomorrow();
+  const dayTog = `<span class="home-daytog"><span class="home-daytog-o${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-daytog-s">·</span><span class="home-daytog-o${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span></span>`;
+  const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${isTom ? 'Tomorrow' : 'The day'}</span>${dayTog}<span class="hf-hint">${esc(homeDaySummary(off))}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
+  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${off === 0 ? homeBirthdaysHtml() : ''}${homeDayGroupedHtml(off)}${homeTomorrowTeaseHtml(off)}` : ''}</section>`;
   // §35 Reflections: anything drawn or cast today, newest first. Folded shows a
   // one-line summary of what's in it.
   const reflCount = homeReadingCount();
@@ -25124,6 +25203,7 @@ document.addEventListener('click', (e) => {
   // Koyeba Home fold headers (Today / Your spaces / Coming into view / the line /
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
+  { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.today === true) { c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
