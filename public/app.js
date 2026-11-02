@@ -4063,9 +4063,11 @@ function sxChoice(spec) {
   else if (kind === 'week') { const w = Number(val); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
   else if (kind === 'cur') { if (state.account) state.account.currency = val; saveAccount({ currency: val }); const c = (CURRENCIES_APP.find((x) => x[0] === val) || [])[3] || val; toast(`Money shown in ${c}`); }
   else if (kind === 'date') { setDateStyle(val); toast(val === 'us' ? 'Dates: October 23' : 'Dates: 23 October'); }
+  else if (kind === 'bday') { state.bdayDefault = val; api('/api/kv/bday_default', { method: 'PUT', body: JSON.stringify({ value: val }) }).catch((e) => toast(e.message)); toast(val === 'off' ? 'Birthday reminders off' : val === '0' ? 'Reminding on the day' : val === '1' ? 'Reminding a day before' : 'Reminding a week before'); }
   renderSettings(); window.scrollTo(0, sy);
 }
 function renderSettingsSix() {
+  loadBdayDefault();
   const a = state.account || {};
   const name = (a.name || '').trim() || (state.me && state.me.name) || 'You';
   const email = a.email || (state.me && state.me.email) || '';
@@ -4132,6 +4134,7 @@ function renderSettingsSix() {
     + grp('Notifications')
     + row('New mail', 'At most one nudge every 30 minutes, never one per email', toggle(a.mailPush !== false, 'mailpush'))
     + row('A daily quote', 'One line on Today', toggle(a.dailyQuote !== false, 'quote'))
+    + (modOn('contacts') ? row('Birthday reminders', 'A quiet nudge before a birthday - set it per person on their card', choices([{ label: 'On the day', on: bdayUsual() === 0, act: 'bday:0' }, { label: 'A day before', on: bdayUsual() === 1, act: 'bday:1' }, { label: 'A week before', on: bdayUsual() === 7, act: 'bday:7' }, { label: 'Off', on: bdayUsual() === 'off', act: 'bday:off' }])) : '')
     + (modOn('contacts') ? row("Who's online", 'Who is around, and when someone wants to connect', toggle(peopleOn(), 'people')) : '');
 
   const connBody =
@@ -8305,7 +8308,11 @@ function homeReadingCount() { return (currentIching() ? 1 : 0) + (currentSpirit(
 function homeBirthdaysHtml() {
   const bd = (state.home.alerts && state.home.alerts.birthdays) || [];
   if (!bd.length || (state.home.dayOffset || 0) !== 0) return '';
-  const rows = bd.slice(0, 8).map((b) => `<div class="ktl-row home-bday-row" data-open-contact="${b.id}" role="button" tabindex="0"><span class="ktl-time">${b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : 'in ' + b.inDays + 'd'}</span><span class="ktl-rail"><span class="ktl-dot"></span></span><span class="ktl-body"><span class="ktl-t">${esc(b.name)}’s birthday</span></span></div>`).join('');
+  const rows = bd.slice(0, 8).map((b) => {
+    const turns = (b.turns != null && b.turns > 0) ? ` · turns ${b.turns}` : '';
+    const hint = b.inDays === 0 ? 'wish them well today' : 'message them, or send a card';
+    return `<div class="ktl-row home-bday-row" data-open-contact="${b.id}" role="button" tabindex="0"><span class="ktl-time">${b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : 'in ' + b.inDays + 'd'}</span><span class="ktl-rail"><span class="ktl-dot"></span></span><span class="ktl-body"><span class="ktl-t">${esc(b.name)}’s birthday${turns}</span><span class="ktl-note">${hint}</span></span></div>`;
+  }).join('');
   return `<div class="home-bdays"><div class="home-sub-eyebrow">Birthdays</div>${rows}</div>`;
 }
 function homeKeepInTouchHtml() {
@@ -12989,6 +12996,18 @@ function eventsByDay() {
     }
     for (const d of (days.length ? days : [e.date])) (map[d] = map[d] || []).push(e);
   }
+  // §42: contacts' birthdays as all-day lines, synthesised per render (never in
+  // state.cal.events, so counts and the clock stay clean). Clicking opens the
+  // contact. Two years cover a window that straddles New Year.
+  const yr = new Date().getFullYear();
+  for (const c of (state.contacts || [])) {
+    const b = c.props && c.props.birthday; if (!b || !/^\d{4}-\d{2}-\d{2}$/.test(b)) continue;
+    const [, bm, bd] = b.split('-').map(Number); if (!bm || !bd) continue;
+    for (const y of [yr, yr + 1]) {
+      const iso = `${y}-${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`;
+      (map[iso] = map[iso] || []).push({ bday: true, allDay: true, date: iso, id: 'bday:' + c.id, contact: c.id, title: `${c.title || 'A contact'}’s birthday` });
+    }
+  }
   for (const d in map) map[d].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
   return map;
 }
@@ -13021,7 +13040,7 @@ async function openCalendar(dateStr) {
   renderNav(); renderCalendar();
   // Contacts power the event form's "With" picker; load them quietly so the
   // dropdown is ready when you open an event.
-  loadContacts().then(() => { if (state.view.type === 'calendar' && state.cal && (state.cal.adding || state.cal.editing) && document.getElementById('ce-contact')) renderCalendar(); }).catch(() => {});
+  loadContacts().then(() => { if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});   // also paints §42 birthday lines once contacts are in
   // The connect flow bounces back to /calendar?gcal=... - surface the outcome once.
   try {
     const g = new URLSearchParams(location.search).get('gcal');
@@ -13231,7 +13250,8 @@ function renderCalendar() {
   const cq = (state.calQuery || '').trim().toLowerCase();
   // A day's events: search-filtered, and (when quiet) repeats sorted below one-offs.
   const dayEvs = (iso) => { let evs = (byDay[iso] || []); if (cq) evs = evs.filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq)); return quiet ? [...evs.filter((e) => !e.recurringId), ...evs.filter((e) => !!e.recurringId)] : evs; };
-  const evRange = (e) => e.allDay ? (e.feed ? 'Holiday' : 'All day') : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}–${minToLabel(e.end_min)}` : minToLabel(e.start_min));
+  const evRange = (e) => e.bday ? 'Birthday' : e.allDay ? (e.feed ? 'Holiday' : 'All day') : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}–${minToLabel(e.end_min)}` : minToLabel(e.start_min));
+  const evAttr = (e) => e.bday ? `data-open-contact="${e.contact}"` : `data-cal-ev="${e.id}"`;
   const evT = (e) => (e.allDay || e.start_min == null) ? '' : minToLabel(e.start_min);
   // ── Month ──
   let main = '';
@@ -13240,23 +13260,23 @@ function renderCalendar() {
     const cell = (d) => {
       let evs = dayEvs(d.iso);
       if (d.today && evs.length > 3) { const up = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (up.length) evs = up; }
-      const shown = evs.slice(0, 3).map((e) => { const tt = evT(e); return `<div class="cx-ev" data-cal-ev="${e.id}">${tt && !narrow ? `<span class="cx-ev-t">${tt}</span>` : ''}<span class="cx-ev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</span></div>`; }).join('');
+      const shown = evs.slice(0, 3).map((e) => { const tt = evT(e); return `<div class="cx-ev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}>${tt && !narrow ? `<span class="cx-ev-t">${tt}</span>` : ''}<span class="cx-ev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</span></div>`; }).join('');
       const more = evs.length > 3 ? `<span class="cx-more">+${evs.length - 3} more</span>` : '';
       return `<div class="cx-cell${d.inMonth ? '' : ' out'}${d.iso === c.selected ? ' sel' : ''}" data-cal-day="${d.iso}"><div class="cx-cell-top"><span class="cx-num${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-cell-evs">${shown}${more}</div></div>`;
     };
     main = `<div class="cx-month"><div class="cx-dows">${WEEKDAYS.map((w) => `<div class="cx-dow">${w}</div>`).join('')}</div><div class="cx-cells">${monthWeeks(c.y, c.m).flat().map(cell).join('')}</div></div>`;
   } else if (c.mode === 'week') {
-    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev" data-cal-ev="${e.id}"><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
+    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
   } else {
     const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
-    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span></div>${evs.map((e) => `<div class="cx-lrow" data-cal-ev="${e.id}"><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span></div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
+    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span></div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
   }
   // ── Selected-day side panel ──
   const [sy, sm, sd] = (c.selected || todayI).split('-').map(Number);
   const sideEyebrow = (c.selected || todayI) === todayI ? 'Today' : WEEKDAYS_LONG[new Date(sy, sm - 1, sd).getDay()];
   const sideDate = `${sd} ${MONTHS_LONG[sm - 1]}`;
   const sevs = dayEvs(c.selected || todayI);
-  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow" data-cal-ev="${e.id}"><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
+  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
   const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
   $('#pane').innerHTML = `
     <div class="kpage-cal">
@@ -18242,6 +18262,7 @@ async function openContacts() {
   const gen = bumpNav();
   state.view = { type: 'contacts' };
   cvState();
+  loadBdayDefault();   // the "your usual" on each card's Remind me
   renderNav();
   renderContacts();   // paint at once from cache
   cvLoadKit();         // keep-in-touch tasks for the list (re-renders when in)
@@ -18433,7 +18454,10 @@ function cvState() { if (!state.cv) state.cv = { view: 'keep', q: '', folds: { d
 // The usual birthday reminder lead (days before), set in Settings › Notifications.
 // Default: a day before (§42). 'off' switches reminders off everywhere unless a
 // contact sets its own. Mirrors the worker's resolution in homeAlerts.
-function bdayUsual() { const v = (state.settings && state.settings.bdayDefault); return (v === 'off' || v === -1) ? 'off' : (v == null || v === '') ? 1 : Number(v); }
+function bdayUsual() { const v = state.bdayDefault; return (v === 'off' || v === -1 || v === '-1') ? 'off' : (v == null || v === '') ? 1 : Number(v); }
+// Load the usual birthday-reminder lead once (kv_bday_default), for the contact
+// card's "your usual" and the Settings control.
+function loadBdayDefault() { if (state.bdayDefault !== undefined) return; state.bdayDefault = ''; api('/api/kv/bday_default').then((r) => { state.bdayDefault = (r && r.value) || ''; if (state.view && (state.view.type === 'contacts' || state.view.type === 'settings')) renderNav(); }).catch(() => {}); }
 // Set this contact's own birthday reminder lead (0/1/3/7/'off'), overriding the
 // usual just for them.
 async function ccSetBdayLead(v) {

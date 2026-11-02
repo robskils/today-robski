@@ -2782,28 +2782,35 @@ async function runBirthdayAlertsForUser(env, user) {
   ).bind(uid, now.date).run();
   if (!claim.meta?.changes) return 0;
 
-  const md = now.date.slice(5);   // MM-DD today, on the user's clock
+  // The reminder day is `lead` days before the birthday: inDays === lead. With
+  // the default lead of 1, that is the morning before; "on the day" is lead 0.
+  const gdef = parseBdayDefault(await getSetting(env, 'kv_bday_default', uid));
+  const [ty, tm, td] = now.date.split('-').map(Number);
+  const t0 = Date.UTC(ty, tm - 1, td);
+  const daysUntilBday = (bmmdd) => { const [mm, dd] = bmmdd.split('-').map(Number); if (!mm || !dd) return -1; let diff = Math.round((Date.UTC(ty, mm - 1, dd) - t0) / 86400000); if (diff < 0) diff = Math.round((Date.UTC(ty + 1, mm - 1, dd) - t0) / 86400000); return diff; };
   const { results } = await env.DB.prepare(
     "SELECT id, title, props FROM blocks WHERE kind='contact' AND archived=0 AND user_id=?",
   ).bind(uid).all().catch(() => ({ results: [] }));
-  const today = [];
+  const due = [];
   for (const r of results || []) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
-    if (!p.birthday || p.bdayLead === 0) continue;                 // no date, or reminders off for this person
-    // slice(-5) takes MM-DD from a full date and a yearless --MM-DD alike.
-    if (String(p.birthday).slice(-5) === md) today.push({ id: r.id, name: r.title || 'A contact' });
+    if (!p.birthday) continue;
+    const lead = resolveBdayLead(p.bdayLead, gdef);
+    if (lead == null) continue;                                    // reminders off for this person
+    if (daysUntilBday(String(p.birthday).slice(-5)) === lead) due.push({ id: r.id, name: r.title || 'A contact', lead });
   }
-  if (!today.length) return 0;
+  if (!due.length) return 0;
 
-  const names = today.map((b) => b.name);
+  const names = due.map((b) => b.name);
+  const onTheDay = due.every((b) => b.lead === 0);
   await pushAll(env, {
     type: 'birthday',
     target: 'contacts',
-    title: today.length === 1 ? `It is ${names[0]}'s birthday today` : `${today.length} birthdays today`,
-    body: today.length === 1 ? 'Wish them a happy birthday.' : names.slice(0, 3).join(', ') + (today.length > 3 ? '…' : ''),
+    title: due.length === 1 ? (due[0].lead === 0 ? `It is ${names[0]}'s birthday today` : `${names[0]}'s birthday is ${due[0].lead === 1 ? 'tomorrow' : 'in ' + due[0].lead + ' days'}`) : `${due.length} birthdays ${onTheDay ? 'today' : 'coming up'}`,
+    body: due.length === 1 ? (due[0].lead === 0 ? 'Wish them a happy birthday.' : 'A little notice, so you have time to do something.') : names.slice(0, 3).join(', ') + (due.length > 3 ? '…' : ''),
     url: '/today',
   }, uid).catch(() => {});
-  return today.length;
+  return due.length;
 }
 
 // The house style for every small system email (surface note, review reminder),
@@ -3259,6 +3266,20 @@ async function handleLanes(request, env) {
   return json({ lanes: cfg.lanes, areaMap: cfg.areaMap, smsAlerts: !smsRow || smsRow.value !== '0', areas: cfg.areas.map((a) => { let p = {}; try { p = a.props ? JSON.parse(a.props) : {}; } catch {} return { id: a.id, title: a.title, hue: p.hue ?? null }; }) }, request);
 }
 
+// §42 birthday reminder lead (days before). The usual is set in Settings
+// (bday_default); a contact's own props.bdayLead overrides it. 0 = on the day,
+// 'off'/-1 = no reminder, unset = follow the usual. Mirrors bdayUsual() on the
+// client. The default usual is a day before.
+function parseBdayDefault(v) {
+  if (v === 'off' || v === -1 || v === '-1') return null;
+  if (v == null || v === '') return 1;
+  const n = Number(v); return isNaN(n) ? 1 : Math.min(Math.max(n, 0), 90);
+}
+function resolveBdayLead(contactLead, globalDefault) {
+  if (contactLead === 'off' || contactLead === -1 || contactLead === '-1') return null;
+  if (contactLead == null || contactLead === '') return globalDefault;
+  const n = Number(contactLead); return isNaN(n) ? globalDefault : Math.min(Math.max(n, 0), 90);
+}
 // Gentle Home alerts: whose birthday is today, and how many P1 tasks are open.
 // Everything scoped to env.uid - never leak across tenants.
 async function homeAlerts(request, env, json) {
@@ -3268,8 +3289,9 @@ async function homeAlerts(request, env, json) {
   ]);
   const birthdays = [];
   const contacts = new Map();
-  // A week's notice before a birthday (default), so there's time to do something
-  // nice - inDays 0 = today. (Robin.)
+  // inDays 0 = today. The lead (how many days ahead it shows) is the contact's
+  // own setting, else the usual from Settings (default: a day before). (§42.)
+  const gdef = parseBdayDefault(await getSetting(env, 'kv_bday_default', env.uid));
   const [ty, tm, td] = localParts(new Date(), tzOf(env)).date.split('-').map(Number);
   const t0 = Date.UTC(ty, tm - 1, td);
   const daysUntilBday = (bmmdd) => {
@@ -3282,9 +3304,16 @@ async function homeAlerts(request, env, json) {
     let p = {}; try { p = JSON.parse(r.props || '{}'); } catch {}
     contacts.set(r.id, { name: r.title || 'A contact', area: (p.areas && p.areas[0]) || null });
     // slice(-5) takes MM-DD from a full date and from a yearless --MM-DD alike.
-    // A week's notice by default; a contact can carry its own props.bdayLead (days)
-    // so the people who matter most get a longer run-up. Capped at 90. (Robin.)
-    if (p.birthday && p.bdayLead !== 0) { const inDays = daysUntilBday(String(p.birthday).slice(-5)); const lead = Math.min(Math.max(Number(p.bdayLead) || 7, 1), 90); if (inDays >= 0 && inDays <= lead) birthdays.push({ id: r.id, name: r.title || 'A contact', inDays }); }
+    const lead = resolveBdayLead(p.bdayLead, gdef);
+    if (p.birthday && lead != null) {
+      const inDays = daysUntilBday(String(p.birthday).slice(-5));
+      if (inDays >= 0 && inDays <= lead) {
+        // Age they turn on the next occurrence, when a real birth year is on file.
+        let turns = null; const ym = /^(\d{4})-\d{2}-\d{2}$/.exec(String(p.birthday));
+        if (ym && Number(ym[1]) > 1901) { const occ = new Date(t0 + inDays * 86400000); turns = occ.getUTCFullYear() - Number(ym[1]); }
+        birthdays.push({ id: r.id, name: r.title || 'A contact', inDays, turns });
+      }
+    }
   }
   birthdays.sort((a, b) => a.inDays - b.inDays);
   const today = localParts(new Date(), tzOf(env)).date;   // YYYY-MM-DD in Lisbon
