@@ -8831,12 +8831,19 @@ function homeReadingsSectionHtml() {
   const items = homeReadingItems();
   const rows = items.length ? items.map((r) => {
     const exp = state.home && state.home.readOpen === r.key;
-    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0"><span class="home-rd-glyph">${esc(homeReadGlyph(r))}</span><div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" ${r.open} role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
+    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0"><span class="home-rd-glyph">${esc(homeReadGlyph(r))}</span><div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
-  const q = dayQuote();
-  const quote = (dailyQuoteOn() && q && q.text) ? `<div class="home-rd-quote"><p class="home-rd-qtext">“${esc(q.text)}”</p><div class="home-rd-qfoot">${q.author ? `<span class="home-rd-qauth">${esc(q.author)}</span>` : ''}<button class="home-rd-qkeep${quoteKept(q.text) ? ' on' : ''}" data-quote-keep>${quoteKept(q.text) ? 'Kept' : 'Keep it'}</button></div></div>` : '';
+  // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
+  // at the foot of the readings.
   const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Today’s readings</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
-  return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}${quote}</div>` : ''}</div>`;
+  return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}</div>` : ''}</div>`;
+}
+// §64: the quote of the day, one line under the greeting's weather line.
+function homeQuoteLineHtml() {
+  if (!dailyQuoteOn()) return '';
+  const q = dayQuote(); if (!q || !q.text) return '';
+  const kept = quoteKept(q.text);
+  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-keep${kept ? ' on' : ''}" data-quote-keep>${kept ? 'Kept' : 'Keep it'}</button></div>`;
 }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
@@ -8881,6 +8888,7 @@ function renderHome() {
             <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
             <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>
             ${homeTimeWeatherHtml()}
+            ${homeQuoteLineHtml()}
           </div>
           ${homeNewBtnHtml()}
         </div>
@@ -25897,6 +25905,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-av3-more]')) { e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.menu = !st.menu; renderAreaV3(); return; }
   if (t.closest('[data-av3-rename]')) { areaV3Rename(); return; }
   if (t.closest('[data-av3-archive]')) { areaV3Archive(); return; }
+  // §64: the readings' "Open" must open the tool on today's reading, not just
+  // toggle the row - so it's handled before the row's expand (data-home-read).
+  { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); const c = homeCollapsed(); c.mail = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} mailMarkLooked(); state.mailArrivalHidden = true; glanceMailToggle(har.dataset.homeArrRead); setTimeout(() => { const el = document.querySelector('.gln-mail.on'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
