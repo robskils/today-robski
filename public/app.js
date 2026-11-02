@@ -12043,7 +12043,160 @@ function spAddGroup(name) {
 }
 // Plain-text excerpt from a note body (no dates on cards, per §29).
 function spSnip(b, n) { return (b && b.body || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/\s+/g, ' ').trim().slice(0, n || 90); }
-function renderArea() {
+// §53/§56 Space v3: a Space is everything about that part of life. Tasks and
+// notes as cards, then the Mail & events stream, with vision and goals folded.
+// Reference: Koyeba Space v3.dc.html. (Events keyed by event_areas aren't loaded
+// on the Space page, so the stream shows filed emails + any event blocks present;
+// mail lives in IMAP. Type system 1a throughout.)
+const AV3_PRIO = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
+function av3Text(html) { return String(html || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim(); }
+function av3Due(iso) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return { t: '', gold: false };
+  const d = Math.round((Date.parse(iso.slice(0, 10) + 'T00:00') - Date.parse(todayISO() + 'T00:00')) / 86400000);
+  if (d < 0) return { t: `${-d} day${d === -1 ? '' : 's'} past`, gold: true };
+  if (d === 0) return { t: 'today', gold: true };
+  if (d === 1) return { t: 'tomorrow', gold: false };
+  if (d <= 7) return { t: `in ${d} days`, gold: false };
+  return { t: new Date(iso.slice(0, 10) + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }), gold: false };
+}
+async function areaV3Rename() {
+  const a = state.area_open && state.area_open.area; if (!a) return;
+  if (state.areaV3) state.areaV3.menu = false;
+  const name = (window.prompt('Rename this Space', a.title || '') || '').trim();
+  if (!name || name === a.title) { renderAreaV3(); return; }
+  a.title = name;
+  const inList = (state.areas || []).find((x) => x.id === a.id); if (inList) inList.title = name;
+  renderAreaV3(); renderNav();
+  try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ title: name }) }); } catch (e) { toast(e.message); }
+}
+async function areaV3Archive() {
+  const a = state.area_open && state.area_open.area; if (!a) return;
+  if (state.areaV3) state.areaV3.menu = false;
+  if (!window.confirm(`Archive “${a.title || 'this Space'}”? You can restore it later.`)) { renderAreaV3(); return; }
+  try { await api(`/api/blocks/${a.id}`, { method: 'PATCH', body: JSON.stringify({ archived: 1 }) }); state.areas = (state.areas || []).filter((x) => x.id !== a.id); toast('Space archived'); openAreasList(); }
+  catch (e) { toast(e.message); }
+}
+// Tick a task from its Space card: flip the Space's own block copy for instant
+// feedback (the Space's blocks are fetched separately from state.tasks), then
+// persist. Kit nudges are excluded from the Space list, so a plain done is right.
+async function av3TaskTick(id) {
+  const b = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (!b) return;
+  const now = !(b.props && b.props.done);
+  b.props = { ...(b.props || {}), done: now };
+  const g = (state.tasks || []).find((x) => x.id === id); if (g) g.props = { ...(g.props || {}), done: now };
+  renderAreaV3();
+  try { await api(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done: now }) }); }
+  catch (e) { b.props.done = !now; if (g) g.props.done = !now; renderAreaV3(); toast((e && e.message) || 'Could not update that.'); }
+}
+function renderArea() { return renderAreaV3(); }
+function renderAreaV3() {
+  const { area, blocks } = state.area_open;
+  const h = hueOf(area);
+  try { document.body.style.setProperty('--area-h', h); } catch {}
+  const canEdit = !(area.sharedBy && !area.canEdit);
+  const st = state.areaV3 = state.areaV3 || {};
+  if (st.aid !== area.id) { st.aid = area.id; st.note = null; st.peek = null; st.tab = 'all'; }   // reset per Space
+  const fold = st.fold = st.fold || {};
+  const isOpen = (k, def) => (k in fold ? fold[k] : def);
+  // Data from the Space's own blocks.
+  const tasksAll = blocks.filter((b) => b.kind === 'task' && !(b.props && b.props.kit));
+  const openTs = tasksAll.filter((t) => !(t.props && t.props.done) && !(t.props && t.props.hideUntil && isSnoozed(t)))
+    .sort((a, b) => (PRIO_ORDER[a.props.priority || ''] || 5) - (PRIO_ORDER[b.props.priority || ''] || 5) || String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const notesAll = blocks.filter((b) => b.kind === 'note');
+  const emails = notesAll.filter((n) => n.props && n.props.fromEmail);
+  const notes = notesAll.filter((n) => !(n.props && n.props.fromEmail))
+    .sort((a, b) => (((b.props && b.props.fav) ? 1 : 0) - ((a.props && a.props.fav) ? 1 : 0)) || String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+  const events = blocks.filter((b) => b.kind === 'event');
+  const goals = blocks.filter((b) => b.kind === 'goal' && (gp(b).status || 'active') !== 'done');
+  const contacts = blocks.filter((b) => b.kind === 'contact');
+
+  // ── Thin strip: Coming up (next things with a date) · People ──
+  const upcoming = [...goals.map((g) => ({ t: g.title || 'A goal', iso: goalDueISO(g) })), ...openTs.filter((t) => t.props && t.props.due).map((t) => ({ t: t.title || 'A task', iso: t.props.due }))]
+    .filter((x) => x.iso).sort((a, b) => String(a.iso).localeCompare(String(b.iso))).slice(0, 2);
+  const stripBlocks = [];
+  if (upcoming.length) stripBlocks.push(`<div class="av3-strip-b"><span class="av3-strip-l">Coming up</span>${upcoming.map((u) => { const d = av3Due(u.iso); return `<span class="av3-strip-it"><span class="av3-strip-t">${esc(u.t)}</span> <span class="av3-strip-s${d.gold ? ' gold' : ''}">${esc(d.t)}</span></span>`; }).join('')}</div>`);
+  if (contacts.length) stripBlocks.push(`<div class="av3-strip-b"><span class="av3-strip-l">People</span>${contacts.slice(0, 3).map((c) => `<span class="av3-strip-it"><span class="av3-strip-t" ${c.id ? `data-open-contact="${c.id}"` : ''} role="button">${esc(c.title || 'Someone')}</span></span>`).join('')}</div>`);
+  const strip = stripBlocks.length ? `<div class="av3-strip">${stripBlocks.join('')}</div>` : '';
+
+  // ── Section header helper (Cormorant 500 30 title · hint · add · sign) ──
+  const secH = (key, title, hint, add, open) => `<div class="av3-sec-h" data-av3-fold="${key}" role="button" tabindex="0"><span class="av3-sec-t">${esc(title)}</span><span class="av3-sec-hint">${esc(hint)}</span><span class="av3-sec-rt">${add && canEdit ? `<span class="av3-sec-add" ${add.attr}>${esc(add.label)}</span>` : ''}<span class="av3-sec-sign" aria-hidden="true">${open ? '−' : '+'}</span></span></div>`;
+
+  // ── Tasks (cards) ──
+  const tOpen = isOpen('tasks', true);
+  const taskCard = (t) => {
+    const p = t.props || {}; const d = av3Due(p.due);
+    const prio = AV3_PRIO[p.priority || ''] || 'Whenever'; const first = prio === 'First';
+    const from = (() => { const a2 = blockAreas(t).filter((x) => x !== area.id).map((x) => areaById(x)).filter(Boolean)[0]; return a2 ? a2.title : ''; })();
+    return `<div class="av3-tcard${p.done ? ' done' : ''}" data-open-task="${t.id}"><div class="av3-tc-top"><span class="av3-tc-box${p.done ? ' on' : ''}" data-av3-tick="${t.id}" role="button" tabindex="0"></span><span class="av3-tc-prio${first ? ' first' : ''}">${esc(prio)}</span>${d.t ? `<span class="av3-tc-due${d.gold ? ' gold' : ''}">${esc(d.t)}</span>` : ''}</div><div class="av3-tc-title">${esc(t.title || 'Untitled')}</div>${from ? `<div class="av3-tc-from">${esc(from)}</div>` : ''}</div>`;
+  };
+  // §56: ticking strikes a task through, so the card stays - done tasks follow the
+  // open ones (struck), rather than vanishing on the tick.
+  const doneTs = tasksAll.filter((t) => t.props && t.props.done).sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const taskList = [...openTs, ...doneTs];
+  const tasksBody = taskList.length
+    ? `<div class="av3-cards">${taskList.slice(0, 8).map(taskCard).join('')}</div>${taskList.length > 8 ? `<button class="av3-all" data-view-tasks>All ${taskList.length} tasks →</button>` : ''}`
+    : `<div class="av3-empty">No tasks here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-task>+ Task</span>' : ''}</div>`;
+  const tasksSec = `<section class="av3-sec">${secH('tasks', 'Tasks', openTs.length ? `${openTs.length} open` : 'Nothing to do', { label: '+ Task', attr: 'data-area-add-task' }, tOpen)}${tOpen ? `<div class="av3-sec-b">${tasksBody}</div>` : ''}</section>`;
+
+  // ── Notes (cards + reader under the grid) ──
+  const nOpen = isOpen('notes', true);
+  const noteCard = (n) => {
+    const p = n.props || {}; const tag = (p.tag || '').trim() || 'Note';
+    const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
+    const ex = av3Text(n.body).slice(0, 180);
+    return `<div class="av3-ncard${st.note === n.id ? ' sel' : ''}" data-av3-note="${n.id}"><div class="av3-nc-top"><span class="av3-nc-tag">${esc(tag)}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(n.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(ex)}</div></div>`;
+  };
+  let noteReader = '';
+  if (st.note) { const n = notes.find((x) => x.id === st.note); if (n) { const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now()); noteReader = `<div class="av3-nreader"><div class="av3-nr-head"><span class="av3-nr-title">${esc(n.title || 'Untitled')}</span><span class="av3-nr-when">${esc(when)}</span></div><div class="av3-nr-body prose">${sanitizeProse(n.body || '') || '<p class="av3-nr-empty">Nothing in this note yet.</p>'}</div><div class="av3-nr-acts"><span class="av3-nr-open" data-open-note="${n.id}">Open note →</span><span class="av3-nr-pin" data-fav="${n.id}">${(n.props && n.props.fav) ? 'Pinned' : 'Pin'}</span><span class="av3-nr-close" data-av3-noteclose>Close</span></div></div>`; } }
+  const notesBody = notes.length
+    ? `<div class="av3-cards">${notes.slice(0, 8).map(noteCard).join('')}</div>${noteReader}${notes.length > 8 ? `<button class="av3-all" data-open-notes>All ${notes.length} notes →</button>` : ''}`
+    : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`;
+  const notesSec = `<section class="av3-sec">${secH('notes', 'Notes', notes.length ? `${notes.length}` : 'Nothing written', { label: '+ Note', attr: 'data-area-add-note' }, nOpen)}${nOpen ? `<div class="av3-sec-b">${notesBody}</div>` : ''}</section>`;
+
+  // ── Mail & events stream ──
+  const lOpen = isOpen('latest', true);
+  const streamAll = [
+    ...emails.map((n) => ({ id: n.id, kind: 'Mail', from: (n.props && n.props.fromName) || '', title: n.title || '(no subject)', sub: av3Text(n.body).slice(0, 90), when: Date.parse(n.updated_at || n.created_at || '') || 0, open: 'note', block: n })),
+    ...events.map((e) => ({ id: e.id, kind: 'Event', from: '', title: e.title || 'Event', sub: (e.props && e.props.location) || '', when: Date.parse(e.updated_at || e.created_at || '') || 0, open: 'event', block: e })),
+  ].sort((a, b) => b.when - a.when);
+  const stream = st.tab === 'mail' ? streamAll.filter((x) => x.kind === 'Mail') : st.tab === 'events' ? streamAll.filter((x) => x.kind === 'Event') : streamAll;
+  const tab = (k, label, n) => `<span class="av3-tab${st.tab === k ? ' on' : ''}" data-av3-tab="${k}" role="button" tabindex="0">${label} <span class="av3-tab-n">${n}</span></span>`;
+  const streamRow = (it) => {
+    const open = st.peek === it.id;
+    const acts = it.open === 'note'
+      ? `<span class="av3-st-act gold" data-open-note="${it.id}">Open note →</span>`
+      : `<span class="av3-st-act gold" data-open-calendar>Open in Calendar →</span>`;
+    const body = open ? `<div class="av3-st-panel">${it.sub ? `<p class="av3-st-body">${esc(av3Text(it.block.body) ? av3Text(it.block.body).slice(0, 400) : it.sub)}</p>` : ''}<div class="av3-st-acts">${acts}<span class="av3-st-not" data-area-remove="${it.open === 'note' ? 'note' : 'event'}:${it.id}:${area.id}">Not this Space</span></div></div>` : '';
+    return `<div class="av3-st"><div class="av3-st-row" data-av3-peek="${it.id}" role="button" tabindex="0"><span class="av3-st-kind${it.kind === 'Mail' ? ' mail' : ''}">${esc(it.kind)}</span><div class="av3-st-b">${it.from ? `<div class="av3-st-from">${esc(it.from)}</div>` : ''}<div class="av3-st-title">${esc(it.title)}</div>${it.sub ? `<div class="av3-st-sub">${esc(it.sub)}</div>` : ''}</div><span class="av3-st-when">${it.when ? timeAgo(it.when) : ''}</span></div>${body}</div>`;
+  };
+  const streamBody = `<div class="av3-tabs">${tab('all', 'All', streamAll.length)}${tab('mail', 'Mail', streamAll.filter((x) => x.kind === 'Mail').length)}${tab('events', 'Events', streamAll.filter((x) => x.kind === 'Event').length)}</div>${stream.length ? stream.map(streamRow).join('') : '<div class="av3-empty">Nothing here yet.</div>'}`;
+  const latestSec = `<section class="av3-sec">${secH('latest', 'Mail & events', streamAll.length ? `${streamAll.length}` : 'Nothing yet', null, lOpen)}${lOpen ? `<div class="av3-sec-b">${streamBody}</div>` : ''}</section>`;
+
+  // ── Vision & goals (folded by default) ──
+  const vOpen = isOpen('vision', false);
+  const vision = (area.props && (area.props.vision || '').trim()) || '';
+  const goalRow = (g) => { const pct = Math.max(0, Math.min(100, Number(gp(g).pct || gp(g).progress || 0))); return `<div class="av3-goal" data-open-goal="${g.id}"><div class="av3-goal-b"><div class="av3-goal-t">${esc(g.title || 'A goal')}</div>${goalDueISO(g) ? `<div class="av3-goal-s">${esc(av3Due(goalDueISO(g)).t)}</div>` : ''}</div><div class="av3-goal-line"><span style="width:${pct}%"></span></div></div>`; };
+  const visionBody = `${vision ? `<p class="av3-vision">${esc(vision)}</p>` : '<p class="av3-vision av3-vision-empty">No vision set yet.</p>'}${goals.length ? `<div class="av3-goals">${goals.map(goalRow).join('')}</div>` : ''}${canEdit ? `<div class="av3-vacts"><span class="av3-vact gold" data-area-add-goal>+ Add a goal</span><span class="av3-vact" data-open-vision="${area.id}">Edit the vision</span></div>` : ''}`;
+  const visionSec = `<section class="av3-sec">${secH('vision', 'Vision & goals', `optional${goals.length ? ` · ${goals.length} goal${goals.length === 1 ? '' : 's'}` : ''}`, null, vOpen)}${vOpen ? `<div class="av3-sec-b">${visionBody}</div>` : ''}</section>`;
+
+  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
+
+  $('#pane').innerHTML = `
+    <div class="kwrap kpage kpage-area av3">
+      <div class="av3-crumb" data-open-areas role="button" tabindex="0"><span class="av3-crumb-a">←</span> Spaces <span class="av3-crumb-dot">·</span> <span class="av3-crumb-nm">${esc(area.title || 'Space')}</span></div>
+      <div class="av3-head">
+        <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(areaNumeral(area.id))}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
+        <div class="av3-head-act">${addMenu}<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, cover, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-area-cover>Change cover</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span></div>
+      </div>
+      ${strip}
+      ${tasksSec}
+      ${notesSec}
+      ${latestSec}
+      ${visionSec}
+    </div>`;
+  renderNav();
+}
+function renderAreaOld() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
   const allOpen = tasks.filter((t) => !t.props.done);
@@ -25725,6 +25878,15 @@ document.addEventListener('click', (e) => {
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
+  { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
+  { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
+  if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderAreaV3(); return; }
+  { const atb = t.closest('[data-av3-tab]'); if (atb) { const st = state.areaV3 = state.areaV3 || {}; st.tab = atb.dataset.av3Tab; st.peek = null; renderAreaV3(); return; } }
+  { const ap = t.closest('[data-av3-peek]'); if (ap) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.peek = st.peek === ap.dataset.av3Peek ? null : ap.dataset.av3Peek; renderAreaV3(); return; } }
+  { const avt = t.closest('[data-av3-tick]'); if (avt) { e.preventDefault(); e.stopPropagation(); av3TaskTick(avt.dataset.av3Tick); return; } }
+  if (t.closest('[data-av3-more]')) { e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.menu = !st.menu; renderAreaV3(); return; }
+  if (t.closest('[data-av3-rename]')) { areaV3Rename(); return; }
+  if (t.closest('[data-av3-archive]')) { areaV3Archive(); return; }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); const c = homeCollapsed(); c.mail = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} mailMarkLooked(); state.mailArrivalHidden = true; glanceMailToggle(har.dataset.homeArrRead); setTimeout(() => { const el = document.querySelector('.gln-mail.on'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
