@@ -22,11 +22,11 @@
   --k-panel:oklch(0.99 0.006 85);    /* ≈#fdfbf7  cards, drawer, inputs-in-panels */
   --k-soft:oklch(0.94 0.016 82);     /* ≈#efe9dc  selected row, inner dividers, open sheet */
   --k-mine:oklch(0.92 0.03 82);      /* my own chat messages' soft fill (never solid gold) */
-  --k-ink:oklch(0.22 0.018 60);      /* ≈#2a2620  text */
-  --k-mute:oklch(0.46 0.022 70);     /* ≈#6b6357  secondary text */
+  --k-ink:oklch(0.17 0.015 60);      /* text - V31 §59: darker, was 0.22 */
+  --k-mute:oklch(0.38 0.02 70);      /* secondary text - V31 §59: darker (passes 4.5:1 on ivory), was 0.46 */
   --k-line:oklch(0.88 0.014 80);     /* ≈#e0d9cc  1px keylines */
   --k-gold:oklch(0.72 0.13 75);      /* ≈#c99a3e  accent fills, rules, markers */
-  --k-goldt:oklch(0.55 0.11 70);     /* ≈#8f6c2a  gold TEXT (passes contrast on ivory) */
+  --k-goldt:oklch(0.5 0.11 68);      /* gold TEXT - V31 §59: darker, was 0.55 */
   --k-deep:oklch(0.28 0.04 155);     /* ≈#2c4a3a  forest: capture bar, notification, avatars */
   --k-ondeep:oklch(0.975 0.012 85);  /* ≈#f8f4ec  text on forest */
   --k-ongold:oklch(0.22 0.018 60);   /* text on a solid gold button (same in both themes) */
