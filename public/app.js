@@ -297,10 +297,18 @@ document.addEventListener('keydown', (ev) => {
 // old ⌘;) open the drawer in Notepad; Esc folds it away. The floating popover is
 // gone - anything with data-notepad-open opens the drawer in Notepad instead.
 document.addEventListener('keydown', (ev) => {
-  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === 'j' || ev.key === 'J' || ev.key === ';')) { ev.preventDefault(); const c = capState(); capSetMode('pad'); c.open = true; renderCapBar(true); return; }
+  // §47: ⌘J (and ⌘;) open the Notepad panel.
+  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === 'j' || ev.key === 'J' || ev.key === ';')) { ev.preventDefault(); toggleNotepad(); return; }
   if (ev.key === 'Escape' && capState().open && !document.getElementById('flyer')) { ev.preventDefault(); capCancel(); return; }
 });
-document.addEventListener('click', (ev) => { const t = ev.target; if (!t.closest) return; if (t.closest('[data-notepad-open]')) { ev.preventDefault(); const c = capState(); capSetMode('pad'); c.open = true; renderCapBar(true); return; } });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.notepad && state.notepad.open) { ev.preventDefault(); toggleNotepad(false); } });
+document.addEventListener('click', (ev) => {
+  const t = ev.target; if (!t.closest) return;
+  if (t.closest('[data-notepad-open]')) { ev.preventDefault(); toggleNotepad(); return; }
+  if (t.closest('[data-notepad-close]')) { ev.preventDefault(); toggleNotepad(false); return; }
+  { const mk = t.closest('[data-notepad-make]'); if (mk) { ev.preventDefault(); notepadMake(mk.getAttribute('data-notepad-make')); return; } }
+  if (t.closest('[data-notepad-clear]')) { ev.preventDefault(); notepadClear(); return; }
+});
 // §18 Side by side: shift-click opens an item beside (caught in the capture
 // phase, before the normal open); the divider resizes; Esc or Fold away closes.
 document.addEventListener('click', (ev) => {
@@ -5558,6 +5566,7 @@ function navGroupsHtml(v) {
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
         ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
+        <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
@@ -5677,7 +5686,7 @@ function renderNav() {
   // §43: the Mail arrival line and the "New since you looked" sheet live on
   // <body>, fixed under the top bar, so they show on every page. Warm the inbox
   // once so the header's to-sort count is right before the sheet is opened.
-  try { renderMailArrival(); renderMailSheet(); } catch {}
+  try { renderMailArrival(); renderMailSheet(); renderNotepadPanel(); } catch {}
   if (modOn('mail') && !state.__mailWarmKicked) { state.__mailWarmKicked = true; setTimeout(() => { try { warmMailForSheet(); } catch {} }, 1500); }
   // §24: lock page scroll behind the full-screen Menu/Find layer (mobile), and
   // open the keyboard with Find focused the moment it rises.
@@ -7897,10 +7906,10 @@ function renderCapBar(force) {
     return;
   }
   root.className = 'cap-open';
-  const modeTabs = [['set', 'Set down', '⌘.'], ['pad', 'Notepad', '⌘J']].map(([id, label, key]) => `<span class="cap-mode${c.mode === id ? ' on' : ''}" data-cap-mode="${id}" role="button" tabindex="0">${label}<span class="cap-mode-k">${esc(PK(key))}</span></span>`).join('');
-  const bodyHtml = c.mode === 'pad'
-    ? capPadBodyHtml()
-    : `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>${c.rec ? '' : '<div class="cap-wn-row"><span class="cap-wn" data-wn-open role="button" tabindex="0">What should I do next?</span></div>'}`;
+  // §47: the Notepad is the header panel now, not a mode here.
+  if (c.mode === 'pad') c.mode = 'set';
+  const modeTabs = '<span class="cap-eyebrow">Set it down</span>';
+  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>${c.rec ? '' : '<div class="cap-wn-row"><span class="cap-wn" data-wn-open role="button" tabindex="0">What should I do next?</span></div>'}`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
     <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
     ${bodyHtml}
@@ -8043,10 +8052,41 @@ async function notepadUndo() {
   if (l) { try { if (l.itemId && l.itemKind === 'event') await api('/api/events/' + l.itemId, { method: 'DELETE' }).catch(() => {}); else if (l.itemId) await api('/api/blocks/' + l.itemId, { method: 'DELETE' }).catch(() => {}); } catch {} l.done = null; l.itemId = null; l.itemKind = null; notepadSave(); }
   np.toast = null; renderNotepad(); capRefreshHome();
 }
-// §31: the floating Notepad popover is gone - Notepad is a mode inside Set
-// something down now. This just clears any leftover root; the data lives on in
-// notepadState/notepadLoad/notepadSave, used by the drawer's Notepad mode.
-function renderNotepad() { const r = document.getElementById('notepad-root'); if (r) r.remove(); }
+// §47: Notepad is a right-hand panel opened from the header (or ⌘J), one pad
+// synced across devices. It reuses the stored lines (kv `notepad`) as one blob.
+function notepadText() { const np = notepadState(); return (np.lines || []).map((l) => l.text).join('\n'); }
+function notepadSetText(v) { const np = notepadState(); np.lines = String(v || '').split('\n').map((t, i) => ({ id: 'p' + i, text: t, done: null })); notepadSave(); }
+function toggleNotepad(open) {
+  const np = notepadState();
+  np.open = open == null ? !np.open : !!open;
+  if (np.open) notepadLoad();
+  renderNav(); renderNotepadPanel();
+  if (np.open) setTimeout(() => { const ta = document.getElementById('notepad-ta'); if (ta) { ta.focus(); const n = ta.value.length; try { ta.setSelectionRange(n, n); } catch {} } }, 40);
+}
+function renderNotepadPanel() {
+  const np = notepadState();
+  let el = document.getElementById('notepad-panel');
+  if (!np.open) { if (el) el.remove(); document.body.classList.remove('notepad-open'); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'notepad-panel'; document.body.appendChild(el); }
+  const status = !np.loaded ? '…' : (notepadText().trim() ? 'Kept as you write' : 'Empty');
+  el.innerHTML = `<div class="np2-head"><span class="np2-title">Notepad</span><span class="np2-status">${esc(status)}</span><button class="np2-close" data-notepad-close>Close ${esc(PK('⌘J'))}</button></div>
+    <textarea id="notepad-ta" class="np2-ta" placeholder="Jot anything. It keeps until you clear it.">${esc(notepadText())}</textarea>
+    <div class="np2-foot"><span class="np2-act np2-note" data-notepad-make="note" role="button" tabindex="0">Make it a note</span><span class="np2-act" data-notepad-make="task" role="button" tabindex="0">Make it a task</span><span class="np2-clear" data-notepad-clear role="button" tabindex="0">Clear</span></div>`;
+  document.body.classList.add('notepad-open');
+  const ta = el.querySelector('#notepad-ta');
+  if (ta && !ta.__b) { ta.__b = true; ta.addEventListener('input', () => { notepadSetText(ta.value); const s = el.querySelector('.np2-status'); if (s) s.textContent = ta.value.trim() ? 'Kept as you write' : 'Empty'; }); }
+}
+async function notepadMake(kind) {
+  const text = notepadText().trim(); if (!text) { toast('Nothing to keep yet.'); return; }
+  const firstLine = text.split('\n').find((l) => l.trim()) || 'Note';
+  try {
+    if (kind === 'task') { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: firstLine.slice(0, 140), props: {} }) }); toast('Made a task'); }
+    else { await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: firstLine.slice(0, 80), body: `<p>${esc(text).replace(/\n/g, '<br>')}</p>` }) }); toast('Made a note'); }
+  } catch (e) { toast((e && e.message) || 'Could not do that.'); }
+}
+function notepadClear() { notepadSetText(''); renderNotepadPanel(); const ta = document.getElementById('notepad-ta'); if (ta) ta.focus(); renderNav(); }
+// Kept for any legacy caller: render the panel (the floating popover is retired).
+function renderNotepad() { renderNotepadPanel(); const r = document.getElementById('notepad-root'); if (r) r.remove(); }
 // ── §18 Side by side: a second, resizable pane (v1) ───────────────────────
 // Opt-in and off by default - single-pane use is untouched. Shift-click any
 // item (or an open email's "Make … beside") opens it in a second pane beside the
@@ -8391,11 +8431,27 @@ function homeSpaceItems(a) {
 function homeSpacesAsideHtml() {
   const areas = (state.areas || []);
   if (!areas.length) return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span></div><button class="home-sa-new" data-new-area>+ New Space</button>`;
-  const sorted = areas.slice().sort((a, b) => (((b.props && b.props.fav) ? 1 : 0) - ((a.props && a.props.fav) ? 1 : 0)) || (a.title || '').localeCompare(b.title || ''));
+  // §46: only the lively ones. Needs-you (and pinned) first, then by most recent
+  // activity; a Space quiet for 30+ days is never in the first 8 unless it needs
+  // you. The foot line goes to the full Spaces page for the rest.
+  if (state.areaSummary === undefined) { state.areaSummary = null; api('/api/areas/summary').then((r) => { state.areaSummary = (r && r.summary) || {}; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.areaSummary = {}; }); }
+  const sum = state.areaSummary || {};
+  const now = Date.now();
+  const scored = areas.map((a) => {
+    const { line, needs } = homeSpaceLine(a);
+    const s = sum[a.id] || {};
+    const act = s.last ? new Date(s.last).getTime() : (a.updated_at ? new Date(a.updated_at).getTime() : 0);
+    return { a, line, needs, act, inactive: act ? (now - act) / 86400000 : 9999, pinned: !!(a.props && a.props.pinToday) };
+  });
+  const need = scored.filter((x) => x.needs).length;
+  const primary = scored.filter((x) => x.needs || x.pinned).sort((x, y) => ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
+  const rest = scored.filter((x) => !(x.needs || x.pinned) && x.inactive < 30).sort((x, y) => y.act - x.act);
+  const ordered = [...primary, ...rest];
+  const CAP = (window.matchMedia && window.matchMedia('(max-width:999px)').matches) ? 5 : 8;
+  const shown = ordered.slice(0, CAP);
+  const quieter = areas.length - shown.length;
   const open = (state.home && state.home.spacesOpen) || {};
-  let need = 0;
-  const rows = sorted.map((a) => {
-    const { line, needs } = homeSpaceLine(a); if (needs) need++;
+  const rows = shown.map(({ a, line, needs }) => {
     const isOpen = !!open[a.id];
     const items = isOpen ? homeSpaceItems(a) : [];
     return `<div class="home-sa-sp">
@@ -8409,7 +8465,8 @@ function homeSpacesAsideHtml() {
     </div>`;
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
-  return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><button class="home-sa-all" data-open-areas>All →</button></div>${rows}<button class="home-sa-new" data-new-area>+ New Space</button>`;
+  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span>${quieter > 0 ? `<span class="home-sa-quiet">${quieter} quieter ${quieter === 1 ? 'one lives' : 'ones live'} there</span>` : ''}</button>`;
+  return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span></div>${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button>`;
 }
 // §35 Reflections on Today: anything drawn or cast today - a Spirit card, an I
 // Ching reading, the horoscope, a Compass check-in - each staying until the next
@@ -8538,7 +8595,6 @@ function renderHome() {
             ${today}
             ${reflections}
             ${kit}
-            ${homeNotepadLineHtml()}
           </div>
           <aside class="home-aside">${homeSpacesAsideHtml()}</aside>
         </div>
