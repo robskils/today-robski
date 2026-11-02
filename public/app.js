@@ -8675,8 +8675,8 @@ function homeTimeWeatherHtml() {
   if (w && typeof w === 'object' && w.temp != null) {
     const word = wxWord(w.code);
     segs.push(`${w.temp}°${word ? ' ' + word : ''}${place ? ', ' + place : ''}`);
-    if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push(`tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}`); }
     if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push(`sunset ${sm[1]}`); }
+    if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push(`tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}`); }
   } else if (place) { segs.push(place); }
   return `<div class="home-tw"><span class="home-time">${esc(homeTimeStr())}</span>${segs.map((s) => ` · ${esc(s)}`).join('')}</div>`;
 }
