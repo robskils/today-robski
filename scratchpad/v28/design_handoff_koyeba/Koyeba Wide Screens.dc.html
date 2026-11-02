@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><title>Koyeba – using the whole screen</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:#ebe8e1;font-family:'Jost',sans-serif;color:oklch(0.22 0.018 60)}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+</style></helmet>
+<section id="t1" style="padding:48px 52px 60px">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 14px"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px">1</span><span style="font:600 13px system-ui,sans-serif">Using the whole screen – one Today, three widths</span></div>
+<div style="max-width:980px;margin:0 0 34px;font:14px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.7);display:grid;gap:6px">
+<div>The page shouldn’t be a fixed column pinned to the left. It should be a grid that gains columns as the screen widens: one on a phone, two on a laptop, three on a big screen, then it stops growing and centres – so lines never get too long to read.</div>
+<div>Sections keep folding, and they move between columns rather than stretching. The sub-header with the boxed back arrow and “+ New” is gone (the breadcrumb and Set down cover both). No money on Today. Folding sections stay folded across widths.</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+<sc-for list="{{ frames }}" as="fr" hint-placeholder-count="3">
+<div id="{{ fr.id }}" style="display:flex;flex-direction:column;gap:10px;flex:none">
+<div style="display:flex;gap:8px;align-items:baseline;font:12.5px system-ui,sans-serif;color:rgba(0,0,0,.65)"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);border-radius:5px">{{ fr.id }}</span>{{ fr.label }}</div>
+<div style="width:{{ fr.w }};background:oklch(0.975 0.012 85);border:1px solid rgba(0,0,0,.08);overflow:hidden">
+<div style="border-bottom:1px solid oklch(0.88 0.014 80)">
+<div style="max-width:{{ fr.max }};margin:0 auto;padding:0 {{ fr.pad }};height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:oklch(0.46 0.022 70);white-space:nowrap"><span>Spaces</span><span>People<span style="font-size:11.5px;color:oklch(0.55 0.11 70)"> 24</span></span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:oklch(0.46 0.022 70)">Search ⌘K<span style="font-size:11.5px;color:oklch(0.55 0.11 70)"> 3</span></span><span style="padding-bottom:3px;border-bottom:1px solid oklch(0.72 0.13 75)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:{{ fr.max }};margin:0 auto;padding:48px {{ fr.pad }} 110px;display:grid;grid-template-columns:{{ fr.cols }};grid-template-areas:{{ fr.areas }};column-gap:{{ fr.gap }};row-gap:44px;align-items:start;position:relative">
+
+<div style="grid-area:a;min-width:0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">Sunday · the afternoon</span></div>
+<div style="font:300 {{ fr.h1 }}/1.02 'Cormorant Garamond',serif;margin-top:16px">Good afternoon, <i style="color:oklch(0.55 0.11 70)">Robin.</i><br><span style="color:oklch(0.46 0.022 70)">The day is yours to shape.</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:30px;padding:18px 0;border-top:1px solid oklch(0.88 0.014 80);border-bottom:1px solid oklch(0.88 0.014 80)">
+<sc-for list="{{ counts }}" as="c"><span style="display:flex;align-items:baseline;gap:9px;white-space:nowrap"><span style="font:300 30px/1 'Cormorant Garamond',serif">{{ c.n }}</span><span style="font:400 14px Jost;color:oklch(0.46 0.022 70)">{{ c.l }}</span></span></sc-for>
+</div>
+<div style="margin-top:30px;padding:24px 0 22px;border-top:1px solid oklch(0.72 0.13 75);border-bottom:1px solid oklch(0.88 0.014 80)">
+<div style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">What next</div>
+<div style="font:300 34px/1.2 'Cormorant Garamond',serif;margin-top:12px">Reply to Sue about the insolvency papers.</div>
+<div style="font:italic 300 20px/1.4 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70);margin-top:8px">It’s two weeks late now, and it will feel lighter once it’s gone. Twenty minutes.</div>
+<div style="display:flex;align-items:center;gap:24px;margin-top:18px;font:400 14.5px Jost"><span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 20px;background:oklch(0.72 0.13 75);white-space:nowrap">Write it</span><span>Not now</span><span>Something else</span></div>
+</div>
+<div style="margin-top:34px">
+<div onClick="{{ f.today.toggle }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60);cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif">Today</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">Events and plans</span><span style="margin-left:auto;font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ f.today.sign }}</span></div>
+<sc-if value="{{ f.today.open }}" hint-placeholder-val="{{ true }}"><sc-for list="{{ day }}" as="d"><div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="font:400 13px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">{{ d.t }}</span><div><div style="font:400 16.5px/1.4 Jost">{{ d.a }}</div><div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);margin-top:2px">{{ d.b }}</div></div></div></sc-for></sc-if>
+</div>
+</div>
+
+<div style="grid-area:b;min-width:0;padding-top:{{ fr.bTop }}">
+<div onClick="{{ f.view.toggle }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60);cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif;white-space:nowrap">Coming into view</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">As it comes due</span><span style="margin-left:auto;font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ f.view.sign }}</span></div>
+<sc-if value="{{ f.view.open }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ noop }}" style="display:flex;align-items:baseline;gap:10px;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="width:6px;height:6px;background:oklch(0.72 0.13 75);align-self:center"></span><span style="flex:1;font:400 14.5px Jost">Joana added three things to Maya’s Space.</span><span style="font:400 13px Jost;color:oklch(0.55 0.11 70);white-space:nowrap">See them</span></div>
+<div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70);padding:18px 0 4px">Deadlines</div>
+<sc-for list="{{ due }}" as="d"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:15px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><div style="min-width:0"><div style="font:300 23px/1.2 'Cormorant Garamond',serif">{{ d.a }}</div><div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);margin-top:3px">{{ d.b }}</div></div><span style="font:{{ d.font }};color:{{ d.color }};white-space:nowrap">{{ d.when }}</span></div></sc-for>
+</sc-if>
+</div>
+
+<div style="grid-area:c;min-width:0;padding-top:{{ fr.cTop }};display:grid;gap:34px">
+<div>
+<div onClick="{{ f.spaces.toggle }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60);cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif">Spaces</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">Kept close</span><span style="margin-left:auto;font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ f.spaces.sign }}</span></div>
+<sc-if value="{{ f.spaces.open }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px"><sc-for list="{{ spaces }}" as="s"><div style="display:flex;align-items:baseline;gap:10px;padding:13px 0;border-bottom:1px solid oklch(0.88 0.014 80);min-width:0"><span style="font:italic 300 15px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">{{ s.n }}</span><span style="font:300 23px/1.15 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.l }}</span></div></sc-for></div>
+<div style="font:500 13px Jost;color:oklch(0.55 0.11 70);margin-top:12px">All 34 Spaces →</div>
+</sc-if>
+</div>
+<div>
+<div onClick="{{ f.pad.toggle }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60);cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif">Notepad</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">Loose thoughts</span><span style="margin-left:auto;font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ f.pad.sign }}</span></div>
+<sc-if value="{{ f.pad.open }}" hint-placeholder-val="{{ true }}"><sc-for list="{{ notes }}" as="n"><div style="padding:13px 0;border-bottom:1px solid oklch(0.88 0.014 80);font:400 15.5px/1.5 Jost;text-wrap:pretty">{{ n }}</div></sc-for></sc-if>
+</div>
+<div>
+<div onClick="{{ f.reading.toggle }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:12px;border-bottom:1px solid oklch(0.22 0.018 60);cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif">A reading</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">For today</span><span style="margin-left:auto;font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ f.reading.sign }}</span></div>
+<sc-if value="{{ f.reading.open }}">
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;padding:18px 0;border-bottom:1px solid oklch(0.88 0.014 80);animation:kfade .35s ease"><span style="font:300 52px/1 serif">泰</span><div><div style="font:italic 300 24px 'Cormorant Garamond',serif">Peace</div><div style="font:500 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:oklch(0.55 0.11 70);margin-top:4px">I Ching · Tài</div><div style="font:400 14.5px/1.6 Jost;color:oklch(0.46 0.022 70);margin-top:8px">Heaven and earth in harmony – an open, flourishing time. Enjoy it, and keep tending it.</div></div></div>
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;padding:18px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="font:italic 300 24px 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70);width:52px">Wonder</span><div style="font:400 14.5px/1.6 Jost;color:oklch(0.46 0.022 70)">Look again – you’ve stopped seeing what’s in front of you.</div></div>
+</sc-if>
+</div>
+</div>
+
+<div style="position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:11px 18px;background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85);white-space:nowrap"><span style="font:300 20px/1 Jost;color:oklch(0.72 0.13 75)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state={open:{today:true,view:true,spaces:true,pad:true,reading:false}};
+  renderVals(){
+    const st=this.state,f={};
+    ['today','view','spaces','pad','reading'].forEach(k=>{const o=!!st.open[k];f[k]={open:o,sign:o?'−':'+',toggle:()=>this.setState({open:{...st.open,[k]:!o}})};});
+    const frames=[
+      {id:'1a',label:'Laptop, 1280 wide – two columns. The day on the left; what’s coming, Spaces and the notepad stacked on the right.',w:'1280px',max:'1280px',pad:'48px',cols:'minmax(0,1.45fr) minmax(320px,1fr)',areas:'"a b" "a c"',gap:'64px',h1:'60px',bTop:'0',cTop:'0'},
+      {id:'1b',label:'Desktop, 1920 wide – three columns. Nothing stretches; each column stays a comfortable reading width.',w:'1920px',max:'1920px',pad:'64px',cols:'minmax(0,1.35fr) minmax(0,1fr) minmax(320px,0.85fr)',areas:'"a b c"',gap:'72px',h1:'72px',bTop:'168px',cTop:'168px'},
+      {id:'1c',label:'Large screen, 2560 wide – still three columns, capped at 2240 and centred, with wider gutters. Past this, extra space is left calm, or offered to a second pane beside.',w:'2560px',max:'2240px',pad:'80px',cols:'minmax(0,1.35fr) minmax(0,1fr) minmax(340px,0.85fr)',areas:'"a b c"',gap:'96px',h1:'80px',bTop:'180px',cTop:'180px'}
+    ];
+    return {frames,f,noop:()=>{},
+      counts:[{n:'24',l:'emails to sort'},{n:'13',l:'things to do'},{n:'4',l:'events tomorrow'}],
+      day:[{t:'All day',a:'Drop stuff at Dona Ajuda',b:'Errands'},{t:'All day',a:'Claire Moore’s birthday',b:'People'},{t:'All day',a:'Dia de Todos-os-Santos',b:'Portugal · public holiday'},{t:'11:30',a:'Maya’s skateboarding class',b:'Maya'},{t:'18:00',a:'Weekly review',b:'Plans'}],
+      due:[{a:'Sue – insolvency & law',b:'Business',when:'14 days late',font:'500 13px Jost',color:'oklch(0.55 0.11 70)'},{a:'Get Stone Grinder going big time',b:'Stone Grinder · goal',when:'1 day late',font:'500 13px Jost',color:'oklch(0.55 0.11 70)'},{a:'Holmes Place three times this week',b:'Body / Health',when:'In 5 days',font:'400 13px Jost',color:'oklch(0.46 0.022 70)'}],
+      spaces:[['XIV','Koyeba'],['I','Art'],['XII','Incremento'],['XXXIV','Zen'],['XXXI','Tara LS'],['XXX','Stone Grinder']].map(([n,l])=>({n,l})),
+      notes:['Write up watercolour notes from Notion into Koyeba','See how much money I have','The Frog: sort out cancelled bookings. Refund proposal.']};
+  }
+}
+</script>
+</body>
+</html>

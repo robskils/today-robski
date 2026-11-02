@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Admin – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:100px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People <span style="color:var(--k-gold);font-size:12px">15</span></span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:400 14px Jost;display:flex;gap:8px;align-items:baseline"><span style="color:var(--k-gold)">←</span><a href="#">Menu</a><span style="color:var(--k-mute)">·</span><span>Admin</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));grid-template-columns:minmax(0,1fr) {{ sideCol }};gap:clamp(40px,5vw,96px);align-items:start">
+<div style="min-width:0;max-width:1040px">
+<div style="padding:34px 0 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Only you and Peter see this</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:12px 0 0">Admin</h1>
+<div style="font:italic 300 24px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px">Everything is running. One person is waiting to join.</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px 32px;margin-top:30px;padding:22px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4"><div><div style="font:300 44px/1 'Cormorant Garamond',serif">{{ s.n }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:6px">{{ s.label }}</div></div></sc-for>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:22px;padding:22px 0 6px;font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)"><span onClick="{{ openAll }}" style="cursor:pointer">Open all</span><span onClick="{{ foldAll }}" style="cursor:pointer">Fold all</span></div>
+
+<sc-for list="{{ secs }}" as="s" hint-placeholder-count="6">
+<div id="{{ s.anchor }}" style="border-top:1px solid var(--k-line)">
+<div onClick="{{ s.toggle }}" style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:22px 0;cursor:pointer">
+<span style="font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ s.num }}</span>
+<div style="min-width:0"><div style="font:300 clamp(30px,3vw,38px)/1.05 'Cormorant Garamond',serif">{{ s.title }}</div><sc-if value="{{ s.closed }}"><div style="font:400 14px Jost;color:var(--k-mute);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.hint }}</div></sc-if></div>
+<span style="font:300 24px Jost;color:var(--k-mute)">{{ s.sign }}</span>
+</div>
+<sc-if value="{{ s.open }}">
+<div style="padding:0 0 32px 52px;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+
+<sc-if value="{{ s.isMembers }}">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 22px">
+<sc-for list="{{ mViews }}" as="v"><div onClick="{{ v.pick }}" style="padding:0 0 10px;border-bottom:1px solid {{ v.line }};cursor:pointer;color:{{ v.color }};white-space:nowrap"><span style="font:300 26px 'Cormorant Garamond',serif">{{ v.n }}</span> <span style="font:400 14px Jost;white-space:nowrap">{{ v.label }}</span></div></sc-for>
+<span style="margin-left:auto;font:500 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap;padding-bottom:10px">+ Invite someone</span>
+</div>
+<div style="margin-top:8px">
+<sc-for list="{{ members }}" as="m">
+<div style="display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line);cursor:pointer">
+<span style="width:6px;height:6px;border-radius:50%;background:{{ m.dot }};align-self:center"></span>
+<div style="min-width:0;display:flex;align-items:baseline;gap:12px;overflow:hidden"><span style="font:300 24px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ m.name }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ m.handle }}</span></div>
+<span style="font:400 13px Jost;color:{{ m.whenColor }};white-space:nowrap">{{ m.when }}</span>
+<span></span><span style="grid-column:2/4;font:400 13px Jost;color:var(--k-mute)">{{ m.sub }}</span>
+</div>
+</sc-for>
+<sc-if value="{{ hasRequest }}"><div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;padding:14px 0;border-bottom:1px solid var(--k-line)"><span style="font:300 24px 'Cormorant Garamond',serif">marta@galeriasete.pt</span><span style="font:400 13px Jost;color:var(--k-mute);flex:1">asked to join yesterday</span><span onClick="{{ letIn }}" style="font:500 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Let her in</span><span onClick="{{ letIn }}" style="font:400 13.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Not now</span></div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.isFeedback }}">
+<sc-for list="{{ feedback }}" as="f"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 18px;padding:14px 0;border-bottom:1px solid var(--k-line)"><span style="font:italic 300 23px/1.4 'Cormorant Garamond',serif;text-wrap:pretty">{{ f.text }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ f.when }}</span><span style="font:400 13px Jost;color:var(--k-goldt)">{{ f.who }} · from {{ f.page }}</span><span style="display:flex;gap:16px;font:400 13px Jost;color:var(--k-mute)"><span style="cursor:pointer">Reply</span><span style="cursor:pointer">Make a task</span><span style="cursor:pointer">Done</span></span></div></sc-for>
+<div style="font:400 13px Jost;color:var(--k-mute);margin-top:12px">Everything sent from “Give feedback” in the Guide lands here.</div>
+</sc-if>
+
+<sc-if value="{{ s.isCosts }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 24px"><span style="font:300 56px/1 'Cormorant Garamond',serif">$5.06</span><span style="font:400 14px Jost;color:var(--k-mute)">so far this November · $0.06 AI, $5.00 hosting</span></div>
+<div style="margin-top:20px">
+<sc-for list="{{ months }}" as="m">
+<div style="display:grid;grid-template-columns:150px minmax(0,1fr) 80px;gap:18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--k-line)">
+<span style="font:400 15px Jost">{{ m.label }}</span>
+<div style="height:8px;display:flex;gap:2px"><div style="width:{{ m.infra }};background:var(--k-line)"></div><div style="width:{{ m.ai }};background:var(--k-gold)"></div></div>
+<span style="font:300 22px 'Cormorant Garamond',serif;text-align:right">{{ m.total }}</span>
+<span></span><span style="font:400 12.5px Jost;color:var(--k-mute);grid-column:2/4">{{ m.detail }}</span>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;gap:22px;margin-top:12px;font:400 13px Jost;color:var(--k-mute)"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:8px;background:var(--k-gold)"></span>AI, estimated from usage</span><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:8px;background:var(--k-line)"></span>Fixed: hosting $5.00</span></div>
+</sc-if>
+
+<sc-if value="{{ s.isHealth }}">
+<div style="font:300 26px/1.35 'Cormorant Garamond',serif">{{ healthLine }}</div>
+<div style="margin-top:14px">
+<sc-for list="{{ services }}" as="v"><div style="display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--k-line)"><span style="width:7px;height:7px;background:{{ v.dot }};align-self:center"></span><div><span style="font:400 15.5px Jost">{{ v.name }}</span><span style="font:400 13px Jost;color:var(--k-mute);margin-left:10px">{{ v.via }}</span></div><span style="font:400 13px Jost;color:{{ v.color }};white-space:nowrap">{{ v.state }}</span></div></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:14px;font:400 13.5px Jost"><span onClick="{{ checkNow }}" style="color:var(--k-goldt);cursor:pointer">Check now</span><span style="color:var(--k-mute)">Checked every half hour. If anything changes, you get an email.</span></div>
+</sc-if>
+
+<sc-if value="{{ s.isSetup }}">
+<sc-for list="{{ setup }}" as="r">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 24px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)">
+<div><div style="font:400 16px Jost">{{ r.label }}</div><div style="font:400 13px/1.5 Jost;color:var(--k-mute);margin-top:3px;text-wrap:pretty">{{ r.sub }}</div></div>
+<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 18px;font:400 14.5px Jost;white-space:nowrap"><sc-for list="{{ r.opts }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;color:{{ o.color }};padding-bottom:2px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for></div>
+</div>
+</sc-for>
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute);padding:20px 0 6px">Hidden for now</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 24px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--k-line)"><div><span style="font:300 23px 'Cormorant Garamond',serif">Meditation</span><span style="font:400 13px Jost;color:var(--k-mute);margin-left:12px">Reflection · timer, bells and logged sits · hidden 30 Oct</span></div><span style="font:400 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Bring it back</span></div>
+</sc-if>
+
+<sc-if value="{{ s.isQuotes }}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px">
+<input value="{{ qText }}" onChange="{{ onQText }}" placeholder="A quote…" style="flex:2;min-width:240px;border:0;border-bottom:1px solid var(--k-ink);background:transparent;outline:none;padding:8px 0;font:italic 300 22px 'Cormorant Garamond',serif;color:var(--k-ink)">
+<input value="{{ qBy }}" onChange="{{ onQBy }}" placeholder="Who said it" style="flex:1;min-width:150px;border:0;border-bottom:1px solid var(--k-line);background:transparent;outline:none;padding:8px 0;font:400 15px Jost;color:var(--k-ink)">
+<span onClick="{{ addQuote }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:{{ addColor }};cursor:pointer;white-space:nowrap">Add ↵</span>
+</div>
+<div style="margin-top:14px">
+<sc-for list="{{ quotes }}" as="q"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:18px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--k-line)"><span style="font:italic 300 22px/1.4 'Cormorant Garamond',serif;text-wrap:pretty">“{{ q.text }}”</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ q.by }}</span><span onClick="{{ q.remove }}" style="font:400 12.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Remove</span></div></sc-for>
+</div>
+<div style="font:400 13px Jost;color:var(--k-goldt);margin-top:12px;cursor:pointer">Show all {{ qCount }}</div>
+</sc-if>
+
+<sc-if value="{{ s.isBrand }}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px 40px">
+<div style="display:flex;align-items:center;gap:16px"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:44px;width:auto"><span style="font:500 44px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:10px"><span title="Ivory paper" style="width:28px;height:28px;background:oklch(0.975 0.012 85);outline:1px solid var(--k-line)"></span><span title="Forest ink" style="width:28px;height:28px;background:oklch(0.28 0.04 155)"></span><span title="Ink" style="width:28px;height:28px;background:oklch(0.22 0.018 60)"></span><span title="Gold" style="width:28px;height:28px;background:oklch(0.72 0.13 75)"></span></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:16px;font:400 14px Jost"><span style="color:var(--k-goldt);cursor:pointer">Open the Brand Pack →</span><span style="color:var(--k-mute);cursor:pointer">Download all files (.zip)</span></div>
+<div style="font:400 13px Jost;color:var(--k-mute);margin-top:8px">The old octagram and “Lb.” icons are retired. App icons and the favicon now use the Mandombe mark.</div>
+</sc-if>
+
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:240px;display:{{ sideDisplay }}">
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--k-ink)">In Admin</div>
+<sc-for list="{{ index }}" as="i"><div onClick="{{ i.go }}" style="display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="width:28px;font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ i.num }}</span><span style="font:300 21px 'Cormorant Garamond',serif;flex:1">{{ i.title }}</span><span style="font:400 12px Jost;color:{{ i.noteColor }};white-space:nowrap">{{ i.note }}</span></div></sc-for>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const R=['I','II','III','IV','V','VI','VII'];
+// name, handle, plan, lastSeenDays(-1 online), joined, active bucket
+const M=[['Robin Savile','@robski','Premium Plus',-1,'24 Aug'],['Peter','@peter','Premium Plus',2,'30 Oct'],['Ines','@ineslanza','Premium Plus',3,'12 Oct'],['Helena','@helenagreene','Premium Plus',5,'1 Sep'],['Carolina','@carolina','Premium',9,'3 Oct'],['Sofia','@sofia','Premium',14,'20 Sep'],['Tara','@tara','Premium Plus',20,'25 Aug'],['James','@jim','Premium',26,'2 Sep'],['Joaquim','@joaquim','Premium',40,'15 Sep'],['Ana','@anaduarte','Premium',52,'10 Sep'],['Edd','@edd','Premium',70,'28 Aug']];
+const SECS=[['members','Members','11 members · 4 this week · 1 asking to join'],['feedback','Feedback','2 new from the Guide'],['costs','Running costs','$5.06 so far this month · $11.40 in October'],['health','Health','All four services up · checked 5 minutes ago'],['setup','Setup','Invite-only · no starting Spaces · 1 part hidden'],['quotes','Quotes','94 in the pool'],['brand','Brand','The Mandombe mark, colours and files']];
+const QUOTES=[['It does not matter how slowly you go, as long as you do not stop.','Confucius'],['The butterfly counts not months but moments, and has time enough.','Rabindranath Tagore'],['The river that flows in you also flows in me.','Kabir'],['If the only prayer you ever say in your whole life is thank you, it will be enough.','Meister Eckhart'],['For it is in giving that we receive.','Francis of Assisi']];
+class Component extends DCLogic {
+  state={o:{members:true},mv:'week',req:true,reg:0,sp:0,quotes:QUOTES,qText:'',qBy:'',checked:5,night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);this.onR=()=>this.setState({wide:window.innerWidth>=1100});this.onR();window.addEventListener('resize',this.onR);}
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const inV=(m,v)=>v==='today'?m[3]<1:v==='week'?m[3]<=7:v==='month'?m[3]<=30:v==='quiet'?m[3]>30:true;
+    const views=[['today','Here today'],['week','This week'],['month','This month'],['all','Everyone'],['quiet','Gone quiet'],['invited','Invited']];
+    const mViews=views.map(([id,label])=>({label,n:id==='invited'?10:M.filter(m=>inV(m,id)).length,color:st.mv===id?'var(--k-ink)':'var(--k-mute)',line:st.mv===id?'var(--k-gold)':'transparent',pick:()=>set({mv:id})}));
+    const members=st.mv==='invited'?[['emailmarkhill@gmail.com','','Premium · 24 months',null,''],['info@eddbateman.com','','Premium · 120 months',null,''],['katarina.becic@gmail.com','','Premium · 120 months',null,'']].map(m=>({name:m[0],handle:'',sub:m[2]+' · Resend · Copy link · Cancel',when:'invited',whenColor:'var(--k-mute)',dot:'transparent'}))
+      :M.filter(m=>inV(m,st.mv)).map(m=>({name:m[0],handle:m[1],sub:m[2]+' · joined '+m[4],when:m[3]<0?'here now':m[3]===0?'today':m[3]+'d ago',whenColor:m[3]<0?'var(--k-goldt)':'var(--k-mute)',dot:m[3]<0?'var(--k-gold)':'transparent'}));
+    const tg=k=>()=>set({o:{...st.o,[k]:!st.o[k]}});
+    const secs=SECS.map(([id,title,hint],i)=>{const o=!!st.o[id];return {num:R[i],title,hint,anchor:'adm-'+id,open:o,closed:!o,sign:o?'−':'+',toggle:tg(id),isMembers:id==='members',isFeedback:id==='feedback',isCosts:id==='costs',isHealth:id==='health',isSetup:id==='setup',isQuotes:id==='quotes',isBrand:id==='brand'};});
+    const index=SECS.map(([id,title],i)=>({num:R[i],title,note:id==='members'&&st.req?'1 waiting':id==='feedback'?'2 new':'',noteColor:'var(--k-goldt)',go:()=>this.setState({o:{...st.o,[id]:true}},()=>{const el=document.getElementById('adm-'+id);if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-20,behavior:'smooth'});})}));
+    const MO=[['November',0.06,1,'1 AI call so far'],['October',6.40,301,'301 AI calls'],['September',4.12,229,'229 AI calls'],['August',0.35,30,'30 AI calls'],['July',0,0,'No AI yet'],['June',0,0,'No AI yet']];
+    const max=11.4;
+    const months=MO.map(([l,ai,c,d])=>({label:l+(l==='November'?' · so far':''),ai:(ai/max*100)+'%',infra:(5/max*100)+'%',total:'$'+(ai+5).toFixed(2),detail:'$'+ai.toFixed(2)+' AI · $5.00 hosting · '+d}));
+    const services=[['Public holidays','Nager.Date','Up · 204 countries'],['Football fixtures','TheSportsDB','Up'],['Cover images','Unsplash','Up'],['Place search','Open-Meteo','Up']].map(([name,via,state])=>({name,via,state,dot:'var(--k-gold)',color:'var(--k-mute)'}));
+    const opt=(k,labels)=>labels.map((l,i)=>({label:l,color:st[k]===i?'var(--k-ink)':'var(--k-mute)',line:st[k]===i?'var(--k-gold)':'transparent',pick:()=>set({[k]:i})}));
+    const setup=[{label:'Who can join',sub:'Invite-only means members invite each other, or you do. Open means anyone can sign up.',opts:opt('reg',['Invite-only','Open'])},
+      {label:'New accounts start with',sub:'Existing members aren’t touched.',opts:opt('sp',['No Spaces','Me · Family · Work · Home','Choose…'])}];
+    return {stats:[{n:'11',label:'Members'},{n:'4',label:'Here this week'},{n:'$5.06',label:'This month so far'},{n:'All up',label:'Services'}],
+      openAll:()=>{const o={};SECS.forEach(s=>o[s[0]]=true);set({o});},foldAll:()=>set({o:{}}),secs,index,mViews,members,hasRequest:st.req&&st.mv!=='invited',letIn:()=>set({req:false}),
+      feedback:[{text:'The journal is lovely – could it remember which prompt I used last?',who:'Helena',page:'Journal',when:'Tue'},{text:'I still only get notified about messages after I refresh.',who:'Peter',page:'Messages',when:'Thu'}],
+      months,services,healthLine:'All four services are up. Last checked '+(st.checked===0?'just now':st.checked+' minutes ago')+'.',checkNow:()=>set({checked:0}),setup,
+      quotes:st.quotes.map(([text,by],i)=>({text,by,remove:()=>set({quotes:st.quotes.filter((_,j)=>j!==i)})})),qCount:String(89+st.quotes.length),
+      qText:st.qText,qBy:st.qBy,onQText:e=>set({qText:e.target.value}),onQBy:e=>set({qBy:e.target.value}),addColor:st.qText.trim()?'var(--k-goldt)':'var(--k-mute)',
+      addQuote:()=>{if(st.qText.trim())set({quotes:[[st.qText.trim(),st.qBy.trim()||'Unknown'],...st.quotes],qText:'',qBy:''});},
+      sideCol:st.wide===false?'0px':'minmax(240px,300px)',sideDisplay:st.wide===false?'none':'block',dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

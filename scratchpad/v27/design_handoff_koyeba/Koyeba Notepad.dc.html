@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Notepad – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input{font:inherit;color:inherit;background:transparent;border:0;outline:0}input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);position:relative">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1440px;margin:0 auto;padding:0 48px;height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span onClick="{{ toggleNight }}" style="color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1440px;margin:0 auto;padding:52px 48px 200px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:64px">
+<div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Sunday · the afternoon</span></div>
+<div style="font:300 64px/1.02 'Cormorant Garamond',serif;margin-top:16px">Good afternoon, <i style="color:var(--k-goldt)">Robin.</i></div>
+<div style="margin-top:30px;padding:24px 0;border-top:1px solid var(--k-gold);border-bottom:1px solid var(--k-line)"><div style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt)">What next</div><div style="font:300 32px/1.2 'Cormorant Garamond',serif;margin-top:12px">Reply to Sue about the insolvency papers.</div><div style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:8px">Two weeks late now. Twenty minutes, then it’s gone.</div></div>
+<div style="margin-top:34px;border-top:1px solid var(--k-ink)">
+<sc-for list="{{ day }}" as="d" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)"><span style="font:400 13px Jost;color:var(--k-mute)">{{ d.t }}</span><span style="font:400 16.5px Jost">{{ d.a }}</span></div></sc-for>
+</div>
+</div>
+<div style="padding-top:150px">
+<div style="font:300 32px/1 'Cormorant Garamond',serif;padding-bottom:12px;border-bottom:1px solid var(--k-ink)">Coming into view</div>
+<sc-for list="{{ due }}" as="d" hint-placeholder-count="3"><div style="display:flex;align-items:baseline;gap:14px;padding:15px 0;border-bottom:1px solid var(--k-line)"><span style="flex:1;font:300 23px 'Cormorant Garamond',serif">{{ d.a }}</span><span style="font:500 13px Jost;color:var(--k-goldt);white-space:nowrap">{{ d.w }}</span></div></sc-for>
+<div style="font:400 13px/1.6 Jost;color:var(--k-mute);margin-top:22px">The Notepad section has gone from Today. Open it from the corner, or with <span style="color:var(--k-ink)">⌘ ;</span></div>
+</div>
+</div>
+
+<sc-if value="{{ padOpen }}">
+<div onMouseDown="{{ closePad }}" style="position:fixed;inset:0;z-index:20"></div>
+<div style="position:fixed;left:32px;bottom:76px;z-index:25;width:min(440px,calc(100% - 64px));max-height:calc(100vh - 100px);display:flex;flex-direction:column;background:var(--k-panel);border:1px solid var(--k-line);padding:22px 26px 18px;box-sizing:border-box;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:300 30px/1 'Cormorant Garamond',serif">Notepad</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ saved }}</span><span onClick="{{ closePad }}" style="margin-left:auto;font:500 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);cursor:pointer;white-space:nowrap">Close · Esc</span></div>
+<div style="margin-top:14px;flex:1;min-height:0;max-height:360px;overflow:auto;border-top:1px solid var(--k-line)">
+<sc-for list="{{ lines }}" as="l">
+<div style="display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--k-line);min-height:44px">
+<textarea rows="1" data-pad-id="{{ l.id }}" value="{{ l.text }}" onChange="{{ l.onChange }}" onKeyDown="{{ l.onKey }}" onFocus="{{ l.onFocus }}" placeholder="{{ l.ph }}" style="flex:1;min-width:0;padding:10px 0;font:300 21px/1.35 'Cormorant Garamond',serif;text-decoration:{{ l.strike }};color:{{ l.color }};background:transparent;border:0;outline:0;resize:none;overflow:hidden;display:block;box-sizing:border-box"></textarea>
+<sc-if value="{{ l.showAct }}"><span onMouseDown="{{ l.send }}" style="font:500 12.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap;padding-top:16px;animation:kfade .25s ease">Set down →</span></sc-if>
+<sc-if value="{{ l.done }}"><span style="font:400 12px Jost;color:var(--k-goldt);white-space:nowrap;padding-top:17px">{{ l.where }}</span></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="font:400 12.5px/1.5 Jost;color:var(--k-mute);margin-top:12px">Never sorted, never tidied. ↵ for a new line. Send any line on with “Set down →”.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showToast }}">
+<div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:30;display:flex;align-items:baseline;gap:16px;padding:13px 20px;background:var(--k-deep);color:var(--k-ondeep);font:400 14px Jost;white-space:nowrap;animation:kfade .4s ease"><span>{{ toast }}</span><span onClick="{{ undo }}" style="font-weight:500;color:var(--k-gold);cursor:pointer">Undo</span></div>
+</sc-if>
+
+<div onClick="{{ togglePad }}" title="Notepad (⌘ ;)" style="position:fixed;left:32px;bottom:24px;z-index:26;display:flex;align-items:baseline;gap:10px;padding:9px 16px;cursor:pointer;white-space:nowrap;background:var(--k-bg);border:1px solid {{ padLine }}">
+<span style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-ink)">Notepad</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ padCount }}</span>
+</div>
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--k-deep);color:var(--k-ondeep);white-space:nowrap"><span style="font:300 20px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const KEY='koyeba-notepad-demo';
+const SEED=['Write up watercolour notes from Notion into Koyeba','Miguel – frames, 40 × 50, ask about oak','Book Biscuit’s booster for Tuesday','The Frog: sort out cancelled bookings. Refund proposal.','Fado – Mesa de Frades, ask Ines?'];
+class Component extends DCLogic {
+  constructor(p){super(p);let lines;try{lines=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+    if(!Array.isArray(lines)||!lines.length)lines=SEED.map((t,i)=>({id:'s'+i,text:t,done:null}));
+    this.state={open:false,lines:[...lines.filter(l=>l.text||l.done),{id:'n'+Date.now(),text:'',done:null}],focus:null,savedAt:null,toast:null,last:null,night:!!this.props.night};}
+  grow(){document.querySelectorAll('[data-pad-id]').forEach(el=>{el.style.height='auto';el.style.height=el.scrollHeight+'px';});}
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);
+    this.kd=e=>{if((e.metaKey||e.ctrlKey)&&e.key===';'){e.preventDefault();this.toggle();}else if(e.key==='Escape'&&this.state.open)this.setState({open:false});};window.addEventListener('keydown',this.kd);}
+  componentWillUnmount(){window.removeEventListener('keydown',this.kd);clearTimeout(this.tt);}
+  componentDidUpdate(pp){this.grow();if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  toggle=()=>{const o=!this.state.open;this.setState({open:o},()=>{if(o)this.focusId(this.state.lines[this.state.lines.length-1].id);});};
+  focusId(id,end){setTimeout(()=>{const el=document.querySelector('[data-pad-id="'+id+'"]');if(el){el.focus();if(end!==false){const n=el.value.length;el.setSelectionRange(n,n);}}},20);}
+  save(lines){try{localStorage.setItem(KEY,JSON.stringify(lines.filter(l=>l.text||l.done)));}catch(e){}this.setState({lines,savedAt:Date.now()});}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const where=t=>/book|booster|ask|call|sort|write/i.test(t)?'a task':'a note';
+    const lines=st.lines.map((l,i)=>({...l,ph:i===st.lines.length-1?'Write anything…':'',
+      strike:l.done?'line-through':'none',color:l.done?'var(--k-mute)':'var(--k-ink)',
+      showAct:st.focus===l.id&&!!l.text.trim()&&!l.done,where:l.done?'→ '+l.done:'',
+      onFocus:()=>set({focus:l.id}),
+      onChange:e=>{const ls=st.lines.map(x=>x.id===l.id?{...x,text:e.target.value}:x);this.save(ls);},
+      onKey:e=>{if(e.key==='Enter'){e.preventDefault();const nl={id:'n'+Date.now(),text:'',done:null};const ls=[...st.lines.slice(0,i+1),nl,...st.lines.slice(i+1)];this.save(ls);this.focusId(nl.id);}
+        else if(e.key==='Backspace'&&!l.text&&st.lines.length>1){e.preventDefault();const ls=st.lines.filter(x=>x.id!==l.id);this.save(ls);const prev=st.lines[Math.max(0,i-1)];this.focusId(prev.id);}
+        else if(e.key==='ArrowUp'&&i>0&&e.target.selectionStart===0){e.preventDefault();this.focusId(st.lines[i-1].id);}else if(e.key==='ArrowDown'&&i<st.lines.length-1&&e.target.selectionEnd===e.target.value.length){e.preventDefault();this.focusId(st.lines[i+1].id);}},
+      send:e=>{e.preventDefault();const w=where(l.text);const ls=st.lines.map(x=>x.id===l.id?{...x,done:w}:x);this.save(ls);set({toast:'Set down as '+w+'. Struck through here, not deleted.',last:l.id});clearTimeout(this.tt);this.tt=setTimeout(()=>this.setState({toast:null}),5000);}}));
+    const live=st.lines.filter(l=>l.text.trim()&&!l.done).length;
+    const ago=st.savedAt?'Kept · just now':'Kept';
+    return {lines,padOpen:st.open,togglePad:this.toggle,closePad:()=>set({open:false}),saved:ago,padCount:live?String(live):'',padLine:st.open?'var(--k-gold)':'var(--k-line)',
+      showToast:!!st.toast,toast:st.toast,undo:()=>{const ls=st.lines.map(x=>x.id===st.last?{...x,done:null}:x);this.save(ls);set({toast:null});},
+      day:[{t:'All day',a:'Claire Moore’s birthday'},{t:'11:30',a:'Maya’s skateboarding class'},{t:'15:00',a:'Paint for an hour'},{t:'18:00',a:'Weekly review'}],
+      due:[{a:'Sue – insolvency & law',w:'14 days late'},{a:'Get Stone Grinder going big time',w:'1 day late'},{a:'Holmes Place three times',w:'In 5 days'}],
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

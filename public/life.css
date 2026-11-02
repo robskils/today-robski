@@ -11831,3 +11831,46 @@ body.mailsheet-open { overflow:hidden; }
 .cvm-cancel { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); margin-top:16px; align-self:flex-start; }
 .cvm-acts .cvm-cancel { margin-top:0; }
 .cvm-cancel:hover { color:var(--k-goldt); }
+
+/* ══ §51 Mail list: three clear levels, hover triage ═════════════════════════ */
+.mail-row.mailv2 { display:grid; grid-template-columns:14px minmax(0,1fr) auto; gap:3px 14px; align-items:baseline; padding:14px 20px; border-bottom:1px solid var(--k-line); background:none; }
+.mail-row.mailv2:hover { background:var(--k-soft); }
+.mailv2 .mail-dot { position:static; width:6px; height:6px; border-radius:50%; background:transparent; border:0; align-self:center; opacity:1; pointer-events:auto; grid-column:1; }
+.mail-row.mailv2.unread .mail-dot { background:var(--k-gold); }
+.mailv2 .mail-row-main { grid-column:2; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.mailv2 .mail-from { font-family:var(--k-sans); font-weight:500; font-size:15px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2 .mail-subject { font-family:var(--k-serif); font-weight:300; font-size:22px; line-height:1.2; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2 .mail-preview { font-family:var(--k-sans); font-size:13.5px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2 .mail-row-right { grid-column:3; position:relative; align-self:start; white-space:nowrap; padding-top:2px; }
+.mailv2 .mail-date { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
+.mail-row.mailv2.unread .mail-date { color:var(--k-goldt); }
+.mailv2 .mail-row-tri { display:none; position:absolute; top:0; right:0; gap:14px; }
+.mail-row.mailv2:hover .mail-date { visibility:hidden; }
+.mail-row.mailv2:hover .mail-row-tri { display:flex; }
+.mailv2 .mrt { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); cursor:pointer; }
+.mailv2 .mrt:hover { color:var(--k-goldt); }
+.mailv2 .mail-conv-n { font-family:var(--k-sans); font-size:11px; color:var(--k-mute); margin-left:6px; }
+.mailv2 .mail-acct-chip, .mailv2 .folder-chip, .mailv2 .mail-folder-chip { font-family:var(--k-sans); font-size:11px; letter-spacing:.04em; color:var(--k-mute); margin-right:6px; text-transform:none; }
+.mail-row.mailv2.picked { background:color-mix(in srgb, var(--k-gold) 10%, transparent); }
+.mail-row.mailv2.csel { background:var(--k-soft); }
+
+/* §51 inbox accordion head: the same three-level hierarchy. */
+.mail-ar-head.mailv2ar { display:grid; grid-template-columns:14px minmax(0,1fr) auto; gap:3px 14px; align-items:baseline; width:100%; text-align:left; background:none; border:0; padding:14px 20px; cursor:pointer; }
+.mail-ar.open .mail-ar-head.mailv2ar, .mail-ar-head.mailv2ar:hover { background:var(--k-soft); }
+.mailv2ar .mail-ar-dot { grid-column:1; width:6px; height:6px; border-radius:50%; background:transparent; align-self:center; }
+.mailv2ar.unread .mail-ar-dot { background:var(--k-gold); }
+.mailv2ar .mail-ar-main { grid-column:2; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.mailv2ar .mail-ar-from { font-family:var(--k-sans); font-weight:500; font-size:15px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2ar .mail-ar-subj { font-family:var(--k-serif); font-weight:300; font-size:22px; line-height:1.2; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2ar .mail-ar-prev { font-family:var(--k-sans); font-size:13.5px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2ar .mail-ar-notice { font-style:italic; color:var(--k-goldt); font-family:var(--k-serif); }
+.mailv2ar .mail-ar-right { grid-column:3; position:relative; align-self:start; padding-top:2px; white-space:nowrap; min-width:40px; text-align:right; }
+.mailv2ar .mail-ar-time { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
+.mailv2ar.unread .mail-ar-time { color:var(--k-goldt); }
+.mailv2ar .mail-ar-tri { display:none; position:absolute; top:0; right:0; gap:14px; }
+.mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:hidden; }
+.mail-ar-head.mailv2ar:hover .mail-ar-tri { display:flex; }
+.mailv2ar .mail-ar-n { font-family:var(--k-sans); font-size:11px; color:var(--k-mute); margin-left:6px; }
+.mailv2ar .mail-ar-acct { font-family:var(--k-sans); font-size:11px; color:var(--k-mute); margin-left:8px; }
+.mailv2ar .mrt { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); cursor:pointer; }
+.mailv2ar .mrt:hover { color:var(--k-goldt); }

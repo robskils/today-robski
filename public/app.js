@@ -15636,20 +15636,14 @@ function mailArrivalLine() {
   const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new letters`;
   return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new letters – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`;
 }
-function toggleMailSheet(open) {
-  const want = open == null ? !state.mailSheet : !!open;
-  state.mailSheet = want;
-  if (want) {
-    state.mailArrivalHidden = true;   // the arrival line gives way to the sheet
-    state.mailSheetOpen = null;
-    mailMarkLooked();
-    // Seed the mail cache + quadrants so the sheet has something to show, and warm
-    // the list in the background if it's empty (e.g. Mail not opened yet).
-    if (!state.mail) { let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {} state.mail = { account: seed.account || 'all', folder: 'inbox', messages: seed.messages || [], gone: new Set(), snapMsgs: {}, accounts: seed.accounts }; }
-    if (!state.__mailListLoaded) warmMailForSheet();   // load the real to-sort inbox
-  }
-  renderNav(); renderMailSheet();
-  if (want) setTimeout(() => { const s = document.getElementById('mail-sheet'); if (s) s.scrollTop = 0; }, 0);
+// §51: the "New mail" sheet is gone. "Mail {count}" and ⌘E just open the Mail
+// page (on the New/to-sort list, newest first). Kept the name so existing
+// callers (the header button, ⌘E) still work.
+function toggleMailSheet() {
+  state.mailSheet = false; state.mailArrivalHidden = true;
+  mailMarkLooked();
+  const el = document.getElementById('mail-sheet'); if (el) el.remove();
+  openMail().catch((e) => toast(e && e.message));
 }
 // Load each account's INBOX so the sheet shows what needs sorting - the SAME set
 // the Mail app counts (untriaged inbox, read or unread), not just the unread
@@ -15719,11 +15713,9 @@ function renderMailArrival() {
   el.innerHTML = html;
 }
 function renderMailSheet() {
-  let el = document.getElementById('mail-sheet');
-  if (!state.mailSheet) { if (el) el.remove(); document.body.classList.remove('mailsheet-open'); return; }
-  if (!el) { el = document.createElement('div'); el.id = 'mail-sheet'; el.className = 'mail-sheet'; document.body.appendChild(el); }
-  el.innerHTML = mailSheetHtml();
-  document.body.classList.add('mailsheet-open');
+  // §51: the sheet is retired. Keep this as a cleanup no-op for any stray node.
+  const el = document.getElementById('mail-sheet'); if (el) el.remove();
+  document.body.classList.remove('mailsheet-open');
 }
 async function mailSheetReadRow(key) {
   state.mailSheetOpen = state.mailSheetOpen === key ? null : key;
@@ -16902,15 +16894,42 @@ const mailSearching = () => !!(state.mail && state.mail.query && state.mail.quer
 const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._mailbox)) ? `<span class="mail-folder-chip">${esc(prettyMailbox(x._mailbox))}</span>` : '';
 // One message row. `count` (>1) shows a quiet conversation tally, Spark-style -
 // no chevrons or badges, the thread just reads as one row.
-const mailRowHtml = (x, child, count) => `<button class="mail-row ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.pending && state.mail.pending.has(x._key) ? 'mail-pending' : ''} ${state.mail.selected && state.mail.selected.has(x._key) ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" draggable="true" data-mail-drag="${esc(x._key)}" data-mail-open="${esc(x._key)}">
-    <span class="mail-check ${state.mail.selected && state.mail.selected.has(x._key) ? 'on' : ''}" data-mail-check="${esc(x._key)}" title="Select">${state.mail.selected && state.mail.selected.has(x._key) ? '✓' : ''}</span>
-    <span class="mail-avatar">${esc(initial(mailFrom(x)))}</span>
-    <span class="mail-row-main"><span class="mail-row-top"><span class="mail-from">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span><span class="mail-date">${mailDate(x.date)}</span></span>
-    <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${mailBesideLinkedChip(x)}${esc(x.subject)}</span>
-    ${x.preview ? `<span class="mail-preview">${esc(x.preview)}</span>` : ''}</span>
-    <span class="mail-quadbtn mail-quad-${mailQuadOf(x)}" data-mail-quad-menu="${esc(x._key)}" title="Set priority (Urgent / Important / Read Later / Others)"><span class="mail-quad-dot"></span></span>
-    <span class="mail-rowact mail-rowarch" data-mail-archive="${esc(x._key)}" title="Archive - done with it, take it out">${MAIL_ICO.archive}</span>
-    <span class="mail-rowact mail-rowtrash" data-mail-rowdel="${esc(x._key)}" title="Delete - move to Trash">${MAIL_ICO.trash}</span></button>`;
+// §51 text cleanup (on top of the worker's proper decode): a clean sender name,
+// a tidy subject (no leading emoji, no shouting), a short plain preview.
+function mailSenderClean(x) {
+  let n = mailFrom(x) || '';
+  n = String(n).replace(/\s+via\s+.+$/i, (m) => m.replace(/^\s+via\s+/i, '')).trim();   // "'x.com' via Name" -> "Name"
+  n = n.replace(/^["'“‘]+|["'”’]+$/g, '').trim();
+  return n || '(unknown)';
+}
+function mailCleanSubject(s) {
+  let t = String(s || '').replace(/^[\s\p{Extended_Pictographic}←-➿️‍]+/u, '').trim();
+  if (t.length > 12 && t === t.toUpperCase() && /[A-Z]/.test(t)) t = t.charAt(0) + t.slice(1).toLowerCase();
+  return t;
+}
+function mailCleanPreview(s) {
+  let t = String(s || '').replace(/[​-‍͏­﻿]/g, '').replace(/\s+/g, ' ').trim();
+  t = t.replace(/\s*On\s.{0,80}?\swrote:[\s\S]*$/i, '').trim();   // drop a quoted reply tail
+  return t.slice(0, 90);
+}
+const mailRowHtml = (x, child, count) => {
+  const sel = !!(state.mail.selected && state.mail.selected.has(x._key));
+  const sender = esc(mailSenderClean(x));
+  const subject = esc(mailCleanSubject(x.subject) || '(no subject)');
+  const prev = esc(mailCleanPreview(x.preview));
+  const k = esc(x._key);
+  return `<button class="mail-row mailv2 ${x.seen ? '' : 'unread'} ${child ? 'mail-child' : ''} ${state.mail.pending && state.mail.pending.has(x._key) ? 'mail-pending' : ''} ${sel ? 'picked' : ''} ${state.mail.open && state.mail.open._key === x._key ? 'csel' : (state.mail.sel === x._key ? 'ksel' : '')}" draggable="true" data-mail-drag="${k}" data-mail-open="${k}">
+    <span class="mail-dot" data-mail-check="${k}" title="Select"></span>
+    <span class="mail-row-main">
+      <span class="mail-from">${sender}${count > 1 ? `<span class="mail-conv-n">${count}</span>` : ''}</span>
+      <span class="mail-subject">${state.mail.account === 'all' ? `<span class="mail-acct-chip">${esc(x._acctName || '')}</span>` : ''}${folderChip(x)}${mailBesideLinkedChip(x)}${subject}</span>
+      ${prev ? `<span class="mail-preview">${prev}</span>` : ''}
+    </span>
+    <span class="mail-row-right">
+      <span class="mail-date">${mailDate(x.date)}</span>
+      <span class="mail-row-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>
+    </span></button>`;
+};
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
 // it reads as one set rather than a jumble of emoji.
 const mIco = (p, fill) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -17301,12 +17320,20 @@ function mailAccordionRow(x, count) {
   const showAcct = m.account === 'all' && (m.accounts || []).length > 1;
   const acctName = showAcct ? (() => { const a = (m.accounts || []).find((y) => y.id === x._acct); return a ? (a.name || a.email) : (x._acctName || ''); })() : '';
   const noticed = mailRowNotice(x);
-  const head = `<button class="mail-ar-head" data-mail-open="${esc(x._key)}">`
+  const k = esc(x._key);
+  // §51: three clear levels - sender (Jost 15/500), subject (Cormorant 22, the
+  // largest), preview (muted, one line). Time on the right, with triage on hover;
+  // an unread dot on the left. Text is cleaned (no shouting, no leading emoji).
+  const head = `<button class="mail-ar-head mailv2ar${x.seen ? '' : ' unread'}" data-mail-open="${k}">`
+    + `<span class="mail-ar-dot"></span>`
+    + `<span class="mail-ar-main">`
+    + `<span class="mail-ar-from">${esc(mailSenderClean(x))}${count > 1 ? `<span class="mail-ar-n">${count}</span>` : ''}${acctName ? `<span class="mail-ar-acct">${esc(acctName)}</span>` : ''}</span>`
+    + `<span class="mail-ar-subj">${esc(mailCleanSubject(x.subject) || '(no subject)')}</span>`
+    + `${!isOpen ? `<span class="mail-ar-prev">${noticed ? `<i class="mail-ar-notice">${noticed}</i>` : esc(mailCleanPreview(x.preview))}</span>` : ''}</span>`
+    + `<span class="mail-ar-right">`
     + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
-    + `<span class="mail-ar-main"><span class="mail-ar-top"><span class="mail-ar-from${x.seen ? '' : ' unread'}">${esc(mailFrom(x) || '(unknown)')}${count > 1 ? `<span class="mail-ar-n">${count}</span>` : ''}</span>${acctName ? `<span class="mail-ar-acct">${esc(acctName)}</span>` : ''}</span>`
-    + `<span class="mail-ar-subj${x.seen ? '' : ' unread'}">${esc(x.subject || '(no subject)')}</span>`
-    + `${!isOpen && x.preview ? `<span class="mail-ar-prev">${esc(x.preview)}</span>` : ''}</span>`
-    + `<span class="mail-ar-sign">${noticed ? '<span class="mail-ar-dot" title="Koyeba noticed something"></span>' : ''}<span class="mail-ar-pm">${isOpen ? '−' : '+'}</span></span>`
+    + `<span class="mail-ar-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
+    + `</span>`
     + `</button>`;
   const panel = isOpen ? `<div class="mail-ar-panel">${mailOpenPanelHtml(m.open)}</div>` : '';
   return `<div class="mail-ar${isOpen ? ' open' : ''}">${head}${panel}</div>`;
@@ -25702,13 +25729,10 @@ document.addEventListener('click', (e) => {
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
   { const qp = t.closest('[data-mail-quad-pick]'); if (qp) { const mm = state.mail.quadMenu; if (mm) mailToQuad(mm.key, qp.dataset.mailQuadPick); return; } }
+  { const qs = t.closest('[data-mail-quad-set]'); if (qs) { e.preventDefault(); e.stopPropagation(); const s = qs.dataset.mailQuadSet, i = s.lastIndexOf(':'); mailToQuad(s.slice(0, i), s.slice(i + 1)); return; } }
   // §43 New-mail sheet + arrival line.
-  if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }
-  if (t.closest('[data-mail-sheet-close]')) { toggleMailSheet(false); return; }
-  { const mr = t.closest('[data-mail-open-full]'); if (mr) { toggleMailSheet(false); openMail(mr.dataset.mailOpenFull).catch((x) => toast(x.message)); return; } }
-  { const mt = t.closest('[data-mail-sheet-tri]'); if (mt) { const s = mt.dataset.mailSheetTri, i = s.lastIndexOf(':'); mailSheetTriage(s.slice(0, i), s.slice(i + 1)); return; } }
-  { const mre = t.closest('[data-mail-sheet-reply]'); if (mre) { toggleMailSheet(false); openMail(mre.dataset.mailSheetReply).catch((x) => toast(x.message)); return; } }
-  if (t.closest('[data-mail-arrival-read]')) { toggleMailSheet(true); return; }
+  if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }   // §51: opens the Mail page
+  { const mar = t.closest('[data-mail-arrival-read]'); if (mar) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   { const mg = t.closest('[data-mail-group]'); if (mg) { const k = mg.dataset.mailGroup; state.mail.groupsShut = state.mail.groupsShut || {}; state.mail.groupsShut[k] = !state.mail.groupsShut[k]; renderMail(); return; } }
