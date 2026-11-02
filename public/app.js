@@ -5259,6 +5259,39 @@ function knavRecent() {
 function knavSharedNew() { return (state.sharedItems || []).some((it) => it && it.isNew); }
 // Whether a new-shared notice is worth a gold count: new AND not yet seen this session.
 function knavFindBadge() { return (!state.knav || !state.knav.findSeen) && knavSharedNew() ? '·' : ''; }
+// ── Universal search ──────────────────────────────────────────────────────
+// The top-nav search box searches your CONTENT, not just nav labels. It calls
+// the same /api/search as the command palette (debounced), injects matching
+// Spaces locally, ranks like the palette, and stashes the hits on state.knav
+// for the find panel to render + open through openSearchHit. (Robin, 2026-11-02:
+// "universal search still very much not working" - it had only filtered tool
+// names, so a note/task/person never showed.)
+let knavSearchT = null;
+function knavRunSearch(qraw) {
+  const kn = state.knav || (state.knav = {});
+  const q = (qraw || '').trim();
+  clearTimeout(knavSearchT);
+  if (!q) { kn.results = []; kn.resultsFor = ''; kn.searching = false; return; }
+  kn.searching = true;
+  knavSearchT = setTimeout(async () => {
+    const ql = q.toLowerCase();
+    let hits = [];
+    try { hits = await api(`/api/search?q=${encodeURIComponent(q)}`); } catch {}
+    if (!state.knav || (state.knav.q || '').trim() !== q) return;   // the query moved on
+    // A Space is a whole corner of a life, so a matching one rides to the top even
+    // if the worker's row cap dropped it (same trick the palette uses).
+    const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
+    const seen = new Set(areaHits.map((a) => String(a.id)));
+    const merged = [...areaHits, ...(Array.isArray(hits) ? hits : []).filter((h) => !seen.has(String(h.id)))];
+    const titleRank = (b) => { const t0 = (b.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(b) : (b.title || '')) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
+    merged.sort((a, b) => titleRank(a) - titleRank(b) || ((SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5)));
+    state.knav.results = merged; state.knav.resultsFor = q; state.knav.searching = false;
+    renderNav();
+    const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} }
+  }, 160);
+}
+const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket list' };
+function knavKindLabel(h) { const base = KNAV_KIND_LABEL[h.kind] || 'Item'; const ar = h.parentTitle || (h.area ? ((areaById(h.area) || {}).title || '') : ''); return ar ? `${base} · ${ar}` : base; }
 function navGroupsHtml(v) {
   state.knav = state.knav || { group: null, contents: false, find: false, findSeen: false, mGroup: null, q: '', fShut: {} };
   const kn = state.knav;
@@ -5312,8 +5345,12 @@ function navGroupsHtml(v) {
   if (kn.find) {
     let sections;
     if (q) {
-      const all = groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: g.label, attrs, isTool: true }))).filter((x) => (x.a + ' ' + x.b).toLowerCase().includes(q));
-      sections = all.length ? [{ label: 'Found', badge: String(all.length), open: true, items: all }] : [];
+      const navMatches = groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: g.label, attrs, isTool: true }))).filter((x) => (x.a + ' ' + x.b).toLowerCase().includes(q));
+      const res = (kn.resultsFor === q) ? (kn.results || []) : [];
+      const contentItems = res.map((h, i) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
+      sections = [];
+      if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
+      if (navMatches.length) sections.push({ label: 'Go to', badge: String(navMatches.length), open: true, items: navMatches });
     } else {
       const sh = knavShared(); const rc = knavRecent();
       sections = [];
@@ -5322,12 +5359,14 @@ function navGroupsHtml(v) {
     }
     const secHtml = sections.map((s) => `<div class="knav-find-sec">
       <button class="knav-find-sh"${s.id ? ` data-knav-fsec="${s.id}"` : ''}><span class="knav-find-sl">${s.label}</span>${s.badge ? `<span class="knav-find-sb">${esc(s.badge)}</span>` : ''}<span class="knav-find-ss">${s.id ? (s.open ? '−' : '+') : ''}</span></button>
-      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
+      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.hitIdx != null ? ` data-knav-hit="${it.hitIdx}"` : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
     </div>`).join('');
-    const empty = q && sections.length === 0 ? `<div class="knav-find-empty">Nothing by that name yet.</div>` : '';
+    const searching = !!q && kn.searching && kn.resultsFor !== q;
+    const empty = q && sections.length === 0 && !searching ? `<div class="knav-find-empty">Nothing matches “${esc(kn.q || '')}”.</div>` : '';
+    const searchNote = searching ? '<div class="knav-find-searching">Searching your Spaces…</div>' : '';
     find = `<div class="knav-find">
       <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Search" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
-      ${secHtml}${empty}
+      ${secHtml}${searchNote}${empty}
     </div>`;
   }
   // ── Contents overlay (groups only; a quiet utility footer) ──
@@ -10672,6 +10711,40 @@ function kspTog(aid, key) { const s = kspFoldStore(aid); s[key] = kspOpen(aid, k
 function kspSetOpen(aid, key) { const s = kspFoldStore(aid); s[key] = false; try { localStorage.setItem('life.space.fold.' + aid, JSON.stringify(s)); } catch {} if (state.view && state.view.type === 'area') renderArea(); }
 function kspSetAll(aid, open) { const s = {}; ['vision', 'tasks', 'notes', 'tables', 'emails', 'files', 'people', 'books'].forEach((k) => { s[k] = !open; }); try { localStorage.setItem('life.space.fold.' + aid, JSON.stringify(s)); } catch {} if (state.view && state.view.type === 'area') renderArea(); }
 function kFileSize(n) { n = +n || 0; if (n >= 1048576) return (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB'; if (n >= 1024) return Math.round(n / 1024) + ' KB'; return n + ' B'; }
+// ── §29 Space v2 helpers ──────────────────────────────────────────────────
+// Per-Space "last looked at" stamp, so Recent can dot what's new since then.
+function spLastVisit(aid) { try { return localStorage.getItem('koyeba.area.seen.' + (aid || '')) || ''; } catch { return ''; } }
+function spMarkVisit(aid) { try { localStorage.setItem('koyeba.area.seen.' + (aid || ''), new Date().toISOString()); } catch {} }
+// A transient per-Space UI bit (note view, recent filter, new-group open).
+function spSet(k, v) { if (!state.area_open) return; state.area_open[k] = v; if (state.view && state.view.type === 'area') renderArea(); }
+// A new note already filed into a group (the per-column "+ Add to …").
+async function areaAddNoteGroup(group) {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const props = { area: area.id, ...(group && group !== 'Loose' ? { group } : {}) };
+  try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', parent_id: null, props }) }); state.noteTops.unshift(n); await openNote(n.id); setTimeout(() => $('#note-title') && $('#note-title').focus(), 30); } catch (e) { toast(e.message); }
+}
+// Move an existing note between groups (the A-Z view's quiet picker). null clears.
+function spSetNoteGroup(noteId, group) {
+  const b = ((state.area_open && state.area_open.blocks) || []).find((x) => String(x.id) === String(noteId)); if (!b) return;
+  const g = (group && group !== 'Loose') ? group : null;
+  b.props = b.props || {}; if (g) b.props.group = g; else delete b.props.group;
+  if (state.view && state.view.type === 'area') renderArea();
+  api('/api/blocks/' + noteId, { method: 'PATCH', body: JSON.stringify({ props: { group: g } }) }).catch(() => {});
+}
+// Create an (empty) note group on the Space, so a column exists to add into.
+function spAddGroup(name) {
+  name = (name || '').trim(); if (!name) return;
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  const cur = (area.props && Array.isArray(area.props.noteGroups)) ? area.props.noteGroups.slice() : [];
+  if (!cur.includes(name)) cur.push(name);
+  area.props = area.props || {}; area.props.noteGroups = cur;
+  const s = state.areas.find((x) => x.id === area.id); if (s) { s.props = s.props || {}; s.props.noteGroups = cur; }
+  if (state.area_open) state.area_open.newGroupOpen = false;
+  if (state.view && state.view.type === 'area') renderArea();
+  api('/api/blocks/' + area.id, { method: 'PATCH', body: JSON.stringify({ props: { noteGroups: cur } }) }).catch(() => {});
+}
+// Plain-text excerpt from a note body (no dates on cards, per §29).
+function spSnip(b, n) { return (b && b.body || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/\s+/g, ' ').trim().slice(0, n || 90); }
 function renderArea() {
   const { area, blocks } = state.area_open;
   const tasks = blocks.filter((b) => b.kind === 'task');
@@ -16562,6 +16635,9 @@ function openFav(ref) {
   if (kind === 'area') return openArea(id);
   if (kind === 'task') return openTaskCard(id);
   if (kind === 'journal') return openJournalEntry(id);
+  // Goal/contact/bucket/bookmark/event fell through to Tasks before - route them
+  // through the shared search-hit opener so a recent or search result opens right.
+  if (['row', 'contact', 'goal', 'bucket', 'bookmark', 'event'].includes(kind)) return Promise.resolve(openSearchHit({ kind, id }));
   return openTasks();
 }
 
@@ -23015,19 +23091,26 @@ function execItem(it) {
   if (it.kind === 'action') return it.run().catch((e) => toast(e.message));
   if (it.kind === 'nav') return Promise.resolve(it.run()).catch((e) => toast(e.message));   // jump to a tool/settings page
   if (q) pushRecentSearch(q);   // opened a result off a query - remember what you searched
-  if (it.kind === 'note') return openNote(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'table') return openTable(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'area') return openArea(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'task') return openTaskCard(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'row') return openRowResult(it.parent, it.id).catch((e) => toast(e.message));
-  if (it.kind === 'contact') return openContactCard(it.id).catch((e) => toast(e.message));
-  // These kinds are returned by /api/search and shown in the palette, so they must
-  // open too (they used to fall through and do nothing). (Robin, 2026-10-28.)
-  if (it.kind === 'goal') return openGoalCard(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'bucket') return openBucketCard(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'journal') return openJournalEntry(it.id).catch((e) => toast(e.message));
-  if (it.kind === 'bookmark') { openBookmarkCard(it.id); return; }
-  if (it.kind === 'event') return openEventHit(it).catch((e) => toast(e.message));
+  return Promise.resolve(openSearchHit(it)).catch((e) => toast(e.message));
+}
+// Open a search hit by its kind - shared by the command palette AND the top-nav
+// search box, so every kind /api/search returns lands on the right page and none
+// silently fall through. (Robin, 2026-11-02: the top-nav search uses this now.)
+function openSearchHit(it) {
+  switch (it.kind) {
+    case 'note': return openNote(it.id);
+    case 'table': return openTable(it.id);
+    case 'area': return openArea(it.id);
+    case 'task': return openTaskCard(it.id);
+    case 'row': return openRowResult(it.parent, it.id);
+    case 'contact': return openContactCard(it.id);
+    case 'goal': return openGoalCard(it.id);
+    case 'bucket': return openBucketCard(it.id);
+    case 'journal': return openJournalEntry(it.id);
+    case 'bookmark': return Promise.resolve(openBookmarkCard(it.id));
+    case 'event': return openEventHit(it);
+    default: return Promise.resolve();
+  }
 }
 // Open a calendar event found in search: jump the calendar to its date and open
 // its editor. Matches a one-off by id and a recurring one by its base id.
@@ -23151,7 +23234,7 @@ document.addEventListener('keydown', (e) => {
     }
   }
   if (e.key === 'Escape' && state.knav && (state.knav.group || state.knav.contents || state.knav.find)) { e.preventDefault(); state.knav.group = null; state.knav.contents = false; state.knav.find = false; renderNav(); return; }
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
   // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
@@ -23275,7 +23358,7 @@ function looksMarkdown(t) {
 // list, like a Markdown editor. Done on `input` (fires reliably on every phone
 // and desktop keyboard, and outside the beforeinput dispatch where execCommand
 // is inert), detecting the moment the line reads exactly "- ".
-document.addEventListener('input', (e) => { if (e.target && e.target.matches && e.target.matches('[data-knav-q]')) { const kn = state.knav || (state.knav = {}); kn.q = e.target.value; renderNav(); const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } });
+document.addEventListener('input', (e) => { if (e.target && e.target.matches && e.target.matches('[data-knav-q]')) { const kn = state.knav || (state.knav = {}); kn.q = e.target.value; knavRunSearch(kn.q); renderNav(); const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } });
 document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!ed || ed.__autobullet) return;   // guard: our own execCommands re-fire input
@@ -23653,7 +23736,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
   { const kg = t.closest('[data-knav-group]'); if (kg) { const kn = state.knav || (state.knav = {}); const id = kg.dataset.knavGroup; const was = kn.group === id && !kn.contents && !kn.find; kn.group = was ? null : id; kn.contents = false; kn.find = false; renderNav(); return; } }
   if (t.closest('[data-knav-contents]')) { const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
-  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
   if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
   { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }
@@ -24353,6 +24436,7 @@ document.addEventListener('click', (e) => {
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a
   // select - so the chip both shows the value and edits it in one tap.
   { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const tgt = jmp.dataset.ceJump; if (tgt === '#ce-area') { const lab = document.querySelector('.ce-arealab'); if (lab) lab.classList.add('ce-area-reveal'); } const el = document.querySelector(tgt); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
+  { const kh = t.closest('[data-knav-hit]'); if (kh) { const kn = state.knav || (state.knav = {}); const hit = (kn.results || [])[+kh.dataset.knavHit]; if (hit) { const qq = (kn.q || '').trim(); kn.find = false; renderNav(); if (qq && typeof pushRecentSearch === 'function') pushRecentSearch(qq); openSearchHit(hit).catch((x) => toast(x.message)); } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
