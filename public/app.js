@@ -8646,13 +8646,75 @@ function homeNewMake(kind) {
 function homeGlancePanelHtml(tool) {
   const open = (attr, k, title, sub, when) => `<button class="gln-item" ${attr}><span class="gln-item-b"><span class="gln-item-t">${esc(title)}</span>${sub ? `<span class="gln-item-s">${esc(sub)}</span>` : ''}</span>${when ? `<span class="gln-item-w">${esc(when)}</span>` : ''}</button>`;
   let rows = '', link = '', label = '';
-  if (tool === 'mail') { label = 'Mail'; const items = mailNewItems().slice(0, 4); rows = items.map((m) => open(`data-mail-open-glance="${esc(m._key)}"`, 'mail', mailSenderClean(m), mailCleanSubject(m.subject), '')).join('') || '<div class="gln-empty">Nothing to sort.</div>'; link = 'data-open-mail'; }
+  if (tool === 'mail') {
+    // §51: one click unfolds the email in place - sender on top (Jost), subject
+    // below (Cormorant), then the text and Reply · triage · Open this in Mail.
+    // Triaging removes the row. The row no longer just jumps to the Mail page.
+    label = 'Mail';
+    const items = mailNewItems().slice(0, 4);
+    const openK = (state.home && state.home.glanceMail) || null;
+    rows = items.map((m) => {
+      const k = m._key; const isOpen = openK === k;
+      const head = `<button class="gln-mail-row" data-glance-mail="${esc(k)}" aria-expanded="${isOpen ? 'true' : 'false'}"><span class="gln-mail-b"><span class="gln-mail-from">${esc(mailSenderClean(m))}</span><span class="gln-mail-subj">${esc(mailCleanSubject(m.subject) || '(no subject)')}</span></span>${m.seen ? '' : '<span class="gln-mail-dot" aria-hidden="true"></span>'}</button>`;
+      let body = '';
+      if (isOpen) {
+        const cache = (state.home && state.home.glanceMailBody) || {};
+        const txt = cache[k];
+        const textHtml = txt === undefined ? '<span class="gln-mail-loading">Reading…</span>' : (txt ? esc(txt) : 'No text to show.');
+        body = `<div class="gln-mail-open"><div class="gln-mail-text">${textHtml}</div><div class="gln-mail-acts"><button class="gln-mail-reply" data-glance-mail-reply="${esc(k)}">Reply</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="urgent">Urgent</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="important">Important</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="chilled">Read later</button><button class="gln-mail-openin" data-glance-mail-openin="${esc(k)}">Open this in Mail →</button></div></div>`;
+      }
+      return `<div class="gln-mail${isOpen ? ' on' : ''}">${head}${body}</div>`;
+    }).join('') || '<div class="gln-empty">Nothing to sort.</div>';
+    link = 'data-open-mail';
+  }
   else if (tool === 'messages') { label = 'Messages'; const by = (state.friendStatus && state.friendStatus.unreadBy) || {}; const ids = Object.keys(by); rows = ids.slice(0, 4).map((id) => { const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id)); return open(`data-friend-chat="${id}"`, 'msg', (f && f.name) || 'Someone', `${by[id]} new`, ''); }).join('') || '<div class="gln-empty">No unread messages.</div>'; link = 'data-open-messages'; }
   else if (tool === 'tasks') { label = 'Tasks'; const ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).slice(0, 4); rows = ts.map((t) => open(`data-open-task="${t.id}"`, 'task', t.title || 'A task', '', '')).join('') || '<div class="gln-empty">Nothing to do.</div>'; link = 'data-view-tasks'; }
   else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', e.location || '', e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
   else if (tool === 'notes') { label = 'Notes'; const ns = (state.noteTops || []).slice(0, 4); rows = ns.map((n) => open(`data-open-note="${n.id}"`, 'note', n.title || 'Untitled', '', '')).join('') || '<div class="gln-empty">No notes yet.</div>'; link = 'data-open-notes'; }
   else { label = 'Goals'; const gs = (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').slice(0, 4); rows = gs.map((g) => open(`data-open-goal="${g.id}"`, 'goal', g.title || 'A goal', '', '')).join('') || '<div class="gln-empty">No goals yet.</div>'; link = 'data-open-goals'; }
   return `<div class="gln-panel-rows">${rows}</div><div class="gln-panel-foot"><button class="gln-open" ${link}>Open ${esc(label)} →</button><button class="gln-fold" data-glance-fold>Fold away</button></div>`;
+}
+// §51: pull a readable plain-text body for the in-place mail read. Prefer the
+// text part; fall back to flattening HTML. Strip invisible characters and a
+// reply's quoted history, collapse runaway blank lines, and cap it so a long
+// newsletter doesn't fill Today - "Open this in Mail →" is there for the rest.
+function glanceMailText(full) {
+  let t = (full && (full.text || full.body || full.snippet)) || '';
+  if (!t && full && full.html) { try { const d = document.createElement('div'); d.innerHTML = full.html; t = d.textContent || ''; } catch {} }
+  t = String(t).replace(/[​-‍͏­﻿]/g, '').replace(/\r/g, '');
+  t = t.replace(/\s*On\s[\s\S]{0,120}?\swrote:[\s\S]*$/i, '');   // drop a quoted reply tail
+  t = t.replace(/\n{3,}/g, '\n\n').trim();
+  return t.length > 900 ? t.slice(0, 900).replace(/\s+\S*$/, '') + '…' : t;
+}
+// Click a glance mail row: unfold it in place (fetching the body once, cached),
+// or fold it if it's already open.
+async function glanceMailToggle(key) {
+  const h = state.home = state.home || {};
+  if (h.glanceMail === key) { h.glanceMail = null; renderHome(); return; }
+  h.glanceMail = key; h.glanceMailBody = h.glanceMailBody || {};
+  renderHome();
+  if (h.glanceMailBody[key] !== undefined) return;   // already fetched
+  const row = mailMsgByKey(key); if (!row) { h.glanceMailBody[key] = ''; return; }
+  try { h.glanceMailBody[key] = glanceMailText(await mailFetchMsg(row)); }
+  catch { h.glanceMailBody[key] = ''; }
+  if (state.view && state.view.type === 'home' && h.glanceMail === key) renderHome();
+}
+// Reply from the glance: land on the message in Mail with the composer open.
+async function glanceMailReply(key) {
+  const row = mailMsgByKey(key); if (!row) { openMail(key).catch((x) => toast(x.message)); return; }
+  try {
+    const full = await mailFetchMsg(row);
+    await openMail(key);
+    state.mail.open = { ...full, _acct: row._acct, _mailbox: row._mailbox, _acctName: row._acctName, _key: row._key, uid: row.uid, flagged: !!row.flagged };
+    mailReplyStart(false);
+  } catch (e) { toast((e && e.message) || 'Could not open the reply.'); }
+}
+// Triage from the glance: file it (mailToQuad handles the IMAP move + state), then
+// the row leaves the to-sort list, so a re-render drops it.
+async function glanceMailQuad(key, quad) {
+  if (state.home) state.home.glanceMail = null;
+  try { await mailToQuad(key, quad); } catch (e) { toast((e && e.message) || 'Could not file that.'); }
+  if (state.view && state.view.type === 'home') renderHome();
 }
 function homeGlanceHtml() {
   const newOpen = !!(state.home && state.home.newMenu);
@@ -25537,8 +25599,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
   if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderHome(); return; }
   { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); return; } }
-  if (t.closest('[data-glance-fold]')) { if (state.home) state.home.glance = null; renderHome(); return; }
-  { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
+  if (t.closest('[data-glance-fold]')) { if (state.home) { state.home.glance = null; state.home.glanceMail = null; } renderHome(); return; }
+  { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glanceMail = null; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
+  { const gmr = t.closest('[data-glance-mail-reply]'); if (gmr) { e.preventDefault(); e.stopPropagation(); glanceMailReply(gmr.dataset.glanceMailReply); return; } }
+  { const gmq = t.closest('[data-glance-mail-quad]'); if (gmq) { e.preventDefault(); e.stopPropagation(); glanceMailQuad(gmq.dataset.glanceMailQuad, gmq.dataset.quad); return; } }
+  { const gmo = t.closest('[data-glance-mail-openin]'); if (gmo) { e.preventDefault(); e.stopPropagation(); openMail(gmo.dataset.glanceMailOpenin).catch((x) => toast(x.message)); return; } }
+  { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailToggle(gm.dataset.glanceMail); return; } }
   { const mog = t.closest('[data-mail-open-glance]'); if (mog) { openMail(mog.dataset.mailOpenGlance).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
