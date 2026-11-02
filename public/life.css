@@ -9815,12 +9815,16 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 #cap-root > * { pointer-events:auto; }
 
 /* Collapsed bar: forest in both themes, a gold + and a Speak chip. */
-.cap-bar { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); display:flex; align-items:center; gap:16px; width:min(460px,calc(100vw - 32px)); box-sizing:border-box; padding:15px 20px; background:#2c4a3a; color:#f6f1e6; border:0; cursor:pointer; text-align:left; }
-.cap-bar-plus { font-family:var(--k-sans); font-weight:300; font-size:24px; line-height:1; color:#d8b25e; }
-.cap-bar-t { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:21px; white-space:nowrap; }
+/* §52: the resting tab is small and sizes to its content - ~44px tall, ~260px
+   wide. Never a width/min-width, never padding above 12px vertical. */
+.cap-bar { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; box-sizing:border-box; padding:12px 20px; background:#2c4a3a; color:#f6f1e6; border:0; cursor:pointer; text-align:left; white-space:nowrap; line-height:1; transition:opacity .25s ease; }
+.cap-bar.cap-dim { opacity:.4; }
+.cap-bar:hover { opacity:1; }
+.cap-bar-plus { font-family:var(--k-sans); font-weight:300; font-size:20px; line-height:1; color:#d8b25e; }
+.cap-bar-t { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; white-space:nowrap; opacity:.85; }
 .cap-bar-speak { margin-left:auto; display:flex; align-items:center; gap:7px; font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.22em; text-transform:uppercase; padding:6px 10px; border:1px solid rgba(246,241,230,.22); }
 .cap-bar-dot { width:6px; height:6px; background:#d8b25e; flex:none; }
-.cap-bar-kbd { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.2em; opacity:.7; }
+.cap-bar-kbd { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.2em; opacity:.55; }
 
 /* Drawer */
 .cap-scrim { position:fixed; inset:0; background:rgba(20,16,8,.28); }
@@ -10031,7 +10035,7 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 .app-shell { display:block; min-height:100vh; }
 body.nav-collapsed .app-shell { grid-template-columns:none; }
 .nav { position:sticky; top:0; z-index:60; height:auto; max-height:none; overflow:visible; width:auto; background:var(--paper); border-bottom:1px solid var(--line); border-right:0; padding:0; }
-.main { min-width:0; display:block; }
+.main { min-width:0; display:block; padding-bottom:120px; }   /* §52: room so the resting tab never covers content */
 .knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); }
 .knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; }
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
@@ -10144,7 +10148,7 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
      #cap-root still opens from it), so hide only the tab, never #cap-root. */
   .cap-bar { display:none !important; }
   /* keep screen content clear of the fixed bottom bar */
-  .main { padding-bottom:96px; }
+  .main { padding-bottom:120px; }
 }
 
 /* §17: the old mobile icon tab bar is replaced by the nav's bottom bar. */

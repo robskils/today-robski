@@ -426,8 +426,10 @@ function previewSnippet(hdr) {
   if (!after) return '';
   const compact = after.replace(/\s+/g, '');
   const b64 = (compact.length >= 40 && /^[A-Za-z0-9+/]+={0,2}$/.test(compact)) ? decodeB64Text(compact) : null;
-  const text = b64 != null ? b64
-    : after.replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))); // QP soft breaks + escapes
+  // QP soft breaks + escapes give us raw bytes as char codes; re-read them as
+  // UTF-8 so "digressão" doesn't come out "digressÃ£o" and NBSP isn't "Â ".
+  const qp = after.replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  const text = b64 != null ? b64 : (() => { try { return new TextDecoder('utf-8', { fatal: false }).decode(Uint8Array.from(qp, (c) => c.charCodeAt(0) & 0xff)); } catch { return qp; } })();
   let s = text
     .replace(/<[^>]+>/g, ' ')                                            // strip HTML tags
     .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;/gi, "'").replace(/&quot;/gi, '"')

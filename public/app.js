@@ -7893,6 +7893,19 @@ function capRecHtml() {
 }
 function capFmtTime(s) { s = s || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 function updateCapReadout() { const el = document.getElementById('cap-readout'); if (el) el.innerHTML = capReadoutHtml(); }
+// §52: fade the resting tab to 40% while scrolling down, back to full on scroll
+// up or at the top (and on hover, via CSS). A cheap size guard warns if it drifts.
+let _capLastY = 0;
+function capScrollFade() {
+  const bar = document.querySelector('.cap-bar'); if (!bar) return;
+  const main = document.querySelector('.main');
+  const y = (main && main.scrollTop) || window.scrollY || 0;
+  if (y > _capLastY + 4 && y > 60) bar.classList.add('cap-dim');
+  else if (y < _capLastY - 4 || y < 20) bar.classList.remove('cap-dim');
+  _capLastY = y;
+}
+function capSizeCheck() { const b = document.querySelector('.cap-bar'); if (!b) return; const r = b.getBoundingClientRect(); if (r.height > 48 || r.width > 300) console.warn('[cap-bar] resting tab too big:', Math.round(r.width) + '×' + Math.round(r.height)); }
+if (!window.__capScroll) { window.__capScroll = true; window.addEventListener('scroll', capScrollFade, { passive: true }); document.addEventListener('scroll', (e) => { if (e.target && e.target.classList && e.target.classList.contains('main')) capScrollFade(); }, { passive: true, capture: true }); }
 function renderCapBar(force) {
   // Only in the signed-in app, and never over a full-screen overlay.
   if (!state.me || document.getElementById('flyer') || (state.view && /^(onboarding|signin|welcome)$/.test(state.view.type || ''))) { const r = document.getElementById('cap-root'); if (r) r.remove(); return; }
@@ -7903,7 +7916,8 @@ function renderCapBar(force) {
   if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
   root.dataset.sig = sig;
   if (!c.open) {
-    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down…</span><span class="cap-bar-speak" data-cap-speak-open><span class="cap-bar-dot"></span>Speak</span><span class="cap-bar-kbd">⌘ .</span></button>`;
+    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down</span><span class="cap-bar-kbd">⌘ .</span></button>`;
+    capSizeCheck();
     return;
   }
   root.className = 'cap-open';
