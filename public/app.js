@@ -5191,14 +5191,14 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''],
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
+      ['Flow', 'data-open-today', ''], ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
       ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
-      ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''], ['Practices', 'data-open-practices', ''] ] },
+      ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''] ] },
     { id: 'money', label: 'Money', about: "What things cost, and what's growing", tools: [
       ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
   ];
@@ -5207,10 +5207,10 @@ function knavGroups() {
 const KNAV_VIEW = {
   area: 'spaces', areas: 'spaces',
   mail: 'conv', mailaccounts: 'conv', messages: 'conv', contacts: 'conv', contactcard: 'conv', connect: 'conv', friends: 'conv', daybookpeople: 'conv', shared: 'conv',
-  calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans',
+  calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans', today: 'plans', practices: 'plans', practicecard: 'plans',
   notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
   goals: 'plans', goalcard: 'plans', bucketcard: 'plans', reviews: 'plans', reviewcard: 'plans',
-  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', practices: 'inner', tracker: 'inner',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'inner',
   money: 'money', financial: 'money',
 };
 // A cheap live hint for a tool, where we have the number to hand (never an amount).
