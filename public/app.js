@@ -11317,6 +11317,7 @@ function renderAreasList() {
   // A space I own: the full card with live metrics, draggable in "My order".
   const card = (a) => {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
+    const pin = !!(a.props && a.props.pinToday);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
     const act = areaActivity(s.last);
     // Wheel-of-Life marker: a mini donut filled to this area's last score (in its own
@@ -11340,6 +11341,7 @@ function renderAreasList() {
         <span class="agc-metrics">${chips}</span>
       </button>
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
+      <div class="agc-foot"><button class="agc-today${pin ? ' on' : ''}" data-area-today="${a.id}" aria-pressed="${pin ? 'true' : 'false'}" title="${pin ? 'Showing on Today - click to remove' : 'Keep this Space on Today'}">${pin ? 'On Today' : 'Keep on Today'}</button></div>
     </div>`;
   };
   // A space shared WITH me: someone else's, so no metrics, star or drag - just a
@@ -11377,6 +11379,18 @@ function renderAreasList() {
     <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Koyeba - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
+}
+// §46: "Keep on Today" pins a Space into Today's Your Spaces column whatever its
+// activity - homeSpacesAsideHtml reads props.pinToday and sorts pinned (and
+// needs-you) Spaces first, counting towards the shown 8. A quiet per-card toggle
+// on the full Spaces page, mirrored optimistically into state.areas.
+async function areaTogglePinToday(id) {
+  const a = (state.areas || []).find((x) => String(x.id) === String(id)); if (!a) return;
+  const pin = !(a.props && a.props.pinToday);
+  a.props = { ...(a.props || {}), pinToday: pin };
+  if (state.view && state.view.type === 'areas') renderAreasList();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { pinToday: pin } }) }); toast(pin ? 'Kept on Today' : 'Removed from Today'); }
+  catch (e) { a.props.pinToday = !pin; if (state.view && state.view.type === 'areas') renderAreasList(); toast((e && e.message) || 'Could not update that.'); }
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -26063,6 +26077,7 @@ document.addEventListener('click', (e) => {
   { const kh = t.closest('[data-knav-hit]'); if (kh) { const kn = state.knav || (state.knav = {}); const hit = (kn.results || [])[+kh.dataset.knavHit]; if (hit) { const qq = (kn.q || '').trim(); kn.find = false; renderNav(); if (qq && typeof pushRecentSearch === 'function') pushRecentSearch(qq); openSearchHit(hit).catch((x) => toast(x.message)); } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
+  { const at = t.closest('[data-area-today]'); if (at) { e.preventDefault(); e.stopPropagation(); areaTogglePinToday(at.dataset.areaToday); return; } }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
   { const tv = t.closest('[data-tasks-view]'); if (tv) { setTasksBoard(tv.dataset.tasksView === 'board'); renderTasks(); return; } }
   { const av = t.closest('[data-area-view]'); if (av) { setAreaBoard(av.dataset.areaView === 'board'); renderArea(); return; } }

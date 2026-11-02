@@ -5966,6 +5966,10 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .agc-chip-t { color:var(--ink-2); background:color-mix(in srgb,var(--c) 13%,transparent); }
 .agc-chip-g { color:var(--ink-2); background:var(--bg-2,color-mix(in srgb,var(--ink) 6%,transparent)); }
 .agc-star { position:absolute; top:12px; right:10px; }
+.agc-foot { border-top:1px solid var(--line); padding:9px 16px; display:flex; justify-content:flex-end; }
+.agc-today { font-family:var(--k-sans,'Jost',sans-serif); font-weight:500; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-3); background:none; border:0; border-radius:0; padding:3px 2px; cursor:pointer; }
+.agc-today:hover { color:var(--ink-2); }
+.agc-today.on { color:var(--accent); }
 /* Top row: monogram + an "how active" pill. */
 .agc-toprow { display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; }
 .agc-topright { display:inline-flex; align-items:center; gap:8px; flex:none; }
