@@ -5462,8 +5462,8 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 6], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''], ['What next', 'data-wn-open', ''],
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
       ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
@@ -8206,8 +8206,8 @@ function openBesideTool(tool) {
 function besideToolHeadHtml(tool) {
   const meta = BESIDE_TOOLS[tool], pairs = besidePairsLoad(), paired = !!pairs[tool];
   const sw = Object.keys(BESIDE_TOOLS).map((k) => `<button type="button" class="pane2-swap${k === tool ? ' on' : ''}" data-beside-tool="${k}">${esc(BESIDE_TOOLS[k].title)}</button>`).join('');
-  const keep = `<button type="button" class="pane2-keep${paired ? ' on' : ''}" data-beside-pair title="${paired ? 'Kept as a pair' : 'Keep this pair'} - Koyeba will offer it again"><span class="pane2-keepbox"></span>${paired ? 'Pair kept' : 'Keep pair'}</button>`;
-  return `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(meta.group)}</div><div class="pane2-title">${esc(meta.title)}</div></div><div class="pane2-acts">${sw}${keep}<span class="pane2-sep">|</span><button type="button" class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  // 'Keep pair' removed (Robin).
+  return `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(meta.group)}</div><div class="pane2-title">${esc(meta.title)}</div></div><div class="pane2-acts">${sw}<span class="pane2-sep">|</span><button type="button" class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
 }
 async function besideLoadToolItems(tool) {
   try {
@@ -16402,7 +16402,17 @@ function mailReopenStale() { try { const t = Number(localStorage.getItem('life.m
 // page. Triage reuses mailToQuad; the message list comes from the synced cache.
 // The header count: the to-sort inbox once the list is loaded (so it drops as
 // you triage), falling back to the server unread total on a cold page.
-function mailHeaderCount() { return state.__mailListLoaded ? mailNewItems().length : (state.mailUnreadTotal || 0); }
+function mailHeaderCount() {
+  // The server's account-wide unread total is the reliable inbox count. The client
+  // list (mailNewItems) only counts what's loaded right now, which narrows when you
+  // open an account, a quadrant or a search - that was the "says 1 or 0 when there
+  // are really 17" bug. Prefer the server total; use the client count only before
+  // the server number is known, and never let a partial list read LOWER than it.
+  const server = (typeof state.mailUnreadTotal === 'number') ? state.mailUnreadTotal : null;
+  if (!state.__mailListLoaded) return server || 0;
+  const client = mailNewItems().length;
+  return server == null ? client : Math.max(server, client);
+}
 function mailLookedKey() { return 'life.mail.looked'; }
 function mailLookedTs() { try { return Number(localStorage.getItem(mailLookedKey())) || 0; } catch { return 0; } }
 function mailMarkLooked() { try { localStorage.setItem(mailLookedKey(), String(Date.now())); } catch {} }
@@ -18199,6 +18209,7 @@ function mailOpenTriageBar(o) {
     + `<button class="mail-trg" data-mail-quad-file="important">Important</button>`
     + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
     + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
+    + `<button class="mail-trg mail-trg-del" data-mail-del="${k}">Delete</button>`
     + `</div>`;
 }
 // Does Koyeba notice anything in this email? (an invite, a meeting link, or that
