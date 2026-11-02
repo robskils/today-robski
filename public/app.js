@@ -15459,7 +15459,16 @@ function mailNewItems() {
   const out = msgs.filter((m) => m && !gone.has(m._key) && mailQuadOf(m) === 'inbox');
   return out.sort((a, b) => mailMsgTs(b) - mailMsgTs(a));
 }
-function mailSenderName(m) { const f = (m && (m.fromName || m.from || '')) || ''; const nm = String(f).replace(/<[^>]*>/g, '').replace(/"/g, '').trim(); return nm || String((m && m.fromAddr) || f || 'Someone').trim(); }
+function mailSenderName(m) {
+  if (!m) return 'Someone';
+  const f = m.from;
+  // Mail stores `from` as an object {name, address} (see mailFrom); only fall
+  // back to string parsing for other shapes.
+  if (f && typeof f === 'object') return f.name || f.address || 'Someone';
+  if (m.fromName) return String(m.fromName);
+  if (typeof f === 'string' && f.trim()) return f.replace(/<[^>]*>/g, '').replace(/"/g, '').trim() || f.trim();
+  return (m.fromAddr && String(m.fromAddr)) || 'Someone';
+}
 function mailArrivalLine() {
   const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
   if (!items.length || state.mailSheet || state.mailArrivalHidden) return '';
@@ -15491,9 +15500,19 @@ async function warmMailForSheet() {
     let accts = (state.mail && state.mail.accounts) || null;
     if (!accts) { const r = await mailApi('/accounts').catch(() => null); accts = Array.isArray(r) ? r : ((r && r.accounts) || []); if (state.mail) state.mail.accounts = accts; }
     if (!accts || !accts.length) return;
-    const r = await mailApi(`/messages?account=${accts[0].id}&limit=40`).catch(() => null);
-    const msgs = (r && r.messages) || [];
-    if (msgs.length && state.mail) { state.mail.messages = msgs; if (state.mailSheet) renderMailSheet(); }
+    const gone = (state.mail && state.mail.gone) || new Set();
+    const all = [];
+    for (const a of accts.slice(0, 5)) {
+      const r = await mailApi(`/messages?account=${a.id}&limit=40`).catch(() => null);
+      // Normalise exactly like the main inbox load, so each message carries the
+      // _acct / _mailbox / _key the rest of the mail system keys off - without
+      // these the sheet rows have no id and can't be opened or triaged.
+      for (const x of ((r && r.messages) || [])) { const mb = x.mailbox || 'INBOX'; all.push({ ...x, _acct: x.account || a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${x.account || a.id}:${mb}:${x.uid}` }); }
+    }
+    if (all.length && state.mail) {
+      state.mail.messages = all.filter((m) => !gone.has(m._key));
+      if (state.mailSheet) { renderNav(); renderMailSheet(); }
+    }
   } catch {}
 }
 function mailSheetHtml() {
@@ -15570,9 +15589,13 @@ async function mailSheetReadRow(key) {
 }
 async function mailSheetTriage(key, pile) {
   const quad = pile === 'later' ? 'chilled' : pile;   // Read later maps to the Chilled pile
-  try { await mailToQuad(key, quad); } catch {}
+  // Drop it from the sheet at once (gone is keyed by _key, same as the rows), so
+  // the row leaves and the count falls without waiting on the IMAP move.
+  if (state.mail && state.mail.gone) state.mail.gone.add(key);
   if (state.mailSheetOpen === key) state.mailSheetOpen = null;
+  renderNav(); renderMailSheet();
   toast(pile === 'urgent' ? 'Moved to Urgent' : pile === 'important' ? 'Moved to Important' : 'Saved to read later');
+  try { await mailToQuad(key, quad); } catch {}
   renderNav(); renderMailSheet();
 }
 async function openMail(openKey) {
@@ -25424,8 +25447,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }
   if (t.closest('[data-mail-sheet-close]')) { toggleMailSheet(false); return; }
   { const mr = t.closest('[data-mail-sheet-row]'); if (mr) { mailSheetReadRow(mr.dataset.mailSheetRow); return; } }
-  { const mt = t.closest('[data-mail-sheet-tri]'); if (mt) { const [k, p] = mt.dataset.mailSheetTri.split(':'); mailSheetTriage(k, p); return; } }
-  { const mu = t.closest('[data-mail-sheet-turn]'); if (mu) { const [k] = mu.dataset.mailSheetTurn.split(':'); toggleMailSheet(false); openMail(k).catch((x) => toast(x.message)); return; } }
+  { const mt = t.closest('[data-mail-sheet-tri]'); if (mt) { const s = mt.dataset.mailSheetTri, i = s.lastIndexOf(':'); mailSheetTriage(s.slice(0, i), s.slice(i + 1)); return; } }
+  { const mu = t.closest('[data-mail-sheet-turn]'); if (mu) { const s = mu.dataset.mailSheetTurn, i = s.lastIndexOf(':'); toggleMailSheet(false); openMail(s.slice(0, i)).catch((x) => toast(x.message)); return; } }
   { const mre = t.closest('[data-mail-sheet-reply]'); if (mre) { toggleMailSheet(false); openMail(mre.dataset.mailSheetReply).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-mail-arrival-read]')) { toggleMailSheet(true); return; }
   if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
