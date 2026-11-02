@@ -8294,11 +8294,42 @@ async function keepQuote() {
     rerenderCurrent();
   } catch (e) { toast(e.message); }
 }
+// ── §41/§42 Today sections ─────────────────────────────────────────────────
+function homeReadingCount() { return (currentIching() ? 1 : 0) + (currentSpirit() ? 1 : 0); }
+function homeBirthdaysHtml() {
+  const bd = (state.home.alerts && state.home.alerts.birthdays) || [];
+  if (!bd.length || (state.home.dayOffset || 0) !== 0) return '';
+  const rows = bd.slice(0, 8).map((b) => `<div class="ktl-row home-bday-row" data-open-contact="${b.id}" role="button" tabindex="0"><span class="ktl-time">${b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : 'in ' + b.inDays + 'd'}</span><span class="ktl-rail"><span class="ktl-dot"></span></span><span class="ktl-body"><span class="ktl-t">${esc(b.name)}’s birthday</span></span></div>`).join('');
+  return `<div class="home-bdays"><div class="home-sub-eyebrow">Birthdays</div>${rows}</div>`;
+}
+function homeKeepInTouchHtml() {
+  const kit = (state.home.alerts && state.home.alerts.keepInTouch) || [];
+  if (!kit.length) return '<div class="home-empty">No one’s due a catch-up right now.</div>';
+  return kit.slice(0, 10).map((k) => {
+    const overdue = k.due && k.due < todayISO();
+    const why = k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet';
+    return `<div class="home-kit-row"><button class="home-kit-nm" data-open-contact="${k.id}">${esc(k.name || 'Someone')}</button><span class="home-kit-why${overdue ? ' over' : ''}">${esc(why)}</span><button class="home-kit-done" data-kit-done="${k.taskId}" title="Mark that you've been in touch">Done</button></div>`;
+  }).join('');
+}
+async function homeKitDone(taskId) {
+  const kit = (state.home.alerts && state.home.alerts.keepInTouch) || [];
+  const k = kit.find((x) => String(x.taskId) === String(taskId)); if (!k) return;
+  const snooze = nextRepeat(k.every || 'monthly', todayISO());
+  state.home.alerts.keepInTouch = kit.filter((x) => String(x.taskId) !== String(taskId));
+  renderHome();
+  try { await api(`/api/blocks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ props: { last: todayISO(), snooze } }) }); toast('Noted – clock reset'); } catch (e) { toast(e.message); }
+}
+function homeNotepadLineHtml() {
+  const n = (typeof notepadLiveCount === 'function') ? notepadLiveCount() : 0;
+  let first = '';
+  try { const np = notepadState && notepadState(); if (np && Array.isArray(np.lines)) { const l = np.lines.find((x) => x && (x.text || '').trim() && !x.done); first = l ? l.text.trim() : ''; } } catch {}
+  return `<button class="home-np-line" data-notepad-open><span class="home-np-l">Notepad</span><span class="home-np-prev">${first ? esc(first.slice(0, 60)) : (n ? `${n} line${n === 1 ? '' : 's'}` : 'Jot something down')}</span><span class="home-np-open">Open ⌘J</span></button>`;
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
-  // "A reading" folds shut by default (§19); seed the collapse store once so the
-  // standard kOpen/kToggle fold mechanism treats it as closed to begin with.
-  try { const _c = homeCollapsed(); if (!('kreading' in _c)) { _c.kreading = true; localStorage.setItem('life.home.collapsed', JSON.stringify(_c)); } } catch {}
+  // §41: "Keep in touch" folds shut by default; Reflections and the day stay
+  // open. Seed the collapse store once so kOpen/kToggle treats kkit as closed.
+  try { const _c = homeCollapsed(); if (!('kkit' in _c)) { _c.kkit = true; localStorage.setItem('life.home.collapsed', JSON.stringify(_c)); } } catch {}
   // A rebuild (e.g. collapsing a section) would otherwise jump the page and the
   // rail back to the top. Only when Home is already on screen, remember the page
   // scroll and the rail's own scroll and put them back after the repaint.
@@ -8308,37 +8339,32 @@ function renderHome() {
   const off = state.home.dayOffset || 0;
   const dayNav = `<span class="today-nav">${off !== 0 ? `<button class="today-nav-btn" data-home-day-set="0" title="Back to today">Today</button>` : ''}<button class="today-nav-arw" data-home-day="-1" title="Previous day" aria-label="Previous day">‹</button><button class="today-nav-arw" data-home-day="1" title="Next day" aria-label="Next day">›</button></span>`;
   const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${esc(homeDayLabel(off))}</span><span class="hf-hint">Events and plans</span><span class="hf-nav">${dayNav}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
-  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? homeTimelineHtml() : ''}</section>`;
-  // b: Coming into view - the shared line, then Deadlines.
-  const comingH = `<div class="home-fold-h" data-hfold="lifebook" role="button" tabindex="0"><span class="hf-name">Coming into view</span><span class="hf-hint">As it comes due</span><span class="hf-sign" aria-hidden="true">${kOpen('lifebook') ? '−' : '+'}</span></div>`;
-  const comingBody = kOpen('lifebook') ? `${homeSharedLineHtml()}<div class="home-sub-eyebrow">Deadlines</div>${homeDueListHtml()}` : '';
-  const coming = `<section class="home-sec2 home-coming">${comingH}${comingBody}</section>`;
-  // c: the quiet things - Spaces, Notepad, A reading (folded by default).
-  const spacesH = `<div class="home-fold-h" data-hfold="kspaces" role="button" tabindex="0"><span class="hf-name">Spaces</span><span class="hf-hint">Kept close</span><span class="hf-sign" aria-hidden="true">${kOpen('kspaces') ? '−' : '+'}</span></div>`;
-  const spaces = modOn('areas') ? `<section class="home-sec2 home-spaces2">${spacesH}${kOpen('kspaces') ? homeSpacesColHtml() : ''}</section>` : '';
-  // §20: the Notepad is a popover now (opened bottom-left or with ⌘;), not a
-  // section on Today.
-  const readingH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">A reading</span><span class="hf-hint">For today</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
-  const reading = reflectOn() ? `<section class="home-sec2 home-reading">${readingH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
+  const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${homeBirthdaysHtml()}${homeTimelineHtml()}` : ''}</section>`;
+  // §35 Reflections: anything drawn or cast today, newest first.
+  const reflH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">Reflections</span><span class="hf-hint">${homeReadingCount() ? `${homeReadingCount()} today` : 'For today'}</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
+  const reflections = reflectOn() ? `<section class="home-sec2 home-reading">${reflH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
+  // §41 Keep in touch (folded by default).
+  const kitDue = ((state.home.alerts && state.home.alerts.keepInTouch) || []).length;
+  const kitH = `<div class="home-fold-h" data-hfold="kkit" role="button" tabindex="0"><span class="hf-name">Keep in touch</span><span class="hf-hint">${kitDue ? `${kitDue} due` : 'Who to catch up with'}</span><span class="hf-sign" aria-hidden="true">${kOpen('kkit') ? '−' : '+'}</span></div>`;
+  const kit = modOn('contacts') ? `<section class="home-sec2 home-kit">${kitH}${kOpen('kkit') ? homeKeepInTouchHtml() : ''}</section>` : '';
   const alerts = `${homeSetupCardHtml()}${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
+  // §41 Today v2: one column - greeting, What next, the day (+ birthdays),
+  // Reflections, Keep in touch, the Notepad line, then the quote and the mark.
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-home">
-    <div class="home">
-      <div class="home-kanji" aria-hidden="true"></div>
+    <div class="home home-v2">
       ${alerts ? `<div class="home-alerts">${alerts}</div>` : ''}
       <div id="qt-wrap"></div>
-      <div class="kgrid home-grid">
-        <div class="k-a">
-          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
-          <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
-          ${homeCountsStrip()}
-          ${homeWhatNextHtml()}
-          ${today}
-        </div>
-        <div class="k-b">${coming}</div>
-        <div class="k-c">${spaces}${reading}</div>
+      <div class="home-flow">
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
+        <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
+        ${homeWhatNextHtml()}
+        ${today}
+        ${reflections}
+        ${kit}
+        ${homeNotepadLineHtml()}
+        ${quoteOfDayHtml()}
       </div>
-      <div class="home-foot"><button class="home-sc-link" data-open-shortcuts>⌨ Keyboard shortcuts</button></div>
       <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
     </div>
     </div>`;
@@ -24482,6 +24508,7 @@ document.addEventListener('click', (e) => {
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
+  { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
   if (t.closest('[data-wn-why]')) { state.home.wnWhy = !state.home.wnWhy; renderHome(); return; }
   if (t.closest('[data-wn-notnow]') || t.closest('[data-wn-else]')) { const n = homeWhatNextCandidates().length; state.home.wnIdx = n ? ((state.home.wnIdx || 0) + 1) % n : 0; state.home.wnWhy = false; renderHome(); return; }
   // Capture ("Set it down"): the floating bar, the drawer and its readout taps.

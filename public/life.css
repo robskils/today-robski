@@ -11046,6 +11046,30 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .kpage-reflect .qod { margin:22px 0 10px; align-items:flex-start; text-align:left; }
 .kpage-reflect .qod-rule { align-self:flex-start; }
 
+/* ══ §41 Today v2 (single column) ═════════════════════════════════════════ */
+.home-v2 .home-flow { max-width:780px; margin:0 auto; }
+.home-v2 .home-greet { font-family:var(--k-serif); font-weight:300; font-size:clamp(48px,6.4vw,100px); line-height:1.02; letter-spacing:-.015em; color:var(--k-ink); margin:10px 0 0; }
+.home-v2 .home-greet-sub { display:block; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(22px,2.4vw,32px); line-height:1.3; color:var(--k-mute); margin-top:10px; }
+.home-v2 .hi-name { font-style:italic; color:var(--k-goldt); }
+.home-v2 .home-sec2 { margin-top:34px; }
+.home-v2 .home-bdays { margin-bottom:6px; }
+.home-bday-row .ktl-t { font-family:var(--k-serif); }
+.home-sub-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-goldt); padding:8px 0 2px; }
+.home-kit-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--k-line); }
+.home-kit-nm { text-align:left; background:none; border:0; padding:0; cursor:pointer; font-family:var(--k-serif); font-weight:300; font-size:22px; line-height:1.2; color:var(--k-ink); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-kit-nm:hover { color:var(--k-goldt); }
+.home-kit-why { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); white-space:nowrap; }
+.home-kit-why.over { color:var(--k-goldt); }
+.home-kit-done { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-goldt); white-space:nowrap; }
+.home-kit-done:hover { color:var(--k-ink); }
+.home-np-line { display:flex; align-items:baseline; gap:14px; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--k-line); padding:20px 0; margin-top:16px; cursor:pointer; }
+.home-np-line .home-np-l { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); white-space:nowrap; }
+.home-np-line .home-np-prev { flex:1; min-width:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-np-line .home-np-open { font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); white-space:nowrap; }
+.home-np-line:hover .home-np-open { color:var(--k-ink); }
+.home-v2 .qod { margin-top:48px; }
+.home-v2 .khome-mark { margin-top:20px; }
+
 /* ══ §20 Notepad: a popover, not a section ═════════════════════════════════
    A running page of auto-growing lines on keylines, opened bottom-left or with
    ⌘;. "Set down →" hands a line to Set something down and keeps it struck. ══ */
