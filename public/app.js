@@ -8480,14 +8480,28 @@ function homeSpacesAsideHtml() {
   // that latest item. Today doesn't load every Space's mail/notes, so the item is
   // best-effort client-side: the top open task, else the deadline/activity line.
   // A Space with nothing at all is hidden.
+  // Deep-link attr for a block kind + id, so the item line jumps to that exact item.
+  const bkAttr = (bk, id) => {
+    if (!id) return '';
+    switch (bk) {
+      case 'task': return `data-open-task="${esc(id)}"`;
+      case 'note': case 'table': return `data-open-note="${esc(id)}"`;
+      case 'goal': return `data-open-goal="${esc(id)}"`;
+      case 'contact': return `data-open-contact="${esc(id)}"`;
+      case 'journal': return `data-open-jentry="${esc(id)}"`;
+      case 'event': return 'data-open-calendar';
+      default: return '';
+    }
+  };
   const scored2 = scored.map((x) => {
     const s = sum[x.a.id] || {};
     const top = homeSpaceItems(x.a)[0] || null;
     // §61: the single latest item - from the summary (any block kind, including
     // events), falling back to the top open task or the deadline/activity line.
-    const item = (s.latest && s.latest.title) ? { kind: s.latest.kind, text: s.latest.title }
-      : top ? { kind: 'Task', text: top.t }
-      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line } : null;
+    // Each carries a deep-link so the item line opens that exact item.
+    const item = (s.latest && s.latest.title) ? { kind: s.latest.kind, text: s.latest.title, attr: bkAttr(s.latest.bk, s.latest.id) }
+      : top ? { kind: 'Task', text: top.t, attr: top.attr }
+      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line, attr: '' } : null;
     const hasAnything = !!item || !!s.last || (s.tasks | 0) > 0 || (s.notes | 0) > 0 || (s.goals | 0) > 0;
     return { ...x, item, hasAnything };
   }).filter((x) => x.hasAnything);
@@ -8497,13 +8511,17 @@ function homeSpacesAsideHtml() {
   const shown = scored2.slice(0, CAP);
   const rows = shown.map(({ a, needs, act, item }) => {
     const when = act ? timeAgo(act) : '';
-    const itemLine = item
+    const itemInner = item
       ? `${item.kind ? `<span class="home-sa-k2">${esc(item.kind)}</span> · ` : ''}${esc(item.text)}`
       : 'Open it →';
-    return `<button class="home-sa-row" data-open-area="${a.id}">
-      <span class="home-sa-row-top"><span class="home-sa-n">${areaNumeral(a.id)}</span><span class="home-sa-nm2">${esc(a.title || 'Untitled')}</span>${needs ? '<span class="home-sa-dot on"></span>' : ''}<span class="home-sa-when">${esc(when)}</span></span>
-      <span class="home-sa-item${needs ? ' needs' : ''}">${itemLine}</span>
-    </button>`;
+    // Two targets: the name opens the Space; the item line deep-links to that item.
+    const itemAttr = (item && item.attr) ? item.attr : `data-open-area="${a.id}"`;
+    return `<div class="home-sa-row">
+      <span class="home-sa-n">${areaNumeral(a.id)}</span>
+      <button class="home-sa-nm2" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>
+      <span class="home-sa-rt">${needs ? '<span class="home-sa-dot on"></span>' : ''}<span class="home-sa-when">${esc(when)}</span></span>
+      <button class="home-sa-item${needs ? ' needs' : ''}" ${itemAttr}>${itemInner}</button>
+    </div>`;
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
   const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span></button>`;

@@ -3387,7 +3387,7 @@ async function connectList(request, env, json) {
 // to compute live; the page shows it as counts and an "how active" indicator.
 async function areasSummary(request, env) {
   const { results } = await env.DB.prepare(
-    "SELECT kind, title, props, updated_at FROM blocks WHERE user_id=? AND archived=0 AND kind IN ('task','goal','note','table','contact','bookmark','journal','bucket','event')",
+    "SELECT id, kind, title, props, updated_at FROM blocks WHERE user_id=? AND archived=0 AND kind IN ('task','goal','note','table','contact','bookmark','journal','bucket','event')",
   ).bind(env.uid).all().catch(() => ({ results: [] }));
   const sum = {};
   // `latest` is the single most-recent item in the Space (§61: "the latest
@@ -3403,7 +3403,7 @@ async function areasSummary(request, env) {
     const kitTask = r.kind === 'task' && p.kit;   // keep-in-touch nudges are never "the latest thing"
     for (const aid of areas) {
       const s = S(aid); if (when > s.last) s.last = when;
-      if (!kitTask && (!s.latest || when > s.latest.when)) s.latest = { kind: KLAB[r.kind] || '', title: String(r.title || '').slice(0, 120), when };
+      if (!kitTask && (!s.latest || when > s.latest.when)) s.latest = { kind: KLAB[r.kind] || '', title: String(r.title || '').slice(0, 120), when, id: r.id, bk: r.kind };
       if (r.kind === 'task') { if (!p.done && !p.kit) s.tasks++; }
       else if (r.kind === 'goal') { if ((p.status || 'active') === 'active') s.goals++; }
       else if (r.kind === 'note' || r.kind === 'table') s.notes++;

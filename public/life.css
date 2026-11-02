@@ -11233,12 +11233,14 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-sa-new:hover { color:var(--k-goldt); }
 /* §61: Your Spaces rows are plain links, never folds. Name + when on top, the
    single latest item below. Type 1a (Jost). */
-.home-sa-row { display:block; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:13px 0; cursor:pointer; }
-.home-sa-row-top { display:flex; align-items:baseline; gap:8px; }
-.home-sa-nm2 { font-family:var(--k-sans); font-weight:500; font-size:16px; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.home-sa-row:hover .home-sa-nm2 { color:var(--k-goldt); }
-.home-sa-when { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-mute); white-space:nowrap; }
-.home-sa-item { display:block; margin-top:3px; font-family:var(--k-sans); font-weight:400; font-size:14px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sa-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto; column-gap:10px; row-gap:3px; align-items:baseline; border-bottom:1px solid var(--k-line); padding:13px 0; }
+.home-sa-row .home-sa-n { grid-column:1; grid-row:1; }
+.home-sa-nm2 { grid-column:2; grid-row:1; background:none; border:0; padding:0; text-align:left; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:16px; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sa-nm2:hover { color:var(--k-goldt); }
+.home-sa-rt { grid-column:3; grid-row:1; display:flex; align-items:center; gap:8px; }
+.home-sa-when { font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-mute); white-space:nowrap; }
+.home-sa-item { grid-column:2 / 4; grid-row:2; background:none; border:0; padding:0; text-align:left; cursor:pointer; font-family:var(--k-sans); font-weight:400; font-size:14px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-sa-item:hover { color:var(--k-goldt); }
 .home-sa-item.needs { color:var(--k-goldt); }
 .home-sa-k2 { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--k-mute); }
 .home-sa-sign { margin-left:4px; font-family:var(--k-sans); font-weight:300; font-size:18px; color:var(--k-mute); }
