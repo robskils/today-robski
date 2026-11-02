@@ -8268,6 +8268,32 @@ function homeReadingHtml() {
   if (sp) { out += `<button class="home-read-row" data-spirit-open><span class="home-read-sym home-read-word">${esc(sp.name || '')}</span><span class="home-read-b"><span class="home-read-txt">${esc(sp.message || '')}</span></span></button>`; }
   return out;
 }
+// ── §39 Quote of the day ───────────────────────────────────────────────────
+// A quiet closing line (end of Today, top of Reflection Overview). One a day
+// from the Admin pool (quoteForDay, deterministic per day), same on every
+// device. "Keep it" files it in a "Quotes I've kept" note. Off via Settings.
+function dailyQuoteOn() { return !(state.account && state.account.dailyQuote === false); }
+function dayQuote() { return (state.home && state.home.quote) || state.dayQuote || null; }
+function quoteKept(text) { try { return JSON.parse(localStorage.getItem('life.quotesKept') || '[]').includes(text); } catch { return false; } }
+function quoteOfDayHtml() {
+  if (!dailyQuoteOn()) return '';
+  const q = dayQuote(); if (!q || !q.text) return '';
+  const kept = quoteKept(q.text);
+  return `<div class="qod"><span class="qod-rule"></span><p class="qod-text">${esc(q.text)}</p>${q.author ? `<div class="qod-author">${esc(q.author)}</div>` : ''}<button class="qod-keep${kept ? ' on' : ''}" data-quote-keep>${kept ? 'Kept in your Notes' : 'Keep it'}</button></div>`;
+}
+async function keepQuote() {
+  const q = dayQuote(); if (!q || !q.text || quoteKept(q.text)) return;
+  const TITLE = 'Quotes I’ve kept';
+  const line = `<blockquote>${esc(q.text)}${q.author ? ` — ${esc(q.author)}` : ''}</blockquote>`;
+  try {
+    let note = (state.noteTops || []).find((n) => (n.title || '') === TITLE);
+    if (!note) { note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: TITLE, body: line, props: {} }) }); state.noteTops = state.noteTops || []; state.noteTops.unshift(note); }
+    else { note.body = (note.body || '') + line; await api(`/api/blocks/${note.id}`, { method: 'PATCH', body: JSON.stringify({ body: note.body }) }); }
+    try { const a = JSON.parse(localStorage.getItem('life.quotesKept') || '[]'); a.push(q.text); localStorage.setItem('life.quotesKept', JSON.stringify(a)); } catch {}
+    toast('Kept in your Notes');
+    rerenderCurrent();
+  } catch (e) { toast(e.message); }
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   // "A reading" folds shut by default (§19); seed the collapse store once so the
@@ -9537,6 +9563,7 @@ async function openJournal(mode) {
 async function openWellbeing() {
   state.view = { type: 'wellbeing' };
   renderNav();
+  if (!dayQuote()) api('/api/day').then((d) => { if (d && d.quote) { state.dayQuote = d.quote; if (state.view && state.view.type === 'wellbeing') renderWellbeing(); } }).catch(() => {});
   try {
     const entries = await fetchJournalEntries();
     state.journal = Object.assign({}, state.journal, { entries, picking: false });
@@ -9756,6 +9783,7 @@ function renderWellbeing() {
     ['meditation', t('wb.meditation'), 'data-open-medi', 'A calm sit, with bells'],
     ['spirit', t('wb.spirit'), 'data-spirit-open', liveSpirit ? `${esc(card.name)}, today` : 'Draw a card'],
     ['iching', t('wb.iching'), liveIch ? 'data-iching-reopen' : 'data-open-iching', liveIch ? 'A live reading' : 'Cast the coins'],
+    ['tarot', 'Tarot', 'data-open-tarot', 'Pictures to think with'],
     ['horoscope', t('wb.horoscope'), 'data-open-horo', liveHoro ? (liveHoro.sign || 'Today') : 'Your daily horoscope'],
     ['insights', t('wb.insights'), 'data-open-insights', 'Patterns across your entries'],
   ].filter((p) => modOn(p[0]));
@@ -9765,13 +9793,14 @@ function renderWellbeing() {
       <div class="rf-main">
         <div class="nx-eyebrow">Room for the rest of you</div>
         <h1 class="nx-h1">${t('nav.reflect')}</h1>
+        ${quoteOfDayHtml()}
         <div class="nx-lead">${esc(lead)}</div>
         <div class="rf-lately">
           <div class="rf-lately-h"><span class="rf-lately-l">Lately</span><div class="rf-filters">${filters}</div></div>
           <div class="rf-rows">${rows}</div>
         </div>
       </div>
-      <aside class="rf-side">${cardHtml}<div class="rf-prac-h2">Practices</div>${pracHtml}</aside>
+      <aside class="rf-side">${cardHtml}<div class="rf-prac-h2">Reflection tools</div>${pracHtml}</aside>
     </div></div>`;
 }
 // ── Insights (its own Well-being tool page) ──────────────────────────────
@@ -25130,6 +25159,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   { const dsh = t.closest('[data-del-spirit-hist]'); if (dsh) { delSpiritHist(Number(dsh.dataset.delSpiritHist)); return; } }
   { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
+  if (t.closest('[data-quote-keep]')) { keepQuote(); return; }
   if (t.closest('[data-open-tarot]')) { openTarot(); return; }
   { const tsp = t.closest('[data-tarot-spread]'); if (tsp) { tarotSetSpread(tsp.dataset.tarotSpread); return; } }
   if (t.closest('[data-tarot-draw]')) { tarotDraw(); return; }

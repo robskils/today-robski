@@ -11031,6 +11031,21 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
   .tr-read { grid-template-columns:1fr; gap:8px; }
 }
 
+/* ══ §39 Quote of the day ══════════════════════════════════════════════════
+   A quiet closing line - end of Today (above the mark), top of Reflection. No
+   box, no icon, no label. */
+.qod { display:flex; flex-direction:column; align-items:center; text-align:center; margin:30px auto; max-width:720px; }
+.qod-rule { width:28px; height:1px; background:var(--k-gold); margin-bottom:22px; }
+.qod-text { margin:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(26px,2.6vw,34px); line-height:1.4; color:var(--k-ink); text-wrap:balance; }
+.qod-author { margin-top:14px; font-family:var(--k-sans); font-weight:500; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-mute); }
+.qod-keep { margin-top:16px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
+.qod-keep:hover { color:var(--k-goldt); }
+.qod-keep.on { color:var(--k-goldt); cursor:default; }
+/* On Reflection Overview the quote sits under the title, left-aligned-ish but
+   kept centred within its own max-width for the same treatment. */
+.kpage-reflect .qod { margin:22px 0 10px; align-items:flex-start; text-align:left; }
+.kpage-reflect .qod-rule { align-self:flex-start; }
+
 /* ══ §20 Notepad: a popover, not a section ═════════════════════════════════
    A running page of auto-growing lines on keylines, opened bottom-left or with
    ⌘;. "Set down →" hands a line to Set something down and keeps it struck. ══ */
