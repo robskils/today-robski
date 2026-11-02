@@ -10957,6 +10957,80 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
   .cv-card-col { border-left:0; padding:20px 0 60px; }
 }
 
+/* ══ §38 Tarot (Reflection X) + shared card back ══════════════════════════ */
+.tr-page { padding-top:18px; padding-bottom:60px; }
+.tr-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,320px); gap:clamp(32px,4vw,64px); align-items:start; }
+.tr-main { min-width:0; }
+.tr-h1 { font-family:var(--k-serif); font-weight:300; font-size:clamp(44px,6vw,64px); line-height:1; margin:10px 0 0; color:var(--k-ink); }
+.tr-lede { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(19px,2vw,24px); line-height:1.4; color:var(--k-mute); margin:12px 0 0; }
+.tr-q { width:100%; max-width:900px; box-sizing:border-box; margin-top:24px; border:0; border-bottom:1px solid var(--k-ink); background:transparent; outline:none; padding:10px 0 14px; font-family:var(--k-serif); font-weight:300; font-size:clamp(26px,2.6vw,34px); line-height:1.2; color:var(--k-ink); }
+.tr-q::placeholder { color:var(--k-mute); }
+.tr-spreads { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 26px; margin-top:20px; }
+.tr-spreads-l { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-mute); }
+.tr-spread { cursor:pointer; white-space:nowrap; font-family:var(--k-sans); font-size:15px; color:var(--k-mute); padding-bottom:3px; border-bottom:1px solid transparent; }
+.tr-spread.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.tr-spread-n { font-size:12px; color:var(--k-mute); }
+.tr-draw { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.24em; text-transform:uppercase; padding:13px 22px; background:var(--k-gold); color:var(--k-ongold); border:0; cursor:pointer; white-space:nowrap; }
+.tr-table { margin-top:34px; padding:44px clamp(16px,3vw,48px); background:var(--k-deep); display:flex; flex-wrap:nowrap; justify-content:center; gap:clamp(10px,2vw,32px); }
+.tr-col { display:flex; flex-direction:column; align-items:center; gap:14px; flex:1 1 0; min-width:0; }
+.tr-flipwrap { width:100%; aspect-ratio:3/5; perspective:1400px; }
+.tr-flipwrap.turnable { cursor:pointer; }
+.tr-flip { position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .9s cubic-bezier(.2,.7,.2,1); }
+.tr-flip.turned { transform:rotateY(180deg); }
+.tr-back, .tr-front { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; }
+.tr-back { background:oklch(0.22 0.035 158); border:1px solid oklch(0.74 0.12 76 / .7); outline:1px solid oklch(0.74 0.12 76 / .35); outline-offset:-8px; display:flex; align-items:center; justify-content:center; background-image:repeating-linear-gradient(45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px),repeating-linear-gradient(-45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px); }
+.tr-back img { width:34%; height:auto; opacity:.85; }
+.tr-front { transform:rotateY(180deg); background:oklch(0.975 0.012 85); color:oklch(0.22 0.018 60); border:1px solid var(--k-gold); outline:1px solid oklch(0.72 0.13 75 / .5); outline-offset:-7px; padding:16px 14px; }
+.tr-front-empty { background:transparent; border-color:oklch(0.74 0.12 76 / .3); outline:0; transform:rotateY(180deg); }
+.tr-front-inner { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; }
+.tr-front-inner.rev { transform:rotate(180deg); }
+.tr-num { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-goldt); }
+.tr-art { flex:1; width:100%; position:relative; margin:8px 0; overflow:hidden; border-top:1px solid oklch(0.72 0.13 75 / .5); border-bottom:1px solid oklch(0.72 0.13 75 / .5); }
+.tr-hz { position:absolute; left:0; right:0; height:1px; background:oklch(0.72 0.13 75 / .7); }
+.tr-circ { position:absolute; left:50%; aspect-ratio:1; transform:translate(-50%,-50%); border:1px solid var(--k-gold); border-radius:50%; }
+.tr-circ.faint { border-color:oklch(0.72 0.13 75 / .5); }
+.tr-initial { position:absolute; left:50%; transform:translate(-50%,-50%); font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(40px,5vw,84px); line-height:1; color:var(--k-goldt); }
+.tr-cname { font-family:var(--k-serif); font-weight:300; font-size:clamp(14px,1.5vw,22px); line-height:1.1; text-align:center; text-wrap:balance; }
+.tr-cap { text-align:center; }
+.tr-cap-pos { font-family:var(--k-sans); font-weight:600; font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-gold); }
+.tr-cap-state { font-family:var(--k-sans); font-size:12.5px; color:var(--k-ondeep); opacity:.72; margin-top:4px; }
+.tr-tablenote { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); margin-top:12px; text-align:center; }
+.tr-reading { max-width:900px; margin-top:36px; }
+.tr-read { display:grid; grid-template-columns:minmax(120px,170px) minmax(0,1fr); gap:24px; align-items:baseline; padding:20px 0; border-top:1px solid var(--k-line); }
+.tr-read-posl { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-goldt); }
+.tr-read-ask { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); margin-top:4px; }
+.tr-read-head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.tr-read-nm { font-family:var(--k-serif); font-weight:300; font-size:30px; line-height:1.1; color:var(--k-ink); }
+.tr-read-or { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
+.tr-read-txt { margin:8px 0 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:23px; line-height:1.5; color:var(--k-ink); text-wrap:pretty; }
+.tr-together { margin-top:8px; padding:26px 28px; background:var(--k-soft); }
+.tr-together-h { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-goldt); }
+.tr-together-p { margin:10px 0 0; font-family:var(--k-serif); font-weight:300; font-size:clamp(24px,2.4vw,30px); line-height:1.45; color:var(--k-ink); text-wrap:pretty; }
+.tr-sit { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; line-height:1.4; color:var(--k-mute); margin-top:16px; }
+.tr-together-acts { display:flex; flex-wrap:wrap; gap:8px 24px; margin-top:18px; }
+.tr-act { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-goldt); padding:0; }
+.tr-act:hover { color:var(--k-ink); }
+.tr-side { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); }
+.tr-side-h { display:flex; align-items:baseline; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--k-ink); font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); }
+.tr-side-n { font-family:var(--k-sans); font-weight:400; font-size:12px; color:var(--k-mute); }
+.tr-side-empty { padding:16px 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-mute); }
+.tr-past { padding:13px 0; border-bottom:1px solid var(--k-line); cursor:default; }
+.tr-past-top { display:flex; align-items:baseline; gap:10px; }
+.tr-past-kind { font-family:var(--k-sans); font-weight:600; font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
+.tr-past-date { margin-left:auto; font-family:var(--k-sans); font-size:12px; color:var(--k-mute); white-space:nowrap; }
+.tr-past-cards { font-family:var(--k-serif); font-weight:300; font-size:21px; line-height:1.3; color:var(--k-ink); margin-top:4px; }
+.tr-past-q { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:17px; color:var(--k-mute); margin-top:2px; }
+/* Spirit card back now matches the Tarot back: forest, gold lattice, Mandombe. */
+.sc-back-v2 { background:oklch(0.22 0.035 158) !important; border:1px solid oklch(0.74 0.12 76 / .7) !important; outline:1px solid oklch(0.74 0.12 76 / .35); outline-offset:-8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background-image:repeating-linear-gradient(45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px),repeating-linear-gradient(-45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px); }
+.sc-back-v2 .sc-back-mark { width:34%; max-width:120px; height:auto; opacity:.85; }
+.sc-back-v2 .sc-back-label { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:oklch(0.74 0.12 76); }
+@media (max-width:899px){
+  .tr-grid { grid-template-columns:1fr; gap:36px; }
+  .tr-side { position:static; }
+  .tr-table { padding:28px 12px; gap:8px; }
+  .tr-read { grid-template-columns:1fr; gap:8px; }
+}
+
 /* ══ §20 Notepad: a popover, not a section ═════════════════════════════════
    A running page of auto-growing lines on keylines, opened bottom-left or with
    ⌘;. "Set down →" hands a line to Set something down and keeps it struck. ══ */

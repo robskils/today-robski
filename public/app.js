@@ -39,7 +39,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // The Reflection page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Reflection hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Reflection tools individually".)
-const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['meditation', 'Meditation'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
+const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['meditation', 'Meditation'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['tarot', 'Tarot'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -1295,7 +1295,7 @@ function helpKey(v) {
   if (v && v.type === 'help') return v.tool || 'home';
   const t = (v && v.type) || 'home';
   return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', iching: 'reflect', spirit: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
+    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', iching: 'reflect', tarot: 'reflect', spirit: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
     area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
     toolbox: 'timer', readwatch: 'saved', money: 'financial' })[t] || t;
 }
@@ -1422,7 +1422,7 @@ function labelForView(v) {
     case 'discover': return t('nav.discover');
     case 'mailaccounts': return 'Mail accounts';
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
-    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'spirit': return t('wb.spirit'); case 'compass': return t('wb.compass');
+    case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'tarot': return 'Tarot'; case 'spirit': return t('wb.spirit'); case 'compass': return t('wb.compass');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
@@ -1461,7 +1461,7 @@ function openView(v) {
     case 'mailaccounts': return openMailAccounts();
     case 'note': return openNote(v.id); case 'notes': return openNotesList();
     case 'wellbeing': return openWellbeing(); case 'insights': return openInsights(); case 'meditation': return openMeditation();
-    case 'iching': return openIChing(); case 'spirit': return openSpiritCards(); case 'compass': return openCompass();
+    case 'iching': return openIChing(); case 'tarot': return openTarot(); case 'spirit': return openSpiritCards(); case 'compass': return openCompass();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
     case 'bookmarkcard': return openBookmarkCard(v.id);
@@ -5338,7 +5338,7 @@ const KFOLDS = [
   { id: 'inner', label: 'Inner life', items: [
       ['Reflection', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
       ['Dreams', 'data-open-dreams', 'dreams'], ['Compass', 'data-open-compass', 'compass'], ['I Ching', 'data-open-iching', 'iching'],
-      ['Spirit Cards', 'data-spirit-open', 'spirit'], ['Horoscope', 'data-open-horo', 'horoscope'], ['Insights', 'data-open-insights', 'insights'] ] },
+      ['Spirit Cards', 'data-spirit-open', 'spirit'], ['Horoscope', 'data-open-horo', 'horoscope'], ['Insights', 'data-open-insights', 'insights'], ['Tarot', 'data-open-tarot', 'tarot'] ] },
   { id: 'reviews', label: 'Reviews', items: [
       ['Daily', 'data-journal-dailyreview', 'journal'], ['Weekly', 'data-open-reviewtype="weekly"', 'goals'], ['Monthly', 'data-open-reviewtype="monthly"', 'goals'],
       ['Quarterly', 'data-open-reviewtype="quarterly"', 'goals'], ['Yearly', 'data-open-reviewtype="yearly"', 'goals'] ] },
@@ -5350,7 +5350,7 @@ const KFOLD_VIEW = {
   mail: 'tools', mailaccounts: 'tools', calendar: 'tools', tasks: 'tools', taskcard: 'tools', notes: 'tools', note: 'tools', table: 'tools', tables: 'tools', readwatch: 'tools', discover: 'tools', goals: 'tools', goalcard: 'tools', bucketcard: 'tools',
   contacts: 'people', contactcard: 'people', messages: 'people', connect: 'people', friends: 'people', daybookpeople: 'people',
   money: 'money', financial: 'money',
-  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner',
   reviews: 'reviews', reviewcard: 'reviews',
 };
 function kToRoman(n) { const m = [['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]]; let r = ''; for (const [s, val] of m) { while (n >= val) { r += s; n -= val; } } return r; }
@@ -5432,7 +5432,7 @@ function knavGroups() {
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Reflection', about: 'Room for the rest of you', tools: [
-      ['Overview', 'data-open-wellbeing', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['I Ching', 'data-open-iching', ''], ['Spirit Cards', 'data-spirit-open', ''], ['Horoscope', 'data-open-horo', ''], ['Insights', 'data-open-insights', ''] ] },
+      ['Overview', 'data-open-wellbeing', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['I Ching', 'data-open-iching', ''], ['Spirit Cards', 'data-spirit-open', ''], ['Horoscope', 'data-open-horo', ''], ['Insights', 'data-open-insights', ''], ['Tarot', 'data-open-tarot', ''] ] },
     { id: 'money', label: 'Money', about: "What things cost, and what's growing", tools: [
       ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
   ];
@@ -5444,7 +5444,7 @@ const KNAV_VIEW = {
   calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans', today: 'plans', practices: 'plans', practicecard: 'plans',
   notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
   goals: 'plans', goalcard: 'plans', bucketcard: 'plans', reviews: 'plans', reviewcard: 'plans',
-  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'inner',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'inner',
   money: 'money', financial: 'money',
 };
 // A cheap live hint for a tool, where we have the number to hand (never an amount).
@@ -8642,6 +8642,140 @@ async function fetchJournalEntries() {
 // ── Spirit Cards ──────────────────────────────────────────────────────
 // A gentle oracle deck inside Reflect: draw a card for a moment's reflection.
 // Built-in deck for now; publisher decks + payouts come later.
+// ── §38 Tarot (Reflection X) ───────────────────────────────────────────────
+// Not a forecast - a mirror. 22 Major Arcana, a spread of one / three / five,
+// each card turned by you, then read together (the companion when AI is on, a
+// kind template when it's off). Saved to history; surfaces in Reflections today.
+const TAROT_DECK = [
+  ['The Fool', 'beginnings', 'A step into the open, before you know how it ends. Lightness is allowed.', 'Pause before the leap – is it courage, or not wanting to look?'],
+  ['The Magician', 'will', 'You have what you need on the table. Use it on purpose.', 'Skill scattered in too many directions. Choose one.'],
+  ['The High Priestess', 'intuition', 'You already know more than you’ve said out loud. Listen inward.', 'Noise is drowning out the quiet voice. Make some silence.'],
+  ['The Empress', 'abundance', 'Something wants tending and will grow if you let it. Be generous with yourself.', 'Giving so much there’s nothing left. Feed the giver.'],
+  ['The Emperor', 'structure', 'A clear frame, a firm decision, a rhythm you can keep.', 'Control held too tightly. Loosen the grip a little.'],
+  ['The Hierophant', 'tradition', 'Learn from those who’ve walked this way. A teacher, a practice, a form.', 'A rule that no longer fits. You may write your own.'],
+  ['The Lovers', 'choice', 'A choice of the heart, made in line with what you value most.', 'Two pulls in different directions. Which one is really yours?'],
+  ['The Chariot', 'momentum', 'Willpower brings opposing forces into one direction. Go.', 'Pushing hard without steering. Where are you actually going?'],
+  ['Strength', 'gentle courage', 'Steadiness, not force. Patience tames what struggle can’t.', 'Self-doubt dressed up as caution. You are stronger than this.'],
+  ['The Hermit', 'solitude', 'Step back from the noise to find your own light.', 'Withdrawal that has become hiding. Let someone in.'],
+  ['Wheel of Fortune', 'turning', 'Things are moving. Meet the turn rather than resisting it.', 'A cycle repeating. What would break the pattern?'],
+  ['Justice', 'truth', 'Honest weighing. Cause and effect are visible now.', 'Something unbalanced, or a truth avoided. Look straight at it.'],
+  ['The Hanged Man', 'surrender', 'A pause that changes how you see. Let go of forcing it.', 'Stuck in waiting. Time to move, even a little.'],
+  ['Death', 'ending', 'Something completes so something else can begin. Let it.', 'Holding on to what is already over.'],
+  ['Temperance', 'balance', 'Mixing opposites patiently until they become one thing.', 'Excess somewhere. Find the middle again.'],
+  ['The Devil', 'attachment', 'A habit or bond that holds you. Notice the chain is loose.', 'You are already loosening it. Keep going.'],
+  ['The Tower', 'upheaval', 'What was built on a crack comes down. Clear ground follows.', 'A shake-up averted, or delayed. What needs to fall?'],
+  ['The Star', 'hope', 'After the storm, quiet renewal. Trust is returning.', 'Hope dimmed. It hasn’t gone – only gone quiet.'],
+  ['The Moon', 'uncertainty', 'Not everything is clear yet. Move gently, by feel.', 'The fog is lifting. You can see further now.'],
+  ['The Sun', 'joy', 'Warmth, clarity, simple gladness. Let it be good.', 'Joy held back. What would let it out?'],
+  ['Judgement', 'awakening', 'A call to rise into who you’re becoming. Answer it.', 'Self-judgement getting in the way of the call.'],
+  ['The World', 'completion', 'A circle closes, whole. Celebrate, then begin again.', 'Nearly there. One loose end to tie.'],
+];
+const TAROT_R = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
+const TAROT_SPREADS = {
+  one: { label: 'One card', pos: [['Today', 'What to carry with you']] },
+  three: { label: 'Three cards', pos: [['Behind you', 'What brought you here'], ['Where you stand', 'What’s true now'], ['Coming into view', 'Where it leans']] },
+  five: { label: 'The cross', pos: [['The heart of it', 'What this is about'], ['What crosses it', 'The difficulty'], ['Beneath', 'The root'], ['Advice', 'What would help'], ['Where it leans', 'If nothing changes']] },
+};
+const TAROT_LAY = [{ hz: '64%', cy: '42%', cs: '50%', cy2: '42%', cs2: '76%', gy: '44%' }, { hz: '74%', cy: '74%', cs: '62%', cy2: '74%', cs2: '90%', gy: '48%' }, { hz: '36%', cy: '60%', cs: '36%', cy2: '26%', cs2: '18%', gy: '58%' }, { hz: '50%', cy: '50%', cs: '70%', cy2: '50%', cs2: '42%', gy: '50%' }, { hz: '82%', cy: '32%', cs: '28%', cy2: '32%', cs2: '56%', gy: '60%' }];
+function openTarot() {
+  state.tarot = state.tarot || { q: '', spread: 'one', cards: [], drawn: false };
+  state.view = { type: 'tarot' };
+  renderNav(); renderTarot();
+  if (state.tarotHistory === undefined) { state.tarotHistory = null; api('/api/kv/tarot_history').then((r) => { try { state.tarotHistory = (r && r.value) ? JSON.parse(r.value) : []; } catch { state.tarotHistory = []; } if (state.view && state.view.type === 'tarot') renderTarot(); }).catch(() => { state.tarotHistory = []; }); }
+}
+function tarotReadQ() { const el = document.getElementById('tarot-q'); return el ? el.value : ((state.tarot && state.tarot.q) || ''); }
+function tarotSetSpread(sp) { if (!TAROT_SPREADS[sp]) return; state.tarot.spread = sp; state.tarot.q = tarotReadQ().trim(); if (state.tarot.drawn) { state.tarot.drawn = false; state.tarot.cards = []; } renderTarot(); }
+function tarotDraw() {
+  const sp = state.tarot.spread; const n = TAROT_SPREADS[sp].pos.length; const idxs = [];
+  while (idxs.length < n) { const i = Math.floor(Math.random() * TAROT_DECK.length); if (!idxs.includes(i)) idxs.push(i); }
+  state.tarot.q = tarotReadQ().trim();
+  state.tarot.cards = idxs.map((di) => ({ di, reversed: Math.random() < 0.25, turned: false }));
+  state.tarot.drawn = true; state.tarot.synth = ''; state.tarot.sit = ''; state.tarot.saved = false; state.tarot.enhancing = false;
+  renderTarot();
+}
+function tarotTurn(i) { const c = state.tarot && state.tarot.cards[i]; if (!c || c.turned) return; c.turned = true; renderTarot(); if (state.tarot.cards.every((x) => x.turned)) tarotComplete(); }
+function tarotTemplate(t) {
+  const pos = TAROT_SPREADS[t.spread].pos;
+  const parts = t.cards.map((c, i) => { const d = TAROT_DECK[c.di]; return `${d[0]}${c.reversed ? ' reversed' : ''} sits in ${pos[i][0].toLowerCase()}`; });
+  return `A picture to think with, not a forecast. ${parts.join('; ')}. Let the cards hold up a mirror - take what rings true and leave the rest.`;
+}
+function tarotSit(t) { const first = TAROT_DECK[t.cards[0].di]; return `Where in your life is ${first[1]} asking for your attention?`; }
+function tarotComplete() {
+  const t = state.tarot; if (!t) return;
+  t.synth = tarotTemplate(t); t.sit = tarotSit(t); t.at = Date.now();
+  tarotSave(t);
+  renderTarot();
+  if (aiClientOn()) tarotEnhance(t);
+}
+async function tarotEnhance(t) {
+  t.enhancing = true; renderTarot();
+  const pos = TAROT_SPREADS[t.spread].pos;
+  const cards = t.cards.map((c, i) => { const d = TAROT_DECK[c.di]; return { name: d[0], keyword: d[1], orientation: c.reversed ? 'reversed' : 'upright', reading: c.reversed ? d[3] : d[2], position: pos[i][0], asks: pos[i][1] }; });
+  try {
+    const r = await api('/api/wellbeing/tarot', { method: 'POST', body: JSON.stringify({ question: t.q || '', spread: TAROT_SPREADS[t.spread].label, cards }) });
+    if (!state.tarot || state.tarot.at !== t.at) return;
+    if (r && r.synthesis) { t.synth = r.synthesis; if (r.question) t.sit = r.question; }
+  } catch {}
+  t.enhancing = false; renderTarot();
+}
+function tarotSave(t) {
+  const names = t.cards.map((c) => TAROT_DECK[c.di][0] + (c.reversed ? ' (r)' : '')).join(' · ');
+  state.tarotHistory = state.tarotHistory || [];
+  state.tarotHistory.unshift({ kind: TAROT_SPREADS[t.spread].label, cards: names, q: t.q || '', at: t.at });
+  state.tarotHistory = state.tarotHistory.slice(0, 200);
+  api('/api/kv/tarot_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.tarotHistory) }) }).catch(() => {});
+  // Pin for Reflections on Today.
+  try { const pin = { cards: names, q: t.q || '', at: t.at }; localStorage.setItem('life.tarotCard', JSON.stringify(pin)); } catch {}
+  api('/api/kv/tarot_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify({ cards: names, q: t.q || '', at: t.at }) }) }).catch(() => {});
+  t.saved = true;
+}
+function tarotCardFront(c, i) {
+  const d = TAROT_DECK[c.di]; const lay = TAROT_LAY[i] || TAROT_LAY[0];
+  return `<div class="tr-front"><div class="tr-front-inner${c.reversed ? ' rev' : ''}">
+    <span class="tr-num">${TAROT_R[c.di]}</span>
+    <div class="tr-art"><span class="tr-hz" style="top:${lay.hz}"></span><span class="tr-circ" style="top:${lay.cy};width:${lay.cs}"></span><span class="tr-circ faint" style="top:${lay.cy2};width:${lay.cs2}"></span><span class="tr-initial" style="top:${lay.gy}">${esc(d[0].replace(/^The /, '')[0])}</span></div>
+    <span class="tr-cname">${esc(d[0])}</span>
+  </div></div>`;
+}
+function renderTarot() {
+  const tr = state.tarot || (state.tarot = { q: '', spread: 'one', cards: [], drawn: false });
+  const sp = TAROT_SPREADS[tr.spread]; const pos = sp.pos;
+  const spreads = Object.keys(TAROT_SPREADS).map((k) => `<span class="tr-spread${tr.spread === k ? ' on' : ''}" data-tarot-spread="${k}">${TAROT_SPREADS[k].label} <span class="tr-spread-n">${TAROT_SPREADS[k].pos.length}</span></span>`).join('');
+  const cardW = tr.spread === 'five' ? '170px' : '230px';
+  const cardsHtml = (tr.drawn ? tr.cards : pos.map(() => null)).map((c, i) => {
+    const turned = c && c.turned;
+    const posLabel = pos[i] ? pos[i][0] : '';
+    const stateLabel = !tr.drawn ? '' : turned ? (c.reversed ? 'Reversed' : 'Upright') : 'Tap to turn';
+    return `<div class="tr-col" style="max-width:${cardW}">
+      <div class="tr-flipwrap${tr.drawn && !turned ? ' turnable' : ''}"${tr.drawn && !turned ? ` data-tarot-turn="${i}" role="button" tabindex="0"` : ''}>
+        <div class="tr-flip${turned ? ' turned' : ''}"><div class="tr-back"><img src="/brand/mandombe-koyeba-ivory.svg" alt=""></div>${c ? tarotCardFront(c, i) : '<div class="tr-front tr-front-empty"></div>'}</div>
+      </div>
+      <div class="tr-cap"><div class="tr-cap-pos">${esc(posLabel)}</div><div class="tr-cap-state">${esc(stateLabel)}</div></div>
+    </div>`;
+  }).join('');
+  const allTurned = tr.drawn && tr.cards.length && tr.cards.every((c) => c.turned);
+  const readingRows = tr.drawn ? tr.cards.map((c, i) => { if (!c.turned) return ''; const d = TAROT_DECK[c.di]; return `<div class="tr-read"><div class="tr-read-pos"><div class="tr-read-posl">${esc(pos[i][0])}</div><div class="tr-read-ask">${esc(pos[i][1])}</div></div><div class="tr-read-b"><div class="tr-read-head"><span class="tr-read-nm">${esc(d[0])}</span><span class="tr-read-or">${c.reversed ? 'Reversed · ' : ''}${esc(d[1])}</span></div><p class="tr-read-txt">${esc(c.reversed ? d[3] : d[2])}</p></div></div>`; }).join('') : '';
+  const together = allTurned ? `<div class="tr-together"><div class="tr-together-h">Read together</div><p class="tr-together-p">${esc(tr.synth || tarotTemplate(tr))}${tr.enhancing ? ' <span class="tr-enh">…</span>' : ''}</p><div class="tr-sit">A question to sit with: ${esc(tr.sit || tarotSit(tr))}</div><div class="tr-together-acts"><button class="tr-act" data-tarot-journal>Write about it in the Journal</button><button class="tr-act" data-tarot-draw>Draw again</button></div></div>` : '';
+  const hist = state.tarotHistory || [];
+  const pastHtml = hist.length ? hist.slice(0, 40).map((x) => `<div class="tr-past"><div class="tr-past-top"><span class="tr-past-kind">${esc(x.kind)}</span><span class="tr-past-date">${esc(reflWhen(x.at))}</span></div><div class="tr-past-cards">${esc(x.cards)}</div>${x.q ? `<div class="tr-past-q">${esc(x.q)}</div>` : ''}</div>`).join('') : '<div class="tr-side-empty">No spreads yet.</div>';
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: 'Tarot' }])}
+    <div class="kwrap tr-page">
+      <div class="tr-grid">
+        <div class="tr-main">
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Reflection</span></div>
+          <h1 class="tr-h1">Tarot</h1>
+          <p class="tr-lede">Not a forecast - a mirror. Pictures to think with, offered gently.</p>
+          <input class="tr-q" id="tarot-q" placeholder="What’s on your mind?" value="${esc(tr.q || '')}" maxlength="200" autocomplete="off">
+          <div class="tr-spreads"><span class="tr-spreads-l">Spread</span>${spreads}<button class="tr-draw" data-tarot-draw>Shuffle and draw</button></div>
+          <div class="tr-table tr-n${pos.length}">${cardsHtml}</div>
+          ${tr.drawn && !allTurned ? '<div class="tr-tablenote">Turn each card when you’re ready.</div>' : ''}
+          ${readingRows ? `<div class="tr-reading">${readingRows}${together}</div>` : ''}
+        </div>
+        <div class="tr-side"><div class="tr-side-h">Past spreads <span class="tr-side-n">${hist.length || ''}</span></div>${pastHtml}</div>
+      </div>
+    </div>`;
+}
 const SPIRIT_CARDS = [
   ['Stillness', '✦', 'The answer arrives when you stop chasing it.'],
   ['Courage', '🔥', "The thing you're avoiding is smaller than the story about it."],
@@ -8690,7 +8824,7 @@ function renderSpirit() {
     <div class="spirit-page">
       <div class="spirit-card-wrap">
         <div class="spirit-card ${c ? 'drawn' : ''}">
-          <div class="sc-face sc-back"><span class="sc-mark">✦</span><span class="sc-draw-hint">Tap to pull a spirit card</span></div>
+          <div class="sc-face sc-back sc-back-v2"><img class="sc-back-mark" src="/brand/mandombe-koyeba-ivory.svg" alt=""><span class="sc-back-label">${c ? 'Tap for another' : 'Tap to pull a card'}</span></div>
           <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
         </div>
         <button class="spirit-card-hit" type="button" data-spirit-draw aria-label="${c ? 'Draw another spirit card' : 'Tap to draw a spirit card'}"></button>
@@ -24996,6 +25130,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   { const dsh = t.closest('[data-del-spirit-hist]'); if (dsh) { delSpiritHist(Number(dsh.dataset.delSpiritHist)); return; } }
   { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
+  if (t.closest('[data-open-tarot]')) { openTarot(); return; }
+  { const tsp = t.closest('[data-tarot-spread]'); if (tsp) { tarotSetSpread(tsp.dataset.tarotSpread); return; } }
+  if (t.closest('[data-tarot-draw]')) { tarotDraw(); return; }
+  { const ttu = t.closest('[data-tarot-turn]'); if (ttu) { tarotTurn(Number(ttu.dataset.tarotTurn)); return; } }
+  if (t.closest('[data-tarot-journal]')) { try { openJournal(); } catch {} return; }
   if (t.closest('[data-spirit-open]')) { openSpiritCards(); return; }
   if (t.closest('[data-spirit-save]')) { saveDrawnSpirit(); return; }
   if (t.closest('[data-spirit-draw]')) { drawSpiritCard(); return; }

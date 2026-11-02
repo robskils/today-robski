@@ -1142,6 +1142,28 @@ async function journalCoach(request, env, json, err) {
   return json({ reply }, request);
 }
 
+// §38 Tarot "read together": a reflective synthesis of the cards drawn, never a
+// forecast. The client shows a kind template meanwhile and replaces it with this.
+async function tarotReflect(request, env, json, err) {
+  const b = await request.json().catch(() => ({}));
+  const q = String(b.question || '').slice(0, 500).trim();
+  const spread = String(b.spread || '').slice(0, 40);
+  const cards = Array.isArray(b.cards) ? b.cards.slice(0, 6) : [];
+  const system = [
+    'You read tarot as a mirror for reflection, never as a forecast or prediction. Warm, plain, kind, British English.',
+    'Given the question, the spread and the cards (each with its position, orientation and a short meaning), write a short synthesis that reads the cards TOGETHER - how they speak to one another and to the question. 3 to 5 flowing sentences, no lists, no headings, no "you will…", no clinical tone. Offer it as a picture to think with, not advice to follow.',
+    'Then give ONE short, open question to sit with.',
+    'Reply as strict JSON only: {"synthesis":"…","question":"…"}',
+  ].join(' ');
+  const user = `Question: ${q || '(none given)'}\nSpread: ${spread}\nCards:\n${cards.map((c) => `- ${c.position} (${c.asks}): ${c.name}, ${c.orientation} - ${c.reading}`).join('\n')}`;
+  let raw;
+  try { raw = await callAI(env, 'wellbeing', { system, user, max_tokens: 500 }); }
+  catch (e) { console.error('tarotReflect:', e.message); return err(`Tarot error: ${e.message}`, request, 502); }
+  if (raw == null) return err(aiNeedsKey('anthropic'), request, 503);
+  let out = {}; try { out = JSON.parse(String(raw).replace(/```json?/gi, '').replace(/```/g, '').trim()); } catch {}
+  return json({ synthesis: (out.synthesis || '').trim(), question: (out.question || '').trim() }, request);
+}
+
 // Insights: read the recent journal entries and surface the key throughlines.
 // POST regenerates and stores; GET returns the last stored set.
 function stripHtmlText(h) {
@@ -5493,6 +5515,7 @@ export default {
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
+      if (path === '/api/wellbeing/tarot' && request.method === 'POST') return tarotReflect(request, env, json, err);
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);
       if (path === '/api/wellbeing/compass' && request.method === 'POST') return compassReflect(request, env, json, err);
       if (path === '/api/journal/deepen' && request.method === 'POST') return journalDeepen(request, env, json, err);
