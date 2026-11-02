@@ -3696,6 +3696,7 @@ async function mpSend() {
   state.mp.messages = [...state.mp.messages, pending]; state.mp.freshScroll = true; mpRenderThread();
   try {
     const r = await api('/api/messages', { method: 'POST', body: JSON.stringify({ to, body }) });
+    kitAutoRoll({ friendId: to });   // §48: reaching someone resets their keep-in-touch clock
     if (!(state.mp && state.mp.cur === to)) return;
     state.mp.sig = (r.messages || []).map((m) => `${m.id}:${m.body}:${m.reaction || ''}`).join('\u0000');
     state.mp.messages = r.messages || []; state.mp.freshScroll = true; mpRenderThread(); mpRefreshThreads();
@@ -16164,6 +16165,7 @@ async function mailSend(to, cc, bcc, subject, bodyHtml, inReplyTo) {
     const payload = { account: from, to, cc, bcc, subject, text, html, inReplyTo, attachments };
     toast('Sending…');
     await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) });
+    { const addr = (String(to || '').match(/[\w.+-]+@[\w.-]+\.[\w-]+/) || [])[0]; if (addr) kitAutoRoll({ email: addr }); }   // §48: emailing resets their keep-in-touch clock
     toast('Sent'); clearDraft(); state.mail.composing = false; renderMail();
   } catch (e) { toast(e && e.message ? e.message : 'Could not send'); }
 }
@@ -19445,6 +19447,25 @@ async function kitSetEvery(every) {
 // A future date is refused rather than silently accepted: you cannot have spoken
 // to somebody tomorrow, and taking it would push the next nudge a whole interval
 // past where it belongs.
+// Auto-reset a contact's keep-in-touch clock when you actually reach them - a
+// message or an email (Robin's choice, 2026-11-02; a phone call still needs the
+// manual tap, since Koyeba can't see those). Matches by friend id or email,
+// rolls the kit task forward from today. A no-op if they have no cadence.
+async function kitAutoRoll(opts) {
+  try {
+    const contacts = (state.contacts && state.contacts.length) ? state.contacts : await api('/api/blocks?kind=contact').catch(() => []);
+    let email = (opts.email || '').toLowerCase();
+    if (!email && opts.friendId) { const fr = ((state.friends && state.friends.friends) || []).find((f) => String(f.id) === String(opts.friendId)); email = fr ? String(fr.email || '').toLowerCase() : ''; }
+    if (!email) return;
+    const c = (contacts || []).find((x) => contactEmails(x.props || {}).some((e) => String(e).toLowerCase() === email));
+    if (!c) return;
+    const kitTaskId = c.props && c.props.kitTask; const every = c.props && c.props.kitEvery;
+    if (!kitTaskId || !every) return;   // no keep-in-touch cadence - nothing to roll
+    const last = todayISO(); const snooze = kitNextFrom(every, last);
+    await api(`/api/blocks/${kitTaskId}`, { method: 'PATCH', body: JSON.stringify({ props: { last, snooze } }) }).catch(() => {});
+    if (state.cvKit && state.cvKit[String(c.id)]) { state.cvKit[String(c.id)].last = last; state.cvKit[String(c.id)].snooze = snooze; }
+  } catch {}
+}
 async function kitSetLast(iso) {
   const t = kitTaskOf(); if (!t) return;
   const every = (t.props && t.props.repeat) || 'quarterly';
