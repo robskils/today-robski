@@ -11131,94 +11131,164 @@ function renderArea() {
   const updMore = updList.length > 6 ? `<button class="area-seemore" data-upd-all>${state.area_open.updAll ? '− Show fewer' : `See all ${updList.length} →`}</button>` : '';
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
-  // ── §11 Space page ─────────────────────────────────────────────────────
-  const total = (state.areas || []).length || 1;
+  // ── §29 Space page v2 ───────────────────────────────────────────────────
+  // V20 "Koyeba Space v2.dc.html". No Space colour anywhere. Reads
+  // What matters now → Notes (groups in columns, no dates) → Recent, then
+  // folded Open tasks and Goals, with a sticky Coming up / People / Kept here
+  // column. Adds are per-section; space settings sit behind a quiet ··· . (Robin, V20.)
+  loadAreaWeek(area.id, 0);                       // this week's events feed Tonight + Coming up
+  // Stamp the visit ONCE per open (not per re-render), so Recent's "new since"
+  // dots stay put while you fold things. The value read is the PREVIOUS visit.
+  if (state.area_open.seenAt === undefined) { state.area_open.seenAt = spLastVisit(area.id); spMarkVisit(area.id); }
   const spNum = areaNumeral(area.id) || roman(1);
-  const fav = !!(area.props && area.props.fav);
-  const attFiles = ((area.props && area.props.attachments) || []).filter((x) => !isImgType(x.type));
-  const q = ((state.area_open && state.area_open.q) || '').trim().toLowerCase();
-  const matchRows = (arr, txt) => q ? arr.filter((o) => txt(o).toLowerCase().includes(q)) : arr;
-  // Each section: key, title, count-label, "All →" link, "+ New", default-open,
-  // and a rows() renderer over its (search-filtered) items.
-  const rowOpen = (title, sub, meta, attr, lead) => `<div class="ksp-row" ${attr} role="button" tabindex="0"><div class="ksp-row-main">${lead || ''}<span class="ksp-row-id"><span class="ksp-row-t">${esc(title || 'Untitled')}</span>${sub ? `<span class="ksp-row-sub">${esc(sub)}</span>` : ''}</span></div>${meta ? `<span class="ksp-row-m">${esc(meta)}</span>` : ''}</div>`;
-  const tLabel = (tk) => { const p = tk.props || {}; return [p.priority || '', p.snooze ? dpLabel(p.snooze) : (p.due ? dpLabel(p.due) : '')].filter(Boolean).join(' · '); };
-  const SEC = [];
-  SEC.push({ k: 'tasks', title: 'Tasks', count: `${openTs.length}${doneN ? ` · ${doneN} done` : ''}`, hint: openTs[0] ? openTs[0].title : '', def: true, items: matchRows(openTs, (t) => t.title || '').slice(0, 8).map((tk) => { const p = tk.props || {}; return `<div class="ksp-row ksp-taskrow"><button class="ksp-check${p.done ? ' on' : ''}" data-check="${tk.id}" aria-label="Done"></button><button class="ksp-row-hit" data-open-task="${tk.id}"><span class="ksp-row-id"><span class="ksp-row-t">${esc(tk.title || 'Untitled')}</span></span><span class="ksp-row-m">${esc(tLabel(tk))}</span></button></div>`; }), all: ['data-view-tasks', 'All tasks'], add: ['data-area-add-task', '+ Add a task'] });
-  SEC.push({ k: 'notes', title: 'Notes', count: String(notes.length), hint: notes[0] ? notes[0].title : '', items: matchRows(notes, (n) => n.title || '').slice(0, 8).map((n) => rowOpen(n.title, '', timeAgo(new Date(n.updated_at || n.created_at || Date.now()).getTime()), `data-open-note="${n.id}"`)), all: ['data-open-notes', 'All notes'], add: ['data-area-add-note', '+ New note'] });
-  SEC.push({ k: 'tables', title: 'Tables', count: String(tables.length), hint: tables[0] ? tables[0].title : '', items: matchRows(tables, (t) => t.title || '').slice(0, 8).map((t) => rowOpen(t.title, '', timeAgo(new Date(t.updated_at || t.created_at || Date.now()).getTime()), `data-open-table="${t.id}"`)), all: ['data-open-tables', 'All tables'], add: ['data-new-table', '+ New table'] });
-  SEC.push({ k: 'emails', title: 'Emails', count: String(emails.length), hint: emails[0] ? emails[0].title : '', items: matchRows(emails, (n) => n.title || '').slice(0, 8).map((n) => rowOpen(n.title, '', timeAgo(new Date(n.updated_at || n.created_at || Date.now()).getTime()), `data-open-note="${n.id}"`)), all: ['data-open-mail', 'Open Mail'], add: null });
-  SEC.push({ k: 'files', title: 'Files', count: String(attFiles.length), hint: attFiles[0] ? attFiles[0].name : '', items: attFiles.slice(0, 8).map((f) => `<div class="ksp-row ksp-row-static"><span class="ksp-row-id"><span class="ksp-row-t">${esc(f.name || 'File')}</span></span>${f.size ? `<span class="ksp-row-m">${esc(kFileSize(f.size))}</span>` : ''}</div>`), all: null, add: null });
-  SEC.push({ k: 'people', title: 'Contacts', count: String(contacts.length), hint: contacts[0] ? contacts[0].title : '', items: matchRows(contacts, (c) => c.title || '').slice(0, 8).map((c) => rowOpen(c.title, (c.props && c.props.role) || '', '', `data-open-contact="${c.id}"`)), all: ['data-open-contacts', 'Open Contacts'], add: ['data-area-add-contact', '+ Add a person'] });
-  SEC.push({ k: 'books', title: 'Books & films', count: String(bookmarks.length), hint: bookmarks[0] ? bookmarks[0].title : '', items: matchRows(bookmarks, (b) => b.title || '').slice(0, 8).map((b) => { const u = (b.props && b.props.url) || ''; return u ? `<a class="ksp-row ksp-row-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="ksp-row-id"><span class="ksp-row-t">${esc(b.title || u)}</span></span></a>` : `<div class="ksp-row ksp-row-static"><span class="ksp-row-id"><span class="ksp-row-t">${esc(b.title || 'Saved')}</span></span></div>`; }), all: ['data-open-readwatch', 'Open Read & Watch'], add: null });
-  const liveSecs = SEC.filter((s) => s.items.length || s.def);
-  // "Vision & goals" is always I; the rest number from II in the order shown.
-  const visGoalsN = activeGoals.length;
-  const contents = [{ k: 'vision', n: visGoalsN, label: visGoalsN === 1 ? 'goal' : 'goals' }].concat(liveSecs.filter((s) => s.items.length).map((s) => ({ k: s.k, n: Number(String(s.count).split(' ')[0]) || s.items.length, label: s.title.toLowerCase() })));
-  const countsLine = contents.map((c) => `<span class="ksp-count" data-ksp-go="sec-${c.k}"><span class="ksp-count-n">${c.n}</span><span class="ksp-count-l">${esc(c.label)}</span></span>`).join('');
-  const kspSectionHtml = (s, num) => {
-    const open = q ? true : kspOpen(area.id, s.k, !!s.def);
-    const head = `<div class="ksp-sec-h" data-ksp-fold="${s.k}" role="button" tabindex="0"><span class="ksp-sec-num">${num}</span><span class="ksp-sec-title">${esc(s.title)}</span><span class="ksp-sec-count">${esc(s.count)}</span>${!open && s.hint ? `<span class="ksp-sec-hint">${esc(s.hint)}</span>` : ''}<span class="ksp-sec-sign">${open ? '−' : '+'}</span></div>`;
-    if (!open) return `<div id="sec-${s.k}" class="ksp-sec">${head}</div>`;
-    const rows = s.items.length ? s.items.join('') : `<div class="ksp-sec-empty">${q ? 'Nothing here matches.' : 'Nothing here yet.'}</div>`;
-    const foot = (s.all || s.add) ? `<div class="ksp-sec-foot">${s.all ? `<span class="ksp-sec-all" ${s.all[0]}>${esc(s.all[1])} →</span>` : ''}${s.add ? `<span class="ksp-sec-add" ${s.add[0]}>${esc(s.add[1])}</span>` : ''}</div>` : '';
-    return `<div id="sec-${s.k}" class="ksp-sec ksp-sec-open">${head}<div class="ksp-sec-body">${rows}${foot}</div></div>`;
-  };
-  // Vision & goals (I): the vision in a forest panel, goals with a thin gold
-  // progress line, then the bucket list as "One day".
-  const visOpen = q ? true : kspOpen(area.id, 'vision', true);
-  const visHead = `<div id="sec-vision" class="ksp-sec-h" data-ksp-fold="vision" role="button" tabindex="0"><span class="ksp-sec-num">I</span><span class="ksp-sec-title">Vision &amp; goals</span><span class="ksp-sec-count">${visGoalsN} ${visGoalsN === 1 ? 'goal' : 'goals'}</span>${!visOpen && activeGoals[0] ? `<span class="ksp-sec-hint">${esc(activeGoals[0].title || '')}</span>` : ''}<span class="ksp-sec-sign">${visOpen ? '−' : '+'}</span></div>`;
-  const visGoalRows = activeGoals.slice(0, 6).map((g) => { const pct = gPct(g); return `<div class="ksp-goal" data-open-goal="${g.id}" role="button" tabindex="0"><div class="ksp-goal-id"><div class="ksp-goal-t">${esc(g.title || 'Goal')}</div><div class="ksp-goal-meta">${esc(gGoalMeta(g))}</div></div><div class="ksp-goal-prog"><div class="ksp-prog-line"><i style="width:${pct}%"></i></div><div class="ksp-prog-pct">${gp(g).status === 'done' ? '✓' : pct + '%'}</div></div></div>`; }).join('');
-  const visPanel = visionSnip ? `<div class="ksp-vision"><div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Vision</span></div><div class="ksp-vision-t">${esc(visionSnip)}</div></div>` : (canEditArea ? `<div class="ksp-vision ksp-vision-empty" data-open-vision="${area.id}" role="button" tabindex="0"><div class="ksp-vision-t">Picture this part of your life at its best. <span class="ksp-write">Write a vision →</span></div></div>` : '');
-  const oneDay = bucket.length ? `<div class="ksp-oneday"><span class="ksp-oneday-l">One day</span>${bucket.slice(0, 4).map((b, i) => `${i ? '<span class="ksp-oneday-sep">·</span>' : ''}<span class="ksp-oneday-i">${esc(b.title || '')}</span>`).join('')}</div>` : '';
-  const visBody = visOpen ? `<div class="ksp-sec-body">${visPanel}${activeGoals.length ? `<div class="ksp-goals">${visGoalRows}</div>` : ''}${oneDay}<div class="ksp-sec-foot"><span class="ksp-sec-all" data-open-goals>All goals →</span>${canEditArea ? '<span class="ksp-sec-add" data-area-add-goal>+ Add a goal</span>' : ''}</div></div>` : '';
-  const visionGoals = `<div class="ksp-sec ksp-sec-open">${visHead}${visBody}</div>`;
-  const sectionsHtml = liveSecs.map((s, i) => kspSectionHtml(s, roman(i + 2))).join('');
-  // Side column: Coming into view, Lately, In this Space.
-  const soonTasks = openTs.filter((t) => t.props && (t.props.due || t.props.snooze)).sort((a, b) => String((a.props.due || a.props.snooze)).localeCompare(String((b.props.due || b.props.snooze)))).slice(0, 4);
-  const comingItems = soonTasks.length ? soonTasks.map((t) => { const w = t.props.due || t.props.snooze; return `<div class="ksp-side-row"><span class="ksp-side-when">${esc(dpLabel(w))}</span><div class="ksp-side-b"><button class="ksp-side-t" data-open-task="${t.id}">${esc(t.title || 'A task')}</button></div></div>`; }).join('') : '<div class="ksp-side-empty">Nothing dated.</div>';
-  const latelyItems = updList.length ? updShown.map((e) => { const who = (updData && updData.me != null && String(e.uid) === String(updData.me)) ? 'You' : esc(e.name || 'Someone'); const ts = e.ts ? new Date(e.ts).getTime() : 0; return `<div class="ksp-side-row"><span class="ksp-side-when">${ts ? esc(timeAgo(ts)) : ''}</span><div class="ksp-side-b"><span class="ksp-side-txt">${who} ${esc(e.verb || 'updated')} ${esc((UPD_THING[e.kind] || 'an item'))}${e.title ? ` · ${esc(e.title)}` : ''}.</span></div></div>`; }).join('') + (updMore ? `<button class="ksp-side-all" data-upd-all>${state.area_open.updAll ? 'Show fewer' : `See all ${updList.length} →`}</button>` : '') : '<div class="ksp-side-empty">Nothing yet.</div>';
-  const memberItems = `<div class="ksp-members">${areaFacesRow(area)}</div><button class="ksp-side-all" data-area-invite>+ Invite someone</button>`;
-  const kspSide = [
-    { k: 'view', title: 'Coming into view', body: comingItems },
-    { k: 'lately', title: 'Lately', body: latelyItems },
-    { k: 'members', title: 'In this Space', body: memberItems },
-  ].map((p) => { const open = kspOpen(area.id, 'side-' + p.k, p.k !== 'members'); return `<div class="ksp-side-p"><div class="ksp-side-h" data-ksp-fold="side-${p.k}" role="button" tabindex="0"><span class="ksp-side-l">${esc(p.title)}</span><span class="ksp-side-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="ksp-side-body">${p.body}</div>` : ''}</div>`; }).join('');
-  const coverHtml = (cover && !coverHidden) ? `<div class="ksp-cover"><div class="ksp-cover-bg" style="background-image:url('${esc(cover.url)}');background-position:${Number.isFinite(+cover.posX) ? +cover.posX : 50}% ${Number.isFinite(+cover.posY) ? +cover.posY : 50}%;transform:scale(${+cover.zoom > 1 ? +cover.zoom : 1})"></div></div>` : '';
+  const t0 = todayISO();
+  const q29 = ((state.area_open && state.area_open.q) || '').trim().toLowerCase();
+  const wk = state.area_open.week;
+  const weekEvents = (wk && !wk.loading && String(wk.for) === String(area.id)) ? (wk.events || []) : [];
+  const evWhen = (e) => e.allDay ? 'All day' : hhmm(e.start_min || 0);
+  const todaysEvents = weekEvents.filter((e) => e.date === t0).sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || (a.start_min || 0) - (b.start_min || 0));
+  const upcomingEvents = weekEvents.filter((e) => e.date >= t0).sort((a, b) => String(a.date).localeCompare(String(b.date)) || (a.start_min || 0) - (b.start_min || 0));
+  const firstTasks = openTs.filter((tk) => (tk.props.priority || '') === 'P1');
+  const sortedGoals = activeGoals.slice().sort((a, b) => gPct(b) - gPct(a));
+  const nearestGoal = sortedGoals[0] || null;
+  const nearestPct = nearestGoal ? gPct(nearestGoal) : null;
+  const attAll = ((area.props && area.props.attachments) || []);
+  const spFold = (key, def) => kspOpen(area.id, key, def);
+  const spSign = (key, def) => spFold(key, def) ? '−' : '+';
+  const nowLabel = (tk) => { const p = tk.props || {}; return [p.priority || '', p.snooze ? dpLabel(p.snooze) : (p.due ? dpLabel(p.due) : '')].filter(Boolean).join(' · '); };
+  // ── figures: up to four honest, non-empty counts ──
+  const FIGC = [
+    { l: 'Tonight', v: todaysEvents.length },
+    { l: 'First tasks', v: firstTasks.length },
+    { l: 'Nearest goal', v: nearestPct != null ? nearestPct + '%' : null, keep: nearestPct != null },
+    { l: 'Open tasks', v: openTs.length },
+    { l: 'People', v: contacts.length },
+  ].filter((f) => f.keep || (typeof f.v === 'number' ? f.v > 0 : !!f.v)).slice(0, 4);
+  const figs29 = FIGC.map((f) => `<div class="sp-fig"><div class="sp-fig-n">${esc(String(f.v))}</div><div class="sp-fig-l">${esc(f.l)}</div></div>`).join('');
+  // ── What matters now ──
+  const nowRows = [];
+  todaysEvents.slice(0, 3).forEach((e) => nowRows.push({ k: 'Event', t: e.title || 'Event', why: [evWhen(e), e.location].filter(Boolean).join(' · '), act: 'Open', attr: `data-open-event-date="${esc(e.date)}"` }));
+  firstTasks.slice(0, Math.max(0, 4 - nowRows.length)).forEach((tk) => nowRows.push({ k: 'Task', t: tk.title || 'Task', why: nowLabel(tk) || 'First', act: 'Start', attr: `data-open-task="${tk.id}"` }));
+  if (nowRows.length < 4 && nearestGoal) nowRows.push({ k: 'Goal', t: nearestGoal.title || 'Goal', why: `${nearestPct}% · ${gGoalMeta(nearestGoal)}`, act: 'See it', attr: `data-open-goal="${nearestGoal.id}"` });
+  if (nowRows.length < 4 && emails.length) { const e0 = emails.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))[0]; nowRows.push({ k: 'Mail', t: e0.title || '(no subject)', why: 'Filed here', act: 'Open', attr: `data-open-note="${e0.id}"` }); }
+  const nowItems = nowRows.slice(0, 4);
+  const sumParts = [];
+  if (todaysEvents.length) { const e = todaysEvents[0]; sumParts.push(`${e.title || 'An event'}${e.allDay ? ' today' : ', ' + hhmm(e.start_min || 0) + ' today'}.`); }
+  if (firstTasks.length) sumParts.push(`${firstTasks.length} ${firstTasks.length === 1 ? 'task' : 'tasks'} to do first${firstTasks[0] ? ', starting with ' + (firstTasks[0].title || 'one') : ''}.`);
+  if (nearestGoal) sumParts.push(`${nearestGoal.title || 'A goal'} is ${nearestPct}% there.`);
+  const nowSummary = sumParts.join(' ') || `Nothing pressing in ${area.title || 'this Space'} right now.`;
+  const nowSec = `<section class="sp-sec">
+    <div class="sp-eyhead" data-ksp-fold="now" role="button" tabindex="0"><span class="kg-rule"></span><span class="kg-eyebrow-t">What matters now</span><span class="sp-sign">${spSign('now', true)}</span></div>
+    ${spFold('now', true) ? `<div class="sp-body sp-now-body"><p class="sp-now-sum">${esc(nowSummary)}</p>${nowItems.length ? `<div class="sp-now-rows">${nowItems.map((r) => `<div class="sp-now-row" ${r.attr} role="button" tabindex="0"><span class="sp-now-k">${esc(r.k)}</span><div class="sp-now-id"><div class="sp-now-t">${esc(r.t)}</div>${r.why ? `<div class="sp-now-why">${esc(r.why)}</div>` : ''}</div><span class="sp-now-act">${esc(r.act)}</span></div>`).join('')}</div>` : ''}</div>` : ''}
+  </section>`;
+  // ── Notes: groups in columns, no dates ──
+  const noteView = (state.area_open && state.area_open.noteView) || 'shelf';
+  const noteGroupOf = (n) => ((n.props && n.props.group) || '').trim();
+  const qHitNote = (n) => !q29 || (String(n.title || '') + ' ' + noteGroupOf(n) + ' ' + spSnip(n, 200)).toLowerCase().includes(q29);
+  const pinnedNotes = notes.filter((n) => n.props && n.props.fav);
+  const savedGroups = (area.props && Array.isArray(area.props.noteGroups)) ? area.props.noteGroups : [];
+  const groupNames = [];
+  savedGroups.forEach((g) => { if (g && !groupNames.includes(g)) groupNames.push(g); });
+  notes.forEach((n) => { const g = noteGroupOf(n); if (g && !groupNames.includes(g)) groupNames.push(g); });
+  const noteCols = groupNames.map((label) => ({ label, notes: notes.filter((n) => noteGroupOf(n) === label && qHitNote(n)) }));
+  const looseFiltered = notes.filter((n) => !noteGroupOf(n) && qHitNote(n));
+  if (looseFiltered.length || !groupNames.length) noteCols.push({ label: 'Loose', notes: looseFiltered, loose: true });
+  const colsShown = q29 ? noteCols.filter((c) => c.notes.length) : noteCols.filter((c) => c.notes.length || savedGroups.includes(c.label) || c.loose);
+  const noteCardHtml = (n) => `<button class="sp-note" data-open-note="${n.id}"><span class="sp-note-t">${esc(n.title || 'Untitled')}</span>${spSnip(n) ? `<span class="sp-note-ex">${esc(spSnip(n))}</span>` : ''}</button>`;
+  const azNotes = notes.filter(qHitNote).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const groupOptions = (sel) => ['Loose', ...groupNames].map((g) => `<option value="${esc(g)}" ${((sel || 'Loose') === g) ? 'selected' : ''}>${esc(g)}</option>`).join('');
+  const newGroupOpen = !!(state.area_open && state.area_open.newGroupOpen);
+  const notesBodyHtml = `
+    <div class="sp-notes-bar">
+      <div class="sp-notes-search"><input class="sp-notes-q" data-area-q type="search" placeholder="Look through ${esc(area.title || '')} notes…" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off">${q29 ? '<span class="sp-notes-clear" data-sp-clearq role="button" tabindex="0">Clear</span>' : ''}</div>
+      <div class="sp-notes-views">${[['shelf', 'By group'], ['az', 'A to Z']].map(([id, l]) => `<span class="sp-nv${noteView === id ? ' on' : ''}" data-sp-noteview="${id}" role="button" tabindex="0">${l}</span>`).join('')}</div>
+      <span class="sp-notes-new" data-area-add-note role="button" tabindex="0">+ New note</span>
+      ${canEditArea ? (newGroupOpen ? '<span class="sp-newgroup"><input class="sp-newgroup-in" data-sp-newgroup-in placeholder="New group name" autocomplete="off"><span class="sp-newgroup-add" data-sp-newgroup-add role="button" tabindex="0">Add</span></span>' : '<span class="sp-notes-newg" data-sp-newgroup role="button" tabindex="0">+ New group</span>') : ''}
+    </div>
+    ${pinnedNotes.length && (!q29 || pinnedNotes.some(qHitNote)) ? `<div class="sp-pinned">${pinnedNotes.filter((n) => !q29 || qHitNote(n)).map((n) => `<button class="sp-pinned-row" data-open-note="${n.id}"><span class="sp-pin-l">Pinned</span><span class="sp-pin-t">${esc(n.title || 'Untitled')}</span>${spSnip(n, 60) ? `<span class="sp-pin-ex">${esc(spSnip(n, 60))}</span>` : ''}</button>`).join('')}</div>` : ''}
+    ${noteView === 'az'
+      ? (azNotes.length ? `<div class="sp-az">${azNotes.map((n) => `<div class="sp-az-row"><button class="sp-az-t" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>${canEditArea ? `<select class="sp-az-group sel" data-note-group="${n.id}">${groupOptions(noteGroupOf(n))}</select>` : `<span class="sp-az-g">${esc(noteGroupOf(n) || 'Loose')}</span>`}</div>`).join('')}</div>` : `<div class="sp-empty">${q29 ? `Nothing in ${esc(area.title || 'these')} notes matches that.` : 'No notes here yet.'}</div>`)
+      : (colsShown.length ? `<div class="sp-shelf">${colsShown.map((c) => `<div class="sp-col"><div class="sp-col-h"><span class="sp-col-l">${esc(c.label)}</span><span class="sp-col-n">${c.notes.length}</span></div>${c.notes.map(noteCardHtml).join('')}${canEditArea ? `<button class="sp-col-add" data-area-add-note-group="${esc(c.label)}">+ Add to ${esc(c.label)}</button>` : ''}</div>`).join('')}</div>` : `<div class="sp-empty">${q29 ? `Nothing in ${esc(area.title || 'these')} notes matches that.` : 'No notes here yet.'}</div>`)}
+  `;
+  const notesSec = `<section class="sp-sec">
+    <div class="sp-head" data-ksp-fold="notes" role="button" tabindex="0"><span class="sp-h-t">Notes</span><span class="sp-h-c">${notes.length} ${notes.length === 1 ? 'note' : 'notes'}${groupNames.length ? ` · ${groupNames.length} ${groupNames.length === 1 ? 'group' : 'groups'}` : ''}</span><span class="sp-sign">${spSign('notes', true)}</span></div>
+    ${spFold('notes', true) ? `<div class="sp-body">${notesBodyHtml}</div>` : ''}
+  </section>`;
+  // ── Recent: one combined feed, gold dot for new since last visit ──
+  const lastSeen = state.area_open.seenAt || '';
+  const recentKindOf = (b) => (b.kind === 'note' && b.props && b.props.fromEmail) ? 'mail' : b.kind;
+  const RECENT_KIND = { note: 'Note', task: 'Task', mail: 'Mail', table: 'Table', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection' };
+  const recentBlocks = blocks.filter((b) => ['note', 'task', 'table', 'goal', 'bookmark', 'journal'].includes(b.kind)).map((b) => ({ b, rk: recentKindOf(b), ts: new Date(b.updated_at || b.created_at || 0).getTime(), iso: b.updated_at || b.created_at || '' })).filter((x) => x.ts > 0);
+  const recFilter = (state.area_open && state.area_open.recentFilter) || 'all';
+  const recCount = (k) => k === 'all' ? recentBlocks.length : recentBlocks.filter((x) => x.rk === k).length;
+  const recentSorted = recentBlocks.slice().sort((a, b) => b.ts - a.ts).filter((x) => recFilter === 'all' || x.rk === recFilter);
+  const newCount = lastSeen ? recentBlocks.filter((x) => x.iso > lastSeen).length : 0;
+  const yISO = addDayISO(t0, -1);
+  const weekAgoISO = addDayISO(t0, -7);
+  const recBucket = (iso) => { const d = (iso || '').slice(0, 10); return d === t0 ? 'Today' : d === yISO ? 'Yesterday' : d >= weekAgoISO ? 'This week' : 'Earlier'; };
+  const recGroups = ['Today', 'Yesterday', 'This week', 'Earlier'].map((label) => ({ label, items: recentSorted.filter((x) => recBucket(x.iso) === label) })).filter((g) => g.items.length);
+  const recOpenAttr = (b) => b.kind === 'task' ? `data-open-task="${b.id}"` : b.kind === 'table' ? `data-open-table="${b.id}"` : b.kind === 'goal' ? `data-open-goal="${b.id}"` : b.kind === 'journal' ? `data-open-jentry="${b.id}"` : b.kind === 'bookmark' ? '' : `data-open-note="${b.id}"`;
+  const recRow = (x) => { const isNew = lastSeen && x.iso > lastSeen; const done = x.b.kind === 'task' && x.b.props && x.b.props.done; return `<div class="sp-rec-row" ${recOpenAttr(x.b)} role="button" tabindex="0"><span class="sp-rec-dot${isNew ? ' on' : ''}"></span><span class="sp-rec-k">${esc(RECENT_KIND[x.rk] || 'Item')}</span><div class="sp-rec-id"><div class="sp-rec-t${done ? ' done' : ''}">${esc(x.b.title || 'Untitled')}</div>${spSnip(x.b, 70) ? `<div class="sp-rec-ex">${esc(spSnip(x.b, 70))}</div>` : ''}</div><span class="sp-rec-when">${esc(timeAgo(x.ts))}</span></div>`; };
+  const RECENT_FILTERS = [['all', 'All'], ['note', 'Notes'], ['task', 'Tasks'], ['mail', 'Mail'], ['table', 'Tables']];
+  const recentSec = `<section class="sp-sec">
+    <div class="sp-head" data-ksp-fold="recent" role="button" tabindex="0"><span class="sp-h-t">Recent</span>${newCount ? `<span class="sp-h-new">${newCount} new${lastSeen ? ` since ${new Date(lastSeen).toLocaleDateString('en-GB', { weekday: 'long' })}` : ''}</span>` : ''}<span class="sp-sign">${spSign('recent', true)}</span></div>
+    ${spFold('recent', true) ? `<div class="sp-body"><div class="sp-rec-filters">${RECENT_FILTERS.filter(([k]) => k === 'all' || recCount(k)).map(([k, l]) => `<span class="sp-rf${recFilter === k ? ' on' : ''}" data-sp-recent-filter="${k}" role="button" tabindex="0">${l} <span class="sp-rf-n">${recCount(k)}</span></span>`).join('')}</div>${recGroups.length ? recGroups.map((g) => `<div class="sp-rec-grp"><div class="sp-rec-grp-h">${esc(g.label)}</div>${g.items.map(recRow).join('')}</div>`).join('') : '<div class="sp-empty">Nothing of this kind lately.</div>'}</div>` : ''}
+  </section>`;
+  // ── Open tasks (folded) ──
+  const taskGroups = [['First', openTs.filter((t) => (t.props.priority || '') === 'P1')], ['Soon', openTs.filter((t) => (t.props.priority || '') === 'P2')], ['Whenever', openTs.filter((t) => !['P1', 'P2'].includes(t.props.priority || ''))]].filter(([, a]) => a.length);
+  const taskRow = (tk) => `<div class="sp-task" data-open-task="${tk.id}" role="button" tabindex="0"><span class="sp-task-t${tk.props.done ? ' done' : ''}">${esc(tk.title || 'Task')}</span><span class="sp-task-m">${esc(nowLabel(tk))}</span></div>`;
+  const tasksSec = `<section class="sp-sec">
+    <div class="sp-head" data-ksp-fold="tasks" role="button" tabindex="0"><span class="sp-h-t">Open tasks</span><span class="sp-h-c">${openTs.length}</span><span class="sp-sign">${spSign('tasks', false)}</span></div>
+    ${spFold('tasks', false) ? `<div class="sp-body">${taskGroups.length ? taskGroups.map(([l, a]) => `<div class="sp-tg"><div class="sp-tg-h"><span>${l}</span><span class="sp-tg-n">${a.length}</span></div>${a.slice(0, 20).map(taskRow).join('')}</div>`).join('') : '<div class="sp-empty">No open tasks here.</div>'}${canEditArea ? '<button class="sp-addrow" data-area-add-task>+ Add a task</button>' : ''}</div>` : ''}
+  </section>`;
+  // ── Goals (folded) ──
+  const goalRow = (g) => { const pct = gPct(g); return `<div class="sp-goal" data-open-goal="${g.id}" role="button" tabindex="0"><div class="sp-goal-id"><div class="sp-goal-t">${esc(g.title || 'Goal')}</div><div class="sp-goal-m">${esc(gGoalMeta(g))}</div></div><div class="sp-goal-prog"><div class="sp-goal-line"><i style="width:${pct}%"></i></div><div class="sp-goal-pct">${gp(g).status === 'done' ? '✓' : pct + '%'}</div></div></div>`; };
+  const goalsSec = `<section class="sp-sec">
+    <div class="sp-head" data-ksp-fold="goals" role="button" tabindex="0"><span class="sp-h-t">Goals</span><span class="sp-h-c">${activeGoals.length}</span><span class="sp-sign">${spSign('goals', false)}</span></div>
+    ${spFold('goals', false) ? `<div class="sp-body">${activeGoals.length ? activeGoals.map(goalRow).join('') : '<div class="sp-empty">No goals here yet.</div>'}${canEditArea ? '<button class="sp-addrow" data-area-add-goal>+ Add a goal</button>' : ''}</div>` : ''}
+  </section>`;
+  // ── sticky side: Coming up / People / Kept here ──
+  const comingList = [];
+  upcomingEvents.slice(0, 6).forEach((e) => comingList.push({ when: e.date === t0 ? `Today ${evWhen(e)}` : new Date(e.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), a: e.title || 'Event', b: e.location || (e.allDay ? 'All day' : evWhen(e)), attr: `data-open-event-date="${esc(e.date)}"` }));
+  openTs.filter((t) => t.props && (t.props.due || t.props.snooze)).sort((a, b) => String(a.props.due || a.props.snooze).localeCompare(String(b.props.due || b.props.snooze))).slice(0, 4).forEach((t) => comingList.push({ when: dpLabel(t.props.due || t.props.snooze), a: t.title || 'A task', b: 'Task', attr: `data-open-task="${t.id}"` }));
+  const comingHtml = comingList.length ? comingList.slice(0, 8).map((it) => `<div class="sp-side-row" ${it.attr} role="button" tabindex="0"><span class="sp-side-when">${esc(it.when)}</span><div class="sp-side-b"><span class="sp-side-a">${esc(it.a)}</span>${it.b ? `<span class="sp-side-c">${esc(it.b)}</span>` : ''}</div></div>`).join('') : '<div class="sp-side-empty">Nothing coming up.</div>';
+  const peopleHtml = (contacts.length ? contacts.slice(0, 10).map((c) => `<div class="sp-side-row" data-open-contact="${c.id}" role="button" tabindex="0"><div class="sp-side-b"><span class="sp-side-a">${esc(c.title || 'Someone')}</span>${(c.props && c.props.role) ? `<span class="sp-side-c">${esc(c.props.role)}</span>` : ''}</div></div>`).join('') : '<div class="sp-side-empty">No one here yet.</div>') + (canEditArea ? '<button class="sp-addrow" data-area-add-contact>+ Add a person</button>' : '');
+  const keptItems = [];
+  pinnedNotes.forEach((n) => keptItems.push({ a: n.title || 'Note', b: 'Pinned', attr: `data-open-note="${n.id}"` }));
+  attAll.forEach((f) => keptItems.push({ a: f.name || 'File', b: f.size ? kFileSize(f.size) : 'File' }));
+  bookmarks.slice(0, 6).forEach((bm) => { const u = (bm.props && bm.props.url) || ''; keptItems.push({ a: bm.title || u || 'Saved', b: 'Link', url: u }); });
+  const keptHtml = keptItems.length ? keptItems.slice(0, 12).map((it) => it.url ? `<a class="sp-side-row" href="${esc(it.url)}" target="_blank" rel="noopener noreferrer"><div class="sp-side-b"><span class="sp-side-a">${esc(it.a)}</span><span class="sp-side-c">${esc(it.b)}</span></div></a>` : `<div class="sp-side-row"${it.attr ? ` ${it.attr} role="button" tabindex="0"` : ''}><div class="sp-side-b"><span class="sp-side-a">${esc(it.a)}</span><span class="sp-side-c">${esc(it.b)}</span></div></div>`).join('') : '<div class="sp-side-empty">Nothing kept here yet.</div>';
+  const sideHtml = [
+    { k: 'up', title: 'Coming up', n: comingList.length, body: comingHtml, def: true },
+    { k: 'people', title: 'People', n: contacts.length, body: peopleHtml, def: true },
+    { k: 'kept', title: 'Kept here', n: keptItems.length, body: keptHtml, def: false },
+  ].map((p) => { const open = spFold('side-' + p.k, p.def); return `<div class="sp-side-p"><div class="sp-side-h" data-ksp-fold="side-${p.k}" role="button" tabindex="0"><span class="sp-side-l">${esc(p.title)}</span>${p.n ? `<span class="sp-side-pn">${p.n}</span>` : ''}<span class="sp-side-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="sp-side-body">${p.body}</div>` : ''}</div>`; }).join('');
+  // ── header ──
+  const visionEl = canEditArea
+    ? `<textarea class="sp-vision sp-vision-edit" data-area-vision="${area.id}" rows="1" placeholder="Picture this part of your life at its best…">${esc(visionSnip)}</textarea>`
+    : (visionSnip ? `<div class="sp-vision">${esc(visionSnip)}</div>` : '');
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Spaces', attr: 'data-open-areas' }, { label: area.title }])}
-    <div class="kwrap kpage kpage-space area-body" style="--h:${h}">
-      ${coverHtml}
-      <div class="ksp-title">
-        <div class="ksp-title-l">
-          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Space · ${spNum} of ${total}</span></div>
-          <h1 class="ksp-h1">${area.sharedBy ? '' : '<button class="ac-dot ac-dot-btn ksp-dot" data-area-color title="Change this space colour" aria-label="Change space colour"></button>'}<input class="ksp-title-in" id="area-title" value="${esc(area.title)}" placeholder="Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
-          ${visionSnip ? `<div class="ksp-vision-line">${esc(visionSnip)}</div>` : ''}
+    <div class="kwrap kpage kpage-space area-body sp-page">
+      <div class="sp-top">
+        <div class="sp-top-l">
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Space ${spNum}</span></div>
+          <h1 class="sp-h1"><input class="sp-h1-in" id="area-title" value="${esc(area.title)}" placeholder="Space" data-area-rename ${area.sharedBy ? 'readonly' : ''}></h1>
+          ${visionEl}
         </div>
-        <div class="ksp-title-r">
-          ${areaFacesRow(area)}
-          <button class="ksp-kept${fav ? ' on' : ''}" data-fav="${area.id}" title="${fav ? 'Kept close' : 'Keep close'}"><span class="ksp-kept-box"></span>${fav ? 'Kept close' : 'Keep close'}</button>
-          ${areaAddBtn}
-          <button class="ksp-dots${areaOvOpen() ? ' on' : ''}" data-area-ov title="Settings &amp; overview" aria-label="Settings and overview">···</button>
-        </div>
+        ${figs29 ? `<div class="sp-figs">${figs29}</div>` : ''}
+        ${area.sharedBy ? '' : `<button class="sp-settings${areaOvOpen() ? ' on' : ''}" data-area-ov title="Space settings" aria-label="Space settings">···</button>`}
       </div>
       ${sharedBanner(area)}
       ${areaOvOpen() ? `<div class="ksp-ov">${areaOverviewHtml(area, { notes: notes.length, goals: activeGoals.length, tasks: openTs.length, tables: tables.length, saved: bookmarks.length, reflections: journals.length }, blocks)}</div>` : ''}
-      <div class="ksp-contents">
-        <div class="ksp-counts">${countsLine}</div>
-        <div class="ksp-search"><input class="ksp-search-in" data-area-q type="search" placeholder="Search this Space" value="${esc((state.area_open && state.area_open.q) || '')}" autocomplete="off"></div>
-      </div>
-      <div class="kgrid k-mainside ksp-grid">
-        <div class="k-a">
-          <div class="ksp-foldbar"><span class="ksp-foldbar-o" data-ksp-openall role="button" tabindex="0">Open all</span><span class="ksp-foldbar-o" data-ksp-foldall role="button" tabindex="0">Fold all</span></div>
-          ${visionGoals}${sectionsHtml}
-        </div>
-        <div class="k-c">${kspSide}</div>
+      <div class="kgrid k-mainside sp-grid">
+        <div class="k-a">${nowSec}${notesSec}${recentSec}${tasksSec}${goalsSec}</div>
+        <div class="k-c sp-side">${sideHtml}</div>
       </div>
       <a class="ksp-foot" data-guide-home role="button" tabindex="0" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba"><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba"></a>
     </div>`;
-  visImgs.forEach(async (im) => { const el = document.querySelector(`img[data-vimg="${area.id}:${im.id}"]`); if (el && !el.dataset.loaded) { try { el.src = await attUrl(area.id, im); el.dataset.loaded = '1'; } catch {} } });
-  loadThumbs();   // area file/photo thumbnails (dashboard + overview)
-  autoGrowSoon(document.querySelector('.area-vision-edit'));   // vision grows to fit, so it all reads
+  autoGrowSoon(document.querySelector('.sp-vision-edit'));   // the vision line grows to fit
+  if (newGroupOpen) { const gi = document.querySelector('[data-sp-newgroup-in]'); if (gi) { gi.focus(); gi.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); spAddGroup(gi.value); } else if (ev.key === 'Escape') { spSet('newGroupOpen', false); } }); } }
 }
 // The area overview: a collapsible dashboard - counts, the people it's shared
 // with (+ invite), file attachments, and a recent-activity feed derived from the
@@ -24462,6 +24532,13 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-area-sethue]'); if (sh) { setAreaHue(+sh.dataset.areaSethue); return; } }
   if (t.closest('[data-area-ov]')) { try { localStorage.setItem('life.area.ov', areaOvOpen() ? '0' : '1'); } catch {} renderArea(); return; }
   { const kf = t.closest('[data-ksp-fold]'); if (kf) { const a = state.area_open && state.area_open.area; if (a) kspTog(a.id, kf.dataset.kspFold); return; } }
+  // §29 Space v2 controls
+  { const nv = t.closest('[data-sp-noteview]'); if (nv) { spSet('noteView', nv.dataset.spNoteview); return; } }
+  { const rf = t.closest('[data-sp-recent-filter]'); if (rf) { spSet('recentFilter', rf.dataset.spRecentFilter); return; } }
+  { const ag = t.closest('[data-area-add-note-group]'); if (ag) { areaAddNoteGroup(ag.dataset.areaAddNoteGroup); return; } }
+  if (t.closest('[data-sp-newgroup]')) { spSet('newGroupOpen', true); return; }
+  if (t.closest('[data-sp-newgroup-add]')) { const gi = document.querySelector('[data-sp-newgroup-in]'); if (gi) spAddGroup(gi.value); return; }
+  if (t.closest('[data-sp-clearq]')) { if (state.area_open) { state.area_open.q = ''; renderArea(); } return; }
   if (t.closest('[data-ksp-openall]')) { const a = state.area_open && state.area_open.area; if (a) kspSetAll(a.id, true); return; }
   if (t.closest('[data-ksp-foldall]')) { const a = state.area_open && state.area_open.area; if (a) kspSetAll(a.id, false); return; }
   { const kg = t.closest('[data-ksp-go]'); if (kg) { const a = state.area_open && state.area_open.area; const key = kg.dataset.kspGo.replace(/^sec-/, ''); if (a) { kspSetOpen(a.id, key); requestAnimationFrame(() => { const el = document.getElementById('sec-' + key); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); } return; } }
@@ -24909,6 +24986,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-refl-save]')) { const v = e.target.value; e.target.value = ''; if (v) saveReadingToLedger(e.target.dataset.reflSave, v); }
   if (e.target.matches('[data-task-addgoal]')) { const gid = e.target.value; if (gid) attachTaskToGoal(e.target.dataset.taskAddgoal, gid); }
   if (e.target.matches('[data-note-sort]')) { if (state.area_open) { state.area_open.noteSort = e.target.value; renderArea(); } return; }
+  if (e.target.matches('[data-note-group]')) { spSetNoteGroup(e.target.dataset.noteGroup, e.target.value); return; }
   if (e.target.id === 'taskcard-due' && state.task_open) { const tk = state.task_open.task; const due = e.target.value || null; const rd = tk.props.remindDays; patchTaskProps(tk.id, { due, snooze: (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : null }); }
   if (e.target.matches('[data-remind-toggle]')) { const id = e.target.dataset.remindToggle; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; if (e.target.checked) { const days = (tk && tk.props.remindDays != null) ? tk.props.remindDays : 1; patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -Number(days)) : null }); } else { patchTaskProps(id, { remindDays: null, snooze: null, hideUntil: false }); } return; }
   if (e.target.matches('[data-remind-days]')) { const id = e.target.dataset.remindDays; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; const days = Math.max(0, Math.min(365, Math.round(Number(e.target.value) || 0))); patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -days) : null }); }
