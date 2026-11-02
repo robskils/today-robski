@@ -8829,10 +8829,22 @@ async function glanceMailFile(key, target, label) {
 async function glanceMailOpenIn(key) {
   const row = mailMsgByKey(key);
   try {
-    // Explicit deep-link: openMail now keeps the key and opens the reader itself
-    // (snap-backed), so this lands on the exact email, not just the Mail tool.
     await openMail(key, { explicit: true, row });
-    if (state.view && state.view.type === 'mail' && (!state.mail.open || state.mail.open._key !== key)) openMessage(key);
+    // Belt-and-braces: a late loadMessages inside openMail can repaint the inbox over
+    // the reader, so re-assert the open once now and again after it settles. Inject
+    // the row into the list and snap so openMessage always resolves it. (Robin: it
+    // kept landing on the inbox, not the email.)
+    const ensure = () => {
+      if (!(state.view && state.view.type === 'mail')) return;
+      if (state.mail.open && state.mail.open._key === key) return;
+      if (row) {
+        state.mail.snapMsgs = state.mail.snapMsgs || {}; state.mail.snapMsgs[key] = row;
+        if (!(state.mail.messages || []).some((m) => m._key === key)) { state.mail.messages = state.mail.messages || []; state.mail.messages.unshift(row); }
+      }
+      openMessage(key);
+    };
+    ensure();
+    setTimeout(ensure, 350);
   } catch (e) { toast((e && e.message) || 'Could not open it.'); }
 }
 function homeGlanceHtml() {
