@@ -20695,10 +20695,18 @@ const horizonLabel = (h) => (HORIZONS.find((x) => x[0] === h) || ['', ''])[1];
 const quarterOf = (d) => Math.floor(d.getMonth() / 3);   // 0-3
 function horizonTargetDate(horizon, ref) {
   const d = ref || new Date();
+  if (horizon === 'month') return localISO(new Date(d.getFullYear(), d.getMonth() + 1, 0));   // last day of this month
   if (horizon === 'quarter') return localISO(new Date(d.getFullYear(), quarterOf(d) * 3 + 3, 0));   // last day of the quarter
   if (horizon === 'year') return localISO(new Date(d.getFullYear(), 11, 31));
   return null;
 }
+// §67 Goal page: "By when" is one of month/quarter/year (a computed deadline),
+// custom (a date you pick, stored in targetDate) or none. A set targetDate always
+// reads as 'custom'. Check-in cadence and the graduated state line live here too.
+function goalByWhen(p) { if (p.targetDate) return 'custom'; if (['month', 'quarter', 'year'].includes(p.horizon)) return p.horizon; return 'none'; }
+const GOAL_CADENCE = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['never', 'Never']];
+function goalCadenceLabel(c) { return (GOAL_CADENCE.find(([v]) => v === (c || 'weekly')) || ['', 'Weekly'])[1]; }
+function goalStateLine(pct) { if (pct >= 100) return 'Achieved - well done.'; if (pct <= 0) return 'Not started'; if (pct < 34) return 'Under way'; if (pct < 67) return 'Well on the way'; return 'Nearly there'; }
 function horizonDateLabel(horizon, iso) {
   if (!iso) return '';
   const d = new Date(iso + 'T00:00');
@@ -21858,17 +21866,26 @@ function gxFold(id, title, hint, open, body) {
 const GC_PRI = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
 const gcStepRow = (tk) => { const pp = tk.props || {}; const done = !!pp.done; const a = areaById(pp.area); return `<div class="gx-step${done ? ' done' : ''}"><span class="gx-step-sq${done ? ' on' : ''}" data-check="${tk.id}" role="button" tabindex="0" title="${done ? 'Mark not done' : 'Mark done'}"></span><div class="gx-step-main"><button class="gx-step-title" data-open-task="${tk.id}">${esc(tk.title || 'Untitled')}</button>${a ? `<div class="gx-step-sub">${esc(a.title)}</div>` : ''}</div><span class="gx-step-pri${pp.priority === 'P1' && !done ? ' first' : ''}">${done ? 'Done' : (GC_PRI[pp.priority] || '')}</span><button class="gx-step-x" data-goal-untask="${tk.id}" title="Remove from this goal">×</button></div>`; };
 function gcThoughtWhen(at) { const d = new Date(at); if (Number.isNaN(d.getTime())) return ''; const now = new Date(); if (d.toDateString() === now.toDateString()) return 'Today'; return d.toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); }
-function gcTimingSummary(p) { const dl = p.targetDate ? dpLabel(p.targetDate) : ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)) : 'No deadline'); const ci = ({ weekly: 'weekly review', monthly: 'monthly review', never: 'no check-in' })[p.checkin || 'weekly']; return `${dl} · ${ci}`; }
+function gcTimingSummary(p) { const bw = goalByWhen(p); const dl = bw === 'none' ? 'No date' : bw === 'custom' ? dpLabel(p.targetDate) : horizonDateLabel(bw, horizonTargetDate(bw)); return `${dl} · ${goalCadenceLabel(p.checkin)} check-in`; }
 function gcTimingBody(g, p) {
-  const row = (label, sub, key, opts) => `<div class="gx-set-row"><div class="gx-set-l"><div class="gx-set-label">${esc(label)}</div>${sub ? `<div class="gx-set-sub">${esc(sub)}</div>` : ''}</div><div class="gx-set-opts">${opts.map(([val, txt, on]) => `<span class="gx-set-opt${on ? ' on' : ''}" data-goal-set="${key}:${val}" role="button" tabindex="0">${esc(txt)}</span>`).join('')}</div></div>`;
-  const hz = p.horizon || 'quarter'; const hasDate = !!p.targetDate; const ci = p.checkin || 'weekly'; const rm = p.remind || 'off';
-  const spaceName = goalArea(g) ? goalArea(g).title : '';
-  return row('Deadline', p.targetDate ? dpLabel(p.targetDate) : (hz === 'quarter' || hz === 'year' ? horizonDateLabel(hz, horizonTargetDate(hz)) : ''), 'deadline', [['quarter', 'End of quarter', hz === 'quarter' && !hasDate], ['pick', 'Pick a date', hasDate], ['none', 'None', hz === 'longterm' && !hasDate]])
-    + (hasDate ? `<div class="gx-set-date">${dateFieldHtml('goalcard-target', p.targetDate || '')}</div>` : '')
-    + row('Check in', 'Where Koyeba asks how it is going', 'checkin', [['weekly', 'Weekly review', ci === 'weekly'], ['monthly', 'Monthly review', ci === 'monthly'], ['never', 'Never', ci === 'never']])
-    + row('Remind me', 'Before the deadline', 'remind', [['off', 'Off', rm === 'off'], ['week', 'A week before', rm === 'week'], ['month', 'A month before', rm === 'month']])
-    + `<div class="gx-set-row"><div class="gx-set-l"><div class="gx-set-label">Spaces</div><div class="gx-set-sub">Where this goal shows up</div></div><div class="gx-set-opts"><span class="gx-set-opt on">${esc(spaceName || 'No space')}</span></div></div>`
-    + `<div class="gx-del" data-del-goal="${g.id}" role="button" tabindex="0">Delete this goal…</div>`;
+  // §67: the choices are keyline buttons that wrap; the chosen one is filled gold.
+  const btn = (key, val, txt, on) => `<button class="gx-tbtn${on ? ' on' : ''}" data-goal-set="${key}:${val}">${esc(txt)}</button>`;
+  const bw = goalByWhen(p); const ci = p.checkin || 'weekly';
+  const whenRow = `<div class="gx-tset"><div class="gx-tset-l">By when</div><div class="gx-tbtns">`
+    + btn('when', 'month', 'This month', bw === 'month')
+    + btn('when', 'quarter', 'This quarter', bw === 'quarter')
+    + btn('when', 'year', 'This year', bw === 'year')
+    + btn('when', 'custom', 'Custom date…', bw === 'custom')
+    + btn('when', 'none', 'No date', bw === 'none')
+    + `</div>${bw === 'custom' ? `<div class="gx-tset-date">${dateFieldHtml('goalcard-target', p.targetDate || '')}<span class="gx-tset-dl">By ${esc(dpLabel(p.targetDate || horizonTargetDate('month')))}</span></div>` : ''}</div>`;
+  const checkRow = `<div class="gx-tset"><div class="gx-tset-l">Check in</div><div class="gx-tbtns">`
+    + GOAL_CADENCE.map(([v, l]) => btn('checkin', v, l, ci === v)).join('')
+    + `</div></div>`;
+  const moveOpen = !!(state.goal_open && state.goal_open.moveOpen);
+  const curArea = gp(g).area || null;
+  const movePick = moveOpen ? `<div class="gx-tbtns gx-tmove">${(state.areas || []).map((a) => `<button class="gx-tbtn${a.id === curArea ? ' on' : ''}" data-goal-moveto="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('') || '<span class="gx-tset-l">No Spaces yet</span>'}${curArea ? '<button class="gx-tbtn" data-goal-moveto="">No Space</button>' : ''}</div>` : '';
+  const moveRow = `<div class="gx-tset"><div class="gx-tbtns"><button class="gx-tbtn${moveOpen ? ' on' : ''}" data-goal-move="${g.id}">Move to another Space</button><button class="gx-tbtn gx-tbtn-warn" data-del-goal="${g.id}">Archive goal</button></div>${movePick}</div>`;
+  return `${whenRow}${checkRow}${moveRow}`;
 }
 function gcConnectedHtml(g) {
   const go = state.goal_open;
@@ -21877,7 +21894,7 @@ function gcConnectedHtml(g) {
   const links = (blockLinks(g) || []).map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="gx-conn-row"><a class="gx-conn-t" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a><span class="gx-conn-b">Link</span><button class="gx-conn-x" data-xlink-del data-xlink-kind="goal" data-xlink-id="${g.id}" data-xlink-idx="${i}" title="Remove">×</button></div>`; });
   const grp = (label, rows) => rows.length ? `<div class="gx-conn-grp"><div class="gx-conn-gl">${label}</div>${rows.join('')}</div>` : '';
   const count = people.length + notes.length + links.length;
-  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person, event or link…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link, or type a name - Koyeba finds it.</div>`;
+  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person or event…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link or type a name - Koyeba finds it.</div>`;
 }
 function renderGoalCard() {
   const go = state.goal_open; if (!go || !go.goal) return;
@@ -21898,24 +21915,33 @@ function renderGoalCard() {
   const selS = keepTitleFocus ? ta0.selectionStart : null; const selE = keepTitleFocus ? ta0.selectionEnd : null;
   const stars = `<span class="gx-star" data-toggle-focus="${g.id}" role="button" tabindex="0"><span class="gx-star-sq${p.focus ? ' on' : ''}"></span>${p.focus ? 'Starred' : 'Star'}</span>`;
   const statusChip = (!isDone && (p.status || 'active') !== 'active') ? `<span class="gx-statustag">${esc((GSTATUS.find(([v]) => v === p.status) || [])[1] || p.status)}</span>` : '';
-  const progBody = `<div class="gx-prog-main gc-progress">
-        <div class="gx-prog-nums"><span class="gx-pct gc-pct">${isDone ? '100%' : pctNum + '%'}</span><span class="gx-pct-note">${isDone ? 'Achieved' : 'Drag the slider'}</span></div>
-        <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><span class="gx-ticks"><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i></span><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
-        <div class="gx-prog-act"><span class="gx-achieve" data-goal-achieve="${g.id}" role="button" tabindex="0">Mark achieved</span></div>
-      </div>
-      <div class="gx-figs">${daysLeft != null ? `<div class="gx-fig"><div class="gx-fig-n">${daysLeft} day${daysLeft === 1 ? '' : 's'}</div><div class="gx-fig-l">By ${esc(dpLabel(dueISO))}</div></div>` : ''}<div class="gx-fig"><div class="gx-fig-n">${stepsLeft}</div><div class="gx-fig-l">Steps to go</div></div></div>`;
+  // §67 progress card: the % (gold) + a graduated state line, a full-width slider
+  // with Just begun · Halfway · Done, then three facts under a keyline. The slider
+  // is the only progress control - at 100% it reads "Achieved - well done." and the
+  // goal counts as done (saveGoalProgress owns the status). No "Mark achieved".
+  const byDate = dueISO ? new Date(dueISO + 'T00:00').toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'long' }) : '';
+  const daysFact = dueISO
+    ? `<div class="gx-fact"><div class="gx-fact-n">${daysLeft === 0 ? 'Due today' : daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left'}</div><div class="gx-fact-l">By ${esc(byDate)}</div></div>`
+    : `<div class="gx-fact"><div class="gx-fact-n">No date</div><div class="gx-fact-l">No deadline set</div></div>`;
+  const progBody = `
+      <div class="gx-prog-top"><span class="gx-pct">${isDone ? '100%' : pctNum + '%'}</span><span class="gx-prog-state"><span class="gx-state">${esc(goalStateLine(isDone ? 100 : pctNum))}</span><span class="gx-drag">Drag to update</span></span></div>
+      <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
+      <div class="gx-slide-labels"><span>Just begun</span><span>Halfway</span><span>Done</span></div>
+      <div class="gx-facts">${daysFact}<div class="gx-fact"><div class="gx-fact-n">${doneN} of ${gtasks.length} done</div><div class="gx-fact-l">Steps towards it</div></div><div class="gx-fact"><div class="gx-fact-n">${esc(goalCadenceLabel(p.checkin))}</div><div class="gx-fact-l">Looked at in your review</div></div></div>`;
   const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in ' + esc(spaceName) : ''}" autocomplete="off"></div>`;
   const thinkBody = `<div class="gx-think-add"><input class="gx-think-input" data-goal-thought="${g.id}" placeholder="Add a thought…" autocomplete="off"></div>${thoughts.map((th) => `<div class="gx-thought"><span class="gx-thought-when">${esc(gcThoughtWhen(th.at))}</span><span class="gx-thought-t">${esc(th.text || '')}</span></div>`).join('')}`;
+  // §67: title lives in the LEFT column (not full-width over both), so the right
+  // column can never overlap it. The crumb is exactly "← {where you came from} ·
+  // {Space}" (§63 back + the Space as the up-link), not the nav group/Goals/title.
+  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(navBackLabel())}</span></button>${a ? `<span class="crumb-dot">·</span><button class="crumb" data-open-area="${a.id}">${esc(a.title)}</button>` : `<span class="crumb-dot">·</span><button class="crumb" data-open-goals>Goals</button>`}</div></div>`;
   $('#pane').innerHTML = `
     <div class="gx-page">
-      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Goals', attr: 'data-open-goals' }, { label: g.title || 'Goal' }])}
-      <div class="gx-head">
-        <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal${spaceName ? ' · ' + esc(spaceName) : ''}${periodLbl ? ' · ' + esc(periodLbl) : ''}</span>${statusChip}${stars}</div>
-        <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
-        <div class="gx-prog">${progBody}</div>
-      </div>
+      ${goalCrumb}
       <div class="gx-grid">
         <div class="gx-main">
+          <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal${spaceName ? ' · ' + esc(spaceName) : ''}</span>${statusChip}${stars}</div>
+          <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
+          <div class="gx-prog gx-card">${progBody}</div>
           ${gxFold('why', 'Why this matters', p.why ? '' : 'Not written yet', fo.why, `<textarea class="gx-why" id="goalcard-why" rows="3" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea>`)}
           ${gxFold('steps', "How I'll get there", `${doneN} of ${gtasks.length} done · each one is a task`, fo.steps, stepsBody)}
           ${gxFold('think', 'Thinking', thoughts.length ? `${thoughts.length} thought${thoughts.length === 1 ? '' : 's'}` : 'Nothing yet', fo.think, thinkBody)}
@@ -23503,7 +23529,7 @@ function renderReviewReport() {
   loadThumbs();
 }
 // A goal's finish-by date: the explicit one, or the quarter/year horizon default.
-function goalDueISO(g) { const p = gp(g); return p.targetDate || ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonTargetDate(p.horizon) : null); }
+function goalDueISO(g) { const p = gp(g); return p.targetDate || (['month', 'quarter', 'year'].includes(p.horizon) ? horizonTargetDate(p.horizon) : null); }
 // Deadlines approaching, shown in a review: active goals whose finish-by date
 // falls within the look-ahead for this cadence (wider for longer reviews), plus
 // anything already overdue. Weekly only shows it when something is actually near.
@@ -26476,10 +26502,13 @@ document.addEventListener('click', (e) => {
   { const gf = t.closest('[data-gx-fold]'); if (gf) { gcSetFold(gf.dataset.gxFold); renderGoalCard(); return; } }
   { const ach = t.closest('[data-goal-achieve]'); if (ach) { saveGoalProgress(ach.dataset.goalAchieve, 100); renderGoalCard(); return; } }
   { const gs = t.closest('[data-goal-set]'); if (gs) { const s = gs.dataset.goalSet; const i = s.indexOf(':'); const key = s.slice(0, i); const val = s.slice(i + 1); const gid = state.goal_open && state.goal_open.goal && state.goal_open.goal.id; if (!gid) return; let patch = null;
-      if (key === 'deadline') { patch = val === 'none' ? { horizon: 'longterm', targetDate: null } : val === 'quarter' ? { horizon: 'quarter', targetDate: null } : { targetDate: horizonTargetDate('quarter') }; }
+      // §67 "By when": month/quarter/year compute their own deadline; custom reveals
+      // a date field (seeded so it isn't empty); none clears the date.
+      if (key === 'when') { patch = val === 'custom' ? { horizon: 'custom', targetDate: gp(state.goal_open.goal).targetDate || horizonTargetDate('month') } : val === 'none' ? { horizon: 'none', targetDate: null } : { horizon: val, targetDate: null }; }
       else if (key === 'checkin') patch = { checkin: val };
-      else if (key === 'remind') patch = { remind: val };
       if (patch) { Object.assign(gp(state.goal_open.goal), patch); patchGoal(gid, patch, true); renderGoalCard(); } return; } }
+  { const gm = t.closest('[data-goal-move]'); if (gm) { if (state.goal_open) state.goal_open.moveOpen = !state.goal_open.moveOpen; renderGoalCard(); return; } }
+  { const gmt = t.closest('[data-goal-moveto]'); if (gmt) { const gid = state.goal_open && state.goal_open.goal && state.goal_open.goal.id; if (!gid) return; const area = gmt.dataset.goalMoveto || null; Object.assign(gp(state.goal_open.goal), { area }); state.goal_open.moveOpen = false; patchGoal(gid, { area }, true); renderGoalCard(); toast(area ? 'Moved Space.' : 'Removed from its Space.'); return; } }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
   // §34 Contacts two-column
   if (t.closest('[data-cv-new]')) { cvNewContact(); return; }
