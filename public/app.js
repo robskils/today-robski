@@ -8644,8 +8644,13 @@ function homeRadarBodyHtml() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
   // The whole row opens the item (Later is handled first, so it still snoozes).
   const rowHtml = (o) => `<div class="rdr-row" ${o.attr} role="button" tabindex="0"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
-  const grp = (label, items, gold) => { if (!items.length) return ''; const shown = items.slice(0, 4); const more = items.length > 4 ? `<button class="rdr-more" data-open-tasks>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
-  return total ? `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}` : `<div class="rdr-empty">Nothing pressing. A clear run.</div>`;
+  // Robin: "And N more" expands the radar in place so you can see them all, right
+  // here - it no longer jumps to Tasks (the radar is goals, tasks, people and more).
+  const all = !!(state.home && state.home.radarAll);
+  const grp = (label, items, gold) => { if (!items.length) return ''; const shown = all ? items : items.slice(0, 4); const more = (!all && items.length > 4) ? `<button class="rdr-more" data-radar-all>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
+  if (!total) return `<div class="rdr-empty">Nothing pressing. A clear run.</div>`;
+  const fewer = all && total > 4 ? `<button class="rdr-more rdr-fewer" data-radar-all>Show fewer</button>` : '';
+  return `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}${fewer}`;
 }
 function homeRadarSummary() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
@@ -8698,15 +8703,27 @@ function homeNewMake(kind) {
     else { openJournal(); }   // Note -> a journal page / note
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
+// Robin: the Mail glance should show what's in the inbox, not only the untriaged
+// "to sort" subset. Prefer to-sort; if there's nothing to sort, show the most recent
+// inbox mail so the tab never reads empty while the inbox has mail.
+function homeMailGlanceItems() {
+  const all = (state.mail && state.mail.messages) || [];
+  const gone = (state.mail && state.mail.gone) || new Set();
+  const inbox = all.filter((m) => m && !gone.has(m._key) && /inbox/i.test(m._mailbox || 'INBOX')).sort((a, b) => mailMsgTs(b) - mailMsgTs(a));
+  const toSort = inbox.filter((m) => mailQuadOf(m) === 'inbox');
+  return (toSort.length ? toSort : inbox).slice(0, 5);
+}
 function homeGlancePanelHtml(tool) {
   const open = (attr, k, title, sub, when) => `<button class="gln-item" ${attr}><span class="gln-item-b"><span class="gln-item-t">${esc(title)}</span>${sub ? `<span class="gln-item-s">${esc(sub)}</span>` : ''}</span>${when ? `<span class="gln-item-w">${esc(when)}</span>` : ''}</button>`;
   let rows = '', link = '', label = '';
   if (tool === 'mail') {
+    // Make sure the inbox is loaded once, so the glance has mail to show.
+    if (!state.__mailWarming && !state.__mailListLoaded) { try { warmMailForSheet(); } catch {} }
     // §51: one click unfolds the email in place - sender on top (Jost), subject
     // below (Cormorant), then the text and Reply · triage · Open this in Mail.
     // Triaging removes the row. The row no longer just jumps to the Mail page.
     label = 'Mail';
-    const items = mailNewItems().slice(0, 4);
+    const items = homeMailGlanceItems();
     const openK = (state.home && state.home.glanceMail) || null;
     rows = items.map((m) => {
       const k = m._key; const isOpen = openK === k;
@@ -8719,7 +8736,7 @@ function homeGlancePanelHtml(tool) {
         body = `<div class="gln-mail-open"><div class="gln-mail-text">${textHtml}</div><div class="gln-mail-acts"><button class="gln-mail-reply" data-glance-mail-reply="${esc(k)}">Reply</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="urgent">Urgent</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="important">Important</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="chilled">Read later</button><button class="gln-mail-q" data-glance-mail-arch="${esc(k)}">Archive</button><button class="gln-mail-q" data-glance-mail-del="${esc(k)}">Delete</button><button class="gln-mail-openin" data-glance-mail-openin="${esc(k)}">Open this in Mail →</button></div></div>`;
       }
       return `<div class="gln-mail${isOpen ? ' on' : ''}">${head}${body}</div>`;
-    }).join('') || '<div class="gln-empty">Nothing to sort.</div>';
+    }).join('') || `<div class="gln-empty">${state.__mailListLoaded ? 'Your inbox is clear.' : 'Loading your inbox…'}</div>`;
     link = 'data-open-mail';
   }
   else if (tool === 'messages') {
@@ -21991,7 +22008,7 @@ function renderGoalCard() {
       <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
       <div class="gx-slide-labels"><span>Just begun</span><span>Halfway</span><span>Done</span></div>
       <div class="gx-facts">${daysFact}<div class="gx-fact"><div class="gx-fact-n">${doneN} of ${gtasks.length} done</div><div class="gx-fact-l">Steps towards it</div></div><div class="gx-fact"><div class="gx-fact-n">${esc(goalCadenceLabel(p.checkin))}</div><div class="gx-fact-l">Looked at in your review</div></div></div>`;
-  const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in ' + esc(spaceName) : ''}" autocomplete="off"></div>`;
+  const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in your ' + esc(spaceName) + ' space' : ''}" autocomplete="off"></div>`;
   const thinkBody = `<div class="gx-think-add"><input class="gx-think-input" data-goal-thought="${g.id}" placeholder="Add a thought…" autocomplete="off"></div>${thoughts.map((th) => `<div class="gx-thought"><span class="gx-thought-when">${esc(gcThoughtWhen(th.at))}</span><span class="gx-thought-t">${esc(th.text || '')}</span></div>`).join('')}`;
   // §67: title lives in the LEFT column (not full-width over both), so the right
   // column can never overlap it. The crumb is exactly "← {where you came from} ·
@@ -26341,6 +26358,7 @@ document.addEventListener('click', (e) => {
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab = 'mail'; try { localStorage.setItem('life.home.ltab', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-ltabwrap'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
+  { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
   if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderHome(); return; }
   { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); return; } }
