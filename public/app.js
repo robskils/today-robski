@@ -8504,7 +8504,8 @@ function homeSpacesAsideHtml() {
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
   const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span></button>`;
-  return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span></div>${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button>`;
+  const open = kOpen('spaces');
+  return `<div class="home-sa-head" data-hfold="spaces" role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><span class="home-sa-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>${open ? `<div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button></div>` : ''}`;
 }
 // §35 Reflections on Today: anything drawn or cast today - a Spirit card, an I
 // Ching reading, the horoscope, a Compass check-in - each staying until the next
@@ -8733,6 +8734,97 @@ function homeGlanceHtml() {
   const panel = glance ? `<div class="gln-panel">${homeGlancePanelHtml(glance)}</div>` : '';
   return `<div class="home-glance"><div class="gln-row"><span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${newMenu}</span><span class="gln-words">${wordHtml}</span></div>${panel}</div>`;
 }
+// ── §62 Today v3: the two-column home ───────────────────────────────────────
+// The one gold "+ New" button and its dropdown, on the right of the greeting.
+function homeNewBtnHtml() {
+  const newOpen = !!(state.home && state.home.newMenu);
+  const newItems = HOME_NEW.map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}<div class="gln-new-foot">Or just write it – Set something down ${esc(PK('⌘.'))}</div></div></div>` : '';
+  return `<span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${newMenu}</span>`;
+}
+// Fold or unfold every section on Today at once.
+function homeFoldAll() {
+  const keys = ['cal', 'radar', 'mail', 'msgs', 'kreading', 'spaces'];
+  const c = homeCollapsed();
+  const anyOpen = keys.some((k) => !c[k]);
+  keys.forEach((k) => { c[k] = anyOpen; });   // if anything's open, close all; else open all
+  try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {}
+  renderHome();
+}
+// The arrival line: when new mail has come in since you last looked. A Cormorant
+// italic sentence with the sender in Jost; Read it opens the Mail section here
+// with that email unfolded, Later tucks the line away for now.
+function homeArrivalHtml() {
+  if (!modOn('mail')) return '';
+  const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
+  if (!items.length || state.mailArrivalHidden) return '';
+  const m = items[0];
+  const who = `<span class="home-arr-who">${esc(mailSenderClean(m))}</span>`;
+  const subj = m.subject ? ` – “${esc(mailCleanSubject(m.subject))}”` : '';
+  const lead = items.length === 1
+    ? `A letter from ${who}, just now${subj}`
+    : `${items.length} new letters – ${who} and ${items.length - 1} more`;
+  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><span class="home-arr-later" data-mail-arrival-later role="button" tabindex="0">Later</span></div>`;
+}
+// §62 Calendar section: confirmed events (and plain slots), Today · Tomorrow;
+// never tasks - those live in On your radar. Practices sit as a tick row at the
+// foot, then Open Calendar →.
+function homeCalItems() { return homeTodayItems().filter((it) => it.kind === 'event' || (it.kind === 'slot' && !it.taskId)); }
+function homeCalSectionHtml(off) {
+  const open = kOpen('cal');
+  const items = homeCalItems();
+  const pracs = items.filter((it) => it.badge === 'practice');
+  const events = items.filter((it) => it.badge !== 'practice');
+  const isTom = off >= 1;
+  const tabs = `<div class="home-cal-tabs"><span class="home-cal-tab${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-cal-tab${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span></div>`;
+  const row = (it) => {
+    const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
+    const note = it.kind === 'event' ? (it.location || '') : '';
+    return `<div class="home-cal-row" ${it.kind === 'event' ? 'data-home-cal role="button" tabindex="0"' : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}</div></div>`;
+  };
+  const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
+  const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
+  const body = `${tabs}${evHtml}${pracHtml}<button class="home-cal-open" data-open-calendar>Open Calendar →</button>`;
+  const hint = `${events.length} ${events.length === 1 ? 'thing' : 'things'} in the diary`;
+  const h = `<div class="home-fold-h" data-hfold="cal" role="button" tabindex="0"><span class="hf-name">Calendar</span><span class="hf-hint">${esc(hint)}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${body}</div>` : ''}</section>`;
+}
+// §62 Mail / Messages as left folding sections. The bodies reuse the in-place
+// openers built for the at-a-glance panel (§51/§58).
+function homeMailSectionHtml() {
+  if (!modOn('mail')) return '';
+  const open = kOpen('mail');
+  const n = mailHeaderCount();
+  const h = `<div class="home-fold-h" data-hfold="mail" role="button" tabindex="0"><span class="hf-name">Mail</span>${n ? `<span class="hf-count hot">${n}</span>` : ''}<span class="hf-hint">${n ? `${n} to sort` : 'All sorted'}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${homeGlancePanelHtml('mail')}</div>` : ''}</section>`;
+}
+function homeMsgsSectionHtml() {
+  if (!modOn('contacts')) return '';
+  const open = kOpen('msgs');
+  const n = unreadMsgs();
+  const h = `<div class="home-fold-h" data-hfold="msgs" role="button" tabindex="0"><span class="hf-name">Messages</span>${n ? `<span class="hf-count hot">${n}</span>` : ''}<span class="hf-hint">${n ? `${n} new` : 'Nothing new'}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<section class="home-sec2">${h}${open ? `<div class="home-sec2-b">${homeGlancePanelHtml('messages')}</div>` : ''}</section>`;
+}
+// §62 right column: Today's readings (I Ching · Horoscope · Spirit) as compact
+// glyph rows, with the quote of the day at their foot. No emoji - the I Ching
+// shows its hexagram character, the others a Cormorant letter.
+function homeReadGlyph(r) {
+  if (r.key === 'iching') { const tok = (r.title || '').trim().match(/^\S/); return tok ? tok[0] : 'I'; }
+  return { spirit: 'S', horo: 'H', compass: 'C' }[r.key] || '·';
+}
+function homeReadingsSectionHtml() {
+  if (!reflectOn()) return '';
+  const open = kOpen('kreading');
+  const items = homeReadingItems();
+  const rows = items.length ? items.map((r) => {
+    const exp = state.home && state.home.readOpen === r.key;
+    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0"><span class="home-rd-glyph">${esc(homeReadGlyph(r))}</span><div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" ${r.open} role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
+  }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
+  const q = dayQuote();
+  const quote = (dailyQuoteOn() && q && q.text) ? `<div class="home-rd-quote"><p class="home-rd-qtext">“${esc(q.text)}”</p><div class="home-rd-qfoot">${q.author ? `<span class="home-rd-qauth">${esc(q.author)}</span>` : ''}<button class="home-rd-qkeep${quoteKept(q.text) ? ' on' : ''}" data-quote-keep>${quoteKept(q.text) ? 'Kept' : 'Keep it'}</button></div></div>` : '';
+  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Today’s readings</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}${quote}</div>` : ''}</div>`;
+}
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   // §41: "Keep in touch" folds shut by default; Reflections and the day stay
@@ -8766,23 +8858,32 @@ function renderHome() {
   // Reflections, Keep in touch, the Notepad line, then the quote and the mark.
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-home">
-    <div class="home home-v2">
+    <div class="home home-v3">
       ${alerts ? `<div class="home-alerts">${alerts}</div>` : ''}
       <div id="qt-wrap"></div>
       <div class="home-flow">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
-        <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.<br><span class="home-greet-sub">${homeSubClause()}</span></h1>
-        ${homeTimeWeatherHtml()}
-        ${homeGlanceHtml()}
-        <div class="home-cols">
-          <div class="home-main">
-            ${homeRadarHtml()}
-            ${today}
-            ${reflections}
+        ${homeArrivalHtml()}
+        <div class="home-greetrow">
+          <div class="home-greetmain">
+            <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
+            <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>
+            ${homeTimeWeatherHtml()}
           </div>
-          <aside class="home-aside">${homeSpacesAsideHtml()}</aside>
+          ${homeNewBtnHtml()}
         </div>
-        ${quoteOfDayHtml()}
+        <div class="home-cols home-cols-v3">
+          <div class="home-main">
+            <div class="home-foldall-row"><span class="home-foldall" data-home-foldall role="button" tabindex="0">Fold all</span></div>
+            ${homeCalSectionHtml(off)}
+            ${homeRadarHtml()}
+            ${homeMailSectionHtml()}
+            ${homeMsgsSectionHtml()}
+          </div>
+          <aside class="home-aside">
+            ${homeReadingsSectionHtml()}
+            ${homeSpacesAsideHtml()}
+          </aside>
+        </div>
       </div>
       <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
     </div>
@@ -25618,8 +25719,11 @@ document.addEventListener('click', (e) => {
   // Koyeba Home fold headers (Today / Your spaces / Coming into view / the line /
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
-  { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.today === true) { c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
+  { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
+  if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
+  { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
+  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); const c = homeCollapsed(); c.mail = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} mailMarkLooked(); state.mailArrivalHidden = true; glanceMailToggle(har.dataset.homeArrRead); setTimeout(() => { const el = document.querySelector('.gln-mail.on'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 140); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
