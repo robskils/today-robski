@@ -12167,9 +12167,12 @@ function stepCal(delta) {
   else { let m = state.cal.m + delta, y = state.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } state.cal.y = y; state.cal.m = m; }
   state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar();
 }
-// §25: Quieten repeats is on by default (muting weekly repeats and sorting them
-// below the one-offs). Kept per person in life.calQuiet.
-function calQuiet() { if (state.cal.quiet == null) state.cal.quiet = (localStorage.getItem('life.calQuiet') !== '0'); return state.cal.quiet; }
+// §25: "Quieten repeats" would mute weekly repeats and sort them below the
+// one-offs. Robin didn't want it (2026-11-02), so it's hidden and off for now -
+// the toggle is gone and this returns false, leaving repeats to read normally.
+// To bring it back: restore the cx-quiet button and the per-person read below.
+// return state.cal.quiet ?? (localStorage.getItem('life.calQuiet') !== '0');
+function calQuiet() { return false; }
 // Titles carry no emoji, flags or ↻ repeat marks (§25): repeats read as muting,
 // and "Repeats weekly" appears in the side panel instead.
 function stripEmoji(s) { return String(s || '').replace(/[←-⇿⌀-➿⬀-⯿\u{1F000}-\u{1FAFF}️⃣™ℹ]/gu, '').replace(/\s{2,}/g, ' ').trim(); }
@@ -12243,7 +12246,6 @@ function renderCalendar() {
       <div class="cx-controls">
         <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today>Today</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
-        <button class="cx-quiet${quiet ? ' on' : ''}" data-cal-quiet><span class="cx-quiet-box"></span>Quieten repeats</button>
         <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
         <button class="cx-new" data-cal-add>New event</button>
       </div>
