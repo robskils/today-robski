@@ -5213,8 +5213,8 @@ function knavGroups() {
       ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
-    { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
-      ['Journal', 'data-open-journal', ''], ['Reflection', 'data-open-wellbeing', ''], ['Coaching', 'data-open-coaching', ''], ['Insights', 'data-open-insights', ''] ] },
+    { id: 'inner', label: 'Reflection', about: 'Room for the rest of you', tools: [
+      ['Overview', 'data-open-wellbeing', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['I Ching', 'data-open-iching', ''], ['Spirit Cards', 'data-spirit-open', ''], ['Horoscope', 'data-open-horo', ''], ['Insights', 'data-open-insights', ''] ] },
     { id: 'money', label: 'Money', about: "What things cost, and what's growing", tools: [
       ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
   ];
@@ -7706,7 +7706,7 @@ function renderNotepad() { const r = document.getElementById('notepad-root'); if
 // first, with a draggable 1px divider (30-70%, double-click resets to half).
 // Fold away or Esc closes it. (Drag-to-join, kept pairs and the mobile flip are
 // a later pass; this ships the core two-pane view behind an opt-in.)
-const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Inner life' };
+const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'Conversations', area: 'Spaces', bookmark: 'Keep', journal: 'Reflection' };
 function splitMain() { return document.querySelector('.main'); }
 function splitEls() {
   const main = splitMain(); if (!main) return {};
@@ -8005,7 +8005,7 @@ function homeSpacesColHtml() {
 function homeReadingHtml() {
   const ic = currentIching();
   const sp = currentSpirit();
-  if (!ic && !sp) return '<div class="home-empty">Cast the I Ching or pull a card from Inner life, and today\'s reading sits here.</div>';
+  if (!ic && !sp) return '<div class="home-empty">Cast the I Ching or pull a card from Reflection, and today\'s reading sits here.</div>';
   let out = '';
   if (ic && ic.lines) { const hex = icHexFor(ic.lines, false); if (hex) { const moving = ic.lines.some((l) => l.changing); out += `<button class="home-read-row" data-iching-reopen><span class="home-read-sym">${esc(hex.cn || '')}</span><span class="home-read-b"><span class="home-read-name">${esc(hex.name || '')}</span><span class="home-read-kind">I Ching · ${esc(hex.py || hex.n || '')}${moving ? ' · changing' : ''}</span><span class="home-read-txt">${esc(hex.text || '')}</span></span></button>`; } }
   if (sp) { out += `<button class="home-read-row" data-spirit-open><span class="home-read-sym home-read-word">${esc(sp.name || '')}</span><span class="home-read-b"><span class="home-read-txt">${esc(sp.message || '')}</span></span></button>`; }
@@ -9332,7 +9332,7 @@ function renderWellbeing() {
   $('#pane').innerHTML = `
     <div class="kpage-reflect"><div class="rf-grid">
       <div class="rf-main">
-        <div class="nx-eyebrow">Inner life · Reflection</div>
+        <div class="nx-eyebrow">Room for the rest of you</div>
         <h1 class="nx-h1">${t('nav.reflect')}</h1>
         <div class="nx-lead">${esc(lead)}</div>
         <div class="rf-lately">
@@ -12618,11 +12618,10 @@ function showCalForm(ev) {
     </div>
     <div class="ce-grid">
       <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">🧭 Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
-      ${(() => { const sel = eventAlarmList(ev); const chs = eventAlarmChSet(ev); const cCb = (v, l) => `<label class="ce-chan"><input type="checkbox" class="ce-chan-cb" value="${v}" ${chs.has(v) ? 'checked' : ''}><span>${l}</span></label>`; return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
+      ${(() => { const sel = eventAlarmList(ev); return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
         <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
         <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
-        <div class="ce-alarm-ch" ${sel.length ? '' : 'hidden'}><span class="ce-rem-chlbl">Notify me</span><div class="ce-rem-chans">${cCb('app', 'In the app')}${cCb('email', 'By email')}${cCb('sms', 'By text')}</div></div>
       </div>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
     </div>
