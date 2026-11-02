@@ -11285,8 +11285,29 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-rd-hl { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-ink); white-space:nowrap; }
 .home-rd-sign { margin-left:auto; font-family:var(--k-sans); font-weight:300; font-size:20px; color:var(--k-mute); }
 .home-rd-body { animation:kfade .35s ease; }
-.home-rd-row { display:grid; grid-template-columns:minmax(46px,max-content) minmax(0,1fr); gap:4px 16px; align-items:baseline; padding:14px 0; border-top:1px solid var(--k-line); cursor:pointer; }
+.home-rd-row { display:grid; grid-template-columns:72px minmax(0,1fr); gap:4px 16px; align-items:start; padding:16px 0; border-top:1px solid var(--k-line); cursor:pointer; }
 .home-rd-glyph { font-family:var(--k-serif); font-weight:500; font-size:32px; line-height:1; color:var(--k-goldt); white-space:nowrap; }
+/* §64 reading card images: 72×100, 1px gold border + inner gold outline inset 5px */
+.home-rd-card { position:relative; width:72px; height:100px; flex:none; background:var(--k-panel); border:1px solid var(--k-gold); box-sizing:border-box; overflow:hidden; }
+.home-rd-card .rc-in { position:absolute; inset:5px; border:1px solid var(--k-gold); pointer-events:none; }
+.home-rd-card .rc-foot { position:absolute; left:0; right:0; bottom:8px; text-align:center; font-family:var(--k-sans); font-weight:600; font-size:6.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 6px; }
+.rc-spirit { background:var(--k-panel); }
+.rc-spirit .rc-svg { position:absolute; inset:0; width:100%; height:100%; }
+.rc-spirit .rc-svg line, .rc-spirit .rc-svg circle { stroke:var(--k-gold); stroke-width:1; fill:none; }
+.rc-spirit .rc-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--k-serif); font-style:italic; font-weight:500; font-size:34px; color:var(--k-ink); padding-bottom:14px; }
+.rc-horo { background:oklch(0.28 0.04 155); }
+.rc-horo .rc-in { border-color:var(--k-gold); }
+.rc-horo .rc-ring { position:absolute; left:50%; top:44px; width:40px; height:40px; transform:translate(-50%,-50%); border:1px solid var(--k-gold); border-radius:50%; opacity:.8; }
+.rc-horo .rc-zc { position:absolute; left:0; right:0; top:44px; transform:translateY(-50%); text-align:center; font-family:'Noto Sans Symbols','Jost',sans-serif; font-size:26px; line-height:1; color:var(--k-gold); }
+.rc-horo .rc-foot-gold { color:var(--k-gold); }
+.rc-ich .rc-bars { position:absolute; left:14px; right:14px; top:20px; bottom:26px; display:flex; flex-direction:column; justify-content:space-between; gap:5px; }
+.rc-ich .rc-bar { height:5px; display:flex; }
+.rc-ich .rc-bar.yang { background:var(--k-ink); }
+.rc-ich .rc-bar.yin { justify-content:space-between; }
+.rc-ich .rc-bar.yin i { width:44%; background:var(--k-ink); }
+.rc-ich .rc-bar.ch.yang { background:var(--k-gold); }
+.rc-ich .rc-bar.ch.yin i { background:var(--k-gold); }
+.rc-plain .rc-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--k-serif); font-style:italic; font-weight:500; font-size:30px; color:var(--k-goldt); padding-bottom:14px; }
 .home-rd-kind { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }
 .home-rd-t { font-family:var(--k-sans); font-weight:500; font-size:16.5px; line-height:1.3; color:var(--k-ink); margin-top:3px; }
 .home-rd-line { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; line-height:1.35; color:var(--k-ink); margin-top:3px; }

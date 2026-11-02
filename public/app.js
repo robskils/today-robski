@@ -8825,13 +8825,34 @@ function homeReadGlyph(r) {
   if (r.key === 'iching') { const tok = (r.title || '').trim().match(/^\S/); return tok ? tok[0] : 'I'; }
   return { spirit: 'S', horo: 'H', compass: 'C' }[r.key] || '·';
 }
+// §64: a 72×100 card image for each reading. Spirit = the generated face (ivory,
+// gold horizon, two circles, the initial); Horoscope = the zodiac glyph in gold
+// on forest (Noto Sans Symbols + U+FE0E so it's text, not an emoji); I Ching =
+// the hexagram drawn as six bars (yang solid, yin broken, changing in gold).
+function homeZodiacGlyph(sign) { const s = String(sign || '').toLowerCase(); const z = (typeof ZODIAC !== 'undefined' ? ZODIAC : []).find((x) => String(x[0]).toLowerCase() === s); return z ? z[1] : ''; }
+function homeReadCardHtml(r) {
+  if (r.key === 'spirit') {
+    const sp = currentSpirit() || {}; const init = esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase());
+    return `<div class="home-rd-card rc-spirit"><span class="rc-in"></span><svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${init}</span><span class="rc-foot">${esc(String(sp.name || 'Spirit').slice(0, 14))}</span></div>`;
+  }
+  if (r.key === 'horo') {
+    const ho = currentHoro() || {}; const sign = String(ho.sign || '').trim(); const g = homeZodiacGlyph(sign);
+    return `<div class="home-rd-card rc-horo"><span class="rc-in"></span><span class="rc-ring"></span><span class="rc-zc">${g ? g + '︎' : esc(sign.charAt(0) || '?')}</span><span class="rc-foot rc-foot-gold">${esc(sign || 'Horoscope')}</span></div>`;
+  }
+  if (r.key === 'iching') {
+    const ic = currentIching(); const lines = (ic && ic.lines) || []; const hex = lines.length ? icHexFor(lines, false) : null;
+    const bars = lines.slice().reverse().map((l) => l.yin ? `<span class="rc-bar yin${l.changing ? ' ch' : ''}"><i></i><i></i></span>` : `<span class="rc-bar yang${l.changing ? ' ch' : ''}"></span>`).join('');
+    return `<div class="home-rd-card rc-ich"><span class="rc-in"></span><span class="rc-bars">${bars}</span><span class="rc-foot">${hex ? hex.n : ''}</span></div>`;
+  }
+  return `<div class="home-rd-card rc-plain"><span class="rc-in"></span><span class="rc-init">${esc((r.kind || '?').charAt(0))}</span></div>`;
+}
 function homeReadingsSectionHtml() {
   if (!reflectOn()) return '';
   const open = kOpen('kreading');
   const items = homeReadingItems();
   const rows = items.length ? items.map((r) => {
     const exp = state.home && state.home.readOpen === r.key;
-    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0"><span class="home-rd-glyph">${esc(homeReadGlyph(r))}</span><div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
+    return `<div class="home-rd-row" data-home-read="${esc(r.key)}" role="button" tabindex="0">${homeReadCardHtml(r)}<div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}${exp ? `<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div>` : ''}</div></div>`;
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.

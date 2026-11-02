@@ -15,6 +15,10 @@
    One variable file carries the 400-600 axis, so 600 renders heavier from it. */
 @font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4.woff2') format('woff2');font-weight:400 600;font-style:normal;font-display:swap}
 @font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4-italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+/* Noto Sans Symbols (§64): the zodiac glyphs ♈–♓ as real text, not emoji.
+   Self-hosted latin/zodiac subset (U+2648-2653); the horoscope card appends
+   U+FE0E to force text presentation. */
+@font-face{font-family:'Noto Sans Symbols';src:url('/fonts/NotoSansSymbols-zodiac.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+2648-2653,U+FE0E}
 
 /* ── Day (default) ────────────────────────────────────────────────────────── */
 :root{
