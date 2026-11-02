@@ -310,6 +310,7 @@ document.addEventListener('click', (ev) => {
   const bc = ev.target.closest && ev.target.closest('[data-beside-close]'); if (bc) { ev.preventDefault(); closeBeside(); }
 }, true);
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.split && !notepadState().open) { closeBeside(); } });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.mailSheet) { ev.preventDefault(); toggleMailSheet(false); } });
 // §22: Enter in the Tasks quick-add line creates the task in the open pile.
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const qa = ev.target.closest && ev.target.closest('[data-task-quickadd]'); if (qa) { ev.preventDefault(); txQuickAdd(qa); } });
 // §30 Goal page: Enter in the step / thought / connect inputs.
@@ -5536,6 +5537,7 @@ function navGroupsHtml(v) {
       <div class="knav-crumb">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
+        ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New since you looked (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
@@ -5652,6 +5654,9 @@ function renderNav() {
     }
   }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
+  // §43: the Mail arrival line and the "New since you looked" sheet live on
+  // <body>, fixed under the top bar, so they show on every page.
+  try { renderMailArrival(); renderMailSheet(); } catch {}
   // §24: lock page scroll behind the full-screen Menu/Find layer (mobile), and
   // open the keyboard with Find focused the moment it rises.
   const overlayOpen = !!(state.knav && (state.knav.contents || state.knav.find));
@@ -15436,6 +15441,140 @@ function startMailUnreadPoll() {
 // instead. (Same spirit as reopening Home at the top after a while.)
 function mailStamp() { try { localStorage.setItem('life.mail.lastActive', String(Date.now())); } catch {} }
 function mailReopenStale() { try { const t = Number(localStorage.getItem('life.mail.lastActive') || 0); return !t || (Date.now() - t) > REOPEN_FRESH_MS; } catch { return false; } }
+// ── §43 New mail, quickly ───────────────────────────────────────────────────
+// A "Mail" item in the header with a gold count, and a drop-down "New since you
+// looked" sheet (⌘E) that lets you read and triage a new email in place, on any
+// page. Triage reuses mailToQuad; the message list comes from the synced cache.
+// The header count: the to-sort inbox once the list is loaded (so it drops as
+// you triage), falling back to the server unread total on a cold page.
+function mailHeaderCount() { return (state.mail && state.mail.messages && state.mail.messages.length) ? mailNewItems().length : (state.mailUnreadTotal || 0); }
+function mailLookedKey() { return 'life.mail.looked'; }
+function mailLookedTs() { try { return Number(localStorage.getItem(mailLookedKey())) || 0; } catch { return 0; } }
+function mailMarkLooked() { try { localStorage.setItem(mailLookedKey(), String(Date.now())); } catch {} }
+function mailMsgTs(m) { const d = m && (m.date || m.received || m.internalDate); const n = d ? Date.parse(d) : 0; return isNaN(n) ? 0 : n; }
+// The to-sort inbox, newest first - what the sheet shows.
+function mailNewItems() {
+  const msgs = (state.mail && state.mail.messages) || [];
+  const gone = (state.mail && state.mail.gone) || new Set();
+  const out = msgs.filter((m) => m && !gone.has(m._key) && mailQuadOf(m) === 'inbox');
+  return out.sort((a, b) => mailMsgTs(b) - mailMsgTs(a));
+}
+function mailSenderName(m) { const f = (m && (m.fromName || m.from || '')) || ''; const nm = String(f).replace(/<[^>]*>/g, '').replace(/"/g, '').trim(); return nm || String((m && m.fromAddr) || f || 'Someone').trim(); }
+function mailArrivalLine() {
+  const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
+  if (!items.length || state.mailSheet || state.mailArrivalHidden) return '';
+  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A letter from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`; }
+  const names = items.slice(0, 3).map(mailSenderName);
+  const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new letters`;
+  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new letters – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><span class="mail-arrival-l" data-mail-arrival-later>Later</span></div>`;
+}
+function toggleMailSheet(open) {
+  const want = open == null ? !state.mailSheet : !!open;
+  state.mailSheet = want;
+  if (want) {
+    state.mailArrivalHidden = true;   // the arrival line gives way to the sheet
+    state.mailSheetOpen = null;
+    mailMarkLooked();
+    // Seed the mail cache + quadrants so the sheet has something to show, and warm
+    // the list in the background if it's empty (e.g. Mail not opened yet).
+    if (!state.mail) { let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {} state.mail = { account: seed.account || 'all', folder: 'inbox', messages: seed.messages || [], gone: new Set(), snapMsgs: {}, accounts: seed.accounts }; }
+    if (!state.mailQuads) { state.mailQuads = {}; api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.mailSheet) renderMailSheet(); }).catch(() => {}); }
+    if (!mailNewItems().length && !state.__mailSheetWarmed) { state.__mailSheetWarmed = true; warmMailForSheet(); }
+  }
+  renderNav(); renderMailSheet();
+  if (want) setTimeout(() => { const s = document.getElementById('mail-sheet'); if (s) s.scrollTop = 0; }, 0);
+}
+// Load the inbox list for the sheet without navigating to Mail. Best-effort: it
+// uses the first account's cached inbox. A no-op if mail isn't configured.
+async function warmMailForSheet() {
+  try {
+    let accts = (state.mail && state.mail.accounts) || null;
+    if (!accts) { const r = await mailApi('/accounts').catch(() => null); accts = Array.isArray(r) ? r : ((r && r.accounts) || []); if (state.mail) state.mail.accounts = accts; }
+    if (!accts || !accts.length) return;
+    const r = await mailApi(`/messages?account=${accts[0].id}&limit=40`).catch(() => null);
+    const msgs = (r && r.messages) || [];
+    if (msgs.length && state.mail) { state.mail.messages = msgs; if (state.mailSheet) renderMailSheet(); }
+  } catch {}
+}
+function mailSheetHtml() {
+  if (!state.mailSheet) return '';
+  const items = mailNewItems();
+  const looked = mailLookedTs();
+  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New since you looked</span><span class="mail-sheet-count">${items.length ? `${items.length} new · sort each one, or open it` : 'Nothing to sort'}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
+  if (!items.length) {
+    const t = looked ? new Date(looked).toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : '';
+    return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">All sorted. Nothing new${t ? ` since ${esc(t)}` : ''}.</div></div>`;
+  }
+  const rows = items.map((m) => {
+    const isOpen = state.mailSheetOpen === m._key;
+    const fresh = mailMsgTs(m) > looked;
+    const tLabel = (() => { const ts = mailMsgTs(m); if (!ts) return ''; const d = new Date(ts); const today = new Date(); return (d.toDateString() === today.toDateString()) ? d.toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); })();
+    const snip = esc(String(m.snippet || m.preview || '').replace(/\s+/g, ' ').slice(0, 90));
+    let body = '';
+    if (isOpen) {
+      const full = (state.mailSheetBody && state.mailSheetBody[m._key]);
+      const text = full != null ? full : (m.snippet || m.preview || '');
+      body = `<div class="mail-sheet-read">
+        <div class="mail-sheet-rtext">${full == null ? '<span class="mail-sheet-loading">Opening…</span>' : esc(String(text).replace(/\s+/g, ' ').slice(0, 1400))}</div>
+        <div class="mail-sheet-actions">
+          <span class="msa-reply" data-mail-sheet-reply="${esc(m._key)}">Reply</span>
+          <span class="msa-sep"></span>
+          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:urgent">Urgent</span>
+          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:important">Important</span>
+          <span class="msa-tri" data-mail-sheet-tri="${esc(m._key)}:later">Read later</span>
+          <span class="msa-sep"></span>
+          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:task">Make a task</span>
+          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:event">Add as event</span>
+          <span class="msa-turn" data-mail-sheet-turn="${esc(m._key)}:note">Keep as note</span>
+        </div>
+      </div>`;
+    }
+    return `<div class="mail-sheet-row${isOpen ? ' open' : ''}">
+      <div class="mail-sheet-rowh" data-mail-sheet-row="${esc(m._key)}" role="button" tabindex="0">
+        <span class="mail-sheet-dot${fresh ? ' on' : ''}"></span>
+        <span class="mail-sheet-from">${esc(mailSenderName(m))}</span>
+        <span class="mail-sheet-subj"><span class="mail-sheet-sj">${esc(String(m.subject || '(no subject)').slice(0, 70))}</span>${snip ? `<span class="mail-sheet-sn">${snip}</span>` : ''}</span>
+        <span class="mail-sheet-time${fresh ? ' on' : ''}">${esc(tLabel)}</span>
+      </div>
+      ${body}
+    </div>`;
+  }).join('');
+  return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-list">${rows}</div></div>`;
+}
+function renderMailArrival() {
+  let el = document.getElementById('mail-arrival-wrap');
+  const html = (modOn('mail') && !state.mailSheet) ? mailArrivalLine() : '';
+  if (!html) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'mail-arrival-wrap'; document.body.appendChild(el); }
+  el.innerHTML = html;
+}
+function renderMailSheet() {
+  let el = document.getElementById('mail-sheet');
+  if (!state.mailSheet) { if (el) el.remove(); document.body.classList.remove('mailsheet-open'); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'mail-sheet'; el.className = 'mail-sheet'; document.body.appendChild(el); }
+  el.innerHTML = mailSheetHtml();
+  document.body.classList.add('mailsheet-open');
+}
+async function mailSheetReadRow(key) {
+  state.mailSheetOpen = state.mailSheetOpen === key ? null : key;
+  renderMailSheet();
+  if (state.mailSheetOpen === key) {
+    state.mailSheetBody = state.mailSheetBody || {};
+    if (state.mailSheetBody[key] == null) {
+      const m = (state.mail.messages || []).find((x) => x._key === key);
+      try { const full = m ? await mailFetchMsg(m) : null; state.mailSheetBody[key] = (full && (full.text || full.body || full.snippet)) || (m && (m.snippet || m.preview)) || ''; }
+      catch { state.mailSheetBody[key] = (m && (m.snippet || m.preview)) || 'Could not load this message.'; }
+      if (state.mailSheet) renderMailSheet();
+    }
+  }
+}
+async function mailSheetTriage(key, pile) {
+  const quad = pile === 'later' ? 'chilled' : pile;   // Read later maps to the Chilled pile
+  try { await mailToQuad(key, quad); } catch {}
+  if (state.mailSheetOpen === key) state.mailSheetOpen = null;
+  toast(pile === 'urgent' ? 'Moved to Urgent' : pile === 'important' ? 'Moved to Important' : 'Saved to read later');
+  renderNav(); renderMailSheet();
+}
 async function openMail(openKey) {
   startMailUnreadPoll();
   // Which tab asked for this. Fetching accounts and a message list takes real
@@ -24239,6 +24378,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.knav && (state.knav.group || state.knav.contents || state.knav.find)) { e.preventDefault(); state.knav.group = null; state.knav.contents = false; state.knav.find = false; renderNav(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e' && !e.shiftKey && !e.altKey && modOn('mail')) { e.preventDefault(); toggleMailSheet(); return; }
   // In a Brave installed web app (standalone PWA) there's no tab strip, so ⌘T
   // and ⌘N reach the page: ⌘T = new in-app tab, ⌘N = new note. ⌥ variants stay
   // as a fallback for any window that still reserves the plain keys. ⌘W closes
@@ -25280,6 +25420,15 @@ document.addEventListener('click', (e) => {
   // Quick-file straight from an inbox row: a small button opens a 4-way menu.
   { const qm = t.closest('[data-mail-quad-menu]'); if (qm) { e.stopPropagation(); const r = qm.getBoundingClientRect(); state.mail.quadMenu = { key: qm.dataset.mailQuadMenu, x: Math.min(r.left, window.innerWidth - 210), y: r.bottom + 4 }; renderMail(); return; } }
   { const qp = t.closest('[data-mail-quad-pick]'); if (qp) { const mm = state.mail.quadMenu; if (mm) mailToQuad(mm.key, qp.dataset.mailQuadPick); return; } }
+  // §43 New-mail sheet + arrival line.
+  if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }
+  if (t.closest('[data-mail-sheet-close]')) { toggleMailSheet(false); return; }
+  { const mr = t.closest('[data-mail-sheet-row]'); if (mr) { mailSheetReadRow(mr.dataset.mailSheetRow); return; } }
+  { const mt = t.closest('[data-mail-sheet-tri]'); if (mt) { const [k, p] = mt.dataset.mailSheetTri.split(':'); mailSheetTriage(k, p); return; } }
+  { const mu = t.closest('[data-mail-sheet-turn]'); if (mu) { const [k] = mu.dataset.mailSheetTurn.split(':'); toggleMailSheet(false); openMail(k).catch((x) => toast(x.message)); return; } }
+  { const mre = t.closest('[data-mail-sheet-reply]'); if (mre) { toggleMailSheet(false); openMail(mre.dataset.mailSheetReply).catch((x) => toast(x.message)); return; } }
+  if (t.closest('[data-mail-arrival-read]')) { toggleMailSheet(true); return; }
+  if (t.closest('[data-mail-arrival-later]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); items.forEach((m) => { try { mailToQuad(m._key, 'chilled'); } catch {} }); mailMarkLooked(); state.mailArrivalHidden = true; renderNav(); toast('Saved to read later'); return; }
   if (t.closest('[data-mail-quad-close]')) { state.mail.quadMenu = null; renderMail(); return; }
   { const mg = t.closest('[data-mail-group]'); if (mg) { const k = mg.dataset.mailGroup; state.mail.groupsShut = state.mail.groupsShut || {}; state.mail.groupsShut[k] = !state.mail.groupsShut[k]; renderMail(); return; } }
   { const msd = t.closest('[data-mail-side]'); if (msd) { const k = msd.dataset.mailSide; state.mail.side = state.mail.side || {}; state.mail.side[k] = !state.mail.side[k]; renderMail(); return; } }
