@@ -6818,7 +6818,7 @@ function renderPracticeCard() {
   // Back goes UP one level - to Practices, the folder this practice lives in -
   // not wherever you happened to start (Robin: a sub-page's Back is its parent,
   // not Home). Always shown, since a practice always has Practices above it.
-  const crumb = `<div class="note-crumbs"><button class="crumb-back" data-open-practices title="Back to Practices" aria-label="Back to Practices">←</button><button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
+  const crumb = `<div class="note-crumbs"><button class="crumb-back" data-open-practices title="Back to Practices" aria-label="Back to Practices">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
   if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
   const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
   const meta = parsePracticeMeta(a);
@@ -8769,7 +8769,14 @@ function glanceMailText(full) {
   if (!t && full && full.html) { try { const d = document.createElement('div'); d.innerHTML = full.html; t = d.textContent || ''; } catch {} }
   t = mailFixText(String(t)).replace(/[​-‍͏­﻿]/g, '').replace(/\r/g, '');
   t = t.replace(/\s*On\s[\s\S]{0,120}?\swrote:[\s\S]*$/i, '');   // drop a quoted reply tail
-  t = t.replace(/\n{3,}/g, '\n\n').trim();
+  // The plain-text part of a marketing email is littered with "[image]" markers and
+  // raw tracking URLs - strip them so the preview reads as clean prose. (Robin.)
+  t = t.replace(/\[image[^\]]*\]/gi, '')                    // [image] / [image: alt] placeholders
+       .replace(/\[\s*https?:\/\/[^\]]*\]/gi, '')           // [https://…] bracketed links
+       .replace(/\bhttps?:\/\/\S+/gi, '')                   // bare URLs (incl. long tracking ones)
+       .replace(/^[ \t]*[-–•·▪*>]+[ \t]*$/gm, '')           // leftover bullet/quote lines
+       .replace(/[ \t]{2,}/g, ' ');
+  t = t.replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '').replace(/\n[ \t]+/g, '\n');
   return t.length > 900 ? t.slice(0, 900).replace(/\s+\S*$/, '') + '…' : t;
 }
 // Click a glance mail row: unfold it in place (fetching the body once, cached),
@@ -11024,7 +11031,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
@@ -12432,7 +12439,7 @@ function renderAreaV4() {
 
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-area av3 av4">
-      <div class="av4-crumb"><span class="av4-crumb-up" data-view-home role="button" tabindex="0">Today</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-up" data-open-areas role="button" tabindex="0">Spaces</span><span class="av4-crumb-dot">·</span><span class="av4-crumb-nm">${esc(area.title || 'Space')}</span></div>
+      <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">·</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
         <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
@@ -18227,6 +18234,8 @@ function mailOpenTriageBar(o) {
     + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
     + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
     + `<button class="mail-trg mail-trg-del" data-mail-del="${k}">Delete</button>`
+    + `<button class="mail-trg" data-mail-spam="${k}">Spam</button>`
+    + `<button class="mail-trg" data-mail-block="${k}" data-mail-from="${esc((o.from && o.from.address) || '')}">Block</button>`
     + `</div>`;
 }
 // Does Koyeba notice anything in this email? (an invite, a meeting link, or that
@@ -22013,13 +22022,15 @@ function renderGoalCard() {
   // §67: title lives in the LEFT column (not full-width over both), so the right
   // column can never overlap it. The crumb is exactly "← {where you came from} ·
   // {Space}" (§63 back + the Space as the up-link), not the nav group/Goals/title.
-  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span>${a ? `<button class="crumb" data-open-area="${a.id}">${esc(a.title)}</button>` : `<button class="crumb" data-open-goals>Goals</button>`}</div></div>`;
+  // Crumb stays clean (Today · Goals); the Space gets its own tidy chip in the
+  // eyebrow row, so 'England' isn't repeated and the top no longer looks cluttered.
+  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span><button class="crumb" data-open-goals>Goals</button></div></div>`;
   $('#pane').innerHTML = `
     <div class="gx-page">
       ${goalCrumb}
       <div class="gx-grid">
         <div class="gx-main">
-          <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal${spaceName ? ' · ' + esc(spaceName) : ''}</span>${statusChip}${stars}</div>
+          <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal</span>${statusChip}${stars}${a ? `<button class="gx-space" data-open-area="${a.id}" title="Open this Space"><span class="gx-space-l">Space</span><span class="gx-space-n">${esc(a.title)}</span></button>` : ''}</div>
           <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
           <div class="gx-prog gx-card">${progBody}</div>
           ${gxFold('why', 'Why this matters', p.why ? '' : 'Not written yet', fo.why, `<textarea class="gx-why" id="goalcard-why" rows="3" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea>`)}
@@ -22072,7 +22083,7 @@ function renderGoalCardLegacy() {
   const selS = keepTitleFocus ? ta0.selectionStart : null;
   const selE = keepTitleFocus ? ta0.selectionEnd : null;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
@@ -22359,7 +22370,7 @@ function renderBucketCard() {
   const areaOpts = `<option value="">No space</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
       <span class="crumb-tools"><button class="ghost" data-bucket-to-goal="${b.id}" title="Turn this into a goal you're actively working towards">🎯 Make a goal</button><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
     <div class="task-focus">
       <button class="bk-done-btn ${p.status === 'done' ? 'on' : ''}" data-bucket-done="${b.id}" title="Mark as done">${p.status === 'done' ? '✓' : '○'}</button>
@@ -22653,7 +22664,7 @@ function renderWheel() {
       <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
     </section>` : '';
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>${t('nav.home')}</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
     <div class="pane-head"><h1>Wheel of Life</h1></div>
     ${body}${trackHtml}`;
 }
@@ -23584,7 +23595,7 @@ function renderReviewReport() {
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
     <article class="rr" style="--h:${hue}">
       <div class="rr-eyebrow"><span>${esc(cfg.label)} review</span>${navHtml}</div>
@@ -23678,7 +23689,7 @@ function renderReviewCard() {
   }).join('');
   const wheelHiddenN = state.areas.length - wheelAreas.length;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); const wk = (p.rtype === 'weekly') ? isoWeekInfo(p.to) : null; return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${wk ? `<span class="rv-dh-week">Week ${wk.week} / ${wk.total}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
@@ -24104,7 +24115,7 @@ async function openVisionCard(id) { const a = await api(`/api/blocks/${id}`); st
 function renderVisionCard() {
   const a = state.vision_open.area; const p = a.props || {};
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
     <div class="task-focus" style="--h:${hueOf(a)}"><span class="vc-dot big"></span><h1 class="vision-h1">${esc(a.title)}</h1></div>
     <label class="tf-field goal-why"><span class="tf-label">Your vision for this area</span><textarea class="sel" id="visioncard-text" rows="4" placeholder="Picture this part of your life at its best — write it in the present tense…">${esc(p.vision || '')}</textarea></label>
     ${attachSection(a)}`;
@@ -24121,7 +24132,7 @@ function renderVisionWall() {
   state.areas.forEach((a) => ((a.props && a.props.attachments) || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: a.id, att: im, hue: hueOf(a), cap: a.title }); }));
   (state.bucket || []).forEach((b) => { const p = b.props || {}; if (p.status === 'done') (p.attachments || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: b.id, att: im, hue: hueOf(areaById(p.area)), cap: b.title, lived: true }); }); });
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
+    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
     <div class="pane-head"><h1>The wall</h1></div>
     <p class="rv-period">The life you're reaching for — and the moments you've lived.</p>
     ${tiles.length ? `<div class="wall-grid">${tiles.map((x) => `<figure class="wall-tile ${x.lived ? 'lived' : ''}" style="--h:${x.hue}"><img data-wimg="${x.block}:${x.att.id}" alt=""><figcaption>${x.lived ? '✓ ' : ''}${esc(x.cap)}</figcaption></figure>`).join('')}</div>` : '<div class="empty" style="padding:50px">Add images to your areas’ visions and to bucket-list moments you’ve lived — they gather here on one wall.</div>'}`;
@@ -24813,7 +24824,7 @@ function renderNote() {
   const kids = connected.map(connItem).join('');
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
       <div class="nc-actions">
         <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">
@@ -28645,7 +28656,7 @@ function renderTaskCard() {
   const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Home</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
       <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
         <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
           ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Koyeba contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}

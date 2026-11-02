@@ -2193,7 +2193,16 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-blank, .note-empty { color:var(--ink-3); font-family:var(--k-serif); font-style:italic; font-size:21px; }
 .note-blank { padding:70px 20px; text-align:center; }
 
-.note-crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; font-size:15px; }
+.note-crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:2px 0 24px; font-size:13px; }
+/* Robin: match the slim breadcrumb used on Mail/Spaces/Goals everywhere - no back
+   arrow (the menubar carries back), a muted "·" separator, the same Jost type. */
+.note-crumbs .crumb-back { display:none; }
+.note-crumbs .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; cursor:pointer; white-space:nowrap; }
+.note-crumbs button.crumb:hover { color:var(--k-goldt); }
+.note-crumbs .crumb.cur { color:var(--k-ink); cursor:default; }
+.note-crumbs .crumb-sep { font-size:0; line-height:0; }
+.note-crumbs .crumb-sep::before { content:'·'; font-size:12px; line-height:1; color:var(--k-line); }
+.note-crumbs .crumb-tools, .note-crumbs .addnew { margin-left:auto; }
 /* Standard breadcrumb bar (tables, rows, and shared with note/task/area). */
 .crumbbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
 /* Desktop: pin the breadcrumb just below the tab strip (44px) as you scroll, so
@@ -9907,6 +9916,10 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 .gx-rule { width:28px; height:1px; background:var(--k-gold); flex:none; }
 .gx-eyebrow-t { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
 .gx-statustag { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--k-mute); }
+/* A tidy 'Space · England' chip, right-aligned in the eyebrow row. (Robin.) */
+.gx-space { margin-left:auto; display:inline-flex; align-items:baseline; gap:9px; background:none; border:0; cursor:pointer; padding:0; font-family:var(--k-sans); font-size:15px; color:var(--k-ink); white-space:nowrap; }
+.gx-space:hover .gx-space-n { color:var(--k-goldt); }
+.gx-space-l { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-goldt); }
 .gx-star { display:inline-flex; align-items:center; gap:8px; margin-left:4px; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
 .gx-star:hover { color:var(--k-goldt); }
 .gx-star-sq { width:9px; height:9px; border:1px solid var(--k-gold); background:transparent; flex:none; }
