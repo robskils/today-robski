@@ -3186,6 +3186,42 @@ function startFriendStatusPoll() {
   refreshFriendStatus();
   window.__friendStatusT = setInterval(() => { if (!document.hidden) refreshFriendStatus(); }, 30000);
 }
+// §33 realtime: a WebSocket that nudges us to refetch the instant a message
+// arrives, so Messages (and the unread badge + toast) update without a reload.
+// It carries NO data - a nudge just re-runs the normal refreshers - so it can
+// never corrupt anything, and it falls back silently to the 30s/4s polls if it
+// can't connect. Reconnects with backoff; a 45s 'ping' holds it open through
+// Cloudflare's idle timeout.
+let rtSock = null, rtBackoff = 2000, rtPingT = null, rtStopped = false;
+async function startRealtime() {
+  rtStopped = false;
+  if (rtSock && (rtSock.readyState === 0 || rtSock.readyState === 1)) return;   // already connecting/open
+  let ticket = '';
+  try { const r = await api('/api/rt/ticket'); ticket = (r && r.ticket) || ''; } catch { ticket = ''; }
+  if (!ticket) { scheduleRtReconnect(); return; }
+  try {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${proto}//${location.host}/api/rt?ticket=${encodeURIComponent(ticket)}`);
+    rtSock = ws;
+    ws.onopen = () => { rtBackoff = 2000; clearInterval(rtPingT); rtPingT = setInterval(() => { try { if (ws.readyState === 1) ws.send('ping'); } catch {} }, 45000); };
+    ws.onmessage = (ev) => { if (ev.data === 'pong') return; let d = null; try { d = JSON.parse(ev.data); } catch {} if (d && d.type === 'msg') onRtMessage(); };
+    ws.onclose = () => { clearInterval(rtPingT); if (rtSock === ws) rtSock = null; scheduleRtReconnect(); };
+    ws.onerror = () => { try { ws.close(); } catch {} };
+  } catch { scheduleRtReconnect(); }
+}
+function scheduleRtReconnect() {
+  if (rtStopped) return;
+  clearTimeout(window.__rtT);
+  window.__rtT = setTimeout(() => { if (document.hidden) scheduleRtReconnect(); else startRealtime(); }, rtBackoff);
+  rtBackoff = Math.min(rtBackoff * 2, 30000);
+}
+function onRtMessage() {
+  // refreshFriendStatus already does the unread badge + the "X messaged you"
+  // toast when you're not in that chat; the mp refreshers bring the open list
+  // and conversation up to date at once.
+  try { refreshFriendStatus(); } catch {}
+  if (state.view && state.view.type === 'messages') { try { mpRefreshThreads(); } catch {} if (state.mp && state.mp.cur != null) { try { mpLoad(); } catch {} } }
+}
 // Home "People" section: whether it shows, and its contents (who's online + a
 // nudge when someone wants to connect). Toggle lives in Settings → Appearance.
 const peopleOn = () => { try { return localStorage.getItem('life.home.people') !== '0'; } catch { return true; } };
@@ -28732,6 +28768,7 @@ function showRequired2fa() {
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
     startFriendStatusPoll(); // Contacts badge + Home "People" section
+    startRealtime();         // §33: instant message nudges over a WebSocket (falls back to the polls)
     startAlarmLoop();        // in-app reminders for events with an alarm set
     // The "People on Home" preference follows the account across devices.
     api('/api/kv/home_people').then((r) => { if (r && (r.value === '0' || r.value === '1')) { try { localStorage.setItem('life.home.people', r.value); } catch {} if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});

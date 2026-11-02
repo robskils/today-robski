@@ -235,6 +235,21 @@ max_batch_timeout = 10
 max_concurrency = 8
 max_retries = 2
 
+# ── Realtime message nudges (§33) ─────────────────────────────────────
+# A single global Durable Object holds each signed-in device's WebSocket and,
+# when someone sends a message, pushes a tiny "refetch" nudge to the recipient's
+# sockets - so Messages updates without a reload. The socket only ever triggers
+# a re-fetch (it never carries message data), and everything degrades to the
+# existing polls if it isn't connected, so it can't break messaging. The DO
+# needs no stored state; it just coordinates the live connections.
+[[durable_objects.bindings]]
+name = "MSGHUB"
+class_name = "MsgHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MsgHub"]
+
 # ── Secrets (npx wrangler secret put <NAME>) ──────────────────────────
 #   AUTH_SECRET           signs the 7-day session JWTs. Rotating it signs
 #                         everyone out, which is the panic button.

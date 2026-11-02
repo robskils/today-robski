@@ -1,5 +1,5 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
-import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT } from './auth.js';
+import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT, signJWT } from './auth.js';
 import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe } from './sharing.js';
@@ -4551,6 +4551,53 @@ async function sendHealthAlert(env, down, up) {
   await sendSystemMail(env, { to, subject: `${down.length ? '⚠️' : '✅'} Koyeba: ${headline}`, html, text: `${headline}. ${[...down, ...up].map((s) => `${s.label} - ${s.detail}`).join(' | ')}` });
 }
 
+// Push a "refetch" nudge to one user's live sockets via the MsgHub DO. Wrapped
+// so a missing binding or a dead socket never affects the send that triggered
+// it. (§33 realtime.)
+async function notifyRealtime(env, to, from) {
+  if (!env.MSGHUB || to == null) return;
+  try {
+    const stub = env.MSGHUB.get(env.MSGHUB.idFromName('global'));
+    await stub.fetch('https://msghub/notify', { method: 'POST', body: JSON.stringify({ to, from }) });
+  } catch {}
+}
+
+// ── §33 realtime hub ───────────────────────────────────────────────────────
+// One global Durable Object holds every signed-in device's WebSocket, tagged by
+// user id, using the hibernation API so idle sockets cost nothing. It carries no
+// message content and keeps no durable state: /connect accepts a socket for a
+// uid; /notify pushes a tiny {type:'msg'} nudge to that uid's sockets, and the
+// client re-fetches. If the socket isn't there, the client's polls cover it.
+export class MsgHub {
+  constructor(state, env) { this.state = state; this.env = env; }
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/connect') {
+      const uid = url.searchParams.get('uid');
+      if (!uid) return new Response('no uid', { status: 400 });
+      const pair = new WebSocketPair();
+      const client = pair[0], server = pair[1];
+      // Hibernatable accept, tagged by uid so /notify can find this user's sockets.
+      this.state.acceptWebSocket(server, ['u:' + uid]);
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    if (url.pathname === '/notify') {
+      let b = {}; try { b = await request.json(); } catch {}
+      if (b && b.to != null) {
+        const msg = JSON.stringify({ type: 'msg', from: b.from != null ? b.from : null });
+        for (const ws of this.state.getWebSockets('u:' + b.to)) { try { ws.send(msg); } catch {} }
+      }
+      return new Response('ok');
+    }
+    return new Response('not found', { status: 404 });
+  }
+  // The client sends 'ping' to keep the socket alive through Cloudflare's idle
+  // timeout; we answer 'pong'. Nothing else is expected inbound.
+  async webSocketMessage(ws, message) { if (message === 'ping') { try { ws.send('pong'); } catch {} } }
+  async webSocketClose(ws) { try { ws.close(); } catch {} }
+  async webSocketError() {}
+}
+
 export default {
   // Cloudflare fires this on the cron schedule in wrangler.toml. waitUntil
   // keeps the isolate alive until the sends finish.
@@ -4631,6 +4678,23 @@ export default {
     if (pubNote) {
       try { return noStore(await servePublicNote(env, pubNote[1], url)); }
       catch { return new Response('Not available', { status: 500, headers: { 'content-type': 'text/plain' } }); }
+    }
+
+    // §33 realtime: the WebSocket a signed-in device holds for instant message
+    // nudges. Handled BEFORE the normal Bearer auth because a browser WebSocket
+    // can't send an Authorization header - it carries a short-lived signed
+    // ?ticket= (minted at /api/rt/ticket) instead. The socket only ever receives
+    // a "refetch" nudge; it never carries message content. Inert (426/401/500 ->
+    // client falls back to polling) if the ticket is bad or the DO is unbound.
+    if (path === '/api/rt') {
+      if ((request.headers.get('Upgrade') || '').toLowerCase() !== 'websocket') return new Response('expected websocket', { status: 426 });
+      const ticket = url.searchParams.get('ticket') || '';
+      const payload = (ticket && env.AUTH_SECRET) ? await verifyJWT(ticket, env.AUTH_SECRET).catch(() => null) : null;
+      if (!payload || !payload.rt || !payload.uid) return new Response('unauthorized', { status: 401 });
+      if (!env.MSGHUB) return new Response('unavailable', { status: 503 });
+      const stub = env.MSGHUB.get(env.MSGHUB.idFromName('global'));
+      const u = new URL(request.url); u.pathname = '/connect'; u.searchParams.set('uid', String(payload.uid));
+      return stub.fetch(new Request(u.toString(), request));
     }
 
     // Static assets (the Worker runs first). The root serves a different app per
@@ -5125,6 +5189,15 @@ export default {
       }
       if (path === '/api/friends/remove' && request.method === 'POST') { const b = await request.json().catch(() => ({})); return json(await removeFriend(env, b.id), request); }
       if (path === '/api/messages' && request.method === 'GET') { try { return json(await getMessages(env, url.searchParams.get('with')), request); } catch (e) { return err(e.message, request, 403); } }
+      // A short-lived ticket so a browser WebSocket (no auth header) can connect
+      // to /api/rt as this user. 120s is plenty to open the socket; the socket
+      // then lives on. (§33 realtime.)
+      if (path === '/api/rt/ticket' && request.method === 'GET') {
+        if (!env.AUTH_SECRET) return err('unavailable', request, 503);
+        const now = Math.floor(Date.now() / 1000);
+        const ticket = await signJWT({ uid: env.uid, rt: 1, iat: now, exp: now + 120 }, env.AUTH_SECRET);
+        return json({ ticket }, request);
+      }
       if (path === '/api/messages' && request.method === 'POST') {
         const b = await request.json().catch(() => ({}));
         try {
@@ -5133,6 +5206,9 @@ export default {
           // this message. Awaited rather than fired off: a push that fails should
           // be logged, and the send is fast enough that it costs nothing.
           await maybePushMessage(env, Number(b.to), (env.user && (env.user.name || env.user.subdomain)) || 'Someone', b.body);
+          // Instant in-app nudge: tell the recipient's live sockets to refetch,
+          // so Messages updates without a reload. Best-effort, never blocks send.
+          ctx.waitUntil(notifyRealtime(env, Number(b.to), env.uid));
           return json(r, request, 201);
         } catch (e) { return err(e.message, request, 403); }
       }
