@@ -2002,7 +2002,7 @@ async function syncDateStyleFromServer() {
 }
 
 // ── Settings hub ──────────────────────────────────────────────────────
-function openSettings(tab) { state.settings = state.settings || {}; if (tab) state.settings.tab = tab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
+function openSettings(tab) { state.settings = state.settings || {}; if (tab) { state.settings.legacy = SET_LEGACY_TABS.includes(tab); state.settings.tab = tab; } else { state.settings.legacy = false; } state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); loadAccount(); loadInvites(); return Promise.resolve(); }
 // 🇵🇹 from "PT" - two regional-indicator symbols (client mirror of the worker's).
 function flagEmoji(code) {
   const c = String(code || '').trim().toUpperCase();
@@ -3792,7 +3792,179 @@ function mobileSettingsHtml() {
     <div class="msec-list" id="msec-list">${rows}</div>
   </div>`;
 }
+// ── Settings (V17 §26) ──────────────────────────────────────────────────────
+// One page, six folding sections, with a sticky index. The simple settings are
+// live here; the flows that touch sign-in, money or your calendars open the
+// existing panels untouched (renderSettingsLegacy), reached by their own links.
+const SET_LEGACY_TABS = ['account', 'ai', 'appearance', 'sections', 'mobile', 'feeds', 'notifications', 'invites', 'import', 'card', 'manage', 'security'];
+const SET_SIX_IDS = ['you', 'plan', 'look', 'conn', 'people', 'data'];
 function renderSettings() {
+  state.settings = state.settings || {};
+  document.body.classList.toggle('sx-six', !state.settings.legacy);
+  if (state.settings.legacy) {
+    renderSettingsLegacy();
+    const pane = $('#pane');
+    if (pane && !pane.querySelector('[data-set-sx-back]')) pane.insertAdjacentHTML('afterbegin', `<button type="button" class="crumb-back set-sx-back" data-set-sx-back>← All settings</button>`);
+    return;
+  }
+  renderSettingsSix();
+}
+// Flip a live on/off setting from the six-section page. `spec` is "kind" or
+// "kind:key"; everything routes through the same save the legacy panels use.
+function sxToggle(spec) {
+  const sy = window.scrollY;
+  const [kind, key] = spec.split(':');
+  if (kind === 'ai') { const off = !(state.account && state.account.aiOff); if (state.account) state.account.aiOff = off; saveAccount({ aiOff: off }); toast(off ? 'AI turned off' : 'AI turned on'); }
+  else if (kind === 'aifeat') { const on = !aiFeatureOn(key); if (state.account) { state.account.aiFeatures = state.account.aiFeatures || {}; if (on) delete state.account.aiFeatures[key]; else state.account.aiFeatures[key] = false; saveAccount({ aiFeatures: state.account.aiFeatures }); } const lbl = (AI_USES.find((u) => u[0] === key) || [])[1] || 'That'; toast(on ? `${lbl} AI on` : `${lbl} AI off`); }
+  else if (kind === 'mod') { state.modules = state.modules || {}; const on = !modOn(key); state.modules[key] = on; saveModules(); renderNav(); }
+  else if (kind === 'quote') { const on = !(state.account && state.account.dailyQuote !== false); if (state.account) state.account.dailyQuote = on; saveAccount({ dailyQuote: on }); toast(on ? 'Daily quote on' : 'Daily quote off'); }
+  else if (kind === 'mailpush') { const on = !(state.account && state.account.mailPush !== false); if (state.account) state.account.mailPush = on; saveAccount({ mailPush: on }); toast(on ? 'New-mail alerts on' : 'New-mail alerts off'); }
+  else if (kind === 'people') { const on = !peopleOn(); try { localStorage.setItem('life.home.people', on ? '1' : '0'); } catch {} api('/api/kv/home_people', { method: 'PUT', body: JSON.stringify({ value: on ? '1' : '0' }) }).catch(() => {}); toast(on ? 'People shown on Home' : 'People hidden from Home'); }
+  renderSettings(); window.scrollTo(0, sy);
+}
+// Pick a value on a choice row (theme, week, currency, dates).
+function sxChoice(spec) {
+  const sy = window.scrollY;
+  const i = spec.indexOf(':'); const kind = spec.slice(0, i); const val = spec.slice(i + 1);
+  if (kind === 'theme') { setThemeMode(val); }
+  else if (kind === 'week') { const w = Number(val); if (state.account) state.account.weekStart = w; try { localStorage.setItem('life.weekStart', String(w)); } catch {} saveAccount({ weekStart: w }); toast(`Week starts on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][w]}`); }
+  else if (kind === 'cur') { if (state.account) state.account.currency = val; saveAccount({ currency: val }); const c = (CURRENCIES_APP.find((x) => x[0] === val) || [])[3] || val; toast(`Money shown in ${c}`); }
+  else if (kind === 'date') { setDateStyle(val); toast(val === 'us' ? 'Dates: October 23' : 'Dates: 23 October'); }
+  renderSettings(); window.scrollTo(0, sy);
+}
+function renderSettingsSix() {
+  const a = state.account || {};
+  const name = (a.name || '').trim() || (state.me && state.me.name) || 'You';
+  const email = a.email || (state.me && state.me.email) || '';
+  const phone = (a.phone || '').trim();
+  const aliasEmails = (a.aliases || []).map((x) => (typeof x === 'string' ? x : x.email)).filter(Boolean);
+  const twofaOn = !!a.totpEnabled;
+  const curKey = a.isOwner ? 'managed' : normPlan(a.plan);
+  const planPlus = curKey === 'managed';
+  const planByok = curKey === 'byok';
+  const mode = themeMode(); const tLocked = themeLocked();
+  const ws = weekStart(); const curc = appCurrencyCode(); const ds = dateStyle();
+  const aiOff = !!a.aiOff;
+  const cyc = state.planCycle === 'annual' ? 'annual' : 'monthly';
+  const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MOD_LABEL = Object.fromEntries(MODULES);
+  const TOOL_KEYS = ['mail', 'calendar', 'tasks', 'notes', 'discover', 'goals', 'financial', 'saved', 'today'];
+  const ROM6 = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  const TITLES = { you: 'You', plan: 'Plan and AI', look: 'How it looks and works', conn: 'Connections', people: 'Invitations', data: 'Your data' };
+  const curName = (CURRENCIES_APP.find((x) => x[0] === curc) || [])[3] || curc;
+
+  // control builders ─────────────────────────────────────────────
+  const sq = (on) => `<span class="sx-sq${on ? ' on' : ''}"></span>`;
+  const toggle = (on, spec, dim) => `<span class="sx-toggle${on ? ' on' : ''}${dim ? ' sx-dim' : ''}" data-sx-toggle="${spec}" role="button" tabindex="0">${sq(on)}${on ? 'On' : 'Off'}</span>`;
+  const choices = (arr) => `<span class="sx-choices">${arr.map((c) => {
+    const attr = c.open ? `data-sx-open="${c.open}"` : `data-sx-choice="${c.act}"`;
+    return `<span class="sx-choice${c.on ? ' on' : ''}" ${attr} role="button" tabindex="0">${esc(c.label)}</span>`;
+  }).join('')}</span>`;
+  const links = (arr) => `<span class="sx-links">${arr.map((l, j) => {
+    const cls = `sx-link${l.danger ? ' danger' : (j === 0 ? ' lead' : '')}`;
+    if (l.href) return `<a class="${cls}" href="${l.href}" target="_blank" rel="noopener">${esc(l.label)}</a>`;
+    const attr = l.open ? `data-sx-open="${l.open}"` : l.raw ? l.raw : `data-sx-act="${l.act}"`;
+    return `<span class="${cls}" ${attr} role="button" tabindex="0">${esc(l.label)}</span>`;
+  }).join('')}</span>`;
+  const row = (label, sub, ctl, named) => `<div class="sx-row"><div class="sx-row-l"><div class="sx-row-label${named ? ' named' : ''}">${label}</div>${sub ? `<div class="sx-row-sub">${sub}</div>` : ''}</div><div class="sx-row-r">${ctl}</div></div>`;
+  const grp = (label) => `<div class="sx-grp">${esc(label)}</div>`;
+
+  // sections ──────────────────────────────────────────────────────
+  const youBody =
+    row(esc(name), esc(email) + (phone ? ' · ' + esc(phone) : ''), links([{ label: 'Edit', open: 'account' }]), true)
+    + row('Also sign in with', aliasEmails.length ? esc(aliasEmails.slice(0, 4).join(', ')) + (aliasEmails.length > 4 ? ` and ${aliasEmails.length - 4} more` : '') : 'Just your main address so far', links([{ label: 'Manage', open: 'account' }, { label: '+ Add', open: 'account' }]), true)
+    + row('Your Koyeba card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
+    + grp('Security')
+    + row('Two-step sign-in', 'A code from your authenticator app after your email code', `<span class="sx-links"><span class="sx-stat">${sq(twofaOn)}${twofaOn ? 'On' : 'Off'}</span><span class="sx-link lead" data-sx-open="account" role="button" tabindex="0">${twofaOn ? 'Manage' : 'Set up'}</span></span>`);
+
+  const planSub = planPlus ? 'We run the AI for you - no keys, nothing to set up' : planByok ? 'Powered by your own AI key' : "You're on the free trial - choose a plan when you're ready";
+  const planBody =
+    row('Your plan', planSub, choices([{ label: 'Premium Plus', on: planPlus, open: 'ai' }, { label: 'Premium - your own key', on: planByok, open: 'ai' }]))
+    + row('Billing', 'Annual saves you two months', choices([{ label: 'Monthly', on: cyc === 'monthly', open: 'ai' }, { label: 'Annual', on: cyc === 'annual', open: 'ai' }]))
+    + row('Use AI at all', 'The master switch. Everything still works without it', toggle(!aiOff, 'ai'))
+    + grp('Where Koyeba uses AI')
+    + AI_USES.map(([key, f, why]) => row(esc(f), esc(why), toggle(aiFeatureOn(key), 'aifeat:' + key, aiOff))).join('');
+
+  const lookBody =
+    row('Day and night', 'Auto follows your local sunrise and sunset', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Auto', on: mode === 'auto', act: 'theme:auto' }, { label: 'Day', on: mode === 'light', act: 'theme:light' }, { label: 'Night', on: mode === 'dark', act: 'theme:dark' }]))
+    + row('Week starts on', 'Sets your weekly review window', choices([{ label: 'Monday', on: ws === 1, act: 'week:1' }, { label: 'Sunday', on: ws === 0, act: 'week:0' }]))
+    + row('Currency', '', choices([{ label: '€ Euro', on: curc === 'EUR', act: 'cur:EUR' }, { label: '£ Pound', on: curc === 'GBP', act: 'cur:GBP' }, { label: '$ Dollar', on: curc === 'USD', act: 'cur:USD' }]))
+    + row('Dates read as', '', choices([{ label: '23 October', on: ds === 'uk', act: 'date:uk' }, { label: 'October 23', on: ds === 'us', act: 'date:us' }]))
+    + grp('Tools you use')
+    + TOOL_KEYS.map((k) => row(esc(MOD_LABEL[k] || k), '', toggle(modOn(k), 'mod:' + k))).join('')
+    + grp('Reflection practices')
+    + REFLECT_MODULES.map(([k, lbl]) => row(esc(lbl), '', toggle(modOn(k), 'mod:' + k))).join('')
+    + grp("Your phone's Today")
+    + row('Notepad · Kept close · First tasks · Keep in touch · People online', 'Today and What next always stay at the top', links([{ label: 'Rearrange', open: 'mobile' }]))
+    + grp('Notifications')
+    + row('New mail', 'At most one nudge every 30 minutes, never one per email', toggle(a.mailPush !== false, 'mailpush'))
+    + row('A daily quote', 'One line on Today', toggle(a.dailyQuote !== false, 'quote'))
+    + (modOn('contacts') ? row("Who's online", 'Who is around, and when someone wants to connect', toggle(peopleOn(), 'people')) : '');
+
+  const connBody =
+    grp('Calendars')
+    + row('Your calendars', 'Google, iCloud, Yahoo and other calendars - connect and manage', links([{ label: 'Manage', open: 'feeds' }]))
+    + grp('On your calendar')
+    + row('Holidays and teams', 'Public holidays and the teams you follow, as read-only entries', links([{ label: 'Change', open: 'feeds' }]))
+    + grp('Mail')
+    + row('Mail accounts', 'The inboxes you send and receive from', links([{ label: 'Manage', raw: 'data-open-mailaccounts=""' }]))
+    + grp('Bring things in')
+    + row('Notes and contacts', 'Import notes from other apps, or a contacts vCard - each note becomes its own page', links([{ label: 'Bring things in', open: 'import' }]));
+
+  const inv = state.invites || [];
+  const invSummary = inv.length ? `${inv.length} invitation${inv.length === 1 ? '' : 's'} sent` : 'Nobody invited yet';
+  const peopleBody = row('Invite someone to Koyeba', `${invSummary}. We send the email - they click one link and they're in.`, links([{ label: 'Open invitations', open: 'invites' }]));
+
+  const dataBody =
+    row('Where it lives', 'Your own storage is on the way', '<span class="sx-choices"><span class="sx-choice on">Hosted by Koyeba</span><span class="sx-choice sx-dim">Your own storage</span></span>')
+    + row('Take everything with you', 'A full export, any time', links([{ label: 'Download', act: 'export' }]))
+    + row('How we handle your data', '', links([{ label: 'Read it', href: 'https://koyeba.co/privacy' }]))
+    + grp('Leaving')
+    + row('Sign out of this device', 'Anything not saved to your account is cleared from this browser', links([{ label: 'Sign out', act: 'signout' }]))
+    + row('Close your account', "Erases your Koyeba and everything in it. It can't be undone", links([{ label: 'Close account…', act: 'close', danger: true }]));
+
+  const youHint = `${esc(name)}${email ? ' · ' + esc(email) : ''}${twofaOn ? ' · two-step on' : ''}`;
+  const planHint = planPlus ? 'Premium Plus - the AI is run for you' : planByok ? 'Premium - your own AI key' : 'Free trial';
+  const lookHint = `${tLocked || mode === 'auto' ? 'Night follows sunset' : mode === 'dark' ? 'Night' : 'Day'} · week starts ${DOW[ws]} · ${esc(curName)} · ${ds === 'us' ? 'October 23' : '23 October'}`;
+  const connHint = 'Calendars, holidays, mail and imports';
+  const dataHint = 'Hosted by Koyeba · never sold, never used to train a model';
+
+  const S = [['you', youHint, youBody], ['plan', planHint, planBody], ['look', lookHint, lookBody], ['conn', connHint, connBody], ['people', invSummary, peopleBody], ['data', dataHint, dataBody]];
+  const sections = S.map(([id, hint, body], i) => {
+    const open = !!(state.settings.sx && state.settings.sx[id]);
+    return `<div class="sx-sec" id="sx-${id}">
+      <div class="sx-sec-h" data-sx-sec="${id}" role="button" tabindex="0" aria-expanded="${open}">
+        <span class="sx-num">${ROM6[i]}</span>
+        <div class="sx-sec-title"><div class="sx-sec-name">${esc(TITLES[id])}</div>${open ? '' : `<div class="sx-sec-hint">${hint}</div>`}</div>
+        <span class="sx-sign">${open ? '−' : '+'}</span>
+      </div>
+      ${open ? `<div class="sx-sec-body">${body}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const signedName = (state.me && (state.me.name || state.me.email)) || name;
+  const planName = a.isOwner ? 'Premium Plus' : (planLabel(a.plan) || 'Free');
+  const isOwner = !!(state.me && state.me.id === 1);
+  const indexHtml = SET_SIX_IDS.map((id, i) => `<div class="sx-idx-row" data-sx-go="${id}" role="button" tabindex="0"><span class="sx-idx-num">${ROM6[i]}</span><span class="sx-idx-t">${esc(TITLES[id])}</span></div>`).join('');
+
+  $('#pane').innerHTML = `<div class="sx-page">
+    <div class="sx-main">
+      <div class="sx-eyebrow"><span class="sx-rule"></span><span class="sx-eyebrow-t">Menu · Settings</span></div>
+      <h1 class="sx-h1">Settings</h1>
+      <div class="sx-lead">Six things to tune. Everything else stays out of the way.</div>
+      <div class="sx-allfold"><span data-sx-allfold="open" role="button" tabindex="0">Open all</span><span data-sx-allfold="fold" role="button" tabindex="0">Fold all</span></div>
+      ${sections}
+      <div class="sx-sec-end"></div>
+    </div>
+    <aside class="sx-side"><div class="sx-side-sticky">
+      <div class="sx-idx-h">In Settings</div>
+      ${indexHtml}
+      <div class="sx-side-id">Signed in as ${esc(signedName)}<br>${esc(planName)}</div>
+      <div class="sx-side-acts">${isOwner ? '<span class="sx-link lead" data-open-admin role="button" tabindex="0">Admin</span>' : ''}<span class="sx-link${isOwner ? '' : ' lead'}" data-sx-act="signout" role="button" tabindex="0">Sign out</span></div>
+    </div></aside>
+  </div>`;
+}
+function renderSettingsLegacy() {
   const cur = (savedAccent() || '').toLowerCase();
   const swatches = ACCENT_PRESETS.map(([hex, name]) =>
     `<button class="acc-swatch ${cur === hex.toLowerCase() ? 'on' : ''}" style="--sw:${hex || '#c99a3e'}" data-accent="${hex}" title="${name}"><span class="acc-dot"></span><span class="acc-name">${name}</span></button>`).join('');
@@ -8847,7 +9019,11 @@ function wbRecentItems() {
   const tm = (v) => { const n = Date.parse(v); return isNaN(n) ? 0 : n; };
   (state.journal && state.journal.entries || []).forEach((n) => {
     const mode = (n.props && n.props.mode) || ''; const meta = journalModeMeta(mode);
-    out.push({ ts: tm((n.props && n.props.date) || n.created_at), ic: meta ? meta.icon : '📓', label: meta ? meta.label : 'Journal', title: journalSnippet(n), attr: `data-open-jentry="${n.id}"` });
+    // One clean kind per row, matching the Lately filters: dreams and coaching
+    // keep their own name; every other journal entry (free write, morning pages,
+    // daily review, prompted…) just reads "Journal". (Robin, 2026-11-02.)
+    const kind = mode === 'dreams' ? 'Dream' : mode === 'coaching' ? 'Coaching' : 'Journal';
+    out.push({ ts: tm((n.props && n.props.date) || n.created_at), ic: meta ? meta.icon : '📓', label: kind, title: journalSnippet(n), attr: `data-open-jentry="${n.id}"` });
   });
   (state.insightsAll || []).forEach((b) => out.push({ ts: tm((b.props && b.props.ts) || b.created_at), ic: '✶', label: 'Insight', title: (insParsed(b.props).text || 'Insight').slice(0, 80), attr: 'data-open-insights' }));
   (state.ichingHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '☯', label: 'I Ching', title: `${x.name || 'Reading'}${x.q ? ` · "${x.q}"` : ''}`, attr: (x.lines && x.lines.length) ? `data-iching-open-hist="${i}"` : 'data-open-iching' }));
@@ -23358,6 +23534,16 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
+  // Settings §26 (six-section page): folds, index jumps, live toggles/choices,
+  // and links that open the existing panels (account, billing, calendars…).
+  { const sb = t.closest('[data-set-sx-back]'); if (sb) { state.settings.legacy = false; renderSettings(); window.scrollTo(0, 0); return; } }
+  { const so = t.closest('[data-sx-open]'); if (so) { openSettings(so.dataset.sxOpen); return; } }
+  { const sg = t.closest('[data-sx-sec]'); if (sg) { const id = sg.dataset.sxSec; state.settings.sx = state.settings.sx || {}; state.settings.sx[id] = !state.settings.sx[id]; const sy = window.scrollY; renderSettings(); window.scrollTo(0, sy); return; } }
+  { const si = t.closest('[data-sx-go]'); if (si) { const id = si.dataset.sxGo; state.settings.sx = state.settings.sx || {}; state.settings.sx[id] = true; renderSettings(); const el = document.getElementById('sx-' + id); if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' }); return; } }
+  { const sf = t.closest('[data-sx-allfold]'); if (sf) { const open = sf.dataset.sxAllfold === 'open'; const o = {}; if (open) SET_SIX_IDS.forEach((k) => { o[k] = true; }); state.settings.sx = o; const sy = window.scrollY; renderSettings(); window.scrollTo(0, sy); return; } }
+  { const tgl = t.closest('[data-sx-toggle]'); if (tgl) { sxToggle(tgl.dataset.sxToggle); return; } }
+  { const chc = t.closest('[data-sx-choice]'); if (chc) { sxChoice(chc.dataset.sxChoice); return; } }
+  { const sac = t.closest('[data-sx-act]'); if (sac) { const x = sac.dataset.sxAct; if (x === 'export') downloadExport(); else if (x === 'signout') signOut(); else if (x === 'close') closeMyAccount(); return; } }
   if (t.closest('[data-open-feeds]')) { openSettings('feeds'); return; }
   if (t.closest('[data-open-ai]')) { openSettings('ai'); return; }
   if (t.closest('[data-open-discover]')) { openDiscover(); return; }
