@@ -8664,7 +8664,7 @@ function homeRadarSummary() {
 function homeRadarHtml() {
   const open = kOpen('radar');
   const wn = `<div class="rdr-wn" data-wn-toggle role="button" tabindex="0"><span class="rdr-wn-q">What should I do next?</span><span class="rdr-wn-k">${esc(PK('⌘/'))}</span></div>${(state.home && state.home.wnOpen) ? homeWhatNextBandHtml() : ''}`;
-  const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">On your radar</span><span class="hf-hint">${esc(homeRadarSummary())}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = `<div class="home-fold-h" data-hfold="radar" role="button" tabindex="0"><span class="hf-name">The feed</span><span class="hf-hint">${esc(homeRadarSummary())}</span><span class="hf-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<section class="home-sec2 home-radar">${h}${open ? `${homeRadarBodyHtml()}${wn}` : ''}</section>`;
 }
 // §49: the time (live) and, when we have it, the weather. loadWeather() is
@@ -8934,7 +8934,7 @@ function homeLeftTabsHtml(off) {
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
   const mailN = modOn('mail') ? mailHeaderCount() : 0;
-  const defs = [['cal', 'Calendar', evN, false], ['radar', 'On your radar', radN, r.overdue.length > 0]];
+  const defs = [['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]];
   if (modOn('mail')) defs.push(['mail', 'Mail', mailN, mailN > 0]);
   const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-ltab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
   const body = cur === 'mail' ? homeGlancePanelHtml('mail') : cur === 'radar' ? homeRadarBodyHtml() : homeCalBodyHtml(off);
