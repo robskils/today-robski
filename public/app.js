@@ -1631,12 +1631,17 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // are one link to the logical parent (the second-to-last crumb); the current
   // item follows in ink. Plain text, no box. Hidden at a tool's top level (the
   // length gate above). Mobile collapses to "‹ parent" top-left.
-  const parent = items[items.length - (opts.omitCurrent ? 1 : 2)];
+  // §63: ← is proper history-back (navBack), labelled with where you came from.
+  // The hierarchy that follows is "up" - separate plain links. If the back target
+  // is the same as the first hierarchy link, drop the duplicate.
   const cur = opts.omitCurrent ? null : items[items.length - 1];
-  const back = parent ? `<button class="crumb-up" ${parent.attr || ''} aria-label="Back to ${esc(parent.label)}"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(parent.label)}</span></button>` : '';
+  const hierItems = (opts.omitCurrent ? items : items.slice(0, -1));
+  const backLbl = navBackLabel();
+  const hier = hierItems.filter((it) => it.label !== backLbl);
+  const back = `<button class="crumb-up" data-nav-back aria-label="Back"><span class="crumb-up-a">←</span><span class="crumb-up-n">${esc(backLbl)}</span></button>`;
+  const links = hier.map((it) => `<span class="crumb-dot">·</span><button class="crumb" ${it.attr || ''}>${esc(it.label)}</button>`).join('');
   const curHtml = cur ? `<span class="crumb-dot">·</span><span class="crumb cur">${esc(cur.label)}</span>` : '';
-  const mob = parent ? `<button class="crumb crumb-mob" ${parent.attr || ''}>‹ ${esc(parent.label)}</button>` : '';
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${back}${curHtml}</div>${mob}</div>`;
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${back}${links}${curHtml}</div></div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -8932,7 +8937,7 @@ function homeQuoteLineHtml() {
   if (!dailyQuoteOn()) return '';
   const q = dayQuote(); if (!q || !q.text) return '';
   const kept = quoteKept(q.text);
-  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-keep${kept ? ' on' : ''}" data-quote-keep>${kept ? 'Kept' : 'Keep it'}</button></div>`;
+  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-keep${kept ? ' on' : ''}" data-quote-keep title="${kept ? 'Saved in your “Quotes I’ve kept” note' : 'Keep this quote in a note'}">${kept ? '✓ Kept in Notes' : 'Keep this quote'}</button></div>`;
 }
 function renderHome() {
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
@@ -21874,8 +21879,8 @@ function renderGoalCard() {
   const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in ' + esc(spaceName) : ''}" autocomplete="off"></div>`;
   const thinkBody = `<div class="gx-think-add"><input class="gx-think-input" data-goal-thought="${g.id}" placeholder="Add a thought…" autocomplete="off"></div>${thoughts.map((th) => `<div class="gx-thought"><span class="gx-thought-when">${esc(gcThoughtWhen(th.at))}</span><span class="gx-thought-t">${esc(th.text || '')}</span></div>`).join('')}`;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Goals', attr: 'data-open-goals' }, { label: g.title || 'Goal' }])}
     <div class="gx-page">
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Goals', attr: 'data-open-goals' }, { label: g.title || 'Goal' }])}
       <div class="gx-head">
         <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal${spaceName ? ' · ' + esc(spaceName) : ''}${periodLbl ? ' · ' + esc(periodLbl) : ''}</span>${statusChip}${stars}</div>
         <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>

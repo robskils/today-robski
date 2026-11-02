@@ -9709,12 +9709,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* §58: an opened email sits on white paper, its own content in Source Serif, so
    you can always tell the email from Koyeba's own Jost interface around it. */
 .mail-ar-card { background:#fff; border:1px solid oklch(0.85 0.014 80); margin:12px 0 2px; padding:0 24px; }
-body.night .mail-ar-card { background:oklch(0.96 0.006 85); }
+body.night .mail-ar-card, :root[data-theme='dark'] .mail-ar-card { background:oklch(0.96 0.006 85); }
 .mail-ar-card .mail-ar-head { padding:20px 0 14px; }
 .mail-ar.open .mail-ar-subj { font-family:var(--k-read); font-weight:600; font-size:24px; line-height:1.3; color:oklch(0.2 0.01 60); white-space:normal; margin-top:6px; }
 .mail-ar-below { padding:12px 2px 8px; }
 .mail-ar-card .mail-text.mail-text-plain { font-family:var(--k-read); font-size:17px; line-height:1.7; max-width:680px; color:oklch(0.2 0.01 60); }
-body.night .mail-ar-card .mail-text.mail-text-plain { color:oklch(0.2 0.01 60); }
+body.night .mail-ar-card .mail-text.mail-text-plain, :root[data-theme='dark'] .mail-ar-card .mail-text.mail-text-plain { color:oklch(0.2 0.01 60); }
 .mail-ar-head { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:18px; align-items:baseline; width:100%; padding:18px 0; background:none; border:0; cursor:pointer; text-align:left; }
 .mail-ar-time { font-family:var(--msans); font-size:13px; color:var(--ink-3); white-space:nowrap; }
 .mail-ar-main { min-width:0; }
@@ -10057,7 +10057,11 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
 .nav { position:sticky; top:0; z-index:60; height:auto; max-height:none; overflow:visible; width:auto; background:var(--paper); border-bottom:1px solid var(--line); border-right:0; padding:0; }
 .main { min-width:0; display:block; padding-bottom:120px; }   /* §52: room so the resting tab never covers content */
 .knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); background:#fff; border-bottom:1px solid var(--k-line); position:sticky; top:0; z-index:40; }
-body.night .knav-bar { background:oklch(0.19 0.02 160); }
+/* Night menubar: a very dark forest, heading towards black, so the white-paper
+   day header doesn't carry into night. Keyed to data-theme (the app) AND
+   body.night (the prototype) - the app sets data-theme='dark', so a body.night-
+   only rule never fired and the bar stayed #fff with near-white text on it. */
+body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.145 0.028 158); border-bottom-color:oklch(0.26 0.03 158); }
 .knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; }
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
@@ -12001,7 +12005,7 @@ body[data-view="settings"].sx-six .pane { max-width:none; padding:0; margin-top:
 .knav-mail-btn.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
 .knav-mail-n { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; color:var(--k-goldt); margin-left:5px; }
 #mail-arrival-wrap { position:fixed; top:var(--tabstrip-h,68px); left:0; right:0; z-index:40; display:flex; justify-content:center; pointer-events:none; }
-.mail-arrival { pointer-events:auto; display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; max-width:1220px; width:100%; box-sizing:border-box; padding:12px clamp(24px,4vw,64px); background:var(--k-bg); border-bottom:1px solid var(--k-line); animation:kfade .6s cubic-bezier(.2,.7,.2,1); }
+.mail-arrival { pointer-events:auto; display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; max-width:1600px; width:100%; box-sizing:border-box; padding:12px clamp(24px,3.5vw,64px); background:var(--k-bg); border-bottom:1px solid var(--k-line); animation:kfade .6s cubic-bezier(.2,.7,.2,1); }
 .mail-arrival-dot { width:6px; height:6px; border-radius:50%; background:var(--k-gold); align-self:center; }
 .mail-arrival-t { flex:1; min-width:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:21px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mail-arrival-a { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); cursor:pointer; white-space:nowrap; }
