@@ -10504,7 +10504,7 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
    Unboxed Jost line, muted links, "/" separators, the current segment in ink.
    No box, no arrow, no background. Ancestors truncate before the current one;
    never wraps. On mobile just "‹ parent". ══ */
-.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:2px 0 24px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:22px 0 24px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
 .crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
 .crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
@@ -11560,7 +11560,9 @@ body.night .av4-glance.white, :root[data-theme='dark'] .av4-glance.white { backg
 .av4-goals-n { font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-mute); }
 .av4-goals-add { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-goldt); cursor:pointer; }
 .av4-goalgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:16px; }
-.av4-goalcard { border:1px solid var(--k-line); background:#fff; padding:24px 26px 22px; }
+/* Robin: no white boxes - goal cards use the theme panel (warm near-white by day,
+   forest at night), like every other card, so they're legible in night. */
+.av4-goalcard { border:1px solid var(--k-line); background:var(--k-panel); padding:24px 26px 22px; }
 .av4-goalcard.editing { grid-column:1/-1; }
 .av4-goal-head { cursor:pointer; }
 .av4-goal-hrow { display:flex; align-items:baseline; gap:14px; }
@@ -11582,7 +11584,7 @@ body.night .av4-glance.white, :root[data-theme='dark'] .av4-glance.white { backg
 .av4-when { font-family:var(--k-sans); font-weight:500; font-size:14.5px; color:var(--k-mute); cursor:pointer; padding-bottom:2px; border-bottom:1px solid transparent; white-space:nowrap; }
 .av4-when.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
 .av4-goal-date { border:0; border-bottom:1px solid var(--k-gold); background:transparent; outline:none; padding:3px 0; font-family:var(--k-sans); font-weight:500; font-size:14.5px; color:var(--k-ink); }
-.av4-goal-why { width:100%; box-sizing:border-box; border:1px solid var(--k-line); background:#fff; outline:none; resize:vertical; min-height:70px; padding:12px 14px; font-family:var(--k-sans); font-weight:400; font-size:15.5px; line-height:1.6; color:var(--k-ink); }
+.av4-goal-why { width:100%; box-sizing:border-box; border:1px solid var(--k-line); background:var(--k-bg); outline:none; resize:vertical; min-height:70px; padding:12px 14px; font-family:var(--k-sans); font-weight:400; font-size:15.5px; line-height:1.6; color:var(--k-ink); }
 .av4-goal-eacts { display:flex; flex-wrap:wrap; gap:8px 20px; font-family:var(--k-sans); font-weight:500; font-size:14px; white-space:nowrap; }
 .av4-goal-done.gold { color:var(--k-goldt); cursor:pointer; } .av4-goal-addtask { cursor:pointer; } .av4-goal-arch { color:var(--k-mute); cursor:pointer; font-weight:400; }
 /* search results */

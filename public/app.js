@@ -6157,7 +6157,7 @@ async function openHome() {
   // Re-pull reviews each time Home opens, so a review filed on another device clears
   // the "due" nudge here (state.reviews would otherwise stay stale). (Robin.)
   api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); } }).catch(() => {});
-  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd, palRec] = await Promise.all([
+  const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd, palRec, tasksRaw] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
     api('/api/kv/home_scratchpad').catch(() => ({ value: '' })),
@@ -6170,6 +6170,9 @@ async function openHome() {
     api('/api/kv/home_side_order').catch(() => null),
     api('/api/kv/home_feeddismiss').catch(() => null),
     api('/api/kv/pal_recent').catch(() => null),
+    // "On your radar" is the whole-system feed, so Home needs the tasks too (not
+    // just goals + alerts) or the feed shows only goals. (Robin, §49.)
+    api('/api/blocks?kind=task').catch(() => null),
   ]);
   // The mobile Home arrangement follows the account too, so a change made on the
   // desktop settings shows up on the phone.
@@ -6177,6 +6180,7 @@ async function openHome() {
   // The right-column (side) arrangement follows the account, like the main one.
   if (sideOrd && sideOrd.value) { try { if (Array.isArray(JSON.parse(sideOrd.value))) localStorage.setItem('life.home.sideOrder', sideOrd.value); } catch {} }
   state.goals = goals || [];
+  if (Array.isArray(tasksRaw)) state.tasks = notKit(tasksRaw);   // feed "On your radar" with real tasks, not just goals
   // The desktop section arrangement follows your account: seed this device's copy
   // from the server so a rearrangement made on one desktop shows on the next.
   if (order && order.value) { try { if (Array.isArray(JSON.parse(order.value))) localStorage.setItem('life.home.mainOrder', order.value); } catch {} }
@@ -22041,7 +22045,7 @@ function renderGoalCard() {
       ${goalCrumb}
       <div class="gx-grid">
         <div class="gx-main">
-          <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal</span>${statusChip}${stars}${a ? `<button class="gx-space" data-open-area="${a.id}" title="Open this Space"><span class="gx-space-l">Space</span><span class="gx-space-n">${esc(a.title)}</span></button>` : ''}</div>
+          <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal</span>${statusChip}${stars}${a ? `<button class="gx-space" data-open-area="${a.id}" title="Open this Space"><span class="gx-space-l">Space:</span><span class="gx-space-n">${esc(a.title)}</span></button>` : ''}</div>
           <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
           <div class="gx-prog gx-card">${progBody}</div>
           ${gxFold('why', 'Why this matters', p.why ? '' : 'Not written yet', fo.why, `<textarea class="gx-why" id="goalcard-why" rows="3" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea>`)}
