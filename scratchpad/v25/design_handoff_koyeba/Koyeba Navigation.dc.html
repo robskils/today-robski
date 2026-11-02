@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><title>Koyeba – navigation, chosen</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:#ebe8e1;font-family:'Jost',sans-serif;color:oklch(0.22 0.018 60)}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+</style></helmet>
+<section id="t2" style="padding:48px 52px 40px">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 14px"><span style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px">2</span><span style="font:600 13px system-ui,sans-serif">Chosen – six groups along the top, a contents page, and mobile rethought</span></div>
+<div style="max-width:920px;margin:0 0 30px;font:14px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.7)">Today is simply where the wordmark takes you – not a tab, not first in a list. Money is a group like any other, but nothing about money is pushed onto Today and no hint shows an amount. On mobile, Set down is a small gold square, not a bar.</div>
+<div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+<div id="2a" style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:8px;align-items:baseline;font:12.5px system-ui,sans-serif;color:rgba(0,0,0,.65)"><a class="dv-oid" href="#2a">2a</a>Desktop – click a group to fold its sheet down. “Contents” opens everything.</div>
+<div style="width:1160px;height:900px;background:oklch(0.975 0.012 85);border:1px solid rgba(0,0,0,.08);position:relative;overflow:hidden">
+<div style="border-bottom:1px solid oklch(0.88 0.014 80);position:relative;z-index:2;background:oklch(0.975 0.012 85)">
+<div style="display:flex;align-items:center;gap:30px;height:68px;padding:0 40px">
+<div onClick="{{ d.home }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span></div>
+<div style="display:flex;gap:24px;height:100%"><sc-for list="{{ d.groups }}" as="g" hint-placeholder-count="7"><div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:5px;height:100%;box-sizing:border-box;border-bottom:1px solid {{ g.line }};margin-bottom:-1px;cursor:pointer;font:400 15px Jost;white-space:nowrap;color:{{ g.color }}">{{ g.label }}<span style="font-size:11.5px;color:oklch(0.55 0.11 70)">{{ g.badge }}</span></div></sc-for></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:22px"><span onClick="{{ d.toggleFind }}" style="font:400 14px Jost;white-space:nowrap;cursor:pointer;color:{{ d.findColor }};padding:6px 0;border-bottom:1px solid {{ d.findLine }}">Search ⌘K<span style="font-size:11.5px;color:oklch(0.55 0.11 70)"> {{ d.sharedBadge }}</span></span><span onClick="{{ d.toggleContents }}" style="font:400 14px Jost;cursor:pointer;white-space:nowrap;padding-bottom:3px;border-bottom:1px solid oklch(0.72 0.13 75)">{{ d.contentsLabel }}</span></div>
+</div>
+<sc-if value="{{ d.sheetOpen }}">
+<div style="padding:26px 40px 30px;border-top:1px solid oklch(0.88 0.014 80);background:oklch(0.94 0.016 82);animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px"><span style="font:300 34px/1 'Cormorant Garamond',serif;white-space:nowrap">{{ d.sheet.label }}</span><span style="font:400 14px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">{{ d.sheet.about }}</span><span onClick="{{ d.close }}" style="margin-left:auto;font:500 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70);cursor:pointer;white-space:nowrap">Fold away</span></div>
+<sc-for list="{{ d.sheet.rows }}" as="row"><div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:0 18px;align-items:start"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70);padding-top:18px;white-space:nowrap">{{ row.label }}</span><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0 26px"><sc-for list="{{ row.tools }}" as="t"><div onClick="{{ t.pick }}" style="padding:13px 0;border-top:1px solid oklch(0.88 0.014 80);cursor:pointer" style-hover="color:oklch(0.55 0.11 70)"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:italic 300 16px 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70)">{{ t.num }}</span><span style="font:300 24px/1.1 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ t.label }}</span></div><div style="font:400 13px/1.4 Jost;color:oklch(0.46 0.022 70);margin-top:3px">{{ t.hint }}</div></div></sc-for></div></div></sc-for>
+</div>
+</sc-if>
+</div>
+<div style="padding:44px 40px"><div style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">{{ d.page.group }}</div><div style="font:300 72px/1 'Cormorant Garamond',serif;margin-top:12px">{{ d.page.title }}</div><div style="font:italic 300 24px 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70);margin-top:12px">{{ d.page.line }}</div><div style="margin-top:34px;border-top:1px solid oklch(0.22 0.018 60)"><div style="height:56px;border-bottom:1px solid oklch(0.88 0.014 80)"></div><div style="height:56px;border-bottom:1px solid oklch(0.88 0.014 80)"></div><div style="height:56px;border-bottom:1px solid oklch(0.88 0.014 80)"></div></div></div>
+<sc-if value="{{ d.contentsOpen }}">
+<div style="position:absolute;inset:68px 0 0 0;background:oklch(0.975 0.012 85);padding:36px 56px;overflow:hidden;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1);z-index:3">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Menu</span><span style="margin-left:auto;font:400 13px Jost;color:oklch(0.46 0.022 70)">⌘/ to open · Esc to close · type to find</span></div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 64px;margin-top:20px"><sc-for list="{{ d.cgroups }}" as="g" hint-placeholder-count="7"><div style="padding:12px 0;border-top:1px solid oklch(0.22 0.018 60)"><div style="display:flex;align-items:baseline;gap:12px"><span style="width:34px;font:italic 300 18px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">{{ g.num }}</span><span style="font:300 28px/1.1 'Cormorant Garamond',serif">{{ g.label }}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px 18px;padding:6px 0 0 46px"><sc-for list="{{ g.tools }}" as="t"><span onClick="{{ t.pick }}" style="font:400 14px Jost;cursor:pointer;white-space:nowrap" style-hover="color:oklch(0.55 0.11 70)">{{ t.label }}<span style="font-size:12px;color:oklch(0.55 0.11 70)"> {{ t.badge }}</span></span></sc-for></div></div></sc-for></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:28px;padding-top:16px;border-top:1px solid oklch(0.88 0.014 80);font:400 14px Jost;color:oklch(0.46 0.022 70)"><span style="cursor:pointer">Night</span><span style="cursor:pointer">Settings</span><span style="cursor:pointer">Guide</span><span style="cursor:pointer">Welcome</span><span style="margin-left:auto">Robin Savile</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ d.findOpen }}"><div style="position:absolute;top:76px;right:40px;width:520px;max-height:600px;overflow:auto;background:oklch(0.99 0.006 85);border:1px solid oklch(0.88 0.014 80);padding:8px 26px 16px;z-index:4;animation:kfade .35s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid oklch(0.22 0.018 60)"><input value="{{ d.find.q }}" onChange="{{ d.find.onQ }}" placeholder="Search" style="flex:1;min-width:0;font:300 26px 'Cormorant Garamond',serif;background:transparent;border:0;outline:0;color:inherit"><span onClick="{{ d.find.close }}" style="font:400 14px Jost;color:oklch(0.46 0.022 70);cursor:pointer;padding:8px 0 8px 8px;white-space:nowrap">Close</span></div>
+<sc-for list="{{ d.find.sections }}" as="s"><div style="border-bottom:1px solid oklch(0.88 0.014 80)"><div onClick="{{ s.toggle }}" style="display:flex;align-items:center;gap:10px;padding:14px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap">{{ s.label }}</span><span style="font:400 12px Jost;color:oklch(0.55 0.11 70)">{{ s.badge }}</span><span style="margin-left:auto;font:300 18px Jost;color:oklch(0.46 0.022 70)">{{ s.sign }}</span></div>
+<sc-if value="{{ s.open }}"><div style="padding:0 0 10px;animation:kfade .3s ease"><sc-for list="{{ s.items }}" as="it"><div onClick="{{ it.pick }}" style="display:flex;align-items:baseline;gap:12px;padding:10px 0;min-height:44px;box-sizing:border-box;border-top:1px solid oklch(0.88 0.014 80);cursor:pointer" style-hover="color:oklch(0.55 0.11 70)"><div style="flex:1;min-width:0"><div style="font:300 21px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.a }}</div><div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.b }}</div></div><span style="font:500 12px Jost;color:oklch(0.55 0.11 70)">{{ it.badge }}</span></div></sc-for></div></sc-if></div></sc-for>
+<sc-if value="{{ d.find.empty }}"><div style="padding:18px 0;font:italic 300 20px 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70)">Nothing by that name yet.</div></sc-if>
+</div></sc-if>
+</div>
+</div>
+
+<div id="2b" style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font:12.5px system-ui,sans-serif;color:rgba(0,0,0,.65);max-width:390px"><a class="dv-oid" href="#2b">2b</a>Mobile – tap Contents, the gold square, or Find.</div>
+<div style="width:390px;height:844px;background:oklch(0.975 0.012 85);border:1px solid rgba(0,0,0,.14);border-radius:46px;overflow:hidden;position:relative;box-sizing:border-box">
+<div style="height:50px;display:flex;align-items:center;padding:0 32px;font:600 15px system-ui,sans-serif">11:48</div>
+<div style="position:absolute;top:50px;left:0;right:0;bottom:88px;overflow:hidden;padding:8px 24px 0">
+<div style="display:flex;align-items:center;justify-content:space-between;height:44px"><div onClick="{{ m.goToday }}" style="display:flex;align-items:center;gap:9px;cursor:pointer"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:20px;width:auto;display:block"><span style="font:500 24px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span></div><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">{{ m.crumb }}</span></div>
+<sc-if value="{{ m.isToday }}" hint-placeholder-val="{{ true }}">
+<div style="font:300 40px/1.05 'Cormorant Garamond',serif;margin-top:18px">Good morning, <i style="color:oklch(0.55 0.11 70)">Robin.</i></div>
+<div style="margin-top:20px;padding:18px 0;border-top:1px solid oklch(0.72 0.13 75);border-bottom:1px solid oklch(0.88 0.014 80)"><div style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:oklch(0.55 0.11 70)">What next</div><div style="font:300 27px/1.2 'Cormorant Garamond',serif;margin-top:10px">Sign Ada’s trip form first.</div><div style="font:italic 300 18px/1.4 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70);margin-top:6px">Two minutes, due tomorrow, and off your mind.</div><div style="display:flex;align-items:center;gap:20px;margin-top:16px"><span style="font:500 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;padding:15px 18px;background:oklch(0.72 0.13 75);white-space:nowrap">Done it</span><span style="font:400 15px Jost;white-space:nowrap">Not now</span><span style="font:400 15px Jost;white-space:nowrap">Something else</span></div></div>
+<sc-if value="{{ m.hasNewShared }}"><div onClick="{{ m.goFind }}" style="display:flex;align-items:baseline;gap:10px;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80);cursor:pointer"><span style="width:6px;height:6px;background:oklch(0.72 0.13 75);align-self:center"></span><span style="flex:1;font:400 14.5px/1.4 Jost">Joana added three things to The kids.</span><span style="font:400 13px Jost;color:oklch(0.55 0.11 70);white-space:nowrap">See them</span></div></sc-if>
+<sc-for list="{{ m.day }}" as="r" hint-placeholder-count="3"><div style="display:grid;grid-template-columns:52px minmax(0,1fr);gap:14px;align-items:baseline;padding:15px 0;border-bottom:1px solid oklch(0.88 0.014 80)"><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">{{ r.t }}</span><div><div style="font:400 16px/1.35 Jost">{{ r.a }}</div><div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);margin-top:2px">{{ r.b }}</div></div></div></sc-for>
+</sc-if>
+<sc-if value="{{ m.isPage }}">
+<div style="font:300 52px/1 'Cormorant Garamond',serif;margin-top:18px">{{ m.page.title }}</div><div style="font:italic 300 20px/1.35 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70);margin-top:10px">{{ m.page.line }}</div>
+<div style="margin-top:26px;border-top:1px solid oklch(0.22 0.018 60)"><div style="height:62px;border-bottom:1px solid oklch(0.88 0.014 80)"></div><div style="height:62px;border-bottom:1px solid oklch(0.88 0.014 80)"></div><div style="height:62px;border-bottom:1px solid oklch(0.88 0.014 80)"></div><div style="height:62px;border-bottom:1px solid oklch(0.88 0.014 80)"></div></div>
+</sc-if>
+</div>
+
+<sc-if value="{{ m.isContents }}">
+<div style="position:absolute;top:50px;left:0;right:0;bottom:88px;background:oklch(0.975 0.012 85);overflow:auto;padding:8px 24px 24px;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1);z-index:4">
+<div style="display:flex;align-items:center;gap:12px;height:44px"><span style="width:22px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Menu</span><span onClick="{{ m.goToday }}" style="margin-left:auto;font:400 15px Jost;color:oklch(0.46 0.022 70);cursor:pointer;padding:12px 0 12px 12px">Today</span></div>
+<div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70);margin-top:10px">Kept close</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px 20px;padding:8px 0 16px"><sc-for list="{{ m.pins }}" as="p"><span onClick="{{ p.pick }}" style="font:300 24px/1.3 'Cormorant Garamond',serif;cursor:pointer;white-space:nowrap">{{ p.label }}<span style="font:500 12px Jost;color:oklch(0.55 0.11 70)"> {{ p.badge }}</span></span></sc-for></div>
+<sc-for list="{{ m.groups }}" as="g" hint-placeholder-count="7"><div style="border-top:1px solid oklch(0.88 0.014 80)"><div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:12px;padding:13px 0;cursor:pointer"><span style="width:28px;font:italic 300 17px 'Cormorant Garamond',serif;color:oklch(0.72 0.13 75)">{{ g.num }}</span><div style="flex:1;min-width:0"><div style="font:300 27px/1.1 'Cormorant Garamond',serif;color:{{ g.color }}">{{ g.label }}</div><sc-if value="{{ g.closed }}"><div style="font:400 13px Jost;color:oklch(0.46 0.022 70);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.hint }}</div></sc-if></div><span style="font:300 20px Jost;color:oklch(0.46 0.022 70)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}"><div style="padding:0 0 10px 40px;animation:kfade .35s ease"><sc-for list="{{ g.tools }}" as="t"><div onClick="{{ t.pick }}" style="display:flex;align-items:baseline;gap:10px;padding:11px 0;border-top:1px solid oklch(0.88 0.014 80);cursor:pointer"><div style="flex:1;min-width:0"><div style="font:400 17px Jost">{{ t.label }}</div><div style="font:400 13px Jost;color:oklch(0.46 0.022 70);margin-top:1px">{{ t.hint }}</div></div><span style="font:500 12.5px Jost;color:oklch(0.55 0.11 70)">{{ t.badge }}</span></div></sc-for></div></sc-if></div></sc-for>
+<div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);padding:14px 0;border-top:1px solid oklch(0.88 0.014 80)">Press and hold any tool to keep it close.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 26px;padding-top:14px;border-top:1px solid oklch(0.88 0.014 80);font:400 14px Jost;color:oklch(0.46 0.022 70)"><span style="cursor:pointer">Night</span><span style="cursor:pointer">Settings</span><span style="cursor:pointer">Guide</span><span style="cursor:pointer">Welcome</span><span style="margin-left:auto">Robin Savile</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ m.isFind }}"><div style="position:absolute;top:50px;left:0;right:0;bottom:88px;background:oklch(0.975 0.012 85);overflow:auto;padding:6px 24px 24px;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1);z-index:4">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid oklch(0.22 0.018 60)"><input value="{{ m.find.q }}" onChange="{{ m.find.onQ }}" placeholder="Search" style="flex:1;min-width:0;font:300 26px 'Cormorant Garamond',serif;background:transparent;border:0;outline:0;color:inherit"><span onClick="{{ m.find.close }}" style="font:400 14px Jost;color:oklch(0.46 0.022 70);cursor:pointer;padding:8px 0 8px 8px;white-space:nowrap">Close</span></div>
+<sc-for list="{{ m.find.sections }}" as="s"><div style="border-bottom:1px solid oklch(0.88 0.014 80)"><div onClick="{{ s.toggle }}" style="display:flex;align-items:center;gap:10px;padding:14px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap">{{ s.label }}</span><span style="font:400 12px Jost;color:oklch(0.55 0.11 70)">{{ s.badge }}</span><span style="margin-left:auto;font:300 18px Jost;color:oklch(0.46 0.022 70)">{{ s.sign }}</span></div>
+<sc-if value="{{ s.open }}"><div style="padding:0 0 10px;animation:kfade .3s ease"><sc-for list="{{ s.items }}" as="it"><div onClick="{{ it.pick }}" style="display:flex;align-items:baseline;gap:12px;padding:10px 0;min-height:44px;box-sizing:border-box;border-top:1px solid oklch(0.88 0.014 80);cursor:pointer" style-hover="color:oklch(0.55 0.11 70)"><div style="flex:1;min-width:0"><div style="font:300 21px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.a }}</div><div style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.b }}</div></div><span style="font:500 12px Jost;color:oklch(0.55 0.11 70)">{{ it.badge }}</span></div></sc-for></div></sc-if></div></sc-for>
+<sc-if value="{{ m.find.empty }}"><div style="padding:18px 0;font:italic 300 20px 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70)">Nothing by that name yet.</div></sc-if>
+</div></sc-if>
+<div style="position:absolute;left:0;right:0;bottom:0;height:88px;border-top:1px solid oklch(0.88 0.014 80);background:oklch(0.975 0.012 85);display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:10px 28px 0;box-sizing:border-box;z-index:5">
+<span onClick="{{ m.goContents }}" style="justify-self:start;font:400 16px Jost;padding:12px 0;cursor:pointer;color:{{ m.cColor }}">Menu</span>
+<span onClick="{{ m.goSet }}" title="Set something down" style="width:52px;height:52px;margin-top:-4px;display:flex;align-items:center;justify-content:center;background:oklch(0.72 0.13 75);color:oklch(0.22 0.018 60);font:300 30px/1 Jost;cursor:pointer">+</span>
+<span onClick="{{ m.goFind }}" style="justify-self:end;font:400 16px Jost;padding:12px 0;cursor:pointer;color:{{ m.fColor }}">Search<span style="font-size:12px;color:oklch(0.55 0.11 70)"> {{ m.sharedBadge }}</span></span>
+</div>
+
+<sc-if value="{{ m.isSet }}">
+<div onClick="{{ m.back }}" style="position:absolute;inset:0;background:oklch(0.22 0.018 60 / .28);z-index:6;animation:kfade .3s ease"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85);padding:22px 24px 34px;z-index:7;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="width:36px;height:1px;background:oklch(0.975 0.012 85 / .4);margin:0 auto 18px"></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="width:22px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:oklch(0.72 0.13 75)">Set something down</span><span onClick="{{ m.back }}" style="margin-left:auto;font:400 14px Jost;opacity:.7;cursor:pointer;padding:10px 0 10px 10px">Close</span></div>
+<div style="font:300 30px/1.2 'Cormorant Garamond',serif;padding:16px 0 12px;border-bottom:1px solid oklch(0.975 0.012 85 / .4)">Dentist on Tuesday at 9am<span style="display:inline-block;width:2px;height:28px;background:oklch(0.72 0.13 75);margin-left:3px;vertical-align:-4px"></span></div>
+<div style="display:flex;flex-wrap:wrap;gap:4px 2px;padding:14px 0 6px;font:500 14px Jost"><span style="padding:8px 10px;border-bottom:1px solid oklch(0.72 0.13 75)">Event</span><span style="padding:8px 10px;opacity:.55">Task</span><span style="padding:8px 10px;opacity:.55">Note</span><span style="padding:8px 10px;opacity:.55">Email</span></div>
+<div style="font:italic 300 17px 'Cormorant Garamond',serif;opacity:.75">Read as an event – there’s a day and a time.</div>
+<div style="display:grid;margin-top:12px;font:400 15px Jost"><div style="display:grid;grid-template-columns:76px 1fr;padding:10px 0;border-top:1px solid oklch(0.975 0.012 85 / .14)"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;opacity:.6">When</span><span>Tue 3 Nov, 09:00</span></div><div style="display:grid;grid-template-columns:76px 1fr;padding:10px 0;border-top:1px solid oklch(0.975 0.012 85 / .14)"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;opacity:.6">Reminds</span><span>Monday evening, and 08:15</span></div></div>
+<div style="display:flex;align-items:center;gap:16px;margin-top:16px"><span style="display:flex;align-items:center;gap:8px;padding:13px 14px;border:1px solid oklch(0.975 0.012 85 / .25);font:500 10px Jost;letter-spacing:.24em"><span style="width:6px;height:6px;background:oklch(0.72 0.13 75)"></span>SPEAK</span><span onClick="{{ m.back }}" style="margin-left:auto;font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;padding:15px 20px;background:oklch(0.72 0.13 75);color:oklch(0.22 0.018 60);cursor:pointer">Set down</span></div>
+</div>
+</sc-if>
+</div>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state={dFind:false,q:'',fShut:{},dSeen:false,mSeen:false,dOpen:'plans',dPage:['plans','Calendar'],dContents:false,mView:'today',mPage:null,mOpen:'plans',mPrev:'today'};
+  renderVals(){
+    const SP=[
+ {id:'recent',special:true,label:'Recent',about:'What you’ve touched lately',hint:'Watercolour, ten minutes ago',tools:[['Watercolour','Note · Art · ten minutes ago',''],['Ana Ribeiro – Class on Saturday','Email · read at 18:50',''],['Sign Ada’s trip form','Task · The kids · yesterday',''],['Paintings','Table · Art · Tuesday',''],['Weekly review','Review · last Sunday','']]},
+ {id:'shared',special:true,label:'Shared with you',about:'What others have opened to you',hint:'Joana added three things to The kids',badge:'3',tools:[['The kids','Space · Joana · three new','3'],['Holiday packing list','Note · Ines · yesterday',''],['Lisbon flat – bills','Table · Ines · Monday',''],['Forró weekend','Event · Carolina · 14 Nov','']]}
+];
+    const G=[...SP,
+ {id:'spaces',label:'Spaces',about:'Each part of your life',hint:'Art, Body / Health, The kids…',tools:[['Art','Painting this afternoon',''],['Body / Health','Parkrun at nine',''],['Business','Two goals',''],['The kids','Trip form due Monday',''],['The house','Boiler on Monday','']]},
+ {id:'conv',label:'People',about:'Everyone who writes to you',hint:'Ines wrote · 8 to sort',badge:'8',tools:[['Mail','8 to sort','8'],['Messages','Ines wrote yesterday','1'],['Contacts','212 people',''],['Sharing','Three Spaces shared','']]},
+ {id:'plans',label:'Plans',about:'From today to one day',hint:'Parkrun at nine · five goals nearly there',rows:[['Soon',5],['Further off',2],['Looking back',4]],tools:[['Calendar','Parkrun at nine',''],['Tasks','13 for today','13'],['Practices','Two still to do today','2'],['Discover','Fado at Mesa de Frades, Friday',''],['Flow','Today, planned around three things',''],['Goals','Five nearly there',''],['Bucket list','Eight, one done',''],['Weekly review','Tonight',''],['Monthly review','Due 30 November',''],['Quarterly review','Next in January',''],['Year in review','December','']]},
+ {id:'keep',label:'Keep',about:'Your reference shelf',hint:'Watercolour, yesterday',tools:[['Notes','Watercolour, yesterday',''],['Tables','Paintings · 12 rows',''],['Saved','41 things kept',''],['Files','Three scans, Tuesday',''],['Read & Watch','Ways of Seeing, halfway','']]},
+ {id:'inner',label:'Reflection',about:'Room for the rest of you',hint:'Yesterday’s page',tools:[['Overview','A question for Sunday',''],['Journal','Yesterday’s page',''],['Dreams','One from Tuesday',''],['Coaching','With your own key',''],['Compass','Your values, checked monthly',''],['I Ching','Cast one this week',''],['Spirit Cards','Wonder, drawn today',''],['Horoscope','Today’s reading',''],['Insights','Patterns from the month',''],['Tarot','Three cards, last Thursday','']]},
+ {id:'money',label:'Money',about:'What things cost, and what’s growing',hint:'Spending, investments, advice',tools:[['Overview','Where it all stands',''],['Spending','Filed by Space',''],['Investments','How they’re doing',''],['Advice','Questions for a calm look','']]},
+    ];
+    const R=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'],GOLD='oklch(0.55 0.11 70)',INK='oklch(0.22 0.018 60)',MUTE='oklch(0.46 0.022 70)';
+    const st=this.state,set=o=>this.setState(o);
+    const page=(p)=>{if(!p)return {group:'Today',title:'Today',line:'Sunday 1 November.'};const g=G.find(x=>x.id===p[0]);const t=g.tools.find(x=>x[0]===p[1])||g.tools[0];return {group:g.label,title:t[0],line:t[1]+'.'};};
+    const NG=G.filter(g=>!g.special);const ds=NG.find(g=>g.id===st.dOpen);
+    const mkFind=(close,pickTo,seen)=>{const q=st.q.trim().toLowerCase();let sections;
+      if(q){const items=NG.concat(SP).flatMap(g=>g.tools.map(([l,h,b])=>({a:l,b:(g.special?'':g.label+' · ')+h,badge:b,g:g.id,l}))).filter(x=>(x.a+' '+x.b).toLowerCase().includes(q));sections=items.length?[{label:'Found',badge:items.length,open:true,sign:'',toggle:()=>{},items:items.map(x=>({...x,pick:()=>pickTo(x.g,x.l)}))}]:[];}
+      else sections=[...SP].reverse().map(g=>{const open=!st.fShut[g.id];return {label:g.label,badge:g.id==='shared'&&!seen?'3 new':'',open,sign:open?'−':'+',toggle:()=>set({fShut:{...st.fShut,[g.id]:open}}),items:g.tools.map(([l,h,b])=>({a:l,b:h,badge:b,pick:()=>pickTo(g.id,l)}))};});
+      return {q:st.q,onQ:e=>set({q:e.target.value}),close,sections,empty:!!q&&sections.length===0};};
+    const d={page:page(st.dPage),home:()=>set({dPage:null,dOpen:null,dContents:false}),sheetOpen:!!ds&&!st.dContents,close:()=>set({dOpen:null}),
+      contentsOpen:st.dContents,contentsLabel:st.dContents?'Close':'Menu',toggleContents:()=>set({dContents:!st.dContents,dOpen:null,dFind:false}),
+      groups:NG.map(g=>{const on=st.dOpen===g.id&&!st.dContents,here=st.dPage&&st.dPage[0]===g.id;return {label:g.label,badge:g.badge||'',line:on?'oklch(0.72 0.13 75)':'transparent',color:on||here?INK:MUTE,toggle:()=>set({dOpen:on?null:g.id,dContents:false})};}),
+      findOpen:st.dFind,findColor:st.dFind?INK:MUTE,findLine:st.dFind?'oklch(0.72 0.13 75)':'transparent',sharedBadge:st.dSeen?'':'3',
+      toggleFind:()=>set({dFind:!st.dFind,dOpen:null,dContents:false,q:'',...(st.dFind?{dSeen:true}:{})}),
+      find:mkFind(()=>set({dFind:false,dSeen:true}),(g,l)=>set({dPage:[g,l],dFind:false,dSeen:true}),st.dSeen),
+      sheet:ds?(()=>{const tl=ds.tools.map(([l,h],i)=>({num:R[i],label:l,hint:h,pick:()=>set({dPage:[ds.id,l],dOpen:null})}));let s=0;const rows=(ds.rows||[['',tl.length]]).map(([label,n])=>{const r={label,tools:tl.slice(s,s+n)};s+=n;return r;});return {label:ds.label,about:ds.about,rows};})():{rows:[]},
+      cgroups:NG.map((g,i)=>({num:R[i],label:g.label,tools:g.tools.map(([l,h,b])=>({label:l,badge:b,pick:()=>set({dPage:[g.id,l],dContents:false})}))}))};
+    const mp=page(st.mPage);
+    const m={isFind:st.mView==='find',fColor:st.mView==='find'?GOLD:INK,sharedBadge:st.mSeen?'':'3',hasNewShared:!st.mSeen,
+      goFind:()=>set({mView:st.mView==='find'?(st.mPage?'page':'today'):'find',q:'',...(st.mView==='find'?{mSeen:true}:{})}),
+      find:mkFind(()=>set({mView:st.mPage?'page':'today',mSeen:true}),(g,l)=>set({mView:'page',mPage:[g,l],mSeen:true}),st.mSeen),
+      isToday:st.mView==='today'||(st.mView==='set'&&st.mPrev==='today'),isPage:st.mView==='page'||(st.mView==='set'&&st.mPrev==='page'),isContents:st.mView==='contents'||(st.mView==='set'&&st.mPrev==='contents'),isSet:st.mView==='set',
+      page:mp,crumb:st.mView==='page'?mp.group+' / '+mp.title:'Sunday 1 Nov',cColor:st.mView==='contents'?GOLD:INK,
+      goToday:()=>set({mView:'today',mPage:null}),goContents:()=>set({mView:st.mView==='contents'?(st.mPage?'page':'today'):'contents'}),goSet:()=>set({mView:'set',mPrev:st.mView==='set'?st.mPrev:st.mView}),back:()=>set({mView:st.mPrev}),
+      day:[{t:'09:00',a:'Parkrun, Monsanto',b:'Body / Health'},{t:'12:30',a:'Lunch with Ines',b:'People'},{t:'18:00',a:'Weekly review',b:'Plans'}],
+      pins:[['conv','Mail','8'],['plans','Calendar',''],['plans','Tasks','6'],['keep','Notes','']].map(([g,l,b])=>({label:l,badge:b,pick:()=>set({mView:'page',mPage:[g,l]})})),
+      groups:NG.map((g,i)=>{const open=st.mOpen===g.id;return {num:R[i],label:g.label,hint:g.hint,open,closed:!open,sign:open?'−':'+',color:open?GOLD:INK,toggle:()=>set({mOpen:open?null:g.id}),
+        tools:g.tools.map(([l,h,b])=>({label:l,hint:h,badge:b,pick:()=>set({mView:'page',mPage:[g.id,l]})}))};})};
+    return {d,m};
+  }
+}
+</script>
+</body>
+</html>

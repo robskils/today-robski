@@ -5655,8 +5655,10 @@ function renderNav() {
   }
   document.body.classList.toggle('util-open', !!state.navUtilOpen);
   // §43: the Mail arrival line and the "New since you looked" sheet live on
-  // <body>, fixed under the top bar, so they show on every page.
+  // <body>, fixed under the top bar, so they show on every page. Warm the inbox
+  // once so the header's to-sort count is right before the sheet is opened.
   try { renderMailArrival(); renderMailSheet(); } catch {}
+  if (modOn('mail') && !state.__mailWarmKicked) { state.__mailWarmKicked = true; setTimeout(() => { try { warmMailForSheet(); } catch {} }, 1500); }
   // §24: lock page scroll behind the full-screen Menu/Find layer (mobile), and
   // open the keyboard with Find focused the moment it rises.
   const overlayOpen = !!(state.knav && (state.knav.contents || state.knav.find));
@@ -15447,7 +15449,7 @@ function mailReopenStale() { try { const t = Number(localStorage.getItem('life.m
 // page. Triage reuses mailToQuad; the message list comes from the synced cache.
 // The header count: the to-sort inbox once the list is loaded (so it drops as
 // you triage), falling back to the server unread total on a cold page.
-function mailHeaderCount() { return (state.mail && state.mail.messages && state.mail.messages.length) ? mailNewItems().length : (state.mailUnreadTotal || 0); }
+function mailHeaderCount() { return state.__mailListLoaded ? mailNewItems().length : (state.mailUnreadTotal || 0); }
 function mailLookedKey() { return 'life.mail.looked'; }
 function mailLookedTs() { try { return Number(localStorage.getItem(mailLookedKey())) || 0; } catch { return 0; } }
 function mailMarkLooked() { try { localStorage.setItem(mailLookedKey(), String(Date.now())); } catch {} }
@@ -15487,40 +15489,46 @@ function toggleMailSheet(open) {
     // Seed the mail cache + quadrants so the sheet has something to show, and warm
     // the list in the background if it's empty (e.g. Mail not opened yet).
     if (!state.mail) { let seed = {}; try { seed = JSON.parse(localStorage.getItem('life.mail.cache') || '{}'); } catch {} state.mail = { account: seed.account || 'all', folder: 'inbox', messages: seed.messages || [], gone: new Set(), snapMsgs: {}, accounts: seed.accounts }; }
-    if (!state.mailQuads) { state.mailQuads = {}; api('/api/kv/mail_quadrants').then((r) => { try { state.mailQuads = JSON.parse(r.value || '{}') || {}; } catch {} if (state.mailSheet) renderMailSheet(); }).catch(() => {}); }
-    if (!mailNewItems().length && !state.__mailSheetWarmed) { state.__mailSheetWarmed = true; warmMailForSheet(); }
+    if (!state.__mailListLoaded) warmMailForSheet();   // load the real to-sort inbox
   }
   renderNav(); renderMailSheet();
   if (want) setTimeout(() => { const s = document.getElementById('mail-sheet'); if (s) s.scrollTop = 0; }, 0);
 }
-// Load the inbox list for the sheet without navigating to Mail. Best-effort: it
-// uses the first account's cached inbox. A no-op if mail isn't configured.
+// Load each account's INBOX so the sheet shows what needs sorting - the SAME set
+// the Mail app counts (untriaged inbox, read or unread), not just the unread
+// ones. Loads the quadrant labels too so mailQuadOf is right. Best-effort; a
+// no-op when mail isn't configured.
 async function warmMailForSheet() {
+  if (state.__mailWarming) return; state.__mailWarming = true;
   try {
-    let accts = (state.mail && state.mail.accounts) || null;
-    if (!accts) { const r = await mailApi('/accounts').catch(() => null); accts = Array.isArray(r) ? r : ((r && r.accounts) || []); if (state.mail) state.mail.accounts = accts; }
-    if (!accts || !accts.length) return;
-    const gone = (state.mail && state.mail.gone) || new Set();
+    if (!state.mail) state.mail = { account: 'all', folder: 'inbox', messages: [], gone: new Set(), snapMsgs: {} };
+    if (!state.mail.gone) state.mail.gone = new Set();
+    if (!state.mailQuads) { try { const r = await api('/api/kv/mail_quadrants'); state.mailQuads = JSON.parse((r && r.value) || '{}') || {}; } catch { state.mailQuads = {}; } }
+    let accts = state.mail.accounts || null;
+    if (!accts) { const r = await mailApi('/accounts').catch(() => null); accts = Array.isArray(r) ? r : ((r && r.accounts) || []); state.mail.accounts = accts; }
+    if (!accts || !accts.length) { state.__mailListLoaded = true; return; }
     const all = [];
     for (const a of accts.slice(0, 5)) {
-      const r = await mailApi(`/messages?account=${a.id}&limit=40`).catch(() => null);
+      const r = await mailApi(`/messages?account=${a.id}&mailbox=INBOX&limit=200`).catch(() => null);
       // Normalise exactly like the main inbox load, so each message carries the
       // _acct / _mailbox / _key the rest of the mail system keys off - without
       // these the sheet rows have no id and can't be opened or triaged.
       for (const x of ((r && r.messages) || [])) { const mb = x.mailbox || 'INBOX'; all.push({ ...x, _acct: x.account || a.id, _acctName: a.name || a.email, _mailbox: mb, _key: `${x.account || a.id}:${mb}:${x.uid}` }); }
     }
-    if (all.length && state.mail) {
-      state.mail.messages = all.filter((m) => !gone.has(m._key));
-      if (state.mailSheet) { renderNav(); renderMailSheet(); }
-    }
-  } catch {}
+    const gone = state.mail.gone;
+    state.mail.messages = all.filter((m) => !gone.has(m._key));
+    state.__mailListLoaded = true;
+    renderNav(); if (state.mailSheet) renderMailSheet();
+  } catch {} finally { state.__mailWarming = false; }
 }
 function mailSheetHtml() {
   if (!state.mailSheet) return '';
   const items = mailNewItems();
   const looked = mailLookedTs();
-  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New since you looked</span><span class="mail-sheet-count">${items.length ? `${items.length} new · sort each one, or open it` : 'Nothing to sort'}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
+  const countTxt = items.length ? `${items.length} to sort · open one, or sort each` : (state.__mailListLoaded ? 'Nothing to sort' : 'Looking…');
+  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New since you looked</span><span class="mail-sheet-count">${countTxt}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
   if (!items.length) {
+    if (!state.__mailListLoaded) return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">Looking for new mail…</div></div>`;
     const t = looked ? new Date(looked).toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : '';
     return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">All sorted. Nothing new${t ? ` since ${esc(t)}` : ''}.</div></div>`;
   }

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Today – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div id="top" style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:140px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div onClick="{{ toTop }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="flex:1;display:flex;gap:clamp(12px,1.5vw,24px);font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0"><span>Spaces</span><span>People <span style="color:var(--k-gold);font-size:12px">3</span></span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;align-items:baseline;gap:clamp(12px,1.5vw,22px);font:400 14px Jost;white-space:nowrap;color:var(--k-mute)">
+<span onClick="{{ toggleMail }}" title="New mail · ⌘ E" style="display:flex;align-items:baseline;gap:8px;cursor:pointer;color:{{ mailColor }};padding-bottom:3px;border-bottom:1px solid {{ mailLine }}" style-hover="color:var(--k-goldt)">Mail<sc-if value="{{ hasNew }}" hint-placeholder-val="{{ true }}"><span style="font:italic 300 19px/1 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ newCount }}</span></sc-if></span>
+<span onClick="{{ togglePad }}" title="Notepad · ⌘ J" style="display:flex;align-items:baseline;cursor:pointer;color:{{ padColor }};padding-bottom:3px;border-bottom:1px solid {{ padLine }}" style-hover="color:var(--k-goldt)">Notepad</span>
+<span>Search<sc-if value="{{ wide }}"> ⌘K</sc-if></span><span>Menu</span><sc-if value="{{ wide }}"><span onClick="{{ toggleNight }}" style="cursor:pointer">{{ nightLabel }}</span></sc-if></div>
+</div>
+</div>
+
+<sc-if value="{{ mailOpen }}">
+<div style="border-bottom:1px solid var(--k-line);background:var(--k-soft);animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="max-width:1600px;margin:0 auto;padding:26px clamp(24px,3.5vw,64px) 22px">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px"><span style="font:300 34px/1 'Cormorant Garamond',serif;white-space:nowrap">New since you looked</span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">{{ sheetHint }}</span><span style="margin-left:auto;display:flex;gap:22px;font:400 13.5px Jost;white-space:nowrap"><span style="color:var(--k-goldt);cursor:pointer">Open Mail →</span><span onClick="{{ toggleMail }}" style="color:var(--k-mute);cursor:pointer">Fold away</span></span></div>
+<div style="margin-top:14px">
+<sc-for list="{{ mail }}" as="m">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ m.peek }}" style="display:grid;grid-template-columns:12px minmax(160px,240px) minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:14px 0;cursor:pointer">
+<span style="width:6px;height:6px;border-radius:50%;background:{{ m.dot }};align-self:center"></span>
+<span style="font:300 23px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.from }}</span>
+<div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font:400 15px Jost">{{ m.subject }}</span><span style="font:400 14px Jost;color:var(--k-mute)"> – {{ m.first }}</span></div>
+<span style="font:400 13px Jost;color:{{ m.whenColor }};white-space:nowrap">{{ m.when }}</span>
+</div>
+<sc-if value="{{ m.open }}">
+<div style="padding:0 0 18px 30px;animation:kfade .35s ease">
+<p style="margin:0;max-width:760px;font:italic 300 22px/1.5 'Cormorant Garamond',serif;text-wrap:pretty">{{ m.body }}</p>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-top:14px;font:400 14px Jost">
+<span style="color:var(--k-goldt);cursor:pointer;white-space:nowrap">Reply</span>
+<span style="width:1px;height:12px;background:var(--k-line)"></span>
+<sc-for list="{{ m.sorts }}" as="s"><span onClick="{{ s.pick }}" style="cursor:pointer;white-space:nowrap;color:var(--k-mute)" style-hover="color:var(--k-goldt)">{{ s.label }}</span></sc-for>
+<span style="width:1px;height:12px;background:var(--k-line)"></span>
+<sc-for list="{{ m.turns }}" as="s"><span style="cursor:pointer;white-space:nowrap;color:var(--k-mute)" style-hover="color:var(--k-goldt)">{{ s }}</span></sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{ allSorted }}"><div style="padding:18px 0 6px;border-top:1px solid var(--k-line);font:italic 300 23px 'Cormorant Garamond',serif;color:var(--k-mute)">All sorted. Nothing new since 18:42.</div></sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<sc-if value="{{ showArrival }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:14px 0;border-bottom:1px solid var(--k-line);animation:kfade .6s cubic-bezier(0.2,0.7,0.2,1)">
+<span style="width:6px;height:6px;border-radius:50%;background:var(--k-gold);align-self:center"></span>
+<span style="font:italic 300 21px 'Cormorant Garamond',serif;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ arrival }}</span>
+<span onClick="{{ readArrival }}" style="font:500 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Read it</span>
+<span onClick="{{ laterArrival }}" style="font:400 13.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Later</span>
+</div>
+</sc-if>
+<div style="padding:56px 0 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Monday 2 November</span></div>
+<h1 style="font:300 clamp(60px,6.4vw,100px)/.98 'Cormorant Garamond',serif;margin:16px 0 0;letter-spacing:-.01em">Good evening, Robin.</h1>
+<div style="font:italic 300 clamp(26px,2.6vw,34px)/1.3 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:10px">The day is drawing in.</div>
+</div>
+
+<div style="display:grid;grid-template-columns:{{ cols }};gap:clamp(40px,5vw,96px);align-items:start;margin-top:48px">
+<div style="min-width:0">
+<div onClick="{{ toggleNext }}" style="display:flex;align-items:baseline;gap:14px;padding:4px 0 18px;border-bottom:1px solid var(--k-line);cursor:pointer;color:{{ nextAskColor }}" style-hover="color:var(--k-goldt)">
+<span style="width:7px;height:7px;border:1px solid var(--k-gold);background:{{ nextDot }};align-self:center"></span>
+<span style="font:italic 300 26px/1.2 'Cormorant Garamond',serif;white-space:nowrap">{{ nextAsk }}</span>
+<span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute);white-space:nowrap">⌘ /</span>
+</div>
+<sc-if value="{{ nextOpen }}">
+<div style="margin-top:18px;padding:30px clamp(22px,3vw,40px);background:oklch(0.28 0.04 155);animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1);color:oklch(0.975 0.012 85)">
+<div style="display:flex;align-items:baseline;gap:14px"><span style="font:600 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:oklch(0.74 0.12 76)">What next</span><span onClick="{{ toggleWhy }}" style="margin-left:auto;font:400 13px Jost;opacity:.7;cursor:pointer;white-space:nowrap">{{ whyLabel }}</span></div>
+<p style="margin:14px 0 0;font:300 clamp(28px,2.8vw,36px)/1.35 'Cormorant Garamond',serif;text-wrap:pretty">{{ next.text }}</p>
+<sc-if value="{{ showWhy }}"><p style="margin:12px 0 0;font:italic 300 21px/1.5 'Cormorant Garamond',serif;opacity:.8;text-wrap:pretty;animation:kfade .35s ease">{{ next.why }}</p></sc-if>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;margin-top:22px">
+<span onClick="{{ doNext }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 20px;background:oklch(0.74 0.12 76);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">{{ next.act }}</span>
+<span onClick="{{ skipNext }}" style="font:400 14px Jost;opacity:.75;cursor:pointer;white-space:nowrap">Not today</span>
+<span style="font:400 13.5px Jost;opacity:.6;margin-left:auto;white-space:nowrap">{{ next.then }}</span>
+</div>
+</div>
+</sc-if>
+
+<sc-for list="{{ folds }}" as="f" hint-placeholder-count="4">
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:baseline;gap:16px;padding:30px 0 12px;cursor:pointer"><span style="font:300 38px/1 'Cormorant Garamond',serif;white-space:nowrap">{{ f.title }}</span>
+<sc-if value="{{ f.isDay }}"><span style="display:flex;gap:16px;font:400 14.5px Jost;white-space:nowrap"><sc-for list="{{ whenOpts }}" as="w"><span onClick="{{ w.pick }}" style="cursor:pointer;color:{{ w.color }};padding-bottom:3px;border-bottom:1px solid {{ w.line }}" style-hover="color:var(--k-goldt)">{{ w.label }}</span></sc-for></span></sc-if><span style="font:400 13.5px Jost;color:{{ f.hintColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ f.hint }}</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ f.sign }}</span></div>
+<sc-if value="{{ f.open }}">
+<div style="padding:0 0 26px;animation:kfade .4s ease">
+<sc-if value="{{ f.isDay }}">
+<sc-for list="{{ day }}" as="d">
+<sc-if value="{{ d.isHead }}"><div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute);padding:16px 0 4px">{{ d.label }}</div></sc-if>
+<sc-if value="{{ d.isRow }}">
+<div style="display:grid;grid-template-columns:64px 18px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:13px 0;border-top:1px solid var(--k-line)">
+<span style="font:500 13px Jost;color:{{ d.timeColor }}">{{ d.time }}</span>
+<span onClick="{{ d.tick }}" style="width:9px;height:9px;border:1px solid {{ d.boxLine }};background:{{ d.fill }};cursor:{{ d.cursor }};align-self:center"></span>
+<div style="min-width:0"><span style="font:300 23px/1.25 'Cormorant Garamond',serif;color:{{ d.color }};text-decoration:{{ d.strike }}">{{ d.title }}</span><sc-if value="{{ d.hasNote }}"><span style="font:400 13px Jost;color:var(--k-mute);margin-left:12px">{{ d.note }}</span></sc-if></div>
+<span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ d.space }}</span>
+</div>
+</sc-if>
+</sc-for>
+</sc-if>
+<sc-if value="{{ f.isRefl }}">
+<sc-for list="{{ refl }}" as="r">
+<div style="display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:14px 0;border-top:1px solid var(--k-line)">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-goldt)">{{ r.kind }}</span>
+<div style="min-width:0"><div style="font:300 24px/1.2 'Cormorant Garamond',serif">{{ r.title }}</div><div style="font:italic 300 19px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:3px">{{ r.line }}</div></div>
+<span style="display:flex;gap:16px;font:400 13.5px Jost;white-space:nowrap"><span style="color:var(--k-goldt);cursor:pointer">Open</span><span onClick="{{ r.away }}" style="color:var(--k-mute);cursor:pointer">Put away</span></span>
+</div>
+</sc-for>
+<sc-if value="{{ reflEmpty }}"><div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;padding:10px 0"><span style="font:italic 300 22px 'Cormorant Garamond',serif;color:var(--k-mute)">Nothing drawn yet today.</span><span style="font:400 14px Jost;color:var(--k-goldt);cursor:pointer">Draw a card</span><span style="font:400 14px Jost;color:var(--k-goldt);cursor:pointer">Cast the coins</span><span style="font:400 14px Jost;color:var(--k-goldt);cursor:pointer">Three cards</span></div></sc-if>
+</sc-if>
+<sc-if value="{{ f.isPeople }}">
+<sc-for list="{{ people }}" as="p">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:16px;align-items:baseline;padding:13px 0;border-top:1px solid var(--k-line)">
+<div style="min-width:0"><span style="font:300 24px 'Cormorant Garamond',serif">{{ p.name }}</span><span style="font:400 13px Jost;color:{{ p.color }};margin-left:12px">{{ p.why }}</span></div>
+<span style="font:500 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">{{ p.act }}</span>
+<span onClick="{{ p.done }}" style="font:400 13.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">{{ p.doneLabel }}</span>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+
+
+
+</div>
+<div style="position:sticky;top:24px">
+<div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--k-ink)"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">Your Spaces</span><span style="font:400 12px Jost;color:var(--k-mute);white-space:nowrap">{{ spaceCount }}</span></div>
+<sc-for list="{{ spaces }}" as="s" hint-placeholder-count="6">
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ s.toggle }}" style="display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:14px 0;cursor:pointer">
+<span style="font:italic 300 17px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ s.num }}</span>
+<span style="font:300 25px/1.15 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+<span style="display:flex;align-items:center;gap:10px"><span style="width:6px;height:6px;background:{{ s.dot }}"></span><span style="font:300 18px Jost;color:var(--k-mute)">{{ s.sign }}</span></span>
+<span></span><span style="grid-column:2/4;font:400 13px Jost;color:{{ s.lineColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.line }}</span>
+</div>
+<sc-if value="{{ s.open }}">
+<div style="padding:0 0 14px 42px;display:grid;gap:8px;animation:kfade .35s ease">
+<sc-for list="{{ s.items }}" as="it"><div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 9.5px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);width:44px;flex:none">{{ it.k }}</span><span style="font:400 14px/1.4 Jost;flex:1;min-width:0">{{ it.t }}</span></div></sc-for>
+<span style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;margin-top:4px">Open {{ s.name }} →</span>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div onClick="{{ toggleSp }}" style="display:flex;align-items:baseline;gap:12px;padding:14px 0;border-bottom:1px solid var(--k-line);cursor:pointer" style-hover="color:var(--k-goldt)"><span style="font:400 14px Jost;color:var(--k-goldt);white-space:nowrap">{{ moreSp }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ moreHint }}</span></div>
+<div style="padding-top:12px;font:400 13px Jost;color:var(--k-mute);cursor:pointer">+ New Space</div>
+</div>
+</div>
+
+<div style="max-width:720px;margin:110px auto 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px">
+<span style="width:28px;height:1px;background:var(--k-gold)"></span>
+<p style="margin:6px 0 0;font:italic 300 clamp(26px,2.6vw,34px)/1.4 'Cormorant Garamond',serif;text-wrap:balance">“The butterfly counts not months but moments, and has time enough.”</p>
+<span style="font:500 10.5px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-mute)">Rabindranath Tagore</span>
+<span onClick="{{ keepQuote }}" style="font:400 12.5px Jost;color:{{ quoteColor }};cursor:pointer">{{ quoteLabel }}</span>
+</div>
+<div style="display:flex;justify-content:center;margin-top:72px">
+<div onClick="{{ toTop }}" title="Back to the top" style="display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;opacity:.55;transition:opacity .6s ease" style-hover="opacity:1">
+<sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-koyeba-ink.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></sc-if>
+<sc-if value="{{ nightOn }}"><img src="assets/mandombe-koyeba-ivory.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></sc-if>
+<span style="font:500 10.5px Jost;letter-spacing:.32em;text-transform:uppercase;color:var(--k-mute)">Koyeba · to know</span>
+</div>
+</div>
+</div>
+
+<sc-if value="{{ padOpen }}">
+<div style="position:fixed;top:72px;right:0;bottom:0;width:min(440px,92vw);z-index:40;background:var(--k-bg);border-left:1px solid var(--k-line);box-shadow:-24px 0 48px -32px rgba(0,0,0,.25);display:flex;flex-direction:column;padding:26px 30px 24px;box-sizing:border-box;animation:kfade .35s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="display:flex;align-items:baseline;gap:14px"><span style="font:300 34px/1 'Cormorant Garamond',serif">Notepad</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ padStatus }}</span><span onClick="{{ togglePad }}" style="margin-left:auto;font:400 13.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Close ⌘ J</span></div>
+<textarea value="{{ padText }}" onChange="{{ onPad }}" placeholder="Jot anything. It keeps until you clear it." style="flex:1;margin-top:18px;border:0;border-top:1px solid var(--k-line);background:transparent;outline:none;resize:none;padding:16px 0;font:300 23px/1.6 'Cormorant Garamond',serif;color:var(--k-ink)"></textarea>
+<div style="display:flex;flex-wrap:wrap;gap:8px 20px;padding-top:14px;border-top:1px solid var(--k-line);font:400 13.5px Jost;white-space:nowrap"><span style="color:var(--k-goldt);cursor:pointer">Make it a note</span><span style="color:var(--k-mute);cursor:pointer">Make it a task</span><span onClick="{{ clearPad }}" style="margin-left:auto;color:var(--k-mute);cursor:pointer">Clear</span></div>
+</div>
+</sc-if>
+<div style="position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:12px 20px;background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85);cursor:pointer;white-space:nowrap">
+<span style="font:300 20px Jost;color:oklch(0.74 0.12 76)">+</span><span style="font:italic 300 19px 'Cormorant Garamond',serif;opacity:.85">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.55">⌘ .</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const NEXT=[
+ {text:'Reply to Marta at Galeria Sete, and send her the three Tejo photos.',why:'She asked four days ago, it’s your first task in Art, and it’s the one thing between you and the show. It should take about twenty minutes – there’s time before Aguarela.',act:'Write to Marta',then:'Then: Aguarela at seven'},
+ {text:'Ring Mum. It’s been two weeks, and Sunday’s call slipped.',why:'You asked to be in touch weekly, and you wrote in October that the calls help you both.',act:'Call Mum',then:'Then: Aguarela at seven'}];
+// time, title, space, kind(e event,t task,p practice), note
+const DAY2=[['Birthdays',[['All day','Katarina’s birthday','Friends','e','turns 40 · you’ve a reminder at nine']]],
+ ['Morning',[['07:30','Zazen, twenty minutes','Zen','p',''],['09:00','Portuguese with Carolina','Língua Portuguesa','e','Café Lisboa · bring the workbook']]],
+ ['Afternoon',[['13:00','Lunch with Ines','Me','e','Taberna da Rua das Flores'],['15:30','Pick Maya up from school','The kids','e','then piano at 16:00, home by 17:15']]],
+ ['Evening',[['19:30','Dinner at home','Me','e','']]],
+ ['Anytime',[['First','Sign Ada’s trip form','The kids','t','due today'],['','Chi Kung','Body / Health','p','']]]];
+const DAY=[['Birthdays',[['Tomorrow','Katarina’s birthday','Friends','e','turns 40 · message her, or send a card'],['Sat','Ana’s birthday','Art','e','in five days']]],['Earlier',[['07:30','Zazen, twenty minutes','Zen','p','',1],['09:00','Holmes Place','Body / Health','e','',1],['11:30','Studio check-in with Peter','Business','e','',1]]],
+ ['This evening',[['19:00','Aguarela II with Joaquim','Art','e','until 22:00 · bring a big flat brush'],['22:15','Read before sleep','Me','p','']]],
+ ['Anytime today',[['First','Reply to Marta at Galeria Sete','Art','t',''],['First','Sign Ada’s trip form','The kids','t','due tomorrow'],['','Chi Kung','Body / Health','p',''],['','Portuguese – one conversation','Língua Portuguesa','p','']]]];
+class Component extends DCLogic {
+  state={o:{day:true,refl:true,people:false},done:{},ni:0,why:false,away:{},touched:{},kept:false,night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);this.onKey=e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='j'||e.key==='J')){e.preventDefault();this.setState(s=>({padOpen:!s.padOpen}));}else if(e.key==='Escape'&&this.state.padOpen){this.setState({padOpen:false});}else if(!e.metaKey&&!e.ctrlKey&&!/INPUT|TEXTAREA/.test((e.target||{}).tagName||'')&&(e.key==='t'||e.key==='T')){this.setState(s=>({when:s.when==='tom'?'today':'tom',o:{...s.o,day:true}}));}else if((e.metaKey||e.ctrlKey)&&e.key==='/'){e.preventDefault();this.setState(s=>({nextOpen:!s.nextOpen,why:false}));}else if((e.metaKey||e.ctrlKey)&&(e.key==='e'||e.key==='E')){e.preventDefault();this.setState(s=>({mailOpen:!s.mailOpen,arrived:true}));}else if(e.key==='Escape'&&this.state.mailOpen)this.setState({mailOpen:false});};window.addEventListener('keydown',this.onKey);this.onR=()=>this.setState({wide:window.innerWidth>=1100});this.onR();window.addEventListener('resize',this.onR);}
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);window.removeEventListener('keydown',this.onKey);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const SP=[['art','Art','Aguarela tonight · Marta waiting on you',1,[['Event','Aguarela II, 19:00'],['Mail','Galeria Sete – four days'],['Task','Photograph the Tejo paintings']]],['kids','The kids','Ada’s trip form due tomorrow',1,[['Task','Sign Ada’s trip form'],['Event','Parents’ evening, Wed 18:30']]],['body','Body / Health','Holmes this morning – done',0,[['Practice','Chi Kung, still to do'],['Goal','Peak condition, 70%']]],['business','Business','Studio check-in done · draft due Friday',0,[['Task','Harlow draft to Priya'],['Note','Pricing ideas']]],['tara','Tara','Seikuji retreat – 15%',0,[['Goal','Zen retreat at Seikuji'],['Event','Ask Tara over dinner, Fri']]],['lingua','Língua Portuguesa','One conversation still to have',0,[['Practice','Portuguese – one conversation'],['Message','Carolina – “Oi!”']]],['zen','Zen','Sat this morning',0,[['Practice','Zazen, twenty minutes – done']]],
+     ['music','Music','New voice memo yesterday',0,[['Note','Riff in D – voice memo']]],['forro','Forró','Dance on Thursday',0,[['Event','Forró at Damas, Thu 22:00']]],['house','The house','Boiler quote came in',0,[['Mail','Dalton Heating – quote']]],['books','Books / Reading','Three pages of notes this week',0,[['Note','Pessoa – lines I liked']]],
+     ['travel','Travel','Nothing since September',0,[['Note','Japan – ideas']]],['garden','The garden','Nothing since August',0,[['Task','Prune the olive']]],['car','The car','Nothing since July',0,[['Note','MOT – due March']]],['friends','Friends','Nothing this month',0,[['Note','Supper club ideas']]],['money','Money','Nothing this month',0,[['Note','Pension questions']]],['health2','Dentist & doctor','Nothing since June',0,[['Note','Allergy list']]],['family','Family in England','Nothing since October',0,[['Note','Christmas plans']]]];
+    const R2=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII'];
+    const SHOW=8;
+    const spaces=SP.slice(0,SHOW).map(([id,name,line,needs,items],i)=>{const o=!!(st.so||{})[id];return {num:R2[i],name,line,lineColor:needs?'var(--k-goldt)':'var(--k-mute)',dot:needs?'var(--k-gold)':'transparent',open:o,sign:o?'−':'+',toggle:()=>set({so:{...(st.so||{}),[id]:!o}}),items:items.map(([k,t])=>({k,t}))};});
+    const day=[];let left=0,practicesLeft=0;
+    (st.when==='tom'?DAY2:DAY).forEach(([label,rows],g0)=>{const g=(st.when==='tom'?'t':'')+g0;day.push({isHead:true,isRow:false,label});rows.forEach((r,i)=>{const k=g+'-'+i,d=r[5]?!st.done[k]:!!st.done[k],tickable=r[3]!=='e';if(!d&&tickable){left++;if(r[3]==='p')practicesLeft++;}
+      day.push({isHead:false,isRow:true,time:r[0],title:r[1],space:r[2],note:r[4],hasNote:!!r[4],timeColor:r[0]==='First'?'var(--k-goldt)':'var(--k-mute)',
+        fill:tickable?(d?'var(--k-gold)':'transparent'):'var(--k-line)',boxLine:tickable?'var(--k-gold)':'transparent',cursor:tickable?'pointer':'default',
+        color:d?'var(--k-mute)':'var(--k-ink)',strike:d&&tickable?'line-through':'none',tick:()=>{if(tickable)set({done:{...st.done,[k]:!st.done[k]}});}});});});
+    const R=[['spirit','Spirit card','Wonder','Drawn this morning – “Let something surprise you today.”'],['iching','I Ching','噬嗑 Biting Through → Innocence','“Name it, and bite through it – clearly, fairly, once.”']].filter(x=>!st.away[x[0]]);
+    const refl=R.map(([id,kind,title,line])=>({kind,title,line,away:()=>set({away:{...st.away,[id]:true}})}));
+    const P=[['mum','Mum','two weeks – longer than you’d like','Call'],['james','James','due tomorrow','Message'],['helena','Helena','wrote on Tuesday – waiting for you','Reply']];
+    const people=P.map(([id,name,why,act])=>({name,why:st.touched[id]?'in touch today':why,color:st.touched[id]?'var(--k-mute)':(id==='mum'?'var(--k-goldt)':'var(--k-mute)'),act,doneLabel:st.touched[id]?'Undo':'Done',done:()=>set({touched:{...st.touched,[id]:!st.touched[id]}})}));
+    const pLeft=P.filter(p=>!st.touched[p[0]]).length;
+    const tg=k=>()=>set({o:{...st.o,[k]:!st.o[k]}});
+    const folds=[['day',st.when==='tom'?'Tomorrow':'The day',st.when==='tom'?'Tue 3 Nov · four things in the diary · Katarina turns 40':left+' still to tick · '+practicesLeft+' practices · Aguarela at seven'],['refl','Reflections',refl.length?refl.length+' today – '+R.map(x=>x[2].split(' →')[0]).join(' · '):'Nothing drawn yet'],['people','Keep in touch',pLeft?P.filter(p=>!st.touched[p[0]]).map(p=>p[1]+' – '+p[2].split(' –')[0]).join(' · '):'Everyone’s up to date']]
+      .map(([id,title,hint])=>({title,hint,hintColor:id==='people'&&pLeft?'var(--k-goldt)':'var(--k-mute)',open:!!st.o[id],sign:st.o[id]?'−':'+',toggle:tg(id),isDay:id==='day',isRefl:id==='refl',isPeople:id==='people'}));
+    const nx=NEXT[st.ni%NEXT.length];
+    const MAIL=[['marta','Marta Lopes','Galeria Sete','The show in March','Could we see the Tejo pieces before Friday?','Dear Robin – we’d love to see the Tejo pieces in person before we confirm the March wall. Could you bring three on Friday afternoon, or send photographs if that’s easier?','18:51',1],
+     ['school','Mrs Okafor','Escola Azul','Year 4 trip – reminder','Forms back by Wednesday, please','A gentle reminder that trip forms and the €12 contribution are due back on Wednesday. Ada’s is still outstanding.','17:20',0],
+     ['joaquim','Joaquim','','Tonight','Bring the big flat brush','We’ll do washes tonight – bring the big flat brush and the cotton paper if you have it. Até logo.','16:05',0]];
+    const sorted=st.sorted||{};const live=MAIL.filter(m=>!sorted[m[0]]);
+    const mail=live.map(([id,from,org,subject,first,body,when,fresh])=>{const o=st.mpeek===id;return {from,subject,first,body,when,whenColor:fresh?'var(--k-goldt)':'var(--k-mute)',dot:fresh?'var(--k-gold)':'transparent',open:o,peek:()=>set({mpeek:o?null:id}),
+      sorts:['Urgent','Important','Read later'].map(l=>({label:l,pick:()=>set({sorted:{...sorted,[id]:l},mpeek:null})})),turns:['Make a task','Add as event','Keep as note']};});
+    const arr=MAIL[0];
+    const whenOpts=[['today','Today'],['tom','Tomorrow']].map(([id,label])=>({label,color:(st.when||'today')===id?'var(--k-ink)':'var(--k-mute)',line:(st.when||'today')===id?'var(--k-gold)':'transparent',pick:e=>{e.stopPropagation();set({when:id,o:{...st.o,day:true}});}}));
+    const pt=st.pad??'Ask Joaquim about cotton vs cellulose paper\nSeikuji – shared rooms?\nFrame size for the Tejo pieces – 40 × 50?';
+    return {wide:st.wide!==false,padOpen:!!st.padOpen,togglePad:()=>set({padOpen:!st.padOpen}),padColor:st.padOpen?'var(--k-ink)':'var(--k-mute)',padLine:st.padOpen?'var(--k-gold)':'transparent',
+      padText:pt,onPad:e=>set({pad:e.target.value}),clearPad:()=>set({pad:''}),padStatus:pt.trim()?'Kept as you write':'Empty',
+      whenOpts,nextOpen:!!st.nextOpen,toggleNext:()=>set({nextOpen:!st.nextOpen,why:false}),nextAsk:st.nextOpen?'Fold it away':'What should I do next?',nextAskColor:st.nextOpen?'var(--k-mute)':'var(--k-ink)',nextDot:st.nextOpen?'var(--k-gold)':'transparent',
+      spaces,spaceCount:SP.length+' · 2 need you',moreSp:'All '+SP.length+' Spaces →',toggleSp:()=>{},moreHint:(SP.length-SHOW)+' quieter ones live there',mail,hasNew:live.length>0,newCount:String(live.length),allSorted:live.length===0,
+      sheetHint:live.length?live.length+' new · sort each one, or open it':'',mailOpen:!!st.mailOpen,mailColor:st.mailOpen?'var(--k-ink)':'var(--k-mute)',mailLine:st.mailOpen?'var(--k-gold)':'transparent',
+      toggleMail:()=>set({mailOpen:!st.mailOpen,arrived:true}),
+      showArrival:!st.arrived&&!sorted.marta,arrival:'A letter from '+arr[1]+', '+arr[2]+' – “'+arr[3]+'”',readArrival:()=>set({mailOpen:true,arrived:true,mpeek:'marta'}),laterArrival:()=>set({arrived:true,sorted:{...sorted,marta:'Read later'}}),cols:st.wide===false?'minmax(0,1fr)':'minmax(0,1fr) minmax(300px,400px)',next:nx,showWhy:st.why,whyLabel:st.why?'Hide the reason':'Why this?',toggleWhy:()=>set({why:!st.why}),doNext:()=>set({ni:st.ni+1,why:false,nextOpen:false}),skipNext:()=>set({ni:st.ni+1,why:false}),
+      folds,day,refl,reflEmpty:refl.length===0,people,
+      keepQuote:()=>set({kept:!st.kept}),quoteLabel:st.kept?'Kept in your Notes':'Keep it',quoteColor:st.kept?'var(--k-goldt)':'var(--k-mute)',
+      toTop:()=>window.scrollTo({top:0,behavior:'smooth'}),dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>
