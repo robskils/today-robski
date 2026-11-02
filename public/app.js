@@ -17469,7 +17469,13 @@ function mailPilesRowHtml() {
     { k: 'chilled', label: 'Later', n: counts.chilled, attr: 'data-mail-quad-view="chilled"' },
     { k: 'archive', label: 'Archive', n: null, attr: 'data-mail-quad-archive' },
   ];
-  const pileEls = piles.map((p) => `<button class="mail-pile${sel === p.k ? ' on' : ''}" ${p.attr}><span class="mail-pile-top"><span class="mail-pile-n">${p.n == null ? '·' : p.n}</span><span class="mail-pile-l">${p.label}</span></span><span class="mail-pile-h">${esc(MAIL_PILE_HINT[p.k])}</span></button>`).join('');
+  // §58: a label (Jost 500 16) with its count (Jost 600 13; gold for To sort and
+  // Urgent). No big Cormorant numbers, no descriptions.
+  const pileEls = piles.map((p) => {
+    const hot = (p.k === 'sort' || p.k === 'urgent');
+    const cnt = p.n == null ? '' : `<span class="mail-pile-c${hot ? ' hot' : ''}">${p.n}</span>`;
+    return `<button class="mail-pile${sel === p.k ? ' on' : ''}" ${p.attr}><span class="mail-pile-l">${p.label}</span>${cnt}</button>`;
+  }).join('');
   const FOLDS = [['drafts', 'Drafts'], ['sent', 'Sent'], ['spam', 'Spam'], ['trash', 'Bin']];
   const foldEls = FOLDS.map(([k, l]) => { const dc = k === 'drafts' ? draftCount() : 0; return `<button class="mail-foldlink${m.folder === k ? ' on' : ''}" data-mail-folder="${k}">${l}${dc ? ` ${dc}` : ''}</button>`; }).join('');
   return `<div class="mail-piles"><div class="mail-piles-row">${pileEls}</div><div class="mail-folds">${foldEls}</div></div>`;
@@ -17528,8 +17534,12 @@ function mailAccordionRow(x, count) {
     + `<span class="mail-ar-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
     + `</span>`
     + `</button>`;
-  const panel = isOpen ? `<div class="mail-ar-panel">${mailOpenPanelHtml(m.open)}</div>` : '';
-  return `<div class="mail-ar${isOpen ? ' open' : ''}">${head}${panel}</div>`;
+  // §58: closed, the row is just its header. Open, the header + body sit on a
+  // white-paper card (#fff, 1px keyline), and the "Koyeba noticed" line and the
+  // action row sit BELOW it, outside the card, in Koyeba's own Jost.
+  if (!isOpen) return `<div class="mail-ar">${head}</div>`;
+  const parts = mailOpenPanelHtml(m.open);
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // Does Koyeba notice anything in this email? (an invite, a meeting link, or that
 // it's already filed to a task/note). Returns a short italic line or null.
@@ -17546,7 +17556,7 @@ function mailOpenPanelHtml(o) {
   const convStrip = (oThread && oThread.count > 1)
     ? `<div class="mail-conv2">${oThread.messages.map((mm) => `<button class="mail-conv2-it${mm._key === o._key ? ' on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mail-conv2-f">${esc(mailFrom(mm) || '?')}</span><span class="mail-conv2-d">${mailDate(mm.date)}</span></button>`).join('')}</div>`
     : '';
-  const body = o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
+  const bodyInner = o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
     : o._bodyError ? `<div class="mail-text mail-body-err">${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
     : (o.html && !m.plain) ? '<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>'
     : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`;
@@ -17574,7 +17584,10 @@ function mailOpenPanelHtml(o) {
   const besideActs = `<button class="mail-make mail-make-beside${bl && bl.note ? ' linked' : ''}" data-mail-note-beside>${bl && bl.note ? 'Note linked' : 'Make a note beside →'}</button><button class="mail-make mail-make-beside${bl && bl.task ? ' linked' : ''}" data-mail-task-beside>${bl && bl.task ? 'Task linked' : 'Make a task beside →'}</button>${besideMobile ? '' : '<span class="mail-make-hint">Or drag it across.</span>'}`;
   const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${besideActs}</div>`;
   const replyActs = `<div class="mail-replyacts"><button class="mail-reply" data-mail-reply-all>Reply</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
-  return `${convStrip}${body}${atts}${join}${imgs}${noticed}<div class="mail-ar-acts">${sorts}${makeActs}${replyActs}</div>`;
+  return {
+    body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
+    below: `${noticed}<div class="mail-ar-acts">${sorts}${makeActs}${replyActs}</div>`,
+  };
 }
 // The "More" menu in the open row: everything §12 keeps but tucks away - Email
 // Scribe (AI draft), the plain-text view, file in a Space, spam, block, delete.
@@ -17615,6 +17628,15 @@ function mailSideHtml() {
     return `<div class="mail-side-panel"><button class="mail-side-h" data-mail-side="${p.id}"><span class="mail-side-hl">${esc(p.title)}</span><span class="mail-side-hc">${p.count}</span><span class="mail-side-sign">${open ? '−' : '+'}</span></button>${open ? `<div class="mail-side-body">${p.body}</div>` : ''}</div>`;
   }).join('');
   return `${html}<div class="mail-side-keys">Keys while sorting: <b>U</b> urgent · <b>I</b> important · <b>L</b> later · <b>A</b> archive</div>`;
+}
+// §58: "N waiting on a reply" sits at the end of the search line, in gold, only
+// when there are any (sent mail with no answer after 3 days). That signal isn't
+// computed yet, so - per §57 (hide empty sections) - this shows nothing until it
+// is. Kept as the one place to wire it, replacing the old empty side panel.
+function mailWaitingLineHtml() {
+  const n = (state.mail && state.mail.waitingCount) || 0;
+  if (!n) return '';
+  return `<button class="mail-waiting" data-mail-waiting>${n} waiting on a reply</button>`;
 }
 function renderMail(loading) {
   // Mail's loads are the slowest in the app (IMAP, over the network), so a
@@ -17669,7 +17691,6 @@ function renderMail(loading) {
     <div class="mail2">
       <div class="mail-titleblock">
         <div class="mail-tb-main">
-          <div class="eyebrow">${mailEyebrow()}</div>
           <h1 class="mail-h1">Mail</h1>
           <div class="mail-mood">${esc(mailMood())}</div>
         </div>
@@ -17682,18 +17703,16 @@ function renderMail(loading) {
       </div>
       ${mailPilesRowHtml()}
       ${err}
-      <div class="mail-cols">
-        <div class="mail-main">
-          <div class="mail-main-top">
-            <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
-            ${progress}
-          </div>
-          ${undo}
-          <div class="mail-groups">${mailDayGroupsHtml(loading)}</div>
-          ${emptyHtml}
-          ${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}
+      <div class="mail-main mail-main-full">
+        <div class="mail-main-top">
+          <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
+          ${mailWaitingLineHtml()}
+          ${progress}
         </div>
-        <div class="mail-side">${mailSideHtml()}</div>
+        ${undo}
+        <div class="mail-groups">${mailDayGroupsHtml(loading)}</div>
+        ${emptyHtml}
+        ${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}
       </div>
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
@@ -25988,7 +26007,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) mailToggleSelect(mo.dataset.mailOpen); else openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) { mailToggleSelect(mo.dataset.mailOpen); return; } if (state.mail.open && state.mail.open._key === mo.dataset.mailOpen) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; } openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }

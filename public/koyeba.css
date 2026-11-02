@@ -10,6 +10,11 @@
 @font-face{font-family:'Jost';src:url('/fonts/Jost-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+/* Source Serif 4 (§58/§59): someone else's words, on white paper. Self-hosted
+   latin woff2 (the prototype loads it from Google Fonts, which our CSP blocks).
+   One variable file carries the 400-600 axis, so 600 renders heavier from it. */
+@font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4.woff2') format('woff2');font-weight:400 600;font-style:normal;font-display:swap}
+@font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4-italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
 
 /* ── Day (default) ────────────────────────────────────────────────────────── */
 :root{
@@ -26,8 +31,9 @@
   --k-ondeep:oklch(0.975 0.012 85);  /* ≈#f8f4ec  text on forest */
   --k-ongold:oklch(0.22 0.018 60);   /* text on a solid gold button (same in both themes) */
 
-  --k-serif:'Cormorant Garamond',serif;         /* anything that speaks */
-  --k-sans:'Jost',sans-serif; /* anything that labels */
+  --k-serif:'Cormorant Garamond',serif;         /* display only: titles, big readings, the quote */
+  --k-sans:'Jost',sans-serif; /* type system 1a (§59): does the work - items, body, meta, labels */
+  --k-read:'Source Serif 4',Georgia,serif; /* someone else's words, on white paper (§58) */
   font-synthesis:none; /* never fake a weight or slant we have no real face for */
 }
 
