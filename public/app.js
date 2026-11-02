@@ -312,6 +312,22 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.split && !notepadState().open) { closeBeside(); } });
 // §22: Enter in the Tasks quick-add line creates the task in the open pile.
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const qa = ev.target.closest && ev.target.closest('[data-task-quickadd]'); if (qa) { ev.preventDefault(); txQuickAdd(qa); } });
+// §30 Goal page: Enter in the step / thought / connect inputs.
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter' || !ev.target.closest) return;
+  const g = state.goal_open && state.goal_open.goal;
+  const sa = ev.target.closest('[data-goal-stepadd]');
+  if (sa && g) { ev.preventDefault(); const title = sa.value.trim(); if (!title) return; const gid = sa.dataset.goalStepadd; sa.value = ''; api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props: { area: gp(g).area || null, priority: null, done: false, goals: [gid], goal: gid } }) }).then((tk) => { state.goal_open.tasks.push(tk); renderGoalCard(); }).catch((e) => toast(e.message)); return; }
+  const th = ev.target.closest('[data-goal-thought]');
+  if (th && g) { ev.preventDefault(); const text = th.value.trim(); if (!text) return; const list = Array.isArray(gp(g).thoughts) ? gp(g).thoughts.slice() : []; list.unshift({ at: Date.now(), text }); gp(g).thoughts = list; th.value = ''; patchGoal(g.id, { thoughts: list }, true); renderGoalCard(); return; }
+  const cn = ev.target.closest('[data-goal-connect]');
+  if (cn && g) { ev.preventDefault(); const v = cn.value.trim(); if (!v) return;
+    if (/^https?:\/\//i.test(v) || /^[\w-]+\.[a-z]{2,}(\/|$)/i.test(v)) { const url = /^https?:\/\//i.test(v) ? v : 'https://' + v; const links = blockLinks(g).slice(); links.push({ url }); gp(g).links = links; cn.value = ''; patchGoal(g.id, { links }, true); renderGoalCard(); toast('Link connected.'); return; }
+    const q = v.toLowerCase(); const linked = new Set((state.goal_open.notes || []).map((n) => n.id));
+    const n = (state.goal_open.allNotes || []).find((x) => (x.title || '').toLowerCase().includes(q) && !linked.has(x.id));
+    if (n) { cn.value = ''; linkNoteToGoal(n.id); return; }
+    toast('Paste a link, or type part of a note’s name to connect it.'); return; }
+});
 document.addEventListener('mousedown', (ev) => {
   const d = ev.target.closest && ev.target.closest('#pane-div'); if (!d || !state.split) return; ev.preventDefault();
   const main = splitMain(); if (!main) return; const r = main.getBoundingClientRect(); document.body.classList.add('split-dragging');
@@ -19478,7 +19494,88 @@ async function openGoalCard(id) {
 // like every other section; state kept per-device. (Robin: a connections section
 // on everything.)
 const gcConnOpen = () => { try { return localStorage.getItem('life.goal.connOpen') !== '0'; } catch { return true; } };
+// ── Goal page v2 (§30): slider-only progress, folding sections, one Connected
+// list. Reuses the existing save wiring (title, why, the progress slider, the
+// goal's tasks as steps, notes/contacts/links, delete). Thoughts are a new
+// props.thoughts list; check-in/remind are stored prefs.
+function gcFolds() { const d = { why: true, steps: true, think: true, timing: false }; try { return Object.assign(d, JSON.parse(localStorage.getItem('life.goal.folds') || '{}')); } catch { return d; } }
+function gcSetFold(k) { const f = gcFolds(); f[k] = !f[k]; try { localStorage.setItem('life.goal.folds', JSON.stringify(f)); } catch {} }
+function gxFold(id, title, hint, open, body) {
+  return `<div class="gx-fold"><div class="gx-fold-h" data-gx-fold="${id}" role="button" tabindex="0"><span class="gx-fold-t">${esc(title)}</span>${(!open && hint) ? `<span class="gx-fold-hint">${esc(hint)}</span>` : ''}<span class="gx-fold-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="gx-fold-b">${body}</div>` : ''}</div>`;
+}
+const GC_PRI = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
+const gcStepRow = (tk) => { const pp = tk.props || {}; const done = !!pp.done; const a = areaById(pp.area); return `<div class="gx-step${done ? ' done' : ''}"><span class="gx-step-sq${done ? ' on' : ''}" data-check="${tk.id}" role="button" tabindex="0" title="${done ? 'Mark not done' : 'Mark done'}"></span><div class="gx-step-main"><button class="gx-step-title" data-open-task="${tk.id}">${esc(tk.title || 'Untitled')}</button>${a ? `<div class="gx-step-sub">${esc(a.title)}</div>` : ''}</div><span class="gx-step-pri${pp.priority === 'P1' && !done ? ' first' : ''}">${done ? 'Done' : (GC_PRI[pp.priority] || '')}</span><button class="gx-step-x" data-goal-untask="${tk.id}" title="Remove from this goal">×</button></div>`; };
+function gcThoughtWhen(at) { const d = new Date(at); if (Number.isNaN(d.getTime())) return ''; const now = new Date(); if (d.toDateString() === now.toDateString()) return 'Today'; return d.toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }); }
+function gcTimingSummary(p) { const dl = p.targetDate ? dpLabel(p.targetDate) : ((p.horizon === 'quarter' || p.horizon === 'year') ? horizonDateLabel(p.horizon, horizonTargetDate(p.horizon)) : 'No deadline'); const ci = ({ weekly: 'weekly review', monthly: 'monthly review', never: 'no check-in' })[p.checkin || 'weekly']; return `${dl} · ${ci}`; }
+function gcTimingBody(g, p) {
+  const row = (label, sub, key, opts) => `<div class="gx-set-row"><div class="gx-set-l"><div class="gx-set-label">${esc(label)}</div>${sub ? `<div class="gx-set-sub">${esc(sub)}</div>` : ''}</div><div class="gx-set-opts">${opts.map(([val, txt, on]) => `<span class="gx-set-opt${on ? ' on' : ''}" data-goal-set="${key}:${val}" role="button" tabindex="0">${esc(txt)}</span>`).join('')}</div></div>`;
+  const hz = p.horizon || 'quarter'; const hasDate = !!p.targetDate; const ci = p.checkin || 'weekly'; const rm = p.remind || 'off';
+  const spaceName = goalArea(g) ? goalArea(g).title : '';
+  return row('Deadline', p.targetDate ? dpLabel(p.targetDate) : (hz === 'quarter' || hz === 'year' ? horizonDateLabel(hz, horizonTargetDate(hz)) : ''), 'deadline', [['quarter', 'End of quarter', hz === 'quarter' && !hasDate], ['pick', 'Pick a date', hasDate], ['none', 'None', hz === 'longterm' && !hasDate]])
+    + (hasDate ? `<div class="gx-set-date">${dateFieldHtml('goalcard-target', p.targetDate || '')}</div>` : '')
+    + row('Check in', 'Where Koyeba asks how it is going', 'checkin', [['weekly', 'Weekly review', ci === 'weekly'], ['monthly', 'Monthly review', ci === 'monthly'], ['never', 'Never', ci === 'never']])
+    + row('Remind me', 'Before the deadline', 'remind', [['off', 'Off', rm === 'off'], ['week', 'A week before', rm === 'week'], ['month', 'A month before', rm === 'month']])
+    + `<div class="gx-set-row"><div class="gx-set-l"><div class="gx-set-label">Spaces</div><div class="gx-set-sub">Where this goal shows up</div></div><div class="gx-set-opts"><span class="gx-set-opt on">${esc(spaceName || 'No space')}</span></div></div>`
+    + `<div class="gx-del" data-del-goal="${g.id}" role="button" tabindex="0">Delete this goal…</div>`;
+}
+function gcConnectedHtml(g) {
+  const go = state.goal_open;
+  const people = (go.contacts || []).map((c) => `<div class="gx-conn-row"><button class="gx-conn-t" data-open-contact="${c.id}">${esc(c.title || 'Someone')}</button><span class="gx-conn-b">Contact</span></div>`);
+  const notes = (go.notes || []).map((n) => `<div class="gx-conn-row"><button class="gx-conn-t" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button><span class="gx-conn-b">Note</span><button class="gx-conn-x" data-goal-unlink-note="${n.id}" title="Disconnect">×</button></div>`);
+  const links = (blockLinks(g) || []).map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="gx-conn-row"><a class="gx-conn-t" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a><span class="gx-conn-b">Link</span><button class="gx-conn-x" data-xlink-del data-xlink-kind="goal" data-xlink-id="${g.id}" data-xlink-idx="${i}" title="Remove">×</button></div>`; });
+  const grp = (label, rows) => rows.length ? `<div class="gx-conn-grp"><div class="gx-conn-gl">${label}</div>${rows.join('')}</div>` : '';
+  const count = people.length + notes.length + links.length;
+  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person, event or link…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link, or type a name - Koyeba finds it.</div>`;
+}
 function renderGoalCard() {
+  const go = state.goal_open; if (!go || !go.goal) return;
+  const g = go.goal; const p = gp(g); const a = goalArea(g);
+  const gtasks = go.tasks || [];
+  const isDone = (p.status || 'active') === 'done';
+  const pctNum = Math.round(goalProgress(g) * 100);
+  const doneN = gtasks.filter((tk) => tk.props && tk.props.done).length;
+  const stepsLeft = gtasks.length - doneN;
+  const dueISO = goalDueISO(g);
+  const daysLeft = dueISO ? Math.max(0, Math.round((Date.parse(dueISO) - Date.now()) / 86400000)) : null;
+  const thoughts = Array.isArray(p.thoughts) ? p.thoughts.slice().sort((x, y) => (y.at || 0) - (x.at || 0)) : [];
+  const spaceName = a ? a.title : '';
+  const periodLbl = (HORIZONS.find(([v]) => v === (p.horizon || 'quarter')) || [])[1] || '';
+  const fo = gcFolds();
+  const ta0 = document.getElementById('goalcard-title');
+  const keepTitleFocus = !!ta0 && document.activeElement === ta0;
+  const selS = keepTitleFocus ? ta0.selectionStart : null; const selE = keepTitleFocus ? ta0.selectionEnd : null;
+  const stars = `<span class="gx-star" data-toggle-focus="${g.id}" role="button" tabindex="0"><span class="gx-star-sq${p.focus ? ' on' : ''}"></span>${p.focus ? 'Starred' : 'Star'}</span>`;
+  const statusChip = (!isDone && (p.status || 'active') !== 'active') ? `<span class="gx-statustag">${esc((GSTATUS.find(([v]) => v === p.status) || [])[1] || p.status)}</span>` : '';
+  const progBody = `<div class="gx-prog-main gc-progress">
+        <div class="gx-prog-nums"><span class="gx-pct gc-pct">${isDone ? '100%' : pctNum + '%'}</span><span class="gx-pct-note">${isDone ? 'Achieved' : 'Drag the slider'}</span></div>
+        <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><span class="gx-ticks"><i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i></span><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
+        <div class="gx-prog-act"><span class="gx-achieve" data-goal-achieve="${g.id}" role="button" tabindex="0">Mark achieved</span></div>
+      </div>
+      <div class="gx-figs">${daysLeft != null ? `<div class="gx-fig"><div class="gx-fig-n">${daysLeft} day${daysLeft === 1 ? '' : 's'}</div><div class="gx-fig-l">By ${esc(dpLabel(dueISO))}</div></div>` : ''}<div class="gx-fig"><div class="gx-fig-n">${stepsLeft}</div><div class="gx-fig-l">Steps to go</div></div></div>`;
+  const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in ' + esc(spaceName) : ''}" autocomplete="off"></div>`;
+  const thinkBody = `<div class="gx-think-add"><input class="gx-think-input" data-goal-thought="${g.id}" placeholder="Add a thought…" autocomplete="off"></div>${thoughts.map((th) => `<div class="gx-thought"><span class="gx-thought-when">${esc(gcThoughtWhen(th.at))}</span><span class="gx-thought-t">${esc(th.text || '')}</span></div>`).join('')}`;
+  $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Goals', attr: 'data-open-goals' }, { label: g.title || 'Goal' }])}
+    <div class="gx-page">
+      <div class="gx-head">
+        <div class="gx-eyebrow"><span class="gx-rule"></span><span class="gx-eyebrow-t">Goal${spaceName ? ' · ' + esc(spaceName) : ''}${periodLbl ? ' · ' + esc(periodLbl) : ''}</span>${statusChip}${stars}</div>
+        <textarea class="gx-title" id="goalcard-title" rows="1" placeholder="${t('goal.titleph')}">${esc(g.title || '')}</textarea>
+        <div class="gx-prog">${progBody}</div>
+      </div>
+      <div class="gx-grid">
+        <div class="gx-main">
+          ${gxFold('why', 'Why this matters', p.why ? '' : 'Not written yet', fo.why, `<textarea class="gx-why" id="goalcard-why" rows="3" placeholder="${t('goal.whyph')}">${esc(p.why || '')}</textarea>`)}
+          ${gxFold('steps', "How I'll get there", `${doneN} of ${gtasks.length} done · each one is a task`, fo.steps, stepsBody)}
+          ${gxFold('think', 'Thinking', thoughts.length ? `${thoughts.length} thought${thoughts.length === 1 ? '' : 's'}` : 'Nothing yet', fo.think, thinkBody)}
+          ${gxFold('timing', 'Timing and settings', gcTimingSummary(p), fo.timing, gcTimingBody(g, p))}
+        </div>
+        <aside class="gx-side"><div class="gx-side-sticky">${gcConnectedHtml(g)}</div></aside>
+      </div>
+    </div>`;
+  autoGrowSoon($('#goalcard-title'));
+  if (keepTitleFocus) { const el = document.getElementById('goalcard-title'); if (el) { el.focus(); try { el.setSelectionRange(selS, selE); } catch {} } }
+}
+function renderGoalCardLegacy() {
   const g = state.goal_open.goal; const p = gp(g); const a = goalArea(g);
   const areaOpts = `<option value="">No space</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   const gtasks = state.goal_open.tasks || [];
@@ -23948,6 +24045,13 @@ document.addEventListener('click', (e) => {
   const mst = t.closest('[data-ms-toggle]'); if (mst) { msToggle(mst.dataset.msToggle); return; }
   const msx = t.closest('[data-ms-del]'); if (msx) { msDel(msx.dataset.msDel); return; }
   const gat = t.closest('[data-goal-addtask]'); if (gat) { const [gid, mid] = gat.dataset.goalAddtask.split(':'); addGoalTask(gid, mid || null).catch((x) => toast(x.message)); return; }
+  { const gf = t.closest('[data-gx-fold]'); if (gf) { gcSetFold(gf.dataset.gxFold); renderGoalCard(); return; } }
+  { const ach = t.closest('[data-goal-achieve]'); if (ach) { saveGoalProgress(ach.dataset.goalAchieve, 100); renderGoalCard(); return; } }
+  { const gs = t.closest('[data-goal-set]'); if (gs) { const s = gs.dataset.goalSet; const i = s.indexOf(':'); const key = s.slice(0, i); const val = s.slice(i + 1); const gid = state.goal_open && state.goal_open.goal && state.goal_open.goal.id; if (!gid) return; let patch = null;
+      if (key === 'deadline') { patch = val === 'none' ? { horizon: 'longterm', targetDate: null } : val === 'quarter' ? { horizon: 'quarter', targetDate: null } : { targetDate: horizonTargetDate('quarter') }; }
+      else if (key === 'checkin') patch = { checkin: val };
+      else if (key === 'remind') patch = { remind: val };
+      if (patch) { Object.assign(gp(state.goal_open.goal), patch); patchGoal(gid, patch, true); renderGoalCard(); } return; } }
   { const cs = t.closest('[data-contact-sel]'); if (cs) { e.preventDefault(); e.stopPropagation(); toggleContactSel(cs.dataset.contactSel); return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
   { const cpr = t.closest('[data-contact-photo-rm]'); if (cpr) { e.preventDefault(); e.stopPropagation(); contactRemovePhoto(); return; } }
