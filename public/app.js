@@ -8754,7 +8754,7 @@ function homeGlancePanelHtml(tool) {
 function glanceMailText(full) {
   let t = (full && (full.text || full.body || full.snippet)) || '';
   if (!t && full && full.html) { try { const d = document.createElement('div'); d.innerHTML = full.html; t = d.textContent || ''; } catch {} }
-  t = String(t).replace(/[​-‍͏­﻿]/g, '').replace(/\r/g, '');
+  t = mailFixText(String(t)).replace(/[​-‍͏­﻿]/g, '').replace(/\r/g, '');
   t = t.replace(/\s*On\s[\s\S]{0,120}?\swrote:[\s\S]*$/i, '');   // drop a quoted reply tail
   t = t.replace(/\n{3,}/g, '\n\n').trim();
   return t.length > 900 ? t.slice(0, 900).replace(/\s+\S*$/, '') + '…' : t;
@@ -17602,11 +17602,11 @@ function wrapEmailHtml(html, blockImages) {
 // word a line on a phone). Prefer the message's own text part; fall back to
 // stripping the HTML, keeping line breaks at block boundaries. (Robin.)
 function mailPlainText(o) {
-  if (o.text && o.text.trim()) return o.text;
+  if (o.text && o.text.trim()) return mailFixText(o.text);
   let h = String(o.html || '');
   h = h.replace(/<\s*(br|\/p|\/div|\/tr|\/li|\/h[1-6])\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
   const ta = document.createElement('textarea'); ta.innerHTML = h;   // decode entities
-  return ta.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return mailFixText(ta.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim());
 }
 // Open a URL in the OS default browser via a marked, user-initiated anchor click
 // (works in installed PWAs / WKWebView wrappers). The data-ext-open marker stops
@@ -17705,19 +17705,45 @@ const folderChip = (x) => (mailSearching() && x._mailbox && !/^INBOX$/i.test(x._
 // no chevrons or badges, the thread just reads as one row.
 // §51 text cleanup (on top of the worker's proper decode): a clean sender name,
 // a tidy subject (no leading emoji, no shouting), a short plain preview.
+// §51: UTF-8 bytes that were read as Latin-1/Windows-1252 show as "Ã§"/"Ã£"/"â€™".
+// Repair only when those tell-tale sequences are present, and keep the result only
+// if it decodes without a replacement char - so correctly-encoded text is untouched.
+function mailFixText(t) {
+  t = String(t || '');
+  if (/Ã[\x80-\xbf]|Â[\x80-\xbf]|â€[\x80-\xbf™œ“”]/.test(t)) {
+    try { const f = decodeURIComponent(escape(t)); if (!/�/.test(f)) t = f; } catch {}
+  }
+  return t;
+}
+// §51: a preview must be clean TEXT, never raw HTML. Some emails carry an HTML-only
+// body, so the stored preview can be tag soup ("<table role=\"presentation\"…").
+// Strip tags (including a dangling unclosed one), decode entities, drop boilerplate.
+function mailStripHtml(t) {
+  if (!/[<&]/.test(t)) return t;
+  return t
+    .replace(/<(style|script|head|title)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<[^>]*>/g, ' ')            // whole tags
+    .replace(/<[^>]*$/,'').replace(/^[^<]*>/,'')   // a tag cut off at either end
+    .replace(/&nbsp;|&zwnj;|&shy;/gi, ' ')
+    .replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+    .replace(/&quot;|&#34;/gi, '"').replace(/&#39;|&apos;|&rsquo;|&lsquo;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(+n); } catch { return ''; } })
+    .replace(/&[a-z0-9]+;/gi, ' ');
+}
 function mailSenderClean(x) {
-  let n = mailFrom(x) || '';
+  let n = mailFixText(mailFrom(x) || '');
   n = String(n).replace(/\s+via\s+.+$/i, (m) => m.replace(/^\s+via\s+/i, '')).trim();   // "'x.com' via Name" -> "Name"
   n = n.replace(/^["'“‘]+|["'”’]+$/g, '').trim();
   return n || '(unknown)';
 }
 function mailCleanSubject(s) {
-  let t = String(s || '').replace(/^[\s\p{Extended_Pictographic}←-➿️‍]+/u, '').trim();
+  let t = mailStripHtml(mailFixText(String(s || ''))).replace(/^[\s\p{Extended_Pictographic}←-➿️‍]+/u, '').replace(/\s+/g, ' ').trim();
   if (t.length > 12 && t === t.toUpperCase() && /[A-Z]/.test(t)) t = t.charAt(0) + t.slice(1).toLowerCase();
   return t;
 }
 function mailCleanPreview(s) {
-  let t = String(s || '').replace(/[​-‍͏­﻿]/g, '').replace(/\s+/g, ' ').trim();
+  let t = mailStripHtml(mailFixText(String(s || ''))).replace(/[​-‍͏­﻿]/g, '').replace(/\s+/g, ' ').trim();
   t = t.replace(/\s*On\s.{0,80}?\swrote:[\s\S]*$/i, '').trim();   // drop a quoted reply tail
   return t.slice(0, 90);
 }
