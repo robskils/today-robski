@@ -1519,6 +1519,9 @@ function openView(v) {
 }
 // ── in-app history (Back) + breadcrumbs ──────────────
 let navHist = [], navLastKey = null, navLastView = null;
+// §63: keep the current view's scroll position on navLastView, so when it's
+// pushed to history and later returned to (navBack), we can restore it.
+window.addEventListener('scroll', () => { if (navLastView) { const m = document.querySelector('.main'); navLastView._scroll = Math.max(window.scrollY || 0, m ? m.scrollTop : 0); } }, { passive: true, capture: true });
 // Navigation generation: bumped at the start of every async open. An open that
 // awaits data then renders must first check it's still the current generation -
 // otherwise a slow load (Home's, on boot) repaints its page over one you've since
@@ -1563,7 +1566,14 @@ function navBack() {
     renderHome(); return;
   }
   navLastKey = null; navLastView = null;           // openView re-seeds without re-pushing
-  Promise.resolve(openView(prev)).catch(() => openHome());
+  // §63: restore the scroll position of the page we're going back to.
+  const sc = prev._scroll || 0;
+  Promise.resolve(openView(prev)).then(() => {
+    if (!sc) return;
+    let n = 0;
+    const tryScroll = () => { try { window.scrollTo(0, sc); const m = document.querySelector('.main'); if (m) m.scrollTop = sc; } catch {} if (++n < 6 && Math.abs((window.scrollY || 0) - sc) > 4) setTimeout(tryScroll, 60); };
+    requestAnimationFrame(tryScroll);
+  }).catch(() => openHome());
 }
 // Wire the device / browser Back button into the app's own navigation. A single
 // "trap" history entry rides on top; a Back press fires popstate, we step back
