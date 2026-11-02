@@ -5369,7 +5369,7 @@ const KFOLDS = [
   { id: 'money', label: 'Money', items: [
       ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Money', 'data-open-money', 'financial'],
       ['Portfolio', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
-  { id: 'inner', label: 'Inner life', items: [
+  { id: 'inner', label: 'Reflection', items: [
       ['Reflection', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
       ['Dreams', 'data-open-dreams', 'dreams'], ['Compass', 'data-open-compass', 'compass'], ['I Ching', 'data-open-iching', 'iching'],
       ['Spirit Cards', 'data-spirit-open', 'spirit'], ['Horoscope', 'data-open-horo', 'horoscope'], ['Insights', 'data-open-insights', 'insights'], ['Tarot', 'data-open-tarot', 'tarot'] ] },
@@ -5427,10 +5427,11 @@ function navFoldsHtml(v) {
       if (over) items += `<button class="kfi kfi-more" data-spaces-more><span class="kfi-num"></span><span class="kfi-l">${state.nav.spacesAll ? 'Show fewer' : `Show all ${areas.length}`}</span></button>`;
       items += `<button class="kfi kfi-all" data-open-areas><span class="kfi-num"></span><span class="kfi-l">${areas.length ? 'All spaces' : 'Add a space'}</span></button>`;
     } else {
-      items = f.items.filter((it) => kItemOn(it[2])).map((it) => {
+      items = f.items.filter((it) => kItemOn(it[2])).map((it, i) => {
         const [label, attrs] = it;
         const badge = (label === 'Mail' && state.mailUnreadTotal) ? state.mailUnreadTotal : (label === 'Messages' && unreadMsgs()) ? unreadMsgs() : 0;
-        return `<button class="kfi" ${attrs}><span class="kfi-num"></span><span class="kfi-l">${label}</span>${badge ? `<span class="kfi-b">${badge > 99 ? '99+' : badge}</span>` : ''}</button>`;
+        // §10: every menu tool carries its numeral, like the Spaces do.
+        return `<button class="kfi" ${attrs}><span class="kfi-num">${kToRoman(i + 1)}</span><span class="kfi-l">${label}</span>${badge ? `<span class="kfi-b">${badge > 99 ? '99+' : badge}</span>` : ''}</button>`;
       }).join('');
     }
     return `<div class="kfold${open ? ' open' : ''}">`
