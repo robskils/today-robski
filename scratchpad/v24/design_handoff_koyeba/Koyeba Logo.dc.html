@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+body{margin:0;background:#ebe8e1;font-family:'Jost',sans-serif;color:oklch(0.22 0.018 60)}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+.dv-turn{padding:48px 52px 40px;border-bottom:1px solid rgba(0,0,0,.08)}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.4 system-ui,sans-serif;color:rgba(0,0,0,.6);max-width:520px}
+.dv-card{border:1px solid rgba(0,0,0,.08);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:24px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+</style></helmet>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Koyeba in Mandombe — a mark, used quietly</span></div>
+<div style="max-width:860px;margin:0 0 28px;font:14px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.7)">Traced from your screenshot as square-cornered strokes. Your red became the single gold accent, so the vowel strokes carry the colour. The Cormorant wordmark stays the main logo; the script sits beside it, never instead of it. Please have someone who reads Mandombe check the tracing before it goes anywhere public.</div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Full lockup: script above, wordmark beneath. For the website, the welcome screen and print.</div>
+<div class="dv-card" style="width:560px;height:420px;background:oklch(0.975 0.012 85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
+<img src="assets/mandombe-koyeba-ink.svg" alt="Koyeba in Mandombe" style="width:300px;height:auto;display:block"></img>
+<div style="width:40px;height:1px;background:oklch(0.72 0.13 75)"></div>
+<div style="font:500 52px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></div>
+<div style="font:500 11px Jost;letter-spacing:.32em;text-transform:uppercase;color:oklch(0.46 0.022 70)">To know</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>The same at night, on forest green.</div>
+<div class="dv-card" style="width:560px;height:420px;background:oklch(0.22 0.03 160);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;color:oklch(0.94 0.012 85)">
+<img src="assets/mandombe-koyeba-ivory.svg" alt="Koyeba in Mandombe" style="width:300px;height:auto;display:block"></img>
+<div style="width:40px;height:1px;background:oklch(0.74 0.12 76)"></div>
+<div style="font:500 52px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.74 0.12 76)">.</span></div>
+<div style="font:500 11px Jost;letter-spacing:.32em;text-transform:uppercase;opacity:.7">To know</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>App icon: just the first syllable, “ko”, on a gold or forest tile. At small sizes the full word becomes noise.</div>
+<div class="dv-card" style="width:560px;height:300px;background:oklch(0.975 0.012 85);display:flex;align-items:center;justify-content:center;gap:40px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><img src="assets/mandombe-ko-tile-gold.svg" alt="" style="width:120px;height:120px;display:block"></img><span style="font:400 12px Jost;color:oklch(0.46 0.022 70)">Home screen</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><img src="assets/mandombe-ko-tile-forest.svg" alt="" style="width:120px;height:120px;display:block"></img><span style="font:400 12px Jost;color:oklch(0.46 0.022 70)">Night</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="display:flex;align-items:flex-end;gap:14px;height:120px"><img src="assets/mandombe-ko-tile-gold.svg" alt="" style="width:48px;height:48px;display:block"></img><img src="assets/mandombe-ko-tile-gold.svg" alt="" style="width:32px;height:32px;display:block"></img><img src="assets/mandombe-ko-tile-gold.svg" alt="" style="width:16px;height:16px;display:block"></img></div><span style="font:400 12px Jost;color:oklch(0.46 0.022 70)">48 · 32 · 16</span></div>
+</div>
+</div>
+
+<div class="dv-opt" id="2d">
+<div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>In the app header: a small “ko” mark beside the wordmark, in place of the old 静.</div>
+<div class="dv-card" style="width:560px;height:300px;background:oklch(0.975 0.012 85);display:flex;flex-direction:column;justify-content:center;gap:0">
+<div style="display:flex;align-items:center;gap:14px;padding:22px 36px;border-top:1px solid oklch(0.88 0.014 80);border-bottom:1px solid oklch(0.88 0.014 80)">
+<img src="assets/mandombe-ko-ink.svg" alt="" style="height:30px;width:auto;display:block"></img>
+<span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.72 0.13 75)">.</span></span>
+<span style="margin-left:auto;font:400 15px Jost;color:oklch(0.46 0.022 70)">Find…&nbsp;&nbsp;⌘K</span>
+</div>
+<div style="display:flex;align-items:center;gap:14px;padding:22px 36px;background:oklch(0.22 0.03 160);color:oklch(0.94 0.012 85)">
+<img src="assets/mandombe-ko-ivory.svg" alt="" style="height:30px;width:auto;display:block"></img>
+<span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:oklch(0.74 0.12 76)">.</span></span>
+<span style="margin-left:auto;font:400 15px Jost;opacity:.7">Find…&nbsp;&nbsp;⌘K</span>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2e">
+<div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Watermark: the full word, very faint and very large, behind the Today screen. Like the 只管打坐 the dojo site carries.</div>
+<div class="dv-card" style="width:1140px;height:440px;background:oklch(0.975 0.012 85);position:relative">
+<img src="assets/mandombe-koyeba-faint.svg" alt="" style="position:absolute;right:-60px;bottom:-40px;width:760px;height:auto;display:block;pointer-events:none"></img>
+<div style="position:relative;padding:52px 64px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Friday · an overcast evening</span></div>
+<div style="font:300 64px/1.02 'Cormorant Garamond',serif;margin-top:18px">Good evening, <i style="color:oklch(0.72 0.13 75)">Robin.</i></div>
+<div style="font:300 64px/1.02 'Cormorant Garamond',serif;color:oklch(0.46 0.022 70)">The day is drawing in.</div>
+<div style="display:grid;grid-template-columns:repeat(4,160px);gap:24px;margin-top:40px;border-top:1px solid oklch(0.88 0.014 80);padding-top:16px">
+<div><div style="font:300 40px/1 'Cormorant Garamond',serif">5</div><div style="font:400 14px Jost;color:oklch(0.46 0.022 70);margin-top:6px">emails to sort</div></div>
+<div><div style="font:300 40px/1 'Cormorant Garamond',serif">4</div><div style="font:400 14px Jost;color:oklch(0.46 0.022 70);margin-top:6px">things to do today</div></div>
+<div><div style="font:300 40px/1 'Cormorant Garamond',serif">2</div><div style="font:400 14px Jost;color:oklch(0.46 0.022 70);margin-top:6px">events tomorrow</div></div>
+<div><div style="font:300 40px/1 'Cormorant Garamond',serif">€1.2k</div><div style="font:400 14px Jost;color:oklch(0.46 0.022 70);margin-top:6px">spent in October</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="2f">
+<div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>Welcome screen: the script as the first thing you see, with its meaning.</div>
+<div class="dv-card" style="width:560px;height:440px;background:oklch(0.975 0.012 85);display:flex;flex-direction:column;justify-content:center;padding:0 56px;box-sizing:border-box">
+<img src="assets/mandombe-koyeba-ink.svg" alt="" style="width:180px;height:auto;display:block"></img>
+<div style="display:flex;align-items:center;gap:12px;margin-top:34px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Nasepeli koyeba yo</span></div>
+<div style="font:300 48px/1.05 'Cormorant Garamond',serif;margin-top:14px">Pleased to know you.</div>
+<div style="font:400 15px/1.6 Jost;color:oklch(0.46 0.022 70);margin-top:12px;max-width:400px">Koyeba is Lingala for “to know”, written here in Mandombe, a script from the Congo.</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: “use <a class="dv-oid" href="#2d">2d</a> in the app header” · “try <a class="dv-oid" href="#2c">2c</a> with all three syllables” · “make the watermark in <a class="dv-oid" href="#2e">2e</a> fainter”</p>
+</section>
+</x-dc>
+</body>
+</html>

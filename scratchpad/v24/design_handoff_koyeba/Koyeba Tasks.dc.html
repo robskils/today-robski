@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Tasks – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input{font:inherit;color:inherit;background:transparent;border:0;outline:0}input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div onClick="{{ goIndex }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People<span style="font-size:11.5px;color:var(--k-goldt)"> 18</span></span><span style="color:var(--k-ink);border-bottom:1px solid var(--k-gold);padding-bottom:4px">Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span onClick="{{ toggleNight }}" style="color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+
+<sc-if value="{{ isIndex }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:clamp(40px,5vw,88px);padding-top:48px;animation:kfade .4s ease">
+<div style="min-width:0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Plans · Tasks</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:14px 0 0">Tasks</h1>
+<div style="font:italic 300 24px/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px">{{ mood }}</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:0 clamp(22px,3vw,44px);margin-top:40px;border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ piles }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.pick }}" style="padding:0 0 14px;border-bottom:1px solid {{ p.line }};margin-bottom:-1px;cursor:pointer;color:{{ p.color }}"><div style="display:flex;align-items:baseline;gap:9px;white-space:nowrap"><span style="font:300 38px/1 'Cormorant Garamond',serif">{{ p.n }}</span><span style="font:400 15.5px Jost;white-space:nowrap">{{ p.label }}</span></div><div style="font:400 12.5px Jost;color:var(--k-mute);margin-top:5px;white-space:nowrap">{{ p.hint }}</div></div></sc-for>
+<div style="margin-left:auto;align-self:flex-end;display:flex;gap:18px;padding-bottom:16px;font:400 14px Jost;white-space:nowrap"><sc-for list="{{ orders }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;color:{{ o.color }};padding-bottom:3px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for></div>
+</div>
+
+<div style="display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--k-line)"><span style="width:13px;height:13px;border:1px dashed var(--k-mute);flex:none"></span><input value="{{ add }}" onChange="{{ onAdd }}" onKeyDown="{{ onAddKey }}" placeholder="{{ addPh }}" style="flex:1;min-width:0;font:300 22px 'Cormorant Garamond',serif"><span style="font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">↵</span></div>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:24px">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap;color:{{ g.color }}">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span><sc-if value="{{ g.closed }}"><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%">{{ g.hint }}</span></sc-if><span style="font:300 18px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<sc-for list="{{ g.items }}" as="t">
+<div style="display:grid;grid-template-columns:13px minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--k-line);animation:{{ t.anim }}">
+<span onClick="{{ t.tick }}" style="width:13px;height:13px;border:1px solid {{ t.boxLine }};background:{{ t.boxFill }};align-self:center;cursor:pointer;transition:background .25s ease"></span>
+<div onClick="{{ t.open }}" style="min-width:0;cursor:pointer" style-hover="color:var(--k-goldt)"><div style="font:400 16.5px/1.4 Jost;text-decoration:{{ t.strike }};color:{{ t.color }};text-wrap:pretty">{{ t.title }}</div><div style="display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;font:400 13px Jost"><span style="color:var(--k-goldt)">{{ t.space }}</span><span style="color:var(--k-mute)">{{ t.meta }}</span></div></div>
+<span style="font:{{ t.dueFont }};color:{{ t.dueColor }};white-space:nowrap">{{ t.due }}</span>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="padding-top:158px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="3">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}"><div style="padding:0 0 20px;display:grid">
+<sc-for list="{{ p.items }}" as="it"><div onClick="{{ it.go }}" style="display:flex;align-items:baseline;gap:12px;padding:9px 0;cursor:pointer;color:{{ it.color }}" style-hover="color:var(--k-goldt)"><span style="flex:1;font:300 21px/1.25 'Cormorant Garamond',serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.label }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.n }}</span></div></sc-for>
+</div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTask }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:clamp(40px,5vw,88px);padding-top:30px;animation:kfade .4s ease">
+<div style="min-width:0">
+<div style="display:flex;align-items:baseline;gap:10px;font:400 14px Jost;white-space:nowrap;overflow:hidden"><span onClick="{{ goIndex }}" style="color:var(--k-mute);cursor:pointer">Plans</span><span style="color:var(--k-line)">/</span><span onClick="{{ goIndex }}" style="color:var(--k-mute);cursor:pointer">Tasks</span><span style="color:var(--k-line)">/</span><span style="overflow:hidden;text-overflow:ellipsis">{{ task.title }}</span></div>
+<div style="max-width:780px">
+<div style="display:grid;grid-template-columns:30px minmax(0,1fr);gap:22px;align-items:start;margin-top:34px">
+<span onClick="{{ task.tick }}" style="width:28px;height:28px;margin-top:14px;border:1px solid {{ task.boxLine }};background:{{ task.boxFill }};cursor:pointer;transition:background .25s ease"></span>
+<h1 style="margin:0;font:300 clamp(48px,4.6vw,72px)/1.05 'Cormorant Garamond',serif;text-wrap:balance;text-decoration:{{ task.strike }};color:{{ task.color }}">{{ task.title }}</h1>
+</div>
+<div style="margin:26px 0 0 52px;font:300 26px/1.6 'Cormorant Garamond',serif;color:var(--k-mute);text-wrap:pretty">
+<sc-for list="{{ task.sentence }}" as="w"><span>{{ w.pre }}</span><span onClick="{{ w.cycle }}" title="Click to change" style="color:var(--k-ink);border-bottom:1px dotted var(--k-gold);cursor:pointer;white-space:nowrap" style-hover="color:var(--k-goldt)">{{ w.val }}</span></sc-for><span>.</span>
+</div>
+<div style="margin:6px 0 0 52px;font:400 12.5px Jost;color:var(--k-mute)">Click any underlined word to change it.</div>
+
+<div style="margin:40px 0 0 52px">
+<div onClick="{{ toggleSteps }}" style="display:flex;align-items:baseline;gap:14px;padding-bottom:10px;border-bottom:1px solid var(--k-ink);cursor:pointer"><span style="font:300 30px/1 'Cormorant Garamond',serif">Steps</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ stepsCount }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ stepsSign }}</span></div>
+<sc-if value="{{ stepsOpen }}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{ steps }}" as="s"><div onClick="{{ s.tick }}" style="display:grid;grid-template-columns:13px minmax(0,1fr);gap:16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="width:13px;height:13px;border:1px solid {{ s.boxLine }};background:{{ s.boxFill }};align-self:center"></span><span style="font:400 16px/1.45 Jost;text-decoration:{{ s.strike }};color:{{ s.color }}">{{ s.t }}</span></div></sc-for>
+<div style="padding:12px 0;font:400 14px Jost;color:var(--k-goldt);cursor:pointer">+ Add a step</div>
+</sc-if>
+</div>
+
+<div style="margin:30px 0 0 52px">
+<div style="font:300 30px/1 'Cormorant Garamond',serif;padding-bottom:10px;border-bottom:1px solid var(--k-ink)">Notes</div>
+<p style="margin:18px 0 0;font:400 17.5px/1.75 Jost;text-wrap:pretty">{{ task.notes }}</p>
+<div style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-mute);padding-top:12px">Keep writing…</div>
+</div>
+</div>
+</div>
+
+<div style="padding-top:96px">
+<div style="display:flex;align-items:center;gap:18px;padding-bottom:18px">
+<span onClick="{{ toggleKept }}" style="display:flex;align-items:center;gap:8px;font:400 14px Jost;color:{{ keptColor }};cursor:pointer;white-space:nowrap"><span style="width:8px;height:8px;border:1px solid var(--k-gold);background:{{ keptFill }}"></span>{{ keptLabel }}</span>
+<span style="margin-left:auto;font:400 14px Jost;color:var(--k-mute);cursor:pointer">Assign</span>
+<span style="font:400 14px Jost;color:var(--k-mute);cursor:pointer">Share</span>
+<span style="font:400 18px Jost;color:var(--k-mute);letter-spacing:.1em">···</span>
+</div>
+<sc-for list="{{ about }}" as="p">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:15px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}"><div style="padding:0 0 18px;display:grid;gap:10px;animation:kfade .3s ease">
+<sc-for list="{{ p.items }}" as="it"><div style="display:flex;align-items:baseline;gap:12px"><span style="flex:1;font:{{ it.font }};min-width:0">{{ it.label }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.meta }}</span></div></sc-for>
+<span style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer">{{ p.add }}</span>
+</div></sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line);padding-top:16px;font:400 13px Jost;color:var(--k-mute);cursor:pointer">Delete this task</div>
+</div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{ showToast }}"><div style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:30;display:flex;align-items:baseline;gap:16px;padding:13px 20px;background:var(--k-deep);color:var(--k-ondeep);font:400 14px Jost;white-space:nowrap;animation:kfade .4s ease"><span>{{ toast }}</span><span onClick="{{ undo }}" style="font-weight:500;color:var(--k-gold);cursor:pointer">Undo</span></div></sc-if>
+<div style="position:fixed;left:32px;bottom:24px;z-index:26;padding:9px 16px;white-space:nowrap;background:var(--k-bg);border:1px solid var(--k-line);font:italic 300 20px 'Cormorant Garamond',serif">Notepad</div>
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--k-deep);color:var(--k-ondeep);white-space:nowrap"><span style="font:300 20px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const T=[
+ {id:'il',title:'Take I&L to court – next steps',space:'Money',g:'late',due:'2 days late',dur:'about 2 hours',pri:0,status:0,notes:'Time to get lively with this one.'},
+ {id:'sue',title:'Reply to Sue about the insolvency papers',space:'Business',g:'late',due:'14 days late',dur:'about 20 minutes',pri:0,status:0},
+ {id:'sg',title:'Get Stone Grinder going big time',space:'Stone Grinder',g:'late',due:'1 day late',dur:'',pri:1,status:1},
+ {id:'ada',title:'Sign Ada’s trip form',space:'The kids',g:'today',due:'Today',dur:'about 2 minutes',pri:0,status:0},
+ {id:'paint',title:'Do a watercolour painting',space:'Art',g:'today',due:'This afternoon',dur:'about an hour',pri:1,status:0},
+ {id:'mum',title:'Call Mum',space:'Me',g:'today',due:'This evening',dur:'',pri:1,status:0},
+ {id:'dalton',title:'Confirm Monday access with Dalton Heating',space:'The house',g:'week',due:'Sun',dur:'',pri:0,status:0},
+ {id:'harlow',title:'Send the Harlow draft back to Priya',space:'Business',g:'week',due:'Wed',dur:'about 3 hours',pri:1,status:1},
+ {id:'imi',title:'Pay IMI, second instalment',space:'Money',g:'week',due:'30 Nov',dur:'',pri:1,status:0},
+ {id:'paper',title:'Buy cold-press paper, 300gsm',space:'Art',g:'week',due:'Sat',dur:'',pri:2,status:0},
+ {id:'frog',title:'The Frog – refund proposal to three families',space:'Business',g:'later',due:'Next week',dur:'',pri:1,status:0},
+ {id:'pass',title:'Renew passport',space:'Me',g:'later',due:'December',dur:'',pri:2,status:0},
+ {id:'shop',title:'Set up the shop page on RobinSavile.com',space:'Art',g:'someday',due:'',dur:'',pri:2,status:0},
+ {id:'gut',title:'Pick a gutter quote',space:'The house',g:'someday',due:'',dur:'',pri:2,status:0}
+];
+const G=[['late','Late'],['today','Today'],['week','This week'],['later','Later'],['someday','Someday']];
+const EXTRA={late:0,today:0,week:9,later:41,someday:203};
+const PRI=['first','soon','whenever'],STAT=['not started','under way','waiting on someone'],REP=['doesn’t repeat','every week','every month'],REM=['the morning of','the day before','not at all'],DUR=['about 20 minutes','about an hour','about 2 hours','half a day'],DUE=['Friday 30 October','Monday','next week','no date'];
+const STEPS={il:['Gather the invoices and the email trail','Write the letter before action','Check the small-claims limit and fee','File online at the court portal'],sue:['Find the signed copy','Reply with the two questions']};
+class Component extends DCLogic {
+  state={view:'index',taskId:'il',order:'priority',pile:'p0',done:{},shut:{later:true,someday:true},side:{space:true,waiting:true},about:{spaces:true,linked:true,find:false,who:true},props:{},sdone:{},steps:true,kept:{il:true},added:[],add:'',toast:null,last:null,night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentWillUnmount(){clearTimeout(this.tt);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const all=[...st.added,...T];
+    const tick=id=>e=>{if(e)e.stopPropagation();const d=!st.done[id];set({done:{...st.done,[id]:d},toast:d?'Done. Nicely.':null,last:id});clearTimeout(this.tt);if(d)this.tt=setTimeout(()=>this.setState({toast:null}),4000);};
+    const open=id=>()=>{set({view:'task',taskId:id});window.scrollTo(0,0);};
+    const row=t=>{const d=!!st.done[t.id],late=t.g==='late';return {...t,open:open(t.id),tick:tick(t.id),anim:t.fresh?'kfade .5s ease':'none',
+      meta:[t.dur,st.order==='date'&&t.pri===0?'first':'',STAT[t.status]!=='not started'?STAT[t.status]:''].filter(Boolean).join(' · '),
+      due:st.order==='priority'&&t.g==='someday'?'':t.due,
+      strike:d?'line-through':'none',color:d?'var(--k-mute)':'var(--k-ink)',boxLine:d?'var(--k-gold)':'var(--k-ink)',boxFill:d?'var(--k-gold)':'transparent',
+      dueFont:late?'500 13px Jost':'400 13px Jost',dueColor:late?'var(--k-goldt)':'var(--k-mute)'};};
+    const W=['None','One','Two','Three','Four','Five','Six','Seven'];
+    const PEX=[0,14,180],DEX={late:0,today:0,week:9,later:41,someday:203};
+    let piles,groups,mood;const doneN=Object.values(st.done).filter(Boolean).length+31;
+    if(st.order==='priority'){
+      const pile=st.pile.startsWith('p')||st.pile==='done'?st.pile:'p0';
+      const cntP=n=>all.filter(t=>t.pri===n&&!st.done[t.id]).length+PEX[n];
+      piles=[['p0','First','What matters most',cntP(0)],['p1','Soon','When there’s room',cntP(1)],['p2','Whenever','No hurry at all',cntP(2)],['done','Done','This week',doneN]].map(([id,label,hint,n])=>({label,hint,n,line:pile===id?'var(--k-gold)':'transparent',color:pile===id?'var(--k-ink)':'var(--k-mute)',pick:()=>set({pile:id})}));
+      if(pile==='done'){const ds=all.filter(t=>st.done[t.id]);groups=[{label:'Done this week',count:ds.length+31,open:true,closed:false,sign:'−',color:'var(--k-ink)',hint:'',toggle:()=>{},items:ds.map(row)}];}
+      else{const n=+pile.slice(1);const it=all.filter(t=>t.pri===n);const sp=[...new Set(it.map(t=>t.space))];
+        groups=sp.map(s=>{const k='s'+n+s,o=!st.shut[k];const items=it.filter(t=>t.space===s);return {label:s,count:items.length,open:o,closed:!o,sign:o?'−':'+',color:'var(--k-ink)',hint:items.slice(0,2).map(t=>t.title).join(' · '),toggle:()=>set({shut:{...st.shut,[k]:o}}),items:items.map(row)};});
+        if(PEX[n])groups.push({label:'And '+PEX[n]+' more, across other Spaces',count:'',open:false,closed:true,sign:'+',color:'var(--k-mute)',hint:'',toggle:()=>{},items:[]});}
+      const first=all.filter(t=>t.pri===0&&!st.done[t.id]);
+      const dated=all.filter(t=>t.g==='late'&&!st.done[t.id]);
+      mood=first.length?(W[first.length]||first.length)+' things come first. Start with “'+first[0].title+'”.'+(dated.length?' '+(W[dated.length]||dated.length)+' with a date '+(dated.length===1?'has':'have')+' slipped.':''):'Nothing pressing. A good day for something from Soon.';
+    } else {
+      const pileOf={now:['late','today'],week:['week'],later:['later'],someday:['someday']};
+      const pile=pileOf[st.pile]||st.pile==='done'?st.pile:'now';
+      const cnt=ids=>all.filter(t=>ids.includes(t.g)&&!st.done[t.id]).length+ids.reduce((a,i)=>a+DEX[i],0);
+      piles=[['now','Now','Late and today',cnt(['late','today'])],['week','This week','Before Sunday',cnt(['week'])],['later','Later','Dated, not yet',cnt(['later'])],['someday','Someday','No date at all',cnt(['someday'])],['done','Done','This week',doneN]].map(([id,label,hint,n])=>({label,hint,n,line:pile===id?'var(--k-gold)':'transparent',color:pile===id?'var(--k-ink)':'var(--k-mute)',pick:()=>set({pile:id})}));
+      if(pile==='done'){const ds=all.filter(t=>st.done[t.id]);groups=[{label:'Done this week',count:ds.length+31,open:true,closed:false,sign:'−',color:'var(--k-ink)',hint:'',toggle:()=>{},items:ds.map(row)}];}
+      else groups=G.filter(([id])=>pileOf[pile].includes(id)).map(([id,label])=>{const it=all.filter(t=>t.g===id);const o=!st.shut[id];return {label,count:it.length+DEX[id],open:o,closed:!o,sign:o?'−':'+',color:id==='late'?'var(--k-goldt)':'var(--k-ink)',hint:it.slice(0,2).map(t=>t.title).join(' · '),toggle:()=>set({shut:{...st.shut,[id]:o}}),items:it.map(row)};});
+      const lateLeft=all.filter(t=>t.g==='late'&&!st.done[t.id]);const todayLeft=all.filter(t=>t.g==='today'&&!st.done[t.id]).length;
+      mood=lateLeft.length?(W[todayLeft]||todayLeft)+' for today. '+W[lateLeft.length]+(lateLeft.length===1?' is':' are')+' late – start with “'+lateLeft[0].title+'”.':'Nothing late. '+(W[todayLeft]||todayLeft)+' for today.';
+    }
+    const orders=[['priority','By priority'],['date','By date']].map(([id,label])=>({label,color:st.order===id?'var(--k-ink)':'var(--k-mute)',line:st.order===id?'var(--k-gold)':'transparent',pick:()=>set({order:id,pile:id==='priority'?'p0':'now'})}));
+    const bySpace={};T.forEach(t=>{bySpace[t.space]=(bySpace[t.space]||0)+1;});
+    const side=[
+      {id:'space',title:'By Space',count:Object.keys(bySpace).length,items:Object.entries(bySpace).map(([s,n])=>({label:s,n:String(n),color:'var(--k-ink)',go:()=>{}}))},
+      {id:'waiting',title:'Waiting on someone',count:2,items:[{label:'Get Stone Grinder going',n:'Tara',color:'var(--k-ink)',go:open('sg')},{label:'Harlow draft',n:'Priya',color:'var(--k-ink)',go:open('harlow')}]}
+    ].map(p=>{const o=!!st.side[p.id];return {...p,open:o,sign:o?'−':'+',toggle:()=>set({side:{...st.side,[p.id]:!o}})};});
+    const t=all.find(x=>x.id===st.taskId)||T[0];const pr=st.props[t.id]||{};
+    const val=(k,arr,def)=>arr[(pr[k]??def)%arr.length];
+    const cyc=(k,arr,def)=>()=>set({props:{...st.props,[t.id]:{...pr,[k]:((pr[k]??def)+1)%arr.length}}});
+    const sentence=[
+      {pre:'Due ',k:'due',arr:DUE,def:0},{pre:', ',k:'rep',arr:REP,def:0},{pre:'. Remind me ',k:'rem',arr:REM,def:0},{pre:'. Takes ',k:'dur',arr:DUR,def:Math.max(0,DUR.indexOf(t.dur))},{pre:', ',k:'pri',arr:PRI.map(p=>p+' priority'),def:t.pri},{pre:', ',k:'stat',arr:STAT,def:t.status}
+    ].map(w=>({pre:w.pre,val:val(w.k,w.arr,w.def),cycle:cyc(w.k,w.arr,w.def)}));
+    const d=!!st.done[t.id];
+    const sl=STEPS[t.id]||['Decide the first small step'];
+    const steps=sl.map((s,i)=>{const k=t.id+i,sd=!!st.sdone[k];return {t:s,tick:()=>set({sdone:{...st.sdone,[k]:!sd}}),strike:sd?'line-through':'none',color:sd?'var(--k-mute)':'var(--k-ink)',boxLine:sd?'var(--k-gold)':'var(--k-ink)',boxFill:sd?'var(--k-gold)':'transparent'};});
+    const sdn=steps.filter(s=>s.strike!=='none').length;
+    const kept=!!st.kept[t.id];
+    const about=[
+      {id:'spaces',title:'In Spaces',count:'1',items:[{label:t.space,meta:'',font:"300 21px 'Cormorant Garamond',serif"}],add:'+ Add to another Space'},
+      {id:'linked',title:'Linked',count:t.id==='il'?'3':'0',items:t.id==='il'?[{label:'Email · I&L – final reminder (unpaid)',meta:'12 Oct',font:'400 14.5px/1.4 Jost'},{label:'Note · Invoices 2025',meta:'Keep',font:'400 14.5px/1.4 Jost'},{label:'File · contract-signed.pdf',meta:'PDF',font:'400 14.5px/1.4 Jost'}]:[],add:'+ Note · File · Scan · Link'},
+      {id:'find',title:'Also findable as',count:'1',items:[{label:'small claims',meta:'',font:"italic 300 20px 'Cormorant Garamond',serif"}],add:'+ Add a word'},
+      {id:'who',title:'Who can see this',count:'',items:[{label:'Only you',meta:'',font:'400 14.5px Jost'}],add:'+ Share, or file it under a shared Space'}
+    ].map(p=>{const o=!!st.about[p.id];return {...p,open:o,sign:o?'−':'+',toggle:()=>set({about:{...st.about,[p.id]:!o}})};});
+    return {isIndex:st.view==='index',isTask:st.view==='task',piles,groups,side,mood,orders,
+      add:st.add,addPh:st.order==='priority'?(st.pile==='done'?'Add something to First…':'Add something to '+({p0:'First',p1:'Soon',p2:'Whenever'}[st.pile]||'First')+'…'):(st.pile==='someday'?'Add a task for someday…':'Add a task for today…'),onAdd:e=>set({add:e.target.value}),
+      onAddKey:e=>{if(e.key==='Enter'&&st.add.trim()){let g,pri;if(st.order==='priority'){pri={p0:0,p1:1,p2:2}[st.pile]??0;g='someday';}else{g=st.pile==='someday'?'someday':st.pile==='week'?'week':st.pile==='later'?'later':'today';pri=2;}
+        set({added:[{id:'a'+Date.now(),title:st.add.trim(),space:'Me',g,due:g==='today'?'Today':'',dur:'',pri,status:0,fresh:true},...st.added],add:'',...(st.pile==='done'?{pile:'p0'}:{}),shut:{...st.shut,['s'+pri+'Me']:false}});}},
+      task:{...t,sentence,notes:t.notes||'Nothing written yet.',tick:tick(t.id),strike:d?'line-through':'none',color:d?'var(--k-mute)':'var(--k-ink)',boxLine:d?'var(--k-gold)':'var(--k-ink)',boxFill:d?'var(--k-gold)':'transparent'},
+      steps,stepsCount:sdn+' of '+steps.length,stepsOpen:st.steps,stepsSign:st.steps?'−':'+',toggleSteps:()=>set({steps:!st.steps}),
+      about,goIndex:()=>set({view:'index'}),
+      keptLabel:kept?'Kept close':'Keep close',keptFill:kept?'var(--k-gold)':'transparent',keptColor:kept?'var(--k-goldt)':'var(--k-mute)',toggleKept:()=>set({kept:{...st.kept,[t.id]:!kept}}),
+      showToast:!!st.toast,toast:st.toast,undo:()=>{set({done:{...st.done,[st.last]:false},toast:null});},
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

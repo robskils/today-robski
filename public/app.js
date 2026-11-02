@@ -18430,6 +18430,20 @@ function renderKoyebaPeople() {
 }
 // ── §34 Contacts + Keep in touch: one two-column 100vh page ────────────────
 function cvState() { if (!state.cv) state.cv = { view: 'keep', q: '', folds: { details: true, together: true, notes: false, spaces: false } }; return state.cv; }
+// The usual birthday reminder lead (days before), set in Settings › Notifications.
+// Default: a day before (§42). 'off' switches reminders off everywhere unless a
+// contact sets its own. Mirrors the worker's resolution in homeAlerts.
+function bdayUsual() { const v = (state.settings && state.settings.bdayDefault); return (v === 'off' || v === -1) ? 'off' : (v == null || v === '') ? 1 : Number(v); }
+// Set this contact's own birthday reminder lead (0/1/3/7/'off'), overriding the
+// usual just for them.
+async function ccSetBdayLead(v) {
+  const c = state.contact_open && state.contact_open.contact; if (!c) return;
+  const val = v === 'off' ? 'off' : Number(v);
+  c.props = Object.assign({}, c.props, { bdayLead: val });
+  const ix = (state.contacts || []).findIndex((x) => String(x.id) === String(c.id)); if (ix >= 0) state.contacts[ix].props = c.props;
+  if (state.view && state.view.type === 'contacts') renderContacts();
+  try { await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { bdayLead: val } }) }); } catch (e) { toast(e.message); }
+}
 // The keep-in-touch tasks, mapped by contact, so the list can show "last in
 // touch" and "due" without opening each card. Loaded once per Contacts open.
 async function cvLoadKit() {
@@ -18507,7 +18521,7 @@ function renderContacts() {
     groups = Object.keys(by).map((L) => ({ label: L, items: by[L].map((x) => row(x, x.onK ? 'on Koyeba' : '')) }));
   }
   const viewsBar = VIEWS.map(([k, l]) => `<button class="cv-v${cv.view === k ? ' on' : ''}" data-cv-view="${k}"><span class="cv-v-n">${counts[k]}</span><span class="cv-v-l">${l}</span></button>`).join('');
-  const keepHint = cv.view === 'keep' ? '<p class="cv-keep-hint">A quiet nudge when it has been too long. The clock restarts only when you say you have been in touch.</p>' : '';
+  const keepHint = cv.view === 'keep' ? '<p class="cv-keep-hint">A quiet nudge when it has been too long. The clock restarts whenever you are in touch, by any means.</p>' : '';
   const listBody = groups.length && groups.some((g) => g.items.length || g.empty) ? groups.map((g) => `${g.label ? `<div class="cv-grp-h"><span>${esc(g.label)}</span></div>` : ''}${g.items.length ? g.items.join('') : `<div class="cv-empty">${esc(g.empty || 'Nobody here.')}</div>`}`).join('') : `<div class="cv-empty">${ql ? 'No one matches.' : 'No contacts yet.'}</div>`;
   const curContact = (state.contact_open && state.contact_open.contact && String(state.contact_open.contact.id) === String(cv.cur)) ? state.contact_open.contact : null;
   const card = cv.cur ? (curContact ? contactCardInner(curContact) : '<div class="cv-loading">Loading…</div>') : '<div class="cv-pick">Pick someone.</div>';
@@ -18953,6 +18967,7 @@ function cvKeepBand(c) {
     <p class="cv-keep-line">${line}</p>
     <div class="cv-keep-row"><div class="cv-freqs">${freqs}</div>${every ? '<button class="cv-touched" data-cv-touched>I’ve just been in touch</button>' : ''}</div>
     ${every ? `<label class="cv-last"><span class="cv-last-l">Last in touch</span>${dateFieldHtml('kit-last', last || '')}${last ? `<span class="cv-last-ago">${esc(kitWhen(last))}</span>` : ''}</label>` : ''}
+    ${every ? '<p class="cv-keep-note">The clock restarts whenever you’re in touch, by any means.</p>' : ''}
   </div>`;
 }
 function cvFold(c, key, title, hint, bodyHtml) {
@@ -18972,7 +18987,18 @@ function contactCardInner(c) {
   if (p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)) {
     const [by, bm, bd] = p.birthday.split('-').map(Number); const t = new Date(); let nx = new Date(t.getFullYear(), bm - 1, bd); if (nx < new Date(t.getFullYear(), t.getMonth(), t.getDate())) nx.setFullYear(nx.getFullYear() + 1);
     const days = Math.round((nx - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5); const turns = nx.getFullYear() - by;
-    bday = `<div class="cv-coming"><span class="cv-coming-l">Coming up</span><span class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</span></div>`;
+    // Remind me: 0 on the day · 1 day · 3 days · a week · off. Unset follows the
+    // usual (Settings default); a set value overrides it just for this person.
+    const usual = bdayUsual();
+    const cur = (p.bdayLead === 'off' || p.bdayLead === -1) ? 'off' : (p.bdayLead == null || p.bdayLead === '') ? usual : Number(p.bdayLead);
+    const opts = [[0, 'On the day'], [1, '1 day before'], [3, '3 days'], [7, 'A week'], ['off', 'Off']]
+      .map(([v, l]) => `<span class="cv-bl${cur === v ? ' on' : ''}" data-cc-bdaylead="${v}">${l}</span>`).join('');
+    const unset = (p.bdayLead == null || p.bdayLead === '');
+    const note = unset ? 'your usual' : 'just for ' + esc((c.title || 'them').split(' ')[0]);
+    bday = `<div class="cv-coming"><span class="cv-coming-l">Coming up</span><span class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</span>
+      <div class="cv-remind"><span class="cv-remind-l">Remind me</span><span class="cv-bls">${opts}</span><span class="cv-remind-note">${note}</span></div></div>`;
+  } else {
+    bday = `<div class="cv-coming"><span class="cv-coming-l">Coming up</span><button class="cv-addbday" data-cc-edit-details>Add a birthday</button></div>`;
   }
   const editing = !!(state.contact_open && state.contact_open.editDetails);
   const detailsBody = () => editing
@@ -18980,7 +19006,7 @@ function contactCardInner(c) {
     : `<div class="cc-facts">${contactDetailsView(c, p)}</div><button type="button" class="cv-edit" data-cc-edit-details>Edit details</button>`;
   return `
     <div class="cv-card-head">
-      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact${spaces[0] ? ' · ' + esc(spaces[0]) : ''}</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}">${p.starred ? '★' : '☆'}</button></div>
+      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact${spaces[0] ? ' · ' + esc(spaces[0]) : ''}</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}"><span class="cv-star-sq"></span>${p.starred ? 'Starred' : 'Star'}</button></div>
       <h1 class="cv-name"><textarea class="cv-name-in" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea></h1>
       <div class="cv-head-meta">${presence}${spaces.length ? `<span class="cv-spaces">In ${esc(spaces.join(', '))}</span>` : ''}</div>
       <div class="cv-acts">${contactActionsHtml(c, p)}</div>
@@ -25057,6 +25083,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }
   { const cvfr = t.closest('[data-cv-freq]'); if (cvfr) { const v = cvfr.dataset.cvFreq; if (v) kitSetEvery(v); else kitToggle(false); return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
+  { const cbl = t.closest('[data-cc-bdaylead]'); if (cbl) { ccSetBdayLead(cbl.dataset.ccBdaylead); return; } }
   { const cpr = t.closest('[data-contact-photo-rm]'); if (cpr) { e.preventDefault(); e.stopPropagation(); contactRemovePhoto(); return; } }
   if (t.closest('[data-self-hide]')) { try { localStorage.setItem('life.contacts.selfHidden', '1'); } catch {} renderContacts(); return; }
   if (t.closest('[data-self-show]')) { try { localStorage.removeItem('life.contacts.selfHidden'); } catch {} renderContacts(); return; }

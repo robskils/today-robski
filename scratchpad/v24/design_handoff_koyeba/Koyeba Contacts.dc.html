@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Contacts – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder,textarea::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="height:100vh;display:flex;flex-direction:column;background:var(--k-bg);color:var(--k-ink)">
+<div style="border-bottom:1px solid var(--k-line);flex:none">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">People <span style="color:var(--k-gold);font-size:12px">13</span></span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;max-width:1600px;width:100%;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);box-sizing:border-box;display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:clamp(32px,4vw,72px)">
+
+<div style="min-height:0;overflow:auto;padding:36px 4px 40px 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">People</span></div>
+<h1 style="font:300 64px/1 'Cormorant Garamond',serif;margin:12px 0 0">Contacts</h1>
+<div style="display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px 0;border-bottom:1px solid var(--k-line)"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Look for someone…" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 15px Jost;color:var(--k-ink)"><span style="font:500 13px Jost;color:var(--k-goldt);white-space:nowrap;cursor:pointer">+ Add</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0 18px;margin-top:18px">
+<sc-for list="{{ views }}" as="v" hint-placeholder-count="5"><div onClick="{{ v.pick }}" style="padding:10px 0 12px;border-bottom:1px solid {{ v.line }};cursor:pointer;color:{{ v.color }}"><div style="font:300 30px/1 'Cormorant Garamond',serif">{{ v.n }}</div><div style="font:400 13px Jost;margin-top:5px;white-space:nowrap">{{ v.label }}</div></div></sc-for>
+</div>
+<sc-if value="{{ isKeep }}"><div style="font:italic 300 19px/1.45 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:18px;text-wrap:pretty">The people you’ve asked Koyeba to keep you close to, soonest first.</div></sc-if>
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+<div style="margin-top:22px">
+<div style="display:flex;align-items:center;gap:12px;padding-bottom:4px"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div>
+<sc-for list="{{ g.items }}" as="c">
+<div onClick="{{ c.open }}" style="display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;padding:12px 12px 12px 10px;margin:0 -12px 0 -10px;border-bottom:1px solid var(--k-line);cursor:pointer;background:{{ c.bg }}">
+<span style="width:7px;height:7px;border:1px solid {{ c.starLine }};background:{{ c.starFill }};align-self:center"></span>
+<span style="font:300 23px/1.2 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span>
+<span style="font:400 12.5px Jost;color:{{ c.rightColor }};white-space:nowrap">{{ c.right }}</span>
+<span></span>
+<span style="grid-column:2/4;font:400 13px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.sub }}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="min-height:0;overflow:auto;border-left:1px solid var(--k-line);padding:36px 0 60px clamp(32px,4vw,72px);margin-left:calc(-1 * clamp(16px,2vw,36px))">
+<div style="max-width:880px">
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+<span style="width:28px;height:1px;background:var(--k-gold)"></span>
+<span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">{{ cur.eyebrow }}</span>
+<span onClick="{{ cur.toggleStar }}" style="display:flex;align-items:center;gap:8px;margin-left:8px;cursor:pointer;font:400 13px Jost;color:{{ cur.starColor }}"><span style="width:9px;height:9px;border:1px solid var(--k-gold);background:{{ cur.starFill }}"></span>{{ cur.starLabel }}</span>
+</div>
+<h2 style="font:300 clamp(52px,5vw,76px)/1 'Cormorant Garamond',serif;margin:14px 0 0;letter-spacing:-.01em">{{ cur.name }}</h2>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:12px;font:400 14px Jost;color:var(--k-mute)">
+<sc-if value="{{ cur.onK }}"><span style="display:flex;align-items:center;gap:8px;color:var(--k-ink)"><span style="width:6px;height:6px;border-radius:50%;background:{{ cur.presDot }}"></span>On Koyeba · {{ cur.presence }}</span></sc-if>
+<span>{{ cur.spacesLine }}</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:26px;padding:16px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ cur.actions }}" as="a"><span style="font:{{ a.font }};color:{{ a.color }};cursor:pointer;white-space:nowrap" style-hover="color:var(--k-goldt)">{{ a.label }}</span></sc-for>
+</div>
+
+<div style="margin-top:30px;padding:22px 24px;background:var(--k-soft)">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Keep in touch</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ cur.keepNote }}</span></div>
+<div style="font:300 clamp(24px,2.3vw,29px)/1.4 'Cormorant Garamond',serif;margin-top:10px;text-wrap:pretty">{{ cur.keepLine }}</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;margin-top:14px;font:400 14.5px Jost">
+<sc-for list="{{ cur.freqs }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ o.color }};padding-bottom:2px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for>
+<span onClick="{{ cur.touched }}" style="margin-left:auto;color:var(--k-goldt);cursor:pointer;white-space:nowrap">I’ve just been in touch</span>
+</div>
+</div>
+
+<sc-if value="{{ cur.hasBday }}">
+<div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:22px"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">Coming up</span><span style="font:italic 300 22px 'Cormorant Garamond',serif">{{ cur.bdayLine }}</span></div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;margin-top:8px;font:400 14px Jost"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);white-space:nowrap">Remind me</span><sc-for list="{{ cur.bdOpts }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ o.color }};padding-bottom:2px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ cur.bdNote }}</span></div>
+</sc-if>
+
+<sc-for list="{{ cur.folds }}" as="f">
+<div style="border-bottom:1px solid var(--k-line);margin-top:{{ f.mt }}">
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:baseline;gap:16px;padding:24px 0 10px;cursor:pointer"><span style="font:300 32px/1 'Cormorant Garamond',serif;white-space:nowrap">{{ f.title }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ f.hint }}</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ f.sign }}</span></div>
+<sc-if value="{{ f.open }}">
+<div style="padding:0 0 22px;animation:kfade .4s ease">
+<sc-if value="{{ f.isDetails }}">
+<sc-for list="{{ cur.details }}" as="d">
+<div style="display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:13px 0;border-top:1px solid var(--k-line)">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">{{ d.label }}</span>
+<div style="min-width:0"><div style="font:400 16px/1.5 Jost;white-space:pre-line">{{ d.value }}</div><sc-if value="{{ d.hasLinks }}"><div style="display:flex;gap:18px;margin-top:4px;font:400 13px Jost"><sc-for list="{{ d.links }}" as="l"><span style="color:var(--k-goldt);cursor:pointer">{{ l }}</span></sc-for></div></sc-if></div>
+<span onClick="{{ d.copy }}" style="font:400 13px Jost;color:{{ d.copyColor }};cursor:pointer;white-space:nowrap">{{ d.copyLabel }}</span>
+</div>
+</sc-for>
+</sc-if>
+<sc-if value="{{ f.isTogether }}">
+<sc-for list="{{ cur.together }}" as="t">
+<div style="display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:13px 0;border-top:1px solid var(--k-line);cursor:pointer">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">{{ t.kind }}</span>
+<div style="min-width:0"><div style="font:300 22px/1.25 'Cormorant Garamond',serif">{{ t.title }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.ex }}</div></div>
+<span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ t.when }}</span>
+</div>
+</sc-for>
+<div style="display:flex;flex-wrap:wrap;gap:6px 22px;padding-top:14px;border-top:1px solid var(--k-line);font:400 13.5px Jost"><span style="color:var(--k-mute)">Start</span><span style="color:var(--k-goldt);cursor:pointer">a note</span><span style="color:var(--k-goldt);cursor:pointer">a task</span><span style="color:var(--k-goldt);cursor:pointer">an event</span><span style="color:var(--k-mute);cursor:pointer">+ Connect something</span></div>
+</sc-if>
+<sc-if value="{{ f.isNotes }}">
+<textarea value="{{ cur.notes }}" onChange="{{ cur.onNotes }}" placeholder="What to remember about them – children’s names, what they’re up to, what you promised…" rows="3" style="display:block;width:100%;box-sizing:border-box;border:0;background:transparent;outline:none;resize:none;padding:0;font:italic 300 23px/1.5 'Cormorant Garamond',serif;color:var(--k-ink)"></textarea>
+</sc-if>
+<sc-if value="{{ f.isSpaces }}">
+<div style="display:flex;flex-wrap:wrap;gap:8px 22px;font:400 15px Jost"><sc-for list="{{ cur.spaces }}" as="s"><span style="padding-bottom:2px;border-bottom:1px solid var(--k-gold)">{{ s }}</span></sc-for><span style="color:var(--k-goldt);cursor:pointer">+ Add a Space</span></div>
+<div style="display:flex;gap:24px;margin-top:22px;font:400 13.5px Jost;color:var(--k-mute)"><span style="cursor:pointer">Edit details</span><span style="cursor:pointer">Merge with…</span><span style="cursor:pointer;color:var(--k-goldt)">Delete contact…</span></div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+// name, spaces, onKoyeba(0 no,1 here,2 away), star, daysSince, freqDays, email, phone, bday(M,D,Y), addr, together
+const C=[
+ ['James Lumley-Savile',['Family','Personal','Friends'],1,1,6,7,'james@lumley-savile.com','+351 910 138 127',[3,30,1975],'Jim’s Belverde\nRua das Túlipas 26, Belverde\n2845-505 Amora, Portugal',
+   [['Message','“Lunch on Sunday?”','You replied “Yes – one o’clock”','Tue'],['Event','Lunch at Belverde','Sun 1 Nov · with Tara','Sun'],['Note','Jim – birthday ideas','A good bottle; the Alentejo book','Oct']]],
+ ['Peter Lumley-Savile',['Family','Business'],1,1,2,14,'peter@lumley-savile.com','+351 912 400 221',[7,12,1978],'',[['Message','“ez big boi”','Naming chat – Spaces, Areas','Sat'],['Note','Koyeba – Peter’s feedback','Notifications don’t arrive until refresh','Thu']]],
+ ['Tara',['Tara','Family'],1,1,0,0,'taralumley@icloud.com','+351 927 100 552',[5,9,1980],'',[['Goal','Take Tara on a zen retreat at Seikuji','15% · by 31 December','Today']]],
+ ['Mum',['Family'],0,1,12,7,'','+44 7700 900 312',[1,22,1948],'',[['Event','Call Mum','Every Sunday · missed last week','2 wk']]],
+ ['Ines Lanza',['Business','Friends'],2,0,2,30,'ines_lanza@yahoo.it','',null,'',[['Message','“People are saying they don’t like LifeFold…”','You, about the name','Thu']]],
+ ['Joaquim Ribeiro',['Art'],0,1,1,0,'joaquim@aguarela.pt','+351 936 220 118',null,'',[['Event','Aguarela II','Tonight 19:00–22:00','Today'],['Mail','Tonight’s subject','Wet-on-wet skies','Sun']]],
+ ['Helena',['Me'],2,0,5,0,'','',null,'',[['Message','“I love the journal”','Waiting for your reply','Tue']]],
+ ['Edd Bateman',['Friends'],0,0,64,60,'info@eddbateman.com','',null,'',[]],
+ ['Katarina Bečić',['Friends'],0,0,40,30,'katarina.becic@gmail.com','',null,'',[]],
+ ['Mark Hill',['Business'],0,0,21,0,'emailmarkhill@gmail.com','',null,'',[]],
+ ['Carolina',['Língua Portuguesa'],1,0,30,0,'','',null,'',[['Message','“Oi!”','Waiting for your reply','Oct']]],
+ ['Sofia',['Me'],2,0,14,0,'','',null,'',[]],
+ ['Ana Duarte',['Art','Friends'],0,0,9,30,'ana.duarte@gmail.com','',null,'',[['Event','Sketching at Belém','Sat 14 Nov','Soon']]]
+];
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const TODAY=new Date(2026,10,2);
+const FREQ=[[7,'Every week'],[14,'Fortnight'],[30,'Month'],[90,'Quarter'],[0,'Off']];
+const ago=d=>d===0?'today':d===1?'yesterday':d<14?d+' days ago':d<60?Math.round(d/7)+' weeks ago':Math.round(d/30)+' months ago';
+class Component extends DCLogic {
+  state={view:'keep',cur:0,q:'',star:{},freq:{},touch:{},notes:{0:'Calls me Robbie. Lily starts at the new school in January – ask how it’s going.'},copied:null,o:{details:true,together:true,notes:true,spaces:false},night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const P=C.map((c,i)=>{const since=st.touch[i]?0:c[4],freq=st.freq[i]??c[5];return {i,name:c[0],spaces:c[1],onK:c[2],star:st.star[i]??!!c[3],since,freq,due:freq?freq-since:null,email:c[6],phone:c[7],bday:c[8],addr:c[9],together:c[10]};});
+    const ql=st.q.trim().toLowerCase();const F=P.filter(p=>!ql||p.name.toLowerCase().includes(ql)||p.spaces.join(' ').toLowerCase().includes(ql));
+    const dueTxt=p=>p.due<0?'overdue by '+(-p.due)+(p.due===-1?' day':' days'):p.due===0?'today':p.due===1?'tomorrow':'in '+p.due+' days';
+    const row=(p,right,rightColor,sub)=>({name:p.name,right,rightColor:rightColor||'var(--k-mute)',sub:sub||p.spaces.join(' · '),starFill:p.star?'var(--k-gold)':'transparent',starLine:p.star?'var(--k-gold)':'transparent',bg:p.i===st.cur?'var(--k-soft)':'transparent',open:()=>set({cur:p.i})});
+    const keep=F.filter(p=>p.freq).sort((a,b)=>a.due-b.due);
+    const counts={keep:P.filter(p=>p.freq&&p.due<=1).length,star:P.filter(p=>p.star).length,recent:P.filter(p=>p.since<=7).length,onk:P.filter(p=>p.onK).length,all:P.length};
+    let groups=[];
+    if(st.view==='keep'){const now=keep.filter(p=>p.due<=1),soon=keep.filter(p=>p.due>1);
+      groups=[now.length&&{label:'Now',items:now.map(p=>row(p,dueTxt(p),'var(--k-goldt)','Last in touch '+ago(p.since)))},soon.length&&{label:'Coming up',items:soon.map(p=>row(p,dueTxt(p),null,'Last in touch '+ago(p.since)))}].filter(Boolean);}
+    else if(st.view==='star')groups=[{label:'Starred',items:F.filter(p=>p.star).map(p=>row(p,ago(p.since)))}];
+    else if(st.view==='recent')groups=[{label:'This week',items:F.filter(p=>p.since<=7).sort((a,b)=>a.since-b.since).map(p=>row(p,ago(p.since)))},{label:'Earlier',items:F.filter(p=>p.since>7).sort((a,b)=>a.since-b.since).map(p=>row(p,ago(p.since)))}];
+    else if(st.view==='onk')groups=[{label:'Here now',items:F.filter(p=>p.onK===1).map(p=>row(p,'here now','var(--k-goldt)'))},{label:'On Koyeba',items:F.filter(p=>p.onK===2).map(p=>row(p,'away'))}];
+    else{const by={};F.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{const L=p.name[0].toUpperCase();(by[L]=by[L]||[]).push(p);});groups=Object.keys(by).map(L=>({label:L,items:by[L].map(p=>row(p,p.onK?'on Koyeba':''))}));}
+    groups=groups.filter(g=>g.items.length).map(g=>({...g,count:g.items.length}));
+    const views=[['keep','Keep in touch'],['star','Starred'],['recent','Recent'],['onk','On Koyeba'],['all','All']].map(([id,label])=>({label,n:counts[id],color:st.view===id?'var(--k-ink)':'var(--k-mute)',line:st.view===id?'var(--k-gold)':'var(--k-line)',pick:()=>set({view:id})}));
+    const p=P[st.cur];
+    let keepLine,keepNote;
+    if(!p.freq){keepLine='No nudges for '+p.name.split(' ')[0]+'. Choose how often you’d like to be in touch.';keepNote='Off';}
+    else{keepLine=(p.since===0?'You were in touch today':'You were last in touch '+ago(p.since))+'. '+(p.due<0?'It’s been longer than you’d like – a good moment to say hello.':p.due<=1?'Koyeba will nudge you '+(p.due<=0?'today':'tomorrow')+'.':'Next nudge '+dueTxt(p)+'.');keepNote='The clock restarts whenever you’re in touch, by any means';}
+    let bdayLine='';if(p.bday){const[m,d,y]=p.bday;let nx=new Date(TODAY.getFullYear(),m-1,d);if(nx<TODAY)nx.setFullYear(nx.getFullYear()+1);const days=Math.round((nx-TODAY)/864e5);bdayLine='Birthday, '+d+' '+MON[m-1]+' – turns '+(nx.getFullYear()-y)+' in '+days+' days';}
+    const det=[];if(p.email)det.push(['Email',p.email,[]]);if(p.phone)det.push(['Phone',p.phone,[]]);if(p.bday)det.push(['Birthday',p.bday[1]+' '+MON[p.bday[0]-1]+' '+p.bday[2],[]]);if(p.addr)det.push(['Address',p.addr,['Map','Directions']]);
+    const details=det.map(([label,value,links],k)=>{const key=st.cur+'-'+k;return {label,value,links,hasLinks:links.length>0,copyLabel:st.copied===key?'Copied':'Copy',copyColor:st.copied===key?'var(--k-goldt)':'var(--k-mute)',copy:()=>{try{navigator.clipboard.writeText(value);}catch(e){}set({copied:key});clearTimeout(this.ct);this.ct=setTimeout(()=>this.setState({copied:null}),1500);}};});
+    const acts=[p.onK&&'Message',p.email&&'Email',p.phone&&'Call',p.phone&&'WhatsApp',p.addr&&'Directions',!p.onK&&'Invite to Koyeba'].filter(Boolean);
+    const tg=k=>()=>set({o:{...st.o,[k]:!st.o[k]}});
+    const folds=[['details','Details',det.map(d=>d[0].toLowerCase()).join(' · ')||'Nothing saved yet'],['together','Together',p.together.length?p.together.length+' things – messages, events, notes':'Nothing yet'],['notes','Notes to self',(st.notes[st.cur]||'').slice(0,60)||'Nothing written'],['spaces','Spaces and settings',p.spaces.join(' · ')]]
+      .map(([id,title,hint],k)=>({title,hint:st.o[id]?'':hint,mt:k===0?'18px':'0',open:!!st.o[id],sign:st.o[id]?'−':'+',toggle:tg(id),isDetails:id==='details',isTogether:id==='together',isNotes:id==='notes',isSpaces:id==='spaces'}));
+    return {views,groups,isKeep:st.view==='keep',q:st.q,onQ:e=>set({q:e.target.value}),
+      cur:{name:p.name,eyebrow:'Contact · '+p.spaces[0],onK:!!p.onK,presence:p.onK===1?'here now':'away',presDot:p.onK===1?'var(--k-gold)':'var(--k-line)',spacesLine:'In '+p.spaces.join(', '),
+        starFill:p.star?'var(--k-gold)':'transparent',starColor:p.star?'var(--k-goldt)':'var(--k-mute)',starLabel:p.star?'Starred':'Star',toggleStar:()=>set({star:{...st.star,[st.cur]:!p.star}}),
+        actions:acts.map((l,k)=>({label:l,font:k===0?"500 15px Jost":"400 15px Jost",color:k===0?'var(--k-goldt)':'var(--k-ink)'})),
+        keepLine,keepNote,freqs:FREQ.map(([d,l])=>({label:l,color:p.freq===d?'var(--k-ink)':'var(--k-mute)',line:p.freq===d?'var(--k-gold)':'transparent',pick:()=>set({freq:{...st.freq,[st.cur]:d}})})),
+        touched:()=>set({touch:{...st.touch,[st.cur]:true}}),hasBday:!!p.bday,bdayLine,bdOpts:[['On the day',0],['1 day before',1],['3 days',3],['A week',7],['Off',-1]].map(([l,d])=>{const v=(st.bd||{})[st.cur]??1;return {label:l,color:v===d?'var(--k-ink)':'var(--k-mute)',line:v===d?'var(--k-gold)':'transparent',pick:()=>set({bd:{...(st.bd||{}),[st.cur]:d}})};}),bdNote:((st.bd||{})[st.cur]??1)===1?'your usual':'just for '+p.name.split(' ')[0],details,
+        together:p.together.map(([kind,title,ex,when])=>({kind,title,ex,when})),folds,spaces:p.spaces,
+        notes:st.notes[st.cur]||'',onNotes:e=>set({notes:{...st.notes,[st.cur]:e.target.value}})},
+      dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>
