@@ -8710,7 +8710,7 @@ function homeGlancePanelHtml(tool) {
         const cache = (state.home && state.home.glanceMailBody) || {};
         const txt = cache[k];
         const textHtml = txt === undefined ? '<span class="gln-mail-loading">Reading…</span>' : (txt ? esc(txt) : 'No text to show.');
-        body = `<div class="gln-mail-open"><div class="gln-mail-text">${textHtml}</div><div class="gln-mail-acts"><button class="gln-mail-reply" data-glance-mail-reply="${esc(k)}">Reply</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="urgent">Urgent</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="important">Important</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="chilled">Read later</button><button class="gln-mail-openin" data-glance-mail-openin="${esc(k)}">Open this in Mail →</button></div></div>`;
+        body = `<div class="gln-mail-open"><div class="gln-mail-text">${textHtml}</div><div class="gln-mail-acts"><button class="gln-mail-reply" data-glance-mail-reply="${esc(k)}">Reply</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="urgent">Urgent</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="important">Important</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="chilled">Read later</button><button class="gln-mail-q" data-glance-mail-arch="${esc(k)}">Archive</button><button class="gln-mail-q" data-glance-mail-del="${esc(k)}">Delete</button><button class="gln-mail-openin" data-glance-mail-openin="${esc(k)}">Open this in Mail →</button></div></div>`;
       }
       return `<div class="gln-mail${isOpen ? ' on' : ''}">${head}${body}</div>`;
     }).join('') || '<div class="gln-empty">Nothing to sort.</div>';
@@ -8778,6 +8778,28 @@ async function glanceMailQuad(key, quad) {
   if (state.home) state.home.glanceMail = null;
   try { await mailToQuad(key, quad); } catch (e) { toast((e && e.message) || 'Could not file that.'); }
   if (state.view && state.view.type === 'home') renderHome();
+}
+// Archive / delete a glance email: drop it from the list and move it on the server.
+async function glanceMailFile(key, target, label) {
+  const o = mailMsgByKey(key); if (!o) return;
+  if (state.home) state.home.glanceMail = null;
+  if (!state.mail.gone) state.mail.gone = new Set();
+  state.mail.gone.add(key);
+  state.mail.messages = (state.mail.messages || []).filter((m) => m._key !== key);
+  if (state.view && state.view.type === 'home') renderHome();
+  try { await mailApi('/move', { method: 'POST', body: JSON.stringify({ account: o._acct, mailbox: o._mailbox || 'INBOX', uid: o.uid, target }) }); if (!o.seen) bumpUnread(o._acct, -1); toast(label); }
+  catch (e) { state.mail.gone.delete(key); toast((e && e.message) || 'Could not move that.'); if (state.view && state.view.type === 'home') renderHome(); }
+}
+// "Open this in Mail": open Mail AND land on this email (not just the inbox).
+async function glanceMailOpenIn(key) {
+  const row = mailMsgByKey(key);
+  try {
+    await openMail(key);
+    if (state.view && state.view.type === 'mail' && (!state.mail.open || state.mail.open._key !== key)) {
+      if (!(state.mail.messages || []).some((m) => m._key === key) && row) { state.mail.messages = state.mail.messages || []; state.mail.messages.unshift(row); }
+      if ((state.mail.messages || []).some((m) => m._key === key)) openMessage(key);
+    }
+  } catch (e) { toast((e && e.message) || 'Could not open it.'); }
 }
 function homeGlanceHtml() {
   const newOpen = !!(state.home && state.home.newMenu);
@@ -8946,10 +8968,10 @@ function renderHome() {
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-home">
     <div class="home home-v3">
+      ${homeArrivalHtml()}
       ${alerts ? `<div class="home-alerts">${alerts}</div>` : ''}
       <div id="qt-wrap"></div>
       <div class="home-flow">
-        ${homeArrivalHtml()}
         <div class="home-greetrow">
           <div class="home-greetmain">
             <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
@@ -26203,7 +26225,9 @@ document.addEventListener('click', (e) => {
   { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glanceMail = null; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
   { const gmr = t.closest('[data-glance-mail-reply]'); if (gmr) { e.preventDefault(); e.stopPropagation(); glanceMailReply(gmr.dataset.glanceMailReply); return; } }
   { const gmq = t.closest('[data-glance-mail-quad]'); if (gmq) { e.preventDefault(); e.stopPropagation(); glanceMailQuad(gmq.dataset.glanceMailQuad, gmq.dataset.quad); return; } }
-  { const gmo = t.closest('[data-glance-mail-openin]'); if (gmo) { e.preventDefault(); e.stopPropagation(); openMail(gmo.dataset.glanceMailOpenin).catch((x) => toast(x.message)); return; } }
+  { const gmo = t.closest('[data-glance-mail-openin]'); if (gmo) { e.preventDefault(); e.stopPropagation(); glanceMailOpenIn(gmo.dataset.glanceMailOpenin); return; } }
+  { const gma = t.closest('[data-glance-mail-arch]'); if (gma) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gma.dataset.glanceMailArch, 'Archive', 'Archived'); return; } }
+  { const gmd = t.closest('[data-glance-mail-del]'); if (gmd) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gmd.dataset.glanceMailDel, 'Trash', 'Moved to Trash'); return; } }
   { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailToggle(gm.dataset.glanceMail); return; } }
   { const mog = t.closest('[data-mail-open-glance]'); if (mog) { openMail(mog.dataset.mailOpenGlance).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }

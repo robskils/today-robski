@@ -11330,7 +11330,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-rd-qkeep { margin-left:auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); white-space:nowrap; }
 .home-rd-qkeep.on { color:var(--k-mute); }
 /* Arrival line */
-.home-arr { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; padding:14px 0; border-bottom:1px solid var(--k-line); animation:kfade .6s cubic-bezier(.2,.7,.2,1); }
+.home-arr { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; margin:calc(10px - clamp(28px,4vw,48px)) 0 14px; padding:6px 0; animation:kfade .6s cubic-bezier(.2,.7,.2,1); }
 .home-arr-dot { width:7px; height:7px; border-radius:50%; background:var(--k-gold); align-self:center; }
 .home-arr-t { flex:1; min-width:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; line-height:1.25; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .home-arr-who { font-family:var(--k-sans); font-style:normal; font-weight:600; font-size:15px; }
