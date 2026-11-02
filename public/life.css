@@ -9823,7 +9823,33 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 
 /* Drawer */
 .cap-scrim { position:fixed; inset:0; background:rgba(20,16,8,.28); }
-.cap-drawer { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(800px,calc(100vw - 24px)); box-sizing:border-box; background:var(--card); color:var(--ink); border:1px solid var(--line); border-bottom:none; box-shadow:0 -18px 50px rgba(20,16,6,.16); padding:26px clamp(20px,4vw,40px) 30px; animation:capup .5s cubic-bezier(.2,.7,.2,1); }
+.cap-drawer { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(900px,calc(100vw - 24px)); box-sizing:border-box; max-height:88vh; overflow-y:auto; background:var(--k-deep); color:var(--k-ondeep); border:0; border-bottom:none; box-shadow:0 -18px 50px rgba(20,16,6,.28); padding:26px clamp(20px,4vw,40px) 30px; animation:capup .5s cubic-bezier(.2,.7,.2,1);
+  /* v2 (§27): the drawer is deep forest green with ivory text - redefine the
+     legacy tokens in this scope so every child reads ivory/gold on green. */
+  --ink:var(--k-ondeep); --ink-2:rgba(246,241,230,.82); --ink-3:rgba(246,241,230,.55); --line:rgba(246,241,230,.18); --accent:var(--k-gold); --accent-ink:var(--k-deep); --card:var(--k-deep); --paper:var(--k-deep); --paper-2:rgba(246,241,230,.08); }
+/* Set something down v2 (§27) */
+.cap-kinds { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 26px; padding:18px 0 0; }
+.cap-kind { display:inline-flex; align-items:baseline; gap:6px; cursor:pointer; font-family:var(--k-sans); font-size:16px; color:rgba(246,241,230,.6); padding-bottom:4px; border-bottom:1px solid transparent; }
+.cap-kind.on { color:var(--k-ondeep); border-bottom-color:var(--k-gold); }
+.cap-kind.guess { border-bottom-color:rgba(216,178,94,.55); }
+.cap-kind.guess.on { border-bottom-color:var(--k-gold); }
+.cap-kind:hover { color:var(--k-ondeep); }
+.cap-kind-tag { font-family:var(--k-sans); font-weight:500; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-gold); }
+.cap-q { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 22px; margin-top:22px; padding:16px 0; border-top:1px solid rgba(246,241,230,.14); border-bottom:1px solid rgba(246,241,230,.14); }
+.cap-q-t { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; color:var(--k-ondeep); }
+.cap-q-b { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.2em; text-transform:uppercase; padding:9px 14px; border:1px solid var(--k-gold); color:var(--k-gold); cursor:pointer; }
+.cap-q-b:hover { background:rgba(216,178,94,.12); }
+.cap-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:0 36px; margin-top:22px; }
+.cap-f { padding:12px 0 14px; border-top:1px solid rgba(246,241,230,.14); }
+.cap-f-l { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:rgba(246,241,230,.6); }
+.cap-f-v { font-family:var(--k-serif); font-weight:300; font-size:24px; line-height:1.25; margin-top:4px; color:var(--k-ondeep); }
+.cap-f-src { font-family:var(--k-sans); font-weight:400; font-size:12.5px; color:var(--k-gold); margin-top:3px; }
+.cap-f-ask { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; color:var(--k-gold); margin-top:4px; }
+.cap-f-picks { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px; font-family:var(--k-sans); font-size:14px; }
+.cap-f-pick { cursor:pointer; white-space:nowrap; color:rgba(246,241,230,.7); padding-bottom:2px; border-bottom:1px solid rgba(246,241,230,.25); }
+.cap-f-pick.on { color:var(--k-ondeep); border-bottom-color:var(--k-gold); }
+.cap-f-pick:hover { color:var(--k-ondeep); }
+.cap-inbox { margin-top:22px; padding:14px 0; border-top:1px solid rgba(246,241,230,.14); font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:22px; line-height:1.4; color:rgba(246,241,230,.85); }
 @keyframes capup { from { transform:translate(-50%,16px); opacity:.4; } to { transform:translate(-50%,0); opacity:1; } }
 .cap-dh { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 .cap-rule { width:28px; height:1px; background:var(--accent); flex:none; }

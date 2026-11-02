@@ -5192,10 +5192,10 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
     { id: 'conv', label: 'Conversations', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''], ['Sharing', 'data-open-shared', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 2], ['Looking back', 4]], tools: [
+    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 3], ['Further off', 2], ['Looking back', 5]], tools: [
       ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Discover', 'data-open-discover', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-      ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
+      ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Inner life', about: 'Room for the rest of you', tools: [
@@ -7400,28 +7400,107 @@ function parseCap(raw0) {
   return { title, type, date, dateLabel, time, amount, area, areaHit, rem, why };
 }
 const capAreaTitle = (id) => { const a = areaById(id); return a ? (a.title || '') : ''; };
+// ── Set something down v2 (§27) ──────────────────────────────────────────────
+// You pick the kind; Koyeba fills the rest from your words, shows where each
+// detail came from, asks when it doesn't know, and saves nothing until Enter.
+// The rule-based parse below is the reliable base (it runs with AI off); an LLM
+// pass refines it when AI is on.
+const CAP_KINDS = [['task', 'Task'], ['event', 'Event'], ['note', 'Note'], ['email', 'Email'], ['inbox', 'Just set it down']];
+const CAP_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const capCap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+// Best-guess kind from the words. Returns [kind|null, confident].
+function capGuess(raw) {
+  const s = (raw || '').toLowerCase().trim(); if (!s) return [null, false];
+  if (/\b(\d{1,2}\s?(am|pm)|until|repeat|every week|remind)\b/.test(s) && !/\b(email|draft)\b/.test(s)) return ['event', true];
+  if (/\b(email|draft|write to|reply to)\b/.test(s)) return ['email', true];
+  if (/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|\d{1,2}(:\d\d)?\s?(am|pm)|at \d)\b/.test(s)) return ['event', true];
+  if (/^(call|buy|book|send|pay|fix|order|ring|renew|sign|pick up|collect|text|message|email|chase|email|remind me)\b/.test(s)) return ['task', true];
+  if (s.split(/\s+/).length > 12) return ['note', true];
+  return [null, false];
+}
+// Lift the details out of the sentence; the remainder (tidied) is the title.
+function capParse2(raw0) {
+  const raw = String(raw0 || '').replace(/[‘’]/g, "'");
+  let t = ' ' + raw + ' ';
+  const cut = (re) => { const m = t.match(re); if (m) t = t.replace(m[0], ' '); return m; };
+  const out = {}; const TODAY = new Date(); const pad = (n) => String(n).padStart(2, '0');
+  const dLabel = (d) => d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
+  let sh, sm = 0, eh, em = 0;
+  let m = cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\s*(?:-|–|to|until|till)\s*(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i);
+  if (m) { sh = +m[1]; sm = +(m[2] || 0); eh = +m[4]; em = +(m[5] || 0); const ap1 = (m[3] || m[6] || '').toLowerCase(), ap2 = (m[6] || m[3] || '').toLowerCase(); if (ap1 === 'pm' && sh < 12) sh += 12; if (ap2 === 'pm' && eh < 12) eh += 12; }
+  else { m = cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)\b/i) || cut(/\bat\s+(\d{1,2})[:.](\d\d)\b/i); if (m) { sh = +m[1]; sm = +(m[2] || 0); if ((m[3] || '').toLowerCase() === 'pm' && sh < 12) sh += 12; }
+    const e = cut(/\b(?:until|till|to)\s+(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i); if (e) { eh = +e[1]; em = +(e[2] || 0); if (((e[3] || '').toLowerCase() === 'pm' || (sh >= 12 && !e[3])) && eh < 12) eh += 12; } }
+  let day = null; const dm = cut(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+  if (dm) { const w = dm[1].toLowerCase(); day = new Date(TODAY); if (w === 'tomorrow') day.setDate(day.getDate() + 1); else if (CAP_DAYS.includes(w)) { const k = (CAP_DAYS.indexOf(w) - day.getDay() + 7) % 7 || 7; day.setDate(day.getDate() + k); } out.dayWord = (w === 'today' || w === 'tonight') ? 'Today, ' : w === 'tomorrow' ? 'Tomorrow, ' : ''; }
+  const rm = cut(/\b(?:and\s+)?(?:repeat(?:s|ing)?\s+)?(every\s+(?:day|week|fortnight|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|weekly|daily|monthly)\b/i);
+  const re = cut(/\b(?:and\s+)?remind(?:\s+me)?\s+(\d+|an?|one|two|three|half an?)\s*(hours?|hrs?|minutes?|mins?)\s+before\b/i);
+  const wm = cut(/\bwith\s+([A-ZÀ-Ý][\wÀ-ÿ'']+(?:\s+(?:and|&)\s+[A-ZÀ-Ý][\wÀ-ÿ'']+)?)/);
+  let title = t.replace(/^\s*(i'?ve got|i have got|i have|i've|got|remind me to|remind me|i need to|need to|don'?t forget to|don'?t forget)\s+/i, ' ')
+    .replace(/\s+(at|on|from|and|,)\s*$/i, ' ').replace(/^\s*(at|on|,)\s+/i, ' ').replace(/\s{2,}/g, ' ').replace(/[\s,]+$/, '').trim();
+  out.title = title ? capCap(title) : '';
+  out.hasWhen = !!(day || sh !== undefined); out.hasTime = sh !== undefined;
+  if (out.hasWhen) { const d = day || TODAY; out.date = dayKey(d); out.when = (out.dayWord || '') + dLabel(d) + (sh !== undefined ? ', ' + pad(sh) + ':' + pad(sm) + (eh !== undefined ? '–' + pad(eh) + ':' + pad(em) : '') : ''); out.wd = CAP_DAYS[d.getDay()]; out.startMin = sh !== undefined ? sh * 60 + sm : null; }
+  if (sh !== undefined && eh !== undefined) { let mins = (eh * 60 + em) - (sh * 60 + sm); if (mins < 0) mins += 1440; out.durMin = mins; out.dur = mins % 60 === 0 ? (mins / 60) + (mins === 60 ? ' hour' : ' hours') : (Math.floor(mins / 60) ? Math.floor(mins / 60) + 'h ' : '') + (mins % 60) + 'm'; }
+  if (rm) { const r = rm[1].toLowerCase(); const wd = out.wd || CAP_DAYS[TODAY.getDay()]; out.repeat = /week|weekly/.test(r) ? 'Every week, on ' + capCap(wd) + 's' : (/day|daily/.test(r) && !/mon|tue|wed|thu|fri|sat|sun/.test(r)) ? 'Every day' : /fortnight/.test(r) ? 'Every other ' + capCap(wd) : /month/.test(r) ? 'Every month' : 'Every ' + capCap(r.replace('every ', '')); out.repeatKey = /week|weekly/.test(r) ? 'weekly' : (/day|daily/.test(r) && !/mon|tue|wed|thu|fri|sat|sun/.test(r)) ? 'daily' : /month/.test(r) ? 'monthly' : 'weekly'; }
+  if (re) { const N = { a: 1, an: 1, one: 1, two: 2, three: 3 }; const n = N[re[1].toLowerCase()] ?? (/half/.test(re[1]) ? 0.5 : +re[1]); const isH = /^h/i.test(re[2]); const mins = isH ? n * 60 : n; out.remindMin = mins; out.remindTxt = isH ? (n === 1 ? 'An hour before' : n + ' hours before') : mins + ' minutes before'; if (sh !== undefined) { let x = sh * 60 + sm - mins; x = (x + 1440) % 1440; out.remindTxt += ' – ' + pad(Math.floor(x / 60)) + ':' + pad(x % 60); } }
+  if (wm) out.who = wm[1];
+  const low = raw.toLowerCase(); let area = '', hit = '';
+  for (const a of (state.areas || [])) { const tt = (a.title || '').toLowerCase().trim(); if (!tt) continue; const cands = [tt, ...tt.split(/\s+/)].filter((w) => w.length >= 3); for (const w of cands) { if (new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(low)) { area = a.id; hit = w; break; } } if (area) break; }
+  if (!area) { const kw = low.match(/aguarela|paint|watercolou?r|sketch/); if (kw) { const art = (state.areas || []).find((a) => /\bart\b/i.test(a.title || '')); if (art) { area = art.id; hit = kw[0]; } } }
+  out.area = area; out.areaHit = hit;
+  return out;
+}
+const capDurFromAns = (a) => ({ '15m': 15, '30m': 30, '1h': 60, '2h': 120 }[a] ?? null);
+function capSpacePicks() { const names = (state.areas || []).map((a) => a.title).filter(Boolean).slice(0, 4); return names.length ? names : ['Me', 'The house', 'Work']; }
+// Field tiles with provenance (known) or a question + quick picks (asks).
+function capFieldsFor(raw, kind, ans) {
+  ans = ans || {}; const p = capParse2(raw); const F = [];
+  const known = (label, value, src) => ({ label, value, src, known: true });
+  const ask = (label, q, picks, key) => { const a = ans[key]; return a ? { label, value: a, src: 'You chose this', known: true } : { label, ask: q, picks, key, known: false }; };
+  F.push(known('Title', p.title || 'Untitled', "What's left once the details are lifted out"));
+  if (kind === 'task') F.push(ask('Priority', 'How soon?', ['First', 'Soon', 'Whenever'], 'priority'));
+  if (p.hasWhen) F.push(known('When', p.when, 'From your words'));
+  else if (kind === 'event') F.push(ask('When', 'When?', ['Today', 'Tomorrow', 'Pick a day…'], 'when'));
+  if (kind === 'event') { if (p.dur) F.push(known('How long', p.dur, 'From your words')); else F.push(ask('How long', 'How long?', ['30m', '1h', '2h', 'Open-ended'], 'dur')); }
+  if (p.repeat) F.push(known('Repeats', p.repeat, 'From your words'));
+  if (p.remindTxt) F.push(known('Remind me', p.remindTxt, 'From your words'));
+  if (p.who) F.push(known('With', p.who, 'From your contacts · they get an invite if you like'));
+  if (kind === 'note') F.push(known('Into', 'A new page', 'Or add it to an existing note'));
+  if (p.area) F.push(known('Space', capAreaTitle(p.area), 'From “' + p.areaHit + '”'));
+  else if (kind !== 'email') F.push(ask('Space', 'Which Space?', capSpacePicks(), 'space'));
+  return { fields: F, parse: p };
+}
+function capHintsHtml() {
+  const ex = ['Dentist on Tuesday at 9am', 'Remind me to call Mum tomorrow', '7pm Today Aguarela II with Joaquim until 10pm repeat every week, remind 1 hour before'];
+  return `<div class="cap-hints">Write it as you'd say it, or press Speak. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x.length > 42 ? x.slice(0, 40) + '…' : x)}”</button>`).join('')}</div>`;
+}
 function capReadoutHtml() {
   const c = capState(); const raw = (c.text || '').trim();
-  if (!raw) {
-    const ex = ['Dentist on Tuesday at 9am', 'Remind me to call Mum tomorrow', 'Movers quote €640'];
-    return `<div class="cap-hints">Write it, or press Speak and say it. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x)}”</button>`).join('')}</div>`;
+  if (!raw) return capHintsHtml();
+  const [g] = capGuess(raw);
+  const kind = c.kind || g;
+  const askQ = (!c.kind && raw && !g) ? ['A task or a note?', ['Task', 'Note']] : null;
+  const kindRow = `<div class="cap-kinds">${CAP_KINDS.map(([id, label]) => {
+    const on = kind === id, isG = !c.kind && g === id;
+    return `<span class="cap-kind${on ? ' on' : ''}${isG ? ' guess' : ''}" data-cap-kind="${id}" role="button" tabindex="0">${esc(label)}${isG ? '<span class="cap-kind-tag">guess</span>' : ''}</span>`;
+  }).join('')}</div>`;
+  const qHtml = (askQ && !c.kind) ? `<div class="cap-q"><span class="cap-q-t">${esc(askQ[0])}</span>${askQ[1].map((l) => `<span class="cap-q-b" data-cap-askq="${l.toLowerCase()}" role="button" tabindex="0">${esc(l)}</span>`).join('')}</div>` : '';
+  const isInbox = kind === 'inbox' || (!kind && !askQ && !!raw);
+  let body = '';
+  if (kind && kind !== 'inbox') {
+    const { fields } = capFieldsFor(raw, kind, c.ans || {});
+    body = `<div class="cap-fields">${fields.map((f) => {
+      const inner = f.known
+        ? `<div class="cap-f-v">${esc(f.value || '')}</div>${f.src ? `<div class="cap-f-src">${esc(f.src)}</div>` : ''}`
+        : `<div class="cap-f-ask">${esc(f.ask)}</div><div class="cap-f-picks">${f.picks.map((p) => `<span class="cap-f-pick${(c.ans && c.ans[f.key] === p) ? ' on' : ''}" data-cap-pick="${esc(f.key)}:${esc(p)}" role="button" tabindex="0">${esc(p)}</span>`).join('')}</div>`;
+      return `<div class="cap-f"><div class="cap-f-l">${esc(f.label)}</div>${inner}</div>`;
+    }).join('')}</div>`;
+  } else if (isInbox) {
+    body = `<div class="cap-inbox">Saved word for word to your inbox. Sort it when you're ready - nothing is filed for you.</div>`;
   }
-  const P = parseCap(raw); const type = c.ov.type || P.type; const area = c.ov.area !== undefined ? c.ov.area : P.area;
-  const aName = area ? capAreaTitle(area) : ''; const aNum = area ? areaNumeral(area) : '';
-  const whenTxt = (type === 'Event' || type === 'Task')
-    ? (P.date ? (P.dateLabel + (P.time ? ' · ' + P.time : ' · all day')) : (P.time ? 'Today · ' + P.time : 'No date - it rests until you need it'))
-    : '';
-  const row = (k, v, note, num, attr) => `<div class="cap-row"><span class="cap-rk">${esc(k)}</span><div class="cap-rv${attr ? ' cap-rv-tap' : ''}" ${attr || ''} ${attr ? 'role="button" tabindex="0"' : ''}><span class="cap-rvt">${num ? `<i>${esc(num)}</i> ` : ''}${esc(v)}</span>${note ? `<span class="cap-rnote">${esc(note)}</span>` : ''}</div></div>`;
-  const rows = [row('What', P.title || '…', '', '')];
-  rows.push(row('As', type, c.ov.type ? 'your choice' : '', '', 'data-cap-type'));
-  if (type === 'Event' || type === 'Task') rows.push(row('When', whenTxt, '', ''));
-  if (type === 'Spend') rows.push(row('Amount', kMoneyShort(P.amount || 0), P.amount == null ? 'add a number' : '', ''));
-  rows.push(row('Into', aName || 'Unfiled', (area && c.ov.area === undefined && P.areaHit) ? ('guessed from “' + P.areaHit + '”') : '', aNum, 'data-cap-space'));
-  if (P.rem.length && (type === 'Event' || type === 'Task')) rows.push(row('Remind', P.rem.join(' · '), P.why, ''));
-  const foot = type === 'Spend' ? 'Logged to Money.' : type === 'Event' ? 'Lands in your calendar.' : type === 'Task' ? 'Comes back when it’s due.' : 'Kept as a note, found with ⌘K.';
-  return `<div class="cap-reads-h">Koyeba reads this as - tap a line to change it</div>
-    <div class="cap-reads">${rows.join('')}</div>
-    <div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>Set down ↵</button></div>`;
+  const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', inbox: 'Set it down' }[kind] || 'Set it down';
+  const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? 'Gold lines say where each detail came from. Tap any to change it.' : 'Not sure what this is - choose a kind above, or just set it down.';
+  return `${kindRow}${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
 }
 function capRecHtml() {
   const c = capState();
@@ -7452,7 +7531,7 @@ function renderCapBar(force) {
   if (!c.rec) {
     const i = document.getElementById('cap-input');
     if (i) {
-      i.addEventListener('input', () => { capState().text = i.value; capGrow(i); updateCapReadout(); });
+      i.addEventListener('input', () => { const cc = capState(); cc.text = i.value; cc.kind = null; cc.ans = {}; capGrow(i); updateCapReadout(); });
       // Enter sends it (like a message); Shift+Enter drops to a new line. A long
       // line now wraps and the box grows instead of running off the side.
       i.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });
@@ -7495,29 +7574,39 @@ function capRefreshHome() {
 async function submitCap() {
   const c = capState(); const raw = (c.text || '').trim();
   if (!raw) { capCancel(); return; }
-  const P = parseCap(raw); const type = c.ov.type || P.type; const area = c.ov.area !== undefined ? c.ov.area : P.area;
+  const [g] = capGuess(raw); const kind = c.kind || g || 'inbox'; const ans = c.ans || {};
+  const p = capParse2(raw);
+  // Space: from the words, else a pick the user made (match its name to an area).
+  let area = p.area || '';
+  if (!area && ans.space) { const a = (state.areas || []).find((x) => x.title === ans.space); if (a) area = a.id; }
   try {
-    if (type === 'Event') {
-      const day = P.date || dayKey(new Date());
-      const body = P.time ? { title: P.title || 'Event', day, start_min: (+P.time.slice(0, 2)) * 60 + (+P.time.slice(3, 5)), duration: 60 } : { title: P.title || 'Event', day, allDay: true };
+    if (kind === 'event') {
+      const day = p.date || dayKey(new Date());
+      const body = { title: p.title || 'Event', day };
+      if (p.startMin != null) { body.start_min = p.startMin; body.duration = p.durMin || capDurFromAns(ans.dur) || 60; }
+      else body.allDay = true;
       if (area) body.area = area;
+      if (p.repeatKey) body.repeat = p.repeatKey;
       await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
-      toast(`${P.title || 'Event'} — ${P.date ? P.dateLabel : 'today'}${P.time ? ' at ' + P.time : ''}.`);
-    } else if (type === 'Task') {
-      const props = {}; if (area) props.area = area; if (P.date) props.due = P.date;
-      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: P.title || raw, props }) });
-      toast(`Task set down${area ? ' in ' + capAreaTitle(area) : ''}.`);
-    } else if (type === 'Spend') {
-      const props = { date: P.date || dayKey(new Date()), amount: -(P.amount || 0), category: area ? capAreaTitle(area) : 'Unfiled' };
-      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'txn', title: P.title || 'Spend', props }) });
-      toast(`Logged ${kMoneyShort(P.amount || 0)}${area ? ' to ' + capAreaTitle(area) : ''}.`);
+      toast(`${p.title || 'Event'} added to your calendar.`);
+    } else if (kind === 'task') {
+      const prio = { First: 'P1', Soon: 'P2', Whenever: 'P3' }[ans.priority] || '';
+      await api('/api/tasks', { method: 'POST', body: JSON.stringify({ title: p.title || raw, area, priority: prio }) });
+      toast(`Set down as a task${area ? ' in ' + capAreaTitle(area) : ''}.`);
+    } else if (kind === 'email') {
+      c.open = false; c.text = ''; c.kind = null; c.ans = {}; c.rec = false; renderCapBar(true);
+      try { startCompose(); } catch { toast('Open Mail to write that.'); }
+      return;
+    } else if (kind === 'inbox') {
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: raw, props: { inbox: true } }) });
+      toast('Set down in your inbox to sort.');
     } else {
       const props = area ? { area, areas: [area] } : {};
-      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: P.title || raw, props }) });
-      toast(`Set down${area ? ' in ' + capAreaTitle(area) : ''}. Find it with ⌘K.`);
+      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: p.title || raw, props }) });
+      toast(`Saved the note${area ? ' in ' + capAreaTitle(area) : ''}. Find it with ⌘K.`);
     }
   } catch (e) { toast((e && e.message) || 'Could not set that down.'); return; }
-  c.open = false; c.text = ''; c.ov = {}; c.rec = false; renderCapBar(true);
+  c.open = false; c.text = ''; c.kind = null; c.ans = {}; c.rec = false; renderCapBar(true);
   capRefreshHome();
 }
 // ── §20 Notepad: a popover, not a Today section ───────────────────────────
@@ -23659,9 +23748,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cap-submit]')) { submitCap(); return; }
   if (t.closest('[data-cap-speak]')) { capStartRec(); return; }
   if (t.closest('[data-cap-recstop]')) { capStopRec(); return; }
-  { const eg = t.closest('[data-cap-eg]'); if (eg) { const c = capState(); c.text = eg.dataset.capEg; c.ov = {}; renderCapBar(true); return; } }
-  { const ty = t.closest('[data-cap-type]'); if (ty) { const c = capState(); const cur = c.ov.type || parseCap((c.text || '').trim()).type; c.ov.type = CAP_TYPES[(CAP_TYPES.indexOf(cur) + 1) % CAP_TYPES.length]; updateCapReadout(); return; } }
-  { const sp = t.closest('[data-cap-space]'); if (sp) { const c = capState(); const ids = ['', ...(state.areas || []).map((a) => a.id)]; const cur = c.ov.area !== undefined ? c.ov.area : parseCap((c.text || '').trim()).area; c.ov.area = ids[(ids.indexOf(cur) + 1) % ids.length]; updateCapReadout(); return; } }
+  { const eg = t.closest('[data-cap-eg]'); if (eg) { const c = capState(); c.text = eg.dataset.capEg; c.kind = null; c.ans = {}; renderCapBar(true); return; } }
+  { const kd = t.closest('[data-cap-kind]'); if (kd) { const c = capState(); const id = kd.dataset.capKind; c.kind = c.kind === id ? null : id; updateCapReadout(); return; } }
+  { const aq = t.closest('[data-cap-askq]'); if (aq) { const c = capState(); c.kind = aq.dataset.capAskq; updateCapReadout(); return; } }
+  { const pk = t.closest('[data-cap-pick]'); if (pk) { const c = capState(); const s = pk.dataset.capPick; const i = s.indexOf(':'); c.ans = c.ans || {}; c.ans[s.slice(0, i)] = s.slice(i + 1); updateCapReadout(); return; } }
   { const sc = t.closest('[data-sec-collapse]'); if (sc) { if (Date.now() - suppressSecClick < 400) return; const c = homeCollapsed(); const k = sc.dataset.secCollapse; c[k] = secOpen(k); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); return; } }
   { const st = t.closest('[data-set-tab]'); if (st) { state.settings = state.settings || {}; state.settings.tab = st.dataset.setTab; state.view = { type: 'settings', tab: state.settings.tab }; renderNav(); renderSettings(); return; } }
   if (t.closest('[data-import-run]')) { importRun(); return; }
