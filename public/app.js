@@ -5397,7 +5397,7 @@ function knavGroups() {
     { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
     { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Flow', 'data-open-today', ''], ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''],
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
       ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
@@ -8894,69 +8894,93 @@ function icLineHtml(l, transformed) {
 }
 // Lines cast from the ground up, so draw them top line first (reverse).
 function icHexGlyph(lines, transformed) { return `<div class="ic-hex">${lines.slice().reverse().map((l) => icLineHtml(l, transformed)).join('')}</div>`; }
+// A single cast line as a 10px bar: solid for yang, broken for yin, gold when
+// it's a changing line (6 or 9).
+function icLineBar(l) { return `<div class="icx-line ${l.yin ? 'yin' : 'yang'}${l.changing ? ' chg' : ''}">${l.yin ? '<span class="icx-seg"></span><span class="icx-seg"></span>' : '<span class="icx-seg full"></span>'}</div>`; }
 function renderIChing() {
-  const s = state.iching || {};
-  let body;
-  if (!s.lines) {
-    body = `<div class="ic-intro">
-      <div class="ic-coin-row"><span class="ic-coin">☯</span></div>
-      <h2 class="ic-h">Consult the I Ching</h2>
-      <p class="ic-lede">Hold a question in mind - open, not yes/no. Then cast the coins six times and read what the moment reflects back.</p>
-      <input class="sel ic-q" id="ic-q" placeholder="Your question (optional)" value="${esc(s.q || '')}" maxlength="200">
-      <button class="ic-cast" data-iching-cast>Cast the coins</button>
-    </div>`;
-  } else {
-    const hex = s.hex; const changing = s.lines.filter((l) => l.changing);
-    const moving = changing.length;
-    const transformed = moving ? icHexFor(s.lines, true) : null;
-    const lineNos = s.lines.map((l, i) => l.changing ? (i + 1) : null).filter(Boolean);
-    body = `<div class="ic-result ${s.casting ? 'casting' : ''}">
-      ${s.q ? `<div class="ic-yourq">"${esc(s.q)}"</div>` : ''}
-      <div class="ic-hexes">
-        <div class="ic-hexcol">
-          ${moving ? '<div class="ic-hexcap">Now</div>' : ''}
-          ${icHexGlyph(s.lines, false)}
-          <div class="ic-hexnum">${hex.n}</div>
-        </div>
-        ${transformed ? `<div class="ic-arrow">→</div><div class="ic-hexcol"><div class="ic-hexcap">Moving toward</div>${icHexGlyph(s.lines, true)}<div class="ic-hexnum">${transformed.n}</div></div>` : ''}
+  const s = state.iching || (state.iching = { q: '' });
+  const lines = s.lines || [];
+  const n = lines.length;
+  const done = n === 6;
+  const hex = done ? (s.hex || icHexFor(lines, false)) : null;
+  // The lines column, six slots, bottom line (1) at the bottom: render top (6)
+  // down to bottom (1). Cast lines show; the rest are faint placeholders.
+  const slots = [];
+  for (let i = 5; i >= 0; i--) slots.push(i < n ? icLineBar(lines[i]) : '<div class="icx-line icx-empty"><span class="icx-seg full"></span></div>');
+  const castLabel = n === 0 ? 'Cast the coins' : `Cast line ${n + 1} of 6`;
+  const lastDesc = (n > 0 && !done) ? (IC_THROW_DESC[lines[n - 1].val] || '') : '';
+  const castPanel = `<div class="icx-cast">
+      <div class="icx-lines">${slots.join('')}</div>
+      <div class="icx-cast-side">
+        ${!done ? `<button class="icx-castbtn" data-iching-throw>${castLabel}</button>` : ''}
+        ${lastDesc ? `<div class="icx-throw">${esc(lastDesc)}</div>` : ''}
+        ${n > 0 && !done ? '<button class="icx-again" data-iching-again>Start again</button>' : ''}
+        ${n === 0 ? '<p class="icx-hint">One click is one line. Hold your question lightly and let the coins fall six times, from the ground up.</p>' : ''}
       </div>
-      <div class="ic-name"><span class="ic-cn">${esc(hex.cn)}</span><span class="ic-en">${esc(hex.name)}</span><span class="ic-py">${esc(hex.py)} · Hexagram ${hex.n}</span></div>
-      <p class="ic-text">${esc(hex.text)}</p>
-      ${transformed ? `<div class="ic-change"><div class="ic-change-h">Changing ${moving > 1 ? `lines ${lineNos.join(', ')}` : `line ${lineNos[0]}`} - the situation is in motion</div><p class="ic-text ic-text-2"><b>${esc(transformed.cn)} ${esc(transformed.name)}</b> - ${esc(transformed.text)}</p></div>` : '<div class="ic-static">No changing lines - the reading is settled, not in flux.</div>'}
-      ${s.reflection ? `<div class="ic-reflect"><div class="ic-reflect-h">✦ Reflection on your question</div><p>${esc(s.reflection)}</p></div>` : ''}
-      <div class="ic-actions">
-        ${(s.q && aiClientOn()) ? `<button class="ic-btn" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? '✦ Reflecting…' : (s.reflection ? '✦ Reflect again' : '✦ Reflect on my question')}</button>` : ''}
-        ${s.saved ? '<span class="ic-saved">✓ Saved to your readings</span>' : '<button class="ic-btn ic-btn-primary" data-iching-save>✓ Save this reading</button>'}
-        <button class="ic-btn" data-iching-cast>↻ Cast again</button>
-        ${reflLedgerSelect('iching')}
+    </div>`;
+  let reading = '';
+  if (done && hex) {
+    const changing = lines.map((l, i) => l.changing ? i + 1 : 0).filter(Boolean);
+    const transformed = changing.length ? icHexFor(lines, true) : null;
+    reading = `<div class="icx-reading">
+      <div class="icx-chars"><span class="icx-cn">${esc(hex.cn)}</span><span class="icx-hexno">Hexagram ${hex.n}</span></div>
+      <div class="icx-name">${esc(hex.name)}</div>
+      <p class="icx-judge">${esc(hex.text)}</p>
+      ${transformed ? `<div class="icx-change"><div class="icx-change-h">Changing ${changing.length > 1 ? 'lines' : 'line'} ${changing.join(', ')}</div><div class="icx-becoming"><span class="icx-becoming-cn">${esc(transformed.cn)}</span><span class="icx-becoming-nm">Becoming ${esc(transformed.name)}</span></div><p class="icx-judge icx-judge-2">${esc(transformed.text)}</p></div>` : '<div class="icx-settled">No changing lines - the reading is settled.</div>'}
+      ${s.reflection ? `<div class="icx-reflect">${esc(s.reflection)}</div>` : ''}
+      <div class="icx-actions">
+        <button class="icx-act" data-iching-journal>Write about it in the Journal</button>
+        ${aiClientOn() ? `<button class="icx-act" data-iching-reflect ${s.reflecting ? 'disabled' : ''}>${s.reflecting ? 'Asking…' : 'Ask the companion'}</button>` : ''}
+        <button class="icx-act" data-iching-cast>Cast again</button>
       </div>
     </div>`;
   }
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: t('wb.iching') }])}
-    <div class="pane-head home-head"><h1>${t('wb.iching')}</h1></div>
-    ${wbToolTilesHtml({ sel: 'iching' })}
-    <div class="ic-sheet ic-page">${body}${icHistoryHtml()}</div>`;
+    <div class="kwrap icx-page">
+      <div class="icx-grid">
+        <div class="icx-main">
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Reflection</span></div>
+          <h1 class="icx-h1">I Ching</h1>
+          <p class="icx-lede">An old way of turning a question over. Cast the coins, then read what the moment reflects back.</p>
+          <input class="icx-q" id="ic-q" placeholder="What would you like to understand?" value="${esc(s.q || '')}" maxlength="200" autocomplete="off">
+          ${castPanel}
+          ${reading}
+        </div>
+        <div class="icx-side">${icHistoryHtml()}</div>
+      </div>
+    </div>`;
 }
 // Past readings as a persistent, revisitable stack - the same robust card list
 // as Insights, not a collapsed drawer. Readings cast since we began storing the
 // lines reopen in full; older rows (no lines) stay as a record you can still
 // remove. The × removes a reading. (Robin.)
+// §37: Past readings, grouped by month, each month folding. A row shows the
+// characters (no-wrap), the name "A → B", the date, and the question in italics.
 function icHistoryHtml() {
   const h = state.ichingHistory || [];
-  if (!h.length) return '';
-  const curAt = state.iching && state.iching.at;
-  const rows = h.slice(0, 80).map((x, i) => {
-    const title = `${x.cn ? esc(x.cn) + ' ' : ''}${esc(x.name || 'Reading')}${x.toName ? ` → ${esc(x.toName)}` : ''}`;
-    const snip = `<span class="jrs-nm">${title}</span>${x.q ? ` · "${esc(x.q)}"` : ''}`;
-    const open = x.lines && x.lines.length;
-    const del = `<span class="j-ins-del" data-del-iching-hist="${i}" title="Remove this reading">×</span>`;
-    const body = `<span class="j-ins-item-date">${esc(reflWhen(x.at))}</span><span class="j-ins-item-snip">${snip}</span>${del}`;
-    return open
-      ? `<button class="j-ins-item jrs-item ${curAt && x.at === curAt ? 'on' : ''}" data-iching-open-hist="${i}" title="Open this reading">${body}</button>`
-      : `<div class="j-ins-item jrs-item jrs-static">${body}</div>`;
+  if (!h.length) return '<div class="icx-side-h">Past readings</div><div class="icx-side-empty">Nothing cast yet.</div>';
+  const groups = [];
+  const byKey = {};
+  h.slice(0, 200).forEach((x, i) => {
+    const d = new Date(x.at || 0);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (!byKey[key]) { byKey[key] = { key, label: d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }), items: [] }; groups.push(byKey[key]); }
+    byKey[key].items.push({ x, i });
+  });
+  const body = groups.map((g, gi) => {
+    const open = icHistOpen(g.key, gi === 0);
+    const rows = g.items.map(({ x, i }) => {
+      const nm = `${esc(x.name || 'Reading')}${x.toName ? ` → ${esc(x.toName)}` : ''}`;
+      const canOpen = x.lines && x.lines.length === 6;
+      const inner = `<span class="icx-hrow-cn">${x.cn ? esc(x.cn) : ''}</span><span class="icx-hrow-b"><span class="icx-hrow-nm">${nm}</span>${x.q ? `<span class="icx-hrow-q">${esc(x.q)}</span>` : ''}</span><span class="icx-hrow-when">${esc(reflWhen(x.at))}</span>`;
+      return canOpen
+        ? `<button class="icx-hrow" data-iching-open-hist="${i}" title="Open this reading">${inner}</button>`
+        : `<div class="icx-hrow icx-hrow-static">${inner}</div>`;
+    }).join('');
+    return `<div class="icx-hmonth"><button class="icx-hmonth-h" data-iching-hmonth="${esc(g.key)}"><span class="icx-hmonth-l">${esc(g.label)}</span><span class="icx-hmonth-n">${g.items.length}</span><span class="icx-hmonth-sign">${open ? '−' : '+'}</span></button>${open ? `<div class="icx-hmonth-b">${rows}</div>` : ''}</div>`;
   }).join('');
-  return `<div class="j-ins-list jrs-list"><div class="j-ins-list-h">Past readings · ${h.length}</div>${rows}</div>`;
+  return `<div class="icx-side-h">Past readings</div>${body}`;
 }
 function delIchingHist(i) {
   const h = state.ichingHistory || []; if (!h[i]) return;
@@ -8978,16 +9002,32 @@ async function openIChing(reading) {
     if (state.view && state.view.type === 'iching') renderIChing();
   }
 }
-function castIChing() {
-  const qEl = document.getElementById('ic-q'); const q = qEl ? qEl.value.trim() : (state.iching && state.iching.q) || '';
-  const lines = [0, 0, 0, 0, 0, 0].map(() => icCastLine());
-  const hex = icHexFor(lines, false);
-  state.iching = { q, lines, hex, saved: false, casting: true };
+// §37: cast the coins one line at a time, from the ground up. Each throw adds a
+// line; the sixth completes the reading, which saves itself (history + the
+// pinned card, so it surfaces in Reflections on Today).
+const IC_THROW_DESC = { 6: 'Tails, tails, tails – an old yin line, changing', 7: 'Heads, tails, tails – a young yang line', 8: 'Heads, heads, tails – a young yin line', 9: 'Heads, heads, heads – an old yang line, changing' };
+function icReadQ() { const qEl = document.getElementById('ic-q'); return qEl ? qEl.value : ((state.iching && state.iching.q) || ''); }
+function castIChing() { state.iching = { q: icReadQ().trim(), lines: [], done: false }; renderIChing(); }
+function icThrow() {
+  let s = state.iching; if (!s) s = (state.iching = { q: '' });
+  if (!s.lines) s.lines = [];
+  if (s.lines.length >= 6) return;
+  s.q = icReadQ().trim();
+  s.lines = [...s.lines, icCastLine()];
+  if (s.lines.length === 6) {
+    s.hex = icHexFor(s.lines, false); s.done = true; s.at = Date.now(); s.saved = true;
+    const transformed = s.lines.some((x) => x.changing) ? icHexFor(s.lines, true) : null;
+    state.ichingHistory = state.ichingHistory || [];
+    state.ichingHistory.unshift({ n: s.hex.n, name: s.hex.name, cn: s.hex.cn, toName: transformed ? transformed.name : '', q: s.q || '', lines: s.lines, reflection: '', at: s.at });
+    state.ichingHistory = state.ichingHistory.slice(0, 200);
+    api('/api/kv/iching_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.ichingHistory) }) }).catch(() => {});
+    saveIchingCard(s);
+  }
   renderIChing();
-  // Reveal the lines from the ground up, settle, then pin it so you can reopen
-  // and reread it from Well-being or Home.
-  setTimeout(() => { const r = state.iching; if (r) { r.casting = false; renderIChing(); saveIchingCard(r); } }, 1500);
 }
+function icToJournal() { try { openJournal(); } catch {} }
+function icHistOpen(key, def) { try { const s = JSON.parse(localStorage.getItem('life.iching.histfold') || '{}'); return (key in s) ? !s[key] : !!def; } catch { return !!def; } }
+function icHistTog(key) { try { const s = JSON.parse(localStorage.getItem('life.iching.histfold') || '{}'); s[key] = icHistOpen(key, false); localStorage.setItem('life.iching.histfold', JSON.stringify(s)); } catch {} renderIChing(); }
 // The latest cast, pinned on Well-being (and Home) so you can reopen and reread
 // it. Held per-device for instant paint and mirrored to the account.
 const ICHING_TTL = 4 * 24 * 60 * 60 * 1000;
@@ -24873,6 +24913,10 @@ document.addEventListener('click', (e) => {
   { const coh = t.closest('[data-compass-open-hist]'); if (coh) { openCompassHist(Number(coh.dataset.compassOpenHist)); return; } }
   if (t.closest('[data-iching-dismiss]')) { dismissIching(); return; }
   if (t.closest('[data-iching-cast]')) { castIChing(); return; }
+  if (t.closest('[data-iching-throw]')) { icThrow(); return; }
+  if (t.closest('[data-iching-again]')) { castIChing(); return; }
+  if (t.closest('[data-iching-journal]')) { icToJournal(); return; }
+  { const ihm = t.closest('[data-iching-hmonth]'); if (ihm) { icHistTog(ihm.dataset.ichingHmonth); return; } }
   if (t.closest('[data-iching-save]')) { saveIChing(); return; }
   if (t.closest('[data-iching-reflect]')) { reflectIChing(); return; }
   if (t.closest('[data-iching-close]') || t.closest('[data-iching-bgclose]') === t) { closeIChing(); return; }

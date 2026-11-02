@@ -10753,6 +10753,71 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
   .mp-back { display:block; }
 }
 
+/* ══ §37 I Ching v2 ════════════════════════════════════════════════════════
+   One large question, six real throws (one click = one line, built bottom-up),
+   changing lines in gold, the reading beside the lines, past readings by month. */
+.icx-page { padding-top:18px; padding-bottom:60px; }
+.icx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,340px); gap:clamp(32px,4vw,64px); align-items:start; }
+.icx-main { min-width:0; }
+.icx-h1 { font-family:var(--k-serif); font-weight:300; font-size:clamp(44px,6vw,64px); line-height:1; margin:10px 0 0; color:var(--k-ink); }
+.icx-lede { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(19px,2vw,24px); line-height:1.4; color:var(--k-mute); margin:12px 0 0; max-width:48ch; }
+.icx-q { width:100%; margin-top:24px; background:transparent; border:0; border-bottom:1px solid var(--k-ink); outline:none; padding:10px 0; font-family:var(--k-serif); font-weight:300; font-size:clamp(26px,3vw,34px); line-height:1.25; color:var(--k-ink); }
+.icx-q::placeholder { color:var(--k-mute); }
+.icx-cast { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:clamp(24px,3vw,44px); align-items:center; margin-top:30px; }
+.icx-lines { display:flex; flex-direction:column; gap:7px; max-width:260px; }
+.icx-line { display:flex; gap:9px; height:10px; }
+.icx-seg { flex:1; background:var(--k-ink); }
+.icx-seg.full { flex:1; }
+.icx-line.yin .icx-seg { flex:1; }
+.icx-line.chg .icx-seg { background:var(--k-gold); }
+.icx-line.icx-empty .icx-seg { background:var(--k-line); }
+.icx-cast-side { display:flex; flex-direction:column; align-items:flex-start; gap:14px; }
+.icx-castbtn { background:none; border:1px solid var(--k-gold); color:var(--k-goldt); cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.22em; text-transform:uppercase; padding:12px 24px; }
+.icx-castbtn:hover { background:var(--k-gold); color:var(--k-ongold); }
+.icx-throw { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; line-height:1.35; color:var(--k-mute); }
+.icx-again { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); padding:0; }
+.icx-again:hover { color:var(--k-goldt); }
+.icx-hint { font-family:var(--k-sans); font-size:14px; line-height:1.6; color:var(--k-mute); margin:0; max-width:34ch; }
+.icx-reading { margin-top:40px; border-top:1px solid var(--k-line); padding-top:28px; animation:kfade .5s ease; }
+.icx-chars { display:flex; align-items:baseline; gap:18px; }
+.icx-cn { font-family:var(--k-serif); font-weight:300; font-size:64px; line-height:1; color:var(--k-ink); }
+.icx-hexno { font-family:var(--k-sans); font-size:13px; letter-spacing:.06em; color:var(--k-mute); }
+.icx-name { font-family:var(--k-serif); font-weight:300; font-size:40px; line-height:1.1; color:var(--k-ink); margin-top:10px; }
+.icx-judge { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(20px,2.1vw,25px); line-height:1.5; color:var(--k-ink); max-width:60ch; margin:14px 0 0; text-wrap:pretty; }
+.icx-change { margin-top:26px; border-top:1px solid var(--k-line); padding-top:20px; }
+.icx-change-h { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-goldt); }
+.icx-becoming { display:flex; align-items:baseline; gap:14px; margin-top:12px; }
+.icx-becoming-cn { font-family:var(--k-serif); font-weight:300; font-size:40px; line-height:1; color:var(--k-ink); }
+.icx-becoming-nm { font-family:var(--k-serif); font-weight:300; font-size:24px; color:var(--k-mute); }
+.icx-judge-2 { font-size:19px; }
+.icx-settled { margin-top:24px; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; color:var(--k-mute); }
+.icx-reflect { margin-top:22px; padding:18px 22px; background:var(--k-soft); font-family:var(--k-serif); font-weight:300; font-size:21px; line-height:1.45; color:var(--k-ink); text-wrap:pretty; }
+.icx-actions { display:flex; flex-wrap:wrap; gap:22px; margin-top:26px; }
+.icx-act { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); padding:0; }
+.icx-act:hover { color:var(--k-ink); }
+.icx-act[disabled] { color:var(--k-mute); cursor:default; }
+.icx-side { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); }
+.icx-side-h { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); padding-bottom:6px; border-bottom:1px solid var(--k-ink); }
+.icx-side-empty { padding:16px 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-mute); }
+.icx-hmonth { border-bottom:1px solid var(--k-line); }
+.icx-hmonth-h { display:flex; align-items:baseline; gap:10px; width:100%; text-align:left; background:none; border:0; cursor:pointer; padding:14px 0; }
+.icx-hmonth-l { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--k-ink); }
+.icx-hmonth-n { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); }
+.icx-hmonth-sign { margin-left:auto; font-family:var(--k-sans); font-size:18px; color:var(--k-mute); }
+.icx-hmonth-b { padding-bottom:10px; }
+.icx-hrow { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 12px; align-items:baseline; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--k-line); padding:12px 0; cursor:pointer; }
+.icx-hrow-static { cursor:default; }
+.icx-hrow-cn { font-family:var(--k-serif); font-weight:300; font-size:21px; line-height:1; color:var(--k-ink); white-space:nowrap; min-width:56px; }
+.icx-hrow-b { min-width:0; }
+.icx-hrow-nm { display:block; font-family:var(--k-serif); font-weight:300; font-size:21px; line-height:1.15; color:var(--k-ink); }
+.icx-hrow:hover .icx-hrow-nm { color:var(--k-goldt); }
+.icx-hrow-q { display:block; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:16px; color:var(--k-mute); margin-top:1px; }
+.icx-hrow-when { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); white-space:nowrap; }
+@media (max-width:899px){
+  .icx-grid { grid-template-columns:1fr; gap:36px; }
+  .icx-side { position:static; }
+}
+
 /* ══ §20 Notepad: a popover, not a section ═════════════════════════════════
    A running page of auto-growing lines on keylines, opened bottom-left or with
    ⌘;. "Set down →" hands a line to Set something down and keeps it struck. ══ */
