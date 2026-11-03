@@ -8960,7 +8960,10 @@ function homeLeftTabsHtml(off) {
   const cur = homeLeftTab();
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
-  const mailN = modOn('mail') ? mailHeaderCount() : 0;
+  // The Mail count must match what the panel actually lists (it used the unread
+  // total, so it said 2 when one row showed, or 1 when two did). Tie it to the
+  // same items the glance renders. (Robin: be consistent.)
+  const mailN = modOn('mail') ? homeMailGlanceItems().length : 0;
   const defs = [['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]];
   if (modOn('mail')) defs.push(['mail', 'Mail', mailN, mailN > 0]);
   const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-ltab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
@@ -17742,8 +17745,17 @@ function wrapEmailHtml(html, blockImages) {
 // word a line on a phone). Prefer the message's own text part; fall back to
 // stripping the HTML, keeping line breaks at block boundaries. (Robin.)
 function mailPlainText(o) {
-  if (o.text && o.text.trim()) return mailFixText(o.text);
-  let h = String(o.html || '');
+  // A <style>/<script> block, or an email whose text/plain is really dumped
+  // HTML, leaks raw CSS ("#bodyTable { height:100% }") as if it were body text.
+  // Strip those blocks - and any flat CSS rule that survived into text - first.
+  const deGunk = (s) => String(s || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/[^\n{}]{0,120}\{[^{}]{0,500}:[^{}]{0,500}\}/g, ' ');
+  if (o.text && o.text.trim()) return mailFixText(deGunk(o.text));
+  let h = deGunk(String(o.html || ''));
   h = h.replace(/<\s*(br|\/p|\/div|\/tr|\/li|\/h[1-6])\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
   const ta = document.createElement('textarea'); ta.innerHTML = h;   // decode entities
   return mailFixText(ta.value.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim());
@@ -18319,7 +18331,7 @@ function mailAccordionRow(x, count) {
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
   // as a bar that sticks to the top of the card while you read it.
   const triage = mailOpenTriageBar(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}${parts.make}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // §58 + Robin: the sticky triage bar at the top of an open email - the same four
 // moves as the action row, reachable without scrolling to the end.
@@ -18378,7 +18390,10 @@ function mailOpenPanelHtml(o) {
   const replyActs = `<div class="mail-replyacts"><button class="mail-reply" data-mail-reply-all>Reply</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
-    below: `${noticed}<div class="mail-ar-acts">${sorts}${makeActs}${replyActs}</div>`,
+    // Robin: the "Make a task / note / event" row sits right under the "Move to"
+    // bar at the top, not stranded at the bottom under the email.
+    make: `<div class="mail-maketop">${makeActs}</div>`,
+    below: `${noticed}<div class="mail-ar-acts">${sorts}${replyActs}</div>`,
   };
 }
 // The "More" menu in the open row: everything §12 keeps but tucks away - Email
