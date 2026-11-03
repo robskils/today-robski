@@ -1621,7 +1621,9 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
   if (items[0] && /data-view-home/.test(items[0].attr || '')) items[0] = { label: 'Today', attr: 'data-view-home' };
   // Insert the section (top-nav group) right after Today, unless it's already there.
-  if (items.length && /data-view-home/.test(items[0].attr || '')) {
+  // A page whose parent IS a named list (e.g. a task under Tasks) passes omitGroup
+  // and names that list itself, so it reads "Today / Tasks / …" not "…/ Plans / …".
+  if (!opts.omitGroup && items.length && /data-view-home/.test(items[0].attr || '')) {
     const gl = crumbGroupLabel();
     if (gl && !items.some((it) => (it.label || '') === gl)) items.splice(1, 0, { label: gl, group: true });
   }
@@ -26999,6 +27001,17 @@ document.addEventListener('click', (e) => {
   const ovi = t.closest('[data-open-vision]'); if (ovi) { openVisionCard(ovi.dataset.openVision).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-goal-progress]')) return;   // the progress slider - adjust, don't open the goal
   { const tug = t.closest('[data-task-ungoal]'); if (tug) { const [tid, gid] = tug.dataset.taskUngoal.split(':'); detachTaskFromGoal(tid, gid); return; } }
+  // §68 task-page button rows: priority / when / how long / status / repeat / remind,
+  // the schedule fold, and "make this a step towards a goal". UI flags first, because
+  // patchTaskProps re-renders synchronously.
+  { const tp = t.closest('[data-task-prio]'); if (tp) { const [tid, v] = tp.dataset.taskPrio.split(':'); const c = taskCopies(tid)[0]; patchTaskProps(tid, { priority: (c && c.props && c.props.priority) === v ? null : v }); return; } }
+  { const tw = t.closest('[data-task-when]'); if (tw) { const [tid, k] = tw.dataset.taskWhen.split(':'); const c = taskCopies(tid)[0]; const rd = c && c.props && c.props.remindDays; const today = todayISO(); if (k === 'pick') { if (state.task_open) { state.task_open.datePick = true; renderTaskCard(); setTimeout(() => { const el = document.getElementById('taskcard-due'); if (el) { try { el.showPicker ? el.showPicker() : el.focus(); } catch { el.focus(); } } }, 30); } return; } if (state.task_open) state.task_open.datePick = false; let due = null; if (k === 'today') due = today; else if (k === 'tom') due = addDaysStr(today, 1); else if (k === 'week') { const wd = new Date(today + 'T00:00').getDay(); due = addDaysStr(today, (7 - wd) % 7 || 7); } patchTaskProps(tid, { due, snooze: (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : null }); return; } }
+  { const td = t.closest('[data-task-dur]'); if (td) { const [tid, v] = td.dataset.taskDur.split(':'); const c = taskCopies(tid)[0]; patchTaskProps(tid, { duration: (c && c.props && Number(c.props.duration)) === Number(v) ? null : Number(v) }); return; } }
+  { const tsx = t.closest('[data-task-status]'); if (tsx) { const [tid, v] = tsx.dataset.taskStatus.split(':'); patchTaskProps(tid, { done: false, kstatus: v === 'todo' ? '' : v }); return; } }
+  { const tr = t.closest('[data-task-repeat]'); if (tr) { const [tid, v] = tr.dataset.taskRepeat.split(':'); if (v === 'custom') { if (state.task_open) { state.task_open.repCustom = true; renderTaskCard(); } return; } if (state.task_open) state.task_open.repCustom = false; patchTaskProps(tid, { repeat: v || null }); return; } }
+  { const trm = t.closest('[data-task-remind]'); if (trm) { const [tid, v] = trm.dataset.taskRemind.split(':'); const c = taskCopies(tid)[0]; const due = c && c.props && c.props.due; if (v === 'off') patchTaskProps(tid, { remindDays: null, snooze: null, hideUntil: false }); else { const n = Number(v); patchTaskProps(tid, { remindDays: n, snooze: due ? addDaysStr(due, -n) : null }); } return; } }
+  { const tsc = t.closest('[data-task-sched]'); if (tsc) { if (state.task_open) { state.task_open.schedOpen = !state.task_open.schedOpen; renderTaskCard(); } return; } }
+  { const tgp = t.closest('[data-task-goalpick]'); if (tgp) { if (state.task_open) { state.task_open.goalPick = !state.task_open.goalPick; renderTaskCard(); } return; } }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
   const obk = t.closest('[data-open-bucket]'); if (obk) { openBucketCard(obk.dataset.openBucket).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-goal]')) { newGoal(null).catch((x) => toast(x.message)); return; }
@@ -29086,43 +29099,107 @@ function taskRepeatHtml(t) {
     ${open ? body : ''}
   </section>`;
 }
+// A task page (V35 §68). A task is a single thing to do - its own step towards a
+// goal, with no sub-steps. Breadcrumbs (Today / Tasks / this), a gold-edged done
+// square + big Cormorant title, a white details card of BUTTON rows (no dropdowns),
+// a Notes fold, and a sticky right column: Towards a goal, Spaces, Connected, Who
+// can see this, Also find it by. (Robin, 2026-11-03.)
 function renderTaskCard() {
-  const t = state.task_open.task; migrateCards(t); const a = areaById(t.props.area); const p = t.props.priority;
+  const t = state.task_open.task; migrateCards(t); const p = t.props; const id = t.id;
+  const canEdit = !(t.sharedBy && !t.canEdit);
+  const today = todayISO(); const tom = addDaysStr(today, 1);
+  const wd = new Date(today + 'T00:00').getDay(); const weekEnd = addDaysStr(today, (7 - wd) % 7 || 7); // this coming Sunday
+  const due = p.due || '';
+  const sd = (iso) => { try { return new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' }); } catch { return iso; } };
+  const durLabel = (m) => ({ 15: '15 min', 30: '30 min', 60: '1h', 120: '2h', 240: 'half a day' }[m] || `${m} min`);
+  // Top-right word actions.
+  const star = `<span class="tcx-act" data-fav="${id}" role="button" tabindex="0" style="color:${p.fav ? 'var(--k-goldt)' : 'var(--k-ink)'}" title="Favourite">${p.fav ? '★ Starred' : '☆ Star'}</span>`;
+  const shareW = t.sharedBy ? '' : `<span class="tcx-act" data-share-open="${id}" data-share-kind="task" data-share-title="${esc(t.title || '')}" role="button" tabindex="0">Share${t.sharedWith ? ` · ${t.sharedWith}` : ''}</span>`;
+  const assignW = (t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<span class="tcx-act" data-assign-open="${id}" data-assign-title="${esc(t.title || '')}" role="button" tabindex="0">Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</span>`;
+  const delW = t.sharedBy ? '' : `<span class="tcx-act tcx-mute" data-del-task-cur role="button" tabindex="0">Delete</span>`;
+  // Summary line under the title.
+  const prioLabel = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' }[p.priority] || '';
+  const whenTxt = !due ? 'no date' : (due < today ? `due ${sd(due)} - overdue` : due === today ? 'today' : due === tom ? 'tomorrow' : `due ${sd(due)}`);
+  const summary = [prioLabel, whenTxt, p.duration ? `about ${durLabel(Number(p.duration))}` : ''].filter(Boolean).join(' · ');
+  // The button rows of the details card. Each option: a keyline chip, filled gold when chosen.
+  const opt = (label, on, attr) => `<span class="tcd-opt${on ? ' on' : ''}" ${attr} role="button" tabindex="0">${esc(label)}</span>`;
+  const prioRow = [['First', 'P1'], ['Soon', 'P2'], ['Whenever', 'P3']].map(([l, v]) => opt(l, p.priority === v || (v === 'P3' && p.priority === 'P4'), `data-task-prio="${id}:${v}"`)).join('');
+  const pickOn = !!due && due !== today && due !== tom && due !== weekEnd;
+  const whenRow = [opt('Today', due === today, `data-task-when="${id}:today"`), opt('Tomorrow', due === tom, `data-task-when="${id}:tom"`), opt('This week', due === weekEnd, `data-task-when="${id}:week"`), opt('Pick a date', pickOn, `data-task-when="${id}:pick"`), opt('No date', !due, `data-task-when="${id}:none"`)].join('') + (pickOn || (state.task_open && state.task_open.datePick) ? `<span class="tcd-date">${dateFieldHtml('taskcard-due', due)}</span>` : '');
+  const durRow = [['15 min', 15], ['30 min', 30], ['1 hour', 60], ['2 hours', 120], ['Half a day', 240]].map(([l, v]) => opt(l, Number(p.duration) === v, `data-task-dur="${id}:${v}"`)).join('');
+  const kst = p.kstatus || '';
+  const statusRow = [opt('Not started', !kst, `data-task-status="${id}:todo"`), opt('Under way', kst === 'doing', `data-task-status="${id}:doing"`), opt('Waiting on someone', kst === 'waiting', `data-task-status="${id}:waiting"`)].join('');
+  // Repeat & reminders fold.
+  const rep = p.repeat || '';
+  const repCustomOn = !!rep && !['daily', 'weekly', 'monthly'].includes(rep);
+  const showRepSel = repCustomOn || !!(state.task_open && state.task_open.repCustom);
+  const repRow = [opt('Never', !rep, `data-task-repeat="${id}:"`), opt('Daily', rep === 'daily', `data-task-repeat="${id}:daily"`), opt('Weekly', rep === 'weekly', `data-task-repeat="${id}:weekly"`), opt('Monthly', rep === 'monthly', `data-task-repeat="${id}:monthly"`), opt('Custom…', repCustomOn, `data-task-repeat="${id}:custom"`)].join('')
+    + (showRepSel ? `<span class="tcd-date"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${rep === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span>` : '');
+  const rd = p.remindDays;
+  const remRow = [opt('Off', rd == null, `data-task-remind="${id}:off"`), opt('Morning of', rd === 0, `data-task-remind="${id}:0"`), opt('A day before', rd === 1, `data-task-remind="${id}:1"`), opt('A week before', rd === 7, `data-task-remind="${id}:7"`)].join('');
+  const schedOpen = !!(state.task_open && state.task_open.schedOpen) || repCustomOn || rd != null || (!!rep && rep !== '');
+  const detailRows = canEdit ? `
+    <div class="tcd-card">
+      <div class="tcd-row tcd-row-first"><span class="tcd-lbl">Priority</span><div class="tcd-opts">${prioRow}</div></div>
+      <div class="tcd-row"><span class="tcd-lbl">When</span><div class="tcd-opts">${whenRow}</div></div>
+      <div class="tcd-row"><span class="tcd-lbl">How long</span><div class="tcd-opts">${durRow}</div></div>
+      <div class="tcd-row"><span class="tcd-lbl">Status</span><div class="tcd-opts">${statusRow}</div></div>
+      ${schedOpen ? `<div class="tcd-row"><span class="tcd-lbl">Repeat</span><div class="tcd-opts">${repRow}</div></div>
+      <div class="tcd-row"><span class="tcd-lbl">Remind me</span><div class="tcd-opts">${remRow}</div></div>` : ''}
+      <div class="tcd-more" data-task-sched role="button" tabindex="0">${schedOpen ? 'Fewer options' : 'Repeat and reminders'}</div>
+    </div>` : (summary ? '' : '');
+  // Notes fold (prose). Keep the email + source sections when present - real data, not clutter.
+  const notesFold = notesSection(t.body, 'task', id, !canEdit);
+  // ── right column ──
+  const goalIds = taskGoalIds(t); const goals = state.goals || [];
+  const g = goalIds.map((gid) => goals.find((x) => String(x.id) === String(gid))).filter(Boolean)[0];
+  let goalBlock;
+  if (g) {
+    const pct = Math.max(0, Math.min(100, Number(gp(g).pct || gp(g).progress || 0)));
+    const gdue = goalDueISO(g); const gsp = areaById(gp(g).area);
+    let stepTxt = '';
+    if (state.tasks) { const steps = state.tasks.filter((x) => taskGoalIds(x).includes(g.id)); const ix = steps.findIndex((x) => String(x.id) === String(id)); if (steps.length) stepTxt = `Step ${(ix < 0 ? steps.length : ix + 1)} of ${steps.length}`; }
+    const sub = [stepTxt, gsp ? gsp.title : '', gdue ? `by ${sd(gdue)}` : ''].filter(Boolean).join(' · ');
+    goalBlock = `<div class="tcs-goal" data-open-goal="${g.id}" role="button" tabindex="0"><div class="tcs-goal-top"><span class="tcs-goal-t">${esc(g.title || 'A goal')}</span><span class="tcs-goal-pct">${pct}%</span></div><div class="tcs-goal-bar"><i style="width:${pct}%"></i></div>${sub ? `<div class="tcs-goal-sub">${esc(sub)}</div>` : ''}</div>
+      <div class="tcs-goal-acts"><span class="tcs-link" data-open-goal="${g.id}" role="button" tabindex="0">Open goal →</span><span class="tcs-mute" data-task-ungoal="${id}:${g.id}" role="button" tabindex="0">Not part of a goal</span></div>`;
+  } else if (canEdit) {
+    const pickOpen = !!(state.task_open && state.task_open.goalPick);
+    const pick = goals.filter((x) => (gp(x).status || 'active') !== 'done' && (gp(x).status || 'active') !== 'dropped');
+    goalBlock = `<div class="tcs-makegoal" data-task-goalpick role="button" tabindex="0">+ Make this a step towards a goal</div>`
+      + (pickOpen ? (pick.length ? `<select class="sel tcs-goalsel" data-task-addgoal="${id}"><option value="">Choose a goal…</option>${pick.slice().sort((x, y) => (x.title || '').localeCompare(y.title || '')).map((x) => `<option value="${x.id}">${esc(x.title || 'Untitled goal')}</option>`).join('')}</select>` : '<p class="tcs-empty">No goals yet - create one in Goals, then attach it here.</p>') : '');
+  } else goalBlock = '<p class="tcs-empty">Not part of a goal.</p>';
+
+  const sideCol = `
+    <div class="tcard-side">
+      <div class="tcs-block"><div class="tcs-lbl">Towards a goal</div>${goalBlock}</div>
+      ${canEdit ? `<div class="tcs-block"><div class="tcs-lbl">Spaces</div><div class="tcs-spaces">${blockAreasControl('task', t)}</div></div>` : ''}
+      <div class="tcs-block tcs-conn">${taskConnectedPanel(t)}</div>
+      ${canEdit ? `<div class="tcs-block"><div class="tcs-lbl">Who can see this</div>${blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>` : ''}
+      ${canEdit ? `<div class="tcs-block"><div class="tcs-lbl">Also find it by</div>${noteAliasesControl(t, 'task')}</div>` : ''}
+    </div>`;
+
+  const checkAttr = t.sharedBy ? `data-shared-check="${id}" data-done="${p.done ? 1 : 0}"` : `data-check="${id}"`;
   $('#pane').innerHTML = `
-    <div class="note-crumbs note-crumbs-split">
-      <div class="nc-top"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-view-tasks>Tasks</button><span class="crumb-sep note-hide-mobile">›</span><span class="crumb cur note-hide-mobile">${esc(t.title || 'Untitled')}</span>${addNewMenuHtml()}</div>
-      <div class="nc-actions">${areaLinkHtml(t.props.area)}<button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite" aria-label="Favourite">${t.props.fav ? '★' : '☆'}</button>
-        <span class="nab-right">${shareBtn(t, 'task', { icon: true })}
-          ${(t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<button class="note-share ghost ${t.assignedCount ? 'on' : ''}" data-assign-open="${t.id}" data-assign-title="${esc(t.title || '')}" title="Assign to a Koyeba contact">👤 Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</button>`}
-          ${t.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-task-cur data-tip="Delete this task" aria-label="Delete this task">${MAIL_ICO.trash}</button>`}</span>
-      </div>
-    </div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tasks', attr: 'data-view-tasks' }, { label: t.title || 'Untitled' }], null, null, { omitGroup: true })}
+    <div class="tcx-actrow"><div class="tcx-acts">${star}${shareW}${assignW}${delW}</div></div>
     ${sharedBanner(t)}
-    <div class="page-kicker" style="--h:${hueOf(a)}">Task</div>
-    <div class="task-focus">
-      <button class="tf-check ${t.props.done ? 'done' : ''}" ${t.sharedBy ? `data-shared-check="${t.id}" data-done="${t.props.done ? 1 : 0}"` : `data-check="${t.id}"`} title="${t.props.done ? 'Done' : 'Mark done'}">✓</button>
-      <textarea class="note-title ${t.props.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>${esc(t.title || '')}</textarea>
-    </div>
-    ${(() => { const m = focusMinsFor('task', t.id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
-    ${t.props.note ? `<div class="task-source"><button class="task-source-link" data-open-note="${t.props.note}" title="Open the page this task came from">${NOTE_ICO}<span>From note: ${esc(t.props.noteTitle || 'View note')}</span></button></div>` : ''}
-    <div class="tf-meta">
-      <label class="tf-field"><span class="tf-label">Priority</span>
-        <select class="sel" data-prio-task="${t.id}"><option value="">—</option>${['P1', 'P2', 'P3', 'P4'].map((x) => `<option ${p === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Duration</span>
-        <select class="sel" data-dur-task="${t.id}">${durationOptionsHtml(t.props.duration)}</select></label>
-      <div class="tf-field"><span class="tf-label">Spaces</span>
-        ${blockAreasControl('task', t)}</div>
-      <label class="tf-field"><span class="tf-label">Status</span>
-        <select class="sel" data-task-kanban="${t.id}">${KANBAN_COLS.map(([k, label]) => `<option value="${k}" ${kanbanColOf(t) === k ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
-    </div>
-    ${noteAliasesControl(t, 'task')}
-    ${t.sharedBy
-      ? taskScheduleHtml(t)
-      : `<div class="tf-splitrow">${taskScheduleHtml(t)}${blockVisibilityHtml('task', t, state.task_open && state.task_open.viewers)}</div>`}
-    <div class="task-lower">
-      ${notesSection(t.body, 'task', t.id, t.sharedBy && !t.canEdit)}
-      ${taskEmailHtml(t)}
-      ${taskConnectedPanel(t)}
+    <div class="tcard-grid">
+      <div class="tcard-main">
+        <div class="tcard-eyebrow">Task${areaById(p.area) ? ` · ${esc(areaById(p.area).title)}` : ''}</div>
+        <div class="tcard-titlerow">
+          <span class="tcard-done ${p.done ? 'on' : ''}" ${checkAttr} role="button" tabindex="0" title="${p.done ? 'Mark as not done' : 'Mark as done'}"><span class="tcard-tick">✓</span></span>
+          <textarea class="tcard-title ${p.done ? 'struck' : ''}" id="taskcard-title" rows="1" placeholder="Untitled task" ${canEdit ? '' : 'readonly'}>${esc(t.title || '')}</textarea>
+        </div>
+        ${summary ? `<div class="tcard-summary">${esc(summary)}</div>` : ''}
+        ${(() => { const m = focusMinsFor('task', id); return m ? `<div class="focus-stat">🍅 ${fmtMins(m)} of focus logged on this task</div>` : ''; })()}
+        ${p.note ? `<div class="task-source"><button class="task-source-link" data-open-note="${p.note}" title="Open the page this task came from">${NOTE_ICO}<span>From note: ${esc(p.noteTitle || 'View note')}</span></button></div>` : ''}
+        ${detailRows}
+        <div class="task-lower">
+          ${notesFold}
+          ${taskEmailHtml(t)}
+        </div>
+      </div>
+      ${sideCol}
     </div>`;
   autoGrowSoon($('#taskcard-title')); loadThumbs(); hydrateEmbeds(); setupFolds();
 }
