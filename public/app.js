@@ -1615,7 +1615,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // at the content inset just under the top nav: "Today / <section> / <page…>", with
   // " / " separators, links in mute, the current page in GOLD. The section is the
   // current view's top-nav group (Keep, Plans, Reflection…), inserted automatically
-  // unless the trail already names it. No back arrow (the menubar does back); +New is
+  // unless the trail already names it. A back ← leads the line when there is history to step back to, and the section crumb (Keep, Plans…) opens its top-nav menu since it has no page of its own.+New is
   // topped up by crumbAddEverywhere where it belongs. backAttr/areaId kept for callers
   // but not drawn. Match this exactly everywhere - see CLAUDE.md.
   let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
@@ -1625,18 +1625,19 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // and names that list itself, so it reads "Today / Tasks / …" not "…/ Plans / …".
   if (!opts.omitGroup && items.length && /data-view-home/.test(items[0].attr || '')) {
     const gl = crumbGroupLabel();
-    if (gl && !items.some((it) => (it.label || '') === gl)) items.splice(1, 0, { label: gl, group: true });
+    if (gl && !items.some((it) => (it.label || '') === gl)) items.splice(1, 0, { label: gl, group: true, gid: crumbGroupId() });
   }
   if (!items.length) return '';
   const cur = opts.omitCurrent ? null : items[items.length - 1];
   const hier = opts.omitCurrent ? items : items.slice(0, -1);
-  const parts = hier.map((it) => it.attr ? `<button class="crumb" ${it.attr}>${esc(it.label)}</button>` : `<span class="crumb crumb-section">${esc(it.label)}</span>`);
+  const parts = hier.map((it) => it.attr ? `<button class="crumb" ${it.attr}>${esc(it.label)}</button>` : (it.group && it.gid ? `<button class="crumb crumb-section" data-knav-group="${esc(it.gid)}" title="Open ${esc(it.label)}">${esc(it.label)}</button>` : `<span class="crumb crumb-section">${esc(it.label)}</span>`));
   if (cur) parts.push(`<span class="crumb cur">${esc(cur.label)}</span>`);
   if (!parts.length) return '';
   // opts.actions: a right-aligned block on the same row as the crumbs (e.g. the
   // Task page's Star · Share · Assign · Delete), so there's no second header row
   // to overlap. The crumb stays a direct #pane child, so its §70 alignment holds.
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.actions || ''}</div>`;
+  const back = (typeof navHist !== 'undefined' && navHist && navHist.length) ? `<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
+  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.actions || ''}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -5498,6 +5499,10 @@ const KNAV_VIEW = {
 // breadcrumb (Today / <section> / <page>). crumbNav() inserts this. (Robin 2026-11-03.)
 const KNAV_GROUP_LABEL = { spaces: 'Spaces', conv: 'People', plans: 'Plans', keep: 'Keep', inner: 'Reflection', money: 'Money' };
 function crumbGroupLabel() { const v = (state.view && state.view.type) || ''; const g = KNAV_VIEW[v]; return g ? (KNAV_GROUP_LABEL[g] || '') : ''; }
+// The top-nav group id for the current view, so the section crumb (Keep, Plans…)
+// can open that group's fold-down menu - there's no standalone group page to go
+// to, so clicking it does what clicking it in the menu bar does. (Robin, 2026-11-03.)
+function crumbGroupId() { const v = (state.view && state.view.type) || ''; return KNAV_VIEW[v] || ''; }
 // A cheap live hint for a tool, where we have the number to hand (never an amount).
 function knavHint(viewKey) {
   if (viewKey === 'mail') { const n = state.mailUnreadTotal || 0; return n ? `${n} to sort` : ''; }
@@ -21977,10 +21982,20 @@ async function openGoals(tab) {
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews(rtype) {
-  state.view = { type: 'reviews', rtype: (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null };
+  const cad = (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null;
+  state.view = { type: 'reviews', rtype: cad };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
+  // A cadence from the Plans menu opens your most recent SUBMITTED review of that
+  // cadence in the §72 report - the beautiful page, with ‹ › to step through the
+  // others. Only if you've never filed one do we show the cadence page, to start.
+  // (Robin, 2026-11-03: "a beautiful page to see submitted reviews", not the list.)
+  if (cad) {
+    const done = (reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === cad && (r.props || {}).status === 'done')
+      .sort((a, b) => String((b.props || {}).to || b.created_at || '').localeCompare(String((a.props || {}).to || a.created_at || '')));
+    if (done.length) { openReviewCard(done[0].id); return; }
+  }
   renderNav(); renderReviews();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
