@@ -8768,23 +8768,16 @@ function homeGlancePanelHtml(tool) {
   if (tool === 'mail') {
     // Make sure the inbox is loaded once, so the glance has mail to show.
     if (!state.__mailWarming && !state.__mailListLoaded) { try { warmMailForSheet(); } catch {} }
-    // §51: one click unfolds the email in place - sender on top (Jost), subject
-    // below (Cormorant), then the text and Reply · triage · Open this in Mail.
-    // Triaging removes the row. The row no longer just jumps to the Mail page.
+    // Robin: clicking a row opens the email in the Mail tool (no in-place reader).
+    // Each row also carries quick triage - Open · Archive · Delete · Spam - right
+    // there, so an email can be dealt with without opening it at all.
     label = 'Mail';
     const items = homeMailGlanceItems();
-    const openK = (state.home && state.home.glanceMail) || null;
     rows = items.map((m) => {
-      const k = m._key; const isOpen = openK === k;
-      const head = `<button class="gln-mail-row" data-glance-mail="${esc(k)}" aria-expanded="${isOpen ? 'true' : 'false'}"><span class="gln-mail-b"><span class="gln-mail-from">${esc(mailSenderClean(m))}</span><span class="gln-mail-subj">${esc(mailCleanSubject(m.subject) || '(no subject)')}</span></span>${m.seen ? '' : '<span class="gln-mail-dot" aria-hidden="true"></span>'}</button>`;
-      let body = '';
-      if (isOpen) {
-        const cache = (state.home && state.home.glanceMailBody) || {};
-        const txt = cache[k];
-        const textHtml = txt === undefined ? '<span class="gln-mail-loading">Reading…</span>' : (txt ? esc(txt) : 'No text to show.');
-        body = `<div class="gln-mail-open"><div class="gln-mail-text">${textHtml}</div><div class="gln-mail-acts"><button class="gln-mail-reply" data-glance-mail-reply="${esc(k)}">Reply</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="urgent">Urgent</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="important">Important</button><button class="gln-mail-q" data-glance-mail-quad="${esc(k)}" data-quad="chilled">Read later</button><button class="gln-mail-q" data-glance-mail-arch="${esc(k)}">Archive</button><button class="gln-mail-q" data-glance-mail-del="${esc(k)}">Delete</button><button class="gln-mail-openin" data-glance-mail-openin="${esc(k)}">Open this in Mail →</button></div></div>`;
-      }
-      return `<div class="gln-mail${isOpen ? ' on' : ''}">${head}${body}</div>`;
+      const k = m._key;
+      const head = `<button class="gln-mail-row" data-glance-mail="${esc(k)}" title="Open in Mail"><span class="gln-mail-b"><span class="gln-mail-from">${esc(mailSenderClean(m))}</span><span class="gln-mail-subj">${esc(mailCleanSubject(m.subject) || '(no subject)')}</span></span>${m.seen ? '' : '<span class="gln-mail-dot" aria-hidden="true"></span>'}</button>`;
+      const triage = `<div class="gln-mail-triage"><button class="gln-tri gln-tri-open" data-glance-mail-openin="${esc(k)}" title="Open in Mail">Open</button><button class="gln-tri" data-glance-mail-arch="${esc(k)}" title="Archive">Archive</button><button class="gln-tri" data-glance-mail-del="${esc(k)}" title="Delete">Delete</button><button class="gln-tri" data-glance-mail-spam="${esc(k)}" title="Mark as spam">Spam</button></div>`;
+      return `<div class="gln-mail">${head}${triage}</div>`;
     }).join('') || `<div class="gln-empty">${state.__mailListLoaded ? 'Your inbox is clear.' : 'Loading your inbox…'}</div>`;
     link = 'data-open-mail';
   }
@@ -26655,6 +26648,7 @@ document.addEventListener('click', (e) => {
   { const gmo = t.closest('[data-glance-mail-openin]'); if (gmo) { e.preventDefault(); e.stopPropagation(); glanceMailOpenIn(gmo.dataset.glanceMailOpenin); return; } }
   { const gma = t.closest('[data-glance-mail-arch]'); if (gma) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gma.dataset.glanceMailArch, 'Archive', 'Archived'); return; } }
   { const gmd = t.closest('[data-glance-mail-del]'); if (gmd) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gmd.dataset.glanceMailDel, 'Trash', 'Moved to Trash'); return; } }
+  { const gms = t.closest('[data-glance-mail-spam]'); if (gms) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gms.dataset.glanceMailSpam, 'Junk', 'Marked as spam'); return; } }
   { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailOpenIn(gm.dataset.glanceMail); return; } }
   { const mog = t.closest('[data-mail-open-glance]'); if (mog) { const k = mog.dataset.mailOpenGlance; openMail(k, { explicit: true, row: mailMsgByKey(k) }).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
