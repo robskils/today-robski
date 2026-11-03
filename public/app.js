@@ -7927,8 +7927,8 @@ function capFieldsFor(raw, kind, ans) {
   return { fields: F, parse: p };
 }
 function capHintsHtml() {
-  const ex = ['Dentist on Tuesday at 9am', 'Remind me to call Mum tomorrow', '7pm Today Aguarela II with Joaquim until 10pm repeat every week, remind 1 hour before'];
-  return `<div class="cap-hints"><span class="cap-hint-lead">Write it as you'd say it</span><span class="cap-hint-extra"><span class="cap-hint-sep">·</span> or press Speak. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x.length > 42 ? x.slice(0, 40) + '…' : x)}”</button>`).join('')}</span></div>`;
+  // Just the one line - no examples, no "what to do next". (Robin, 2026-11-03.)
+  return `<div class="cap-hints"><span class="cap-hint-lead">Write it as you'd say it</span></div>`;
 }
 function capReadoutHtml() {
   const c = capState(); const raw = (c.text || '').trim();
@@ -8009,9 +8009,9 @@ function renderCapBar(force) {
   // §47: the Notepad is the header panel now, not a mode here.
   if (c.mode === 'pad') c.mode = 'set';
   const modeTabs = '<span class="cap-eyebrow">Set it down</span>';
-  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>${c.rec ? '' : '<div class="cap-wn-row"><span class="cap-wn" data-wn-open role="button" tabindex="0">What should I do next?</span></div>'}`;
+  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
-    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close>Esc · fold away</button></div>
+    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close title="Close" aria-label="Close">✕</button></div>
     ${bodyHtml}
   </div>`;
   if (c.mode === 'pad') {
@@ -24093,7 +24093,7 @@ function renderReviewReport() {
   const free = (r.body || '').trim() ? `<div class="rr-free">${decorateProse(bodyToHtml(r.body))}</div>` : '';
   const readHtml = p.doneSummary
     ? `<div class="rv-summary-body rr-read rr-read--drop">${reviewSummaryHtml(p.doneSummary)}</div>`
-    : `<ul class="rv-insight-list rr-read-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>`;
+    : `<div class="rv-summary-body rr-read rr-read--drop">${reviewInsight(m, p).map((l) => `<p>${l}</p>`).join('')}</div>`;
   // The steer: the one part of life to lean into next - the quietest petal on the
   // wheel. A gentle forward nudge at the foot of the read, gold-edged. (§72.)
   const steerEntries = Object.keys(p.wheel || {}).map((id) => ({ a: areaById(id), s: Math.min((p.wheel || {})[id] || 0, 5) })).filter((x) => x.a && x.s > 0).sort((x, y) => x.s - y.s);
@@ -24186,12 +24186,11 @@ function renderReviewReport() {
       ${periodLine ? `<div class="rr-kicker">${esc(periodLine)}</div>` : ''}
       ${p.doneAt ? `<div class="rr-submitted">Submitted ${esc(prettyDate(p.doneAt))}</div>` : ''}
       <p class="rr-standfirst">${standfirst}</p>
-      ${sent ? `<div class="rr-byline"><span class="rr-byline-emoji">${sent.emoji}</span> The mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
+      ${sent ? `<div class="rr-byline">Mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
       ${figsHtml}
-      ${reviewKeyPointsHtml(m, p, r)}
       ${feature}
-      ${rrSec('read', 'The read', `<div class="rr-article">${readHtml}${steerHtml}</div>`)}
       ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
+      ${rrSec('read', 'The read', `<div class="rr-article">${readHtml}${steerHtml}</div>`)}
       ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
       ${(doneN || practicesK) ? rrSec('moved', 'What moved', reviewMovedHtml(m, p)) : ''}

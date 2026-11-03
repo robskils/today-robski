@@ -12887,3 +12887,9 @@ body.mailsheet-open { overflow:hidden; }
 .rwp-foot-x { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); cursor:pointer; }
 .rwp-foot-x:hover { color:var(--k-goldt); }
 @media (max-width:620px) { .rwp-panel { width:100%; } .rw-up-card { grid-template-columns:84px minmax(0,1fr); } .rw-cov--up { width:84px; height:118px; } }
+
+/* One page-title size across the app pages - the titles were "a bit rando"
+   (Robin, 2026-11-03). Matches the Reviews / Weekly-review masthead (.rv-mast-t).
+   The Today hero (.home-head h1) and the Space / note editable titles keep their
+   own deliberately-distinctive size. */
+.pane-head h1, .cal-head h1, .tbl-head h1, .mail-h1, .kg-h1, .icx-h1, .tr-h1, .adm2-h1, .nx-h1 { font-size:clamp(40px,4.4vw,56px); }
