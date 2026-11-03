@@ -9496,12 +9496,12 @@ function tarotSave(t) {
   t.saved = true;
 }
 function tarotCardFront(c, i) {
-  const d = TAROT_DECK[c.di]; const lay = TAROT_LAY[i] || TAROT_LAY[0];
-  return `<div class="tr-front"><div class="tr-front-inner${c.reversed ? ' rev' : ''}">
-    <span class="tr-num">${TAROT_R[c.di]}</span>
-    <div class="tr-art"><span class="tr-hz" style="top:${lay.hz}"></span><span class="tr-circ" style="top:${lay.cy};width:${lay.cs}"></span><span class="tr-circ faint" style="top:${lay.cy2};width:${lay.cs2}"></span><span class="tr-initial" style="top:${lay.gy}">${esc(d[0].replace(/^The /, '')[0])}</span></div>
-    <span class="tr-cname">${esc(d[0])}</span>
-  </div></div>`;
+  const d = TAROT_DECK[c.di];
+  // Real Rider-Waite-Smith Major Arcana art (Pamela Colman Smith, 1909, public
+  // domain), self-hosted in /tarot. A reversed card turns the whole image 180°
+  // (.rev), just as you'd see it in a real spread. (Robin: real, charming cards.)
+  const src = `/tarot/${String(c.di).padStart(2, '0')}.jpg`;
+  return `<div class="tr-front"><div class="tr-front-inner${c.reversed ? ' rev' : ''}"><img class="tr-img" src="${src}" alt="${esc(d[0])}" loading="lazy" draggable="false"></div></div>`;
 }
 function renderTarot() {
   const tr = state.tarot || (state.tarot = { q: '', spread: 'one', cards: [], drawn: false });

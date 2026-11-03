@@ -11182,10 +11182,13 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .tr-back, .tr-front { position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; }
 .tr-back { background:oklch(0.22 0.035 158); border:1px solid oklch(0.74 0.12 76 / .7); outline:1px solid oklch(0.74 0.12 76 / .35); outline-offset:-8px; display:flex; align-items:center; justify-content:center; background-image:repeating-linear-gradient(45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px),repeating-linear-gradient(-45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 14px); }
 .tr-back img { width:34%; height:auto; opacity:.85; }
-.tr-front { transform:rotateY(180deg); background:oklch(0.975 0.012 85); color:oklch(0.22 0.018 60); border:1px solid var(--k-gold); outline:1px solid oklch(0.72 0.13 75 / .5); outline-offset:-7px; padding:16px 14px; }
+.tr-front { transform:rotateY(180deg); background:oklch(0.975 0.012 85); color:oklch(0.22 0.018 60); border:1px solid var(--k-gold); padding:0; overflow:hidden; }
 .tr-front-empty { background:transparent; border-color:oklch(0.74 0.12 76 / .3); outline:0; transform:rotateY(180deg); }
 .tr-front-inner { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; }
 .tr-front-inner.rev { transform:rotate(180deg); }
+/* The real card art fills the gold-keyline frame; near-identical 3/5 aspect so
+   the slight cover-crop is invisible. */
+.tr-img { width:100%; height:100%; object-fit:cover; display:block; }
 .tr-num { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-goldt); }
 .tr-art { flex:1; width:100%; position:relative; margin:8px 0; overflow:hidden; border-top:1px solid oklch(0.72 0.13 75 / .5); border-bottom:1px solid oklch(0.72 0.13 75 / .5); }
 .tr-hz { position:absolute; left:0; right:0; height:1px; background:oklch(0.72 0.13 75 / .7); }
