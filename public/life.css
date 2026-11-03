@@ -10590,7 +10590,7 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
    lands the same distance below the nav everywhere; full-bleed pages add that gap
    back in the scoped rule. Bottom margin is the same on every page. (Robin,
    2026-11-03: consistent spacing above and below, every page.) */
-.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:0 0 22px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:8px 0 28px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
 /* The crumb is a direct child of .pane. On a normal (padded) page .pane already
    provides the gutter, so the crumb must NOT add its own - it lines up with the
    logo and the page title. Only the flattened full-bleed pages (.pane{padding:0},
@@ -11884,7 +11884,7 @@ body[data-view="wellbeing"] .pane > .crumbbar-slim,
 body[data-view="messages"] .pane > .crumbbar-slim,
 body[data-view="contacts"] .pane > .crumbbar-slim,
 body[data-view="settings"] .pane > .crumbbar-slim,
-body[data-view="home"] .pane > .crumbbar-slim { width:100%; max-width:2240px; margin:0 auto 22px; padding:30px clamp(20px,4vw,48px) 0; box-sizing:border-box; }
+body[data-view="home"] .pane > .crumbbar-slim { width:100%; max-width:2240px; margin:0 auto 28px; padding:38px clamp(20px,4vw,48px) 0; box-sizing:border-box; }
 @media (min-width:1600px){
   body[data-view="area"] .pane > .crumbbar-slim,
   body[data-view="goals"] .pane > .crumbbar-slim,
