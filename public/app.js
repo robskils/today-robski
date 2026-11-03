@@ -8445,10 +8445,11 @@ function homeWnTasksBodyHtml() {
   return `<div class="gln-panel-rows">${rows}</div>${foot}`;
 }
 function homeWnPracticesBodyHtml() {
-  if (!state.practices) { loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return `<div class="gln-panel-rows"><div class="gln-empty">Loading your practices…</div></div>`; }
-  const html = practicesGroups(false);
-  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-practices>Open Practices →</button></div>`;
-  return `<div class="home-wn-prc">${html || '<div class="gln-empty">No practices yet.</div>'}</div>${foot}`;
+  // The full practices interface - the very panel the Tracker uses: an edit link, every
+  // practice with its tick, the last 7 days and the streak, and the add form. Not a
+  // stripped list. (Robin, 2026-11-03.)
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open the Tracker →</button></div>`;
+  return `<div class="home-wn-prc">${trackerPanel()}</div>${foot}`;
 }
 function homeWhatNextTabsHtml() {
   const cur = homeWnTab();
@@ -8723,17 +8724,46 @@ function homeRadarItems() {
   out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
   return out;
 }
+function homeFeedFilter() { return (state.home && state.home.feedF) || 'all'; }
+// §70: what others did in shared Spaces, since you last looked. Best-effort from the
+// shares-with-me feed (the richest shared-activity we have). Hidden when nothing's new.
+function homeSinceItems() {
+  const seen = state.sharesSeen || ''; const dismissed = new Set((state.sharesDismissed || []).map(String));
+  return (state.sharedItems || []).filter((i) => i && i.shared_at && String(i.shared_at) > seen && !dismissed.has(String(i.id)));
+}
+function homeSinceHtml() {
+  const items = homeSinceItems();
+  if (!items.length) return '';
+  const rows = items.slice(0, 8).map((i) => {
+    const who = (i.owner || 'Someone').trim(); const init = (who.charAt(0) || '?').toUpperCase();
+    const where = i.title ? `“${esc(i.title)}”` : 'something';
+    const when = i.shared_at ? esc(timeAgo(new Date(i.shared_at).getTime())) : '';
+    return `<div class="feed-since-row"><span class="feed-since-init">${esc(init)}</span><div class="feed-since-b"><span class="feed-since-line"><span class="feed-since-who">${esc(who)}</span> shared with you <span class="feed-since-where" data-knav-find role="button" tabindex="0">${where}</span></span>${when ? `<span class="feed-since-when">${when}</span>` : ''}</div><div class="feed-since-acts"><span class="feed-since-do" data-knav-find role="button" tabindex="0">See it</span><span class="feed-since-seen" data-shared-dismiss="${esc(i.id)}" role="button" tabindex="0">Seen</span></div></div>`;
+  }).join('');
+  return `<div class="feed-since-head"><span class="feed-since-eyebrow">Since you were last here</span><span class="feed-since-rule"></span><span class="feed-since-clear" data-shares-seen role="button" tabindex="0">Mark all as seen</span></div><div class="feed-since-list">${rows}</div>`;
+}
+// §70 The feed: filters, "Since you were last here", then dated cards grouped
+// Today · Overdue · The next few days · Further ahead. Birthdays land on the day.
 function homeRadarBodyHtml() {
-  const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
-  // The whole row opens the item (Later is handled first, so it still snoozes).
-  const rowHtml = (o) => `<div class="rdr-row" ${o.attr} role="button" tabindex="0"><span class="rdr-kind">${esc(o.kind)}</span><div class="rdr-b"><span class="rdr-t">${esc(o.text)} <span class="rdr-when${o.overdue ? ' over' : ''}">${esc(o.when)}</span></span>${o.space ? `<span class="rdr-space">${esc(o.space)}</span>` : ''}</div><span class="rdr-acts"><span class="rdr-act">${esc(o.act)}</span><span class="rdr-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></span></div>`;
-  // Robin: "And N more" expands the radar in place so you can see them all, right
-  // here - it no longer jumps to Tasks (the radar is goals, tasks, people and more).
-  const all = !!(state.home && state.home.radarAll);
-  const grp = (label, items, gold) => { if (!items.length) return ''; const shown = all ? items : items.slice(0, 4); const more = (!all && items.length > 4) ? `<button class="rdr-more" data-radar-all>And ${items.length - 4} more</button>` : ''; return `<div class="rdr-grp"><div class="rdr-grp-h${gold ? ' over' : ''}">${esc(label)}</div>${shown.map(rowHtml).join('')}${more}</div>`; };
-  if (!total) return `<div class="rdr-empty">Nothing pressing. A clear run.</div>`;
-  const fewer = all && total > 4 ? `<button class="rdr-more rdr-fewer" data-radar-all>Show fewer</button>` : '';
-  return `${grp('Overdue', r.overdue, true)}${grp('The next few days', r.soon, false)}${grp('Further ahead', r.ahead, false)}${fewer}`;
+  const f = homeFeedFilter();
+  const FILTERS = [['all', 'All'], ['updates', 'Updates'], ['plans', 'Plans'], ['people', 'People']];
+  const filterRow = `<div class="feed-filters">${FILTERS.map(([k, l]) => `<span class="feed-filter${f === k ? ' on' : ''}" data-feed-filter="${k}" role="button" tabindex="0">${esc(l)}</span>`).join('')}</div>`;
+  const since = (f === 'all' || f === 'updates') ? homeSinceHtml() : '';
+  const KIND_CAT = { Task: 'plans', Goal: 'plans', Birthday: 'people', 'Keep in touch': 'people' };
+  let groupsHtml = '';
+  if (f !== 'updates') {
+    const r = homeRadarItems();
+    let all = [...r.overdue, ...r.soon, ...r.ahead];
+    if (f === 'plans' || f === 'people') all = all.filter((o) => KIND_CAT[o.kind] === f);
+    const byG = { today: all.filter((o) => o.n === 0), overdue: all.filter((o) => o.n < 0), soon: all.filter((o) => o.n >= 1 && o.n <= 7), ahead: all.filter((o) => o.n > 7) };
+    const mark = (o) => (o.kind === 'Keep in touch' ? 'K' : (o.kind || '?').charAt(0)).toUpperCase();
+    const card = (o) => `<div class="feed-card" ${o.attr} role="button" tabindex="0"><span class="feed-mark">${esc(mark(o))}</span><div class="feed-card-b"><div class="feed-card-meta"><span class="feed-card-kind${o.overdue ? ' over' : ''}">${esc(o.kind)}</span><span class="feed-card-when">${esc(o.when)}</span>${o.space ? `<span class="feed-card-dot">·</span><span class="feed-card-space">${esc(o.space)}</span>` : ''}</div><div class="feed-card-t">${esc(o.text)}</div><div class="feed-card-acts"><span class="feed-card-do">${esc(o.act || 'Open')}</span><span class="feed-card-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></div></div></div>`;
+    const GROUPS = [['today', 'Today', false], ['overdue', 'Overdue', true], ['soon', 'The next few days', false], ['ahead', 'Further ahead', false]];
+    groupsHtml = GROUPS.map(([k, label, over]) => { const items = byG[k]; if (!items.length) return ''; return `<div class="feed-group"><div class="feed-group-h${over ? ' over' : ''}">${esc(label)}</div><div class="feed-cards">${items.map(card).join('')}</div></div>`; }).join('');
+  }
+  const body = `${since}${groupsHtml}`;
+  const wn = `<div class="feed-wn" data-wn-next role="button" tabindex="0">Not sure where to start? <span class="feed-wn-s">What should I do next</span> <kbd>${esc(PK('⌘/'))}</kbd></div>`;
+  return `${filterRow}${body || '<div class="rdr-empty">A clear run - nothing waiting.</div>'}${wn}`;
 }
 function homeRadarSummary() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
@@ -26617,6 +26647,10 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-messages]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
   { const dz = t.closest('[data-shared-dismiss]'); if (dz) { const id = dz.getAttribute('data-shared-dismiss'); const arr = state.sharesDismissed = (state.sharesDismissed || []); if (!arr.map(String).includes(String(id))) arr.push(id); renderHome(); api('/api/shared/dismiss', { method: 'POST', body: JSON.stringify({ id }) }).catch(() => {}); return; } }
+  // §70 The feed: filter chips, "mark all seen", and the "what next" prompt.
+  { const ff = t.closest('[data-feed-filter]'); if (ff) { e.preventDefault(); state.home = state.home || {}; state.home.feedF = ff.dataset.feedFilter; renderHome(); return; } }
+  { const ss = t.closest('[data-shares-seen]'); if (ss) { e.preventDefault(); state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; } }
+  { const wnx = t.closest('[data-wn-next]'); if (wnx) { e.preventDefault(); state.home = state.home || {}; state.home.wntab = 'next'; try { localStorage.setItem('life.home.wntab', 'next'); } catch {} renderHome(); setTimeout(() => { const b = document.querySelector('.home-wntabs'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); return; } }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
