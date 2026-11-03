@@ -2196,26 +2196,29 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-blank, .note-empty { color:var(--ink-3); font-family:var(--k-serif); font-style:italic; font-size:21px; }
 .note-blank { padding:70px 20px; text-align:center; }
 
-.note-crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:2px 0 24px; font-size:13px; }
+.note-crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:22px 0 24px; font-size:13px; }
 /* Robin: match the slim breadcrumb used on Mail/Spaces/Goals everywhere - no back
    arrow (the menubar carries back), a muted "·" separator, the same Jost type. */
 .note-crumbs .crumb-back { display:none; }
 .note-crumbs .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; cursor:pointer; white-space:nowrap; }
 .note-crumbs button.crumb:hover { color:var(--k-goldt); }
-.note-crumbs .crumb.cur { color:var(--k-ink); cursor:default; }
+.note-crumbs .crumb.cur { color:var(--k-goldt); cursor:default; }
 .note-crumbs .crumb-sep { font-size:0; line-height:0; }
-.note-crumbs .crumb-sep::before { content:'·'; font-size:12px; line-height:1; color:var(--k-line); }
+.note-crumbs .crumb-sep::before { content:'/'; font-size:14px; line-height:1; color:var(--k-mute); }
 .note-crumbs .crumb-tools, .note-crumbs .addnew { margin-left:auto; }
 /* Standard breadcrumb bar (tables, rows, and shared with note/task/area). */
 .crumbbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
 /* Desktop: pin the breadcrumb just below the tab strip (44px) as you scroll, so
    you always know where you are. Negative side margins bleed the blurred bar to
    the pane edges (cancelling the pane's side padding); mobile has its own rule. */
+/* Robin 2026-11-03: every breadcrumb is now the plain, static, content-inset line
+   (.crumbbar-slim style). .note-crumbs no longer becomes a sticky blurred bar - it
+   matches .crumbbar-slim. The mail reader keeps its own sticky rule (body.mail-reading
+   .note-crumbs) further down. .crumbbar is left here but every crumbbar is -slim,
+   which overrides this to static anyway, so it's inert. */
 @media (min-width:821px){
-  .crumbbar, .note-crumbs {
+  .crumbbar:not(.crumbbar-slim) {
     position:sticky; top:var(--tabstrip-h, 0px); z-index:22;
-    /* -30px cancels the pane's 30px top padding, so the bar sits FLUSH under the
-       tab strip at rest and never slides - an anchor that never moves. (Robin.) */
     margin:-30px calc(-1 * clamp(20px,4vw,52px)) 12px; padding:9px clamp(20px,4vw,52px) 11px;
     background:color-mix(in srgb,var(--paper) 92%,transparent); backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line);
@@ -10570,7 +10573,10 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
 .crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
-.crumbbar-slim .crumb.cur { color:var(--k-ink); font-weight:500; max-width:48ch; cursor:default; }
+.crumbbar-slim .crumb.cur { color:var(--k-goldt); font-weight:500; max-width:48ch; cursor:default; }
+/* The section segment (Today / <section> / page) is context, not a link - muted,
+   same as the other crumbs but not interactive. */
+.crumbbar-slim .crumb-section, .note-crumbs .crumb-section { color:var(--k-mute); cursor:default; }
 .crumbbar-slim .crumb-dot { color:var(--k-line); font-size:12px; line-height:1; flex:none; }
 .crumbbar-slim .crumb-sep { color:var(--k-line); font-size:14px; opacity:1; flex:none; }
 .crumbbar-slim .crumb-up { display:inline-flex; align-items:baseline; gap:6px; background:none; border:0; padding:0; font-family:var(--k-sans); font-size:14px; line-height:1.3; cursor:pointer; max-width:34ch; overflow:hidden; white-space:nowrap; flex:none; }
@@ -10593,7 +10599,7 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .note-crumbs .crumb-back { display:none; }
 .note-crumbs .crumb { font-family:var(--k-sans); font-size:14px; line-height:1.3; color:var(--k-mute); background:none; border:0; padding:0; max-width:30ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .note-crumbs button.crumb:hover { color:var(--k-goldt); }
-.note-crumbs .crumb.cur { color:var(--k-ink); cursor:default; }
+.note-crumbs .crumb.cur { color:var(--k-goldt); cursor:default; }
 .note-crumbs .crumb-sep { font-size:0; color:var(--k-line); flex:none; }
 .note-crumbs .crumb-sep::after { content:"/"; font-size:14px; }
 .note-crumbs .crumb-tools { margin-left:auto; display:flex; align-items:baseline; gap:16px; }

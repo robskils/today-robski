@@ -1610,25 +1610,28 @@ function areaLinkHtml(areaId) {
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
 // connected page when there is one.
 function crumbNav(trail, areaId, backAttr, opts = {}) {
-  // §19 slim breadcrumb: an unboxed Jost line - muted links, "/" separators, the
-  // current segment in ink. It starts at the group (the wordmark is home, so a
-  // leading "Home" crumb is dropped and the current view's group prepended), and
-  // is hidden at a tool's top level since the page title already says where you
-  // are - it only shows once you are genuinely deep. On mobile it collapses to
-  // "‹ parent". No back arrow, no "+ New": Set something down and ⌘[ replace them.
-  // (backAttr / areaId kept for callers but no longer drawn.)
-  // Robin: no back ARROW in the breadcrumb bar - the persistent one in the menubar
-  // does back. This bar is just the hierarchy, starting at "Today" (the home crumb,
-  // relabelled), then the trail the caller passed, the last segment in ink.
+  // THE one breadcrumb for the whole app (Robin, 2026-11-03: make them consistent -
+  // same place, same style, on every page but Today). An unboxed, static Jost line
+  // at the content inset just under the top nav: "Today / <section> / <page…>", with
+  // " / " separators, links in mute, the current page in GOLD. The section is the
+  // current view's top-nav group (Keep, Plans, Reflection…), inserted automatically
+  // unless the trail already names it. No back arrow (the menubar does back); +New is
+  // topped up by crumbAddEverywhere where it belongs. backAttr/areaId kept for callers
+  // but not drawn. Match this exactly everywhere - see CLAUDE.md.
   let items = (opts.omitCurrent ? trail.slice(0, -1) : trail).slice();
   if (items[0] && /data-view-home/.test(items[0].attr || '')) items[0] = { label: 'Today', attr: 'data-view-home' };
+  // Insert the section (top-nav group) right after Today, unless it's already there.
+  if (items.length && /data-view-home/.test(items[0].attr || '')) {
+    const gl = crumbGroupLabel();
+    if (gl && !items.some((it) => (it.label || '') === gl)) items.splice(1, 0, { label: gl, group: true });
+  }
   if (!items.length) return '';
   const cur = opts.omitCurrent ? null : items[items.length - 1];
   const hier = opts.omitCurrent ? items : items.slice(0, -1);
-  const parts = hier.map((it) => `<button class="crumb" ${it.attr || ''}>${esc(it.label)}</button>`);
+  const parts = hier.map((it) => it.attr ? `<button class="crumb" ${it.attr}>${esc(it.label)}</button>` : `<span class="crumb crumb-section">${esc(it.label)}</span>`);
   if (cur) parts.push(`<span class="crumb cur">${esc(cur.label)}</span>`);
   if (!parts.length) return '';
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">·</span>')}</div></div>`;
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div></div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -3794,6 +3797,7 @@ function renderMessagesPage() {
   $('#pane').innerHTML = `
     <div class="mp-page${hasCur ? ' mp-has-cur' : ''}">
       <div class="mp-list-col">
+        ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Messages' }])}
         <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
         <h1 class="mp-title">Messages</h1>
         <div class="mp-search"><input class="mp-q" id="mp-q" type="search" placeholder="Look for a person or a word…" value="${esc(mp.q || '')}" autocomplete="off"><button class="mp-new" data-open-contacts>+ New</button></div>
@@ -4218,6 +4222,7 @@ function renderSettingsSix() {
 
   $('#pane').innerHTML = `<div class="sx-page">
     <div class="sx-main">
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings' }])}
       <div class="sx-eyebrow"><span class="sx-rule"></span><span class="sx-eyebrow-t">Menu · Settings</span></div>
       <h1 class="sx-h1">Settings</h1>
       <div class="sx-lead">Six things to tune. Everything else stays out of the way.</div>
@@ -5484,6 +5489,10 @@ const KNAV_VIEW = {
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'inner',
   money: 'money', financial: 'money',
 };
+// The top-nav group labels, keyed by group id - the "section" segment of every
+// breadcrumb (Today / <section> / <page>). crumbNav() inserts this. (Robin 2026-11-03.)
+const KNAV_GROUP_LABEL = { spaces: 'Spaces', conv: 'People', plans: 'Plans', keep: 'Keep', inner: 'Reflection', money: 'Money' };
+function crumbGroupLabel() { const v = (state.view && state.view.type) || ''; const g = KNAV_VIEW[v]; return g ? (KNAV_GROUP_LABEL[g] || '') : ''; }
 // A cheap live hint for a tool, where we have the number to hand (never an amount).
 function knavHint(viewKey) {
   if (viewKey === 'mail') { const n = state.mailUnreadTotal || 0; return n ? `${n} to sort` : ''; }
@@ -12623,7 +12632,7 @@ function renderAreaV4() {
 
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-area av3 av4">
-      <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">·</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
+      <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
         <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
@@ -14510,6 +14519,7 @@ function renderCalendar() {
   const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
   $('#pane').innerHTML = `
     <div class="kpage-cal">
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.calendar') }])}
       <div class="cx-eyebrow">Plans · Calendar</div>
       <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
@@ -20151,7 +20161,7 @@ function renderContactPage() {
   };
   $('#pane').innerHTML = `
     <div class="kwrap cvx-cpage">
-      <div class="cvx-cback"><button class="cvx-back" data-cv-back>← Contacts</button><span class="cvx-back-sep">·</span><span class="cvx-back-nm">${esc(c.title || 'Contact')}</span></div>
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts'), attr: 'data-open-contacts' }, { label: c.title || 'Contact' }])}
       <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}"><span class="cv-star-sq"></span>${p.starred ? 'Starred' : 'Star'}</button></div>
       <h1 class="cv-name"><textarea class="cv-name-in" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea></h1>
       ${inLine ? `<div class="cvx-inline">${esc(inLine)}</div>` : ''}
@@ -21973,6 +21983,7 @@ function renderGoals() {
   const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : view === 'bucket' ? bucketBody() : goalsByAreaBody();
   const showOrder = view !== 'bucket';
   $('#pane').innerHTML = `<div class="kwrap kpage kpage-goals">
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: view === 'bucket' ? 'Bucket list' : 'Goals' }])}
     <div class="kg-title">
       <div class="kg-title-l">
         <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Plans · Goals</span></div>
@@ -22223,7 +22234,7 @@ function renderGoalCard() {
   // {Space}" (§63 back + the Space as the up-link), not the nav group/Goals/title.
   // Crumb stays clean (Today · Goals); the Space gets its own tidy chip in the
   // eyebrow row, so 'England' isn't repeated and the top no longer looks cluttered.
-  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">·</span><button class="crumb" data-open-goals>Goals</button></div></div>`;
+  const goalCrumb = `<div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-goals>Goals</button></div></div>`;
   $('#pane').innerHTML = `
     <div class="gx-page">
       ${goalCrumb}
