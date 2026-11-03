@@ -8967,23 +8967,43 @@ function homeLeftTab() {
   if (!state.home) return 'cal';
   if (!state.home.ltab) { let v = 'cal'; try { v = localStorage.getItem('life.home.ltab') || 'cal'; } catch {} state.home.ltab = v; }
   let cur = state.home.ltab;
-  if (cur === 'mail' && !modOn('mail')) cur = 'cal';
-  if (!['cal', 'radar', 'mail'].includes(cur)) cur = 'cal';
+  // Mail now lives in its own band beside Messages; this band is Calendar · The feed.
+  if (!['cal', 'radar'].includes(cur)) cur = 'cal';
   return cur;
 }
 function homeLeftTabsHtml(off) {
   const cur = homeLeftTab();
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
-  // The Mail count must match what the panel actually lists (it used the unread
-  // total, so it said 2 when one row showed, or 1 when two did). Tie it to the
-  // same items the glance renders. (Robin: be consistent.)
-  const mailN = modOn('mail') ? homeMailGlanceItems().length : 0;
   const defs = [['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]];
-  if (modOn('mail')) defs.push(['mail', 'Mail', mailN, mailN > 0]);
   const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-ltab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
-  const body = cur === 'mail' ? homeGlancePanelHtml('mail') : cur === 'radar' ? homeRadarBodyHtml() : homeCalBodyHtml(off);
+  const body = cur === 'radar' ? homeRadarBodyHtml() : homeCalBodyHtml(off);
   return `<div class="home-ltabwrap"><div class="home-ltabs" role="tablist">${strip}</div><div class="home-ltab-body home-ltab-${cur}">${body}</div></div>`;
+}
+// Robin: Mail and Messages share their own tabbed band lower down - Mail on the
+// left, Messages on the right - working exactly like Calendar · The feed above.
+// The Mail count is the inbox to-sort pile the glance lists (see
+// feedback_mail_count_tosort); Messages is the unread count.
+function homeLowerTab() {
+  const haveMail = modOn('mail'); const haveMsgs = modOn('contacts');
+  if (!state.home) return haveMail ? 'mail' : 'messages';
+  if (!state.home.ltab2) { let v = ''; try { v = localStorage.getItem('life.home.ltab2') || ''; } catch {} state.home.ltab2 = v || (haveMail ? 'mail' : 'messages'); }
+  let cur = state.home.ltab2;
+  if (cur === 'mail' && !haveMail) cur = 'messages';
+  if (cur === 'messages' && !haveMsgs) cur = 'mail';
+  if (!['mail', 'messages'].includes(cur)) cur = haveMail ? 'mail' : 'messages';
+  return cur;
+}
+function homeLowerTabsHtml() {
+  const haveMail = modOn('mail'); const haveMsgs = modOn('contacts');
+  if (!haveMail && !haveMsgs) return '';
+  const cur = homeLowerTab();
+  const defs = [];
+  if (haveMail) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
+  if (haveMsgs) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
+  const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-ltab2="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
+  const body = cur === 'messages' ? homeGlancePanelHtml('messages') : homeGlancePanelHtml('mail');
+  return `<div class="home-ltabwrap home-mmtabs"><div class="home-ltabs" role="tablist">${strip}</div><div class="home-ltab-body home-ltab-${cur}">${body}</div></div>`;
 }
 // §62 right column: Today's readings (I Ching · Horoscope · Spirit) as compact
 // glyph rows, with the quote of the day at their foot. No emoji - the I Ching
@@ -9110,7 +9130,7 @@ function renderHome() {
           <div class="home-main">
             ${homeLeftTabsHtml(off)}
             <div class="home-below2">
-              ${homeMsgsSectionHtml()}
+              ${homeLowerTabsHtml()}
               ${homeWhatNextHtml()}
             </div>
           </div>
@@ -9320,7 +9340,8 @@ function renderNotesList() {
   const favs = notes.filter((n) => n.props && n.props.fav);
   const spaceCounts = new Map();
   for (const n of notes) for (const k of blockAreas(n)) spaceCounts.set(k, (spaceCounts.get(k) || 0) + 1);
-  const spaceRows = [...spaceCounts.entries()].map(([k, c]) => [areaById(k), c]).filter(([a]) => a).sort((x, y) => (x[0].title || '').localeCompare(y[0].title || ''));
+  // Most notes first (Robin), then alphabetical for ties.
+  const spaceRows = [...spaceCounts.entries()].map(([k, c]) => [areaById(k), c]).filter(([a]) => a).sort((x, y) => (y[1] - x[1]) || (x[0].title || '').localeCompare(y[0].title || ''));
   const sideOpen = (id) => !(state.notesSide && state.notesSide[id] === false);
   const sidePanel = (id, title, count, body) => `<div class="nx-side-panel"><button class="nx-side-h" data-notes-side="${id}"><span class="nx-side-hl">${esc(title)}</span><span class="nx-side-n">${count}</span><span class="nx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
   const keptBody = `<div class="nx-side-body">${favs.length ? favs.map((n) => `<button class="nx-side-row" data-open-note="${n.id}"><span class="nx-side-rt">${esc(n.title || 'Untitled')}</span></button>`).join('') : '<div class="nx-side-empty">No starred notes yet.</div>'}</div>`;
@@ -26518,6 +26539,7 @@ document.addEventListener('click', (e) => {
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
   { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} if (lt.dataset.homeLtab === 'mail') state.home.glanceMail = null; renderHome(); return; } }
+  { const lt = t.closest('[data-home-ltab2]'); if (lt) { state.home = state.home || {}; state.home.ltab2 = lt.dataset.homeLtab2; try { localStorage.setItem('life.home.ltab2', state.home.ltab2); } catch {} if (lt.dataset.homeLtab2 === 'mail') state.home.glanceMail = null; renderHome(); return; } }
   { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
   { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
   if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderArea(); return; }
@@ -26541,7 +26563,7 @@ document.addEventListener('click', (e) => {
   // toggle the row - so it's handled before the row's expand (data-home-read).
   { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarotReading(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
-  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab = 'mail'; try { localStorage.setItem('life.home.ltab', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-ltabwrap'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
+  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab2 = 'mail'; try { localStorage.setItem('life.home.ltab2', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-mmtabs'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
