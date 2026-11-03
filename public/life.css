@@ -12893,3 +12893,75 @@ body.mailsheet-open { overflow:hidden; }
    The Today hero (.home-head h1) and the Space / note editable titles keep their
    own deliberately-distinctive size. */
 .pane-head h1, .cal-head h1, .tbl-head h1, .mail-h1, .kg-h1, .icx-h1, .tr-h1, .adm2-h1, .nx-h1 { font-size:clamp(40px,4.4vw,56px); }
+
+/* ════ V37 Weekly Review report — matches Koyeba Weekly Review.dc.html.
+   Cormorant Garamond for anything that speaks, Jost for anything that labels,
+   no other fonts. Scoped to .rr-v37 so no other page is touched. (Robin, 2026-11-03.) */
+.rr-v37 { max-width:960px; margin:0 auto; }
+.rr-crumb-acts { display:flex; align-items:center; gap:18px; margin-left:auto; white-space:nowrap; }
+.rr-sibnav, .rr-v37 .rr-edit-btn { background:none; border:0; padding:0; cursor:pointer; font:500 14px var(--k-sans); color:var(--k-mute); }
+.rr-v37 .rr-edit-btn { color:var(--k-ink); }
+.rr-sibnav:hover, .rr-v37 .rr-edit-btn:hover { color:var(--k-goldt); }
+/* Hero — centred */
+.rr-v37 .rr-hero { padding:48px 0 0; text-align:center; }
+.rr-v37 .rr-eyebrow { display:block; font:600 11px var(--k-sans); letter-spacing:.16em; text-transform:uppercase; color:var(--k-goldt); border:0; padding:0; }
+.rr-v37 .rr-headline { font:500 clamp(40px,4.6vw,58px)/1.05 var(--k-serif); color:var(--k-ink); margin:14px 0 0; letter-spacing:0; text-wrap:balance; }
+.rr-v37 .rr-standfirst { font:italic 300 clamp(26px,2.8vw,34px)/1.3 var(--k-serif); color:var(--k-goldt); margin:14px 0 0; }
+.rr-herometa { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 22px; margin-top:16px; font:400 14.5px var(--k-sans); color:var(--k-mute); }
+.rr-herometa b { color:var(--k-ink); font-weight:500; }
+/* Figures strip */
+.rr-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); margin-top:40px; background:var(--k-panel); border:1px solid var(--k-line); }
+.rr-stat { padding:22px 22px 18px; border-right:1px solid var(--k-line); display:flex; flex-direction:column; gap:6px; min-width:0; }
+.rr-stat-top { display:flex; align-items:baseline; gap:10px; }
+.rr-stat-n { font:500 50px/1 var(--k-serif); color:var(--k-ink); }
+.rr-stat-d { font:600 13px var(--k-sans); white-space:nowrap; }
+.rr-stat-d-mute { color:var(--k-mute); } .rr-stat-d-rust { color:var(--k-rust); }
+.rr-stat-l { font:500 14.5px var(--k-sans); color:var(--k-ink); }
+.rr-stat-spark { display:flex; align-items:flex-end; gap:3px; height:30px; margin-top:6px; }
+.rr-stat-span { font:400 12px var(--k-sans); color:var(--k-mute); }
+/* The win (forest card) + In your own words */
+.rr-winwords { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:18px; margin-top:22px; }
+.rr-win { position:relative; overflow:hidden; background:var(--k-deep); color:var(--k-ondeep); padding:28px 30px; }
+.rr-win-ring { position:absolute; border-radius:50%; border:1px solid color-mix(in srgb,var(--k-gold) 45%,transparent); }
+.rr-win-ring1 { right:-40px; top:-40px; width:180px; height:180px; }
+.rr-win-ring2 { right:10px; top:10px; width:80px; height:80px; border-color:color-mix(in srgb,var(--k-gold) 60%,transparent); }
+.rr-win-eyebrow { position:relative; font:600 11px var(--k-sans); letter-spacing:.16em; text-transform:uppercase; color:var(--k-gold); }
+.rr-win-t { position:relative; font:500 34px/1.12 var(--k-serif); margin-top:14px; max-width:320px; }
+.rr-win-sub { position:relative; font:400 15px var(--k-sans); margin-top:12px; opacity:.85; }
+.rr-win-go { position:relative; display:block; background:none; border:0; padding:0; margin-top:18px; cursor:pointer; font:500 14px var(--k-sans); color:var(--k-gold); }
+.rr-words { background:var(--k-panel); border:1px solid var(--k-line); padding:28px 30px; }
+.rr-words-eyebrow { font:600 11px var(--k-sans); letter-spacing:.16em; text-transform:uppercase; color:var(--k-mute); }
+.rr-words-q { font:italic 300 30px/1.25 var(--k-serif); margin-top:12px; color:var(--k-ink); }
+.rr-words-grid { display:grid; gap:12px; margin-top:18px; }
+.rr-words-row { display:grid; grid-template-columns:110px minmax(0,1fr); gap:12px; align-items:baseline; }
+.rr-words-k { font:600 10.5px var(--k-sans); letter-spacing:.12em; text-transform:uppercase; color:var(--k-goldt); }
+.rr-words-v { font:500 16px/1.5 var(--k-serif); color:var(--k-ink); }
+/* Sections — numeral + Cormorant title + Jost hint + sign */
+.rr-v37 .rr-sec { border-bottom:1px solid var(--k-line); }
+.rr-v37 .rr-h.rr-collap { display:flex; align-items:baseline; gap:16px; width:100%; padding:34px 0 14px; background:none; border:0; cursor:pointer; text-align:left; margin:0; }
+.rr-h-num { flex:none; width:26px; font:italic 300 18px var(--k-serif); color:var(--k-gold); }
+.rr-h-t { font:500 32px/1.05 var(--k-serif); color:var(--k-ink); white-space:nowrap; }
+.rr-h-hint { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:400 14.5px var(--k-sans); color:var(--k-mute); }
+.rr-h-sign { margin-left:auto; font:400 20px/1 var(--k-sans); color:var(--k-mute); }
+.rr-sec-body { padding:4px 0 34px 42px; }
+/* The read — Cormorant prose (Robin: Cormorant for anything that speaks) + drop-cap */
+.rr-v37 .rr-article { max-width:660px; }
+.rr-v37 .rr-read, .rr-v37 .rr-read--drop { max-width:660px; color:var(--k-ink); }
+.rr-v37 .rr-read p, .rr-v37 .rr-read--drop p { font:500 18px/1.65 var(--k-serif); margin:0 0 18px; }
+.rr-v37 .rr-read p:last-child, .rr-v37 .rr-read--drop p:last-child { margin-bottom:0; }
+.rr-v37 .rr-read p:first-child::first-letter, .rr-v37 .rr-read--drop p:first-child::first-letter { font:500 74px/.8 var(--k-serif); color:var(--k-gold); float:left; padding:8px 10px 0 0; }
+.rr-v37 .rr-read-list { margin:0; padding:0; list-style:none; }
+.rr-v37 .rr-read-list li { font:500 18px/1.65 var(--k-serif); color:var(--k-ink); padding:0 0 12px; }
+/* Coda */
+.rr-v37 .rr-coda { text-align:center; padding:70px 0 10px; }
+.rr-coda-line { margin:0; font:italic 300 30px/1.35 var(--k-serif); color:var(--k-ink); }
+.rr-coda-mark { margin-top:22px; font-size:30px; line-height:1; color:var(--k-gold); opacity:.7; }
+.rr-coda-acts { display:flex; flex-wrap:wrap; justify-content:center; gap:24px; margin-top:22px; }
+.rr-coda-link { background:none; border:0; padding:0; cursor:pointer; font:500 14px var(--k-sans); color:var(--k-ink); }
+.rr-coda-link:hover { color:var(--k-goldt); }
+.rr-coda-primary { color:var(--k-goldt); }
+.rr-ahead-empty { font:400 15px var(--k-sans); color:var(--k-mute); }
+@media (max-width:720px){ .rr-v37 .rr-sec-body { padding-left:0; } .rr-h-t { white-space:normal; } }
+/* Night: the forest win card sits on a forest ground, so give it a faint gold
+   keyline for definition. Day keeps the reference's borderless card. */
+body.night .rr-win, :root[data-theme='dark'] .rr-win { border:1px solid color-mix(in srgb,var(--k-gold) 22%,transparent); }

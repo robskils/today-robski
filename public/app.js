@@ -24070,9 +24070,11 @@ function reviewSentimentHtml(p, r) {
 // the wins showcase, your area scores + notes, goals, and reflections - a document
 // you'd be happy to look back on. "Edit" flips to the working form.
 // A collapsible section in the report (reuses the review-section toggle store).
-function rrSec(key, label, inner) {
+function rrSec(key, num, title, hint, inner) {
+  // §V37 section chrome: a Cormorant Roman numeral + Cormorant title, a Jost hint
+  // (shown only when folded), and a + / − sign. Matches Koyeba Weekly Review.dc.html.
   const open = rvSecOpen(key);
-  return `<section class="rr-sec"><button type="button" class="rr-h rr-collap" data-rvsec="${esc(key)}"><span class="acw-chev">${open ? '▾' : '▸'}</span><span>${label}</span></button>${open ? inner : ''}</section>`;
+  return `<section class="rr-sec" id="rr-${esc(key)}"><button type="button" class="rr-h rr-collap" data-rvsec="${esc(key)}"><span class="rr-h-num">${esc(num)}</span><span class="rr-h-t">${esc(title)}</span>${!open && hint ? `<span class="rr-h-hint">${esc(hint)}</span>` : ''}<span class="rr-h-sign" aria-hidden="true">${open ? '−' : '+'}</span></button>${open ? `<div class="rr-sec-body">${inner}</div>` : ''}</section>`;
 }
 function renderReviewReport() {
   const R = state.review_open; const r = R.review; const p = r.props || {}; const cfg = REVIEWS[p.rtype] || REVIEWS.weekly; const m = p.mirror || {};
@@ -24178,26 +24180,62 @@ function renderReviewReport() {
   // it belongs (the footer), and leaves you looking forward. (Robin, 2026-10-30.)
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
+  // ── V37 Weekly Review report: matches Koyeba Weekly Review.dc.html. Cormorant for
+  // anything that speaks, Jost for anything that labels, no other fonts. (Robin.)
+  const wk = (p.rtype === 'weekly' && p.to) ? isoWeekInfo(p.to) : null;
+  const eyebrowTxt = `${cfg.label} review${wk ? ` · Week ${wk.week} of ${wk.total}` : (pt.main ? ` · ${esc(pt.main)}` : '')}`;
+  const sibLbl = (rev) => { if (!rev) return ''; const q = rev.props || {}; if (q.rtype === 'weekly' && q.to) { const ww = isoWeekInfo(q.to); return `Week ${ww.week}`; } return (periodTitle(q.rtype, q.from, q.to) || {}).main || cfg.label; };
+  const prevL = sibLbl(sib.prev), nextL = sibLbl(sib.next);
+  // The editorial standfirst - a warm one-liner. The richest version rides in the AI
+  // read; without it, a line composed from the record. (Flagged to Robin.)
+  const sfTop = topAName ? `A ${pw} carried by ${esc(topAName)}.` : doneN ? `${doneN} done, and a ${pw} on the record.` : `A quiet ${pw} - and that's allowed.`;
+  // Figures strip - the four headline numbers with a move and an 8-period sparkline.
+  const barStrip = (vals, mx) => { const v = (vals || []).filter((x) => x != null).slice(-8); if (v.length < 2) return ''; const m2 = Math.max(mx || 1, ...v); return `<div class="rr-stat-spark">${v.map((x, i) => `<span style="flex:1;height:${Math.max(6, Math.round(x / m2 * 100))}%;background:${i === v.length - 1 ? 'var(--k-gold)' : 'var(--k-line)'}"></span>`).join('')}</div><div class="rr-stat-span">Last ${v.length} ${pw}s</div>`; };
+  const delSpan = (cur, prev) => { if (prev == null || cur == null) return ''; const d = Math.round((cur - prev) * 10) / 10; if (!d) return ''; const up = d > 0; return `<span class="rr-stat-d" style="color:${up ? 'var(--k-goldt)' : 'var(--k-rust)'}">${up ? '+' : '−'}${Math.abs(d)}</span>`; };
+  const openP1 = p.openP1 != null ? p.openP1 : 0;
+  const trackedN = (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff)).length;
+  const scoredN = Object.keys(p.wheel || {}).length;
+  const STAT = [
+    doneN != null ? ['Ticked off', String(doneN), delSpan(doneN, prevDone), barStrip(doneHist, 10)] : null,
+    scoredN ? ['Spaces moved', String(scoredN), `<span class="rr-stat-d rr-stat-d-mute">of ${trackedN}</span>`, ''] : null,
+    wAvg ? ['Wheel of Life', String(wAvg), delSpan(wAvg, prevWheel), barStrip(wheelHist, 5)] : null,
+    ['First priorities', String(openP1), openP1 ? `<span class="rr-stat-d rr-stat-d-rust">still open</span>` : `<span class="rr-stat-d rr-stat-d-mute">all clear</span>`, ''],
+  ].filter(Boolean);
+  const statsHtml = `<div class="rr-stats">${STAT.map(([label, n, d, spark]) => `<div class="rr-stat"><div class="rr-stat-top"><span class="rr-stat-n">${esc(n)}</span>${d}</div><div class="rr-stat-l">${esc(label)}</div>${spark}</div>`).join('')}</div>`;
+  // The win of the period (forest card) + In your own words.
+  const winHtml = top ? `<div class="rr-win"><span class="rr-win-ring rr-win-ring1"></span><span class="rr-win-ring rr-win-ring2"></span><div class="rr-win-eyebrow">The win of the ${pw}</div><div class="rr-win-t">${esc(top.title || 'Untitled')}</div>${top.tag ? `<div class="rr-win-sub">${esc(top.tag)}</div>` : ''}${top.id ? `<button class="rr-win-go" data-open-task="${top.id}">See it →</button>` : ''}</div>` : '';
+  const wordItems = (cfg.prompts || []).map((q, i) => { const a = (p.answers || {})[i]; return (a && a.trim()) ? { k: q, v: a.trim() } : null; }).filter(Boolean).slice(0, 4);
+  const wordsHtml = (quote || wordItems.length) ? `<div class="rr-words"><div class="rr-words-eyebrow">In your own words</div>${quote ? `<div class="rr-words-q">“${esc(quote)}”</div>` : ''}${wordItems.length ? `<div class="rr-words-grid">${wordItems.map((w) => `<div class="rr-words-row"><span class="rr-words-k">${esc(w.k)}</span><span class="rr-words-v">${esc(w.v)}</span></div>`).join('')}</div>` : ''}</div>` : '';
+  const winWordsHtml = (winHtml || wordsHtml) ? `<div class="rr-winwords">${winHtml}${wordsHtml}</div>` : '';
+  // Next week: what's on the horizon.
+  const aheadItems = reviewDeadlineItems(p);
+  const aheadHtml = aheadItems.length ? `<div class="rr-ahead">${reviewDeadlineRows(p)}</div>` : `<div class="rr-ahead-empty">A clear horizon - nothing waiting.</div>`;
+  const balBody = reviewWheelHtml(p), movedBody = reviewMovedHtml(m, p), trendsBody = reviewTrendsHtml(p);
+  const hintRead = sent ? `${esc(sent.label)}${steerLow ? ` · steer: ${esc(steerLow.a.title)}` : ''}` : (steerLow ? `Steer: ${esc(steerLow.a.title)}` : 'Your week, read back');
+  const sectionsHtml = [
+    rrSec('read', 'I', 'The read', hintRead, `<div class="rr-article">${readHtml}</div>${steerHtml}`),
+    balBody ? rrSec('balance', 'II', 'The balance', wAvg ? `Averaging ${wAvg} of 5` : 'Your Wheel of Life', balBody) : '',
+    (doneN || practicesK) ? rrSec('moved', 'III', 'What moved', 'What climbed, what went quiet', movedBody) : '',
+    trendsBody ? rrSec('trends', 'IV', 'Trends', `Your run over recent ${pw}s`, trendsBody) : '',
+    rrSec('next', 'V', 'Next week', aheadItems.length ? `${aheadItems.length} on the horizon` : 'A clear horizon', aheadHtml),
+  ].join('');
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${cfg.label} review` }], null, null, { actions: `<span class="crumb-actions"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span>` })}
-    <article class="rr" style="--h:${hue}">
-      <div class="rr-eyebrow"><span>${esc(cfg.label)} review</span>${navHtml}</div>
-      <h1 class="rr-headline">${esc(headline)}</h1>
-      ${periodLine ? `<div class="rr-kicker">${esc(periodLine)}</div>` : ''}
-      ${p.doneAt ? `<div class="rr-submitted">Submitted ${esc(prettyDate(p.doneAt))}</div>` : ''}
-      <p class="rr-standfirst">${standfirst}</p>
-      ${sent ? `<div class="rr-byline">Mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</div>` : ''}
-      ${figsHtml}
-      ${feature}
-      ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
-      ${rrSec('read', 'The read', `<div class="rr-article">${readHtml}${steerHtml}</div>`)}
-      ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
-      ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
-      ${(doneN || practicesK) ? rrSec('moved', 'What moved', reviewMovedHtml(m, p)) : ''}
-      ${recordHtml}
-      ${deadlinesHtml}
-      <div class="rr-coda"><span class="rr-coda-rule"></span><p class="rr-coda-line">${esc(codaLine)}</p><span class="rr-coda-mark">${MARK}</span></div>
-      <div class="rr-foot"><button class="ghost" data-review-edit>✎ Edit this review</button><span class="rr-foot-note">The scores and words above are the fuel; the report reads them back to you. Open the editor to change any of it.</span></div>
+    ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: sibLbl(r) || `${cfg.label} review` }], null, null, { actions: `<span class="rr-crumb-acts">${sib.prev ? `<button class="rr-sibnav" data-open-review="${sib.prev.id}">‹ ${esc(prevL)}</button>` : ''}${sib.next ? `<button class="rr-sibnav" data-open-review="${sib.next.id}">${esc(nextL)} ›</button>` : ''}<button class="ghost rr-edit-btn" data-review-edit>Edit</button></span>` })}
+    <article class="rr rr-v37">
+      <div class="rr-hero">
+        <div class="rr-eyebrow">${eyebrowTxt}</div>
+        <h1 class="rr-headline">${esc(headline)}</h1>
+        <div class="rr-standfirst">${sfTop}</div>
+        <div class="rr-herometa">${p.doneAt ? `<span>Submitted ${esc(prettyDate(p.doneAt))}</span>` : ''}${sent ? `<span>Mood: <b>${esc(sent.label)}</b> · ${esc(sent.note)}</span>` : ''}</div>
+      </div>
+      ${statsHtml}
+      ${winWordsHtml}
+      ${sectionsHtml}
+      <div class="rr-coda">
+        <p class="rr-coda-line">${esc(codaLine)}</p>
+        <div class="rr-coda-mark">${MARK}</div>
+        <div class="rr-coda-acts">${sib.prev ? `<button class="rr-coda-link" data-open-review="${sib.prev.id}">‹ ${esc(prevL)}</button>` : ''}<button class="rr-coda-link rr-coda-primary" data-open-reviews-tool>Start next ${pw}'s review</button><button class="rr-coda-link" data-review-edit>Edit this one</button></div>
+      </div>
     </article>`;
   loadThumbs();
 }
