@@ -21982,20 +21982,14 @@ async function openGoals(tab) {
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews(rtype) {
-  const cad = (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null;
-  state.view = { type: 'reviews', rtype: cad };
+  // A cadence from the Plans menu opens that cadence's own PAGE - the masthead and
+  // then every weekly/monthly/… review as a card. Clicking a submitted one opens
+  // it in the §72 gold-rose report. (Robin, 2026-11-03: a page that shows them all,
+  // not a jump to the last one.)
+  state.view = { type: 'reviews', rtype: (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
-  // A cadence from the Plans menu opens your most recent SUBMITTED review of that
-  // cadence in the §72 report - the beautiful page, with ‹ › to step through the
-  // others. Only if you've never filed one do we show the cadence page, to start.
-  // (Robin, 2026-11-03: "a beautiful page to see submitted reviews", not the list.)
-  if (cad) {
-    const done = (reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === cad && (r.props || {}).status === 'done')
-      .sort((a, b) => String((b.props || {}).to || b.created_at || '').localeCompare(String((a.props || {}).to || a.created_at || '')));
-    if (done.length) { openReviewCard(done[0].id); return; }
-  }
   renderNav(); renderReviews();
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
@@ -23681,13 +23675,14 @@ function reviewInsight(m, p) {
 function reviewScrollTop() { try { window.scrollTo(0, 0); const pane = document.getElementById('pane'); if (pane) pane.scrollTop = 0; const sc = document.querySelector('.app-main, .app-scroll, main'); if (sc) sc.scrollTop = 0; } catch {} }
 async function openReviewCard(id) {
   const r = await api(`/api/blocks/${id}`);
-  // A review is finalised as a read-only report ONLY once you've submitted it.
-  // Anything not yet submitted - including a past period you never got to - opens
-  // in the working form so you can still fill it in. From the report you can always
-  // tap Edit to change it (it stays submitted). (Robin: read-only = after submit.)
+  // A review reads as the §72 report once it's been submitted; only one still being
+  // filled in (status 'inprogress') opens in the working form. We key off 'inprogress'
+  // rather than exactly 'done' so older reviews that never got a 'done' stamp still
+  // open in the beautiful report, not the edit form. Tap Edit to change a report (it
+  // stays submitted). (Robin, 2026-11-03: a submitted review must be the beautiful one.)
   restoreReviewDraft(r);   // fold back any writing that didn't reach the server last time
   const p = r.props || {};
-  state.review_open = { review: r, mode: p.status === 'done' ? 'report' : 'edit' }; state.view = { type: 'reviewcard', id };
+  state.review_open = { review: r, mode: p.status === 'inprogress' ? 'edit' : 'report' }; state.view = { type: 'reviewcard', id };
   renderNav(); renderReviewCard(); maybeAutoReadReview(); reviewScrollTop();
   // Load goals + tasks (for the 'Deadlines approaching' block) if not already held.
   if (state.goals === undefined) { state.goals = []; api('/api/blocks?kind=goal').then((gs) => { state.goals = gs || []; if (state.view.type === 'reviewcard') renderReviewCard(); }).catch(() => {}); }
