@@ -16136,7 +16136,12 @@ function mailQuadMsgs(quad) {
   // Snapshot messages carry a frozen `seen` from when they were filed, so a mail
   // you've since opened kept re-lighting as new. Overlay the sticky read-set (keyed
   // by Message-ID) so an opened mail stays read in its bucket too.
-  return applyMailReads([...byId.values()]);
+  // Drop anything just triaged away (archived/trashed/spammed): a bucket is built
+  // from filed SNAPSHOTS, not state.mail.messages, so without this a deleted email
+  // lingers in its bucket until the next full reload. (Robin, 2026-11-03.)
+  const gone = state.mail.gone;
+  const out = gone && gone.size ? [...byId.values()].filter((m) => !gone.has(m._key)) : [...byId.values()];
+  return applyMailReads(out);
 }
 // Persist quadrant labels WITHOUT clobbering a change made on another device: read
 // the server copy, layer this device's labels on top, drop the keys this action
@@ -16409,7 +16414,7 @@ async function mailMoveTo(key, target, label) {
     // Leaving the inbox (archive/trash/spam/move) also clears the email's quadrant
     // filing, so an actioned email doesn't linger in Urgent / Important / etc.
     let quadChanged = false; const qDel = [];
-    for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; qDel.push(fk); } }
+    for (const row of rows) { const fk = mailFileKey(row); if (state.mailQuads && state.mailQuads[fk]) { delete state.mailQuads[fk]; quadChanged = true; qDel.push(fk); } if (state.mail.snapMsgs) delete state.mail.snapMsgs[row._key]; }
     if (quadChanged) persistMailQuads(qDel);
     const openKey = state.mail.open && state.mail.open._key;
     // Undo: move each message back from `target` to where it came from, found by
@@ -18400,6 +18405,10 @@ function mailVisibleThreads() {
       threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
     }
   }
+  // Belt-and-braces: never show a thread whose latest message was just triaged
+  // away. The inbox builds from state.mail.messages (already filtered on triage),
+  // but a bucket builds from snapshots, so guard every view the same way here.
+  if (m.gone && m.gone.size) threads = threads.filter((th) => th.latest && !m.gone.has(th.latest._key));
   return threads;
 }
 // The row keys on screen, in order - what j/k walk through.
