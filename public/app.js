@@ -5611,7 +5611,7 @@ function navGroupsHtml(v) {
         body = `<div class="knav-sheet-grid">${g.tools.map((tItem, i) => toolBtn(tItem, i)).join('')}</div>`;
       }
       sheet = `<div class="knav-sheet">
-      <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close>Fold away</button></div>
+      <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close aria-label="Close" title="Close">✕</button></div>
       ${body}
     </div>`;
     }
@@ -8218,7 +8218,7 @@ function openBeside(kind, id) {
 function closeBeside() { state.split = null; document.body.classList.remove('split'); const d = document.getElementById('pane-div'); if (d) d.remove(); const p = document.getElementById('pane2'); if (p) p.remove(); }
 function besideItemHtml(b, kind) {
   const p = b.props || {};
-  const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Beside')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Beside')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
   let body;
   if (kind === 'note') body = `<div class="pane2-body prose">${sanitizeProse(b.body || '') || '<p class="pane2-empty">Nothing in this note yet.</p>'}</div>`;
   else if (kind === 'task') body = `<div class="pane2-body"><div class="pane2-meta">${prioLabel(p.priority) ? prioLabel(p.priority) + ' · ' : ''}${p.done ? 'Done' : 'Open'}${p.area && areaById(p.area) ? ' · ' + esc(areaById(p.area).title) : ''}</div>${b.body ? `<div class="prose">${sanitizeProse(b.body)}</div>` : ''}</div>`;
@@ -8230,9 +8230,9 @@ function besideItemHtml(b, kind) {
 }
 async function renderBeside() {
   const s = state.split; if (!s || s.tool) return; const { p2 } = splitEls(); if (!p2) return;
-  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Beside')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Beside')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
   try { const b = await api('/api/blocks/' + s.id); if (state.split && state.split.id === s.id) p2.innerHTML = besideItemHtml(b, s.kind); }
-  catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`; }
+  catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`; }
 }
 
 // ── §18 Side by side: tool mode (Mail beside Notes/Tasks) ────────────────────
@@ -8273,7 +8273,7 @@ function besideToolHeadHtml(tool) {
   const meta = BESIDE_TOOLS[tool], pairs = besidePairsLoad(), paired = !!pairs[tool];
   const sw = Object.keys(BESIDE_TOOLS).map((k) => `<button type="button" class="pane2-swap${k === tool ? ' on' : ''}" data-beside-tool="${k}">${esc(BESIDE_TOOLS[k].title)}</button>`).join('');
   // 'Keep pair' removed (Robin).
-  return `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(meta.group)}</div><div class="pane2-title">${esc(meta.title)}</div></div><div class="pane2-acts">${sw}<span class="pane2-sep">|</span><button type="button" class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
+  return `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(meta.group)}</div><div class="pane2-title">${esc(meta.title)}</div></div><div class="pane2-acts">${sw}<span class="pane2-sep">|</span><button type="button" class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
 }
 async function besideLoadToolItems(tool) {
   try {
@@ -8890,7 +8890,7 @@ function homeGlancePanelHtml(tool) {
   else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', e.location || '', e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
   else if (tool === 'notes') { label = 'Notes'; const ns = (state.noteTops || []).slice(0, 4); rows = ns.map((n) => open(`data-open-note="${n.id}"`, 'note', n.title || 'Untitled', '', '')).join('') || '<div class="gln-empty">No notes yet.</div>'; link = 'data-open-notes'; }
   else { label = 'Goals'; const gs = (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').slice(0, 4); rows = gs.map((g) => open(`data-open-goal="${g.id}"`, 'goal', g.title || 'A goal', '', '')).join('') || '<div class="gln-empty">No goals yet.</div>'; link = 'data-open-goals'; }
-  return `<div class="gln-panel-rows">${rows}</div><div class="gln-panel-foot"><button class="gln-open" ${link}>Open ${esc(label)} →</button><button class="gln-fold" data-glance-fold>Fold away</button></div>`;
+  return `<div class="gln-panel-rows">${rows}</div><div class="gln-panel-foot"><button class="gln-open" ${link}>Open ${esc(label)} →</button><button class="gln-fold" data-glance-fold aria-label="Close" title="Close">✕</button></div>`;
 }
 // §51: pull a readable plain-text body for the in-place mail read. Prefer the
 // text part; fall back to flattening HTML. Strip invisible characters and a
@@ -16936,7 +16936,7 @@ function mailSheetHtml() {
   const items = mailNewItems();
   const looked = mailLookedTs();
   const countTxt = items.length ? `${items.length} to sort · open one, or sort each` : (state.__mailListLoaded ? 'Nothing to sort' : 'Looking…');
-  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New mail</span><span class="mail-sheet-count">${countTxt}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close>Fold away</button></span></div>`;
+  const head = `<div class="mail-sheet-head"><span class="mail-sheet-title">New mail</span><span class="mail-sheet-count">${countTxt}</span><span class="mail-sheet-acts"><button class="mail-sheet-open" data-open-mail>Open Mail →</button><button class="mail-sheet-close" data-mail-sheet-close aria-label="Close" title="Close">✕</button></span></div>`;
   if (!items.length) {
     if (!state.__mailListLoaded) return `<div class="mail-sheet-inner">${head}<div class="mail-sheet-allclear">Looking for new mail…</div></div>`;
     const t = looked ? new Date(looked).toLocaleTimeString(dloc(), { hour: 'numeric', minute: '2-digit' }) : '';
@@ -21977,19 +21977,11 @@ async function openGoals(tab) {
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews(rtype) {
-  // §73: there is ONE Reviews page now (masthead · Due now · Looking back · the
-  // Wheel). A cadence from the Plans menu (Weekly / Monthly / …) focuses the
-  // Looking-back timeline on that cadence - there is no separate, older per-type
-  // page any more. (Robin, 2026-11-03: the cadence menu items showed the old one.)
-  const cad = (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null;
-  if (cad) state.reviewsTab = cad;
-  state.view = { type: 'reviews', rtype: null };
+  state.view = { type: 'reviews', rtype: (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
   renderNav(); renderReviews();
-  // A cadence click lands on the one hub, focused on its Looking-back timeline.
-  if (cad) setTimeout(() => { const el = document.querySelector('.rv-back'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80);
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
   // Reviews page lists them, newest first.
@@ -22047,6 +22039,20 @@ function renderReviews() {
     return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
       <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
   })() : '';
+  // A cadence (Weekly / Monthly / …) from the Plans menu opens that cadence's own
+  // page: this period's review and the submitted ones below. Clicking a submitted
+  // one opens it in the §72 report (the gold-rose "cool" design). (Robin, 2026-11-03.)
+  const rtype = state.view && state.view.rtype;
+  if (rtype) {
+    const label = (REVIEWS[rtype] || {}).label || 'Review';
+    const doneN = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === rtype && (r.props || {}).status === 'done').length;
+    const line = doneN ? `${doneN} ${label.toLowerCase()} review${doneN === 1 ? '' : 's'} filed so far.` : 'A quiet moment to look back and take stock.';
+    $('#pane').innerHTML = `
+      ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${label} reviews` }])}
+      <div class="rv-mast"><div class="rv-mast-eyebrow">Plans · Looking back</div><h1 class="rv-mast-t">${esc(label)} reviews</h1><div class="rv-mast-line">${esc(line)}</div></div>
+      ${reviewsTypeBody(rtype)}`;
+    return;
+  }
   // §73 Reviews page (V36): masthead + one-line, ask bar, Due now cards, a
   // Looking-back bar timeline (height = wheel score), the Wheel of Life, and
   // When reviews land. (Robin, 2026-11-03.)
@@ -22171,15 +22177,15 @@ function reviewsTypeBody(k) {
   let dueLine, dueClass = '';
   if (curDone) {
     const nextDue = reviewCadNext(k, localISO(new Date(Date.parse(cur.to + 'T00:00') + 86400000)));
-    dueLine = nextDue ? `📅 Next ${low} review lands <b>${esc(fullD(nextDue))}</b>` : '✓ Up to date';
+    dueLine = nextDue ? `Next ${low} review lands <b>${esc(fullD(nextDue))}</b>` : 'Up to date';
     dueClass = 'is-done';
-  } else if (diff > 0) dueLine = `📅 Due <b>${esc(fullD(cur.to))}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
-  else if (diff === 0) { dueLine = '📅 <b>Due today</b>'; dueClass = 'is-due'; }
-  else { dueLine = `📅 <b>Overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`; dueClass = 'is-over'; }
+  } else if (diff > 0) dueLine = `Due <b>${esc(fullD(cur.to))}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
+  else if (diff === 0) { dueLine = '<b>Due today</b>'; dueClass = 'is-due'; }
+  else { dueLine = `<b>Overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`; dueClass = 'is-over'; }
   const pt = periodTitle(k, cur.from, cur.to);
   const curPeriodLbl = (k === 'weekly') ? `${sd(cur.from)} – ${sd(cur.to)}` : pt.main;
   const ctaAttr = curRev ? `data-open-review="${curRev.id}"` : `data-start-review="${k}"`;
-  const cta = `<button class="rv-start-weekly ${curDone ? 'rv-hero-done' : ''}" ${ctaAttr}><span class="rvw-ic">${curDone ? '✓' : '🔄'}</span><span class="rvw-body"><b>${esc(label)} · ${esc(curPeriodLbl)}</b><small>${curDone ? 'Filed - tap to look back over it.' : curProg ? 'Started - pick up where you left off.' : 'A few minutes to see where you stand.'}</small></span><span class="rvw-go">→</span></button>`;
+  const cta = `<button class="rv-start-weekly ${curDone ? 'rv-hero-done' : ''}" ${ctaAttr}>${curDone ? '<span class="rvw-ic">✓</span>' : ''}<span class="rvw-body"><b>${esc(label)} · ${esc(curPeriodLbl)}</b><small>${curDone ? 'Filed - tap to look back over it.' : curProg ? 'Started - pick up where you left off.' : 'A few minutes to see where you stand.'}</small></span><span class="rvw-go">→</span></button>`;
   const past = all.filter((r) => r !== curRev);
   return `<div class="rv-type-due ${dueClass}">${dueLine}</div>
     ${cta}

@@ -10545,6 +10545,11 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .home-wn-fold { margin-left:auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:300; font-size:20px; line-height:1; color:var(--k-mute); padding:0 2px; align-self:center; }
 .home-wn-whyb + .home-wn-fold { margin-left:14px; }
 .home-wn-fold:hover { color:var(--k-goldt); }
+/* Close buttons now show a clean ✕ instead of "Fold away" (Robin: an X is more
+   intuitive). letter-spacing:0 so the single glyph isn't tracked like the
+   uppercase labels these buttons used to carry; gold on hover. */
+.knav-sheet-x, .pane2-fold, .gln-fold, .mail-sheet-close { font-size:17px; line-height:1; letter-spacing:0; }
+.knav-sheet-x:hover, .pane2-fold:hover, .gln-fold:hover, .mail-sheet-close:hover { color:var(--k-goldt); }
 .home-wn-one { font-family:var(--k-serif); font-weight:300; font-size:clamp(28px,2.6vw,34px); line-height:1.2; color:var(--k-ink); margin-top:12px; text-wrap:pretty; }
 .home-wn-because { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; line-height:1.4; color:var(--k-mute); margin-top:8px; text-wrap:pretty; }
 /* The "why" meta is always shown now (no toggle) - lift it to a quiet gold
