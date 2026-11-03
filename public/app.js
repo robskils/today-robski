@@ -9532,10 +9532,25 @@ function openTarot() {
 // up, with the deterministic "read together" line. Nothing saved -> generic page.
 function openTarotReading() {
   const ta = currentTarot();
-  if (!ta || !Array.isArray(ta.dis) || !ta.dis.length) { openTarot(); return; }
+  if (!ta) { openTarot(); return; }
+  // Prefer the stored deck indices; fall back to resolving them from the saved card
+  // names (older pins carried only `cards`), so an existing reading reopens as
+  // itself - the Hanged Man stays the Hanged Man - rather than starting a fresh
+  // draw. If nothing resolves, it's genuinely gone: open the draw page. (Robin.)
+  let dis = Array.isArray(ta.dis) ? ta.dis.slice() : [];
+  let revs = Array.isArray(ta.revs) ? ta.revs.slice() : [];
+  if (!dis.length && ta.cards) {
+    dis = []; revs = [];
+    String(ta.cards).split('·').map((s) => s.trim()).filter(Boolean).forEach((p) => {
+      const rev = /\(r\)/i.test(p); const nm = p.replace(/\(r\)/i, '').trim();
+      const ix = TAROT_DECK.findIndex((d) => d[0] === nm);
+      if (ix >= 0) { dis.push(ix); revs.push(rev); }
+    });
+  }
+  if (!dis.length) { openTarot(); return; }
   let spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].label === ta.spread);
-  if (!spKey || TAROT_SPREADS[spKey].pos.length !== ta.dis.length) spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].pos.length === ta.dis.length) || 'one';
-  const cards = ta.dis.slice(0, TAROT_SPREADS[spKey].pos.length).map((di, i) => ({ di, reversed: !!(ta.revs && ta.revs[i]), turned: true }));
+  if (!spKey || TAROT_SPREADS[spKey].pos.length !== dis.length) spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].pos.length === dis.length) || 'one';
+  const cards = dis.slice(0, TAROT_SPREADS[spKey].pos.length).map((di, i) => ({ di, reversed: !!revs[i], turned: true }));
   state.tarot = { q: ta.q || '', spread: spKey, cards, drawn: true, saved: true, at: ta.at || Date.now() };
   state.tarot.synth = tarotTemplate(state.tarot); state.tarot.sit = tarotSit(state.tarot);
   state.view = { type: 'tarot' };
@@ -10110,8 +10125,8 @@ function icHistOpen(key, def) { try { const s = JSON.parse(localStorage.getItem(
 function icHistTog(key) { try { const s = JSON.parse(localStorage.getItem('life.iching.histfold') || '{}'); s[key] = icHistOpen(key, false); localStorage.setItem('life.iching.histfold', JSON.stringify(s)); } catch {} renderIChing(); }
 // The latest cast, pinned on Well-being (and Home) so you can reopen and reread
 // it. Held per-device for instant paint and mirrored to the account.
-const ICHING_TTL = 4 * 24 * 60 * 60 * 1000;
-const ichingFresh = (s) => ((s && s.lines && s.at && (Date.now() - s.at) < ICHING_TTL) ? s : null);
+const ICHING_TTL = 24 * 60 * 60 * 1000;   // 24h - every reflection lasts a day (Robin, 2026-11-03)
+const ichingFresh = (s) => ((s && s.lines && s.at && (Date.now() - s.at) < ICHING_TTL) ? s : null);   // 24h, like the others (Robin, 2026-11-03)
 function currentIching() { if (state.ichingCard === undefined) { try { state.ichingCard = JSON.parse(localStorage.getItem('life.ichingCard')); } catch { state.ichingCard = null; } } return ichingFresh(state.ichingCard); }
 function saveIchingCard(r) {
   const saved = { q: r.q || '', lines: r.lines, reflection: r.reflection || '', at: Date.now() };
@@ -10553,14 +10568,17 @@ function compassWorksheetHtml() {
   ];
   return `<div class="cmp-ws"><div class="cmp-ws-h">No AI needed - sit with these, one at a time</div>${qs.map(([h, q]) => `<div class="cmp-ws-item"><span class="cmp-ws-q">${h}</span><span class="cmp-ws-a">${q}</span></div>`).join('')}<p class="cmp-ws-foot">Turn on the Reflection companion in Settings and Compass will weigh it with you.</p></div>`;
 }
+const COMPASS_TTL = 24 * 60 * 60 * 1000;   // like every other reflection, a Compass lasts a day (Robin, 2026-11-03)
 function currentCompass() {
   if (state.compassCard === undefined) { try { state.compassCard = JSON.parse(localStorage.getItem('life.compass')); } catch { state.compassCard = null; } }
-  return state.compassCard || null;
+  const c = state.compassCard;
+  return (c && c.at && (Date.now() - c.at) < COMPASS_TTL) ? c : null;
 }
 function saveCompassCard(c) {
-  state.compassCard = c || null;
-  try { if (c) localStorage.setItem('life.compass', JSON.stringify(c)); else localStorage.removeItem('life.compass'); } catch {}
-  api('/api/kv/compass_current', { method: 'PUT', body: JSON.stringify({ value: c ? JSON.stringify(c) : '' }) }).catch(() => {});
+  const saved = c ? { ...c, at: c.at || Date.now() } : null;
+  state.compassCard = saved;
+  try { if (saved) localStorage.setItem('life.compass', JSON.stringify(saved)); else localStorage.removeItem('life.compass'); } catch {}
+  api('/api/kv/compass_current', { method: 'PUT', body: JSON.stringify({ value: saved ? JSON.stringify(saved) : '' }) }).catch(() => {});
 }
 function pushCompassHist(c) {
   if (!c || !c.text) return;
