@@ -11421,7 +11421,12 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-cols-v3 .home-main .home-sec2:first-of-type { margin-top:10px; }
 /* Mail · Messages band sits in home-below2 with What next under it; keep What
    next's gap the same as when Messages was its own section above it. (Robin.) */
-.home-cols-v3 .home-main .home-below2 > .home-wn-sec { margin-top:30px; }
+.home-cols-v3 .home-main .home-below2 > .home-wn-sec,
+.home-cols-v3 .home-main .home-below2 > .home-wntabs { margin-top:30px; }
+/* Practices inside the What next tab: trim the tracker's own top margin so it sits
+   neatly under the tab strip. */
+.home-wn-practices .home-wn-prc { margin-top:4px; }
+.home-wn-practices .home-wn-prc .prc-group:first-child { margin-top:0; }
 /* Calendar section */
 .home-cal-tabs { display:flex; gap:20px; margin:4px 0 10px; }
 .home-cal-tab { font-family:var(--k-sans); font-weight:500; font-size:15px; color:var(--k-mute); cursor:pointer; padding-bottom:4px; border-bottom:2px solid transparent; }

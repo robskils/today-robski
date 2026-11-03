@@ -8422,6 +8422,43 @@ function homeWhatNextCandidates() {
 }
 // Robin: What next is open by default on Today; the fold choice persists.
 function wnOpenPref() { try { return localStorage.getItem('life.home.wnOpen') !== '0'; } catch { return true; } }
+// Robin: What next is a tabbed band like Calendar · The feed above - What next ·
+// Tasks · Practices. Tasks shows the priority list; Practices the day's practices.
+function homeWnTab() {
+  const haveT = modOn('tasks'), haveP = modOn('today');
+  if (!state.home) return 'next';
+  if (!state.home.wntab) { let v = ''; try { v = localStorage.getItem('life.home.wntab') || ''; } catch {} state.home.wntab = v || 'next'; }
+  let cur = state.home.wntab;
+  if (cur === 'tasks' && !haveT) cur = 'next';
+  if (cur === 'practices' && !haveP) cur = 'next';
+  if (!['next', 'tasks', 'practices'].includes(cur)) cur = 'next';
+  return cur;
+}
+function homeWnTasksBodyHtml() {
+  if (!state.tasks && !state.__wnTasksLoad) { state.__wnTasksLoad = true; api('/api/blocks?kind=task').then((r) => { state.tasks = r || []; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); }
+  let ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit);
+  ts = sortP1(ts.slice());   // priority first, like the Tasks page
+  if (!ts.length) ts = priorityTasks();
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-view-tasks>Open Tasks →</button></div>`;
+  if (!ts.length) return `<div class="gln-panel-rows"><div class="gln-empty">Nothing to do - a clear run.</div></div>${foot}`;
+  const rows = ts.slice(0, 6).map((t) => { const a = (t.props && t.props.area) ? areaById(t.props.area) : null; const pr = (t.props && t.props.priority) || ''; const meta = [pr && /^p[1-4]$/i.test(pr) ? pr.toUpperCase() : '', a ? a.title : ''].filter(Boolean).join(' · '); return `<button class="gln-item" data-open-task="${esc(t.id)}"><span class="gln-item-b"><span class="gln-item-t">${esc(t.title || 'A task')}</span>${meta ? `<span class="gln-item-s">${esc(meta)}</span>` : ''}</span></button>`; }).join('');
+  return `<div class="gln-panel-rows">${rows}</div>${foot}`;
+}
+function homeWnPracticesBodyHtml() {
+  if (!state.practices) { loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); return `<div class="gln-panel-rows"><div class="gln-empty">Loading your practices…</div></div>`; }
+  const html = practicesGroups(false);
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-practices>Open Practices →</button></div>`;
+  return `<div class="home-wn-prc">${html || '<div class="gln-empty">No practices yet.</div>'}</div>${foot}`;
+}
+function homeWhatNextTabsHtml() {
+  const cur = homeWnTab();
+  const defs = [['next', 'What next', 0, false]];
+  if (modOn('tasks')) { const n = priorityTasks().length; defs.push(['tasks', 'Tasks', n, false]); }
+  if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
+  const strip = defs.map(([k, l, n]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-wntab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n">${n}</i>` : ''}</button>`).join('');
+  const body = cur === 'tasks' ? homeWnTasksBodyHtml() : cur === 'practices' ? homeWnPracticesBodyHtml() : homeWhatNextBandHtml();
+  return `<div class="home-ltabwrap home-wntabs"><div class="home-ltabs" role="tablist">${strip}</div><div class="home-ltab-body home-wn-${cur}">${body}</div></div>`;
+}
 function homeWhatNextHtml() {
   const open = (state.home && state.home.wnOpen !== undefined) ? !!state.home.wnOpen : wnOpenPref();
   // Robin: a plain folding section under Messages, styled exactly like it - a
@@ -9138,7 +9175,7 @@ function renderHome() {
             ${homeLeftTabsHtml(off)}
             <div class="home-below2">
               ${homeLowerTabsHtml()}
-              ${homeWhatNextHtml()}
+              ${homeWhatNextTabsHtml()}
             </div>
           </div>
           <aside class="home-aside">
@@ -26701,6 +26738,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
   { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} if (lt.dataset.homeLtab === 'mail') state.home.glanceMail = null; renderHome(); return; } }
   { const lt = t.closest('[data-home-ltab2]'); if (lt) { state.home = state.home || {}; state.home.ltab2 = lt.dataset.homeLtab2; try { localStorage.setItem('life.home.ltab2', state.home.ltab2); } catch {} if (lt.dataset.homeLtab2 === 'mail') state.home.glanceMail = null; renderHome(); return; } }
+  { const wt = t.closest('[data-home-wntab]'); if (wt) { state.home = state.home || {}; state.home.wntab = wt.dataset.homeWntab; try { localStorage.setItem('life.home.wntab', state.home.wntab); } catch {} renderHome(); return; } }
   { const af = t.closest('[data-av3-fold]'); if (af) { const st = state.areaV3 = state.areaV3 || {}; const f = st.fold = st.fold || {}; const k = af.dataset.av3Fold; const def = k !== 'vision'; f[k] = (k in f) ? !f[k] : !def; renderAreaV3(); return; } }
   { const an = t.closest('[data-av3-note]'); if (an) { e.preventDefault(); e.stopPropagation(); const st = state.areaV3 = state.areaV3 || {}; st.note = st.note === an.dataset.av3Note ? null : an.dataset.av3Note; renderAreaV3(); return; } }
   if (t.closest('[data-av3-noteclose]')) { e.preventDefault(); e.stopPropagation(); if (state.areaV3) state.areaV3.note = null; renderArea(); return; }
