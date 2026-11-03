@@ -5574,7 +5574,7 @@ function navGroupsHtml(v) {
   // Mobile top line (§17): wordmark + a breadcrumb or the date. On Today the
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
-  const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${DOW3[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()].slice(0, 3)}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
+  const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${WEEKDAYS_LONG[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()]}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
   // A persistent back arrow in the sticky top bar - always visible on any sub-page,
   // always in the same place, wired to navBack (proper history-back). This is the
   // "normal back button" Robin keeps asking for; the in-page crumb back stays too.
@@ -9147,7 +9147,7 @@ function renderHome() {
           </aside>
         </div>
       </div>
-      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba · to know</span></button>
+      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba</span></button>
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set

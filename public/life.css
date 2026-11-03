@@ -10158,7 +10158,7 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 body.nav-collapsed .app-shell { grid-template-columns:none; }
 .nav { position:sticky; top:0; z-index:60; height:auto; max-height:none; overflow:visible; width:auto; background:var(--paper); border-bottom:1px solid var(--line); border-right:0; padding:0; }
 .main { min-width:0; display:block; padding-bottom:120px; }   /* §52: room so the resting tab never covers content */
-.knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); background:#fff; border-bottom:1px solid var(--k-line); position:sticky; top:0; z-index:40; }
+.knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); background:#fff; border-bottom:1px solid var(--k-line); position:sticky; top:0; z-index:40; width:100%; box-sizing:border-box; }
 /* Night menubar: a very dark forest, heading towards black, so the white-paper
    day header doesn't carry into night. Keyed to data-theme (the app) AND
    body.night (the prototype) - the app sets data-theme='dark', so a body.night-
