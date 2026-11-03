@@ -23889,9 +23889,18 @@ function renderReviewCard() {
     <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
-    ${p.to ? (() => { const pt = periodTitle(p.rtype, p.from, p.to); const wk = (p.rtype === 'weekly') ? isoWeekInfo(p.to) : null; return `<div class="rv-datehead"><span class="rv-dh-day">${esc(pt.main)}</span>${pt.range ? `<span class="rv-dh-range">${esc(pt.range)}</span>` : ''}${wk ? `<span class="rv-dh-week">Week ${wk.week} / ${wk.total}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`; })() : ''}
+    ${p.to ? (() => {
+      // Robin (2026-11-03, asked several times): lead with the PERIOD in review, big
+      // - "The week of Mon 26 Oct - Sun 1 Nov", "November 2026", "Q4 2026", "2026" -
+      // and the exact due date small beneath. Same logic for every cadence.
+      const pt = periodTitle(p.rtype, p.from, p.to);
+      const wk = (p.rtype === 'weekly') ? isoWeekInfo(p.to) : null;
+      const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+      const big = (p.rtype === 'weekly' && pt.range) ? cap(pt.range) : (pt.main || cap(pt.range));
+      const due = `${prettyDate(p.to)} ${p.to.slice(0, 4)}`;
+      return `<div class="rv-datehead"><span class="rv-dh-day">${esc(big)}</span><span class="rv-dh-range">Due date: ${esc(due)}</span>${wk ? `<span class="rv-dh-week">Week ${wk.week} / ${wk.total}</span>` : ''}${p.doneAt ? `<span class="rv-dh-sub">✓ Submitted ${esc(prettyDate(p.doneAt))} ${esc(p.doneAt.slice(0, 4))}</span>` : ''}</div>`;
+    })() : ''}
     <div class="rv-period">
-      ${reviewWhenHtml(p)}
       ${R.editDates ? `<div class="rv-period-dates">
         <label class="rv-dt">Start <input type="date" data-rv-date="from" value="${esc(p.from || '')}"></label>
         <span class="rv-dt-dash">→</span>
@@ -24013,19 +24022,19 @@ function weeklyGoalsGlance() {
   const rows = list.map((g) => {
     const p = gp(g); const a = goalArea(g); const pct = Math.round(goalProgress(g) * 100);
     const note = (gr[g.id] || {}).note || '';
-    // Every goal is tracked by the one 0-100% slider now, never a typed number; the
-    // quick "mark as achieved" tick stays alongside it. (Robin, 2026-11-01.)
-    const control = `<label class="rvg-donerow"><input type="checkbox" data-rvg-done="${g.id}" ${p.status === 'done' ? 'checked' : ''}><span>${p.status === 'done' ? 'Achieved ✓' : 'Mark as achieved'}</span></label>`;
+    // Every goal is tracked by the one 0-100% slider. Dragging it all the way to
+    // 100% is the ONE way to mark a goal achieved - there is no "mark as achieved"
+    // checkbox anywhere on the site. saveGoalProgress sets status done at 100 and
+    // reopens it below. (Robin, 2026-11-03 - make it consistent everywhere.)
     return `<div class="rvg-goal" style="--h:${hueOf(a)}">
       <div class="rvg-goal-h"><button class="rvg-t2" data-open-goal="${g.id}" title="Open ${esc(g.title || 'this goal')}">${esc(g.title || 'Untitled')}</button><span class="rvg-pct" data-rvg-pct="${g.id}">${pct}%</span></div>
       ${a ? `<div class="rvg-goal-m">${esc(a.title)}</div>` : ''}
-      <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span><input type="range" class="gc-slider rvg-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Slide to set how far along this goal is"></span>
-      ${control}
+      <span class="rvg-barwrap"><span class="rvg-bar"><i data-rvg-bar="${g.id}" style="width:${pct}%"></i></span><input type="range" class="gc-slider rvg-slider" min="0" max="100" step="5" value="${pct}" data-goal-progress="${g.id}" aria-label="Progress: ${pct}%" title="Drag all the way to 100% to mark it achieved"></span>
       <input class="rvg-note" data-goalrev-note="${esc(g.id)}" value="${esc(note)}" placeholder="A line on how this went this week…" autocomplete="off">
     </div>`;
   }).join('');
   return `<section class="rv-goals-glance"><div class="home-sec-h">Your goals${focused.length ? ` <span class="rvg-hcount">· ${focused.length} starred first</span>` : ''}</div>
-    <p class="rvg-intro">The bar is how far along each goal is. Slide it right here, or tick one off when it's done - and add a line on how it went.</p>
+    <p class="rvg-intro">The bar is how far along each goal is. Slide it right - all the way to 100% to mark it achieved - and add a line on how it went.</p>
     <div class="rvg-list rvg-goals">${rows}</div></section>`;
 }
 // Update a goal's current number from inside a review: patch it (debounced) and
@@ -27677,7 +27686,6 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'taskcard-due' && state.task_open) { const tk = state.task_open.task; const due = e.target.value || null; const rd = tk.props.remindDays; patchTaskProps(tk.id, { due, snooze: (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : null }); }
   if (e.target.matches('[data-remind-toggle]')) { const id = e.target.dataset.remindToggle; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; if (e.target.checked) { const days = (tk && tk.props.remindDays != null) ? tk.props.remindDays : 1; patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -Number(days)) : null }); } else { patchTaskProps(id, { remindDays: null, snooze: null, hideUntil: false }); } return; }
   if (e.target.matches('[data-remind-days]')) { const id = e.target.dataset.remindDays; const tk = taskCopies(id)[0]; const due = tk && tk.props.due; const days = Math.max(0, Math.min(365, Math.round(Number(e.target.value) || 0))); patchTaskProps(id, { remindDays: days, snooze: due ? addDaysStr(due, -days) : null }); }
-  if (e.target.matches('[data-rvg-done]')) { const id = e.target.dataset.rvgDone; patchGoal(id, { status: e.target.checked ? 'done' : 'active' }, true).then(() => { if (state.view.type === 'reviewcard') renderReviewCard(); }); return; }
   if (e.target.matches('[data-surface-hide]')) { patchTaskProps(e.target.dataset.surfaceHide, { hideUntil: e.target.checked }); if (state.view.type === 'tasks') renderTasks(); }
   if (e.target.matches('[data-block-private]')) { const [k, id] = e.target.dataset.blockPrivate.split(':'); setBlockPrivate(k, id, e.target.checked).then(() => { if (k === 'goal' && state.view.type === 'goalcard') { renderGoalCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.goal_open && state.goal_open.goal.id === id) { state.goal_open.viewers = r.viewers || []; if (state.view.type === 'goalcard') renderGoalCard(); } }).catch(() => {}); } else if (k === 'task' && state.view.type === 'taskcard') { renderTaskCard(); api(`/api/blocks/${id}/viewers`).then((r) => { if (state.task_open && state.task_open.task.id === id) { state.task_open.viewers = r.viewers || []; if (state.view.type === 'taskcard') renderTaskCard(); } }).catch(() => {}); } }); return; }
   if (e.target.matches('[data-rev-cad-on]')) { toggleReviewCad(e.target.dataset.revCadOn, e.target.checked); return; }

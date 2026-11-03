@@ -1171,7 +1171,10 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rv-row:hover { background:var(--paper-2); }
 .rv-row-l { font-size:16px; } .rv-row-l b { font-weight:600; }
 .rv-row-m { font-size:13.5px; color:var(--ink-3); white-space:nowrap; }
-.rv-period { margin:-6px 0 22px; padding:16px 18px; background:var(--card); border:1px solid var(--line); border-radius:0; box-shadow:var(--shadow); }
+/* The period box used to repeat the header's dates (Robin: "saying the same
+   thing"). The relative "Last week / ended N days ago" line is gone; this is now
+   just a quiet home for the Adjust dates link, unboxed. (Robin, 2026-11-03.) */
+.rv-period { margin:2px 0 24px; }
 /* The "where are we, relative to now" timeline. */
 .rv-when-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:11px; }
 .rv-when-rel { font-family:var(--k-serif); font-size:23px; font-weight:300; letter-spacing:-.01em; color:var(--ink); }
