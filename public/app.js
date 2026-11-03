@@ -8780,13 +8780,21 @@ function homeSinceHtml() {
 }
 // §70 The feed: filters, "Since you were last here", then dated cards grouped
 // Today · Overdue · The next few days · Further ahead. Birthdays land on the day.
+// V38 feed: which items you've dealt with today, persisted so they stay gone when
+// you navigate away and back (state.home is rebuilt by openHome each time). Day-scoped
+// like the radar's "Later" - a new day starts clean. (Robin, 2026-11-03: actions
+// weren't sticking - "Been in touch"/"Sent my wishes" asked again on return.)
+function feedGoneKey() { return 'life.feed.gone.' + todayISO(); }
+function feedGoneLoad() { try { return JSON.parse(localStorage.getItem(feedGoneKey()) || '{}') || {}; } catch { return {}; } }
+function feedGoneSave(m) { try { localStorage.setItem(feedGoneKey(), JSON.stringify(m || {})); } catch {} }
 function homeRadarBodyHtml() {
   // ── V38 The feed: Needs you · Worth knowing · Keep in touch · On the horizon.
   // Matches Koyeba Today v3.dc.html. Cormorant for anything that speaks, Jost for
   // anything that labels; var(--k-*) so it themes to night. Every item has a clear
   // action with Undo - never a vague "Later". (Robin, 2026-11-03.)
   state.home = state.home || {};
-  const fs = (state.home.feed = state.home.feed || { gone: {}, snz: null, worthAll: false });
+  const fs = (state.home.feed = state.home.feed || { gone: feedGoneLoad(), snz: null, doneReal: {}, worthAll: false });
+  feedGoneSave(fs.gone);   // persist what you've dealt with, so it stays gone across navigation
   const g = (id) => fs.gone[id];
   const cid = (id) => String(id).split(':').slice(1).join(':');   // 'b:42' -> '42'
   const goneLine = (id) => `<div style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>${esc(g(id))}</span><span data-feed-undo="${esc(id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
@@ -9291,7 +9299,7 @@ function homeReadingsSectionHtml() {
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.
   const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Reflections</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
-  return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}</div>` : ''}</div>`;
+  return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}<div class="home-rd-all" data-open-wellbeing role="button" tabindex="0">All reflections →</div></div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
 // Whether today's quote has been hidden (keyed to its text, so a new day's quote
@@ -22157,6 +22165,135 @@ function reviewOverviewHtml() {
         : o.text ? `<div class="rvo-body">${o.text.split(/\n\n+/).map((p) => `<p>${esc(p.trim())}</p>`).join('')}</div>` : '';
   return `<section class="home-sec rv-overview"><div class="rvo-head"><span class="rvo-t">How am I doing?</span><button class="rvo-btn" data-review-overview ${o && o.loading ? 'disabled' : ''}>${o && o.loading ? '…' : (o && o.text ? '↻ Refresh' : '✦ Give me an overview')}</button></div>${body}</section>`;
 }
+// ── V39 The Reviews page (Koyeba Reviews v2.dc.html). Opening · Your rhythm ·
+// How things are going · The wheel of life · footer. Cormorant for anything that
+// speaks, Jost for anything that labels; var(--k-*) so it reads in night. SVG
+// charts (reusing roseSvg for the petal). No ask bar (Robin dropped it). No
+// streaks. (Robin, 2026-11-03.)
+function reviewHeadline(q) {
+  if (q && q.doneSummary) { const s = String(q.doneSummary).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); const first = s.split(/(?<=[.!?])\s/)[0]; if (first) return first.length > 92 ? first.slice(0, 90) + '…' : first; }
+  const m = (q && q.mirror) || {}; const n = (m.tasksDone && m.tasksDone.length) || (q && q.tasksDone) || 0; const wv = Math.min(wheelAvg(q && q.wheel) || 0, 5);
+  return n ? `${n} ticked off${wv ? `, the wheel at ${wv}` : ''}.` : 'A quiet one on the record.';
+}
+function rvLineChartSvg(series) {
+  if (!series || series.length < 2) return '';
+  const cw = 620, ch = 170, px = 30, py = 18, n = series.length;
+  const x = (i) => px + i * (cw - 2 * px) / (n - 1); const y = (v) => py + (4 - v) / (4 - 1.5) * (ch - 2 * py - 18);
+  const pts = series.map((s, i) => `${x(i).toFixed(1)},${y(s.v).toFixed(1)}`).join(' ');
+  const grid = [2, 3].map((v) => `<line x1="${px}" x2="${cw - px}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--k-line)" stroke-dasharray="${v === 3 ? '0' : '3 4'}"/><text x="0" y="${(y(v) + 4).toFixed(1)}" fill="var(--k-mute)" style="font:400 12px Jost">${v}</text>`).join('');
+  const dots = series.map((s, i) => { const last = i === n - 1; return `<circle cx="${x(i).toFixed(1)}" cy="${y(s.v).toFixed(1)}" r="${last ? 5 : 3}" fill="${last ? 'var(--k-gold)' : 'var(--k-bg)'}" stroke="var(--k-gold)" stroke-width="1.4"/>${(i % 2 === 0 || last) ? `<text x="${x(i).toFixed(1)}" y="${ch - 2}" text-anchor="middle" fill="var(--k-mute)" style="font:400 12px Jost">${esc(s.label)}</text>` : ''}${last ? `<text x="${x(i).toFixed(1)}" y="${(y(s.v) - 12).toFixed(1)}" text-anchor="middle" fill="var(--k-goldt)" style="font:500 15px Jost">${s.v.toFixed(1)}</text>` : ''}${s.note ? `<text x="${x(i).toFixed(1)}" y="${(y(s.v) + 22).toFixed(1)}" text-anchor="middle" fill="var(--k-mute)" style="font:italic 300 15px 'Cormorant Garamond'">${esc(s.note)}</text>` : ''}`; }).join('');
+  return `<svg viewBox="0 0 ${cw} ${ch}" style="width:100%;height:auto;display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="var(--k-gold)" stroke-width="1.6" stroke-linejoin="round"/>${grid}${dots}</svg>`;
+}
+function reviewsV39Html() {
+  const today = todayISO();
+  const st = (state.rvV39 = state.rvV39 || { rhythm: 'weekly', trends: true, wheel: true });
+  const reviews = state.reviews || [];
+  const areas = (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff));
+  const doneOf = (k) => reviewSeries(k).filter((q) => q.status === 'done');
+  const weekly = doneOf('weekly');
+  const wv = (q) => Math.min(wheelAvg(q && q.wheel) || 0, 5);
+  const shortD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
+  const weekdayOf = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'long' }) : '';
+  const diffOf = (iso) => Math.round((Date.parse(iso + 'T00:00') - Date.parse(today + 'T00:00')) / 86400000);
+
+  // ── Opening generated line ──
+  const lastW = weekly[weekly.length - 1]; const lastAvg = lastW ? wv(lastW) : 0;
+  const prevAvgs = weekly.slice(0, -1).map(wv).filter((x) => x > 0); const prevAvg = prevAvgs.length ? prevAvgs[prevAvgs.length - 1] : 0;
+  let wheelPhrase;
+  if (!lastAvg) wheelPhrase = 'Your reviews are just beginning';
+  else if (prevAvgs.length && lastAvg >= Math.max(...prevAvgs)) wheelPhrase = 'Your wheel is at its highest since you began';
+  else if (prevAvg && lastAvg > prevAvg) wheelPhrase = 'Your wheel is climbing';
+  else if (prevAvg && lastAvg < prevAvg) wheelPhrase = 'Your wheel dipped a little this week';
+  else wheelPhrase = 'Your wheel is holding steady';
+  const dueCount = ['weekly', 'monthly', 'quarterly', 'yearly'].filter((k) => { const w = activeReviewWindow(k, today); const ex = reviews.find((r) => ((r.props || {}).rtype || 'weekly') === k && (r.props || {}).to === w.to); const done = ex && (ex.props || {}).status === 'done'; return !done && diffOf(w.to) <= 0; }).length;
+  const duePhrase = dueCount ? `${dueCount === 1 ? 'One review is' : dueCount + ' reviews are'} waiting for you` : 'Nothing is waiting - you are up to date';
+  const openingLine = `${wheelPhrase}. ${duePhrase}.`;
+
+  // ── Your rhythm ──
+  const periodLabel = (k, iso) => k === 'weekly' ? `Week ${isoWeekInfo(iso).week}` : k === 'monthly' ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { month: 'long' }) : k === 'quarterly' ? `Q${Math.floor(new Date(iso + 'T00:00').getMonth() / 3) + 1} ${new Date(iso + 'T00:00').getFullYear()}` : String(new Date(iso + 'T00:00').getFullYear());
+  const btn = (label, filled, attr) => `<span ${attr} role="button" tabindex="0" style="justify-self:end;font:600 11.5px Jost;letter-spacing:.14em;text-transform:uppercase;padding:11px 18px;white-space:nowrap;cursor:pointer;background:${filled ? 'var(--k-gold)' : 'transparent'};color:${filled ? 'oklch(0.2 0.02 160)' : 'var(--k-goldt)'};border:1px solid var(--k-gold)">${esc(label)}</span>`;
+  const rowHtml = (kind, period, status, statusGold, since, action, open, past) => {
+    const sign = open ? '−' : '+';
+    const pastHtml = open ? `<div style="padding:0 0 22px;animation:kfade .3s ease">${past.length ? past.map((p) => `<div ${p.attr} role="button" tabindex="0" style="display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr) 60px auto;gap:6px 22px;align-items:baseline;padding:12px 0;border-top:1px solid var(--k-line);cursor:pointer"><span style="font:500 14.5px Jost;white-space:nowrap">${esc(p.when)}</span><span style="font:500 21px/1.3 'Cormorant Garamond',serif;text-wrap:pretty">${esc(p.line)}</span><span style="font:500 14px Jost;color:var(--k-goldt);text-align:right;white-space:nowrap">${p.score || ''}</span><span style="font:500 14px Jost;color:var(--k-goldt);white-space:nowrap">Read →</span></div>`).join('') : `<div style="padding:12px 0;border-top:1px solid var(--k-line);font:400 15px Jost;color:var(--k-mute)">Nothing filed yet.</div>`}</div>` : '';
+    return `<div style="border-bottom:1px solid var(--k-line)">
+      <div style="display:grid;grid-template-columns:minmax(170px,300px) minmax(0,1fr) 180px 24px;gap:12px 24px;align-items:center;padding:20px 0">
+        <div data-rvv39-row="${esc(kind.toLowerCase())}" style="min-width:0;cursor:pointer"><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-mute)">${esc(kind)}</div><div style="font:500 30px/1.1 'Cormorant Garamond',serif;margin-top:4px;white-space:nowrap">${esc(period)}</div></div>
+        <div data-rvv39-row="${esc(kind.toLowerCase())}" style="min-width:0;cursor:pointer"><div style="font:500 15px Jost;color:${statusGold ? 'var(--k-goldt)' : 'var(--k-ink)'}">${esc(status)}</div>${since ? `<div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:3px">${esc(since)}</div>` : ''}</div>
+        ${action}
+        <span data-rvv39-row="${esc(kind.toLowerCase())}" style="font:400 20px/1 Jost;color:var(--k-mute);cursor:pointer;text-align:right">${sign}</span>
+      </div>${pastHtml}</div>`;
+  };
+  const rows = [];
+  // Daily (journal-based)
+  if (reflectOn()) {
+    const list = state.dailyReviews || []; const todays = list.find((n) => String((n.props && n.props.date) || '').slice(0, 10) === today);
+    const past = list.filter((n) => n !== todays).slice(0, 8).map((n) => ({ when: journalDateLabel((n.props && n.props.date) || n.created_at), line: journalSnippet(n) || 'A daily note.', score: '', attr: `data-open-jentry="${n.id}"` }));
+    const action = todays ? btn('Look back', false, `data-open-jentry="${todays.id}"`) : btn('Close the day', true, 'data-journal-dailyreview');
+    rows.push(rowHtml('Daily', 'Today', todays ? 'Closed today' : 'Closes tonight', !todays, todays ? 'done today' : 'wins, what moved, what to carry', action, st.rhythm === 'daily', past));
+  }
+  ['weekly', 'monthly', 'quarterly', 'yearly'].forEach((k) => {
+    const w = activeReviewWindow(k, today); const ex = reviews.map((r) => r.props || {}).find((p) => (p.rtype || 'weekly') === k && p.to === w.to);
+    const done = ex && ex.status === 'done'; const prog = ex && ex.status === 'inprogress'; const diff = diffOf(w.to);
+    const exId = (reviews.find((r) => { const p = r.props || {}; return (p.rtype || 'weekly') === k && p.to === w.to; }) || {}).id;
+    let status, statusGold = false, action, since;
+    const lastDone = doneOf(k).slice(-1)[0];
+    const lastDoneLbl = lastDone ? ' · last done ' + periodLabel(k, lastDone.to) : '';
+    if (done) { status = 'Filed'; action = btn('Look back', false, `data-open-review="${exId}"`); since = 'filed' + lastDoneLbl; }
+    else if (prog) { status = 'In progress'; action = btn('Continue', false, `data-open-review="${exId}"`); since = 'started' + lastDoneLbl; }
+    else if (diff < 0) { status = `${-diff} day${diff === -1 ? '' : 's'} past`; statusGold = true; action = btn('Start', true, `data-start-review="${k}"`); since = 'due' + lastDoneLbl; }
+    else if (diff === 0) { status = 'Due today'; statusGold = true; action = btn('Start', true, `data-start-review="${k}"`); since = 'lands today' + lastDoneLbl; }
+    else { status = `Lands ${weekdayOf(w.to)}`; action = btn('Start early', false, `data-start-review="${k}"`); since = `in ${diff} day${diff === 1 ? '' : 's'}${lastDoneLbl}`; }
+    const past = doneOf(k).slice().reverse().slice(0, 12).map((q) => ({ when: `${periodLabel(k, q.to)} · ${shortD(q.to)}`, line: reviewHeadline(q), score: wv(q) ? `${wv(q)}` : '', attr: `data-open-review="${(reviews.find((r) => (r.props || {}).to === q.to && ((r.props || {}).rtype || 'weekly') === k) || {}).id}"` }));
+    rows.push(rowHtml(k.charAt(0).toUpperCase() + k.slice(1), periodLabel(k, w.to), status, statusGold, since, action, st.rhythm === k, past));
+  });
+
+  // ── How things are going ──
+  const lineSeries = weekly.slice(-12).map((q) => ({ label: shortD(q.to), v: wv(q) })).filter((s) => s.v > 0);
+  // dip note: a short line at the lowest point, from that week's headline.
+  if (lineSeries.length >= 3) { let lo = 0; lineSeries.forEach((s, i) => { if (s.v < lineSeries[lo].v) lo = i; }); if (lo > 0 && lo < lineSeries.length - 1) { const q = weekly.slice(-12)[lo]; const hl = q && reviewHeadline(q); if (hl) lineSeries[lo].note = hl.split(/[.!?]/)[0].slice(0, 22); } }
+  const last = weekly[weekly.length - 1]; const base = weekly.length >= 6 ? weekly[weekly.length - 6] : weekly[0];
+  const lw = (last && last.wheel) || {}; const bw = (base && base.wheel) || {};
+  const deltas = areas.map((a) => ({ n: a.title, now: Math.min(lw[a.id] || 0, 5), was: Math.min(bw[a.id] || 0, 5) })).filter((d) => d.now > 0);
+  const rising = deltas.filter((d) => d.now > d.was).sort((x, y) => (y.now - y.was) - (x.now - x.was)).slice(0, 3);
+  const asking = deltas.filter((d) => d.now <= 2).sort((x, y) => x.now - y.now).slice(0, 3).map((d) => ({ ...d, note: d.was > d.now ? `down from ${d.was}` : `at ${d.now}` }));
+  const STOP = new Set('the a an and to of in it is i my me for on with was that this but so at as had have has be been just not out up about from more some one two all very really still get got day days week weeks month been feel felt lot bit more most into over also them they you your our we us her him his she he not dont didnt'.split(/\s+/));
+  const freq = {}; weekly.slice(-9).forEach((q) => { Object.values(q.answers || {}).forEach((v) => { String(v || '').toLowerCase().split(/[^a-zà-ÿ']+/).forEach((w) => { if (w.length >= 4 && !STOP.has(w)) freq[w] = (freq[w] || 0) + 1; }); }); });
+  const words = Object.entries(freq).filter(([, k]) => k >= 2).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const maxF = words.length ? words[0][1] : 1;
+  const risingHtml = rising.length ? rising.map((x) => `<div style="display:flex;align-items:baseline;gap:10px;padding:10px 0;border-bottom:1px solid var(--k-line)"><span style="font:500 16px Jost;flex:1;min-width:0">${esc(x.n)}</span><span style="font:400 14px Jost;color:var(--k-mute)">${x.was || '–'}</span><span style="font:500 14px Jost;color:var(--k-goldt)">→</span><span style="font:500 22px/1 'Cormorant Garamond',serif">${x.now}</span></div>`).join('') : `<div style="padding:10px 0;font:400 14px Jost;color:var(--k-mute)">A few more reviews and this fills in.</div>`;
+  const askingHtml = asking.length ? asking.map((x) => `<div style="display:flex;align-items:baseline;gap:10px;padding:10px 0;border-bottom:1px solid var(--k-line)"><div style="flex:1;min-width:0"><div style="font:500 16px Jost">${esc(x.n)}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px">${esc(x.note)}</div></div><span style="font:500 22px/1 'Cormorant Garamond',serif">${x.now}</span></div>`).join('') : `<div style="padding:10px 0;font:400 14px Jost;color:var(--k-mute)">Nothing's low right now.</div>`;
+  const wordsHtml = words.length ? `<div style="grid-column:1 / -1"><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-mute);padding-bottom:10px;border-bottom:1px solid var(--k-line)">In your own words, lately</div><div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding-top:12px">${words.map(([w, k]) => `<span title="In ${k} of your last ${Math.min(weekly.length, 9)} weekly reviews" style="font:italic 300 ${(16 + (k / maxF) * 16).toFixed(0)}px/1.1 'Cormorant Garamond',serif;color:${k / maxF >= 0.6 ? 'var(--k-goldt)' : 'var(--k-ink)'};white-space:nowrap">${esc(w)}</span>`).join('')}</div></div>` : `<div style="grid-column:1 / -1;font:400 14px Jost;color:var(--k-mute);padding-top:6px">As you write in your reviews, the words you reach for most will gather here.</div>`;
+  const lineBlock = lineSeries.length >= 3
+    ? `${rvLineChartSvg(lineSeries)}<div style="font:400 15.5px/1.55 Jost;color:var(--k-mute);margin-top:10px;max-width:520px;text-wrap:pretty">${esc(weekly.length + ' weekly reviews so far. The wheel ' + (lastAvg >= (prevAvg || 0) ? 'is holding up' : 'softened a little') + ', now at ' + (lastAvg || '–') + ' out of 5.')}</div>`
+    : `<div style="font:400 15.5px/1.55 Jost;color:var(--k-mute);max-width:520px">A few more weekly reviews and the line takes shape here.</div>`;
+
+  // ── The wheel of life ──
+  const wheelSrc = last ? (last.wheel || {}) : Object.fromEntries(areas.map((a) => [a.id, Math.min((a.props && a.props.wheelScore) || 0, 5)]));
+  const wdata = areas.map((a) => ({ a: { title: a.title }, score: Math.min(wheelSrc[a.id] || 0, 5) })).filter((d) => d.score > 0);
+  const wavg = wdata.length ? Math.round(wdata.reduce((s, d) => s + d.score, 0) / wdata.length * 10) / 10 : 0;
+  const petal = wdata.length ? roseSvg(wdata, { center: wavg ? String(wavg) : '–', label: 'Your wheel of life' }) : '';
+  const BANDS = [['Flourishing', [4, 5], 'scored 4 or 5'], ['Steady', [3], 'scored 3'], ['Getting by', [2], 'scored 2'], ['Asking for you', [1], 'scored 1']];
+  const bandsHtml = BANDS.map(([label, scores, sub]) => { const items = wdata.filter((d) => scores.includes(d.score)); if (!items.length) return ''; return `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 20px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)"><div><div style="font:500 22px/1.1 'Cormorant Garamond',serif">${esc(label)}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px">${esc(sub)}</div></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font:400 15.5px Jost">${items.map((d) => `<span style="white-space:nowrap;color:${scores[0] === 1 ? 'var(--k-goldt)' : 'var(--k-ink)'}">${esc(d.a.title)}</span>`).join('')}</div></div>`; }).join('');
+
+  // ── assemble ──
+  const sec = (label, right, sign, open, body) => `<div style="margin-top:56px"><div ${sign ? `data-rvv39-fold="${sign}"` : ''} style="display:flex;align-items:center;gap:12px;padding-bottom:6px;${sign ? 'cursor:pointer' : ''}"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap">${esc(label)}</span>${right || ''}<span style="flex:1;height:1px;background:var(--k-line)"></span>${sign ? `<span style="font:400 20px/1 Jost;color:var(--k-mute)">${open ? '−' : '+'}</span>` : ''}</div>${open ? body : ''}</div>`;
+  const trendsBody = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:40px 56px;padding-top:22px;animation:kfade .3s ease"><div style="min-width:0"><div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span style="font:500 26px 'Cormorant Garamond',serif">Your wheel, week by week</span><span style="font:400 14px Jost;color:var(--k-mute)">average, out of 5</span></div><div style="margin-top:16px">${lineBlock}</div></div><div style="min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:28px 36px;align-content:start"><div><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-goldt);padding-bottom:8px;border-bottom:1px solid var(--k-line)">Rising</div>${risingHtml}</div><div><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-mute);padding-bottom:8px;border-bottom:1px solid var(--k-line)">Asking for you</div>${askingHtml}</div>${wordsHtml}</div></div>`;
+  const wheelBody = `<div style="display:flex;flex-wrap:wrap;gap:36px 64px;align-items:center;padding-top:24px;animation:kfade .3s ease"><div style="flex:0 0 300px;display:flex;flex-direction:column;align-items:center;gap:12px">${petal}<div style="font:400 15px Jost;color:var(--k-mute)">Hover a petal to see the area</div></div><div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column">${bandsHtml || '<div style="font:400 15px Jost;color:var(--k-mute);padding:14px 0">Score your Spaces in a weekly review and the wheel takes shape.</div>'}</div></div>`;
+  return `${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: 'Plans', group: true, gid: 'plans' }, { label: t('nav.reviews') }], null, null, {})}
+    <div style="max-width:1120px">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 40px;padding:28px 0 10px">
+        <div style="flex:1 1 460px;min-width:0">
+          <div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-goldt)">Plans · Looking back</div>
+          <div style="font:500 clamp(48px,6vw,72px)/1 'Cormorant Garamond',serif;margin-top:12px">Reviews</div>
+          <div style="font:italic 300 clamp(24px,2.4vw,30px)/1.3 'Cormorant Garamond',serif;margin-top:16px;max-width:640px;text-wrap:pretty">${esc(openingLine)}</div>
+        </div>
+      </div>
+      <div style="margin-top:36px"><div style="display:flex;align-items:center;gap:12px;padding-bottom:6px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap">Your rhythm</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">Open one to see past reports</span></div>${rows.join('')}</div>
+      ${sec('How things are going', '', 'trends', st.trends, trendsBody)}
+      ${sec('The wheel of life', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${wdata.length} areas · from your last weekly review</span>`, 'wheel', st.wheel, wheelBody)}
+      <div style="margin-top:48px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;font:400 15px Jost;color:var(--k-mute)"><span>Weekly reviews land on Sunday, monthly on the last day, quarterly and yearly at the end of each.</span><span data-open-settings role="button" tabindex="0" style="font-weight:500;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Change when they land →</span></div>
+    </div>`;
+}
 function renderReviews() {
   const daily = reflectOn() ? (() => {
     const list = state.dailyReviews || [];
@@ -22183,16 +22320,7 @@ function renderReviews() {
       ${reviewsTypeBody(rtype)}`;
     return;
   }
-  // §73 Reviews page (V36): masthead + one-line, ask bar, Due now cards, a
-  // Looking-back bar timeline (height = wheel score), the Wheel of Life, and
-  // When reviews land. (Robin, 2026-11-03.)
-  $('#pane').innerHTML = `${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews') }])}
-    <div class="rv-mast"><div class="rv-mast-eyebrow">Plans · Looking back</div><h1 class="rv-mast-t">${t('nav.reviews')}</h1><div class="rv-mast-line">${esc(reviewsOneLine())}</div></div>
-    ${reviewOverviewHtml()}
-    ${reviewDueCardsHtml()}
-    ${reviewTimelineHtml()}
-    ${wheelOfLifeHtml()}
-    ${reviewsLandHtml()}`;
+  $('#pane').innerHTML = reviewsV39Html();
 }
 // One warm, specific line under the title (Koyéba's voice). Falls back gracefully.
 function reviewsOneLine() {
@@ -27217,7 +27345,7 @@ document.addEventListener('click', (e) => {
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   // ── V38 feed actions. Each clears to a muted "{what} · Undo" line (state.home.feed.gone)
   // and, where it can, does the real thing (tick the task, reset the kit counter). ──
-  { const feedS = () => { state.home = state.home || {}; return (state.home.feed = state.home.feed || { gone: {}, snz: null, doneReal: {}, worthAll: false }); };
+  { const feedS = () => { state.home = state.home || {}; return (state.home.feed = state.home.feed || { gone: feedGoneLoad(), snz: null, doneReal: {}, worthAll: false }); };
     const fu = t.closest('[data-feed-undo]'); if (fu) { e.preventDefault(); const id = fu.dataset.feedUndo; const fs = feedS(); delete fs.gone[id]; if (fs.doneReal && fs.doneReal[id]) { try { toggleTask(fs.doneReal[id]); } catch {} delete fs.doneReal[id]; } renderHome(); return; }
     const fd = t.closest('[data-feed-done]'); if (fd) { e.preventDefault(); const id = fd.dataset.feedDone; const tid = id.split(':').slice(1).join(':'); const fs = feedS(); fs.doneReal = fs.doneReal || {}; try { toggleTask(tid); } catch {} fs.doneReal[id] = tid; fs.gone[id] = 'Done'; fs.snz = null; renderHome(); return; }
     const fsn = t.closest('[data-feed-snooze]'); if (fsn) { e.preventDefault(); const id = fsn.dataset.feedSnooze; const fs = feedS(); fs.snz = fs.snz === id ? null : id; renderHome(); return; }
@@ -27406,6 +27534,9 @@ document.addEventListener('click', (e) => {
   { const cr = t.closest('[data-rev-cad-resume]'); if (cr) { setReviewCadPause(cr.dataset.revCadResume, ''); toast('Resumed'); return; } }
   { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
   { const rtb = t.closest('[data-reviews-tab]'); if (rtb) { state.reviewsTab = rtb.dataset.reviewsTab; state.rvtSel = null; renderReviews(); return; } }
+  // V39 Reviews page: the rhythm rows (one open at a time) and the two folding sections.
+  { const rr = t.closest('[data-rvv39-row]'); if (rr) { e.preventDefault(); const k = rr.dataset.rvv39Row; state.rvV39 = state.rvV39 || { rhythm: 'weekly', trends: true, wheel: true }; state.rvV39.rhythm = state.rvV39.rhythm === k ? null : k; renderReviews(); return; } }
+  { const rf = t.closest('[data-rvv39-fold]'); if (rf) { e.preventDefault(); const k = rf.dataset.rvv39Fold; state.rvV39 = state.rvV39 || { rhythm: 'weekly', trends: true, wheel: true }; state.rvV39[k] = !state.rvV39[k]; renderReviews(); return; } }
   { const rvb = t.closest('[data-rvt]'); if (rvb) { state.rvtSel = (state.rvtSel === rvb.dataset.rvt) ? null : rvb.dataset.rvt; renderReviews(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }

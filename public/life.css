@@ -11580,6 +11580,8 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-rd-empty { display:flex; flex-direction:column; gap:6px; padding:14px 0; border-top:1px solid var(--k-line); }
 .home-rd-emptyt { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:17px; color:var(--k-mute); }
 .home-rd-link { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); cursor:pointer; }
+.home-rd-all { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); cursor:pointer; padding:14px 0 2px; border-top:1px solid var(--k-line); margin-top:4px; }
+.home-rd-all:hover { color:var(--k-ink); }
 .home-rd-quote { padding:16px 0 18px; border-top:1px solid var(--k-line); }
 .home-rd-qtext { margin:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:20px; line-height:1.4; color:var(--k-ink); text-wrap:pretty; }
 .home-rd-qfoot { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin-top:8px; }
