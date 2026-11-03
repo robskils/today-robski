@@ -14,7 +14,7 @@
      pops against them. (Robin, 2026-10-30: the beige was the problem.) */
   /* Koyeba day: warm ivory paper, ink, one gold accent (per the Brand Pack). */
   --paper:#f8f4ec; --paper-2:#efe9dc; --card:#fdfbf7;
-  --ink:#2a2620; --ink-2:rgba(42,38,32,.62); --ink-3:rgba(42,38,32,.42);
+  --ink:#2a2620; --ink-2:rgba(42,38,32,.62); --ink-3:rgba(42,38,32,.70); /* ink-3 raised .42->.70: never very-light text on a light surface (Robin's eyesight) */
   --line:rgba(42,38,32,.12); --line-2:rgba(42,38,32,.22); --pat-ink:rgba(42,38,32,.05); --fold-pat:rgba(201,154,62,.34); --body-crease:rgba(42,38,32,.045); --facet-a:rgba(255,255,255,.60); --facet-b:rgba(42,38,32,.05);
   --accent:#c99a3e; --accent-ink:#2a2620; --gold:#c99a3e; --done:#c99a3e;
   --note-surface:rgba(253,251,247,.62); --note-edge:rgba(42,38,32,.10);
@@ -49,7 +49,7 @@
    first - slate / calm / night, pickable in Settings › Appearance.) */
 :root[data-theme='calm'] {
   --paper:#e9e0ce; --paper-2:#ddd2bb; --card:#f6f0e3;
-  --ink:#2c2616; --ink-2:rgba(44,38,22,.64); --ink-3:rgba(44,38,22,.42);
+  --ink:#2c2616; --ink-2:rgba(44,38,22,.64); --ink-3:rgba(44,38,22,.70); /* ink-3 raised .42->.70: never very-light text on a light surface (Robin's eyesight) */
   --line:rgba(60,48,28,.13); --line-2:rgba(60,48,28,.22); --pat-ink:rgba(60,48,28,.05); --fold-pat:rgba(150,120,75,.42); --body-crease:rgba(92,70,40,.05); --facet-a:rgba(255,252,245,.58); --facet-b:rgba(92,70,40,.055);
   --accent:#cf4327; --accent-ink:#fff; --gold:#b0863c; --done:#6f8a52;
   --note-surface:rgba(255,252,245,.62); --note-edge:rgba(60,48,28,.11);
