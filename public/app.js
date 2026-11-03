@@ -8439,12 +8439,14 @@ function homeWhatNextBandHtml() {
   if (!cands.length) return `<div class="home-wn home-wn-rest"><div class="home-wn-one">That is enough for today.</div><div class="home-wn-because">Nothing is pressing. Take the dog out, or just sit a while.</div></div>`;
   let idx = state.home.wnIdx || 0; if (idx >= cands.length) idx = 0;
   const c = cands[idx];
-  const whyOpen = !!state.home.wnWhy;
+  // Robin: the "why" (the little Goal · Space · timing line) is always shown now -
+  // no Show/Hide toggle. It sits as a quiet gold eyebrow under the reason.
+  const why = c.why.filter(Boolean);
   return `<div class="home-wn">
     <div class="home-wn-one">${esc(c.title)}</div>
     <div class="home-wn-because">${esc(c.because)}</div>
-    ${whyOpen ? `<div class="home-wn-why">${c.why.filter(Boolean).map((w) => `<span>${esc(w)}</span>`).join('<span class="wn-sep">·</span>')}</div>` : ''}
-    <div class="home-wn-acts"><button class="home-wn-do" ${c.attr}>${esc(c.verb)}</button>${cands.length > 1 ? '<button class="home-wn-skip" data-wn-notnow>Not now</button><button class="home-wn-skip" data-wn-else>Something else</button>' : '<button class="home-wn-skip" data-wn-notnow>Not now</button>'}<button class="home-wn-whyb" data-wn-why>${whyOpen ? 'Hide why' : 'Why this?'}</button></div>
+    ${why.length ? `<div class="home-wn-why">${why.map((w) => `<span>${esc(w)}</span>`).join('<span class="wn-sep">·</span>')}</div>` : ''}
+    <div class="home-wn-acts"><button class="home-wn-do" ${c.attr}>${esc(c.verb)}</button>${cands.length > 1 ? '<button class="home-wn-skip" data-wn-notnow>Not now</button><button class="home-wn-skip" data-wn-else>Something else</button>' : '<button class="home-wn-skip" data-wn-notnow>Not now</button>'}</div>
   </div>`;
 }
 // §17/§19 shared line: one quiet line on Today, only when something is new.
