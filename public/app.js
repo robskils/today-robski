@@ -8985,7 +8985,8 @@ function homeReadCardHtml(r) {
   const open = `data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading"`;
   if (r.key === 'spirit') {
     const sp = currentSpirit() || {}; const sym = String(sp.symbol || '').trim();
-    const face = sym ? `<span class="rc-sym">${esc(sym)}</span>` : `<svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase())}</span>`;
+    const svg = spiritSymSvg(sp.name, 'rc-svg2');
+    const face = svg || (sym ? `<span class="rc-sym">${esc(sym)}</span>` : `<svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase())}</span>`);
     return `<div class="home-rd-card rc-spirit" ${open}><span class="rc-in"></span>${face}<span class="rc-foot">${esc(String(sp.name || 'Spirit').slice(0, 14))}</span></div>`;
   }
   if (r.key === 'horo') {
@@ -9558,6 +9559,51 @@ function renderTarot() {
       </div>
     </div>`;
 }
+// Bespoke gold monoline symbols, one per card - cooler and properly on-brand
+// (the emoji broke rule 9). Each is a single-idea line glyph on a 48 grid; the
+// card's ivory face + gold keyline frame them. (Robin, 2026-11-03.)
+const SPIRIT_SYM = {
+  Stillness: '<circle cx="24" cy="20" r="8"/><circle cx="24" cy="20" r="1.6" fill="currentColor" stroke="none"/><path d="M12 34h24"/>',
+  Courage: '<path d="M24 9c5 6 8 11 8 16a8 8 0 0 1-16 0c0-4 2-7 5-10 0 3 2 4 3 6 1-3 1-7 0-12z"/>',
+  Rest: '<path d="M31 13a13 13 0 1 0 0 22 10 10 0 0 1 0-22z"/>',
+  Trust: '<path d="M12 25a12 12 0 0 0 24 0"/><circle cx="24" cy="15" r="2.2" fill="currentColor" stroke="none"/><path d="M24 19v4"/>',
+  Release: '<path d="M13 28a11 11 0 0 0 22 0"/><path d="M24 24V13"/><path d="M20 17l4-4 4 4"/>',
+  Beginning: '<path d="M24 37V21"/><path d="M24 25c-1-5-5-7-10-7 0 5 3 8 10 7z"/><path d="M24 22c1-4 5-6 9-6 0 4-3 7-9 6z"/>',
+  Presence: '<circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2.2" fill="currentColor" stroke="none"/>',
+  Gentleness: '<path d="M31 14C21 18 15 27 14 34c7-1 16-5 20-15 1-3 1-5-.5-6.5S32 11 31 14z"/><path d="M27 19L17 32"/>',
+  Enough: '<path d="M14 20h20l-2 11a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z"/><path d="M14 24h20"/>',
+  Patience: '<path d="M16 12h16l-8 12 8 12H16l8-12z"/><path d="M14 12h20M14 36h20"/>',
+  Truth: '<circle cx="18" cy="19" r="6"/><path d="M22 23l13 13M31 32l4 4M34 29l3 3"/>',
+  Play: '<path d="M24 10a8 9 0 0 1 0 18 8 9 0 0 1 0-18z"/><path d="M24 28l-1.5 3 3 2-1.5 3"/>',
+  Boundaries: '<path d="M31 12H16v24h15"/>',
+  Wonder: '<path d="M24 11l2.5 9.5L36 24l-9.5 3.5L24 37l-2.5-9.5L12 24l9.5-3.5z"/><path d="M35 13l.8 3 3 .8-3 .8-.8 3-.8-3-3-.8 3-.8z"/>',
+  Forgiveness: '<path d="M24 35C14 28 11 23 11 18a6.5 6.5 0 0 1 13-1 6.5 6.5 0 0 1 13 1c0 5-3 10-13 17z"/>',
+  Focus: '<circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="5.5"/><circle cx="24" cy="24" r="1.6" fill="currentColor" stroke="none"/>',
+  Change: '<path d="M24 15v18"/><path d="M24 19c-4-7-13-6-11 2-4 1-3 8 2 8 5 0 8-5 9-10z"/><path d="M24 19c4-7 13-6 11 2 4 1 3 8-2 8-5 0-8-5-9-10z"/>',
+  Body: '<circle cx="24" cy="14" r="4"/><path d="M24 18v11M16 23h16M24 29l-5 9M24 29l5 9"/>',
+  Connection: '<circle cx="14" cy="29" r="3"/><circle cx="34" cy="29" r="3"/><path d="M14 29C14 18 34 18 34 29"/>',
+  Simplicity: '<rect x="15" y="15" width="18" height="18"/>',
+  Gratitude: '<path d="M12 24c0 7 5 11 12 11s12-4 12-11"/><path d="M12 24c0-3 2-5 4-5M36 24c0-3-2-5-4-5"/><circle cx="24" cy="19" r="2" fill="currentColor" stroke="none"/><path d="M24 14v-3M19 16l-2.5-2.5M29 16l2.5-2.5"/>',
+  Faith: '<path d="M11 32h26"/><path d="M17 32a7 7 0 0 1 14 0"/><path d="M24 20v-4M14 25l-2.5-2.5M34 25l2.5-2.5"/>',
+  Solitude: '<path d="M11 35l13-20 13 20z"/><path d="M19 27l5-4 4 4"/>',
+  Flow: '<path d="M11 21c4-5 8-5 12 0s8 5 13 0"/><path d="M11 29c4-5 8-5 12 0s8 5 13 0"/>',
+  Curiosity: '<path d="M24 24a4 4 0 0 1 3 6 8 8 0 0 1-11 1 13 13 0 0 1 1-18 18 18 0 0 1 20 1"/>',
+  Acceptance: '<circle cx="24" cy="15" r="3"/><path d="M24 18v18"/><path d="M15 24h18"/><path d="M12 29a12 12 0 0 0 24 0"/><path d="M12 29v4l-3-2M36 29v4l3-2"/>',
+  Compassion: '<path d="M24 30c-6-4-9-8-9-12a4.5 4.5 0 0 1 9-1 4.5 4.5 0 0 1 9 1c0 4-3 8-9 12z"/><path d="M12 31a12 12 0 0 0 24 0"/>',
+  Roots: '<circle cx="24" cy="17" r="7"/><path d="M24 24v9"/><path d="M24 33c-3 1-5 3-7 5M24 33c3 1 5 3 7 5M24 33v5"/>',
+  Ease: '<path d="M10 14v10M38 14v10"/><path d="M10 17c7 11 21 11 28 0"/>',
+  Devotion: '<path d="M19 22h10v15H19z"/><path d="M24 22v-3"/><path d="M24 11c2.5 2.5 3.5 4 3.5 5.5a3.5 3.5 0 0 1-7 0c0-1.5 1-2.5 2-3.5.3 1.2 1 1.8 1.5 2.3 0-1.3 0-2.6 0-4.3z"/>',
+  Humility: '<path d="M13 22a14 14 0 0 1 22 0"/><circle cx="24" cy="30" r="3.5"/>',
+  Hope: '<path d="M12 36h24"/><path d="M24 13l2.2 5.4 5.8.5-4.4 3.8 1.3 5.7L24 31l-4.9 2.4 1.3-5.7-4.4-3.8 5.8-.5z"/>',
+  Attention: '<path d="M11 24c4-7 22-7 26 0-4 7-22 7-26 0z"/><circle cx="24" cy="24" r="3.5"/><circle cx="24" cy="24" r="1" fill="currentColor" stroke="none"/>',
+  Return: '<circle cx="24" cy="24" r="13"/><path d="M24 24l7-10-10 7z"/><path d="M24 24l-4 8 7-5z"/><circle cx="24" cy="24" r="1.4" fill="currentColor" stroke="none"/>',
+  Warmth: '<path d="M14 23h16v7a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M30 25h3a3 3 0 0 1 0 6h-3"/><path d="M19 19c-1.5-2 1.5-3 0-5M25 19c-1.5-2 1.5-3 0-5"/>',
+  Mystery: '<path d="M20 32a9 9 0 1 1 0-16 7 7 0 0 0 0 16z"/><path d="M32 16l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/><circle cx="31" cy="29" r="1.2" fill="currentColor" stroke="none"/>',
+};
+function spiritSymSvg(name, cls = 'sc-svg') {
+  const inner = SPIRIT_SYM[name]; if (!inner) return '';
+  return `<svg class="${cls}" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+}
 const SPIRIT_CARDS = [
   ['Stillness', '✦', 'The answer arrives when you stop chasing it.'],
   ['Courage', '🔥', "The thing you're avoiding is smaller than the story about it."],
@@ -9596,7 +9642,7 @@ const SPIRIT_CARDS = [
   ['Warmth', '🍵', 'Be a warm room to come in from the cold - starting with yourself.'],
   ['Mystery', '🌌', "You don't need the whole map to love the walk."],
 ];
-const scFront = (c) => `<span class="sc-sym">${c[1]}</span><h3 class="sc-name">${esc(c[0])}</h3><p class="sc-msg">${esc(c[2])}</p>`;
+const scFront = (c) => `<span class="sc-sym">${spiritSymSvg(c[0]) || esc(c[1])}</span><h3 class="sc-name">${esc(c[0])}</h3><p class="sc-msg">${esc(c[2])}</p>`;
 function renderSpirit() {
   const c = state.spirit && state.spirit.card;
   $('#pane').innerHTML = `

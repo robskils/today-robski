@@ -3447,7 +3447,8 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .sc-back .sc-mark { font-size:58px; color:#e0684f; }
 .sc-draw-hint { font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.85; line-height:1.7; }
 .sc-front { background:linear-gradient(160deg,#faf6ee,#efe7d4); color:#211c17; transform:rotateY(180deg); gap:16px; border:1px solid rgba(0,0,0,.06); }
-.sc-sym { font-size:56px; line-height:1; }
+.sc-sym { font-size:56px; line-height:1; color:var(--k-goldt); display:flex; align-items:center; justify-content:center; }
+.sc-svg { width:70px; height:70px; display:block; }
 .sc-name { font-family:var(--k-serif); font-size:33px; font-weight:300; margin:0; }
 .sc-msg { font-size:17px; line-height:1.5; color:#574e44; margin:0; max-width:23ch; }
 .spirit-again { padding:11px 24px; border-radius:0; background:var(--accent); color:#fff; border:0; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; box-shadow:0 10px 26px -12px var(--accent); }
@@ -11374,6 +11375,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .rc-spirit { background:var(--k-panel); }
 .rc-spirit .rc-svg { position:absolute; inset:0; width:100%; height:100%; }
 .rc-spirit .rc-svg line, .rc-spirit .rc-svg circle { stroke:var(--k-gold); stroke-width:1; fill:none; }
+.rc-spirit .rc-svg2 { position:absolute; left:0; right:0; top:0; bottom:16px; margin:auto; width:52%; height:52%; color:var(--k-gold); }
 .rc-spirit .rc-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--k-serif); font-style:italic; font-weight:500; font-size:34px; color:var(--k-ink); padding-bottom:14px; }
 .rc-horo { background:oklch(0.28 0.04 155); }
 .rc-horo .rc-in { border-color:var(--k-gold); }
