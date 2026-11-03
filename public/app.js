@@ -6223,6 +6223,12 @@ async function openHome() {
   api('/api/feed/folios').then((r) => {
     if (r && r.updates) { state.home.folioFeed = r; renderHomeSoon(); if (r.updates.length) api('/api/feed/folios/seen', { method: 'POST' }).catch(() => {}); }
   }).catch(() => {});
+  // Pinned tarot reading follows the account, so Today's Cards shows a reading
+  // drawn on another device. Adopt the server's copy when it's newer. (Robin.)
+  api('/api/kv/tarot_current').then((r) => {
+    if (!r || !r.value) return;
+    try { const k = JSON.parse(r.value); if (k && k.at && (!tarotFresh(state.tarotCard) || k.at > (state.tarotCard.at || 0))) { state.tarotCard = k; try { localStorage.setItem('life.tarotCard', r.value); } catch {} renderHomeSoon(); } } catch {}
+  }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
 // practices and task-bearing slots), merged and sorted by time. A slot that
@@ -8570,6 +8576,7 @@ function homeReadingItems() {
   const ic = currentIching();
   if (ic && ic.lines) { const hex = icHexFor(ic.lines, false); if (hex) { const moving = ic.lines.some((l) => l.changing); out.push({ key: 'iching', kind: 'I Ching', title: `${hex.cn || ''} ${hex.name || ''}`.trim() || 'A reading', line: `${hex.text || ''}${moving ? ' · changing' : ''}`.trim(), open: 'data-iching-reopen' }); } }
   const sp = currentSpirit(); if (sp) out.push({ key: 'spirit', kind: 'Spirit card', title: sp.name || 'A card', line: sp.message || '', open: 'data-spirit-open' });
+  const ta = (!modOn || modOn('tarot')) ? currentTarot() : null; if (ta) out.push({ key: 'tarot', kind: 'Tarot', title: ta.cards || ta.spread || 'A spread', line: ta.q || ta.spread || '', open: 'data-open-tarot' });
   const ho = currentHoro(); if (ho) out.push({ key: 'horo', kind: 'Horoscope', title: ho.sign || 'Today', line: (ho.text || '').replace(/\s+/g, ' ').slice(0, 130), open: 'data-horo-reopen' });
   const co = currentCompass(); if (co && (co.question || co.bearing || co.summary)) out.push({ key: 'compass', kind: 'Compass', title: co.question || 'A decision', line: co.bearing || co.summary || '', open: 'data-open-compass' });
   return out.filter((r) => !away.has(r.key));
@@ -8991,6 +8998,15 @@ function homeReadCardHtml(r) {
     const svg = spiritSymSvg(sp.name, 'rc-svg2');
     const face = svg || (sym ? `<span class="rc-sym">${esc(sym)}</span>` : `<svg class="rc-svg" viewBox="0 0 72 100" aria-hidden="true" preserveAspectRatio="xMidYMid meet"><line x1="12" y1="60" x2="60" y2="60"/><circle cx="27" cy="45" r="9"/><circle cx="47" cy="52" r="5"/></svg><span class="rc-init">${esc((String(sp.name || '?').trim().charAt(0) || '?').toUpperCase())}</span>`);
     return `<div class="home-rd-card rc-spirit" ${open}><span class="rc-in"></span>${face}<span class="rc-foot">${esc(String(sp.name || 'Spirit').slice(0, 14))}</span></div>`;
+  }
+  if (r.key === 'tarot') {
+    const ta = currentTarot() || {};
+    const di = (Array.isArray(ta.dis) && ta.dis.length) ? ta.dis[0] : null;
+    const rev = Array.isArray(ta.revs) ? ta.revs[0] : false;
+    const face = (di != null)
+      ? `<img class="rc-tarot-img${rev ? ' rev' : ''}" src="/tarot/${String(di).padStart(2, '0')}.jpg" alt="" loading="lazy">`
+      : `<span class="rc-init">✦</span>`;
+    return `<div class="home-rd-card rc-tarot" ${open}><span class="rc-in"></span>${face}<span class="rc-foot">${esc(ta.spread || 'Tarot')}</span></div>`;
   }
   if (r.key === 'horo') {
     const ho = currentHoro() || {}; const sign = String(ho.sign || '').trim(); const g = homeZodiacGlyph(sign);
@@ -9505,14 +9521,25 @@ async function tarotEnhance(t) {
 }
 function tarotSave(t) {
   const names = t.cards.map((c) => TAROT_DECK[c.di][0] + (c.reversed ? ' (r)' : '')).join(' · ');
+  // Keep the deck indices + orientations so Reflections can show the real card
+  // art (the first card's picture) and the spread label. (Robin: show tarot.)
+  const dis = t.cards.map((c) => c.di); const revs = t.cards.map((c) => !!c.reversed); const spread = TAROT_SPREADS[t.spread].label;
   state.tarotHistory = state.tarotHistory || [];
-  state.tarotHistory.unshift({ kind: TAROT_SPREADS[t.spread].label, cards: names, q: t.q || '', at: t.at });
+  state.tarotHistory.unshift({ kind: spread, cards: names, q: t.q || '', at: t.at });
   state.tarotHistory = state.tarotHistory.slice(0, 200);
   api('/api/kv/tarot_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.tarotHistory) }) }).catch(() => {});
   // Pin for Reflections on Today.
-  try { const pin = { cards: names, q: t.q || '', at: t.at }; localStorage.setItem('life.tarotCard', JSON.stringify(pin)); } catch {}
-  api('/api/kv/tarot_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify({ cards: names, q: t.q || '', at: t.at }) }) }).catch(() => {});
+  const pin = { cards: names, dis, revs, spread, q: t.q || '', at: t.at };
+  state.tarotCard = pin;
+  try { localStorage.setItem('life.tarotCard', JSON.stringify(pin)); } catch {}
+  api('/api/kv/tarot_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(pin) }) }).catch(() => {});
   t.saved = true;
+}
+const TAROT_TTL = 24 * 60 * 60 * 1000;
+const tarotFresh = (s) => ((s && s.cards && s.at && (Date.now() - s.at) < TAROT_TTL) ? s : null);
+function currentTarot() {
+  if (state.tarotCard === undefined) { try { state.tarotCard = JSON.parse(localStorage.getItem('life.tarotCard')); } catch { state.tarotCard = null; } }
+  return tarotFresh(state.tarotCard);
 }
 function tarotCardFront(c, i) {
   const d = TAROT_DECK[c.di];
@@ -12419,7 +12446,10 @@ function renderAreaV4() {
   const noteCard = (n) => {
     const p = n.props || {}; const tag = (p.tag || '').trim() || 'Note';
     const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
-    return `<div class="av3-ncard${st.note === n.id ? ' sel' : ''}" data-av4-note="${n.id}"><div class="av3-nc-top"><span class="av3-nc-tag">${esc(tag)}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(n.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(av3Text(n.body).slice(0, 180))}</div></div>`;
+    // Open the note directly - the old inline-reader toggle rendered its preview
+    // below the whole grid (off-screen with many notes), so a click looked like
+    // nothing happened. (Robin: it should just open.)
+    return `<div class="av3-ncard" data-open-note="${n.id}" role="button" tabindex="0"><div class="av3-nc-top"><span class="av3-nc-tag">${esc(tag)}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(n.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(av3Text(n.body).slice(0, 180))}</div></div>`;
   };
   const noteReaderHtml = () => {
     if (!st.note) return ''; const n = notes.find((x) => x.id === st.note); if (!n) return '';
@@ -26476,7 +26506,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-av3-archive]')) { areaV3Archive(); return; }
   // §64: the readings' "Open" must open the tool on today's reading, not just
   // toggle the row - so it's handled before the row's expand (data-home-read).
-  { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
+  { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarot(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab = 'mail'; try { localStorage.setItem('life.home.ltab', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-ltabwrap'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
