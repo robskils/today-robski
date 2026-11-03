@@ -12472,6 +12472,9 @@ body.mailsheet-open { overflow:hidden; }
   .newpop { top:76px; width:calc(100vw - 28px); padding:18px; }
   .newpop-grid { grid-template-columns:1fr 1fr; }
   .newpop-item:not(.big) { display:none; }
+  /* The "or just write it…" hint is about the separate Set-it-down capture, not
+     +New - drop it here. (Robin, 2026-11-03.) */
+  .newpop-foot { display:none; }
 }
 .gln-new-menu { position:absolute; top:calc(100% + 8px); left:0; z-index:50; }
 .gln-scrim { position:fixed; inset:0; }
