@@ -10522,6 +10522,13 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
    No box, no arrow, no background. Ancestors truncate before the current one;
    never wraps. On mobile just "‹ parent". ══ */
 .crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:22px 0 24px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+/* A crumb rendered straight into #pane (the reflection tools, notes, contacts,
+   goals, reviews…) sat flush to the window edge, while a crumb inside a .kwrap
+   (the Space page) lined up with the title. Give the loose ones the same inset
+   as .kwrap so breadcrumbs sit in one place everywhere. (Robin, 2026-11-03.) */
+#pane > .crumbbar-slim { width:100%; max-width:2240px; margin-left:auto; margin-right:auto; padding-left:clamp(20px,4vw,48px); padding-right:clamp(20px,4vw,48px); box-sizing:border-box; }
+@media (min-width:1600px){ #pane > .crumbbar-slim { padding-left:64px; padding-right:64px; } }
+@media (min-width:2200px){ #pane > .crumbbar-slim { padding-left:80px; padding-right:80px; } }
 .crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
 .crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
@@ -10535,9 +10542,11 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .crumbbar-slim .crumb-dot { color:var(--k-mute); font-size:14px; flex:none; }
 .crumbbar-slim .crumb-mob { display:none; }
 @media (max-width:820px){
-  .crumbbar-slim .crumbs { display:none; }
-  .crumbbar-slim .crumb-mob { display:inline-flex; align-items:center; min-height:44px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--k-sans); font-size:15px; color:var(--k-mute); background:none; border:0; padding:0; cursor:pointer; }
-  .crumbbar-slim .crumb-mob:hover { color:var(--k-goldt); }
+  /* Keep the breadcrumb visible on phones/PWA too (it used to hide in favour of
+     a crumb-mob element that was never emitted, so crumbs just vanished). Let it
+     wrap so a long trail fits. (Robin: breadcrumbs on every page but Today.) */
+  .crumbbar-slim .crumbs { flex-wrap:wrap; }
+  .crumbbar-slim .crumb-mob { display:none; }
 }
 /* The hand-rolled detail-card crumbs (goal, contact, review, vision, journal …)
    wear the same slim look: no boxed back arrow, muted links, "/" separators, the
@@ -11388,7 +11397,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .rc-spirit .rc-svg2 { position:absolute; left:0; right:0; top:0; bottom:16px; margin:auto; width:52%; height:52%; color:var(--k-gold); }
 /* Today's Cards tarot thumbnail: the first card's real art, inside the gold
    frame and clear of the foot label. A reversed draw turns it 180. */
-.rc-tarot .rc-tarot-img { position:absolute; left:7px; right:7px; top:7px; bottom:19px; width:auto; height:auto; object-fit:cover; }
+.rc-tarot .rc-tarot-img { position:absolute; left:7px; right:7px; top:7px; bottom:19px; width:auto; height:auto; object-fit:contain; object-position:center; }
 .rc-tarot .rc-tarot-img.rev { transform:rotate(180deg); }
 .rc-spirit .rc-init { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--k-serif); font-style:italic; font-weight:500; font-size:34px; color:var(--k-ink); padding-bottom:14px; }
 .rc-horo { background:oklch(0.28 0.04 155); }

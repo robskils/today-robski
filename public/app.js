@@ -8073,15 +8073,23 @@ async function submitCap() {
 // struck through here, with Undo. Opened bottom-left, with ⌘; or from Contents.
 function notepadState() { if (!state.notepad) state.notepad = { open: false, lines: null, savedAt: 0, toast: null, loaded: false }; return state.notepad; }
 function notepadLoad() {
-  const np = notepadState(); if (np.loaded) return; np.loaded = true;
+  // loaded only flips true on a SUCCESSFUL load, and _loading guards against a
+  // double fetch - so a failed/slow load retries next open instead of leaving
+  // the pad stuck empty while the server still holds your lines. (Robin: it
+  // blanked.)
+  const np = notepadState(); if (np.loaded || np._loading) return; np._loading = true;
   api('/api/kv/notepad').then((r) => {
+    np._loading = false; np.loaded = true;
+    // If you already started typing before this resolved, keep your text - never
+    // overwrite live input with the server copy.
+    if (Array.isArray(np.lines) && np.lines.some((l) => l.text && l.text.trim())) { if (capState().open && capState().mode === 'pad') renderCapBar(true); return; }
     let lines = null; if (r && r.value) { try { lines = JSON.parse(r.value); } catch {} }
     if (!Array.isArray(lines)) { const old = (state.home && state.home.notepad) || ''; lines = old ? old.split(/\n/).map((t, i) => ({ id: 'm' + i, text: t, done: null })) : []; }
     np.lines = lines; if (capState().open && capState().mode === 'pad') renderCapBar(true);
-  }).catch(() => { np.lines = np.lines || []; if (capState().open && capState().mode === 'pad') renderCapBar(true); });
+  }).catch(() => { np._loading = false; if (capState().open && capState().mode === 'pad') renderCapBar(true); });
 }
 function notepadLines() { const np = notepadState(); if (!Array.isArray(np.lines)) np.lines = []; const last = np.lines[np.lines.length - 1]; if (!last || last.text || last.done) np.lines.push({ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), text: '', done: null }); return np.lines; }
-function notepadSave() { const np = notepadState(); const keep = (np.lines || []).filter((l) => (l.text && l.text.trim()) || l.done); clearTimeout(np._t); np._t = setTimeout(() => { api('/api/kv/notepad', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keep) }) }).catch(() => {}); }, 600); np.savedAt = Date.now(); }
+function notepadSave() { const np = notepadState(); const keep = (np.lines || []).filter((l) => (l.text && l.text.trim()) || l.done); if (!keep.length && !np.loaded) return; clearTimeout(np._t); np._t = setTimeout(() => { api('/api/kv/notepad', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keep) }) }).catch(() => {}); }, 600); np.savedAt = Date.now(); }
 function notepadLiveCount() { const np = notepadState(); return (np.lines || []).filter((l) => l.text && l.text.trim() && !l.done).length; }
 function notepadRoot() { let el = document.getElementById('notepad-root'); if (!el) { el = document.createElement('div'); el.id = 'notepad-root'; document.body.appendChild(el); } return el; }
 function notepadGrow() { document.querySelectorAll('#notepad-root [data-pad-id]').forEach((el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }); }
@@ -9001,8 +9009,11 @@ function homeReadCardHtml(r) {
   }
   if (r.key === 'tarot') {
     const ta = currentTarot() || {};
-    const di = (Array.isArray(ta.dis) && ta.dis.length) ? ta.dis[0] : null;
-    const rev = Array.isArray(ta.revs) ? ta.revs[0] : false;
+    let di = (Array.isArray(ta.dis) && ta.dis.length) ? ta.dis[0] : null;
+    let rev = Array.isArray(ta.revs) ? !!ta.revs[0] : false;
+    // Older readings stored only the names - resolve the first card's picture
+    // from its name so it shows an image too, not a placeholder. (Robin.)
+    if (di == null && ta.cards) { const f = String(ta.cards).split('·')[0]; rev = /\(r\)/i.test(f); const nm = f.replace(/\(r\)/i, '').trim(); const ix = TAROT_DECK.findIndex((d) => d[0] === nm); if (ix >= 0) di = ix; }
     const face = (di != null)
       ? `<img class="rc-tarot-img${rev ? ' rev' : ''}" src="/tarot/${String(di).padStart(2, '0')}.jpg" alt="" loading="lazy">`
       : `<span class="rc-init">✦</span>`;
@@ -9126,13 +9137,16 @@ function renderHome() {
 function openTablesList() {
   state.view = { type: 'tables' };
   renderNav();
-  const favTables = state.tables.filter((t) => t.props && t.props.fav);
+  // Tables load alongside Notes; if you came straight here, fetch them first so
+  // the page isn't wrongly empty. (Robin: Tables showed the Notes page.)
+  if (!state.__tablesLoaded) { state.__tablesLoaded = true; api('/api/blocks?kind=table').then((r) => { if (Array.isArray(r)) state.tables = r; if (state.view && state.view.type === 'tables') openTablesList(); }).catch(() => { state.__tablesLoaded = false; }); }
+  const favTables = (state.tables || []).filter((t) => t.props && t.props.fav);
   const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   $('#pane').innerHTML = `
     ${pageCrumb(t('title.tables'))}
     <div class="pane-head home-head"><h1>${t('title.tables')}</h1><button class="add-btn wide" data-new-table>${t('btn.newtable')}</button></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">All tables · ${state.tables.length}</div><div class="tbl-cards">${cards(state.tables) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+    <section class="home-sec"><div class="home-sec-h">All tables · ${(state.tables || []).length}</div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section>`;
 }
 
 function openNotesList() {
@@ -10635,7 +10649,7 @@ function renderWellbeing() {
   ].filter((p) => modOn(p[0]));
   const pracHtml = PRAC.map(([id, label, attr, hint], i) => `<button class="rf-prac" ${attr}><span class="rf-prac-n">${RF_ROM[i] || ''}</span><span class="rf-prac-b"><span class="rf-prac-l">${esc(label)}</span><span class="rf-prac-h">${esc(hint)}</span></span></button>`).join('');
   $('#pane').innerHTML = `
-    <div class="kpage-reflect"><div class="rf-grid">
+    <div class="kpage-reflect">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect') }])}<div class="rf-grid">
       <div class="rf-main">
         <div class="nx-eyebrow">Room for the rest of you</div>
         <h1 class="nx-h1">${t('nav.reflect')}</h1>
@@ -16557,15 +16571,16 @@ function mailReopenStale() { try { const t = Number(localStorage.getItem('life.m
 // The header count: the to-sort inbox once the list is loaded (so it drops as
 // you triage), falling back to the server unread total on a cold page.
 function mailHeaderCount() {
-  // The server's account-wide unread total is the reliable inbox count. The client
-  // list (mailNewItems) only counts what's loaded right now, which narrows when you
-  // open an account, a quadrant or a search - that was the "says 1 or 0 when there
-  // are really 17" bug. Prefer the server total; use the client count only before
-  // the server number is known, and never let a partial list read LOWER than it.
-  const server = (typeof state.mailUnreadTotal === 'number') ? state.mailUnreadTotal : null;
-  if (!state.__mailListLoaded) return server || 0;
-  const client = mailNewItems().length;
-  return server == null ? client : Math.max(server, client);
+  // The number Robin counts is the inbox pile still to sort (quad 'inbox'), not
+  // the unread total - a seen-but-unsorted email still needs dealing with. Count
+  // it from the loaded inbox; before any inbox is loaded there's nothing to count
+  // yet, so fall back to the server's total so the badge isn't blank on boot.
+  const m = state.mail;
+  const all = (m && m.messages) || [];
+  const gone = (m && m.gone) || new Set();
+  const toSort = all.filter((x) => x && !gone.has(x._key) && /inbox/i.test(x._mailbox || 'INBOX') && mailQuadOf(x) === 'inbox').length;
+  const server = (typeof state.mailUnreadTotal === 'number') ? Math.max(0, state.mailUnreadTotal) : 0;
+  return toSort > 0 ? toSort : server;
 }
 function mailLookedKey() { return 'life.mail.looked'; }
 function mailLookedTs() { try { return Number(localStorage.getItem(mailLookedKey())) || 0; } catch { return 0; } }
@@ -26284,7 +26299,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
   { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }
   if (t.closest('[data-view-home]')) { Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-open-tables]')) { openNotesList(); return; }   // Tables folded into Notes
+  if (t.closest('[data-open-tables]')) { openTablesList(); return; }   // Tables has its own page (Robin: it opened Notes)
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
   const nxOrd = t.closest('[data-notes-order]'); if (nxOrd) { state.notesOrder = nxOrd.dataset.notesOrder; try { localStorage.setItem('life.notesOrder', state.notesOrder); } catch {} renderNotesList(); return; }
