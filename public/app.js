@@ -6242,6 +6242,8 @@ async function openHome() {
   // Spaces/pages shared WITH me surface front and centre - a share you shouldn't
   // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
   api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; state.sharesDismissed = r.dismissed || []; renderHomeSoon(); } }).catch(() => {});
+  // V38 feed "Worth knowing": other people's doings in shared Spaces. (Robin.)
+  api('/api/activity').then((r) => { if (r) { state.activity = r.items || []; state.activitySeen = r.seen || ''; renderHomeSoon(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
   if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; renderHomeSoon(); } }).catch(() => {});
   // What others have done in spaces you share - surfaced on the feed. Mark seen so
@@ -8779,25 +8781,138 @@ function homeSinceHtml() {
 // §70 The feed: filters, "Since you were last here", then dated cards grouped
 // Today · Overdue · The next few days · Further ahead. Birthdays land on the day.
 function homeRadarBodyHtml() {
-  const f = homeFeedFilter();
-  const FILTERS = [['all', 'All'], ['updates', 'Updates'], ['plans', 'Plans'], ['people', 'People']];
-  const filterRow = `<div class="feed-filters">${FILTERS.map(([k, l]) => `<span class="feed-filter${f === k ? ' on' : ''}" data-feed-filter="${k}" role="button" tabindex="0">${esc(l)}</span>`).join('')}</div>`;
-  const since = (f === 'all' || f === 'updates') ? homeSinceHtml() : '';
-  const KIND_CAT = { Task: 'plans', Goal: 'plans', Birthday: 'people', 'Keep in touch': 'people' };
-  let groupsHtml = '';
-  if (f !== 'updates') {
-    const r = homeRadarItems();
-    let all = [...r.overdue, ...r.soon, ...r.ahead];
-    if (f === 'plans' || f === 'people') all = all.filter((o) => KIND_CAT[o.kind] === f);
-    const byG = { today: all.filter((o) => o.n === 0), overdue: all.filter((o) => o.n < 0), soon: all.filter((o) => o.n >= 1 && o.n <= 7), ahead: all.filter((o) => o.n > 7) };
-    const mark = (o) => (o.kind === 'Keep in touch' ? 'K' : (o.kind || '?').charAt(0)).toUpperCase();
-    const card = (o) => `<div class="feed-card" ${o.attr} role="button" tabindex="0"><span class="feed-mark">${esc(mark(o))}</span><div class="feed-card-b"><div class="feed-card-meta"><span class="feed-card-kind${o.overdue ? ' over' : ''}">${esc(o.kind)}</span><span class="feed-card-when">${esc(o.when)}</span>${o.space ? `<span class="feed-card-dot">·</span><span class="feed-card-space">${esc(o.space)}</span>` : ''}</div><div class="feed-card-t">${esc(o.text)}</div><div class="feed-card-acts"><span class="feed-card-do">${esc(o.act || 'Open')}</span><span class="feed-card-later" data-radar-later="${esc(o.id)}" role="button" tabindex="0">Later</span></div></div></div>`;
-    const GROUPS = [['today', 'Today', false], ['overdue', 'Overdue', true], ['soon', 'The next few days', false], ['ahead', 'Further ahead', false]];
-    groupsHtml = GROUPS.map(([k, label, over]) => { const items = byG[k]; if (!items.length) return ''; return `<div class="feed-group"><div class="feed-group-h${over ? ' over' : ''}">${esc(label)}</div><div class="feed-cards">${items.map(card).join('')}</div></div>`; }).join('');
+  // ── V38 The feed: Needs you · Worth knowing · Keep in touch · On the horizon.
+  // Matches Koyeba Today v3.dc.html. Cormorant for anything that speaks, Jost for
+  // anything that labels; var(--k-*) so it themes to night. Every item has a clear
+  // action with Undo - never a vague "Later". (Robin, 2026-11-03.)
+  state.home = state.home || {};
+  const fs = (state.home.feed = state.home.feed || { gone: {}, snz: null, worthAll: false });
+  const g = (id) => fs.gone[id];
+  const cid = (id) => String(id).split(':').slice(1).join(':');   // 'b:42' -> '42'
+  const goneLine = (id) => `<div style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>${esc(g(id))}</span><span data-feed-undo="${esc(id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
+  const head = (label, col, right) => `<div style="display:flex;align-items:center;gap:12px;padding-bottom:10px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:${col};white-space:nowrap">${esc(label)}</span><span style="flex:1;height:1px;background:var(--k-line)"></span>${right || ''}</div>`;
+  const A = (label, attr, gold) => `<span ${attr || ''} role="button" tabindex="0" style="font:${gold ? '500' : '400'} 14.5px Jost;color:${gold ? 'var(--k-goldt)' : 'var(--k-mute)'};cursor:pointer;white-space:nowrap">${esc(label)}</span>`;
+  const dnum = (n) => { const d = new Date(Date.parse(todayISO() + 'T00:00') + (n || 0) * 86400000); return { num: String(d.getDate()), day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] }; };
+  const snoozeRow = (id, label, chips) => fs.snz === id ? `<div style="grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;animation:kfade .25s ease"><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${esc(label)}</span>${chips.map(([l, msg, gold]) => `<span data-feed-snz="${esc(id)}|${esc(msg)}" role="button" tabindex="0" style="font:500 13.5px Jost;color:${gold ? 'var(--k-goldt)' : 'var(--k-ink)'};border:1px solid var(--k-line);padding:7px 12px;cursor:pointer;white-space:nowrap">${esc(l)}</span>`).join('')}</div>` : '';
+  const r = homeRadarItems();
+  const all = [...r.overdue, ...r.soon, ...r.ahead];
+  const parts = [];
+
+  // ── 1. Needs you ──
+  const invites = (state.sharedItems || []).filter((s) => s.kind === 'area' && !g('inv:' + s.id)).map((s) => ({ invite: true, kind: 'Invitation', id: 'inv:' + s.id, areaId: s.id, who: s.owner || 'Someone', title: (s.title || 'a Space') }));
+  const needR = all.filter((o) => o.kind !== 'Keep in touch' && (o.n <= 0 || (o.kind === 'Goal' && o.n <= 7)));
+  const needAll = [...needR, ...invites];
+  const needLive = needAll.filter((o) => !g(o.id));
+  if (needAll.length) {
+    const cards = needAll.map((o) => {
+      if (g(o.id)) return goneLine(o.id);
+      if (o.invite) {
+        return `<div style="border:1px solid var(--k-line);padding:18px 20px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:18px;align-items:start;animation:kfade .35s ease"><div style="width:48px;height:48px;box-sizing:border-box;border:1px solid var(--k-gold);display:flex;align-items:center;justify-content:center"><span style="font:500 24px/1 'Cormorant Garamond',serif">${esc((o.who || '?').charAt(0).toUpperCase())}</span></div><div style="min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-mute)">Invitation</div><span style="font:500 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">${esc(o.who)} invited you to ${esc(o.title)}</span><div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-top:6px">${A('Join', `data-feed-join="${esc(o.areaId)}" data-feed-gid="${esc(o.id)}"`, true)}${A('Not now', `data-feed-gone="${esc(o.id)}|Declined for now"`)}</div></div></div>`;
+      }
+      const late = o.n < 0;
+      let mark = (o.kind || '?').charAt(0).toUpperCase(); let sub = '';
+      if (o.kind === 'Birthday') { const d = dnum(o.n); mark = d.num; sub = d.day; }
+      else if (o.kind === 'Goal') mark = 'G'; else if (o.kind === 'Review') mark = 'R'; else if (o.kind === 'Task') mark = 'T';
+      const tag = late ? (o.n === -1 ? '1 day late' : `${-o.n} days late`) : (o.kind === 'Goal' ? `Goal · ${esc(o.when)}` : o.kind);
+      const metaWhen = o.space || (late ? '' : o.when) || '';
+      const edge = late ? 'var(--k-gold)' : 'var(--k-line)';
+      const tagCol = late ? 'var(--k-goldt)' : 'var(--k-mute)';
+      let acts = '';
+      const c = cid(o.id);
+      if (o.kind === 'Birthday') acts = A('WhatsApp', `data-feed-contact="wa:${esc(c)}"`, true) + A('Email', `data-feed-contact="email:${esc(c)}"`) + A('Sent my wishes', `data-feed-gone="${esc(o.id)}|Wishes sent to ${esc(o.text)}"`);
+      else if (o.kind === 'Goal') acts = A('Check in', o.attr, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      else if (o.kind === 'Review') acts = A('Do it now', 'data-open-reviews-tool', true) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      else acts = A('Done', `data-feed-done="${esc(o.id)}"`, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      const snz = snoozeRow(o.id, 'Bring it back', [['Tomorrow', 'Snoozed: back tomorrow'], ['At the weekend', 'Snoozed: back at the weekend'], ['Next week', 'Snoozed: back next week'], ['Pick a date', 'Snoozed']]);
+      return `<div style="border:1px solid ${edge};padding:18px 20px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:18px;align-items:start;animation:kfade .35s ease">
+        <div style="width:48px;height:48px;box-sizing:border-box;border:1px solid var(--k-gold);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:500 24px/1 'Cormorant Garamond',serif">${esc(mark)}</span>${sub ? `<span style="font:600 8.5px Jost;letter-spacing:.12em;text-transform:uppercase;color:var(--k-goldt);margin-top:2px">${esc(sub)}</span>` : ''}</div>
+        <div style="min-width:0;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font:400 13px Jost;color:var(--k-mute)"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:${tagCol};white-space:nowrap">${tag}</span>${metaWhen ? `<span>·</span><span style="white-space:nowrap">${esc(metaWhen)}</span>` : ''}</div>
+          <span style="font:500 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">${esc(o.text)}</span>
+          <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-top:6px">${acts}</div>
+          ${snz}
+        </div>
+      </div>`;
+    }).join('');
+    parts.push(`<div>${head('Needs you', 'var(--k-goldt)', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${needLive.length} to act on</span>`)}<div style="display:flex;flex-direction:column;gap:10px">${cards}</div></div>`);
   }
-  const body = `${since}${groupsHtml}`;
-  const wn = `<div class="feed-wn" data-wn-next role="button" tabindex="0">Not sure where to start? <span class="feed-wn-s">What should I do next</span> <kbd>${esc(PK('⌘/'))}</kbd></div>`;
-  return `${filterRow}${body || '<div class="rdr-empty">A clear run - nothing waiting.</div>'}${wn}`;
+
+  // ── 2. Worth knowing ──
+  const verb = (t, m) => t === 'task_add' ? 'added a task to' : t === 'task_done' ? 'finished a task in' : t === 'goal_moved' ? `moved a goal${m && m.pct != null ? ' to ' + m.pct + '%' : ''} in` : 'updated';
+  const actW = (state.activity || []).map((a) => ({ id: 'act:' + a.id, who: a.who || 'Someone', did: verb(a.type, a.meta), where: a.areaTitle || 'a Space', areaId: a.areaId, title: a.title || '', when: a.at ? timeAgo(Date.parse(a.at)) : '', act: 'See it', actAttr: a.areaId ? `data-open-area="${esc(a.areaId)}"` : '' }));
+  const shareW = (state.sharedItems || []).filter((s) => s.shared_at).map((s) => ({ id: 'shw:' + s.id, who: s.owner || 'Someone', did: s.kind === 'area' ? 'invited you to' : 'shared', where: s.title || 'something', areaId: '', title: '', when: s.shared_at ? timeAgo(Date.parse(s.shared_at)) : '', act: 'Open', actAttr: 'data-knav-find' }));
+  const worthAll = [...actW, ...shareW];
+  const worthLive = worthAll.filter((w) => !g(w.id));
+  if (worthAll.length) {
+    const show = fs.worthAll ? worthAll : worthAll.slice(0, 3);
+    const rows = show.map((w) => {
+      if (g(w.id)) return goneLine(w.id);
+      return `<div style="display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:14px;align-items:start;padding:13px 0;border-bottom:1px solid var(--k-line);animation:kfade .35s ease">
+        <div style="width:32px;height:32px;box-sizing:border-box;border:1px solid var(--k-line);display:flex;align-items:center;justify-content:center;font:500 17px 'Cormorant Garamond',serif;color:var(--k-goldt)">${esc((w.who || '?').charAt(0).toUpperCase())}</div>
+        <div style="min-width:0;padding-top:4px"><span style="font:400 16px/1.45 Jost;text-wrap:pretty"><span style="font-weight:600">${esc(w.who)}</span> ${esc(w.did)} <span ${w.actAttr} role="button" tabindex="0" style="font-weight:500;color:var(--k-goldt);cursor:pointer">${esc(w.where)}</span></span>${w.title ? `<div style="font:italic 400 19px/1.3 'Cormorant Garamond',serif;margin-top:3px;text-wrap:pretty">${esc(w.title)}</div>` : ''}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:5px">${w.when ? `<span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">${esc(w.when)}</span>` : ''}<div style="display:flex;gap:14px;font:500 14px Jost;white-space:nowrap">${A(w.act, w.actAttr, true)}${A('Seen', `data-feed-gone="${esc(w.id)}|Seen"`)}</div></div>
+      </div>`;
+    }).join('');
+    const more = worthAll.length > 3 ? `<div data-feed-worthmore role="button" tabindex="0" style="padding-top:12px;font:500 14px Jost;color:var(--k-goldt);cursor:pointer">${fs.worthAll ? 'Show fewer' : 'Show ' + (worthAll.length - 3) + ' more'}</div>` : '';
+    parts.push(`<div>${head('Worth knowing', 'var(--k-ink)', A('Mark all as seen', 'data-feed-seenall'))}<div style="border-top:1px solid var(--k-line)">${rows}</div>${more}</div>`);
+  }
+
+  // ── 3. Keep in touch ──
+  const kit = ((state.home.alerts && state.home.alerts.keepInTouch) || []).map((k) => ({ id: 'kit:' + (k.taskId || k.id), cId: k.id, taskId: k.taskId, name: k.name || 'Someone', last: k.last, since: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, note: k.note || '' }));
+  const kitLive = kit.filter((k) => !g(k.id));
+  if (kit.length) {
+    const rows = kit.map((k) => {
+      if (g(k.id)) return goneLine(k.id);
+      const fn = (k.name || '').split(' ')[0];
+      const acts = A('WhatsApp', `data-feed-contact="wa:${esc(k.cId)}"`, true) + A('Email', `data-feed-contact="email:${esc(k.cId)}"`) + A('Call', `data-feed-contact="call:${esc(k.cId)}"`) + (k.taskId ? A('Been in touch', `data-kit-done="${esc(k.taskId)}"`) : A('Been in touch', `data-feed-gone="${esc(k.id)}|Noted"`)) + A('Snooze', `data-feed-snooze="${esc(k.id)}"`);
+      const snz = snoozeRow(k.id, 'Remind me about ' + fn + ' in', [['3 days', 'Snoozed ' + fn + ' for 3 days'], ['A week', 'Snoozed ' + fn + ' for a week'], ['A month', 'Snoozed ' + fn + ' for a month'], ['Stop reminding me', 'Keep in touch turned off for ' + fn, 1]]);
+      return `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 18px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)">
+        <div style="min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px"><span style="font:500 22px/1.2 'Cormorant Garamond',serif">${esc(k.name)}</span><span style="font:400 14px Jost;color:${k.long ? 'var(--k-goldt)' : 'var(--k-mute)'};white-space:nowrap">${esc(k.since)}</span>${k.note ? `<span style="flex-basis:100%;font:400 14.5px/1.45 Jost;color:var(--k-mute)">${esc(k.note)}</span>` : ''}</div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:flex-end;align-items:baseline">${acts}</div>
+        ${snz}
+      </div>`;
+    }).join('');
+    parts.push(`<div>${head('Keep in touch', 'var(--k-ink)', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">People you asked to hear from</span>`)}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
+  }
+
+  // ── 4. On the horizon ──
+  const horAll = all.filter((o) => o.n >= 1 && o.kind !== 'Keep in touch' && o.kind !== 'Goal');
+  const horLive = horAll.filter((o) => !g(o.id));
+  if (horAll.length) {
+    const rows = horAll.map((o) => {
+      if (g(o.id)) return goneLine(o.id);
+      const d = dnum(o.n);
+      const sub = [o.kind, o.space].filter(Boolean).join(' · ');
+      const c = cid(o.id);
+      const actAttr = o.kind === 'Birthday' ? `data-feed-contact="wa:${esc(c)}"` : o.attr;
+      return `<div style="display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--k-line)">
+        <div style="display:flex;flex-direction:column;align-items:center"><span style="font:500 26px/1 'Cormorant Garamond',serif">${esc(d.num)}</span><span style="font:600 9px Jost;letter-spacing:.12em;text-transform:uppercase;color:var(--k-goldt);margin-top:3px">${esc(d.day)}</span></div>
+        <div style="min-width:0"><div style="font:500 16.5px/1.35 Jost;text-wrap:pretty">${esc(o.text)}</div>${sub ? `<div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px">${esc(sub)}</div>` : ''}</div>
+        ${A(o.kind === 'Birthday' ? 'WhatsApp' : (o.act || 'Open'), actAttr, true)}
+      </div>`;
+    }).join('');
+    parts.push(`<div>${head('On the horizon', 'var(--k-ink)')}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
+  }
+
+  const foot = `<div data-wn-next role="button" tabindex="0" style="margin-top:22px;font:400 14px Jost;color:var(--k-mute);cursor:pointer">Not sure where to start? <span style="font-weight:500">What should I do next</span> ${esc(PK('⌘/'))}</div>`;
+  if (!parts.length) return `<div style="font:400 15px Jost;color:var(--k-mute);padding:20px 0">Nothing new since you looked.</div>${foot}`;
+  return `<div style="display:flex;flex-direction:column;gap:34px">${parts.join('')}</div>${foot}`;
+}
+// V38 feed: reach a keep-in-touch / birthday person the way their card allows -
+// WhatsApp (wa.me + a short draft), Email (a Koyeba Mail compose, addressed) or a
+// phone Call. Falls back to opening their card when there's no number/email on
+// file, or while contacts are still loading. (Robin, 2026-11-03.)
+function feedReach(mode, id) {
+  const go = () => {
+    const c = (state.contacts || []).find((x) => String(x.id) === String(id)); const p = (c && c.props) || {};
+    const email = p.email || ''; const num = String(p.phone || '').replace(/[^\d+]/g, ''); const wa = String(p.phone || '').replace(/[^\d]/g, '');
+    const fn = ((c && c.title) || '').split(' ')[0];
+    if (mode === 'wa' && wa) { window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent('Hi ' + fn + ' – '), '_blank', 'noopener'); return; }
+    if (mode === 'call' && num) { window.location.href = 'tel:' + num; return; }
+    if (mode === 'email' && email) { openMail().then(() => { state.mail.composing = { to: email, subject: '', body: '' }; renderMail(); }).catch(() => {}); return; }
+    if (c) openContactCard(id).catch(() => {}); else toast('No way to reach them on file yet - open their card to add one.');
+  };
+  if (state.contacts === undefined) loadContacts().then(go).catch(go); else go();
 }
 function homeRadarSummary() {
   const r = homeRadarItems(); const total = r.overdue.length + r.soon.length + r.ahead.length;
@@ -27100,6 +27215,18 @@ document.addEventListener('click', (e) => {
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; glanceMailOpenIn(har.dataset.homeArrRead); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
+  // ── V38 feed actions. Each clears to a muted "{what} · Undo" line (state.home.feed.gone)
+  // and, where it can, does the real thing (tick the task, reset the kit counter). ──
+  { const feedS = () => { state.home = state.home || {}; return (state.home.feed = state.home.feed || { gone: {}, snz: null, doneReal: {}, worthAll: false }); };
+    const fu = t.closest('[data-feed-undo]'); if (fu) { e.preventDefault(); const id = fu.dataset.feedUndo; const fs = feedS(); delete fs.gone[id]; if (fs.doneReal && fs.doneReal[id]) { try { toggleTask(fs.doneReal[id]); } catch {} delete fs.doneReal[id]; } renderHome(); return; }
+    const fd = t.closest('[data-feed-done]'); if (fd) { e.preventDefault(); const id = fd.dataset.feedDone; const tid = id.split(':').slice(1).join(':'); const fs = feedS(); fs.doneReal = fs.doneReal || {}; try { toggleTask(tid); } catch {} fs.doneReal[id] = tid; fs.gone[id] = 'Done'; fs.snz = null; renderHome(); return; }
+    const fsn = t.closest('[data-feed-snooze]'); if (fsn) { e.preventDefault(); const id = fsn.dataset.feedSnooze; const fs = feedS(); fs.snz = fs.snz === id ? null : id; renderHome(); return; }
+    const fz = t.closest('[data-feed-snz]'); if (fz) { e.preventDefault(); const [id, msg] = fz.dataset.feedSnz.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Snoozed'; fs.snz = null; renderHome(); return; }
+    const fg = t.closest('[data-feed-gone]'); if (fg) { e.preventDefault(); const [id, msg] = fg.dataset.feedGone.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Done'; fs.snz = null; renderHome(); return; }
+    const fj = t.closest('[data-feed-join]'); if (fj) { e.preventDefault(); const fs = feedS(); fs.gone[fj.dataset.feedGid] = 'Joined'; renderHome(); return; }
+    const fm = t.closest('[data-feed-worthmore]'); if (fm) { e.preventDefault(); const fs = feedS(); fs.worthAll = !fs.worthAll; renderHome(); return; }
+    const fsa = t.closest('[data-feed-seenall]'); if (fsa) { e.preventDefault(); const now = new Date().toISOString(); state.activitySeen = now; state.sharesSeen = now; const fs = feedS(); (state.activity || []).forEach((a) => { fs.gone['act:' + a.id] = 'Seen'; }); (state.sharedItems || []).forEach((s) => { fs.gone['shw:' + s.id] = 'Seen'; }); renderHome(); api('/api/activity/seen', { method: 'POST', body: '{}' }).catch(() => {}); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; }
+    const frc = t.closest('[data-feed-contact]'); if (frc) { e.preventDefault(); const v = frc.dataset.feedContact; const i = v.indexOf(':'); feedReach(v.slice(0, i), v.slice(i + 1)); return; } }
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
   if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderHome(); return; }
