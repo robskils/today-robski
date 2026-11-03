@@ -26630,7 +26630,7 @@ document.addEventListener('click', (e) => {
   { const gmo = t.closest('[data-glance-mail-openin]'); if (gmo) { e.preventDefault(); e.stopPropagation(); glanceMailOpenIn(gmo.dataset.glanceMailOpenin); return; } }
   { const gma = t.closest('[data-glance-mail-arch]'); if (gma) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gma.dataset.glanceMailArch, 'Archive', 'Archived'); return; } }
   { const gmd = t.closest('[data-glance-mail-del]'); if (gmd) { e.preventDefault(); e.stopPropagation(); glanceMailFile(gmd.dataset.glanceMailDel, 'Trash', 'Moved to Trash'); return; } }
-  { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailToggle(gm.dataset.glanceMail); return; } }
+  { const gm = t.closest('[data-glance-mail]'); if (gm) { e.preventDefault(); e.stopPropagation(); glanceMailOpenIn(gm.dataset.glanceMail); return; } }
   { const mog = t.closest('[data-mail-open-glance]'); if (mog) { const k = mog.dataset.mailOpenGlance; openMail(k, { explicit: true, row: mailMsgByKey(k) }).catch((x) => toast(x.message)); return; } }
   { const hs = t.closest('[data-home-space]'); if (hs) { state.home = state.home || {}; state.home.spacesOpen = state.home.spacesOpen || {}; const id = hs.dataset.homeSpace; state.home.spacesOpen[id] = !state.home.spacesOpen[id]; renderHome(); return; } }
   { const kd = t.closest('[data-kit-done]'); if (kd) { e.preventDefault(); e.stopPropagation(); homeKitDone(kd.dataset.kitDone); return; } }
