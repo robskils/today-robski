@@ -12422,8 +12422,10 @@ body.mailsheet-open { overflow:hidden; }
 .gln-mail-b { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .gln-mail-from { font-family:var(--k-sans); font-size:14.5px; font-weight:500; color:var(--k-ink); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gln-mail-subj { font-family:var(--k-sans); font-weight:500; font-size:17px; color:var(--k-ink); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+/* No gold unread square next to emails (Robin). The clickable affordance is the
+   pointer cursor on the row plus the subject going gold on hover. */
 .gln-mail:hover .gln-mail-subj { color:var(--k-goldt); }
-.gln-mail-dot { flex:none; width:6px; height:6px; margin-top:7px; background:var(--k-gold); }
+.gln-mail-row { cursor:pointer; }
 .gln-mail-open { padding:0 0 16px; animation:kfade .3s ease; }
 .gln-mail-text { font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.65; color:var(--k-ink); white-space:pre-wrap; max-width:660px; margin-bottom:14px; }
 .gln-mail-loading { color:var(--k-mute); }

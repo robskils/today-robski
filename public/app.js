@@ -8775,7 +8775,7 @@ function homeGlancePanelHtml(tool) {
     const items = homeMailGlanceItems();
     rows = items.map((m) => {
       const k = m._key;
-      const head = `<button class="gln-mail-row" data-glance-mail="${esc(k)}" title="Open in Mail"><span class="gln-mail-b"><span class="gln-mail-from">${esc(mailSenderClean(m))}</span><span class="gln-mail-subj">${esc(mailCleanSubject(m.subject) || '(no subject)')}</span></span>${m.seen ? '' : '<span class="gln-mail-dot" aria-hidden="true"></span>'}</button>`;
+      const head = `<button class="gln-mail-row" data-glance-mail="${esc(k)}" title="Open in Mail"><span class="gln-mail-b"><span class="gln-mail-from">${esc(mailSenderClean(m))}</span><span class="gln-mail-subj">${esc(mailCleanSubject(m.subject) || '(no subject)')}</span></span></button>`;
       const triage = `<div class="gln-mail-triage"><button class="gln-tri gln-tri-open" data-glance-mail-openin="${esc(k)}" title="Open in Mail">Open</button><button class="gln-tri" data-glance-mail-arch="${esc(k)}" title="Archive">Archive</button><button class="gln-tri" data-glance-mail-del="${esc(k)}" title="Delete">Delete</button><button class="gln-tri" data-glance-mail-spam="${esc(k)}" title="Mark as spam">Spam</button></div>`;
       return `<div class="gln-mail">${head}${triage}</div>`;
     }).join('') || `<div class="gln-empty">${state.__mailListLoaded ? 'Your inbox is clear.' : 'Loading your inbox…'}</div>`;
