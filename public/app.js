@@ -11595,77 +11595,130 @@ async function openReadwatch() {
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
 }
+// ── Read & Watch covers (V35 §69) ────────────────────────────────────────────
+// A real cover/thumbnail when we have one (props.image), else a generated cover
+// with a palette derived deterministically from the title - a spine stripe, the
+// kind or site at the top, the title in Cormorant and the author at the foot. The
+// palette stays within Koyeba's warm/forest/gold world; these are book spines, not
+// UI, so a little tonal variety is welcome, never a clash. (Robin, 2026-11-03.)
+const RW_PAL = [
+  ['#223027', '#f4efe4', '#d8b25e'], ['#efe8d8', '#2a2620', '#c99a3e'], ['#33463f', '#f1ece0', '#cfa450'],
+  ['#4f3b2c', '#f3ead9', '#d8b25e'], ['#2c3741', '#efe9dd', '#cfa450'], ['#5e4436', '#f4ead6', '#e0b25e'],
+  ['#45394f', '#efe7dd', '#d8b25e'], ['#e7dcc2', '#2a2620', '#8a6a2e'], ['#1f2a24', '#f4efe4', '#d8b25e'],
+];
+function rwPalOf(title) { const s = String(title || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return RW_PAL[h % RW_PAL.length]; }
+function rwCoverHtml(b, sizeCls) {
+  const p = b.props || {}; const mk = rwMediaKey(p); const done = p.status === 'done'; const play = mk === 'video';
+  const title = p.title || p.url || 'Untitled';
+  const badges = `${play ? '<span class="rw-cov-play">▶</span>' : ''}${done ? '<span class="rw-cov-fin">Finished</span>' : ''}`;
+  if (p.image) return `<div class="rw-cov rw-cov-img ${sizeCls}"><img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.closest('.rw-cov').classList.add('rw-cov-failed')"><span class="rw-cov-fallback">${esc(title)}</span>${badges}</div>`;
+  const pal = rwPalOf(title); const top = (mk === 'article' || mk === 'link') ? (p.site || RW_MEDIA[mk].label) : RW_MEDIA[mk].label;
+  const by = p.author || p.year || p.site || '';
+  const tl = title.length; const tsz = sizeCls === 'rw-cov--list' ? '0' : tl > 34 ? 'sm' : tl > 18 ? 'md' : 'lg';
+  return `<div class="rw-cov rw-cov-gen ${sizeCls} ts-${tsz}" style="--cbg:${pal[0]};--cfg:${pal[1]};--csp:${pal[2]}"><span class="rw-cov-spine"></span>${sizeCls === 'rw-cov--list' ? '' : `<span class="rw-cov-in"><span class="rw-cov-top">${esc(top)}</span><span class="rw-cov-title">${esc(title)}</span>${by ? `<span class="rw-cov-by">${esc(by)}</span>` : ''}</span>`}${badges}</div>`;
+}
+async function rwTogglePin(id) {
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
+  b.props = b.props || {}; b.props.pinned = !b.props.pinned;
+  renderReadwatch();
+  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { pinned: b.props.pinned } }) }); } catch (e) { toast(e.message); }
+}
+// The item panel (slides in from the right). Reuses every bookmark handler; stars
+// show only once it's finished. (V35 §69.)
+function rwPanelHtml() {
+  const id = state.rw && state.rw.sel; if (!id) return '';
+  const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return '';
+  const p = b.props || {}; const mk = rwMediaKey(p); const done = p.status === 'done';
+  const title = p.title || p.url || 'Untitled'; const by = [p.author, p.year, p.site].filter(Boolean).join(' · ');
+  const go = mk === 'book' ? 'Find it' : mk === 'film' ? 'Where to watch' : mk === 'video' ? 'Watch' : 'Read';
+  const href = p.url || (mk === 'book' ? `https://www.google.com/search?q=${encodeURIComponent(title + ' book')}` : mk === 'film' ? `https://www.google.com/search?q=${encodeURIComponent(title + ' film')}` : mk === 'video' ? `https://www.youtube.com/results?search_query=${encodeURIComponent(title)}` : '#');
+  const r = (() => { const raw = Number(p.rating) || 0; return raw > 5 ? Math.round(raw / 2) : raw; })();
+  const stars = [1, 2, 3, 4, 5].map((n) => `<span class="rwp-star ${n <= r ? 'on' : ''}" data-rw-rate="${b.id}" data-rw-rate-n="${n}" role="button" tabindex="0">★</span>`).join('');
+  const ar = p.area ? areaById(p.area) : null;
+  const facts = [['Kind', RW_MEDIA[mk].label], [(mk === 'article' || mk === 'video') ? 'From' : 'By', p.author || p.site || '-'], [(mk === 'book' || mk === 'film') ? 'Year' : 'Length', p.year || p.length || '-'], ['Space', ar ? ar.title : 'Not in a Space'], ['Saved', fmtDate(p.added || b.created_at)]];
+  return `<div class="rwp-scrim" data-rw-close></div>
+    <aside class="rwp-panel" role="dialog" aria-label="${esc(title)}">
+      <div class="rwp-in">
+        <div class="rwp-closerow"><span class="rwp-close" data-rw-close role="button" tabindex="0">Close  Esc</span></div>
+        <div class="rwp-head">${rwCoverHtml(b, 'rw-cov--panel')}<div class="rwp-headb"><div class="rwp-kind">${RW_MEDIA[mk].label}${ar ? ` · ${esc(ar.title)}` : ''}</div><div class="rwp-title">${esc(title)}</div>${by ? `<div class="rwp-by">${esc(by)}</div>` : ''}</div></div>
+        <div class="rwp-acts"><a class="rwp-go" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${go}</a><span class="rwp-btn" data-rw-done="${b.id}" role="button" tabindex="0">${done ? 'Not finished' : 'Mark as finished'}</span><span class="rwp-btn" data-rw-pin="${b.id}" role="button" tabindex="0">${p.pinned ? 'Unpin from Up next' : 'Pin to Up next'}</span></div>
+        ${done ? `<div class="rwp-sec"><div class="rwp-sec-h">How was it?</div><div class="rwp-stars">${stars}</div></div>` : ''}
+        <div class="rwp-sec rwp-facts">${facts.map(([k, v]) => `<div class="rwp-fact"><span class="rwp-fk">${esc(k)}</span><span class="rwp-fv">${esc(v)}</span></div>`).join('')}</div>
+        <div class="rwp-sec"><div class="rwp-sec-h">What I thought</div><textarea class="rwp-note" data-rw-note="${b.id}" rows="3" placeholder="A line or two, for when you want to remember it…">${esc(p.note || '')}</textarea></div>
+        <div class="rwp-foot"><select class="sel rwp-areasel" data-rw-area="${b.id}"><option value="">Add to a Space</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select><span class="rwp-foot-x" data-rw-del="${b.id}" role="button" tabindex="0">Remove</span></div>
+      </div>
+    </aside>`;
+}
 function renderReadwatch() {
   const rw = state.rw || { items: [] };
   const items = rw.items || [];
-  const sort = rw.sort || 'added-desc';
-  // Pages power the per-item area picker + colour; pull them in once if this
-  // is a cold open straight onto Read & Watch.
+  if (!rw.view) { try { rw.view = localStorage.getItem('life.rwView') || 'shelf'; } catch { rw.view = 'shelf'; } }
+  if (!rw.fold) rw.fold = { todo: true, done: true };
+  const sort = rw.sort === 'added-asc' ? 'added-asc' : 'added-desc';
+  const shelf = rw.view !== 'list';
+  // Pages power the per-item Space picker; pull them in once on a cold open.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'readwatch') renderReadwatch(); } }).catch(() => {});
-  // Type filter (All / Films / Books / Articles / Videos / Websites), so this can
-  // read as "films I want to see" and "films I've seen", and the same per type.
   const tf = rw.typeFilter || '';
   const inType = (b) => !tf || rwMediaKey(b.props || {}) === tf;
   const scoped = items.filter(inType);
-  // Split by state: to-do on top, done below. Ticking the box moves an item
-  // between the two. The box IS the done toggle - empty = still to do.
-  const unread = rwSortList(scoped.filter((b) => (b.props || {}).status !== 'done'), sort);
-  const read = rwSortList(scoped.filter((b) => (b.props || {}).status === 'done'), sort);
-  const editing = rw.editing || new Set();
-  const card = (b) => {
-    const p = b.props || {}; const done = p.status === 'done';
-    const mk = rwMediaKey(p); const vid = mk === 'video'; const book = mk === 'book'; const film = mk === 'film'; const link = mk === 'link'; const art = mk === 'article';
-    // A book/film with no stored link falls back to a web search, so tapping it
-    // always leads somewhere (find it, buy it, watch it).
-    const href = p.url || (book ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' book')}`
-      : film ? `https://www.google.com/search?q=${encodeURIComponent((p.title || '') + ' film')}`
-      : vid ? `https://www.youtube.com/results?search_query=${encodeURIComponent(p.title || '')}` : '#');
-    const icon = RW_MEDIA[mk].ic;
-    const isEd = editing.has(b.id);
-    const addedDate = String(p.added || b.created_at || '').slice(0, 10);
-    const ar = p.area ? areaById(p.area) : null; const ahue = ar ? hueOf(ar) : null;
-    return `<div class="rw-card ${done ? 'done' : ''} ${book ? 'is-book' : ''} ${film ? 'is-film' : ''} ${isEd ? 'editing' : ''}${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
-      <button class="rw-tick ${done ? 'on' : ''}" data-rw-done="${b.id}" role="checkbox" aria-checked="${done}" title="${done ? 'Read - tap to mark unread' : 'Tap when you\'ve read/watched it'}">${done ? '✓' : ''}</button>
-      <button class="rw-thumb ${vid ? 'vid' : ''} ${book ? 'book' : ''} ${film ? 'film' : ''} ${link ? 'link' : ''} ${art ? 'article' : ''}" data-open-bookmark="${b.id}" title="Open its card">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rw-thumb-ic">${icon}</span></button>
-      <div class="rw-body">
-        <button class="rw-title" data-open-bookmark="${b.id}" title="Open its card">${esc(p.title || p.url)}</button>
-        <div class="rw-meta"><span class="rw-media">${icon} ${RW_MEDIA[mk].label}</span>${ar ? `<span class="rw-area" style="--h:${ahue}"><span class="cd"></span>${esc(ar.title)}</span>` : ''}${p.site ? `<span class="rw-site">${esc(p.site)}</span>` : ''}<span class="rw-added">${fmtDate(p.added || b.created_at)}</span></div>
-        ${rwRatingHtml(b)}
-        ${isEd ? `<div class="rw-edit">
-          <label class="rw-edit-f rw-edit-name"><span>Name</span><input class="sel" data-rw-name="${b.id}" value="${esc(p.title || '')}" placeholder="Title" autocomplete="off"></label>
-          <label class="rw-edit-f"><span>Type</span><select class="sel" data-rw-type-sel="${b.id}">${RW_MEDIA_ORDER.map((k) => `<option value="${k}" ${k === mk ? 'selected' : ''}>${RW_MEDIA[k].ic} ${RW_MEDIA[k].label}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Space</span><select class="sel" data-rw-area="${b.id}"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
-          <label class="rw-edit-f"><span>Date</span><input type="date" class="sel" data-rw-date="${b.id}" value="${esc(addedDate)}"></label>
-          <div class="rw-edit-links">${externalLinksHtml('bookmark', b)}</div>
-        </div>` : ''}
-      </div>
-      <div class="rw-card-act">
-        <button class="rw-edit-btn ${isEd ? 'on' : ''}" data-rw-edit="${b.id}" title="${isEd ? 'Done editing' : 'Edit type, date & rating'}">${isEd ? '✓' : '✎'}</button>
-        <button class="rw-del" data-rw-del="${b.id}" title="Remove">×</button>
-      </div>
-    </div>`;
-  };
-  const section = (label, list, empty) => `<section class="rw-sec"><div class="home-sec-h rw-sec-h">${label}<span class="muted">${list.length}</span></div><div class="rw-list">${list.map(card).join('') || (empty ? `<div class="empty">${empty}</div>` : '')}</div></section>`;
+  const todo = rwSortList(scoped.filter((b) => (b.props || {}).status !== 'done'), sort);
+  const done = rwSortList(scoped.filter((b) => (b.props || {}).status === 'done'), sort);
+  const kindLabel = (b) => { const p = b.props || {}; const mk = rwMediaKey(p); const ar = p.area ? areaById(p.area) : null; return RW_MEDIA[mk].label + (ar ? ` · ${ar.title}` : ''); };
+  const byLine = (b) => { const p = b.props || {}; return [p.author, p.year || p.length, p.site].filter(Boolean).join(' · '); };
+  const starsOf = (b) => { const raw = Number((b.props || {}).rating) || 0; return raw > 5 ? Math.round(raw / 2) : raw; };
+  // Shelf cell + list row.
+  const shelfItem = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); return `<div class="rw-si" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--shelf')}<div class="rw-si-kind">${esc(kindLabel(b))}</div><div class="rw-si-title">${esc(p.title || p.url || 'Untitled')}</div>${byLine(b) ? `<div class="rw-si-by">${esc(byLine(b))}</div>` : ''}${d && r ? `<div class="rw-si-stars">${'★'.repeat(r)}${'☆'.repeat(5 - r)}</div>` : ''}</div>`; };
+  const listRow = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); const right = d ? (r ? '★'.repeat(r) : 'Finished') : (p.year || p.length || fmtDate(p.added || b.created_at)); return `<div class="rw-lr" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--list')}<div class="rw-lr-b"><div class="rw-lr-title">${esc(p.title || p.url || 'Untitled')}</div><div class="rw-lr-by"><span class="rw-lr-kind">${esc(kindLabel(b))}</span>${esc(byLine(b))}</div></div><span class="rw-lr-right ${d && r ? 'gold' : ''}">${esc(right)}</span></div>`; };
+  const sectionBody = (list) => shelf ? `<div class="rw-shelf">${list.map(shelfItem).join('')}</div>` : `<div class="rw-listv">${list.map(listRow).join('')}</div>`;
+  const section = (key, title, list) => list.length ? `<div class="rw-sec2"><div class="rw-sec2-h" data-rw-sec="${key}" role="button" tabindex="0"><span class="rw-sec2-t">${title}</span><span class="rw-sec2-n">${list.length}</span><span class="rw-sec2-sign">${rw.fold[key] ? '−' : '+'}</span></div>${rw.fold[key] ? `<div class="rw-sec2-body">${sectionBody(list)}</div>` : ''}</div>` : '';
+  // Filter chips with counts (across everything, not just the current filter).
+  const tc = {}; items.forEach((b) => { const k = rwMediaKey(b.props || {}); tc[k] = (tc[k] || 0) + 1; });
+  const PLURAL = { book: 'Books', film: 'Films', video: 'Videos', article: 'Articles', link: 'Websites' };
+  const chip = (k, label, n, on) => `<span class="rw-fk ${on ? 'on' : ''}" data-rw-typefilter="${k}" role="button" tabindex="0"><span class="rw-fk-l">${label}</span><span class="rw-fk-n">${n}</span></span>`;
+  const chips = chip('', 'All', items.length, !tf) + RW_MEDIA_ORDER.filter((k) => tc[k]).map((k) => chip(k, PLURAL[k] || RW_MEDIA[k].label, tc[k], tf === k)).join('');
+  // Up next: pinned, still-to-go, up to three.
+  const up = items.filter((b) => (b.props || {}).pinned && (b.props || {}).status !== 'done').slice(0, 3);
+  const upCard = (b) => { const p = b.props || {}; const prog = p.progress != null ? Math.max(0, Math.min(100, Number(p.progress))) : null; return `<div class="rw-up-card" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--up')}<div class="rw-up-b"><div class="rw-up-kind">${esc(RW_MEDIA[rwMediaKey(p)].label)}</div><div class="rw-up-title">${esc(p.title || p.url || 'Untitled')}</div>${byLine(b) ? `<div class="rw-up-by">${esc(byLine(b))}</div>` : ''}<div class="rw-up-foot">${prog != null ? `<div class="rw-up-bar"><i style="width:${prog}%"></i></div>` : ''}<div class="rw-up-where">${esc(p.where || (prog != null ? `${prog}%` : 'Not started'))}</div></div></div></div>`; };
+  const mood = `${todo.length} waiting · ${done.length} finished`;
   $('#pane').innerHTML = `
-    ${pageCrumb(t('saved.title'))}
-    <div class="pane-head home-head"><h1>${t('saved.title')}</h1><button class="ghost rw-setup-btn" data-rw-setup title="Set up one-tap saving">⚙ Quick-save</button></div>
-    <form class="rw-add" id="rw-add-form"><input id="rw-url" placeholder="Paste a link, or type a book or film title…" autocomplete="off" ${rw.saving ? 'disabled' : ''}><button class="add-btn wide" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button></form>
-    <div class="rw-type" title="Koyeba works out what a title is. Press one only when it guesses wrong.">${[['book', '📖 Book'], ['film', '🎬 Film']].map(([k, l]) => `<button class="rw-type-btn ${rw.addType === k ? 'on' : ''}" data-rw-type="${k}">${l}</button>`).join('')}</div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Read & Watch' }])}
+    <div class="rw-head2">
+      <div class="rw-eyebrow">Keep</div>
+      <h1 class="rw-title2">Read &amp; Watch</h1>
+      <div class="rw-mood">${items.length ? esc(mood) : 'Nothing saved yet'}<button class="rw-quicksave" data-rw-setup>· one-tap saving</button></div>
+    </div>
+    <form class="rw-savebar ${rw.saving ? 'saving' : ''}" id="rw-add-form">
+      <span class="rw-save-plus">+</span>
+      <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book or film title" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
+      <span class="rw-save-guess" id="rw-save-guess"></span>
+      <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button>
+    </form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
-    ${items.length ? `${(() => {
-      const tc = {}; items.forEach((b) => { const k = rwMediaKey(b.props || {}); tc[k] = (tc[k] || 0) + 1; });
-      const chips = RW_MEDIA_ORDER.filter((k) => tc[k]).map((k) => `<button class="rw-fchip ${tf === k ? 'on' : ''}" data-rw-typefilter="${k}">${RW_MEDIA[k].ic} ${RW_MEDIA[k].label} · ${tc[k]}</button>`).join('');
-      return `<div class="rw-typefilter"><button class="rw-fchip ${!tf ? 'on' : ''}" data-rw-typefilter="">All · ${items.length}</button>${chips}</div>`;
-    })()}
-    <div class="rw-sortbar"><select class="rw-sort sel" data-rw-sort title="Order">${RW_SORTS.map(([k, l]) => `<option value="${k}" ${sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-    ${(() => {
-      const TODO = { film: 'Want to see', book: 'Want to read', article: 'To read', video: 'To watch', link: 'To visit' };
-      const DONE = { film: 'Seen', book: 'Read', article: 'Read', video: 'Watched', link: 'Visited' };
-      const todoLbl = tf ? (TODO[tf] || 'To do') : 'To read &amp; watch';
-      const doneLbl = tf ? (DONE[tf] || 'Done') : 'Finished';
-      return `${section(todoLbl, unread, 'All caught up - nothing left.')}${read.length ? section(doneLbl, read, '') : ''}`;
-    })()}`
-      : '<div class="empty">Nothing here yet. Paste a link above, or set up one-tap saving.</div>'}`;
+    ${items.length ? `
+      ${up.length ? `<div class="rw-upnext"><div class="rw-up-h"><span class="rw-up-ht">Up next</span><span class="rw-up-hs">The few you've chosen. Pin anything to put it here.</span></div><div class="rw-up-grid">${up.map(upCard).join('')}</div></div>` : ''}
+      <div class="rw-filterbar">
+        <div class="rw-fks">${chips}</div>
+        <div class="rw-fb-right">
+          <span class="rw-sortflip" data-rw-sortflip role="button" tabindex="0" title="Press again to reverse">${sort === 'added-asc' ? 'Oldest first' : 'Newest first'} <span class="rw-sortar">${sort === 'added-asc' ? '↑' : '↓'}</span></span>
+          <span class="rw-fb-div"></span>
+          <span class="rw-view ${shelf ? 'on' : ''}" data-rw-view="shelf" role="button" tabindex="0">Shelf</span>
+          <span class="rw-view ${shelf ? '' : 'on'}" data-rw-view="list" role="button" tabindex="0">List</span>
+        </div>
+      </div>
+      ${section('todo', 'To read and watch', todo)}
+      ${section('done', 'Finished', done)}
+      ${todo.length || done.length ? '' : '<div class="empty" style="padding:30px 0">Nothing in this filter.</div>'}
+    ` : '<div class="empty" style="padding:30px 0">Nothing here yet. Paste a link above, or set up one-tap saving.</div>'}
+    ${rwPanelHtml()}`;
+  rwBindOnce();
+}
+function rwGuess(tx) { tx = (tx || '').trim(); if (!tx) return ''; if (/youtu|vimeo|watch/i.test(tx)) return 'Looks like a video'; if (/^https?:/i.test(tx) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(tx)) return 'Looks like an article'; if (/\bfilm|movie\b/i.test(tx)) return 'Looks like a film'; return 'Looks like a book'; }
+// Esc closes the item panel; the save bar shows a live "Looks like a …" guess and
+// lights its border as you type. Bound once. (V35 §69.)
+function rwBindOnce() {
+  if (window.__rwBound) return; window.__rwBound = true;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.view && state.view.type === 'readwatch' && state.rw && state.rw.sel) { state.rw.sel = null; renderReadwatch(); } });
+  document.addEventListener('input', (e) => { if (e.target && e.target.id === 'rw-url') { const v = e.target.value.trim(); const g = document.getElementById('rw-save-guess'); if (g) g.textContent = v ? rwGuess(v) : ''; const bar = e.target.closest('.rw-savebar'); if (bar) bar.classList.toggle('on', !!v); } });
 }
 function rwSetupHtml() {
   const s = state.rw && state.rw.setup;
@@ -26618,6 +26671,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
+  // §69 Read & Watch: the slide-in item panel, shelf/list, sort flip, section folds, pin.
+  { const ro = t.closest('[data-rw-open]'); if (ro) { if (state.rw) { state.rw.sel = ro.dataset.rwOpen; renderReadwatch(); } return; } }
+  { const rc = t.closest('[data-rw-close]'); if (rc) { if (state.rw) { state.rw.sel = null; renderReadwatch(); } return; } }
+  { const rv = t.closest('[data-rw-view]'); if (rv) { if (state.rw) { state.rw.view = rv.dataset.rwView; try { localStorage.setItem('life.rwView', state.rw.view); } catch {} renderReadwatch(); } return; } }
+  { const rsf = t.closest('[data-rw-sortflip]'); if (rsf) { if (state.rw) { state.rw.sort = state.rw.sort === 'added-asc' ? 'added-desc' : 'added-asc'; try { localStorage.setItem('life.rwSort', state.rw.sort); } catch {} renderReadwatch(); } return; } }
+  { const rsc = t.closest('[data-rw-sec]'); if (rsc) { if (state.rw) { state.rw.fold = state.rw.fold || { todo: true, done: true }; const k = rsc.dataset.rwSec; state.rw.fold[k] = !state.rw.fold[k]; renderReadwatch(); } return; } }
+  { const rp = t.closest('[data-rw-pin]'); if (rp) { rwTogglePin(rp.dataset.rwPin); return; } }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
   const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { const typed = ($('#rw-url') || {}).value || ''; state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) { i.value = typed; i.focus(); try { i.setSelectionRange(typed.length, typed.length); } catch {} } } return; }
   { const rss = t.closest('[data-rw-setstatus]'); if (rss) { const i = rss.dataset.rwSetstatus.indexOf(':'); rwSetStatus(rss.dataset.rwSetstatus.slice(0, i), rss.dataset.rwSetstatus.slice(i + 1)); return; } }
