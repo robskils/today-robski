@@ -9328,6 +9328,7 @@ function renderNotesList() {
   const lead = `${notes.length} note${notes.length === 1 ? '' : 's'}.${lastNote ? ` You were last in <span class="nx-last">${esc(lastNote.title || 'Untitled')}</span>.` : ''}`;
   $('#pane').innerHTML = `
     <div class="kpage-notes">
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.notes') }])}
       <div class="nx-grid">
         <div class="nx-main">
           <div class="nx-eyebrow">Keep · Notes</div>
@@ -19297,7 +19298,7 @@ function renderTasks() {
   const sideOpen = (id) => !(state.taskSide && state.taskSide[id] === false);
   const sidePanel = (id, title, count, body) => `<div class="tx-side-panel"><button class="tx-side-h" data-task-side="${id}"><span class="tx-side-hl">${esc(title)}</span><span class="tx-side-n">${count}</span><span class="tx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
   const spaceBody = `<div class="tx-side-body">${spaceRows.map(([s, n]) => `<div class="tx-side-row"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></div>`).join('') || '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
-  $('#pane').innerHTML = `<div class="kpage-tasks"><div class="tx-grid">
+  $('#pane').innerHTML = `<div class="kpage-tasks">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.tasks') }])}<div class="tx-grid">
     <div class="tx-main">
       <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
@@ -20058,6 +20059,7 @@ function renderContacts() {
   }
   $('#pane').innerHTML = `
     <div class="kwrap cvx-page">
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
       <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
       <div class="cvx-titlerow"><h1 class="cvx-title">Contacts</h1><span class="cvx-count">${P.length}</span><span class="cvx-new" data-cv-new>+ New contact</span><span class="cvx-import" data-contact-import title="Import a vCard (.vcf)">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       <div class="cvx-searchrow"><input class="cvx-search" id="cv-q" type="search" placeholder="Search by name, place, email or Space" value="${esc(cv.q || '')}" autocomplete="off"></div>
