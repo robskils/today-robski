@@ -4,8 +4,8 @@
 <script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Koyeba - un foyer paisible pour toute votre vie</title>
-<meta name="description" content="Koyeba réunit courrier, agenda, tâches, notes, argent et vie intérieure en un seul endroit privé, reliés par les Spaces. Posez-le, et il revient quand vous en avez besoin. Vos données sont à vous.">
+<title>Koyéba - un foyer paisible pour toute votre vie</title>
+<meta name="description" content="Koyéba réunit courrier, agenda, tâches, notes, argent et vie intérieure en un seul endroit privé, reliés par les Spaces. Posez-le, et il revient quand vous en avez besoin. Vos données sont à vous.">
 <link rel="canonical" href="https://koyeba.co/fr">
 <link rel="alternate" hreflang="en" href="https://koyeba.co/">
 <link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt">
@@ -20,18 +20,18 @@
 <meta name="theme-color" content="#13241d" media="(prefers-color-scheme: dark)">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Koyeba">
-<meta property="og:title" content="Koyeba - posez-le, et il revient">
+<meta property="og:site_name" content="Koyéba">
+<meta property="og:title" content="Koyéba - posez-le, et il revient">
 <meta property="og:description" content="Un foyer paisible et privé pour toute votre vie : courrier, agenda, tâches, notes, argent et vie intérieure, reliés par les Spaces. Vos données sont à vous.">
 <meta property="og:url" content="https://koyeba.co/fr">
 <meta property="og:image" content="https://koyeba.co/brand/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Koyeba - posez-le, et il revient quand vous en avez besoin">
+<meta property="og:image:alt" content="Koyéba - posez-le, et il revient quand vous en avez besoin">
 <meta property="og:locale" content="fr_FR">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Koyeba - posez-le, et il revient">
+<meta name="twitter:title" content="Koyéba - posez-le, et il revient">
 <meta name="twitter:description" content="Un foyer paisible et privé pour toute votre vie. Posez-le, et il revient quand vous en avez besoin.">
 <meta name="twitter:image" content="https://koyeba.co/brand/og-image.png">
 <!-- Structured data -->
@@ -43,19 +43,19 @@
       "@type": "WebSite",
       "@id": "https://koyeba.co/#website",
       "url": "https://koyeba.co/",
-      "name": "Koyeba",
+      "name": "Koyéba",
       "slogan": "Pour une vie bien vécue",
       "description": "Un foyer paisible et privé pour toute votre vie - courrier, agenda, tâches, notes, argent et vie intérieure, reliés par les Spaces.",
       "inLanguage": "fr"
     },
     {
       "@type": "SoftwareApplication",
-      "name": "Koyeba",
+      "name": "Koyéba",
       "slogan": "Pour une vie bien vécue",
       "url": "https://koyeba.co/",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "Koyeba est un foyer paisible et privé pour tout ce que vous portez - courrier, agenda, tâches, notes, argent et vie intérieure. Posez-le, et il revient quand vous en avez besoin. Vos données vous appartiennent, et l’IA est optionnelle, avec votre propre clé.",
+      "description": "Koyéba est un foyer paisible et privé pour tout ce que vous portez - courrier, agenda, tâches, notes, argent et vie intérieure. Posez-le, et il revient quand vous en avez besoin. Vos données vous appartiennent, et l’IA est optionnelle, avec votre propre clé.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -342,7 +342,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Choix des cookies');
-    b.innerHTML = '<p>Koyeba utilise des cookies de mesure d’audience pour comprendre comment le site est utilisé - rien de personnel, et jamais aucun de vos contenus Koyeba. Vous permettez ? <a href="/privacy">Confidentialité</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Refuser</button><button class="dbk-accept" type="button">Accepter</button></div>';
+    b.innerHTML = '<p>Koyéba utilise des cookies de mesure d’audience pour comprendre comment le site est utilisé - rien de personnel, et jamais aucun de vos contenus Koyéba. Vous permettez ? <a href="/privacy">Confidentialité</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Refuser</button><button class="dbk-accept" type="button">Accepter</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -361,7 +361,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
     <a class="brand" href="#top">
       <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
       <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
-      <span class="brand-word">Koyeba<span class="dot">.</span></span>
+      <span class="brand-word">Koyéba<span class="dot">.</span></span>
     </a>
     <ul class="nav-links">
       <li><a href="#idea">L’idée</a></li>
@@ -405,7 +405,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
     </div>
     <div class="idea-body reveal">
       <p>Des tâches à moitié oubliées, des idées qu’on voulait garder, de l’argent qu’on voulait surveiller. Mal retenu, tout cela s’égare – sur des bouts de papier, dans dix applications différentes, ou simplement perdu en silence.</p>
-      <p>Koyeba signifie <span class="know">savoir</span> en lingala. Posez quelque chose une fois et vous saurez toujours où le retrouver – la tâche quand la journée l’appelle, la page quand vous planifiez, la pensée quand vous vous arrêtez.</p>
+      <p>Koyéba signifie <span class="know">savoir</span> en lingala. Posez quelque chose une fois et vous saurez toujours où le retrouver – la tâche quand la journée l’appelle, la page quand vous planifiez, la pensée quand vous vous arrêtez.</p>
     </div>
   </div>
 </section>
@@ -452,7 +452,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
       <h2 class="big">De la place pour l’action, <i>et pour le reste de vous-même.</i></h2>
       <p class="lead">Le journal, les bilans, les objectifs et un accompagnement en douceur côtoient vos tâches et vos projets, pour que chacun éclaire l’autre. Présents quand vous les voulez, à l’écart quand ce n’est pas le moment.</p>
       <button class="inner-more" type="button" data-inner id="innerMore">Lire la suite +</button>
-      <p class="lead inner-extra" id="innerExtra" hidden>La plupart des outils s’occupent de la vie extérieure et laissent le reste dehors. Koyeba garde un lieu paisible pour les pensées, les sentiments et le sens de tout cela – un peu de conscience pour les jours ordinaires, et une façon de prêter attention à la vie que vous vivez vraiment.</p>
+      <p class="lead inner-extra" id="innerExtra" hidden>La plupart des outils s’occupent de la vie extérieure et laissent le reste dehors. Koyéba garde un lieu paisible pour les pensées, les sentiments et le sens de tout cela – un peu de conscience pour les jours ordinaires, et une façon de prêter attention à la vie que vous vivez vraiment.</p>
     </div>
   </div>
 </section>
@@ -462,7 +462,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
     <div class="reveal">
       <div class="eyebrow">Privé par conception</div>
       <h2 class="big">À vous. <i>Vraiment.</i></h2>
-      <p class="lead">Koyeba conserve les parts les plus personnelles de votre vie, alors nous avons bâti une entreprise sur la confiance, non sur la vente de vos données.</p>
+      <p class="lead">Koyéba conserve les parts les plus personnelles de votre vie, alors nous avons bâti une entreprise sur la confiance, non sur la vente de vos données.</p>
     </div>
     <div class="priv-points reveal" id="privPoints"></div>
   </div>
@@ -484,15 +484,15 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
 
 <section class="invite" id="invite">
   <div class="wrap invite-in reveal">
-    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba, écrit en Mandombe">
+    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba, écrit en Mandombe">
     <div class="eyebrow center">Accès anticipé</div>
     <h2>Venez le poser.</h2>
-    <p class="invite-lead">Koyeba grandit doucement, par le bouche-à-oreille, pour qu’il reste paisible et bien soigné. Parlez-nous un peu de vous et nous vous ferons une place.</p>
+    <p class="invite-lead">Koyéba grandit doucement, par le bouche-à-oreille, pour qu’il reste paisible et bien soigné. Parlez-nous un peu de vous et nous vous ferons une place.</p>
     <form class="invite-form" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="inv-field"><input id="if-name" placeholder="Votre nom" autocomplete="name" required></div>
       <div class="inv-field"><input id="if-email" type="email" placeholder="Votre e-mail" autocomplete="email" required></div>
-      <div class="inv-field"><input id="if-heard" placeholder="Comment avez-vous connu Koyeba ? (facultatif)" autocomplete="off"></div>
+      <div class="inv-field"><input id="if-heard" placeholder="Comment avez-vous connu Koyéba ? (facultatif)" autocomplete="off"></div>
       <div class="if-actions"><button class="btn btn-primary" type="submit" id="if-submit">Demander une invitation →</button></div>
       <p class="if-note" id="if-note" hidden></p>
     </form>
@@ -507,7 +507,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
         <a class="brand" href="#top">
           <img class="brand-mark ko-ink" src="/brand/mandombe-ko-ink.svg" alt="" aria-hidden="true">
           <img class="brand-mark ko-ivory" src="/brand/mandombe-ko-ivory.svg" alt="" aria-hidden="true">
-          <span class="brand-word">Koyeba<span class="dot">.</span></span>
+          <span class="brand-word">Koyéba<span class="dot">.</span></span>
         </a>
         <span class="foot-tag">Pour une vie bien vécue</span>
       </div>
@@ -517,26 +517,26 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
       <div class="foot-col">
         <a href="/privacy">Politique de confidentialité</a><a href="/terms">Conditions</a><a href="#" data-cookie-settings>Paramètres des cookies</a><a href="mailto:contact@koyeba.co">contact@koyeba.co</a>
       </div>
-      <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyeba</div>
+      <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyéba</div>
       <div class="foot-lang"><span class="foot-lang-label">Langue</span><div class="lang-switch"></div></div>
     </div>
     <a class="foot-mark" href="#top" title="Retour en haut">
-      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba">
-      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba">
+      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba">
+      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba">
     </a>
     <div class="dict">
-      <div class="dict-head"><span class="dict-word">Koyeba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verbe, lingala</span></div>
+      <div class="dict-head"><span class="dict-word">Koyéba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verbe, lingala</span></div>
       <div class="dict-def">Savoir – des faits, des lieux, des personnes.</div>
     </div>
   </div>
 </footer>
 
 <div class="signin-overlay" id="signin-modal" hidden>
-  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Se connecter à votre Koyeba">
+  <div class="signin-box" role="dialog" aria-modal="true" aria-label="Se connecter à votre Koyéba">
     <button class="signin-close" data-signin-close aria-label="Fermer">&times;</button>
     <div class="eyebrow">Bon retour</div>
-    <h3 class="signin-h">Connectez-vous à votre Koyeba</h3>
-    <p class="signin-p">Saisissez votre e-mail et nous vous enverrons un code. Nous vous emmènerons ensuite vers votre Koyeba.</p>
+    <h3 class="signin-h">Connectez-vous à votre Koyéba</h3>
+    <p class="signin-p">Saisissez votre e-mail et nous vous enverrons un code. Nous vous emmènerons ensuite vers votre Koyéba.</p>
     <form id="signin-form">
       <label class="signin-label" for="signin-email">Votre e-mail</label>
       <div class="signin-field">
@@ -546,7 +546,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
       <button type="button" class="signin-smslink" id="signin-sms">Recevoir mon code de connexion par SMS</button>
       <p class="signin-err" id="signin-err" hidden></p>
     </form>
-    <p class="signin-foot">Pas encore de Koyeba ? <a href="#invite" data-signin-close>Demander une invitation</a></p>
+    <p class="signin-foot">Pas encore de Koyéba ? <a href="#invite" data-signin-close>Demander une invitation</a></p>
   </div>
 </div>
 
@@ -636,9 +636,9 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
 
   // ── Private: five folding points I–V, one open at a time, first open ──
   var PRIV = [
-    ['Connexion à deux facteurs', 'Votre Koyeba est bien verrouillé, et vos données sont chiffrées au repos.'],
+    ['Connexion à deux facteurs', 'Votre Koyéba est bien verrouillé, et vos données sont chiffrées au repos.'],
     ['Jamais exploité, jamais vendu', 'Rien de ce qui vous appartient ne sert à la publicité ni n’alimente aucun modèle.'],
-    ['Apportez votre propre IA', 'L’IA est facultative, avec votre propre clé. Laissez-la désactivée et Koyeba fonctionne tout aussi bien.'],
+    ['Apportez votre propre IA', 'L’IA est facultative, avec votre propre clé. Laissez-la désactivée et Koyéba fonctionne tout aussi bien.'],
     ['Tout exporter', 'Emportez tout en un geste, à tout moment – ou gardez tout sur votre propre espace de stockage.'],
     ['Partez quand vous voulez', 'Fermez votre compte et emportez tout avec vous.']
   ];
@@ -725,7 +725,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
     note.hidden = true; btn.disabled = true; btn.textContent = 'Envoi…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Koyeba grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’aimerait, parlez-lui de nous.</p></div>'; })
+      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Koyéba grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’aimerait, parlez-lui de nous.</p></div>'; })
       .catch(function () { fail('Un problème est survenu - écrivez à contact@koyeba.co et nous arrangerons cela.'); });
   });
 

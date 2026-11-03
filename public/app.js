@@ -1,12 +1,12 @@
-// Koyeba — one surface. Sidebar + a single pane that renders any block,
+// Koyéba — one surface. Sidebar + a single pane that renders any block,
 // and a ⌘K palette to jump anywhere. No page reloads.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
-// The wordmark: <first name> Koyeba. The name comes from the signed-in account
+// The wordmark: <first name> Koyéba. The name comes from the signed-in account
 // (see firstName), never from a constant - a hard-coded owner is how every member
-// ended up looking at somebody else's name on their own Koyeba.
-const BRAND = { app: 'Koyeba' };
+// ended up looking at somebody else's name on their own Koyéba.
+const BRAND = { app: 'Koyéba' };
 // The tiers. Stored keys describe the arrangement, labels are the marketing name -
 // which has changed three times while the arrangement hasn't. Mirrors
 // worker/plans.js; change both together.
@@ -17,10 +17,10 @@ const PLAN_PRICE = { free: '', byok: '€9/mo', managed: '€13/mo' };
 const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
 const planLabel = (p) => PLAN_LABEL[normPlan(p)];
 const isManagedPlan = (p) => normPlan(p) === 'managed';
-// The Koyeba mark: a sun rising over two page-lines (a book of days). Uses
+// The Koyéba mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
-// name and "Koyeba" in the wordmark.
-// The Koyeba mark: a monoline eight-fold star (an octagram of two folded
+// name and "Koyéba" in the wordmark.
+// The Koyéba mark: a monoline eight-fold star (an octagram of two folded
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
@@ -54,7 +54,7 @@ const T_EN = {
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Koyeba card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Koyeba reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Koyéba card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Koyéba reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'More languages are rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
@@ -62,12 +62,12 @@ const T_EN = {
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Koyeba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyeba will live at', 'signup.create': 'Create my Koyeba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Koyeba friends', 'ct.self.show': 'Show your Koyeba card', 'ct.self.sub': 'Your window on Koyeba', 'ct.selfcard.tag': 'Koyeba card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Koyéba friends', 'ct.self.show': 'Show your Koyéba card', 'ct.self.sub': 'Your window on Koyéba', 'ct.selfcard.tag': 'Koyéba card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
@@ -76,7 +76,7 @@ const T_PT = {
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Koyeba - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Koyeba te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Koyéba - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Koyéba te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
@@ -84,12 +84,12 @@ const T_PT = {
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyeba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyeba ficará em', 'signup.create': 'Criar o meu Koyeba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Koyeba', 'ct.self.show': 'Mostrar o meu cartão Koyeba', 'ct.self.sub': 'A tua janela no Koyeba', 'ct.selfcard.tag': 'Cartão Koyeba ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Koyéba', 'ct.self.show': 'Mostrar o meu cartão Koyéba', 'ct.self.sub': 'A tua janela no Koyéba', 'ct.selfcard.tag': 'Cartão Koyéba ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 const T_IT = {
   'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Riflessione', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
@@ -98,7 +98,7 @@ const T_IT = {
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
   'set.title': 'Impostazioni',
   'set.tab.account': 'Account', 'set.tab.card': 'Scheda', 'set.tab.ai': 'Piano', 'set.tab.appearance': 'Aspetto', 'set.tab.mobile': 'Telefono', 'set.tab.notifications': 'Notifiche', 'set.tab.sections': 'Strumenti', 'set.tab.invites': 'Inviti', 'set.tab.manage': 'Gestisci', 'set.tab.feeds': 'Calendario', 'set.tab.security': 'Sicurezza', 'set.tab.import': 'Importa',
-  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Koyeba - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Koyeba ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
+  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Koyéba - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Koyéba ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
   'set.language': 'Lingua', 'set.language.hint': "L'italiano viene introdotto sezione per sezione",
   'home.greeting.morning': 'Buongiorno', 'home.greeting.afternoon': 'Buon pomeriggio', 'home.greeting.evening': 'Buonasera',
   'home.newnote': '+ Nota', 'home.newtask': '+ Attività', 'home.newevent': '+ Evento',
@@ -106,12 +106,12 @@ const T_IT = {
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
-  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyeba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyeba vivrà su', 'signup.create': 'Crea il mio Koyeba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': "Il codice nell'email che ti ha invitato.", 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
+  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': "Il codice nell'email che ti ha invitato.", 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
   'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
   'task.search': 'Cerca attività…', 'task.add': '+ Aggiungi attività', 'task.whatneeds': "Cosa c'è da fare?", 'task.surfaceon': 'Riappare il', 'task.notesph': 'Dettagli, contesto o link…', 'task.addtask': 'Aggiungi attività', 'task.done': 'Fatto', 'task.showcompleted': 'Mostra completate', 'task.empty.filters': 'Nessuna attività corrisponde a questi filtri.', 'task.empty.open': 'Nessuna attività aperta qui.', 'task.empty.here': 'Ancora nessuna attività qui.', 'task.nextdue': 'La prossima scade', 'task.onschedule': 'Secondo programma', 'task.aftertick': 'Dopo averla segnata',
-  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Koyeba', 'ct.self.show': 'Mostra la mia scheda Koyeba', 'ct.self.sub': 'La tua finestra su Koyeba', 'ct.selfcard.tag': 'Scheda Koyeba ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
+  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Koyéba', 'ct.self.show': 'Mostra la mia scheda Koyéba', 'ct.self.sub': 'La tua finestra su Koyéba', 'ct.selfcard.tag': 'Scheda Koyéba ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
 };
 function locale() {
   // Multi-language is PAUSED until the app is fully translated - English only for
@@ -212,7 +212,7 @@ async function api(path, opts = {}) {
     // us, not the member) - show something calm and human instead.
     if (/D1_ERROR|row write limit|SQLITE|no such (table|column)/i.test(msg)) {
       msg = /write limit/i.test(msg)
-        ? "Couldn't save just now - Koyeba is briefly at capacity. Please try again in a little while."
+        ? "Couldn't save just now - Koyéba is briefly at capacity. Please try again in a little while."
         : "Couldn't save that just now. Please try again.";
     }
     throw new Error(msg);
@@ -1077,7 +1077,7 @@ function sanitizeProse(html) {
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
-      // Internal links to other Koyeba pages FIRST: an internal link the
+      // Internal links to other Koyéba pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
@@ -1143,7 +1143,7 @@ const HELP = {
       <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
       <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
   mail: { title: 'Mail', tip: 'Every inbox in one place - Gmail, Yahoo, iCloud, Outlook. Your mail stays where it is; you just get to do far more with it: triage to zero, turn email into tasks and notes, file it under a Space, and search your whole archive.',
-    body: `<p><b>Here's the deal.</b> Connect your email accounts and Koyeba becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into Koyeba; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. Koyeba is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
+    body: `<p><b>Here's the deal.</b> Connect your email accounts and Koyéba becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into Koyéba; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. Koyéba is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
       <h4>What's in it for you</h4>
       <ul>
       <li><b>One inbox for every account.</b> Gmail for work, iCloud for the family, that old Yahoo you still get the good stuff on - they pour into a single stream, so you check mail once, not five times.</li>
@@ -1152,7 +1152,7 @@ const HELP = {
       <li><b>Find anything, ever.</b> Search reaches your <b>whole mailbox</b> on the server - your entire Gmail history, not just what's on screen - using Gmail's own search index under the hood. The past is all still there; you just don't have to carry it around.</li>
       </ul>
       <h4>Going forward, not hoarding backward</h4>
-      <p>Koyeba works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and Koyeba just gives you better things to do with it.</p>
+      <p>Koyéba works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and Koyéba just gives you better things to do with it.</p>
       <h4>One inbox, triaged to zero</h4>
       <p>New mail lands in the <b>Inbox</b> queue. File each email into one of three honest buckets - and it leaves the inbox:</p>
       <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
@@ -1172,7 +1172,7 @@ const HELP = {
       </ol>
       <h4>Passwords by provider</h4>
       <ul>
-        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Koyeba", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
+        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Koyéba", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
         <li><b>iCloud</b> - an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
         <li><b>Yahoo</b> - an <b>app password</b> from your Yahoo Account Security settings (your normal password won't work for a mail app).</li>
         <li><b>Outlook / Office 365</b> - your normal password usually works; with MFA, generate an app password in your Microsoft security settings.</li>
@@ -1182,7 +1182,7 @@ const HELP = {
       <p>Your account passwords are <b>encrypted</b> so not even we can read them, your mail stays on your provider's own servers, and anything that <b>leaves</b> your account - a reply, a forward - always waits for you to press the button. Scribe drafts; it never sends on its own.</p>` },
   contacts: { title: 'Contacts', tip: 'The people in your life, kept close - with a gentle nudge when it has been too long since you spoke, measured from when you last actually did.',
     body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
-      <p>Contacts with an email are checked against Koyeba, so you can see which of your people are here and connect with them.</p>
+      <p>Contacts with an email are checked against Koyéba, so you can see which of your people are here and connect with them.</p>
       <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
       <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
       <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
@@ -1190,10 +1190,10 @@ const HELP = {
   financial: { title: 'Money', tip: 'Spending, portfolio and a read on the markets in one glance - and your money lines up with your life, because your Spaces double as the spending categories.',
     body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
       <h4>Portfolio</h4>
-      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Koyeba keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
+      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Koyéba keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
       <h4>Spending</h4>
       <ul>
-      <li><b>Import a statement</b> (CSV or PDF) and Koyeba reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
+      <li><b>Import a statement</b> (CSV or PDF) and Koyéba reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
       <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a space.</li>
       <li>The month reads back as <b>spend, income and net</b>, with your <b>top categories</b>, so the shape of the month is clear without a spreadsheet.</li>
       </ul>
@@ -1210,7 +1210,7 @@ const HELP = {
       </ul>
       <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
   areas: { title: 'Spaces', tip: 'A home for every part of your life - an area, a project, even a person. Everything to do with it in one place, so you stop hunting across a dozen apps for the pieces.',
-    body: `<p>Koyeba keeps a <b>space for each part of your life</b> - the way a book of accounts keeps a separate space for each domain. A space can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
+    body: `<p>Koyéba keeps a <b>space for each part of your life</b> - the way a book of accounts keeps a separate space for each domain. A space can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
       <p><b>One space gathers that whole corner of your life:</b></p>
       <ul>
       <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
@@ -1242,12 +1242,12 @@ const HELP = {
     body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
       <h4>Adding something</h4>
       <ul>
-      <li><b>Paste a link</b> and Koyeba fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
+      <li><b>Paste a link</b> and Koyéba fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
       <li><b>Type a book or film</b> title (tap <b>Book</b> or <b>Film</b> first if you want to be sure) and it looks up the cover, year and a link for you.</li>
       <li>Quickest from anywhere: <b>+ New → Read or watch</b>, or the <b>+</b> beside Read &amp; Watch in the sidebar.</li>
       </ul>
       <h4>Five kinds, each worded to suit</h4>
-      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Koyeba guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
+      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Koyéba guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
       <h4>Working the list</h4>
       <ul>
       <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
@@ -1255,18 +1255,18 @@ const HELP = {
       <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
       <li><b>File it to a Space</b> and it sits with that part of your life, in that space's colour - your watercolour reading filed under Art, say.</li>
       </ul>
-      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Koyeba.</p>` },
+      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Koyéba.</p>` },
   timer: { title: 'Toolbox', tip: 'The small tools for doing the work: a focus timer that logs your deep-work sessions, a plain countdown for anything, and your practices.',
     body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
       <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
       <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
       <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
       <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on Koyeba', tip: 'Connect with the people you know who are on Koyeba - then share Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
-    body: `<p>Some of the people in your Contacts are on Koyeba too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
+  friends: { title: 'Contacts on Koyéba', tip: 'Connect with the people you know who are on Koyéba - then share Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
+    body: `<p>Some of the people in your Contacts are on Koyéba too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
       <h4>Connecting</h4>
       <ul>
-      <li>At the top of <b>Contacts</b>, Koyeba quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
+      <li>At the top of <b>Contacts</b>, Koyéba quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
       <li>Or add someone straight off by <b>name or email</b>.</li>
       <li>A request waits until they accept. <b>Incoming</b> requests are yours to accept or decline, and you can see the ones you have <b>sent</b>.</li>
       </ul>
@@ -1288,35 +1288,35 @@ const HELP = {
       <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
       <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
   tabs: { title: 'Tabs & getting around', tip: 'Keep a few places open at once like browser tabs, pin the ones you always want to hand, and jump anywhere in a couple of keystrokes with ⌘K.',
-    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Koyeba - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
+    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Koyéba - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
       <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
       <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
-      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Koyeba opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
+      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Koyéba opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
       <li><b>Unpin</b> by tapping the <b>📌</b> again; it becomes an ordinary working tab.</li>
       <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
-      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Koyeba.</li></ul>
+      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Koyéba.</li></ul>
       <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
   settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Koyeba card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
-  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Koyeba card, and two-factor security - all in one place.',
+    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Koyéba card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
+  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Koyéba card, and two-factor security - all in one place.',
     body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
-      <ul><li><b>Your Koyeba card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
+      <ul><li><b>Your Koyéba card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
       <li><b>Two-factor authentication</b> lives here too, under Security: add a second step at sign-in from your authenticator app.</li>
       <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
   'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
     body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
   'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
-    body: `<p>Every plan is the whole of Koyeba - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
-  'settings-notifications': { title: 'Notifications', tip: 'How and when Koyeba reaches you - the brief, text alerts, and a couple of Home touches.',
+    body: `<p>Every plan is the whole of Koyéba - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
+  'settings-notifications': { title: 'Notifications', tip: 'How and when Koyéba reaches you - the brief, text alerts, and a couple of Home touches.',
     body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
       <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
       <p><b>Around the app:</b> the <b>daily inspirational quote</b> on Home, Today and the brief, and whether you <b>see online contacts</b> in the Home sidebar.</p>` },
   'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
     body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
-  'settings-invites': { title: 'Invites', tip: 'Bring people onto Koyeba.',
-    body: `<p>Put in someone's email and a note, and Koyeba emails them the invitation. They click one link, sign in and their own Koyeba is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
+  'settings-invites': { title: 'Invites', tip: 'Bring people onto Koyéba.',
+    body: `<p>Put in someone's email and a note, and Koyéba emails them the invitation. They click one link, sign in and their own Koyéba is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
   'settings-manage': { title: 'Manage', tip: 'Spaces, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Spaces</b> (what Koyeba orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
+    body: `<p>Each tile opens a small subpage: <b>Spaces</b> (what Koyéba orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
   'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
     body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
 };
@@ -1384,13 +1384,13 @@ function renderGuideIndex() {
     const h = HELP[k];
     return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
   }).join('');
-  $('#pane').innerHTML = `${pageCrumb('Koyeba Guide')}
-    <div class="pane-head home-head"><h1>Koyeba Guide</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Koyéba Guide')}
+    <div class="pane-head home-head"><h1>Koyéba Guide</h1></div>
     <div class="help-doc">
       <div class="guide-ethos">
         <div class="guide-ethos-mark">${MARK}</div>
         <div class="guide-ethos-tag">For a life well lived</div>
-        <p class="guide-ethos-p">Koyeba holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
+        <p class="guide-ethos-p">Koyéba holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
       </div>
       <p class="help-lede">Here's how it all works. Pick a tool below to see its guide.</p>
       <div class="guide-sec-h">All the guides</div>
@@ -1399,13 +1399,13 @@ function renderGuideIndex() {
       <p class="guide-start-p">Spotted something, hit a snag, or have an idea? We read every note.</p>
       <button class="add-btn wide help-feedback-btn" data-guide-feedback="Guide">💬 Give feedback</button>
       <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>Your data belongs to you.</b> Koyeba is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Koyeba is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
+      <p class="guide-start-p"><b>Your data belongs to you.</b> Koyéba is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Koyéba is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
       <div class="guide-legal">
         <a class="guide-legal-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
         <a class="guide-legal-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@koyeba.co">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyeba · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyéba · daybook.fyi</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -1457,14 +1457,14 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
-    case 'card': return 'Koyeba card';
+    case 'card': return 'Koyéba card';
     case 'admin': return 'Admin';
-    case 'friends': return 'Contacts on Koyeba';
+    case 'friends': return 'Contacts on Koyéba';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Space'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Koyeba';
+    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Koyéba';
     case 'messages': return 'Messages';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
@@ -1476,7 +1476,7 @@ function labelForView(v) {
   }
 }
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
-// single note reads "Koyeba Notes", a contact "Koyeba Contacts", etc.
+// single note reads "Koyéba Notes", a contact "Koyéba Contacts", etc.
 const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
 // The back button that rides in the top line (to the right of the ☰ menu), shown
 // only when there is somewhere to go back to.
@@ -1711,7 +1711,7 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
         // A new build is live. Never yank the page out mid-work - show a quiet,
         // sticky "tap to refresh" nudge and let the choice be theirs. (Robin.)
         updating = true;
-        toast('A new version of Koyeba is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
+        toast('A new version of Koyéba is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
       }
     } catch { /* offline - keep running what we have */ }
   }
@@ -1849,7 +1849,7 @@ function navSection(key, v) {
       return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
     }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
   } else if (key === 'people') {
-    // Your connected Koyeba people, online ones first and offline ones greyed,
+    // Your connected Koyéba people, online ones first and offline ones greyed,
     // so you can see who's about at a glance and message them in a tap.
     title = 'People'; add = '<button class="nav-add" data-open-contacts title="Contacts">👤</button>';
     // Need the friends list (names) once; the 90s status poll keeps who's online.
@@ -1861,7 +1861,7 @@ function navSection(key, v) {
     rows = sorted.map((f) => {
       const on = isOnline(f); const un = unreadFrom(f.id);
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyeba</button>');
+    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyéba</button>');
   } else {
     title = 'Spaces'; add = '<button class="nav-add" data-new-area title="New space">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
@@ -1938,7 +1938,7 @@ function navTopSecs(v) {
 // make. (Robin, 2026-10-24: for most people except admins it's always automatic.)
 function themeLocked() { return !!(state.me && state.me.id !== 1); }
 // Two pickable worlds - 'light' (Day, ivory) and 'dark' (Night, deep forest) -
-// plus 'auto', which follows the sun between them. (Koyeba: one gold accent; the
+// plus 'auto', which follows the sun between them. (Koyéba: one gold accent; the
 // old washi/vermilion 'calm' world was retired 2026-10-31. A stored 'calm' now
 // resolves to 'auto', and the dead [data-theme='calm'] CSS is simply unreachable.)
 function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
@@ -1991,12 +1991,12 @@ function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(
 // color-mixed from --accent, so overriding --accent (+ --accent-ink for text
 // on accent) recolours the whole app. Cached in localStorage for instant paint
 // and mirrored to settings (kv_accent) so it follows you across devices.
-// Koyeba has ONE accent: gold (rule 1 - no red/green/blue/orange/purple, ever).
+// Koyéba has ONE accent: gold (rule 1 - no red/green/blue/orange/purple, ever).
 // The single choice resets to the theme gold, which flips #c99a3e by day /
 // #d8b25e by night on its own. (The old multi-colour presets + custom picker were
 // a latent brand breach; restore the array here if a choice is ever wanted back.)
 const ACCENT_PRESETS = [
-  ['', 'Koyeba gold'],
+  ['', 'Koyéba gold'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
 function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
@@ -2155,8 +2155,8 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnySet || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 
-// ── Your Koyeba card ─────────────────────────────────────────────────────
-// A little profile: how people find you on Koyeba, and your window to the
+// ── Your Koyéba card ─────────────────────────────────────────────────────
+// A little profile: how people find you on Koyéba, and your window to the
 // world - photo, tagline, a colour, and the contact details you choose to show.
 // Kept in kv_card_profile (photo is a small square data URI); name/handle come
 // from the account. Others seeing it comes next; for now it's yours to make.
@@ -2214,7 +2214,7 @@ function cardHtml(d, full) {
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Koyeba</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Koyeba">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Koyéba</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Koyéba">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -2254,7 +2254,7 @@ async function cardSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 // A contact's photo: crop-to-square 256px JPEG data URI on props.photo - small
-// and light, in keeping with Koyeba (no high-res uploads). (Robin.)
+// and light, in keeping with Koyéba (no high-res uploads). (Robin.)
 async function contactSetPhoto(file) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
   try {
@@ -2265,7 +2265,7 @@ async function contactSetPhoto(file) {
     await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
   } catch (e) { toast(e.message || 'Could not read that image'); }
 }
-// Dismiss a "your contact is on Koyeba" suggestion. Drops it locally and persists
+// Dismiss a "your contact is on Koyéba" suggestion. Drops it locally and persists
 // the hidden id (kv_sugg_hidden), so getFriends keeps it out from now on. (Robin:
 // let me hide a suggestion as well as connect.)
 async function hideSuggestion(id) {
@@ -2310,20 +2310,20 @@ function cardChosenEmails(c) {
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
-  $('#pane').innerHTML = `${pageCrumb('Koyeba card')}
-    <div class="pane-head home-head"><h1>Your Koyeba card</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Koyéba card')}
+    <div class="pane-head home-head"><h1>Your Koyéba card</h1></div>
     ${cardEditorHtml()}`;
 }
 // Repaint the card editor on whichever surface it's on: the Settings > Card tab,
-// or the standalone Koyeba card view.
+// or the standalone Koyéba card view.
 function rerenderCard() { if (state.view && state.view.type === 'settings') renderSettings(); else renderCard(); }
-// The card editor body (preview + fields), reused by the standalone Koyeba card
+// The card editor body (preview + fields), reused by the standalone Koyéba card
 // view and the Settings > Card tab.
 function cardEditorHtml() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
   const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
-  return `<p class="dbc-lede">How people find you on Koyeba, and your small window to the world. Make it yours.</p>
+  return `<p class="dbc-lede">How people find you on Koyéba, and your small window to the world. Make it yours.</p>
     <div class="dbc-wrap">
       <div class="dbc-preview">${cardPreviewHtml(true)}</div>
       <div class="dbc-edit">
@@ -2351,7 +2351,7 @@ function cardEditorHtml() {
         <div class="dbc-field"><span class="dbc-l">Show my phone</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
-        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Koyeba</small></span>
+        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Koyéba</small></span>
           <div class="dbc-qrwrap">${qrSvg('https://koyeba.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
@@ -2378,7 +2378,7 @@ function personAvatar(id, name, extra) {
   if (c && c.photo) return `<span class="fr-av fr-av-photo ${extra || ''}" style="background-image:url('${c.photo}')"></span>`;
   return `<span class="fr-av ${extra || ''}">${esc(initial((c && c.name) || name || '?'))}</span>`;
 }
-// Read-only view of someone else's Koyeba card, in a light overlay.
+// Read-only view of someone else's Koyéba card, in a light overlay.
 async function openPublicCard(id, seed) {
   id = Number(id); if (!id) return;
   state.viewCard = { id, data: seed || (state.cardCache && state.cardCache[id]) || null, loading: true };
@@ -2399,7 +2399,7 @@ function renderPublicCard() {
   if (d && d.id && !isMe) {
     if (connected) act = `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>`;
     else if (outgoing) act = '<span class="dbc-view-pending">Request sent ✓</span>';
-    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Koyeba</button>`;
+    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Koyéba</button>`;
   }
   el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${act ? `<div class="dbc-view-acts">${act}</div>` : ''}</div></div>`;
 }
@@ -2409,7 +2409,7 @@ async function openConnectBySub(sub) {
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
   try {
     const d = await api('/api/card/by/' + encodeURIComponent(sub));
-    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Koyeba card was not found'); }
+    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Koyéba card was not found'); }
   } catch (e) { openHome(); toast(e.message || 'Could not open that card'); }
 }
 function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
@@ -2481,7 +2481,7 @@ async function saveAiKey(provider) {
 }
 async function closeMyAccount() {
   if (state.me && state.me.id === 1) { toast('The owner account cannot be closed here.'); return; }
-  if (!(await uiConfirm('Close your account? This permanently deletes your Koyeba and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
+  if (!(await uiConfirm('Close your account? This permanently deletes your Koyéba and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
   const typed = await uiPrompt('Type DELETE to confirm you want to permanently erase your account.', { title: 'Are you sure?', okLabel: 'Close my account', placeholder: 'DELETE' });
   if ((typed || '').trim().toUpperCase() !== 'DELETE') { toast('Account not closed.'); return; }
   try {
@@ -2500,11 +2500,11 @@ const aiProvLabel = (p) => ({ anthropic: 'Claude', openai: 'ChatGPT', gemini: 'G
 // which provider it is. No picking, no per-provider boxes.
 function aiConnectHtml(a) {
   if (a.aiAnySet && a.aiProvider) {
-    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Koyeba.</div>
+    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Koyéba.</div>
       <button class="ghost ai-disconnect" data-ai-disconnect="${esc(a.aiProvider)}">Disconnect ${esc(aiProvLabel(a.aiProvider))}</button>
       ${a.aiProvider === 'gemini' ? '' : '<p class="plan-note"><b>Voice notes</b> and the <b>Money</b> tools (reading a statement, summarising the finance videos you follow) are the one exception - they need <b>Gemini</b>, the only AI that reads audio and video. A <b>free</b> Gemini key covers both; paste one below and they switch on too.</p>'}`;
   }
-  return `<p class="plan-desc">Koyeba runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
+  return `<p class="plan-desc">Koyéba runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
     <div class="ai-key-in"><input class="sel" type="password" data-ai-key-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-ai-connect>Connect</button></div>
     <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div>
     <p class="plan-note">Your one key powers everything. The <b>one exception</b> is <b>voice notes</b> and the <b>Money</b> tools, which need <b>Gemini</b> (it alone reads audio and video) - a <b>free</b> Gemini key covers them.</p>`;
@@ -2585,13 +2585,13 @@ async function downloadExport() {
 // sweep rather than quietly surviving it.
 // A crumb shared across *.daybook.fyi (the token can't be - it's per-origin in
 // localStorage): which subdomain this browser is signed in on. The apex marketing
-// page reads it so "Sign in" jumps you straight to your Koyeba instead of asking
+// page reads it so "Sign in" jumps you straight to your Koyéba instead of asking
 // for your email again. Cleared on sign-out.
 function rememberSubdomain(sub) { if (!sub || !/^[a-z0-9-]{1,63}$/i.test(sub)) return; try { document.cookie = `db_sub=${encodeURIComponent(sub)}; domain=.daybook.fyi; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax; secure`; } catch {} }
 function forgetSubdomain() { try { document.cookie = 'db_sub=; domain=.daybook.fyi; path=/; max-age=0; samesite=lax; secure'; } catch {} }
 const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
 async function signOut() {
-  if (!(await uiConfirm('Sign out of Koyeba on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
+  if (!(await uiConfirm('Sign out of Koyéba on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
   // Push goes first, while the token that authorises it still exists: a device
   // left subscribed would carry on buzzing with this account's mail afterwards.
   try {
@@ -2795,7 +2795,7 @@ function renderAdmin() {
     </div>
     <div class="set-card" style="margin-top:14px">
       <div class="set-row-t">Hidden for now</div>
-      <p class="home-empty" style="margin:6px 0 14px">Parts of Koyeba switched off for the moment - a running note so we remember what to bring back.</p>
+      <p class="home-empty" style="margin:6px 0 14px">Parts of Koyéba switched off for the moment - a running note so we remember what to bring back.</p>
       <div class="adm-hidden">${HIDDEN_FEATURES.length ? HIDDEN_FEATURES.map((h) => `<div class="admin-row"><span><b>${esc(h.label)}</b> <span class="scope">${esc(h.where || '')}${h.note ? ' · ' + esc(h.note) : ''}</span></span><span class="aq-author">${h.since ? 'hidden ' + esc(h.since) : ''}</span></div>`).join('') : '<span class="sp-cat-empty">Nothing hidden right now.</span>'}</div>
     </div>`;
 
@@ -2804,11 +2804,11 @@ function renderAdmin() {
       <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
     </div>`;
 
-  const BR_SW = [['#a8844a', 'Koyeba Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
+  const BR_SW = [['#a8844a', 'Koyéba Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Koyeba</span></span>
+        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Koyéba</span></span>
         <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
       </div>
       <div class="home-sec-h" style="margin-top:6px">Logo files</div>
@@ -2834,7 +2834,7 @@ function renderAdmin() {
   const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
   const costsPane = `<div class="set-card">
       <div class="home-sec-h">Running costs</div>
-      <p class="inv-hint">What Koyeba costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
+      <p class="inv-hint">What Koyéba costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
       <div class="adm-cost-list">${costMonths.map(costRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No cost data yet.</div>'}</div>
     </div>
     <div class="set-card" style="margin-top:14px">
@@ -2843,7 +2843,7 @@ function renderAdmin() {
       <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
     </div>`;
 
-  // ── Health: the outside services Koyeba leans on, up or down ───────────
+  // ── Health: the outside services Koyéba leans on, up or down ───────────
   // Robin: "we don't like silent breakages." Probed every half hour by the
   // worker; this is the glanceable status, a Check-now, and the alert toggle.
   const hs = a.health || null;
@@ -2851,7 +2851,7 @@ function renderAdmin() {
   const svcDown = svcList.filter(([, v]) => !v.ok).length;
   const healthPane = `<div class="set-card">
       <div class="home-sec-h">Integrations ${svcList.length ? (svcDown ? `<span class="adm-health-badge down">${svcDown} down</span>` : '<span class="adm-health-badge ok">all up</span>') : ''}</div>
-      <p class="inv-hint">The outside services Koyeba depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
+      <p class="inv-hint">The outside services Koyéba depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
       ${svcList.length ? `<div class="adm-health-list">${svcList.map(([k, v]) => `
         <div class="adm-health-row${v.ok ? '' : ' down'}" title="${esc(v.ok ? 'Up' : 'Down')} since ${esc(timeAgo(v.since || v.at))}">
           <span class="ahr-dot ${v.ok ? 'ok' : 'down'}"></span>
@@ -2878,13 +2878,13 @@ function renderAdmin() {
 
   const panes = { members: membersPane, feedback: feedbackPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
-    members: `${users.length} on Koyeba · tap anyone for the full picture`,
+    members: `${users.length} on Koyéba · tap anyone for the full picture`,
     feedback: feedback.length ? `${feedback.length} note${feedback.length === 1 ? '' : 's'} from the Guide` : 'What people send from the Guide',
-    costs: 'What it costs to run Koyeba, by month',
-    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Koyeba depends on',
+    costs: 'What it costs to run Koyéba, by month',
+    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Koyéba depends on',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
-    brand: 'The Koyeba logo, icons and colours',
+    brand: 'The Koyéba logo, icons and colours',
   };
 
   // §40: one folding page. A top band (eyebrow + Admin + a one-line state +
@@ -2897,7 +2897,7 @@ function renderAdmin() {
     ['Services', svcList.length ? `${svcList.length - svcDown}/${svcList.length}` : '—'],
   ];
   const waiting = requests.length;
-  const stateSentence = `${svcList.length ? (svcDown === 0 ? 'Everything is running.' : `${svcDown} service${svcDown === 1 ? '' : 's'} need${svcDown === 1 ? 's' : ''} looking at.`) : 'Koyeba is running.'}${waiting ? ` ${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting to join.` : ''}`;
+  const stateSentence = `${svcList.length ? (svcDown === 0 ? 'Everything is running.' : `${svcDown} service${svcDown === 1 ? '' : 's'} need${svcDown === 1 ? 's' : ''} looking at.`) : 'Koyéba is running.'}${waiting ? ` ${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting to join.` : ''}`;
   const sectionHtml = ([key, label], i) => {
     const open = admOpen(key, key === 'members');
     return `<section class="adm2-sec" id="adm-sec-${key}">
@@ -2974,13 +2974,13 @@ async function setUserFree(id, months) {
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months === 'forever' ? 'Free forever' : months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
   catch (e) { toast(e.message); renderAdmin(); }
 }
-// ── Friends on Koyeba ────────────────────────────────────────────────
+// ── Friends on Koyéba ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
-// Order Koyeba contacts by who was online most recently: anyone online right
+// Order Koyéba contacts by who was online most recently: anyone online right
 // now (live presence poll, or the last-known flag) sits at the top, then the
 // rest by how recently they were last seen, newest first, down to never-seen.
-// Used by the sidebar lists and the Contacts / Koyeba Contacts pages so they
+// Used by the sidebar lists and the Contacts / Koyéba Contacts pages so they
 // all agree. (Robin, 2026-10-27.)
 function friendsByRecency(list) {
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
@@ -2996,10 +2996,10 @@ function friendsByRecency(list) {
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
-  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Koyeba card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Koyéba card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
-// page re-renders whichever view the action was taken on - Contacts, the Koyeba
+// page re-renders whichever view the action was taken on - Contacts, the Koyéba
 // people hub, or Home (where invitations surface too). (Robin, 2026-10-13.)
 function renderFriends() {
   const v = state.view && state.view.type;
@@ -3027,12 +3027,12 @@ async function peopleSearch() {
   // query still matches what's typed.
   if (($('#friend-email') || {}).value?.trim() !== q) return;
   box.innerHTML = people.length
-    ? `<div class="fr-scan-note">People on Koyeba matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
-    : `<div class="home-empty" style="padding:8px 2px">No one on Koyeba matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
+    ? `<div class="fr-scan-note">People on Koyéba matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+    : `<div class="home-empty" style="padding:8px 2px">No one on Koyéba matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Connected'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
-// Invite someone to Koyeba: their email, a note in your own words, Send. The
+// Invite someone to Koyéba: their email, a note in your own words, Send. The
 // worker emails the invitation with a one-click link - the invitee never copies a
 // code anywhere. Leave the email blank and it just mints a code to share by hand.
 // One dialog behind every entry point (Contacts, Settings, Admin) so there is a
@@ -3050,7 +3050,7 @@ function inviteToKoyeba(prefill) {
     : `<p class="inv-d-hint">You've given out all 10 of your free ${gMonths}-month gifts - a plain invite still lands them on Free.</p>`;
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
-    <div class="recur-h">Invite someone to Koyeba</div>
+    <div class="recur-h">Invite someone to Koyéba</div>
     <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
       <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
@@ -3209,11 +3209,11 @@ async function dismissRequest(id) {
   if (state.inviteReq) state.inviteReq.count = (state.admin && state.admin.requests || []).length;
   renderAdmin();
 }
-// Unread Koyeba MESSAGES (not friend requests) - the signal we make loud.
+// Unread Koyéba MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
-// Name of a Koyeba contact by id, from whatever's loaded (friends list, then
+// Name of a Koyéba contact by id, from whatever's loaded (friends list, then
 // the online roster). Falls back to a generic label.
 function friendName(id) {
   const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id));
@@ -3230,13 +3230,13 @@ async function refreshFriendStatus() {
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
     // Ping when a contact's unread rises (a new message) - unless you're already
-    // in that chat. A toast alerts you wherever you are in Koyeba.
+    // in that chat. A toast alerts you wherever you are in Koyéba.
     if (hadBaseline) {
       const openWith = state.chat && state.chat.with;
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
           const nm = friendName(id);
-          toast(`💬 ${nm || 'A Koyeba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
+          toast(`💬 ${nm || 'A Koyéba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
         }
       });
     }
@@ -3854,16 +3854,16 @@ function renderShare() {
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
-        <p>You're not connected with anyone on Koyeba yet.</p>
+        <p>You're not connected with anyone on Koyéba yet.</p>
         <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
-  // A public link: notes only, for sharing with someone who isn't on Koyeba.
+  // A public link: notes only, for sharing with someone who isn't on Koyéba.
   // Off by default; a quiet, revocable read-only page at koyeba.co/n/<token>.
   const webUrl = shareWebUrl();
   const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
-    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Koyeba account needed. Read-only.</small></span></div>
+    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Koyéba account needed. Read-only.</small></span></div>
     ${webUrl ? `<div class="sw-live">
         <input class="sw-url" type="text" readonly value="${esc(webUrl)}" data-share-web-url aria-label="Public link">
         <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop sharing</button></div>
@@ -3975,7 +3975,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
-// Where AI actually gets used across Koyeba, and which model powers each - so
+// Where AI actually gets used across Koyéba, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
@@ -4012,7 +4012,7 @@ const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.
 const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your normal password:
   <ol class="gpw-steps">
     <li>Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a> (required before app passwords appear).</li>
-    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Koyeba</b>, and press Create.</li>
+    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Koyéba</b>, and press Create.</li>
     <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
   </ol>`;
 // ── Mobile Home layout ────────────────────────────────────────────────
@@ -4151,7 +4151,7 @@ function renderSettingsSix() {
   const youBody =
     row(esc(name), esc(email) + (phone ? ' · ' + esc(phone) : ''), links([{ label: 'Edit', open: 'account' }]), true)
     + row('Also sign in with', aliasEmails.length ? esc(aliasEmails.slice(0, 4).join(', ')) + (aliasEmails.length > 4 ? ` and ${aliasEmails.length - 4} more` : '') : 'Just your main address so far', links([{ label: 'Manage', open: 'account' }, { label: '+ Add', open: 'account' }]), true)
-    + row('Your Koyeba card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
+    + row('Your Koyéba card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
     + grp('Security')
     + row('Two-step sign-in', 'A code from your authenticator app after your email code', `<span class="sx-links"><span class="sx-stat">${sq(twofaOn)}${twofaOn ? 'On' : 'Off'}</span><span class="sx-link lead" data-sx-open="account" role="button" tabindex="0">${twofaOn ? 'Manage' : 'Set up'}</span></span>`);
 
@@ -4160,7 +4160,7 @@ function renderSettingsSix() {
     row('Your plan', planSub, choices([{ label: 'Premium Plus', on: planPlus, open: 'ai' }, { label: 'Premium - your own key', on: planByok, open: 'ai' }]))
     + row('Billing', 'Annual saves you two months', choices([{ label: 'Monthly', on: cyc === 'monthly', open: 'ai' }, { label: 'Annual', on: cyc === 'annual', open: 'ai' }]))
     + row('Use AI at all', 'The master switch. Everything still works without it', toggle(!aiOff, 'ai'))
-    + grp('Where Koyeba uses AI')
+    + grp('Where Koyéba uses AI')
     + AI_USES.map(([key, f, why]) => row(esc(f), esc(why), toggle(aiFeatureOn(key), 'aifeat:' + key, aiOff))).join('');
 
   const lookBody =
@@ -4192,21 +4192,21 @@ function renderSettingsSix() {
 
   const inv = state.invites || [];
   const invSummary = inv.length ? `${inv.length} invitation${inv.length === 1 ? '' : 's'} sent` : 'Nobody invited yet';
-  const peopleBody = row('Invite someone to Koyeba', `${invSummary}. We send the email - they click one link and they're in.`, links([{ label: 'Open invitations', open: 'invites' }]));
+  const peopleBody = row('Invite someone to Koyéba', `${invSummary}. We send the email - they click one link and they're in.`, links([{ label: 'Open invitations', open: 'invites' }]));
 
   const dataBody =
-    row('Where it lives', 'Your own storage is on the way', '<span class="sx-choices"><span class="sx-choice on">Hosted by Koyeba</span><span class="sx-choice sx-dim">Your own storage</span></span>')
+    row('Where it lives', 'Your own storage is on the way', '<span class="sx-choices"><span class="sx-choice on">Hosted by Koyéba</span><span class="sx-choice sx-dim">Your own storage</span></span>')
     + row('Take everything with you', 'A full export, any time', links([{ label: 'Download', act: 'export' }]))
     + row('How we handle your data', '', links([{ label: 'Read it', href: 'https://koyeba.co/privacy' }]))
     + grp('Leaving')
     + row('Sign out of this device', 'Anything not saved to your account is cleared from this browser', links([{ label: 'Sign out', act: 'signout' }]))
-    + row('Close your account', "Erases your Koyeba and everything in it. It can't be undone", links([{ label: 'Close account…', act: 'close', danger: true }]));
+    + row('Close your account', "Erases your Koyéba and everything in it. It can't be undone", links([{ label: 'Close account…', act: 'close', danger: true }]));
 
   const youHint = `${esc(name)}${email ? ' · ' + esc(email) : ''}${twofaOn ? ' · two-step on' : ''}`;
   const planHint = planPlus ? 'Premium Plus - the AI is run for you' : planByok ? 'Premium - your own AI key' : 'Free trial';
   const lookHint = `${tLocked || mode === 'auto' ? 'Night follows sunset' : mode === 'dark' ? 'Night' : 'Day'} · week starts ${DOW[ws]} · ${esc(curName)} · ${ds === 'us' ? 'October 23' : '23 October'}`;
   const connHint = 'Calendars, holidays, mail and imports';
-  const dataHint = 'Hosted by Koyeba · never sold, never used to train a model';
+  const dataHint = 'Hosted by Koyéba · never sold, never used to train a model';
 
   const S = [['you', youHint, youBody], ['plan', planHint, planBody], ['look', lookHint, lookBody], ['conn', connHint, connBody], ['people', invSummary, peopleBody], ['data', dataHint, dataBody]];
   const sections = S.map(([id, hint, body], i) => {
@@ -4252,7 +4252,7 @@ function renderSettingsLegacy() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Spaces', 'What your Koyeba orbits', 'data-open-areas=""'],
+    ['◈', 'Spaces', 'What your Koyéba orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -4262,7 +4262,7 @@ function renderSettingsLegacy() {
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in. Your
-  // Koyeba card and your security (two-factor) are not separate tabs - they
+  // Koyéba card and your security (two-factor) are not separate tabs - they
   // live inside Account: the card as a sub-page (Edit card), two-factor inline.
   // Tools sits right after Appearance; Manage retired - every tile it held (Life
   // Spaces, Mail accounts, Practices, Spending categories, Reviews, Flow) is
@@ -4279,7 +4279,7 @@ function renderSettingsLegacy() {
     ['import', t('set.tab.import')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
-  // Koyeba card editor opens from Account and returns there.
+  // Koyéba card editor opens from Account and returns there.
   const SUBTABS = ['card'];
   const SUB_TITLE = { card: t('set.tab.card') };
   // Calendar feed subscriptions (holidays, fixtures) - load once.
@@ -4357,7 +4357,7 @@ function renderSettingsLegacy() {
       </div>
       <div class="set-acct-cols">
         <div class="set-card set-cardpreview">
-          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Koyeba card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
+          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Koyéba card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
           <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
         </div>
         <div class="set-card set-account-sec">
@@ -4367,20 +4367,20 @@ function renderSettingsLegacy() {
       </div>
       <div class="set-card set-yourdata">
         <div class="set-sec-title">Your data</div>
-        <div class="set-row-s">Your Koyeba is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
+        <div class="set-row-s">Your Koyéba is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
         <div class="yd-hosts">
-          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Koyeba</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
+          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Koyéba</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
         <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Koyeba on this device. Anything not saved to your account is cleared from this browser.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Koyéba on this device. Anything not saved to your account is cleared from this browser.</div></div>
           <button class="ghost" data-account-signout>↪ Sign out</button>
         </div>
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Koyeba and everything in it. This cannot be undone.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Koyéba and everything in it. This cannot be undone.</div></div>
           <button class="ghost acct-danger" data-account-close>Close my account…</button>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
@@ -4389,10 +4389,10 @@ function renderSettingsLegacy() {
         <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Two worlds, Day and Night. Auto follows your local sunrise &amp; sunset.'}</div>
           ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
-        <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Koyeba keeps a single gold accent - warm by day, brighter by night.</div>
+        <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Koyéba keeps a single gold accent - warm by day, brighter by night.</div>
           <div class="acc-swatches">${swatches}</div>
         </div>
-        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Koyeba symbol - the clean octagram, or held in its ring.</div>
+        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Koyéba symbol - the clean octagram, or held in its ring.</div>
           <div class="mark-opts">
             <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
             <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
@@ -4413,9 +4413,9 @@ function renderSettingsLegacy() {
     const onByok = curKey === 'byok';
     const onTrial = !onManaged && !onByok;
     const heroName = onManaged ? 'Premium Plus' : onByok ? 'Premium' : 'Free trial';
-    const heroSub = onManaged ? 'The whole of Koyeba, with the AI run for you.'
-      : onByok ? 'The whole of Koyeba, powered by your own AI key.'
-      : "You're exploring Koyeba. Pick a plan below whenever you're ready.";
+    const heroSub = onManaged ? 'The whole of Koyéba, with the AI run for you.'
+      : onByok ? 'The whole of Koyéba, powered by your own AI key.'
+      : "You're exploring Koyéba. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     // Monthly or annual. Annual holds at the old yearly price, so it's a bigger
     // saving now the monthly has gone up - most on Premium. The buttons still open
@@ -4440,30 +4440,30 @@ function renderSettingsLegacy() {
         <div class="plan-hero-sub">${esc(heroSub)}</div>
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">${onTrial ? 'Choose your plan' : 'Plans'}</div>
-      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Koyeba - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
+      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Koyéba - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
       ${cycleToggle}
       <div class="plan-cards">
         <div class="plan-card ${onByok ? 'on' : ''}">
           <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
           ${priceBlock('byok')}
           <p class="plan-desc">Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the provider directly.</p>
-          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Koyeba Premium plan' + cycLabel)}
+          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Koyéba Premium plan' + cycLabel)}
         </div>
         <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
           ${priceBlock('managed')}
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up. The hands-off option.</p>
-          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Koyeba Premium Plus plan' + cycLabel)}
+          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Koyéba Premium Plus plan' + cycLabel)}
         </div>
       </div>
       <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.${cycle === 'annual' ? ' Annual billing saves you two months.' : ''}</div>
       <div class="set-row-t" style="margin:26px 0 4px">Your AI</div>
-      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Koyeba.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Koyéba.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
       ${onManaged
         ? '<p class="set-row-s" style="margin:10px 0 0">On Premium Plus the AI is handled for you - there’s no key to add.</p>'
         : `<div class="plan-ai-connect ${a.aiOff ? 'ai-disabled' : ''}" style="margin-top:12px">${aiConnectHtml(a)}</div>`}
-      <div class="set-row-t" style="margin:22px 0 4px">Where Koyeba uses AI</div>
-      <p class="set-row-s" style="margin:0 0 10px">Every place Koyeba calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
+      <div class="set-row-t" style="margin:22px 0 4px">Where Koyéba uses AI</div>
+      <p class="set-row-s" style="margin:0 0 10px">Every place Koyéba calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
       ${aiUsesTogglesHtml()}`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -4559,7 +4559,7 @@ function importPane() {
 }
 function importContactsPaneHtml() {
   return `
-      <p class="imp-lead">Bring your address book into Koyeba - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
+      <p class="imp-lead">Bring your address book into Koyéba - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
       <p class="imp-hint">Export a <b>vCard</b> (<code>.vcf</code>) from <b>Google Contacts</b>, <b>Apple Contacts</b>, <b>Outlook</b> or your phone - one file can hold everyone - then choose it below.</p>
       <div class="imp-field">
         <label class="imp-label">Choose your vCard</label>
@@ -4606,7 +4606,7 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Koyeba reads the dates straight out - you tick which ones land on your calendar.</p>
+        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Koyéba reads the dates straight out - you tick which ones land on your calendar.</p>
         <button class="add-btn wide" data-open-flyer>Add from a file</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
@@ -4832,7 +4832,7 @@ function renderFlyerImport() {
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Koyeba reads the dates out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Koyéba reads the dates out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -5209,7 +5209,7 @@ function navItems(v) {
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
-    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyeba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyéba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
   };
 }
@@ -5304,19 +5304,19 @@ function navGridHtml(v) {
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
-// contacts are switched on - the live Koyeba people below, in the same box, so
+// contacts are switched on - the live Koyéba people below, in the same box, so
 // there's a single place for everyone rather than a group plus a separate list.
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  // People box order: Contacts, Koyeba, Connect - half-width tiles in the same
+  // People box order: Contacts, Koyéba, Connect - half-width tiles in the same
   // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyeba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyéba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
-  // The live Koyeba people, names and all, under a collapsible header so it can
+  // The live Koyéba people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
   let friendsBlock = '';
   if (modOn('contacts') && peopleOn()) {
@@ -5325,21 +5325,21 @@ function peopleBox() {
     const onlineN = navOnlineCount();
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyeba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyéba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
   const gcol = !!state.nav.collapsed['grp.people'];
   return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
 }
-// How many Koyeba contacts are online right now - drives the green dot on the
-// "Koyeba Contacts" header so you see someone's about even with the list folded.
+// How many Koyéba contacts are online right now - drives the green dot on the
+// "Koyéba Contacts" header so you see someone's about even with the list folded.
 function navOnlineCount() {
   const friends = (state.friends && state.friends.friends) || [];
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   return friends.filter((f) => onSet.has(f.id) || !!f.online).length;
 }
-// The live Koyeba-friends list (online first), reused inside the People box.
+// The live Koyéba-friends list (online first), reused inside the People box.
 function navPeopleRows() {
   if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
   const friends = (state.friends && state.friends.friends) || [];
@@ -5349,9 +5349,9 @@ function navPeopleRows() {
   return sorted.map((f) => {
     const on = isOnline(f); const un = unreadFrom(f.id);
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyeba</button>');
+  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyéba</button>');
 }
-// The same Koyeba Contacts list, for the MOBILE drawer. On a wide screen it
+// The same Koyéba Contacts list, for the MOBILE drawer. On a wide screen it
 // lives in the grid's People box, but that box is hidden on mobile, so without
 // this the live contacts never showed on a phone. Mobile-only via .nav-mpeople;
 // shares the collapsed state and rows with the desktop box. (Robin, 2026-10-20.)
@@ -5362,11 +5362,11 @@ function navPeopleMobileHtml() {
   const onlineN = navOnlineCount();
   const open = navPeopleOpen();
   return `<div class="nav-mpeople">
-    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyeba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyéba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
     ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
   </div>`;
 }
-// ── Koyeba seven-fold nav (the prototype's left column). Each item reuses an
+// ── Koyéba seven-fold nav (the prototype's left column). Each item reuses an
 //    existing data-open-* / data-view-* handler, so navigation is unchanged - this
 //    only regroups the tools into seven folds, one open at a time.
 const KFOLDS = [
@@ -5458,7 +5458,7 @@ function navFoldsHtml(v) {
     + `<button type="button" class="kfind" data-palette aria-label="${t('nav.search')}"><span class="kfind-l">Find…</span><kbd class="kfind-k">${PK('⌘K')}</kbd></button>`
     + `<div class="kfolds">${KFOLDS.map(foldHtml).join('')}</div></div>`;
 }
-// ── Koyeba navigation (§17, V9): seven groups along the top on desktop, each
+// ── Koyéba navigation (§17, V9): seven groups along the top on desktop, each
 // folding a sheet down; a Contents overlay (⌘/, groups only); and a Find panel
 // (⌘K) that shows Shared-with-you + Recent before you type, results after. On
 // mobile: a slim wordmark + a three-item bottom bar (Contents · gold + · Find),
@@ -5580,7 +5580,7 @@ function navGroupsHtml(v) {
     const badge = knavGroupBadge(g);
     return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
   }).join('');
-  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></button>`;
+  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today">${MARK}<em class="brand-word">Koyéba<i class="brand-dot">.</i></em></button>`;
   // Mobile top line (§17): wordmark + a breadcrumb or the date. On Today the
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
@@ -5615,7 +5615,7 @@ function navGroupsHtml(v) {
       } else {
         body = `<div class="knav-sheet-grid">${g.tools.map((tItem, i) => toolBtn(tItem, i)).join('')}</div>`;
       }
-      sheet = `<div class="knav-sheet">
+      sheet = `<div class="knav-scrim" data-knav-close aria-hidden="true"></div><div class="knav-sheet">
       <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close aria-label="Close" title="Close">✕</button></div>
       ${body}
     </div>`;
@@ -6100,7 +6100,7 @@ const firstName = () => {
   const m = state.me || {};
   return String(m.name || '').trim().split(/\s+/)[0] || String(m.subdomain || '').trim();
 };
-// Koyeba hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
+// Koyéba hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
 // we have it), then the big greeting followed by a muted second breath. Quiet,
 // editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
 function homePartOfDay() { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
@@ -7071,7 +7071,7 @@ function practiceEditorHtml() {
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
-// the rest of Koyeba has, held in the editor's state and saved with it.
+// the rest of Koyéba has, held in the editor's state and saved with it.
 function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
@@ -7201,7 +7201,7 @@ function homeReqAlertHtml() {
   const r = state.inviteReq; const n = (r && r.count) || 0;
   if (!n) return '';
   const first = (r.requests && r.requests[0] && r.requests[0].name) || '';
-  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Koyeba` : 'New invite request');
+  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Koyéba` : 'New invite request');
   const sub = n > 1 ? 'People asking to join · tap to see' : 'Someone wants an invite · tap to see';
   return `<button class="home-msgalert home-reqalert" data-open-requests>
     <span class="hma-ic">✦</span>
@@ -7212,7 +7212,7 @@ function homeReqAlertHtml() {
 // The "Getting started" card on Home: the single, low-friction doorway into the
 // setup hub, shown until you finish or hide it. New accounts land on Home (no
 // forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
-// The Koyeba mark - monoline octagram with an inner square - for the Getting
+// The Koyéba mark - monoline octagram with an inner square - for the Getting
 // Started banner. Matches the app icon, favicon and emails (no more crane).
 const ORIGAMI_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M27 27H73V73H27Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
@@ -7227,7 +7227,7 @@ function homeSetupCardHtml() {
   return `<section class="home-setup">
     <button class="gs-banner" data-open-getstarted>
       <span class="gs-art">${ORIGAMI_SVG}</span>
-      <span class="gs-body"><span class="gs-t">Welcome to Koyeba</span><span class="gs-s">Let's set Koyeba up to fit you. Tap here to begin.</span></span>
+      <span class="gs-body"><span class="gs-t">Welcome to Koyéba</span><span class="gs-s">Let's set Koyéba up to fit you. Tap here to begin.</span></span>
       <span class="gs-go" aria-hidden="true">→</span>
     </button>
     <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide getting started">✕</button>
@@ -7378,13 +7378,13 @@ function homeInvitesHtml() {
   const rows = inv.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('');
   return `<section class="home-sec home-sec-card home-invites">
     <div class="home-sec-h">✦ Invitations<span class="muted">${inv.length}</span></div>
-    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Koyeba.' : `${inv.length} people want to connect with you on Koyeba.`}</p>
+    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Koyéba.' : `${inv.length} people want to connect with you on Koyéba.`}</p>
     ${rows}
   </section>`;
 }
 // Front and centre on Home: someone shared a Space or page with you. Persists
 // until you open them or clear them with ×, so an invitation is never missed.
-// (Robin: all such invites belong top and centre - the Koyeba wall.)
+// (Robin: all such invites belong top and centre - the Koyéba wall.)
 function homeSharedAlertHtml() {
   const items = (state.sharedItems || []);
   const seen = state.sharesSeen || '';
@@ -7492,7 +7492,7 @@ function lifebookFeedInner() {
       items.push({ ts: Date.now() + 10000, html:
         `<div class="lb-item lb-click" data-lb-2fa role="button" tabindex="0" title="Set up two-factor authentication">
           <span class="lb-ic">🔐</span>
-          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Koyeba - ${when}. It takes about a minute.</span></span></div>` });
+          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Koyéba - ${when}. It takes about a minute.</span></span></div>` });
     }
   }
   // Tasks back from snooze - tick to complete, × to clear.
@@ -7556,11 +7556,11 @@ function lifebookFeedInner() {
   if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Spaces will show up here.</div>';
   return `${pinned}${items.length ? `<div class="lb-feed">${items.map((i) => i.html).join('')}</div>` : ''}`;
 }
-// ── Koyeba Home (the reimagined Today) ──────────────────────────────────────
+// ── Koyéba Home (the reimagined Today) ──────────────────────────────────────
 // The day at a glance, in the prototype's grammar: a two-line greeting, a ledger
 // of Cormorant numbers, then Today + Your spaces beside Coming into view, a line
 // for the evening and the Notepad. Built from the app's real data; see
-// design/koyeba/Koyeba App.dc.html for the reference.
+// design/koyeba/Koyéba App.dc.html for the reference.
 //
 // A Roman numeral - the quiet connector the prototype uses for a Space instead of
 // colour. Falls back to the number for anything daft.
@@ -7576,12 +7576,12 @@ function areaNumeral(id) {
   const i = list.findIndex((a) => a.id === id);
   return i < 0 ? '' : roman(i + 1);
 }
-// Fold state for the Koyeba Home sections: default OPEN at every width (the
+// Fold state for the Koyéba Home sections: default OPEN at every width (the
 // prototype opens with everything in view); an explicit choice is remembered in
 // the same store the rest of Home uses, toggled by the data-kfold handler.
 function kOpen(key) { const c = homeCollapsed(); return key in c ? c[key] !== true : true; }
 function kToggle(key) { const c = homeCollapsed(); c[key] = kOpen(key); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); }
-// A Koyeba fold header: a Cormorant title with a muted hint, or an eyebrow label,
+// A Koyéba fold header: a Cormorant title with a muted hint, or an eyebrow label,
 // and the +/− glyph on the right (rule 6, never a chevron).
 function kFoldH(key, title, hint, eyebrow) {
   const body = eyebrow
@@ -7798,7 +7798,7 @@ function homeLineEveningHtml() {
 // which Space and the reminders, shows a readout you can tap to correct, then
 // files it into the real app - a calendar event, a task, a note or a spend.
 // Speak uses the browser's own speech recognition where available.
-// Reference: design/koyeba/Koyeba App.dc.html. (Robin, 2026-10-31.)
+// Reference: design/koyeba/Koyéba App.dc.html. (Robin, 2026-10-31.)
 const CAP_WD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const CAP_TYPES = ['Event', 'Task', 'Note', 'Spend'];
 function capState() { if (!state.cap) { let mode = 'set'; try { const m = localStorage.getItem('life.cap.mode'); if (m === 'set' || m === 'pad') mode = m; } catch {} state.cap = { open: false, text: '', kind: null, ans: {}, rec: false, recT: 0, mode }; } return state.cap; }
@@ -7850,7 +7850,7 @@ function parseCap(raw0) {
 }
 const capAreaTitle = (id) => { const a = areaById(id); return a ? (a.title || '') : ''; };
 // ── Set something down v2 (§27) ──────────────────────────────────────────────
-// You pick the kind; Koyeba fills the rest from your words, shows where each
+// You pick the kind; Koyéba fills the rest from your words, shows where each
 // detail came from, asks when it doesn't know, and saves nothing until Enter.
 // The rule-based parse below is the reliable base (it runs with AI off); an LLM
 // pass refines it when AI is on.
@@ -8252,7 +8252,7 @@ async function renderBeside() {
 // task from an email - by the "Make … beside" actions or by dragging the email
 // across. The new item fades in at the top with a gold "From …'s email" line,
 // the mail row shows "note linked", and a forest toast offers Undo for 5s.
-// "Keep pair" remembers the combination so Koyeba offers it again.
+// "Keep pair" remembers the combination so Koyéba offers it again.
 const BESIDE_TOOLS = { notes: { group: 'Keep', title: 'Notes', kind: 'note' }, tasks: { group: 'Plans', title: 'Tasks', kind: 'task' } };
 function besidePairsLoad() { try { return JSON.parse(localStorage.getItem('koyeba.beside.pairs') || '{}') || {}; } catch { return {}; } }
 function besidePairsSave(p) { try { localStorage.setItem('koyeba.beside.pairs', JSON.stringify(p)); } catch {} }
@@ -8415,7 +8415,7 @@ function mailBesideLinkedChip(x) {
   return `<span class="mail-row-linked">${parts.join(' · ')} linked</span>`;
 }
 
-// ── Today, by area (Koyeba §19) ─────────────────────────────────────────────
+// ── Today, by area (Koyéba §19) ─────────────────────────────────────────────
 // A quiet counts line - emails to sort, things to do, events tomorrow. No money
 // (§17/§19: money is optional and never pushed to Today).
 function homeCountsStrip() {
@@ -9255,7 +9255,7 @@ function renderHome() {
           </aside>
         </div>
       </div>
-      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba" /><span class="kmark-cap">Koyeba</span></button>
+      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba" /><span class="kmark-cap">Koyéba</span></button>
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
@@ -9396,7 +9396,7 @@ async function setNoteType(id, type) {
     toast(type === 'table' ? 'Now a table' : 'Now a plain note');
   } catch (e) { toast(e.message); }
 }
-// ── Notes index (Koyeba §21) ────────────────────────────────────────────────
+// ── Notes index (Koyéba §21) ────────────────────────────────────────────────
 // Notes only (Tables are their own Keep tool, openTablesList). A grouped list of
 // rows on the §19 grid, with a side column of Kept close + By Space. Replaces the
 // old six-across card grid, the type chips, the area dropdown and the sort menu.
@@ -10778,7 +10778,7 @@ async function runCompass() {
     toast(e.message || 'Could not reach Claude.');
   }
 }
-// ── Reflection hub (Koyeba §23) ─────────────────────────────────────────────
+// ── Reflection hub (Koyéba §23) ─────────────────────────────────────────────
 // A title and an italic line, a "Lately" feed of entries as rows (kind in gold ·
 // the text · when, with filters), and a side column of today's card and the
 // practices as a numbered list. No stat boxes and no icon-tile grid.
@@ -10961,7 +10961,7 @@ async function delInsight(id) {
 }
 // ── §36 Journal (V21) ───────────────────────────────────────────────────────
 // One question at a time, an unboxed page that keeps itself as you write, and
-// your past pages grouped by month. Reference: Koyeba Journal.dc.html.
+// your past pages grouped by month. Reference: Koyéba Journal.dc.html.
 // The six kinds reuse JOURNAL_MODES' keys (so a page's props.mode stays in step
 // with the rest of the app) but show the handover's short labels.
 const JK36_LABEL = { free: 'Free write', reflect: 'Reflect on the day', gratitude: 'Gratitude', 'work-through': 'Work through something', intention: 'Set an intention', dreams: 'A dream' };
@@ -11638,7 +11638,7 @@ async function openReadwatch() {
 // A real cover/thumbnail when we have one (props.image), else a generated cover
 // with a palette derived deterministically from the title - a spine stripe, the
 // kind or site at the top, the title in Cormorant and the author at the foot. The
-// palette stays within Koyeba's warm/forest/gold world; these are book spines, not
+// palette stays within Koyéba's warm/forest/gold world; these are book spines, not
 // UI, so a little tonal variety is welcome, never a clash. (Robin, 2026-11-03.)
 const RW_PAL = [
   ['#223027', '#f4efe4', '#d8b25e'], ['#efe8d8', '#2a2620', '#c99a3e'], ['#33463f', '#f1ece0', '#cfa450'],
@@ -11767,10 +11767,10 @@ function rwSetupHtml() {
   return `<div class="rw-setup-panel">
     <div class="rw-setup-h">One-tap saving</div>
     <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
-      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Koyeba</a></div></div>
-    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Koyeba”:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Koyéba</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Koyéba”:
       <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
-      Then anywhere: <b>Share → Save to Koyeba</b>.</div>
+      Then anywhere: <b>Share → Save to Koyéba</b>.</div>
     <div class="rw-setup-note">This save link is private to you.</div>
   </div>`;
 }
@@ -12078,7 +12078,7 @@ function renderAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Koyeba - everything about what matters, in one place.</p>
+    <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Koyéba - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
 }
@@ -12380,7 +12380,7 @@ function timeAgo(t) {
   return Math.floor(d / 365) + 'y ago';
 }
 // Plain "N days ago" for the admin members list: Robin wants the day count, not a
-// date, so how long since someone used Koyeba reads at a glance (and big numbers
+// date, so how long since someone used Koyéba reads at a glance (and big numbers
 // flag churn). (Robin, 2026-10-18.)
 function daysAgoLabel(ts) {
   if (!ts) return 'never';
@@ -12457,7 +12457,7 @@ function areaSentimentHtml(area) {
 }
 // A compact "who has access" row for the masthead, sitting under Add/Share: round
 // faces (you + anyone you share with) and a ＋ to give someone access. The faces
-// open each person's Koyeba card; the ＋ opens the same Share surface the ▾
+// open each person's Koyéba card; the ＋ opens the same Share surface the ▾
 // overview uses - this is just the quick view. (Robin, 2026-10-28: faces replace
 // the Space Access box.)
 function areaFacesRow(area) {
@@ -12472,7 +12472,7 @@ function areaFacesRow(area) {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyeba card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyéba card">${av}</button>`);
   }
   const LIM = 6;
   const list = shares || [];
@@ -12568,7 +12568,7 @@ function spAddGroup(name) {
 function spSnip(b, n) { return (b && b.body || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/\s+/g, ' ').trim().slice(0, n || 90); }
 // §53/§56 Space v3: a Space is everything about that part of life. Tasks and
 // notes as cards, then the Mail & events stream, with vision and goals folded.
-// Reference: Koyeba Space v3.dc.html. (Events keyed by event_areas aren't loaded
+// Reference: Koyéba Space v3.dc.html. (Events keyed by event_areas aren't loaded
 // on the Space page, so the stream shows filed emails + any event blocks present;
 // mail lives in IMAP. Type system 1a throughout.)
 const AV3_PRIO = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
@@ -13319,7 +13319,7 @@ function renderAreaOld() {
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   // ── §29 Space page v2 ───────────────────────────────────────────────────
-  // V20 "Koyeba Space v2.dc.html". No Space colour anywhere. Reads
+  // V20 "Koyéba Space v2.dc.html". No Space colour anywhere. Reads
   // What matters now → Notes (groups in columns, no dates) → Recent, then
   // folded Open tasks and Goals, with a sticky Coming up / People / Kept here
   // column. Adds are per-section; space settings sit behind a quiet ··· . (Robin, V20.)
@@ -13472,7 +13472,7 @@ function renderAreaOld() {
         <div class="k-a">${nowSec}${notesSec}${recentSec}${tasksSec}${goalsSec}</div>
         <div class="k-c sp-side">${sideHtml}</div>
       </div>
-      <a class="ksp-foot" data-guide-home role="button" tabindex="0" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyeba"><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyeba"></a>
+      <a class="ksp-foot" data-guide-home role="button" tabindex="0" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba"><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba"></a>
     </div>`;
   autoGrowSoon(document.querySelector('.sp-vision-edit'));   // the vision line grows to fit
   if (newGroupOpen) { const gi = document.querySelector('[data-sp-newgroup-in]'); if (gi) { gi.focus(); gi.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); spAddGroup(gi.value); } else if (ev.key === 'Escape') { spSet('newGroupOpen', false); } }); } }
@@ -13485,7 +13485,7 @@ function areaOverviewHtml(area, c, blocks) {
   const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
   const shares = state.area_open && state.area_open.shares;
   const friends = (state.friends && state.friends.friends) || [];
-  // Your own Koyeba card always shows here (unless this area was shared TO you
+  // Your own Koyéba card always shows here (unless this area was shared TO you
   // by someone else): you are the first person who has access.
   const meCard = (() => {
     if (area.sharedBy) return '';
@@ -13495,10 +13495,10 @@ function areaOverviewHtml(area, c, blocks) {
     const sub = subd ? `lifebook.fyi/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
-    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Koyeba card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
+    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Koyéba card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
   if (shares && shares.length) loadCards(shares.map((s) => s.id));
-  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Koyeba card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Koyéba card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
     : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
@@ -13668,7 +13668,7 @@ function areaMembersBody(area) {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
-    return `<button class="mem-card mem-card-me" data-open-card title="Your Koyeba card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
+    return `<button class="mem-card mem-card-me" data-open-card title="Your Koyéba card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
   };
   // A space shared WITH me: name its owner + me (I can't list the owner's full
   // roster - that's owner-scoped - so show who I can see), plus any co-members the
@@ -13807,7 +13807,7 @@ function areaAttachHtml(area) {
     ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
   return `<section class="attachments area-files" data-att-zone="${area.id}">
-    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Koyeba keeps things light, not a photo vault</span></div>
+    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Koyéba keeps things light, not a photo vault</span></div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file or photo</span></label>
     </div></section>`;
@@ -14439,7 +14439,7 @@ function weekDays(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: DOW3[x.getDay()], today: di === todayISO() }; });
 }
-// The Monday-first week containing `iso` (Koyeba §25 Week view): seven columns,
+// The Monday-first week containing `iso` (Koyéba §25 Week view): seven columns,
 // Mon-Sun, whichever week the selected day falls in.
 function weekMon(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -14502,14 +14502,14 @@ function gcalBarHtml(ctx) {
   if (knownMember) {
     primary = s.connected
       ? `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`
-      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Koyeba ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Koyéba ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
   } else if (acct && acct.isOwner) {
     // The owner's main calendar runs on the shared connection (env token), not a
     // member link. Name the address it reads, and offer to pause it (the token
     // stays, so reconnecting is instant). (Robin, 2026-10-29.)
     const em = s.ownerEmail ? ` · ${esc(s.ownerEmail)}` : '';
     primary = s.ownerOff
-      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Koyeba isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
+      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Koyéba isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
       : `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${em}</span><button class="ghost gcal-x" data-gcal-owner-pause>Disconnect</button></div>`;
   }
   // Additional connected calendars - for EVERYONE (owner included). Each is stored
@@ -14594,7 +14594,7 @@ async function caldavConnect() {
 }
 async function gcalAccountDisconnect(id) {
   const a = (state.gcalAccounts || []).find((x) => x.id === id);
-  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Koyeba.`, { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Koyéba.`, { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api(`/api/gcal/accounts/${id}`, { method: 'DELETE' });
     state.gcalAccounts = (state.gcalAccounts || []).filter((x) => x.id !== id);
@@ -14603,14 +14603,14 @@ async function gcalAccountDisconnect(id) {
   } catch (e) { toast(e.message); }
 }
 async function gcalDisconnect() {
-  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Koyeba.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Koyéba.', { okLabel: 'Disconnect', danger: true }))) return;
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
 }
 // Owner pause/resume of the shared Workspace calendar (the env token stays, so a
 // resume is instant). Disconnecting asks first; resuming is a quiet one-tap.
 async function ownerGcalPause(off) {
-  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Koyeba until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Koyéba until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api('/api/gcal/owner-pause', { method: 'POST', body: JSON.stringify({ off }) });
     state.gcal = { ...(state.gcal || {}), ownerOff: off };
@@ -14957,7 +14957,7 @@ function showCalForm(ev) {
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
       <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
-      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyeba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
+      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyéba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
       ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
     ${ceQuickBar(ev)}
@@ -15154,7 +15154,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
   } catch (e) { toast(e.message); }
 }
 // ── Event reminders (in-app alarms) ─────────────────────────────────────
-// A reminder set on an event fires while Koyeba is open: a toast, a chime and,
+// A reminder set on an event fires while Koyéba is open: a toast, a chime and,
 // if you allow it, a browser notification. Checked on a short loop so it works
 // across a reload and background-tab throttling. It fires client-side, so it
 // needs the app open somewhere - which for a day tool it usually is.
@@ -16141,7 +16141,7 @@ const MAIL_QUADS = [
 const normQuad = (q) => (q === 'others' ? 'chilled' : q);
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
-// after it leaves the loaded inbox (Koyeba remembers it). Old data stored a bare
+// after it leaves the loaded inbox (Koyéba remembers it). Old data stored a bare
 // quad string; both shapes are read here. Works the same for Gmail and IMAP - the
 // snapshot carries the account it came from.
 const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[key]; return v == null ? null : (typeof v === 'string' ? { q: v, m: null } : v); };
@@ -16749,8 +16749,8 @@ const isStandalone = () => { try { return window.matchMedia('(display-mode: stan
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
 function installRowHtml() {
   if (isStandalone()) return '';   // already installed as an app
-  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyeba</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
-  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyeba</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Koyeba opens full-screen and works offline.</div></div></div>`;
+  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyéba</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
+  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyéba</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Koyéba opens full-screen and works offline.</div></div></div>`;
   return '';
 }
 async function promptInstall() {
@@ -16758,7 +16758,7 @@ async function promptInstall() {
   try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch {}
   deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings();
 }
-// PWA share target: another app shared a link/text to Koyeba (via /share). A URL
+// PWA share target: another app shared a link/text to Koyéba (via /share). A URL
 // becomes a Read & Watch bookmark; plain text becomes a note. Then land on it.
 async function handleShareTarget() {
   const q = new URLSearchParams(location.search);
@@ -16801,7 +16801,7 @@ async function subscribePush(reg) {
 }
 // User tapped "Enable notifications": prompt, subscribe, register with server.
 async function enablePush() {
-  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Koyeba to your Home Screen from Safari first.'); return; }
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Koyéba to your Home Screen from Safari first.'); return; }
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
@@ -16819,12 +16819,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Koyeba to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a badge on the app icon when mail arrives, add Koyéba to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Koyeba app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Show a number on the Koyéba app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
@@ -17145,7 +17145,7 @@ function mailMarkReadLocal(key) {
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
-  // Once you've read an email in Koyeba it stays read - full stop. We DON'T prune
+  // Once you've read an email in Koyéba it stays read - full stop. We DON'T prune
   // the key when the server happens to report it seen: Gmail's seen flag flip-flops
   // (eventual consistency + the sticky-read cache), and pruning meant the next
   // fetch that said "unseen" had nothing to correct it, so a mail you'd already
@@ -17789,7 +17789,7 @@ function sigBuilderInner(a) {
         </div>
       </div>
       ${f('name', 'Name', 'Robin Lumley-Savile')}
-      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Koyeba')}</div>
+      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Koyéba')}</div>
       <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
       ${f('website', 'Website', 'daybook.fyi', 'url')}
       ${f('address', 'Address / location', 'Lisbon, Portugal')}
@@ -17878,9 +17878,9 @@ function renderMailAccounts(note) {
       <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 10px">Make Koyeba open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://koyeba.co/mail" target="_blank" rel="noopener"><b>koyeba.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Koyeba. Safari / iOS can't do this.</p>
-      <button class="add-btn wide" data-mail-handler>Set Koyeba as my email app</button></section>
+      <p class="scope" style="margin:0 0 10px">Make Koyéba open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://koyeba.co/mail" target="_blank" rel="noopener"><b>koyeba.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Koyéba. Safari / iOS can't do this.</p>
+      <button class="add-btn wide" data-mail-handler>Set Koyéba as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
   if (mailAddDraft()) { state.mail.addProvider = (mailAddDraft() || {}).provider || null; showMailAccountForm(); }
@@ -18523,7 +18523,7 @@ function mailListInner(loading) {
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
   const m = state.mail;
-  // The Koyeba Mail list (§12) lives in .mail-groups. Refresh it in place, but
+  // The Koyéba Mail list (§12) lives in .mail-groups. Refresh it in place, but
   // never while a message is open (that would reset its body iframe) or while the
   // search box has focus (would steal it mid-type) - those wait for a full render.
   const groups = document.querySelector('.mail-groups');
@@ -18556,9 +18556,9 @@ function scrollToMailList() {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
-// ── Koyeba Mail page (§12 of the handover). A piles row of Cormorant numbers,
+// ── Koyéba Mail page (§12 of the handover). A piles row of Cormorant numbers,
 // a day-grouped accordion of emails that open in place, and a sticky side of
-// what Koyeba noticed. The model is UNCHANGED: the piles map onto the existing
+// what Koyéba noticed. The model is UNCHANGED: the piles map onto the existing
 // quad labels - To sort = the inbox queue (untriaged), Urgent/Important/Later =
 // urgent/important/chilled, Archive = the IMAP Archive folder - and every action
 // reuses its old handler (data-mail-quad-view/inbox/archive, data-mail-quad-file,
@@ -18663,8 +18663,8 @@ function mailAccordionRow(x, count) {
     + `</span>`
     + `</button>`;
   // §58: closed, the row is just its header. Open, the header + body sit on a
-  // white-paper card (#fff, 1px keyline), and the "Koyeba noticed" line and the
-  // action row sit BELOW it, outside the card, in Koyeba's own Jost.
+  // white-paper card (#fff, 1px keyline), and the "Koyéba noticed" line and the
+  // action row sit BELOW it, outside the card, in Koyéba's own Jost.
   if (!isOpen) return `<div class="mail-ar">${head}</div>`;
   const parts = mailOpenPanelHtml(m.open);
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
@@ -18686,7 +18686,7 @@ function mailOpenTriageBar(o) {
     + `<button class="mail-trg" data-mail-block="${k}" data-mail-from="${esc((o.from && o.from.address) || '')}">Block</button>`
     + `</div>`;
 }
-// Does Koyeba notice anything in this email? (an invite, a meeting link, or that
+// Does Koyéba notice anything in this email? (an invite, a meeting link, or that
 // it's already filed to a task/note). Returns a short italic line or null.
 function mailRowNotice(o) {
   if (!o) return null;
@@ -18752,7 +18752,7 @@ function mailMoreHtml(o) {
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
-// Side column: what Koyeba noticed, and what you're waiting on.
+// Side column: what Koyéba noticed, and what you're waiting on.
 function mailNoticedList() {
   const m = state.mail;
   return buildThreads(m.messages || []).map((th) => th.latest).filter((o) => o && o.invite).map((o) => ({
@@ -18889,7 +18889,7 @@ function showQuickTask() {
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
   $('#qt-title').focus();
 }
-// Turn the open email into a Koyeba task: subject becomes the title, and
+// Turn the open email into a Koyéba task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
 // Turning an email into a task opens a little popover first, so the title, life
@@ -19508,7 +19508,7 @@ function commitTaskView() {
     if (labelChanged) renderTabs();   // keep the tab strip's title in step with the filter
   }
 }
-// ── Tasks index (Koyeba §22) ────────────────────────────────────────────────
+// ── Tasks index (Koyéba §22) ────────────────────────────────────────────────
 // Piles (By priority: First/Soon/Whenever/Done, grouped by Space · By date:
 // Now/This week/Later/Someday/Done), a quick-add line, and a side By-Space list.
 // Replaces the endless filtered list. The task card stays the detail view.
@@ -20052,8 +20052,8 @@ function contactCardHtml(c) {
     <span class="contact-av${p.photo ? ' has-photo' : ''}"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
-// Your own Koyeba card, shown as a "You" card at the top of Contacts. It's
-// always there (can't be deleted, only hidden) and ties to your Koyeba card -
+// Your own Koyéba card, shown as a "You" card at the top of Contacts. It's
+// always there (can't be deleted, only hidden) and ties to your Koyéba card -
 // it's how you appear to others. Tapping it opens the card editor.
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
@@ -20061,7 +20061,7 @@ function selfContactHtml() {
   const sub = a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
-  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Koyeba card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Koyéba card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
 // Contacts are organised by Page, not a separate "groups" concept. The bar
@@ -20117,7 +20117,7 @@ function contactMenuHtml() {
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${areaSection}
-    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Koyeba</button><div class="ctx-sep"></div>` : ''}
+    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Koyéba</button><div class="ctx-sep"></div>` : ''}
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
 }
@@ -20144,24 +20144,24 @@ function openContactMenu(id, x, y) {
   state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
-// Automatically surfaced at the top of Contacts: Koyeba scans every contact's
+// Automatically surfaced at the top of Contacts: Koyéba scans every contact's
 // email against its accounts (worker getFriends), and this tells you, up front,
-// which of your people are already on Koyeba - tap to connect.
+// which of your people are already on Koyéba - tap to connect.
 function contactsKoyebaBannerHtml() {
-  // Your address-book contacts who are on Koyeba, ready to connect. Koyeba
-  // connection *requests* live on the Koyeba Contacts hub, not here. No
+  // Your address-book contacts who are on Koyéba, ready to connect. Koyéba
+  // connection *requests* live on the Koyéba Contacts hub, not here. No
   // "checking…"/"none yet" noise. (Robin, 2026-10-14.)
   const sug = (state.friends && state.friends.suggestions) || [];
   if (!sug.length) return '';
   const n = sug.length;
-  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Koyeba"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Koyeba Contacts below</div>` : '';
-  const head = n === 1 ? 'A friend of yours is on Koyeba — connect?' : `${n} friends of yours are on Koyeba — connect?`;
+  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Koyéba"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Koyéba Contacts below</div>` : '';
+  const head = n === 1 ? 'A friend of yours is on Koyéba — connect?' : `${n} friends of yours are on Koyéba — connect?`;
   return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
 }
-// The Koyeba-friends pane: suggestions, connect-by-email + Invite, incoming
+// The Koyéba-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
-// page and the dedicated Koyeba people page.
+// page and the dedicated Koyéba people page.
 function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
@@ -20175,16 +20175,16 @@ function friendsPaneHtml(opts) {
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${d.incoming.length ? `<div class="ppl-sub ppl-sub-req">${d.incoming.length === 1 ? 'Wants to connect with you' : `${d.incoming.length} people want to connect with you`}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      <p class="fr-intro">Invite your friends to Koyeba so you can share with them - a whole Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
-      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Koyeba<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Koyeba</button>`)).join('')}</div>` : ''}
-      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Koyeba - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Koyeba by email">✦ Invite to Koyeba</button></div>
+      <p class="fr-intro">Invite your friends to Koyéba so you can share with them - a whole Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Koyéba<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Koyéba</button>`)).join('')}</div>` : ''}
+      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Koyéba - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Koyéba by email">✦ Invite to Koyéba</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Koyeba.</div>')}
+      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Koyéba.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
-// The Koyeba people hub: your card, your friends on Koyeba, and the invite +
+// The Koyéba people hub: your card, your friends on Koyéba, and the invite +
 // connect tools - all on one page. Its own view, reached from the People box.
 async function openKoyebaPeople() {
   state.view = { type: 'daybookpeople' };
@@ -20194,10 +20194,10 @@ async function openKoyebaPeople() {
 }
 function renderKoyebaPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Koyeba Contacts')}
-    <div class="pane-head"><h1>Koyeba Contacts</h1></div>
-    <p class="t2-sub">Your people on Koyeba - share a page, a note or a few tasks with them.</p>
-    <section class="home-sec"><div class="home-sec-h">Your Koyeba card</div>${selfContactHtml()}</section>
+    ${pageCrumb('Koyéba Contacts')}
+    <div class="pane-head"><h1>Koyéba Contacts</h1></div>
+    <p class="t2-sub">Your people on Koyéba - share a page, a note or a few tasks with them.</p>
+    <section class="home-sec"><div class="home-sec-h">Your Koyéba card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
 // ── §34 Contacts + Keep in touch: one two-column 100vh page ────────────────
@@ -20389,7 +20389,7 @@ function cvKitSection(c) {
   const open = cvKitFoldOpen(c.id);
   const first = esc((c.title || 'them').split(' ')[0]);
   const hint = every ? ((CV_FREQ.find(([v]) => v === every) || [])[1] || 'On') : 'Off';
-  const body = every ? cvKeepBand(c) : `<div class="cv-kitoff"><p class="cv-kitoff-l">Off for ${first}. Koyeba won’t nudge you.</p><button class="cv-kiton" data-cv-kit-on>Keep in touch with ${first}</button></div>`;
+  const body = every ? cvKeepBand(c) : `<div class="cv-kitoff"><p class="cv-kitoff-l">Off for ${first}. Koyéba won’t nudge you.</p><button class="cv-kiton" data-cv-kit-on>Keep in touch with ${first}</button></div>`;
   return `<section class="cv-sec"><div class="cv-sec-h" data-cv-kitfold="${c.id}" role="button" tabindex="0"><span class="cv-sec-t">Keep in touch</span>${!open ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${body}</div>` : ''}</section>`;
 }
 function cvBirthdayHtml(c) {
@@ -20442,7 +20442,7 @@ function renderContactPage() {
 // buttons, so the find box grows to fill and the row reserves right-padding equal
 // to the gap, landing Invite exactly under the search box's edge. Desktop only;
 // re-runs on resize.
-// The Koyeba-friends connect row now lives in its own section, so it just
+// The Koyéba-friends connect row now lives in its own section, so it just
 // flexes to fill via CSS - no cross-section width alignment needed any more.
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
@@ -20622,7 +20622,7 @@ function contactBoxesHtml(c) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 Koyeba Connect</button>
+          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 Koyéba Connect</button>
           <button type="button" class="nx-choose" data-contact-new-note="${c.id}">▤ New Note</button>
           <button type="button" class="nx-choose" data-contact-new-task="${c.id}">✓ New Task</button>
           <button type="button" class="nx-choose" data-contact-new-event="${c.id}">📅 New Event</button>
@@ -20813,7 +20813,7 @@ async function kitSetEvery(every) {
 // past where it belongs.
 // Auto-reset a contact's keep-in-touch clock when you actually reach them - a
 // message or an email (Robin's choice, 2026-11-02; a phone call still needs the
-// manual tap, since Koyeba can't see those). Matches by friend id or email,
+// manual tap, since Koyéba can't see those). Matches by friend id or email,
 // rolls the kit task forward from today. A no-op if they have no cadence.
 async function kitAutoRoll(opts) {
   try {
@@ -20865,7 +20865,7 @@ function contactActionsHtml(c, p) {
   if (num) A.push(`<a class="cv-act" href="tel:${esc(num)}">Call</a>`);
   if (wa.length >= 8) A.push(`<a class="cv-act" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`);
   if (addr) A.push(`<a class="cv-act" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Directions</a>`);
-  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Koyeba</button>`);
+  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Koyéba</button>`);
   return A.join('<span class="cv-act-sep">·</span>');
 }
 // The keep-in-touch band: one sentence, the frequency as words, and the manual
@@ -20897,7 +20897,7 @@ function contactCardInner(c) {
   const fr = firstEmail ? (((state.friends && state.friends.friends) || []).find((f) => (f.email || '').toLowerCase() === firstEmail.toLowerCase())) : null;
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   const here = fr && onSet.has(fr.id);
-  const presence = fr ? `<span class="cv-pres"><span class="cv-pres-dot${here ? ' on' : ''}"></span>On Koyeba · ${here ? 'here now' : 'away'}</span>` : '';
+  const presence = fr ? `<span class="cv-pres"><span class="cv-pres-dot${here ? ' on' : ''}"></span>On Koyéba · ${here ? 'here now' : 'away'}</span>` : '';
   // Coming up: next birthday.
   let bday = '';
   if (p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)) {
@@ -21392,7 +21392,7 @@ async function loadPortfolio(force) {
 }
 // The default currency the money tools show in. It's a display choice (symbol +
 // number grouping), not a conversion - you enter amounts in your own currency
-// and Koyeba shows them with your symbol. Chosen in Settings › Appearance,
+// and Koyéba shows them with your symbol. Chosen in Settings › Appearance,
 // stored on the account (account.currency, default EUR). [code, symbol, locale, name]
 const CURRENCIES_APP = [
   ['EUR', '€', 'en-IE', 'Euro'],
@@ -22079,7 +22079,7 @@ function renderReviews() {
     ${wheelOfLifeHtml()}
     ${reviewsLandHtml()}`;
 }
-// One warm, specific line under the title (Koyeba's voice). Falls back gracefully.
+// One warm, specific line under the title (Koyéba's voice). Falls back gracefully.
 function reviewsOneLine() {
   const done = (state.reviews || []).filter((r) => (r.props || {}).status === 'done');
   const weeks = done.filter((r) => ((r.props || {}).rtype || 'weekly') === 'weekly').length;
@@ -22258,7 +22258,7 @@ function saveGoalProgress(id, pct) {
   if (state.goal_open) apply(state.goal_open.goal);
   api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v, status } }) }).catch((e) => toast(e.message));
 }
-// ── Goals page (Koyeba §13) ──────────────────────────────────────────────
+// ── Goals page (Koyéba §13) ──────────────────────────────────────────────
 // Rebuilt to the prototype: a Mail-style title + mood line, a row of views
 // (By Space / Starred / All goals / Bucket list) as Cormorant counts, an Order
 // line, then the §19 grid - the list in the main column, "Nearly there" and
@@ -22545,7 +22545,7 @@ function gcConnectedHtml(g) {
   const links = (blockLinks(g) || []).map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="gx-conn-row"><a class="gx-conn-t" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a><span class="gx-conn-b">Link</span><button class="gx-conn-x" data-xlink-del data-xlink-kind="goal" data-xlink-id="${g.id}" data-xlink-idx="${i}" title="Remove">×</button></div>`; });
   const grp = (label, rows) => rows.length ? `<div class="gx-conn-grp"><div class="gx-conn-gl">${label}</div>${rows.join('')}</div>` : '';
   const count = people.length + notes.length + links.length;
-  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person or event…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link or type a name - Koyeba finds it.</div>`;
+  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person or event…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link or type a name - Koyéba finds it.</div>`;
 }
 function renderGoalCard() {
   const go = state.goal_open; if (!go || !go.goal) return;
@@ -24078,7 +24078,7 @@ function reviewSentimentHtml(p, r) {
 // A collapsible section in the report (reuses the review-section toggle store).
 function rrSec(key, num, title, hint, inner) {
   // §V37 section chrome: a Cormorant Roman numeral + Cormorant title, a Jost hint
-  // (shown only when folded), and a + / − sign. Matches Koyeba Weekly Review.dc.html.
+  // (shown only when folded), and a + / − sign. Matches Koyéba Weekly Review.dc.html.
   const open = rvSecOpen(key);
   return `<section class="rr-sec" id="rr-${esc(key)}"><button type="button" class="rr-h rr-collap" data-rvsec="${esc(key)}"><span class="rr-h-num">${esc(num)}</span><span class="rr-h-t">${esc(title)}</span>${!open && hint ? `<span class="rr-h-hint">${esc(hint)}</span>` : ''}<span class="rr-h-sign" aria-hidden="true">${open ? '−' : '+'}</span></button>${open ? `<div class="rr-sec-body">${inner}</div>` : ''}</section>`;
 }
@@ -24186,7 +24186,7 @@ function renderReviewReport() {
   // it belongs (the footer), and leaves you looking forward. (Robin, 2026-10-30.)
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
-  // ── V37 Weekly Review report: matches Koyeba Weekly Review.dc.html. Cormorant for
+  // ── V37 Weekly Review report: matches Koyéba Weekly Review.dc.html. Cormorant for
   // anything that speaks, Jost for anything that labels, no other fonts. (Robin.)
   const wk = (p.rtype === 'weekly' && p.to) ? isoWeekInfo(p.to) : null;
   const eyebrowTxt = `${cfg.label} review${wk ? ` · Week ${wk.week} of ${wk.total}` : (pt.main ? ` · ${esc(pt.main)}` : '')}`;
@@ -25083,7 +25083,7 @@ function noteUnlinkContact(cid) {
 // xlink handlers). Opens each link in a new tab.
 // ── "Linked & attached" panel (replaces the right-hand column) ──────────────
 // One list of everything this note connects to - notes, tasks, people, events,
-// web links and files - with a Link search (anything in Koyeba, or a web
+// web links and files - with a Link search (anything in Koyéba, or a web
 // address) and file upload beneath. Reuses every existing link/unlink/add action
 // via their data-attributes, so nothing new touches the storage. (Robin, 2026-10-26.)
 function nxOpenRow(icon, name, kind, meta, openAttr, removeAttr) {
@@ -25119,7 +25119,7 @@ function noteLinkSearchRows(q) {
   const connIds = new Set((state.note.connected || []).map((c) => String(c.id)));
   let count = 0;
   for (const c of [...(state.noteTops || []), ...(state.tables || [])]) { if (count >= 18) break; if (!c || String(c.id) === String(n.id) || connIds.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; const isT = isTableNote(c); out.push(`<button class="nx-sugg-row" data-note-connect="${c.id}"><span class="ic">${isT ? '▦' : '▤'}</span>${esc(c.title || 'Untitled')}<span class="kind">${isT ? 'Table' : 'Note'}</span></button>`); count++; }
-  // Goals and Spaces too, so Connect finds everything in your Koyeba. (Robin.)
+  // Goals and Spaces too, so Connect finds everything in your Koyéba. (Robin.)
   { const curGoal = n.props && n.props.goal; for (const g of (state.goals || [])) { if (count >= 18) break; if ((gp(g).status || 'active') === 'done') continue; if (String(g.id) === String(curGoal)) continue; if (!(g.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-goal="${g.id}"><span class="ic">🎯</span>${esc(g.title || 'Untitled goal')}<span class="kind">Goal</span></button>`); count++; } }
   { const curAreas = new Set(blockAreas(n).map(String)); for (const a of (state.areas || [])) { if (count >= 18) break; if (curAreas.has(String(a.id))) continue; if (!(a.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-area="${a.id}"><span class="ic">◈</span>${esc(a.title || 'Space')}<span class="kind">Space</span></button>`); count++; } }
   for (const tk of (state.allTasks || [])) { if (count >= 18) break; if (!tk.props || tk.props.note === n.id || tk.props.done) continue; if (!(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
@@ -25205,7 +25205,7 @@ function noteConnectedPanel(n) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 Koyeba Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 Koyéba Connect</button>
           <button type="button" class="nx-choose ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">✓ Add Task</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
@@ -25288,7 +25288,7 @@ function shareBtn(block, kind, opts) {
 }
 // The note header's share control, matched to a Space masthead: a row of
 // round faces (you, then everyone you've shared with) and a ＋ to add someone,
-// in place of the bare "Share · N" pill. A face opens that person's Koyeba
+// in place of the bare "Share · N" pill. A face opens that person's Koyéba
 // card; the ＋ opens the same Share surface. Owner-only - a borrowed note shows
 // the "shared with you" banner instead. (Robin, 2026-10-29: notes share like
 // Spaces, same little round face thingies.)
@@ -25316,7 +25316,7 @@ function noteFacesRow(n) {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyeba card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyéba card">${av}</button>`);
   }
   const LIM = 6;
   for (const s of list.slice(0, LIM)) {
@@ -25333,7 +25333,7 @@ function sharedBanner(block) {
   if (!block.sharedBy) return '';
   return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
 }
-// People a note is shared with: their Koyeba contact cards, tap to message.
+// People a note is shared with: their Koyéba contact cards, tap to message.
 // Owner only - a borrowed note shows the "shared with you" banner instead.
 function noteMembersHtml(n) {
   if (n.sharedBy) return '';
@@ -26666,7 +26666,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
-  // Koyeba card: live-update the preview as you type, save shortly after.
+  // Koyéba card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
@@ -26780,7 +26780,7 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  // Internal links jump within Koyeba instead of opening a browser tab.
+  // Internal links jump within Koyéba instead of opening a browser tab.
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
@@ -27063,9 +27063,9 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
-  // Koyeba Home ledger: tapping a cell opens its rows (one open at a time).
+  // Koyéba Home ledger: tapping a cell opens its rows (one open at a time).
   { const kl = t.closest('[data-kled]'); if (kl) { const k = kl.dataset.kled; state.home.ledgerOpen = state.home.ledgerOpen === k ? null : k; renderHome(); return; } }
-  // Koyeba Home fold headers (Today / Your spaces / Coming into view / the line /
+  // Koyéba Home fold headers (Today / Your spaces / Coming into view / the line /
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
@@ -27796,7 +27796,7 @@ document.addEventListener('click', (e) => {
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); setFold(prose.dataset.blockId, i, !head.classList.contains('folded')); reapplyFolds(prose); } return; } }
-  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Koyeba` : 'No contacts on Koyeba yet'); }); return; }
+  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Koyéba` : 'No contacts on Koyéba yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
@@ -28001,7 +28001,7 @@ document.addEventListener('contextmenu', (e) => {
   const nrc = e.target.closest('.nt-card[data-open-note], .nt-card[data-open-table]');
   if (nrc && state.view.type === 'notes') { e.preventDefault(); openNoteMenu(nrc.dataset.openNote || nrc.dataset.openTable, e.clientX, e.clientY); return; }
   // Right-click a link inside note/task prose: offer to open it in a new tab.
-  // Internal Koyeba links (#rl-…) open in a fresh in-app tab; web links open in
+  // Internal Koyéba links (#rl-…) open in a fresh in-app tab; web links open in
   // a new browser tab.
   const alink = e.target.closest('a[href]');
   if (alink && alink.closest('.prose, .note-body')) {
@@ -28017,7 +28017,7 @@ function linkMenuKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeLin
 function openLinkMenu(x, y, href, view) {
   closeLinkMenu();
   const items = view
-    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Koyeba tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
+    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Koyéba tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
     : ['<button class="ctx-item" data-lm="browser">↗ Open in new browser tab</button>', '<button class="ctx-item" data-lm="copy">Copy link</button>'];
   const mx = Math.min(x, window.innerWidth - 232), my = Math.min(y, window.innerHeight - 110);
   const el = document.createElement('div'); el.id = 'linkmenu'; el.className = 'ctx-bg';
@@ -28468,7 +28468,7 @@ document.addEventListener('pointerup', msecDragEnd);
 document.addEventListener('pointercancel', msecDragEnd);
 
 // Read by the section-fold click guard below (data-sec-collapse); the home-section
-// and lead/chip drags that used to set it went with the pre-Koyeba Home.
+// and lead/chip drags that used to set it went with the pre-Koyéba Home.
 let suppressSecClick = 0;
 // Drag an inbox row up onto a quadrant card to file it fast. Touch: long-press
 // then drag (so a tap still opens and a swipe still scrolls). Mouse: drag on move.
@@ -29589,7 +29589,7 @@ function connectAddSectionHtml() {
 // The task card used to carry five separate boxes - Goals, Contacts, Web links,
 // Connected and Attachments. That's the same clutter the note panel already
 // retired, so a task now gets the one-panel treatment too: a single list of
-// everything it links to, with a Link tab (search anything in Koyeba - notes,
+// everything it links to, with a Link tab (search anything in Koyéba - notes,
 // tasks, people, events, GOALS, pages - or paste a web address) and an
 // Attach-a-file tab. Every row reuses the existing add/unlink plumbing, so
 // storage is unchanged: a goal still lives in props.goals (the task counts
@@ -29662,7 +29662,7 @@ function taskConnectedPanel(t) {
       ${items}
       <div class="nx-attach">
         <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 Koyeba Connect</button>
+          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 Koyéba Connect</button>
           <label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Attach File</label>
           <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label>
           <button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button>
@@ -30997,13 +30997,13 @@ document.addEventListener('keydown', (e) => {
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
-// in to Robin's Koyeba, so the wordmark drops the owner's name and reads just
-// "Koyeba". On a tenant subdomain it stays whose it is.
+// in to Robin's Koyéba, so the wordmark drops the owner's name and reads just
+// "Koyéba". On a tenant subdomain it stays whose it is.
 const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">Koyeba<i class="brand-dot">.</i></em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">Koyéba<i class="brand-dot">.</i></em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -31038,7 +31038,7 @@ function showSignup(email, inviteRequired, invited) {
   const needCode = inviteRequired && !invited && !preInvite;
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Koyeba</em></div>
+      <div class="gate2-mark"><em>Koyéba</em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -31052,7 +31052,7 @@ function showSignup(email, inviteRequired, invited) {
   $('#su-signout').addEventListener('click', () => { clearToken(); location.reload(); });
   $('#su-name').focus();
 }
-// Their Koyeba lives on its own subdomain - a different origin, with its own
+// Their Koyéba lives on its own subdomain - a different origin, with its own
 // empty localStorage. Carry the session over in the fragment (never sent to a
 // server, never logged) so the new origin is signed in on arrival. Reloading the
 // apex instead used to land the newcomer back on the marketing page, which is
@@ -31163,7 +31163,7 @@ async function openMailCompose(c) {
   renderMail();
   setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
 }
-// Offer Koyeba as the browser's mailto handler (Chromium/Firefox). The
+// Offer Koyéba as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() {
   if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
@@ -31192,7 +31192,7 @@ async function finishOnboarding() {
   try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
   state.onbSeen = true;
   closeOnbHub();
-  // "Open Koyeba" lands you on Home - the place to start - not back on whatever
+  // "Open Koyéba" lands you on Home - the place to start - not back on whatever
   // Settings tab the setup hub was opened from. (Robin, 2026-10-29.)
   Promise.resolve(openHome()).catch(() => {});
 }
@@ -31201,9 +31201,9 @@ async function finishOnboarding() {
 // collapsible, tick-as-you-go checklist at the top of the Account page. Reads
 // global state; tapping an item opens the hub at that step. Completion detectors
 // mirror the hub's TILES - keep them in step. (Robin, 2026-10-26.)
-// Has Koyeba been added as an app on this kind of device? We can't see another
+// Has Koyéba been added as an app on this kind of device? We can't see another
 // device, so we remember a manual "I've added it" per kind, and also count the
-// CURRENT device as done when Koyeba is running as an installed (standalone) app.
+// CURRENT device as done when Koyéba is running as an installed (standalone) app.
 function appInstalled(which) {
   try { if (localStorage.getItem('lf_app_' + which) === '1') return true; } catch {}
   let standalone = false;
@@ -31253,7 +31253,7 @@ function welcomeGuideHtml() {
       <button class="set-welcome-x" data-welcome-dismiss title="Hide getting started" aria-label="Hide getting started">✕</button>
     </summary>
     <div class="set-welcome-body">
-      <p class="set-welcome-lede">Set Koyeba up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
+      <p class="set-welcome-lede">Set Koyéba up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
       <div class="set-welcome-grid">
         ${items.map((x) => `<button class="wg-item${x.done ? ' done' : ''}" data-onb-open-hub="${x.id}" title="${x.done ? 'Done - open to review' : 'Set this up'}">
           <span class="wg-item-pip" aria-hidden="true">${x.done ? '✓' : ''}</span>
@@ -31308,7 +31308,7 @@ function onbAreas() {
        <div class="onb-sugg">${sugg.map(([n, h]) => `<button class="onb-sugg-btn" data-onb-area-suggest="${esc(n)}"><span class="onb-sugg-n">+ ${esc(n)}</span>${h ? `<span class="onb-sugg-s">${esc(h)}</span>` : ''}</button>`).join('')}</div></div>`
     : '';
   return `<h2 class="onb-h">Your Spaces</h2>
-    <p class="onb-p">Spaces are the parts of your life Koyeba is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Space, so each one gathers everything about that part of your life in one place.</p>
+    <p class="onb-p">Spaces are the parts of your life Koyéba is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
     <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a space…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>
@@ -31338,10 +31338,10 @@ function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.mi
 function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
-  return `<h2 class="onb-h">Welcome to Koyeba${name ? `, ${name}` : ''}</h2>
+  return `<h2 class="onb-h">Welcome to Koyéba${name ? `, ${name}` : ''}</h2>
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
-    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Koyeba helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Koyéba helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {
@@ -31355,7 +31355,7 @@ function onbAi() {
   const a = state.onb.account || {};
   const connected = a.aiAnySet && a.aiProvider;
   return `<h2 class="onb-h">Add your AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p"><b>Koyeba works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p"><b>Koyéba works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
     <p class="onb-p">AI just adds a few optional helpers - Reflection coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
     ${connected
       ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`
@@ -31371,10 +31371,10 @@ async function onbConnectAi() {
 }
 function onbEmail() {
   const n = (Array.isArray(state.onb.mailAccounts) ? state.onb.mailAccounts.length : 0) || (state.onb.mailDone ? 1 : 0);
-  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Koyeba.</div>
+  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Koyéba.</div>
     <p class="onb-p">Add another, or manage them, in the full mail setup.</p>
     <button class="add-btn wide" data-onb-nav="mail">Open mail setup →</button>`;
-  return `<p class="onb-p">Read and send your email right inside Koyeba - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
+  return `<p class="onb-p">Read and send your email right inside Koyéba - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
     <p class="onb-p onb-muted">The setup walks you through your provider - some (Gmail included) need a one-time app password, and it shows you exactly how.</p>
     <button class="add-btn wide" data-onb-nav="mail">Connect a mailbox →</button>`;
 }
@@ -31382,7 +31382,7 @@ function onbPhone() {
   const a = state.onb.account || {};
   const saved = (a.phone || '').trim();
   return `<h2 class="onb-h">A backup way in <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Koyeba signs you in with a code sent to your email. But once Koyeba <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
+    <p class="onb-p">Koyéba signs you in with a code sent to your email. But once Koyéba <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
     <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
     ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
     <div class="onb-mailform">
@@ -31410,7 +31410,7 @@ function onbDone() {
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
 }
 // "Make it yours": name, a highlight colour and a photo, all inline - the three
-// quick touches that make a new Koyeba feel like the member's own. Each writes
+// quick touches that make a new Koyéba feel like the member's own. Each writes
 // straight through (account name, the app accent, the card photo) and re-renders
 // the hub in place. (Robin, 2026-10-28.)
 function onbIdentity() {
@@ -31419,7 +31419,7 @@ function onbIdentity() {
   const photo = card.photo
     ? `<span class="dbc-photo sm" style="background-image:url('${card.photo}')"></span>`
     : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c99a3e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
-  return `<p class="onb-p">A few quick touches to make Koyeba feel like yours - change any of it later.</p>
+  return `<p class="onb-p">A few quick touches to make Koyéba feel like yours - change any of it later.</p>
     <div class="onb-field"><span class="onb-l">Your name</span>
       <span class="onb-inline"><input id="onb-name" class="sel" value="${esc(a.name || '')}" placeholder="What should we call you?" maxlength="60" autocomplete="name"><button class="add-btn wide" data-onb-name-save>Save</button></span></div>
     <div class="onb-field"><span class="onb-l">Photo <span class="onb-opt">if you like</span></span>
@@ -31442,7 +31442,7 @@ async function onbSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 function onbRemovePhoto() { if (state.card) { delete state.card.photo; saveCard(); } if (state.onb) renderOnboarding(); }
-// Your Koyeba calendar works from the start (native events, no account). This
+// Your Koyéba calendar works from the start (native events, no account). This
 // step brings an OUTSIDE calendar in - Google read-only, or iCloud/Yahoo two-way
 // - which the Calendar view's own connect strip handles in full.
 function onbCalendar() {
@@ -31452,7 +31452,7 @@ function onbCalendar() {
   const list = accts.length
     ? `<div class="onb-ok">✓ Connected: ${accts.map((x) => esc(x.label || (x.provider === 'caldav' ? 'iCloud / CalDAV' : 'Google'))).join(', ')}. Manage them on the Calendar.</div>`
     : (a.isOwner ? '<div class="onb-ok">✓ Your Google calendar is connected - you\'ll see it on the Calendar.</div>' : '');
-  return `<p class="onb-p">Your Koyeba calendar works from the off - add events anytime, no account needed.</p>
+  return `<p class="onb-p">Your Koyéba calendar works from the off - add events anytime, no account needed.</p>
     <p class="onb-p">Connect an <b>outside</b> calendar to see it here too: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
     ${list}
     <button class="add-btn wide" data-onb-nav="calendar">${connected ? 'Open the Calendar' : 'Open the Calendar to connect'} →</button>`;
@@ -31460,7 +31460,7 @@ function onbCalendar() {
 // What you can bring in today. Notes and contacts have a home to send you to;
 // events and statements live on their own tools (mentioned, not linked).
 function onbImport() {
-  return `<p class="onb-p">Bring your existing notes and contacts into Koyeba.</p>
+  return `<p class="onb-p">Bring your existing notes and contacts into Koyéba.</p>
     <ul class="onb-tips">
       <li><b>Notes</b> - Markdown or text files from Obsidian, Bear, Apple Notes, Notion and the like.</li>
       <li><b>Contacts</b> - a vCard (.vcf) from Google, Outlook, iCloud or your phone.</li>
@@ -31474,7 +31474,7 @@ function onbTwofaPanel() {
     <button class="add-btn wide" data-onb-nav="twofa">Manage two-factor →</button>`;
   return `<p class="onb-p">Add a second step at sign-in from an authenticator app (Google Authenticator, Authy, 1Password…), so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`;
 }
-// "Add the web app" - Koyeba is a proper app you install straight from the
+// "Add the web app" - Koyéba is a proper app you install straight from the
 // browser, no app store. Pick your device, follow three plain steps. (Robin, 2026-10-29.)
 function onbAppDesktop() {
   const os = (state.onb && state.onb.appDeskOS) || (/(Mac|iPhone|iPad)/.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'win');
@@ -31482,13 +31482,13 @@ function onbAppDesktop() {
   const steps = os === 'mac' ? [
     ['In Safari', 'Click <b>Share</b> (the square with an arrow ↑) in the toolbar, then <b>Add to Dock</b>.'],
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['That’s it', 'Koyeba now lives in your Dock and opens in its own window.'],
+    ['That’s it', 'Koyéba now lives in your Dock and opens in its own window.'],
   ] : [
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Koyeba…</b>'],
-    ['That’s it', 'Koyeba now lives on your taskbar and opens in its own window.'],
+    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Koyéba…</b>'],
+    ['That’s it', 'Koyéba now lives on your taskbar and opens in its own window.'],
   ];
-  return `<p class="onb-p">Add Koyeba to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Koyeba.</p>
+  return `<p class="onb-p">Add Koyéba to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Koyéba.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'mac' ? 'on' : ''}" data-onb-deskos="mac">Mac</button>
       <button type="button" class="onb-ostab ${os === 'win' ? 'on' : ''}" data-onb-deskos="win">Windows</button>
@@ -31500,15 +31500,15 @@ function onbAppPhone() {
   const os = (state.onb && state.onb.appPhoneOS) || (/(iPhone|iPad|iPod)/.test(navigator.userAgent || '') ? 'ios' : 'android');
   const done = appInstalled('phone');
   const steps = os === 'ios' ? [
-    ['Open Koyeba in Safari', 'It has to be Safari for this step - not Chrome.'],
+    ['Open Koyéba in Safari', 'It has to be Safari for this step - not Chrome.'],
     ['Tap Share', 'The square with an arrow ↑, at the bottom of the screen.'],
     ['Add to Home Screen', 'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.'],
   ] : [
-    ['Open Koyeba in Chrome', 'On your Android phone.'],
+    ['Open Koyéba in Chrome', 'On your Android phone.'],
     ['Tap the ⋮ menu', 'Top-right of the screen.'],
     ['Install app', 'Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.'],
   ];
-  return `<p class="onb-p">Add Koyeba to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
+  return `<p class="onb-p">Add Koyéba to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'ios' ? 'on' : ''}" data-onb-phoneos="ios">iPhone</button>
       <button type="button" class="onb-ostab ${os === 'android' ? 'on' : ''}" data-onb-phoneos="android">Android</button>
@@ -31559,17 +31559,17 @@ function renderOnboarding() {
   const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
   // Hold the overlay's scroll steady while background data re-renders it below.
   const prevScroll = (document.querySelector('#onb .onb-bg') || {}).scrollTop || 0;
-  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Koyeba">
+  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Koyéba">
     <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
     <div class="onb-head">
       <span class="onb-mark">${MARK}</span>
-      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Koyeba${name ? `, ${esc(name)}` : ''}`}</h2>
+      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Koyéba${name ? `, ${esc(name)}` : ''}`}</h2>
       <p class="onb-lede">${allDone ? 'The essentials are in place. Everything else here is optional - add it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required, AI included.'}</p>
       <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
     </div>
     <div class="onb-grid">${tilesHtml}</div>
     ${panel}
-    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Koyeba' : 'Done for now'}</button>
+    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Koyéba' : 'Done for now'}</button>
   </div></div>`;
   // When a step opens, bring its panel to the top so you land on the actual content,
   // not the tile grid above it. The overlay re-renders repeatedly as background data
@@ -31637,7 +31637,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Koyeba</em></div>';
+  const mark = '<div class="gate2-mark"><em>Koyéba</em></div>';
   const head = (txt) => `<div style="font-family:var(--k-serif);font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
@@ -31645,7 +31645,7 @@ function showRequired2fa() {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:var(--k-sans);font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
-      <button class="gate2-btn" id="r2-done">Done - open Koyeba</button>`;
+      <button class="gate2-btn" id="r2-done">Done - open Koyéba</button>`;
     document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
     return;
   }
@@ -31668,7 +31668,7 @@ function showRequired2fa() {
     return;
   }
   card.innerHTML = `${mark}${head('Two-factor is now required')}
-    <p class="gate2-sub">To keep your Koyeba secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
+    <p class="gate2-sub">To keep your Koyéba secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
     <button class="gate2-btn" id="r2-start">Set it up now</button>
     <p class="gate2-alt"><a href="/blog/two-factor-authentication" target="_blank" rel="noopener">Why?</a> · <button type="button" class="su-signout" id="r2-signout">sign out</button></p>`;
   document.getElementById('r2-start').onclick = async () => {
@@ -31723,11 +31723,11 @@ function showRequired2fa() {
     invited = !!storedInvite();
   } catch {}
   if (!token()) {
-    showGate(invited ? "You've been invited to Koyeba. Sign in with your email to accept." : null);
+    showGate(invited ? "You've been invited to Koyéba. Sign in with your email to accept." : null);
     // They typed their email on the marketing sign-in box; prefill it and let them
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was
-    // impossible - the one case (mailbox lives inside Koyeba) it exists for.
+    // impossible - the one case (mailbox lives inside Koyéba) it exists for.
     if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; if (preChannel === 'sms') gateSend('sms'); else { const b = $('#gate-btn'); if (b) b.focus(); } }
     return;
   }
@@ -31744,7 +31744,7 @@ function showRequired2fa() {
       // day/night theme, so re-resolve in case they'd previously chosen one. (Robin.)
       try { if (themeLocked()) applyTheme(false); } catch {}
       // Two-factor becomes required three months after an account opens. Past that,
-      // a member without it set up must turn it on before using Koyeba. Sign-out
+      // a member without it set up must turn it on before using Koyéba. Sign-out
       // is always offered, so this asks firmly but can never lock anyone out.
       if (!me.user.totp_enabled && me.user.created_at && (Date.now() - Date.parse(me.user.created_at)) > 90 * 86400000) { showRequired2fa(); return; }
     }
@@ -31775,7 +31775,7 @@ function showRequired2fa() {
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     // Restore the tabs you had open, focused on the one you were using - so
-    // reopening Koyeba on desktop puts you back exactly where you left off. The
+    // reopening Koyéba on desktop puts you back exactly where you left off. The
     // installed PHONE app is the exception: after an hour away it still drops you
     // on Home (a fresh glance beats last night's page), though a quick reopen keeps
     // your place. A deep-link route below still wins over all of this. (Robin:
@@ -31836,7 +31836,7 @@ function showRequired2fa() {
     syncBgPatternFromServer();  // and the background pattern, likewise
     syncDateStyleFromServer();  // and the UK/US date style, likewise
 
-    loadAccount();           // name, handle & contact details for the Koyeba card
+    loadAccount();           // name, handle & contact details for the Koyéba card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Pinned I Ching / horoscope readings follow the account, so they surface on
     // Well-being and Home on any device.

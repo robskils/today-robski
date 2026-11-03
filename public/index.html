@@ -30,8 +30,8 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=202611032238">
-<link rel="icon" href="/favicon.svg?v=202611032238">
+<link rel="stylesheet" href="/today.css?v=202611032257">
+<link rel="icon" href="/favicon.svg?v=202611032257">
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
 .dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card,#fffdf8); border-top:1px solid var(--line,rgba(27,24,32,.12)); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink,#1b1820); }
@@ -61,7 +61,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Koyeba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyeba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Koyéba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyéba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -75,7 +75,7 @@
 </head>
 <body>
 
-<!-- The Koyeba world: a soft sumi-e ground the app floats on. Mountains rise from
+<!-- The Koyéba world: a soft sumi-e ground the app floats on. Mountains rise from
      the foot of the screen into mist; theme-aware fills live in life.css. Fixed,
      subtle, non-interactive. (2026-10-30: new calm look & feel.) -->
 <svg class="zen-bg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -99,7 +99,7 @@
 <div id="gate" class="gate" hidden>
   <!-- The door is Robski. The room, once you're in, is not. -->
   <div class="gate-card">
-    <div class="gate-mark gate-wordmark">Koyeba</div>
+    <div class="gate-mark gate-wordmark">Koyéba</div>
     <div class="gate-stripe" aria-hidden="true"></div>
 
     <div class="gate-body">
@@ -130,7 +130,7 @@
   <header class="bar">
     <div class="bar-left">
       <!-- On-brand wordmark. -->
-      <a class="wordmark" href="/" title="Koyeba"><em>Day</em>book</a>
+      <a class="wordmark" href="/" title="Koyéba"><em>Day</em>book</a>
       <div class="bar-date">
         <button class="nav-btn" id="prev-day" aria-label="Previous day">&#8249;</button>
         <div class="bar-title">
@@ -269,11 +269,11 @@
   </form>
 </div>
 
-<!-- New task. Creates a native task block in Koyeba. -->
+<!-- New task. Creates a native task block in Koyéba. -->
 <div class="sheet-bg" id="new-bg" hidden>
   <form class="sheet" id="new-form">
     <h3>New task</h3>
-    <p class="sheet-sub">Added to your Koyeba tasks.</p>
+    <p class="sheet-sub">Added to your Koyéba tasks.</p>
 
     <label class="field">
       <span>Task</span>
@@ -362,6 +362,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=202611032238"></script>
+<script type="module" src="/today.js?v=202611032257"></script>
 </body>
 </html>
