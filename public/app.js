@@ -21977,11 +21977,19 @@ async function openGoals(tab) {
 }
 // Reviews are their own tool now (own sidebar button), split out of Goals.
 async function openReviews(rtype) {
-  state.view = { type: 'reviews', rtype: (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null };
+  // §73: there is ONE Reviews page now (masthead · Due now · Looking back · the
+  // Wheel). A cadence from the Plans menu (Weekly / Monthly / …) focuses the
+  // Looking-back timeline on that cadence - there is no separate, older per-type
+  // page any more. (Robin, 2026-11-03: the cadence menu items showed the old one.)
+  const cad = (rtype && RTYPE_ORDER.includes(rtype)) ? rtype : null;
+  if (cad) state.reviewsTab = cad;
+  state.view = { type: 'reviews', rtype: null };
   const [reviews, areas] = await Promise.all([api('/api/blocks?kind=review'), state.areas && state.areas.length ? Promise.resolve(state.areas) : api('/api/blocks?kind=area')]);
   state.reviews = reviews; if (Array.isArray(areas)) state.areas = areas;
   pruneDuplicateReviews();   // collapse any (type, period) duplicates to one canonical block
   renderNav(); renderReviews();
+  // A cadence click lands on the one hub, focused on its Looking-back timeline.
+  if (cad) setTimeout(() => { const el = document.querySelector('.rv-back'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80);
   api('/api/review-reminders').then((r) => { if (state.view.type === 'reviews') { state.reviewRem = r.reminders || {}; renderReviews(); } }).catch(() => {});
   // Daily reviews now live here (bullet-journal daily log). Load past ones so the
   // Reviews page lists them, newest first.
@@ -22039,15 +22047,6 @@ function renderReviews() {
     return `<section class="home-sec rv-daily-sec"><div class="home-sec-h rv-sec-h">Daily review</div>
       <div class="rv-daily-list">${todayRow}${past.map((n) => row(n)).join('')}</div></section>`;
   })() : '';
-  const rtype = state.view && state.view.rtype;
-  if (rtype) {
-    const label = (REVIEWS[rtype] || {}).label || 'Review';
-    $('#pane').innerHTML = `
-      ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${label} reviews` }])}
-      <div class="pane-head"><h1>${esc(label)} reviews</h1></div>
-      ${reviewsTypeBody(rtype)}`;
-    return;
-  }
   // §73 Reviews page (V36): masthead + one-line, ask bar, Due now cards, a
   // Looking-back bar timeline (height = wheel score), the Wheel of Life, and
   // When reviews land. (Robin, 2026-11-03.)
