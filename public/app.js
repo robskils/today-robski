@@ -8967,9 +8967,16 @@ function homeGlanceHtml() {
 // The one gold "+ New" button and its dropdown, on the right of the greeting.
 function homeNewBtnHtml() {
   const newOpen = !!(state.home && state.home.newMenu);
-  const newItems = HOME_NEW.map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}<div class="gln-new-foot">Or just write it – Set something down ${esc(PK('⌘.'))}</div></div></div>` : '';
-  return `<span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${newMenu}</span>`;
+  // A centred popover of keyline tiles, not a list pinned to the button's corner.
+  // The first four (Note/Task/Event/Email, the ones with shortcuts) are the "big
+  // four" and the only ones shown on a phone. (Robin, 2026-11-03.)
+  const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Make something new">
+    <div class="newpop-h"><span class="newpop-eyebrow">Make something new</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+    <div class="newpop-grid">${items}</div>
+    <div class="newpop-foot">Or just write it as you'd say it — Set something down ${esc(PK('⌘.'))}</div>
+  </div></div>` : '';
+  return `<span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${pop}</span>`;
 }
 // Fold or unfold every section on Today at once.
 function homeFoldAll() {
