@@ -683,7 +683,9 @@ async function updateEvent(request, env, id) {
       if (rp && rp !== 'none') p.repeat = rp;
     } else {
       if (native.p.repeat) p.repeat = native.p.repeat;
+      if (native.p.interval) p.interval = native.p.interval;
       if (native.p.until) p.until = native.p.until;
+      if (native.p.count) p.count = native.p.count;
       if (native.p.exdates) p.exdates = native.p.exdates;
     }
     // Notes and a carried-in meeting link aren't always resent (a drag-to-
@@ -1923,40 +1925,69 @@ async function deleteEvent(request, env, id) {
 //   exdates   [YYYY-MM-DD] occurrences dropped individually
 const NATIVE_SEP = '::';   // occurrence id = `${blockId}::${YYYY-MM-DD}`; UUIDs never contain '::'
 
-// Does a recurring master with `repeat` land on `d` (both YYYY-MM-DD, d >= base)?
-function repeatHits(repeat, base, d) {
+// `day` + `months` calendar months, clamping the day to the target month's end
+// (31 Jan + 1 month = 28/29 Feb), matching the task addPeriod rule. All UTC.
+function addMonthsStr(day, months) {
+  const [y, m, d] = day.split('-').map(Number);
+  const total = (y * 12 + (m - 1)) + Math.round(Number(months) || 0);
+  const ny = Math.floor(total / 12), nm = ((total % 12) + 12) % 12;   // nm 0-11
+  const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
+  return `${ny}-${String(nm + 1).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+}
+// Does a recurring master with `repeat` (every `interval`) land on `d`
+// (both YYYY-MM-DD, d >= base)? interval defaults to 1 (every day/week/month/year).
+function repeatHits(repeat, base, d, interval) {
   if (d === base) return true;
   const bt = Date.parse(`${base}T00:00:00Z`), dt = Date.parse(`${d}T00:00:00Z`);
   if (dt < bt) return false;
+  const iv = Math.max(1, Math.round(Number(interval) || 1));
   const days = Math.round((dt - bt) / 86400000);
   const [by, bm, bd] = base.split('-').map(Number);
   const [dy, dm, dd] = d.split('-').map(Number);
   switch (repeat) {
-    case 'daily': return true;
-    case 'weekdays': { const dow = new Date(`${d}T00:00:00Z`).getUTCDay(); return dow >= 1 && dow <= 5; }
-    case 'weekly': return days % 7 === 0;
-    case 'monthly': return dd === bd;               // same day-of-month
-    case 'yearly': return dm === bm && dd === bd;   // same month + day
+    case 'daily': return days % iv === 0;
+    case 'weekdays': { const dow = new Date(`${d}T00:00:00Z`).getUTCDay(); return dow >= 1 && dow <= 5; }   // legacy; interval n/a
+    case 'weekly': return days % (7 * iv) === 0;
+    case 'monthly': { if (dd !== bd) return false; const md = (dy - by) * 12 + (dm - bm); return md >= 0 && md % iv === 0; }
+    case 'yearly': { if (dm !== bm || dd !== bd) return false; return (dy - by) % iv === 0; }
     default: return false;
   }
 }
+// The start date of the n-th occurrence (1-based) of a repeat/interval from base.
+// Used to turn an "after N times" end rule into a concrete last date.
+function nthOccurrenceDate(repeat, base, interval, n) {
+  const iv = Math.max(1, Math.round(Number(interval) || 1));
+  const steps = Math.max(0, (Math.round(Number(n) || 1)) - 1);
+  switch (repeat) {
+    case 'daily': return addDaysStr(base, steps * iv);
+    case 'weekly': return addDaysStr(base, steps * 7 * iv);
+    case 'monthly': return addMonthsStr(base, steps * iv);
+    case 'yearly': return addMonthsStr(base, steps * iv * 12);
+    case 'weekdays': { let d = base, c = 0; for (let i = 0; i < 4000 && c < steps; i++) { d = addDaysStr(d, 1); const dow = new Date(`${d}T00:00:00Z`).getUTCDay(); if (dow >= 1 && dow <= 5) c++; } return d; }
+    default: return base;
+  }
+}
 // Occurrence start-dates of one event block within [from, to] (inclusive),
-// honouring repeat / until / exdates. A non-repeating event yields at most its
-// own date.
+// honouring repeat / interval / until / count / exdates. A non-repeating event
+// yields at most its own date. The end is the earliest of `until` (inclusive) and
+// the count-th occurrence; count counts rule occurrences (before any exdates).
 function occurrencesInRange(p, from, to) {
   const base = p.date;
   if (!base) return [];
   const rep = p.repeat && p.repeat !== 'none' ? p.repeat : null;
   const ex = new Set(p.exdates || []);
-  const cap = p.until && p.until < to ? p.until : to;
   if (!rep) return (base >= from && base <= to && !ex.has(base)) ? [base] : [];
+  const iv = Math.max(1, Math.round(Number(p.interval) || 1));
+  let endCap = p.until || null;
+  if (p.count && Number(p.count) > 0) { const cd = nthOccurrenceDate(rep, base, iv, Number(p.count)); endCap = (endCap && endCap < cd) ? endCap : cd; }
+  const cap = endCap && endCap < to ? endCap : to;
   const out = [];
   // Walk day by day from max(base, from) to cap. Personal-scale ranges (a month
   // or a week) keep this cheap; a hard limit guards against a runaway.
   let d = base > from ? base : from;
   for (let i = 0; i < 800 && d <= cap; i++, d = addDaysStr(d, 1)) {
     if (d < base) continue;
-    if (!ex.has(d) && repeatHits(rep, base, d)) out.push(d);
+    if (!ex.has(d) && repeatHits(rep, base, d, iv)) out.push(d);
   }
   return out;
 }
@@ -1979,14 +2010,16 @@ function nativeRangeShape(blockId, title, p, occDate) {
   // event card's repeat section can say when it began and whether it ends.
   const recurStart = recurring ? (p.date || null) : null;
   const until = recurring ? (p.until || null) : null;
+  const interval = recurring ? Math.max(1, Math.round(Number(p.interval) || 1)) : 1;
+  const count = recurring && p.count ? Number(p.count) : null;
   if (p.allDay) {
     const span = (p.end_date && p.end_date > p.date) ? Math.round((Date.parse(`${p.end_date}T00:00:00Z`) - Date.parse(`${p.date}T00:00:00Z`)) / 86400000) : 1;
-    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId, repeat, recurStart, until };
+    return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: true, date: occDate, end_date: addDaysStr(occDate, span), start_min: null, end_min: null, recurringId, repeat, recurStart, until, interval, count };
   }
   const startMin = Math.max(0, Number(p.start_min) || 0);
   const duration = Math.max(15, Number(p.duration) || 60);
   const total = startMin + duration;
-  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat, recurStart, until };
+  return { id, title, location: p.location || null, url: p.url || null, notes: p.notes || null, allDay: false, date: occDate, start_min: startMin, end_date: addDaysStr(occDate, Math.floor(total / 1440)), end_min: total % 1440, recurringId, repeat, recurStart, until, interval, count };
 }
 async function nativeEventBlocks(env, uid = env.uid) {
   const r = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind='event' AND archived=0 AND user_id=?").bind(uid).all();
@@ -2034,7 +2067,13 @@ function eventPropsFromBody(b) {
     p.allDay = false; p.start_min = startMin; p.duration = duration;
   }
   const rep = String(b.repeat || '').toLowerCase();
-  if (['daily', 'weekdays', 'weekly', 'monthly', 'yearly'].includes(rep)) p.repeat = rep;
+  if (['daily', 'weekdays', 'weekly', 'monthly', 'yearly'].includes(rep)) {
+    p.repeat = rep;
+    // Custom interval (every N), and the end rule: a date (until) or a count.
+    const iv = Math.round(Number(b.interval) || 1); if (iv > 1) p.interval = Math.min(99, iv);
+    if (isValidDay(b.until)) p.until = b.until;
+    const cnt = Math.round(Number(b.count) || 0); if (cnt > 0) p.count = Math.min(999, cnt);
+  }
   return p;
 }
 async function createNativeEvent(env, b) {

@@ -14789,7 +14789,31 @@ function showCalForm(ev) {
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
         <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
       </div>`; })()}
-      ${(ev && ev.recurringId) ? '' : (() => { const cur = (ev && ev.repeat) || 'none'; const opt = (v, l) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`; return `<label class="ce-field ce-repeat-field"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><select id="ce-repeat" class="sel">${opt('none', 'Does not repeat')}${opt('daily', 'Daily')}${opt('weekdays', 'Every weekday (Mon-Fri)')}${opt('weekly', 'Weekly')}${opt('monthly', 'Monthly')}${opt('yearly', 'Yearly')}</select></label>`; })()}
+      ${(ev && ev.recurringId) ? '' : (() => {
+        // Repeat: Daily/Weekly/Monthly/Yearly or Custom (every N days/weeks/months).
+        // When it repeats, an End control appears beside it: Never / on a date /
+        // after N times. (Robin, 2026-11-03. 'weekdays' retired from the picker.)
+        const cur0 = (ev && !ev.recurringId && ev.repeat) || 'none';
+        const iv = (ev && Number(ev.interval)) || 1;
+        const isCustom = cur0 !== 'none' && cur0 !== 'yearly' && iv > 1;
+        const repSel = isCustom ? 'custom' : cur0;
+        const unit = ['daily', 'weekly', 'monthly'].includes(cur0) ? cur0 : 'weekly';
+        const endMode = (ev && ev.until) ? 'date' : (ev && ev.count) ? 'count' : 'never';
+        const opt = (v, l, on) => `<option value="${v}" ${on === v ? 'selected' : ''}>${l}</option>`;
+        return `<label class="ce-field ce-repeat-field">
+          <span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span>
+          <div class="ce-rep-controls">
+            <select id="ce-repeat" class="sel ce-rep-sel">${opt('none', 'Does not repeat', repSel)}${opt('daily', 'Daily', repSel)}${opt('weekly', 'Weekly', repSel)}${opt('monthly', 'Monthly', repSel)}${opt('yearly', 'Yearly', repSel)}${opt('custom', 'Custom…', repSel)}</select>
+            <span class="ce-end" id="ce-end-wrap" ${repSel === 'none' ? 'hidden' : ''}>
+              <span class="ce-end-lbl">End</span>
+              <select id="ce-end" class="sel ce-end-sel">${opt('never', 'Never', endMode)}${opt('date', 'On a date', endMode)}${opt('count', 'After…', endMode)}</select>
+              <span class="ce-end-datewrap" id="ce-until-wrap" ${endMode === 'date' ? '' : 'hidden'}>${dateFieldHtml('ce-until', (ev && ev.until) || '')}</span>
+              <span class="ce-end-countwrap" id="ce-end-countwrap" ${endMode === 'count' ? '' : 'hidden'}><input id="ce-end-n" class="sel ce-end-n" type="number" min="1" max="999" inputmode="numeric" value="${(ev && ev.count) || 10}"><span class="ce-end-times">times</span></span>
+            </span>
+          </div>
+          <span class="ce-rep-custom" id="ce-rep-custom" ${repSel === 'custom' ? '' : 'hidden'}><span class="ce-rep-every">Every</span><input id="ce-rep-interval" class="sel ce-rep-interval" type="number" min="1" max="99" inputmode="numeric" value="${iv}"><select id="ce-rep-unit" class="sel ce-rep-unit">${opt('daily', 'days', unit)}${opt('weekly', 'weeks', unit)}${opt('monthly', 'months', unit)}</select></span>
+        </label>`;
+      })()}
     </div>
     ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
@@ -14863,12 +14887,21 @@ function onEventEndEdit(prefix) {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00`) - Date.parse(`${a}T00:00:00`)) / 86400000);
 // The POST/PATCH body for an event, from the fields both the calendar form and
 // Home's quick-event form collect. `repeat` is only sent on a new event (isNew).
-function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, acct, isNew, fallbackDate }) {
+function buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, interval, until, count, notes, area, url, contact, alarms, alarmCh, acct, isNew, fallbackDate }) {
   startDate = startDate || fallbackDate || todayISO();
   endDate = endDate || startDate;
   // Send the repeat whenever the form supplied one (create OR edit) so you can
-  // add, change or stop recurrence on an existing event; 'none' clears it.
-  const rep = (repeat !== undefined && repeat !== null && repeat !== '') ? { repeat } : {};
+  // add, change or stop recurrence on an existing event; 'none' clears it. When it
+  // repeats, carry the custom interval and the end rule (a date, or a count).
+  let rep = {};
+  if (repeat !== undefined && repeat !== null && repeat !== '') {
+    rep.repeat = repeat;
+    if (repeat !== 'none') {
+      if (interval && Number(interval) > 1) rep.interval = Math.min(99, Math.round(Number(interval)));
+      if (until) rep.until = until;
+      if (count && Number(count) > 0) rep.count = Math.min(999, Math.round(Number(count)));
+    }
+  }
   const nt = (notes && String(notes).trim()) ? { notes: String(notes).trim() } : { notes: '' };
   const ar = area !== undefined ? { area: area || null } : {};   // a thing can carry a page
   const ur = url !== undefined ? { url: String(url || '').trim() } : {};   // a link to open in one tap (class, call, page)
@@ -14889,10 +14922,25 @@ function buildEventBody({ title, startDate, startTime, endDate, endTime, locatio
   duration = Math.max(15, duration);
   return { title, day: startDate, start_min: sMin, duration, location: location || undefined, ...rep, ...nt, ...ar, ...ur, ...co, ...ac, ...alrm };
 }
-async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh) {
+// Read the event editor's recurrence controls into { repeat, interval, until, count }.
+// 'Custom' maps to its unit (daily/weekly/monthly) + interval; the End select gives
+// a date (until) or a count. (Robin, 2026-11-03.)
+function ceRecur() {
+  const sel = document.getElementById('ce-repeat'); if (!sel) return { repeat: 'none' };
+  let repeat = sel.value, interval = 1;
+  if (repeat === 'custom') { const u = document.getElementById('ce-rep-unit'); repeat = (u && u.value) || 'weekly'; interval = Math.max(1, Math.min(99, parseInt((document.getElementById('ce-rep-interval') || {}).value, 10) || 1)); }
+  if (repeat === 'none') return { repeat: 'none' };
+  const em = (document.getElementById('ce-end') || {}).value || 'never';
+  let until, count;
+  if (em === 'date') { const d = (document.getElementById('ce-until') || {}).value; if (d) until = d; }
+  else if (em === 'count') { const n = parseInt((document.getElementById('ce-end-n') || {}).value, 10); if (n > 0) count = Math.min(999, n); }
+  return { repeat, interval, until, count };
+}
+async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, recur) {
   if (Array.isArray(alarms) ? alarms.length : (alarms !== undefined && alarms !== '')) ensureAlarmSetup();   // arming the first reminder: unlock sound + ask for notifications
   const acct = !id ? ((document.getElementById('ce-calacct') || {}).value || undefined) : undefined;   // new event: which connected calendar
-  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, notes, area, url, contact, alarms, alarmCh, acct, isNew: !id, fallbackDate: state.cal.selected }));
+  const rc = recur || {};
+  const body = JSON.stringify(buildEventBody({ title, startDate, startTime, endDate, endTime, location, allDay, repeat, interval: rc.interval, until: rc.until, count: rc.count, notes, area, url, contact, alarms, alarmCh, acct, isNew: !id, fallbackDate: state.cal.selected }));
   startDate = startDate || state.cal.selected;
   try {
     if (id) await api(`/api/events/${id}`, { method: 'PATCH', body });
@@ -27798,6 +27846,9 @@ document.addEventListener('change', (e) => {
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const f = $('#cal-ev-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
+  // Recurrence: reveal the End control when it repeats, and the Every-N row for Custom.
+  if (e.target.id === 'ce-repeat') { const none = e.target.value === 'none'; const custom = e.target.value === 'custom'; const ew = $('#ce-end-wrap'), cw = $('#ce-rep-custom'); if (ew) ew.hidden = none; if (cw) cw.hidden = !custom; }
+  if (e.target.id === 'ce-end') { const m = e.target.value; const dw = $('#ce-until-wrap'), cw = $('#ce-end-countwrap'); if (dw) dw.hidden = m !== 'date'; if (cw) cw.hidden = m !== 'count'; }
   if (e.target.id === 'qe-allday') { const f = $('#qe-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // An event's end follows its start. Changing the start date/time slides the end
   // along, preserving the length; editing the end sets a new length. So the end is
@@ -27908,7 +27959,8 @@ document.addEventListener('submit', (e) => {
     // One or more reminder leads, chosen as chips (stored as a JSON array).
     const alarmsVal = remSelected(e.target);
     const alarmChVal = (() => { if (!alarmsVal.length) return ['app']; const cs = [...e.target.querySelectorAll('.ce-chan-cb')].filter((c) => c.checked).map((c) => c.value); return cs.length ? cs : ['app']; })();
-    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rp ? rp.value : 'none', nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmsVal, alarmChVal); }
+    const rc = ceRecur();
+    if (v) calSaveEvent(e.target.dataset.ev || null, v, dt ? dt.value : '', ($('#ce-time') || {}).value, ed ? ed.value : '', ($('#ce-endtime') || {}).value, $('#ce-loc').value.trim(), $('#ce-allday').checked, rc.repeat, nt ? nt.value.trim() : '', ar ? ar.value : undefined, ur ? ur.value.trim() : undefined, co ? co.value : undefined, alarmsVal, alarmChVal, rc); }
   if (e.target.id === 'mail-acct-form-el') { const em = $('#ma-email').value.trim(); addMailAccount({ email: em, imapHost: $('#ma-imaphost').value.trim(), imapPort: $('#ma-imapport').value.trim(), smtpHost: $('#ma-smtphost').value.trim(), smtpPort: $('#ma-smtpport').value.trim(), username: ($('#ma-user') && $('#ma-user').value.trim()) || em, pass: $('#ma-pass').value }); }
   if (e.target.dataset && e.target.dataset.acctEditForm) {
     const f = e.target, g = (c) => (f.querySelector(c) || {}).value || '';
