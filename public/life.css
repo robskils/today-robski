@@ -10166,7 +10166,11 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 body.nav-collapsed .app-shell { grid-template-columns:none; }
 .nav { position:sticky; top:0; z-index:60; height:auto; max-height:none; overflow:visible; width:auto; background:var(--paper); border-bottom:1px solid var(--line); border-right:0; padding:0; }
 .main { min-width:0; display:block; padding-bottom:120px; }   /* §52: room so the resting tab never covers content */
-.knav-bar { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:68px; padding:0 clamp(20px,4vw,40px); background:#fff; border-bottom:1px solid var(--k-line); position:sticky; top:0; z-index:40; width:100%; box-sizing:border-box; }
+/* §70: the white bar is full-width; its inner content sits in the same container
+   as the page (max-width 2240, gutter clamp 48 → 64 → 80), so the logo, the
+   breadcrumb and the page title all share one left edge. (Robin, 2026-11-03.) */
+.knav-bar { height:68px; background:#fff; border-bottom:1px solid var(--k-line); position:sticky; top:0; z-index:40; width:100%; box-sizing:border-box; }
+.knav-inner { display:flex; align-items:center; gap:clamp(14px,2.2vw,30px); height:100%; width:100%; max-width:2240px; margin:0 auto; padding:0 clamp(20px,4vw,48px); box-sizing:border-box; }
 /* Night menubar: a very dark forest, heading towards black, so the white-paper
    day header doesn't carry into night. Keyed to data-theme (the app) AND
    body.night (the prototype) - the app sets data-theme='dark', so a body.night-
@@ -10262,7 +10266,8 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 
 /* ── mobile (≤820px): wordmark on top, three-item bottom bar ── */
 @media (max-width:820px){
-  .knav-bar { height:50px; padding:0 20px; gap:12px; }
+  .knav-bar { height:50px; }
+  .knav-inner { padding:0 20px; gap:12px; }
   .knav-brand .brand-word { font-size:24px; }
   .knav-groups, .knav-right { display:none; }
   .knav-crumb { display:block; margin-left:auto; }
@@ -10322,15 +10327,10 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
   .kgrid { gap:96px; }
   .kwrap { padding:0 80px; }
 }
-/* The §17 header shares the same container, so the wordmark aligns with content.
-   width:100% makes the bar fill (it is a flex item in the flex .nav, otherwise
-   shrink-wrapped and floated centre), then max-width + margin auto cap and
-   centre it past 2240 exactly like .kwrap. */
-@media (min-width:821px){
-  .knav-bar { width:100%; max-width:2240px; margin:0 auto; box-sizing:border-box; padding-left:clamp(20px,4vw,48px); padding-right:clamp(20px,4vw,48px); }
-}
-@media (min-width:1600px){ .knav-bar { padding-left:64px; padding-right:64px; } }
-@media (min-width:2200px){ .knav-bar { padding-left:80px; padding-right:80px; } }
+/* The header's inner content matches the page container's gutter bumps, so the
+   logo stays level with the content and breadcrumb at every width. */
+@media (min-width:1600px){ .knav-inner { padding-left:64px; padding-right:64px; } }
+@media (min-width:2200px){ .knav-inner { padding-left:80px; padding-right:80px; } }
 @keyframes kfade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 
 /* ══ §13 Goals page (Koyeba) ══════════════════════════════════════════════

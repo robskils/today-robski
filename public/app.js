@@ -5577,13 +5577,12 @@ function navGroupsHtml(v) {
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
   const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${WEEKDAYS_LONG[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()]}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
-  // A persistent back arrow in the sticky top bar - always visible on any sub-page,
-  // always in the same place, wired to navBack (proper history-back). This is the
-  // "normal back button" Robin keeps asking for; the in-page crumb back stays too.
-  const backBtn = (v && v.type && v.type !== 'home') ? `<button class="knav-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
-  const header = `<div class="knav-bar">
+  // §70: no ← back button in the bar. The breadcrumb is the way up; the browser
+  // back and Esc still work. The header's inner content sits in the same container
+  // as the page (max-width + gutter), so the logo, the breadcrumb and the page
+  // title all share one left edge. (Robin, 2026-11-03.)
+  const header = `<div class="knav-bar"><div class="knav-inner">
       ${wordmark}
-      ${backBtn}
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
@@ -5592,7 +5591,7 @@ function navGroupsHtml(v) {
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
-    </div>`;
+    </div></div>`;
   // ── fold-down sheet (desktop), when a group is open ──
   let sheet = '';
   if (kn.group && !kn.contents && !kn.find) {
@@ -6863,7 +6862,7 @@ function renderPracticeCard() {
   // Back goes UP one level - to Practices, the folder this practice lives in -
   // not wherever you happened to start (Robin: a sub-page's Back is its parent,
   // not Home). Always shown, since a practice always has Practices above it.
-  const crumb = `<div class="note-crumbs"><button class="crumb-back" data-open-practices title="Back to Practices" aria-label="Back to Practices">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
+  const crumb = `<div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
   if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
   const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
   const meta = parsePracticeMeta(a);
@@ -11325,7 +11324,7 @@ function renderJournalEntry() {
   const sep = '<span class="crumb-sep">›</span>';
   const dateLabel = journalDateLabel((n.props && n.props.date) || n.created_at);
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-wellbeing>${t('nav.reflect')}</button>${sep}<button class="crumb" ${crumbAttr}>${crumbLbl}</button>${sep}<span class="crumb cur">${esc(dateLabel)}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-journal title="Delete this entry">Delete</button></span></div>
     <div class="j-entry">
       <div class="j-entry-head"><h1 class="j-entry-date">${esc(dateLabel)}</h1>${mode ? `<span class="j-card-mode">${mode.icon} ${esc(mode.label)}</span>` : ''}</div>
@@ -22540,7 +22539,7 @@ function renderGoalCardLegacy() {
   const selS = keepTitleFocus ? ta0.selectionStart : null;
   const selE = keepTitleFocus ? ta0.selectionEnd : null;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-goals>Goals</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(g.title || 'Goal')}</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-goal="${g.id}">Delete</button></span></div>
     <div class="gc-hero" style="--h:${hueOf(a)}">
       <div class="gc-hero-top">
@@ -22827,7 +22826,7 @@ function renderBucketCard() {
   const areaOpts = `<option value="">No space</option>` + editableAreas().map((x) => `<option value="${x.id}" ${p.area === x.id ? 'selected' : ''}>${esc(x.title)}${sharedTag(x)}</option>`).join('');
   migrateCards(b);
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-bucketlist>Bucket list</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(b.title || 'Bucket list')}</span>
       <span class="crumb-tools"><button class="ghost" data-bucket-to-goal="${b.id}" title="Turn this into a goal you're actively working towards">🎯 Make a goal</button><button class="note-del ghost" data-del-bucket="${b.id}">Delete</button></span></div>
     <div class="task-focus">
       <button class="bk-done-btn ${p.status === 'done' ? 'on' : ''}" data-bucket-done="${b.id}" title="Mark as done">${p.status === 'done' ? '✓' : '○'}</button>
@@ -23121,7 +23120,7 @@ function renderWheel() {
       <div class="wheeltrack-list">${allAreas.map((a) => { const tracked = !(a.props && a.props.reviewOff); return `<div class="wheeltrack-row" style="--h:${hueOf(a)}"><span class="wt-dot"></span><span class="wheeltrack-n">${esc(a.title)}</span><label class="msec-switch" title="${tracked ? 'Tracked - tap to remove' : 'Not tracked - tap to add'}"><input type="checkbox" data-wheel-track="${a.id}" ${tracked ? 'checked' : ''}><span class="switch-sl"></span></label></div>`; }).join('')}</div>
     </section>` : '';
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews-tool>${t('nav.reviews')}</button><span class="crumb-sep">›</span><span class="crumb cur">Wheel of Life</span></div>
     <div class="pane-head"><h1>Wheel of Life</h1></div>
     ${body}${trackHtml}`;
 }
@@ -24052,7 +24051,7 @@ function renderReviewReport() {
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
     <article class="rr" style="--h:${hue}">
       <div class="rr-eyebrow"><span>${esc(cfg.label)} review</span>${navHtml}</div>
@@ -24146,7 +24145,7 @@ function renderReviewCard() {
   }).join('');
   const wheelHiddenN = state.areas.length - wheelAreas.length;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
       <span class="crumb-tools"><button class="note-del ghost" data-del-review="${r.id}">Delete</button></span></div>
     <div class="pane-head rv-cardhead"><h1>${esc(cfg.label)} review</h1><span class="rv-status rv-status-${st}">${st === 'done' ? '✓ Submitted' : '● In progress'}</span>${(() => { const s = reviewSiblings(r); if (s.list.length < 2) return ''; return `<span class="rv-cardnav"><button class="rv-navbtn" ${s.prev ? `data-open-review="${s.prev.id}"` : 'disabled'} title="Older ${esc(cfg.label.toLowerCase())} review">‹</button><span class="rv-navpos">${s.i + 1} of ${s.list.length}</span><button class="rv-navbtn" ${s.next ? `data-open-review="${s.next.id}"` : 'disabled'} title="Newer ${esc(cfg.label.toLowerCase())} review">›</button></span>`; })()}</div>
     ${p.to ? (() => {
@@ -24581,7 +24580,7 @@ async function openVisionCard(id) { const a = await api(`/api/blocks/${id}`); st
 function renderVisionCard() {
   const a = state.vision_open.area; const p = a.props || {};
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
     <div class="task-focus" style="--h:${hueOf(a)}"><span class="vc-dot big"></span><h1 class="vision-h1">${esc(a.title)}</h1></div>
     <label class="tf-field goal-why"><span class="tf-label">Your vision for this area</span><textarea class="sel" id="visioncard-text" rows="4" placeholder="Picture this part of your life at its best — write it in the present tense…">${esc(p.vision || '')}</textarea></label>
     ${attachSection(a)}`;
@@ -24598,7 +24597,7 @@ function renderVisionWall() {
   state.areas.forEach((a) => ((a.props && a.props.attachments) || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: a.id, att: im, hue: hueOf(a), cap: a.title }); }));
   (state.bucket || []).forEach((b) => { const p = b.props || {}; if (p.status === 'done') (p.attachments || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: b.id, att: im, hue: hueOf(areaById(p.area)), cap: b.title, lived: true }); }); });
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
+    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
     <div class="pane-head"><h1>The wall</h1></div>
     <p class="rv-period">The life you're reaching for — and the moments you've lived.</p>
     ${tiles.length ? `<div class="wall-grid">${tiles.map((x) => `<figure class="wall-tile ${x.lived ? 'lived' : ''}" style="--h:${x.hue}"><img data-wimg="${x.block}:${x.att.id}" alt=""><figcaption>${x.lived ? '✓ ' : ''}${esc(x.cap)}</figcaption></figure>`).join('')}</div>` : '<div class="empty" style="padding:50px">Add images to your areas’ visions and to bucket-list moments you’ve lived — they gather here on one wall.</div>'}`;
@@ -25299,7 +25298,7 @@ function renderNote() {
   const nFloat = canEditNote ? `<div class="note-float-ins" hidden aria-hidden="true"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
-      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
     </div>
     <div class="note-cq"><div class="note-layout note-layout-side">
       <div class="note-main">
