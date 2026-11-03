@@ -7906,18 +7906,20 @@ function capFieldsFor(raw, kind, ans) {
 }
 function capHintsHtml() {
   const ex = ['Dentist on Tuesday at 9am', 'Remind me to call Mum tomorrow', '7pm Today Aguarela II with Joaquim until 10pm repeat every week, remind 1 hour before'];
-  return `<div class="cap-hints">Write it as you'd say it, or press Speak. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x.length > 42 ? x.slice(0, 40) + '…' : x)}”</button>`).join('')}</div>`;
+  return `<div class="cap-hints"><span class="cap-hint-lead">Write it as you'd say it</span><span class="cap-hint-extra"><span class="cap-hint-sep">·</span> or press Speak. Try ${ex.map((x) => `<button class="cap-eg" data-cap-eg="${esc(x)}">“${esc(x.length > 42 ? x.slice(0, 40) + '…' : x)}”</button>`).join('')}</span></div>`;
 }
 function capReadoutHtml() {
   const c = capState(); const raw = (c.text || '').trim();
-  if (!raw) return capHintsHtml();
-  const [g] = capGuess(raw);
+  const [g] = raw ? capGuess(raw) : [null];
   const kind = c.kind || g;
   const askQ = (!c.kind && raw && !g) ? ['A task or a note?', ['Task', 'Note']] : null;
   const kindRow = `<div class="cap-kinds">${CAP_KINDS.map(([id, label]) => {
     const on = kind === id, isG = !c.kind && g === id;
     return `<span class="cap-kind${on ? ' on' : ''}${isG ? ' guess' : ''}" data-cap-kind="${id}" role="button" tabindex="0">${esc(label)}${isG ? '<span class="cap-kind-tag">guess</span>' : ''}</span>`;
   }).join('')}</div>`;
+  // Empty: still show the type buttons (so you can say what it is up front) above
+  // the hint. (Robin, 2026-11-03.)
+  if (!raw) return `${kindRow}${capHintsHtml()}`;
   const qHtml = (askQ && !c.kind) ? `<div class="cap-q"><span class="cap-q-t">${esc(askQ[0])}</span>${askQ[1].map((l) => `<span class="cap-q-b" data-cap-askq="${l.toLowerCase()}" role="button" tabindex="0">${esc(l)}</span>`).join('')}</div>` : '';
   const isInbox = kind === 'inbox' || (!kind && !askQ && !!raw);
   let body = '';
@@ -7999,7 +8001,9 @@ function renderCapBar(force) {
   } else if (!c.rec) {
     const i = document.getElementById('cap-input');
     if (i) {
-      i.addEventListener('input', () => { const cc = capState(); cc.text = i.value; cc.kind = null; cc.ans = {}; capGrow(i); updateCapReadout(); });
+      // Keep an explicitly chosen type while you type (tap Event, then write it);
+      // if you never tapped one, c.kind stays null and the guess keeps updating.
+      i.addEventListener('input', () => { const cc = capState(); cc.text = i.value; cc.ans = {}; capGrow(i); updateCapReadout(); });
       // Enter sends it (like a message); Shift+Enter drops to a new line. A long
       // line now wraps and the box grows instead of running off the side.
       i.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });

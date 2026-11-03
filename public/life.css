@@ -10109,6 +10109,14 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
 
 /* Readout */
 .cap-hints { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:16px; font-family:var(--k-sans); font-size:14.5px; color:var(--ink-2); align-items:baseline; }
+/* §: on a phone the capture is a near-full-screen sheet (room to type), it keeps
+   just "Write it as you'd say it", and the type buttons sit up top. (Robin, 2026-11-03.) */
+@keyframes capup-m { from { transform:translateY(100%); } to { transform:translateY(0); } }
+@media (max-width:620px) {
+  .cap-drawer { top:48px; bottom:0; left:0; transform:translateY(0); width:100%; max-width:none; max-height:none; padding:20px 18px calc(24px + env(safe-area-inset-bottom,0px)); animation:capup-m .4s cubic-bezier(.2,.7,.2,1); }
+  .cap-hint-extra { display:none; }
+  .cap-kinds { padding-top:14px; gap:8px 16px; }
+}
 .cap-eg { background:none; border:0; padding:0; font-family:var(--k-sans); font-size:14.5px; color:var(--accent); cursor:pointer; white-space:nowrap; }
 .cap-reads-h { margin-top:16px; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--ink-3); }
 .cap-reads { display:grid; grid-template-columns:76px minmax(0,1fr); margin-top:8px; border-top:1px solid var(--line); }
