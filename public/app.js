@@ -1633,7 +1633,10 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   const parts = hier.map((it) => it.attr ? `<button class="crumb" ${it.attr}>${esc(it.label)}</button>` : `<span class="crumb crumb-section">${esc(it.label)}</span>`);
   if (cur) parts.push(`<span class="crumb cur">${esc(cur.label)}</span>`);
   if (!parts.length) return '';
-  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div></div>`;
+  // opts.actions: a right-aligned block on the same row as the crumbs (e.g. the
+  // Task page's Star · Share · Assign · Delete), so there's no second header row
+  // to overlap. The crumb stays a direct #pane child, so its §70 alignment holds.
+  return `<div class="crumbbar crumbbar-slim"><div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.actions || ''}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -29280,8 +29283,7 @@ function renderTaskCard() {
 
   const checkAttr = t.sharedBy ? `data-shared-check="${id}" data-done="${p.done ? 1 : 0}"` : `data-check="${id}"`;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tasks', attr: 'data-view-tasks' }, { label: t.title || 'Untitled' }], null, null, { omitGroup: true })}
-    <div class="tcx-actrow"><div class="tcx-acts">${star}${shareW}${assignW}${delW}</div></div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tasks', attr: 'data-view-tasks' }, { label: t.title || 'Untitled' }], null, null, { omitGroup: true, actions: `<div class="tcx-acts">${star}${shareW}${assignW}${delW}</div>` })}
     ${sharedBanner(t)}
     <div class="tcard-grid">
       <div class="tcard-main">

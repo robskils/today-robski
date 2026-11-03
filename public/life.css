@@ -12599,8 +12599,8 @@ body.mailsheet-open { overflow:hidden; }
 /* §68 A task page (V35): word actions, big title + done square, button-row details
    card, and a sticky right column of keyline blocks. */
 @keyframes kpop { 0% { transform:scale(1); } 40% { transform:scale(1.22); } 100% { transform:scale(1); } }
-.tcx-actrow { display:flex; justify-content:flex-end; margin:-4px 0 0; }
-.tcx-acts { display:flex; flex-wrap:wrap; gap:20px; font-family:var(--k-sans); font-weight:500; font-size:14px; }
+/* Task actions ride on the breadcrumb row, pushed to the right (§68, V36). */
+.tcx-acts { margin-left:auto; display:flex; flex-wrap:wrap; gap:20px; font-family:var(--k-sans); font-weight:500; font-size:14px; white-space:nowrap; }
 .tcx-act { cursor:pointer; white-space:nowrap; color:var(--k-ink); }
 .tcx-act:hover { color:var(--k-goldt); }
 .tcx-act.tcx-mute { color:var(--k-mute); font-weight:400; }
