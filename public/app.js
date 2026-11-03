@@ -9017,7 +9017,7 @@ function homeReadCardHtml(r) {
     const face = (di != null)
       ? `<img class="rc-tarot-img${rev ? ' rev' : ''}" src="/tarot/${String(di).padStart(2, '0')}.jpg" alt="" loading="lazy">`
       : `<span class="rc-init">✦</span>`;
-    return `<div class="home-rd-card rc-tarot" ${open}><span class="rc-in"></span>${face}<span class="rc-foot">${esc(ta.spread || 'Tarot')}</span></div>`;
+    return `<div class="home-rd-card rc-tarot" ${open}>${face}</div>`;
   }
   if (r.key === 'horo') {
     const ho = currentHoro() || {}; const sign = String(ho.sign || '').trim(); const g = homeZodiacGlyph(sign);
