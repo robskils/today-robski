@@ -6162,6 +6162,14 @@ function renderHomeSoon() {
     if (state.view && state.view.type === 'home') renderHome();
   }, 70);
 }
+// Land hard at the top of Today on a cold open. The home fills in over several
+// async renders, so re-assert the top now, next frame and after a short beat, or
+// a late reflow can leave you part-way down. Only called on a cold open (forceHome),
+// so it never yanks you mid-scroll in normal use. (Robin, 2026-11-03: mobile reopen.)
+function scrollHomeTop() {
+  const go = () => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; const m = document.querySelector('.main'); if (m) m.scrollTop = 0; } catch {} };
+  go(); requestAnimationFrame(go); setTimeout(go, 160); setTimeout(go, 420);
+}
 async function openHome() {
   const gen = bumpNav();
   state.view = { type: 'home' };
@@ -31606,7 +31614,7 @@ function showRequired2fa() {
     // The default landing (the active tab's view) is a fallback, not a command:
     // if you tapped a sidebar item while the app was still booting, that click has
     // already navigated (navGen moved), so DON'T override it with the default page.
-    else if (navGen === 0) { await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome()); if (forceHome) { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} } }
+    else if (navGen === 0) { await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome()); if (forceHome) scrollHomeTop(); }
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
     startFriendStatusPoll(); // Contacts badge + Home "People" section

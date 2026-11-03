@@ -11,7 +11,7 @@
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Koyeba</title>
-<link rel="icon" href="/favicon.svg?v=202611031326">
+<link rel="icon" href="/favicon.svg?v=202611031328">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v19.png">
@@ -22,8 +22,8 @@
 <meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1e2b23" media="(prefers-color-scheme: dark)">
 <!-- Fonts are self-hosted via koyeba.css (@font-face): Cormorant Garamond + Jost only. No Google Fonts link. -->
-<link rel="stylesheet" href="/koyeba.css?v=202611031326">
-<link rel="stylesheet" href="/life.css?v=202611031326">
+<link rel="stylesheet" href="/koyeba.css?v=202611031328">
+<link rel="stylesheet" href="/life.css?v=202611031328">
 <script>
   try {
     const t = localStorage.getItem('today.theme');
@@ -40,6 +40,10 @@
       document.documentElement.style.setProperty('--accent-ink', (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff');
     }
   } catch (e) {}
+  // Own the scroll position: stop the browser from restoring where you were on a
+  // reopen, so a cold open can land on the top of Today (Robin, 2026-11-03: mobile
+  // kept dropping me part-way down). Set before the load's scroll-restore runs.
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
   // No redirect here: if there's no token, app.js shows a sign-in gate in place
   // (the root of life.robski.uk is this app, so a redirect would loop).
 </script>
@@ -55,7 +59,7 @@
   <button class="undo-fab" id="undo-fab" data-undo type="button" aria-label="Undo the last change" title="Undo"><span class="uf-ic" aria-hidden="true">↶</span><span class="uf-l">Undo</span></button>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202611031326"></script>
-  <script src="/app.js?v=202611031326"></script>
+  <script src="/qrcode.min.js?v=202611031328"></script>
+  <script src="/app.js?v=202611031328"></script>
 </body>
 </html>
