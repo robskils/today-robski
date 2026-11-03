@@ -25016,29 +25016,82 @@ function renderNote() {
   const connItem = (c) => { const isT = isTableNote(c); const a = areaById(blockAreas(c)[0]); const hue = a ? hueOf(a) : null; return `<button class="subpage subpage-linked${hue != null ? ' has-area' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-open-${isT ? 'table' : 'note'}="${c.id}"${a ? ` title="${esc(a.title)}"` : ''}><span class="sp-ico sp-linkico" title="Connected">🔗</span><span class="sp-t">${esc(c.title || 'Untitled')}</span><span class="sp-unlink" data-note-unlink="${c.id}" role="button" title="Disconnect">×</span></button>`; };
   const connected = state.note.connected || [];
   const kids = connected.map(connItem).join('');
+  // Robin's note-header rebuild (2026-11-03): the +New box sits right; the star,
+  // the people faces, the lock, delete and ⋯more all move down onto the Space-chips
+  // row (no separate action toolbar); insert image/file become a floating box that
+  // follows the caret; and Linked & attached moves into a right-hand sidebar.
+  const canEditNote = !(n.sharedBy && !n.canEdit);
+  const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
+  const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
+  const nFloat = canEditNote ? `<div class="note-float-ins" hidden aria-hidden="true"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
   $('#pane').innerHTML = `
-    <div class="note-crumbs note-crumbs-split">
+    <div class="note-crumbs note-crumbs-split note-crumbs-slim">
       <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
-      <div class="nc-actions">
-        <button class="star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
-        <span class="nab-right">
-          <span class="note-hide-mobile note-faces-wrap">${noteFacesRow(n)}</span>
-          ${(n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<button class="note-ins note-ins-ic ghost" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="note-ins note-ins-ic ghost" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button>`}${n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`}${(n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`}
-        </span>
-      </div>
     </div>
-    <div class="note-cq"><div class="note-layout">
+    <div class="note-cq"><div class="note-layout note-layout-side">
       <div class="note-main">
         ${sharedBanner(n)}
-        <div class="note-areas-row note-areas-row-split">${noteAreasControl(n)}<div class="note-areas-aliases">${noteAliasesControl(n)}</div></div>
+        <div class="note-areas-row note-areas-row-split">
+          <button class="star note-star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
+          <span class="note-faces-wrap note-hide-mobile">${noteFacesRow(n)}</span>
+          ${noteAreasControl(n)}
+          <span class="note-areas-actions">${nLock}${nDel}${nMore}<span class="note-areas-aliases">${noteAliasesControl(n)}</span></span>
+        </div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
-        <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}</div>
+        <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}${nFloat}</div>
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
-        ${noteConnectedPanel(n)}
       </div>
+      <aside class="note-linkside">${noteConnectedPanel(n)}</aside>
     </div></div>`;
   autoGrowSoon($('#note-title')); loadThumbs(); loadInlineImages(); hydrateEmbeds(); setupFolds();
+  if (canEditNote) noteFloatInsertInit();
+}
+// A small insert toolbar (image · file) that floats a couple of lines above the
+// caret while you write a note - to hand, but out of the way. Pinned to the right
+// margin and tracking the caret's height, so it never covers the text you type and
+// doesn't jump about as you type. (Robin, 2026-11-03.) The buttons reuse the
+// existing data-note-insert-image / -file handlers; mousedown is suppressed so a
+// click doesn't blur the editor and hide the box before it fires.
+let __noteFloatWired = false, __nfiRaf = 0;
+function noteFloatInsertInit() {
+  const schedule = () => { if (__nfiRaf) return; __nfiRaf = requestAnimationFrame(() => { __nfiRaf = 0; try { noteFloatPlace(); } catch {} }); };
+  if (!__noteFloatWired) {
+    __noteFloatWired = true;
+    document.addEventListener('selectionchange', schedule);
+    window.addEventListener('resize', schedule);
+    document.addEventListener('scroll', schedule, true);
+  }
+  const ed = document.querySelector('.note-body .prose');
+  if (ed && !ed.__nfiWired) {
+    ed.__nfiWired = true;
+    ed.addEventListener('input', schedule);
+    ed.addEventListener('focus', schedule);
+    ed.addEventListener('blur', () => setTimeout(() => { const e2 = document.querySelector('.note-body .prose'); if (document.activeElement !== e2) { const b = document.querySelector('.note-float-ins'); if (b) b.hidden = true; } }, 200));
+  }
+  const box = document.querySelector('.note-float-ins');
+  if (box && !box.__nfiWired) { box.__nfiWired = true; box.addEventListener('mousedown', (e) => e.preventDefault()); }
+  schedule();
+}
+function noteFloatPlace() {
+  const box = document.querySelector('.note-float-ins');
+  const body = box && box.closest('.note-body');
+  const ed = body && body.querySelector('.prose');
+  if (!box || !ed) return;
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || document.activeElement !== ed) { box.hidden = true; return; }
+  const range = sel.getRangeAt(0);
+  if (!ed.contains(range.startContainer)) { box.hidden = true; return; }
+  const host = body.getBoundingClientRect();
+  const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+  const anchorTop = (rect && (rect.height || rect.top)) ? rect.top : host.top + 6;   // empty line -> top of editor
+  const bh = box.offsetHeight || 40;
+  let top = anchorTop - host.top - 44;   // a couple of lines up
+  top = Math.max(2, Math.min(top, Math.max(2, host.height - bh - 2)));
+  box.style.top = top + 'px';
+  box.style.right = '6px'; box.style.left = 'auto';   // pinned to the right margin
+  box.hidden = false;
 }
 
 // ── file a note in a page ───────────────────────

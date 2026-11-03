@@ -2511,6 +2511,39 @@ tr:hover td.row-open .ro-ic { opacity:1; }
   .note-side .ce-card { background:var(--paper-2); }
   .note-side .subpage { background:var(--paper-2); box-shadow:none; }
 }
+/* ── Note-header rebuild (Robin, 2026-11-03) ────────────────────────────────
+   The separate action toolbar row is gone: the star, the people faces, the lock,
+   delete and ⋯more all sit on the Space-chips row (star on the left, the rest
+   pushed right). Insert image/file float by the caret instead (.note-float-ins).
+   Linked & attached moves into a right-hand rail (.note-linkside). +New already
+   sits right via .note-crumbs-split .nc-top .addnew { margin-left:auto }. */
+/* The crumb row is a flex column of one row now (the action toolbar is gone), and
+   its single .nc-top wasn't stretching to full width - so +New's margin-left:auto
+   had no free space and sat on the left. Force the row full width so +New lands
+   right. (Robin: +New always on the right.) */
+.note-crumbs-slim .nc-top { width:100%; }
+.note-areas-row-split .note-star { opacity:1; flex:none; }
+.note-areas-row-split .note-faces-wrap { flex:none; }
+.note-areas-row-split .note-areas-actions { margin-left:auto; display:flex; align-items:center; gap:6px; }
+.note-areas-row-split .note-areas-actions .note-areas-aliases { margin-left:0; }
+.note-areas-row-split .note-areas-actions .note-del { margin-left:0; }
+.note-body { position:relative; }
+.note-float-ins { position:absolute; right:6px; z-index:6; display:flex; gap:2px; padding:3px; background:var(--card); border:1px solid var(--line-2); }
+.note-float-ins[hidden] { display:none; }
+.nfi-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:0; background:none; color:var(--ink-2); cursor:pointer; }
+.nfi-btn:hover { color:var(--accent); }
+.nfi-btn svg { width:18px; height:18px; display:block; }
+.note-layout-side { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,320px); gap:clamp(28px,3.5vw,52px); align-items:start; }
+.note-linkside { min-width:0; position:sticky; top:16px; }
+.note-linkside .nx-wrap { margin-top:0; }
+@container notecq (max-width:900px){
+  .note-layout-side { display:flex; flex-direction:column; }
+  /* Beat the legacy .note-main{order:1} rule so the writing stays on top and
+     Linked & attached stacks beneath it when the column is narrow. */
+  .note-layout-side .note-main { order:0; }
+  .note-layout-side .note-linkside { order:1; position:static; }
+  .note-linkside .nx-wrap { margin-top:30px; }
+}
 /* Desktop: the sticky side rails (Life areas, Goals, Notes list, Tables) get their
    own scroll, so a tall rail can be scrolled top-to-bottom independently of the
    main column - not clamped to how far the main column has scrolled. (Robin.) */
