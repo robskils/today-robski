@@ -11426,7 +11426,12 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-ltab-body .rdr-grp:first-child .rdr-row:first-of-type { border-top:0; }
 /* The quieter pair below the tabs: Messages, then What next. */
 .home-below2 { margin-top:30px; padding-top:6px; border-top:1px solid var(--k-line); display:flex; flex-direction:column; gap:6px; }
-.home-aside { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); }
+/* The right column scrolls on its own: a sticky panel with its own scroll area,
+   so you can reach its foot without scrolling the main column all the way down.
+   (Robin, 2026-11-03.) overscroll-behavior:contain stops it chaining to the page. */
+.home-aside { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); max-height:calc(100vh - var(--tabstrip-h,68px) - 32px); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; padding-right:4px; }
+.home-aside::-webkit-scrollbar { width:8px; }
+.home-aside::-webkit-scrollbar-thumb { background:var(--k-line); border-radius:0; }
 .home-sa-head { display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--k-ink); }
 .home-sa-title { font-family:var(--k-serif); font-weight:500; font-size:clamp(26px,2.2vw,30px); line-height:1.05; color:var(--k-ink); white-space:nowrap; }
 .home-sa-count { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); white-space:nowrap; }

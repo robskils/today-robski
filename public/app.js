@@ -8122,8 +8122,14 @@ function notepadLoad() {
     if (Array.isArray(np.lines) && np.lines.some((l) => l.text && l.text.trim())) { if (capState().open && capState().mode === 'pad') renderCapBar(true); return; }
     let lines = null; if (r && r.value) { try { lines = JSON.parse(r.value); } catch {} }
     if (!Array.isArray(lines)) { const old = (state.home && state.home.notepad) || ''; lines = old ? old.split(/\n/).map((t, i) => ({ id: 'm' + i, text: t, done: null })) : []; }
-    np.lines = lines; if (capState().open && capState().mode === 'pad') renderCapBar(true);
-  }).catch(() => { np._loading = false; if (capState().open && capState().mode === 'pad') renderCapBar(true); });
+    np.lines = lines;
+    // Paint the loaded lines into the open §47 panel. The async load used to only
+    // refresh the old cap drawer, so the panel stayed blank and your notes looked
+    // gone. Update the textarea in place (only when you haven't started typing) so
+    // the caret survives. (Robin, 2026-11-03: notepad kept disappearing.)
+    if (np.open) { const ta = document.getElementById('notepad-ta'); if (ta) { if (!ta.value) { ta.value = notepadText(); const s = document.querySelector('#notepad-panel .np2-status'); if (s) s.textContent = notepadText().trim() ? 'Kept as you write' : 'Empty'; } } else { renderNotepadPanel(); } }
+    if (capState().open && capState().mode === 'pad') renderCapBar(true);
+  }).catch(() => { np._loading = false; if (np.open) { const s = document.querySelector('#notepad-panel .np2-status'); if (s) s.textContent = notepadText().trim() ? 'Kept as you write' : 'Empty'; } if (capState().open && capState().mode === 'pad') renderCapBar(true); });
 }
 function notepadLines() { const np = notepadState(); if (!Array.isArray(np.lines)) np.lines = []; const last = np.lines[np.lines.length - 1]; if (!last || last.text || last.done) np.lines.push({ id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), text: '', done: null }); return np.lines; }
 function notepadSave() { const np = notepadState(); const keep = (np.lines || []).filter((l) => (l.text && l.text.trim()) || l.done); if (!keep.length && !np.loaded) return; clearTimeout(np._t); np._t = setTimeout(() => { api('/api/kv/notepad', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keep) }) }).catch(() => {}); }, 600); np.savedAt = Date.now(); }
@@ -9192,7 +9198,7 @@ function renderHome() {
   // scroll and the rail's own scroll and put them back after the repaint.
   const _homeShown = !!document.querySelector('.home');
   const _prevWinScroll = _homeShown ? window.scrollY : 0;
-  const _prevSideScroll = document.querySelector('.home-side')?.scrollTop || 0;
+  const _prevSideScroll = document.querySelector('.home-aside')?.scrollTop || 0;
   // Anchor the viewport to the left tab band (Robin: triaging an email from Today
   // must not shift the view). When the glance list below changes height, we re-scroll
   // so the tab band stays at the same place on screen, instead of restoring an
@@ -9261,7 +9267,7 @@ function renderHome() {
     if (a) { const delta = a.getBoundingClientRect().top - _anchorTop; if (Math.abs(delta) > 0.5) window.scrollBy(0, delta); }
     else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
   } else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
-  if (_prevSideScroll) { const el = document.querySelector('.home-side'); if (el) el.scrollTop = _prevSideScroll; }
+  if (_prevSideScroll) { const el = document.querySelector('.home-aside'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
   state.view = { type: 'tables' };
