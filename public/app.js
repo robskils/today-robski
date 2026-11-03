@@ -23895,58 +23895,71 @@ function reviewSentiment(p, r) {
   return { emoji: '😌', label: 'Even', note: 'A fairly level week.' };
 }
 // A little wheel drawn from THIS review's scores, plus a line reading it.
+// A gold rose (donut-rose) chart: one petal per Space, reaching further the
+// better that part of life felt. Gold only - opacity carries the score, never a
+// second colour (rule 1). Petals lift on hover; a native title names each one.
+// Shared by the review report's "balance" and anywhere a wheel is drawn.
+function roseSvg(data, opts) {
+  opts = opts || {};
+  const cx = 160, cy = 160, R0 = 26, R1 = 150, n = Math.max(data.length, 1);
+  const P = (a, rr) => `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`;
+  const rings = [1, 2, 3, 4, 5].map((s) => `<circle cx="${cx}" cy="${cy}" r="${(R0 + (R1 - R0) * s / 5).toFixed(1)}" fill="none" stroke="var(--k-line)" stroke-width="1"/>`).join('');
+  const petals = data.map((d, i) => {
+    const a0 = (i / n) * 2 * Math.PI - Math.PI / 2 + 0.012, a1 = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2 - 0.012;
+    const sc = Math.min(Math.max(d.score || 0, 0), 5), r = R0 + (R1 - R0) * sc / 5;
+    const dPath = `M${P(a0, R0)} L${P(a0, r)} A${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${P(a1, r)} L${P(a1, R0)} A${R0},${R0} 0 0 0 ${P(a0, R0)} Z`;
+    return `<path d="${dPath}" class="rr-petal" fill="var(--k-gold)" fill-opacity="${(0.26 + sc * 0.145).toFixed(3)}" stroke="var(--k-panel)" stroke-width="1"><title>${esc(d.a.title)} - ${sc} of 5</title></path>`;
+  }).join('');
+  // "Last time" as a faint dashed outline at each petal's mid-angle, when every
+  // petal has a prior score (so the shape is honest, not full of gaps).
+  const havePrev = data.length && data.every((d) => d.prev > 0);
+  const prevOutline = havePrev
+    ? `<polygon points="${data.map((d, i) => P((i + 0.5) / n * 2 * Math.PI - Math.PI / 2, R0 + (R1 - R0) * Math.min(d.prev, 5) / 5)).join(' ')}" fill="none" stroke="var(--k-mute)" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.6"/>`
+    : '';
+  const hub = `<circle cx="${cx}" cy="${cy}" r="${R0 - 2}" fill="var(--k-bg)"/>` +
+    (opts.center ? `<text x="${cx}" y="${cy + 7}" text-anchor="middle" style="font:500 22px var(--k-serif);fill:var(--k-ink)">${esc(opts.center)}</text>` : '');
+  return `<svg viewBox="0 0 320 320" class="rr-rose-svg" role="img" aria-label="${esc(opts.label || 'Life balance, each Space one petal')}">${rings}${petals}${prevOutline}${hub}</svg>`;
+}
 function reviewWheelHtml(p) {
   const areas = (state.areas || []).filter((a) => a && a.title && (p.wheel || {})[a.id]);
   if (areas.length < 3) return '';
   const period = PERIOD_WORD[p.rtype] || 'period';
-  // The previous review of this type, so the wheel can show how the shape has
-  // changed - a dashed "last time" outline over it, and a move on each spoke.
+  // The previous review of this type, so the rose can show how the shape has
+  // changed - a dashed "last time" outline over it, and a move on each petal.
   const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
   const prevWheel = (prev && prev.wheel) || null;
-  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }));
-  const N = data.length, cx = 110, cy = 110, R = 92, seg = 2 * Math.PI / N;
-  const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
-  const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
-  const wedges = data.map((d, i) => { const a0 = -Math.PI / 2 + i * seg, a1 = a0 + seg, large = seg > Math.PI ? 1 : 0, rr = R * d.score / 5; return `<path d="M${cx},${cy} L${P(R, a0)} A${R},${R} 0 ${large} 1 ${P(R, a1)} Z" class="wol-track"/><path d="M${cx},${cy} L${P(rr, a0)} A${rr.toFixed(1)},${rr.toFixed(1)} 0 ${large} 1 ${P(rr, a1)} Z" fill="hsl(${hueOf(d.a)} 58% 55%)" fill-opacity="0.9" stroke="var(--card)" stroke-width="1.5"/>`; }).join('');
-  // "Last time" as a dashed radar outline: each spoke's previous score plotted at
-  // the spoke's mid-angle, joined into a closed loop. Only when every spoke has a
-  // prior score, so the shape is honest and not full of gaps.
+  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }))
+    .sort((x, y) => y.score - x.score);
   const havePrev = prevWheel && data.every((d) => d.prev > 0);
-  const prevOutline = havePrev
-    ? `<polygon points="${data.map((d, i) => P(R * d.prev / 5, -Math.PI / 2 + i * seg + seg / 2)).join(' ')}" class="rr-wheel-prev"/>`
-    : '';
-  const svg = `<svg viewBox="0 0 220 220" class="wol-svg" role="img" aria-label="Wheel of Life">${rings}${wedges}${prevOutline}<circle cx="${cx}" cy="${cy}" r="3" class="wol-hub"/></svg>`;
-  const sorted = data.slice().sort((x, y) => y.score - x.score);
-  const top = sorted[0], low = sorted[sorted.length - 1];
   const avg = Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10;
   const prevAvg = havePrev ? Math.round(data.reduce((s, d) => s + d.prev, 0) / data.length * 10) / 10 : null;
+  const top = data[0], low = data[data.length - 1];
   const spread = top.score - low.score;
   const dTag = (d) => d ? `<span class="rr-key-d ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${Math.abs(Math.round(d * 10) / 10)}</span>` : '';
-  let comm = `Averaging <b>${avg}/5</b>${prevAvg != null && prevAvg !== avg ? ` ${dTag(avg - prevAvg)} on last ${period}` : ''}. <b>${esc(top.a.title)}</b> leads at ${top.score}/5`;
-  if (low.a.id !== top.a.id) comm += `; <b>${esc(low.a.title)}</b> is quietest at ${low.score}/5`;
-  comm += spread >= 3 ? ' - an uneven picture, worth steering some energy to the lower spokes.' : ' - a nicely balanced spread.';
-  // Per-spoke breakdown: dots + score + the move on last time, hottest first.
-  const spokeRows = sorted.map((d) => {
-    const delta = (d.prev && d.score) ? d.score - d.prev : 0;
-    const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < d.score ? 'on' : ''}" style="--h:${hueOf(d.a)}"></span>`).join('');
-    return `<button class="rr-spoke" data-open-area="${d.a.id}" style="--h:${hueOf(d.a)}"><span class="rr-spoke-n">${esc(d.a.title)}</span><span class="rr-spoke-dots">${dots}</span><span class="rr-spoke-s">${d.score}/5${dTag(delta)}</span></button>`;
+  const svg = roseSvg(data, { center: avg.toFixed(1), label: `Life balance this ${period}, each Space one petal` });
+  // The averaging line, plainly: where the balance sits, who leads, who's quiet.
+  let comm = `Averaging <b>${avg} out of 5</b>${prevAvg != null && prevAvg !== avg ? `, ${avg > prevAvg ? 'up' : 'down'} ${Math.abs(Math.round((avg - prevAvg) * 10) / 10)} on last ${period}` : ''}. <span class="rr-lead">${esc(top.a.title)}</span> leads`;
+  if (low.a.id !== top.a.id) comm += `; <b>${esc(low.a.title)}</b> ${low.score <= 2 ? 'needs you' : 'is quietest'} at ${low.score} of 5`;
+  comm += spread >= 3 ? ' - an uneven picture, worth steering some energy low.' : '.';
+  // The four bands: Flourishing (5) · Steady (4) · Getting by (3) · Needs you (1-2).
+  // Gold only; "needs you" takes the one sanctioned rust, nothing else coloured.
+  const BANDS = [['Flourishing', [5], 'var(--k-goldt)'], ['Steady', [4], 'var(--k-ink)'], ['Getting by', [3], 'var(--k-mute)'], ['Needs you', [1, 2], 'var(--k-rust)']];
+  const bandsHtml = BANDS.map(([label, scores, color]) => {
+    const items = data.filter((d) => scores.includes(d.score));
+    if (!items.length) return '';
+    const top5 = Math.max(...scores);
+    const dots = [1, 2, 3, 4, 5].map((d) => `<span class="rr-band-dot${d <= top5 ? ' on' : ''}"></span>`).join('');
+    const chips = items.map((d) => {
+      const mv = havePrev ? d.score - d.prev : 0;
+      const move = mv > 0 ? `<span class="rr-bandchip-m up">▲${mv}</span>` : mv < 0 ? `<span class="rr-bandchip-m down">▼${-mv}</span>` : '';
+      return `<button class="rr-bandchip" data-open-area="${d.a.id}"><span class="rr-bandchip-n">${esc(d.a.title)}</span>${move}</button>`;
+    }).join('');
+    return `<div class="rr-band"><div class="rr-band-h"><span class="rr-band-lbl" style="color:${color}">${label}</span><span class="rr-band-n">${items.length}</span><span class="rr-band-dots">${dots}</span></div><div class="rr-band-chips">${chips}</div></div>`;
   }).join('');
-  // Movers vs last time: the spoke that climbed most and the one that slipped most.
-  let moversHtml = '';
-  if (havePrev) {
-    const moved = data.map((d) => ({ a: d.a, d: d.score - d.prev, now: d.score })).filter((x) => x.d !== 0).sort((x, y) => y.d - x.d);
-    const up = moved[0] && moved[0].d > 0 ? moved[0] : null;
-    const dn = moved[moved.length - 1] && moved[moved.length - 1].d < 0 ? moved[moved.length - 1] : null;
-    const bits = [];
-    if (up) bits.push(`<span class="rr-mover up">📈 <b>${esc(up.a.title)}</b> ${dTag(up.d)} to ${up.now}/5</span>`);
-    if (dn) bits.push(`<span class="rr-mover down">📉 <b>${esc(dn.a.title)}</b> ${dTag(dn.d)} to ${dn.now}/5</span>`);
-    if (!up && !dn) bits.push(`<span class="rr-mover flat">Every spoke held its ground since last ${period}.</span>`);
-    moversHtml = `<div class="rr-wheel-movers">${bits.join('')}</div>`;
-  }
   const legend = havePrev ? `<div class="rr-wheel-legend"><span class="rr-wheel-key now">This ${period}</span><span class="rr-wheel-key was">Last ${period}</span></div>` : '';
   return `<div class="rr-wheel">
-    <div class="rr-wheel-chart">${svg}${legend}<p class="rr-caption">Your life in the round this ${period} - each spoke a part of it, scored out of five.</p></div>
-    <div class="rr-wheel-read"><p class="rr-wheel-comm">${comm}</p>${moversHtml}<div class="rr-wheel-spokes">${spokeRows}</div></div>
+    <div class="rr-wheel-chart"><div class="rr-rose">${svg}</div>${legend}<p class="rr-caption">Each Space is one petal - the further it reaches, the better that part of life felt this ${period}.</p></div>
+    <div class="rr-wheel-read"><p class="rr-wheel-comm">${comm}</p><div class="rr-bands">${bandsHtml}</div></div>
   </div>`;
 }
 // A LIVE wheel for the edit tab: the shape takes form as you score, with the
@@ -24099,8 +24112,14 @@ function renderReviewReport() {
   const refl = cfg.prompts.map((q, i) => (ans[i] && ans[i].trim()) ? `<div class="rr-qa"><div class="rr-q">${esc(q)}</div><div class="rr-a">${esc(ans[i])}</div></div>` : '').join('');
   const free = (r.body || '').trim() ? `<div class="rr-free">${decorateProse(bodyToHtml(r.body))}</div>` : '';
   const readHtml = p.doneSummary
-    ? `<div class="rv-summary-body rr-read">${reviewSummaryHtml(p.doneSummary)}</div>`
+    ? `<div class="rv-summary-body rr-read rr-read--drop">${reviewSummaryHtml(p.doneSummary)}</div>`
     : `<ul class="rv-insight-list rr-read-list">${reviewInsight(m, p).map((l) => `<li>${l}</li>`).join('')}</ul>`;
+  // The steer: the one part of life to lean into next - the quietest petal on the
+  // wheel. A gentle forward nudge at the foot of the read, gold-edged. (§72.)
+  const steerEntries = Object.keys(p.wheel || {}).map((id) => ({ a: areaById(id), s: Math.min((p.wheel || {})[id] || 0, 5) })).filter((x) => x.a && x.s > 0).sort((x, y) => x.s - y.s);
+  const steerNext = { weekly: 'next week', monthly: 'next month', quarterly: 'next quarter', yearly: 'next year' }[p.rtype] || 'next time';
+  const steerLow = steerEntries[0];
+  const steerHtml = steerLow ? `<div class="rr-steer"><div class="rr-steer-lbl">The steer for ${steerNext}</div><div class="rr-steer-head">${esc(steerLow.a.title)}.</div><div class="rr-steer-body">It is sitting at ${steerLow.s} of 5 - the quietest part of the wheel this ${PERIOD_WORD[p.rtype] || 'period'}. A little attention here would move the shape the most. Everything else can keep ticking.</div><div class="rr-steer-acts"><button class="rr-steer-go" data-open-area="${steerLow.a.id}">Open ${esc(steerLow.a.title)} →</button></div></div>` : '';
   // Standfirst: a punchy one-line summary composed from the record.
   const doneItems = m.tasksDone || []; const doneN = doneItems.length;
   const byA = {}; doneItems.forEach((t) => { if (t.area && areaById(t.area)) byA[t.area] = (byA[t.area] || 0) + 1; });
@@ -24172,8 +24191,7 @@ function renderReviewReport() {
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-reviews>Reviews</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(cfg.label)} review</span>
-      <span class="crumb-tools"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span></div>
+    ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${cfg.label} review` }], null, null, { actions: `<span class="crumb-actions"><button class="ghost rr-edit-btn" data-review-edit>✎ Edit</button></span>` })}
     <article class="rr" style="--h:${hue}">
       <div class="rr-eyebrow"><span>${esc(cfg.label)} review</span>${navHtml}</div>
       <h1 class="rr-headline">${esc(headline)}</h1>
@@ -24184,7 +24202,7 @@ function renderReviewReport() {
       ${figsHtml}
       ${reviewKeyPointsHtml(m, p, r)}
       ${feature}
-      ${rrSec('read', '✦ The read', `<div class="rr-article">${readHtml}</div>`)}
+      ${rrSec('read', 'The read', `<div class="rr-article">${readHtml}${steerHtml}</div>`)}
       ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
       ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}

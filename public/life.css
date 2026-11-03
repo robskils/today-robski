@@ -1412,7 +1412,7 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-read p { font-size:16.5px; line-height:1.62; color:var(--ink); margin:0 0 12px; }
 .rr-read p:last-child { margin-bottom:0; }
 .rr-wheel { display:flex; align-items:center; gap:26px; flex-wrap:wrap; margin:2px 0 16px; }
-.rr-wheel-chart { flex:none; width:212px; max-width:62vw; }
+.rr-wheel-chart { flex:none; width:300px; max-width:72vw; }
 .rr-wheel-comm { font-size:15px; line-height:1.55; color:var(--ink-2); margin:0 0 12px; } .rr-wheel-comm b { color:var(--ink); }
 .rr-wheel-read { flex:1 1 260px; min-width:0; }
 /* Dashed "last time" outline laid over the current wheel. */
@@ -1432,6 +1432,37 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-spoke-dots .rr-dot { width:9px; height:9px; }
 .rr-spoke-s { flex:none; display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink-2); font-variant-numeric:tabular-nums; min-width:34px; justify-content:flex-end; }
 @media (max-width:560px){ .rr-spoke-dots { display:none; } }
+/* §72 The balance - a gold rose + four bands. Gold only; rust for "needs you". */
+.rr-rose { width:min(100%,320px); margin:0 auto; }
+.rr-rose-svg { width:100%; height:auto; display:block; }
+.rr-petal { transition:fill-opacity .2s ease; cursor:default; }
+.rr-petal:hover { fill-opacity:1 !important; }
+.rr-lead { color:var(--k-goldt); font-weight:500; }
+.rr-bands { display:flex; flex-direction:column; gap:18px; margin-top:16px; }
+.rr-band-h { display:flex; align-items:baseline; gap:10px; padding-bottom:8px; border-bottom:1px solid var(--k-line); }
+.rr-band-lbl { font:600 11px var(--k-sans); letter-spacing:.14em; text-transform:uppercase; white-space:nowrap; }
+.rr-band-n { font:500 12.5px var(--k-sans); color:var(--k-mute); font-variant-numeric:tabular-nums; }
+.rr-band-dots { margin-left:auto; display:flex; gap:3px; }
+.rr-band-dot { width:8px; height:8px; background:var(--k-line); }
+.rr-band-dot.on { background:var(--k-gold); }
+.rr-band-chips { display:flex; flex-wrap:wrap; gap:7px 8px; margin-top:10px; }
+.rr-bandchip { display:inline-flex; align-items:center; gap:6px; font:500 14px var(--k-sans); color:var(--k-ink); padding:6px 11px; background:var(--k-panel); border:1px solid var(--k-line); cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+.rr-bandchip:hover { background:var(--k-soft); border-color:var(--k-gold); }
+.rr-bandchip-m { font:600 11.5px var(--k-sans); }
+.rr-bandchip-m.up { color:var(--k-goldt); }
+.rr-bandchip-m.down { color:var(--k-rust); }
+/* §72 The read - long-form, with a gold Cormorant drop-capital - and the steer. */
+.rr-article .rr-read--drop { font-family:var(--k-read); font-size:17.5px; line-height:1.75; max-width:660px; color:var(--k-ink); }
+.rr-article .rr-read--drop p { font-size:17.5px; line-height:1.75; }
+.rr-article .rr-read--drop p:first-child::first-letter { font-family:var(--k-serif); font-weight:500; font-size:68px; color:var(--k-gold); float:left; line-height:.78; padding:8px 10px 0 0; }
+.rr-steer { margin-top:26px; padding:20px 24px; background:var(--k-panel); border:1px solid var(--k-line); border-left:3px solid var(--k-gold); max-width:660px; box-sizing:border-box; }
+.rr-steer-lbl { font:600 11px var(--k-sans); letter-spacing:.16em; text-transform:uppercase; color:var(--k-goldt); }
+.rr-steer-head { font:500 22px/1.35 var(--k-sans); margin-top:10px; color:var(--k-ink); }
+.rr-steer-body { font:400 15.5px/1.6 var(--k-sans); color:var(--k-mute); margin-top:6px; }
+.rr-steer-acts { display:flex; flex-wrap:wrap; gap:10px 20px; margin-top:14px; align-items:center; }
+.rr-steer-go { font:600 12px var(--k-sans); letter-spacing:.1em; text-transform:uppercase; padding:11px 18px; background:var(--k-gold); color:var(--k-ongold); border:0; cursor:pointer; white-space:nowrap; }
+.rr-steer-go:hover { background:var(--k-goldt); color:var(--k-bg); }
+.crumb-actions { margin-left:auto; display:flex; align-items:center; gap:10px; flex:none; }
 .rr-areas { display:flex; flex-direction:column; gap:10px; }
 .rr-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:0; background:var(--card); }
 .rr-area-h { display:flex; align-items:center; gap:10px; }

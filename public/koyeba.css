@@ -34,6 +34,7 @@
   --k-deep:oklch(0.28 0.04 155);     /* ≈#2c4a3a  forest: capture bar, notification, avatars */
   --k-ondeep:oklch(0.975 0.012 85);  /* ≈#f8f4ec  text on forest */
   --k-ongold:oklch(0.22 0.018 60);   /* text on a solid gold button (same in both themes) */
+  --k-rust:oklch(0.6 0.14 40);       /* V36 §72: a quiet terracotta for "needs you"/overdue ONLY - never a status colour elsewhere */
 
   --k-serif:'Cormorant Garamond',serif;         /* display only: titles, big readings, the quote */
   --k-sans:'Jost',sans-serif; /* type system 1a (§59): does the work - items, body, meta, labels */
@@ -58,5 +59,6 @@ body.night, :root[data-theme='dark']{
   --k-goldt:oklch(0.80 0.11 78);
   --k-deep:oklch(0.18 0.035 158);
   --k-ondeep:oklch(0.94 0.012 85);
+  --k-rust:oklch(0.74 0.13 44);      /* lifted for legibility on deep forest */
   /* --k-ongold stays the day ink: text on gold is always dark. */
 }
