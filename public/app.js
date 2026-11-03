@@ -9498,6 +9498,22 @@ function openTarot() {
   renderNav(); renderTarot();
   if (state.tarotHistory === undefined) { state.tarotHistory = null; api('/api/kv/tarot_history').then((r) => { try { state.tarotHistory = (r && r.value) ? JSON.parse(r.value) : []; } catch { state.tarotHistory = []; } if (state.view && state.view.type === 'tarot') renderTarot(); }).catch(() => { state.tarotHistory = []; }); }
 }
+// Robin: clicking the tarot card in Reflections opens THAT reading - the cards
+// face up with their meanings - not a fresh generic draw. Rebuild state.tarot
+// from the pinned reading (indices + orientations + spread + question), turned
+// up, with the deterministic "read together" line. Nothing saved -> generic page.
+function openTarotReading() {
+  const ta = currentTarot();
+  if (!ta || !Array.isArray(ta.dis) || !ta.dis.length) { openTarot(); return; }
+  let spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].label === ta.spread);
+  if (!spKey || TAROT_SPREADS[spKey].pos.length !== ta.dis.length) spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].pos.length === ta.dis.length) || 'one';
+  const cards = ta.dis.slice(0, TAROT_SPREADS[spKey].pos.length).map((di, i) => ({ di, reversed: !!(ta.revs && ta.revs[i]), turned: true }));
+  state.tarot = { q: ta.q || '', spread: spKey, cards, drawn: true, saved: true, at: ta.at || Date.now() };
+  state.tarot.synth = tarotTemplate(state.tarot); state.tarot.sit = tarotSit(state.tarot);
+  state.view = { type: 'tarot' };
+  renderNav(); renderTarot();
+  if (state.tarotHistory === undefined) { state.tarotHistory = null; api('/api/kv/tarot_history').then((r) => { try { state.tarotHistory = (r && r.value) ? JSON.parse(r.value) : []; } catch { state.tarotHistory = []; } if (state.view && state.view.type === 'tarot') renderTarot(); }).catch(() => { state.tarotHistory = []; }); }
+}
 function tarotReadQ() { const el = document.getElementById('tarot-q'); return el ? el.value : ((state.tarot && state.tarot.q) || ''); }
 function tarotSetSpread(sp) { if (!TAROT_SPREADS[sp]) return; state.tarot.spread = sp; state.tarot.q = tarotReadQ().trim(); if (state.tarot.drawn) { state.tarot.drawn = false; state.tarot.cards = []; } renderTarot(); }
 // Lay the cards face-down for the current spread (no render) - like a spirit
@@ -26523,7 +26539,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-av3-archive]')) { areaV3Archive(); return; }
   // §64: the readings' "Open" must open the tool on today's reading, not just
   // toggle the row - so it's handled before the row's expand (data-home-read).
-  { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarot(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
+  { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarotReading(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
   { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab = 'mail'; try { localStorage.setItem('life.home.ltab', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-ltabwrap'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }

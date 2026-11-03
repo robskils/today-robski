@@ -11379,6 +11379,8 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 /* Today's readings (right column) */
 .home-rd { margin-bottom:8px; }
 .home-cols-v3 .home-aside .home-rd { margin-top:10px; }
+/* Breathing room between Reflections and Your Spaces in the aside. (Robin.) */
+.home-cols-v3 .home-aside .home-rd + .home-sa-head { margin-top:40px; }
 .home-rd-h { display:flex; align-items:baseline; gap:12px; padding:0 0 12px; border-bottom:1px solid var(--k-ink); cursor:pointer; }
 .home-rd-hl { font-family:var(--k-serif); font-weight:500; font-size:clamp(26px,2.2vw,30px); line-height:1.05; color:var(--k-ink); white-space:nowrap; }
 .home-rd-sign { margin-left:auto; font-family:var(--k-sans); font-weight:300; font-size:20px; color:var(--k-mute); }
