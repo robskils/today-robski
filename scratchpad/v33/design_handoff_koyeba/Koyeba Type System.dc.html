@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><title>Koyeba – type system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;background:#ebe8e1;color:oklch(0.22 0.018 60);-webkit-font-smoothing:antialiased}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+</style></helmet>
+<section id="t1" style="padding:48px 52px 56px">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 10px"><a href="#t1" style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none">1</a><span style="flex:1;font:600 13px system-ui,sans-serif;color:#1a1a1a">Koyeba type – three real systems, same screen</span></div>
+<p style="max-width:900px;margin:0 0 28px;font:14px/1.6 system-ui,sans-serif;color:rgba(0,0,0,.7)">The problem isn’t one font – it’s that every line had the same weight, size and colour. Each option below uses <b>five clear levels</b> (display · heading · item · body · label) with real contrast in size, weight and colour. Cormorant is kept only for the big moments. Pick one and I’ll roll it through every page.</p>
+<div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+<sc-for list="{{ opts }}" as="o" hint-placeholder-count="3">
+<div id="{{ o.id }}" style="flex:none;display:flex;flex-direction:column;gap:10px;width:600px">
+<div style="display:flex;align-items:baseline;gap:8px;font:12px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.6)"><a href="#{{ o.id }}" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">{{ o.id }}</a><span style="flex:1;min-width:0"><b style="color:#1a1a1a">{{ o.name }}</b> – {{ o.about }}</span></div>
+<div style="--ui:{{ o.ui }};--tx:{{ o.text }};background:oklch(0.975 0.012 85);border:1px solid rgba(0,0,0,.08);padding:34px 36px 30px">
+<div style="font:600 11px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:oklch(0.55 0.11 70)">Monday 2 November</div>
+<div style="font:500 56px/1 'Cormorant Garamond',serif;margin-top:12px;letter-spacing:-.01em">Good evening, Robin.</div>
+<div style="font:400 16px/1.5 var(--ui);color:oklch(0.46 0.022 70);margin-top:10px">18:52 · 16° clearing, Lisbon · sunset 17:24</div>
+
+<div style="display:flex;align-items:baseline;gap:12px;margin-top:34px;padding-bottom:10px;border-bottom:1px solid oklch(0.22 0.018 60)"><span style="font:{{ o.h2 }}">On your radar</span><span style="font:500 13px var(--ui);color:oklch(0.55 0.11 70)">3 overdue</span><span style="margin-left:auto;font:400 18px var(--ui);color:oklch(0.46 0.022 70)">−</span></div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:baseline;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80)">
+<span style="font:{{ o.item }};color:oklch(0.22 0.018 60)">Sign Ada’s trip form</span><span style="font:600 13.5px var(--ui);color:oklch(0.55 0.11 70);white-space:nowrap">Open</span>
+<span style="font:400 14px var(--ui);color:oklch(0.46 0.022 70)"><span style="font-weight:600;color:oklch(0.55 0.11 70)">Overdue by 1 day</span> · Task · The kids</span><span></span>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;align-items:baseline;padding:14px 0;border-bottom:1px solid oklch(0.88 0.014 80)">
+<span style="font:{{ o.item }}">Katarina turns 40</span><span style="font:600 13.5px var(--ui);color:oklch(0.55 0.11 70);white-space:nowrap">Send a message</span>
+<span style="font:400 14px var(--ui);color:oklch(0.46 0.022 70)">Tomorrow · Birthday · Friends</span><span></span>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:12px;margin-top:30px;padding-bottom:10px;border-bottom:1px solid oklch(0.22 0.018 60)"><span style="font:{{ o.h2 }}">Mail</span><span style="font:500 13px var(--ui);color:oklch(0.46 0.022 70)">3 new</span></div>
+<sc-for list="{{ mail }}" as="m">
+<div style="display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:3px 12px;align-items:baseline;padding:13px 0;border-bottom:1px solid oklch(0.88 0.014 80)">
+<span style="width:6px;height:6px;border-radius:50%;background:{{ m.dot }};align-self:center"></span>
+<span style="font:{{ m.fromFont }};font-family:var(--ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.from }}</span>
+<span style="font:500 13px var(--ui);color:{{ m.timeColor }};white-space:nowrap">{{ m.time }}</span>
+<span></span><span style="grid-column:2/4;font:{{ o.subj }};color:oklch(0.22 0.018 60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.subj }}</span>
+<span></span><span style="grid-column:2/4;font:400 14px/1.45 var(--ui);color:oklch(0.46 0.022 70);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.prev }}</span>
+</div>
+</sc-for>
+
+<div style="margin-top:26px;padding:22px 24px;background:oklch(0.94 0.016 82)">
+<div style="font:600 14px var(--ui)">Marta Lopes <span style="font-weight:400;color:oklch(0.46 0.022 70)">· Galeria Sete · 18:51</span></div>
+<div style="font:{{ o.readTitle }};margin-top:6px">The show in March</div>
+<p style="margin:12px 0 0;font:{{ o.body }};color:oklch(0.22 0.018 60);text-wrap:pretty">Dear Robin – we’d love to see the Tejo pieces in person before we confirm the March wall. Could you bring three on Friday afternoon? Any time after two is fine.</p>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin-top:16px">
+<span style="font:600 12px var(--ui);letter-spacing:.1em;text-transform:uppercase;padding:11px 18px;background:oklch(0.72 0.13 75);color:oklch(0.22 0.018 60)">Reply</span>
+<span style="font:500 14.5px var(--ui)">Urgent</span><span style="font:500 14.5px var(--ui)">Important</span><span style="font:500 14.5px var(--ui)">Read later</span>
+<span style="margin-left:auto;font:400 14px var(--ui);color:oklch(0.46 0.022 70)">Open in Mail →</span>
+</div>
+</div>
+
+<div style="margin-top:28px;padding-top:16px;border-top:1px solid oklch(0.88 0.014 80);display:grid;gap:7px">
+<div style="font:600 10.5px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:oklch(0.46 0.022 70)">The scale</div>
+<sc-for list="{{ o.scale }}" as="s"><div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;font:400 13px/1.4 var(--ui)"><span style="font-weight:600">{{ s.k }}</span><span style="color:oklch(0.46 0.022 70)">{{ s.v }}</span></div></sc-for>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const MAIL=[['Marta Lopes','The show in March','We’d love to see the Tejo pieces in person before we confirm the wall…','18:51',1],['Mrs Okafor','Year 4 trip – a gentle reminder','Trip forms and the €12 contribution are due back on Wednesday…','17:20',1],['Casa.it','Three new flats in Vomero','From €850 a month · saved search “Napoli, 2 rooms”','Wed',0]];
+class Component extends DCLogic {
+  renderVals(){
+    const opts=[
+      {id:'1a',name:'Jost, done properly',about:'keep the fonts you have, fix the hierarchy',ui:"'Jost',sans-serif",text:"'Jost',sans-serif",
+        h2:"500 30px/1.1 'Cormorant Garamond',serif",item:"500 18px/1.35 'Jost',sans-serif",subj:"500 17px/1.35 'Jost',sans-serif",readTitle:"500 30px/1.15 'Cormorant Garamond',serif",body:"400 16.5px/1.65 'Jost',sans-serif",
+        scale:[['Display','Cormorant 500 · 56 / 30 · titles only'],['Item','Jost 500 · 18'],['Body','Jost 400 · 16.5 / 1.65'],['Meta','Jost 400 · 14 · muted'],['Label','Jost 600 · 11 · caps']]},
+      {id:'1b',name:'A proper working sans',about:'Instrument Sans for everything you read – taller, clearer, calmer',ui:"'Instrument Sans',sans-serif",text:"'Instrument Sans',sans-serif",
+        h2:"600 21px/1.2 'Instrument Sans',sans-serif",item:"600 17px/1.35 'Instrument Sans',sans-serif",subj:"500 16.5px/1.35 'Instrument Sans',sans-serif",readTitle:"500 32px/1.1 'Cormorant Garamond',serif",body:"400 16px/1.65 'Instrument Sans',sans-serif",
+        scale:[['Display','Cormorant 500 · 56 / 32 · titles only'],['Heading','Instrument Sans 600 · 21'],['Item','Instrument Sans 600 · 17'],['Body','Instrument Sans 400 · 16 / 1.65'],['Label','Instrument Sans 600 · 11 · caps']]},
+      {id:'1c',name:'Book serif for reading',about:'Source Serif for the things you read; Instrument Sans for the things you scan',ui:"'Instrument Sans',sans-serif",text:"'Source Serif 4',serif",
+        h2:"600 21px/1.2 'Instrument Sans',sans-serif",item:"600 18px/1.35 'Source Serif 4',serif",subj:"600 17px/1.35 'Source Serif 4',serif",readTitle:"500 32px/1.1 'Cormorant Garamond',serif",body:"400 17px/1.65 'Source Serif 4',serif",
+        scale:[['Display','Cormorant 500 · 56 / 32'],['Heading','Instrument Sans 600 · 21'],['Item','Source Serif 600 · 18'],['Body','Source Serif 400 · 17 / 1.65'],['Meta, label','Instrument Sans 400 / 600']]}];
+    opts.forEach(o=>{o.scale=o.scale.map(([k,v])=>({k,v}));});
+    const mail=MAIL.map(([from,subj,prev,time,unread])=>({from,subj,prev,time,dot:unread?'oklch(0.72 0.13 75)':'transparent',fromFont:unread?'600 14.5px/1.3 sans-serif':'500 14.5px/1.3 sans-serif',timeColor:unread?'oklch(0.55 0.11 70)':'oklch(0.46 0.022 70)'}));
+    return {opts,mail};
+  }
+}
+</script>
+</body>
+</html>

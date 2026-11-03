@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Set something down v2 – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;background:oklch(0.975 0.012 85);color:oklch(0.22 0.018 60);font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+input::placeholder{color:oklch(0.975 0.012 85 / .45)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column">
+<div style="max-width:1100px;width:100%;margin:0 auto;padding:56px clamp(24px,4vw,56px) 36px;box-sizing:border-box;flex:1">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">Set something down · v2</span></div>
+<h1 style="font:300 clamp(48px,5vw,72px)/1 'Cormorant Garamond',serif;margin:14px 0 0">You pick the kind. <i style="color:oklch(0.55 0.11 70)">Koyeba fills in the rest.</i></h1>
+<div style="font:400 16px/1.6 Jost;color:oklch(0.46 0.022 70);margin-top:16px;max-width:720px;text-wrap:pretty">It fills in only what your words or your history say, and shows where each detail came from. When it doesn’t know, it asks. Nothing is saved until you press Enter.</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 26px;margin-top:30px">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:oklch(0.46 0.022 70)">Try</span>
+<sc-for list="{{ examples }}" as="e" hint-placeholder-count="5"><span onClick="{{ e.pick }}" style="font:italic 300 21px 'Cormorant Garamond',serif;cursor:pointer;color:{{ e.color }};border-bottom:1px solid {{ e.line }}">{{ e.short }}</span></sc-for>
+</div>
+</div>
+
+<div style="background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85)">
+<div style="max-width:1100px;margin:0 auto;padding:30px clamp(24px,4vw,56px) 28px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:14px"><span style="font:300 26px Jost;color:oklch(0.74 0.12 76)">+</span><div style="display:flex;gap:22px"><sc-for list="{{ modes }}" as="m" hint-placeholder-count="2"><span onClick="{{ m.pick }}" style="display:flex;align-items:baseline;gap:8px;cursor:pointer;font:600 10.5px Jost;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;color:{{ m.color }};padding-bottom:5px;border-bottom:1px solid {{ m.line }}">{{ m.label }}<span style="font:500 9px Jost;letter-spacing:.16em;opacity:.6">{{ m.key }}</span></span></sc-for></div><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;opacity:.6;white-space:nowrap">ESC TO FOLD</span></div>
+<sc-if value="{{ isSet }}" hint-placeholder-val="{{ true }}">
+<input value="{{ text }}" onChange="{{ onText }}" placeholder="Dentist Tuesday at nine…" style="display:block;width:100%;box-sizing:border-box;margin-top:12px;background:transparent;border:0;border-bottom:1px solid oklch(0.975 0.012 85 / .3);padding:6px 0 14px;font:300 clamp(28px,3vw,38px)/1.2 'Cormorant Garamond',serif;color:oklch(0.975 0.012 85);outline:none">
+
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 26px;padding:18px 0 0">
+<sc-for list="{{ kinds }}" as="k" hint-placeholder-count="5"><span onClick="{{ k.pick }}" style="display:flex;align-items:baseline;gap:6px;cursor:pointer;font:400 16px Jost;color:{{ k.color }};padding-bottom:4px;border-bottom:1px solid {{ k.line }}">{{ k.label }}<span style="font:500 9px Jost;letter-spacing:.2em;text-transform:uppercase;color:oklch(0.74 0.12 76)">{{ k.tag }}</span></span></sc-for>
+</div>
+
+<sc-if value="{{ hasQuestion }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 22px;margin-top:22px;padding:16px 0;border-top:1px solid oklch(0.975 0.012 85 / .14);border-bottom:1px solid oklch(0.975 0.012 85 / .14);animation:kfade .35s ease">
+<span style="font:italic 300 24px 'Cormorant Garamond',serif">{{ question }}</span>
+<sc-for list="{{ qChoices }}" as="q"><span onClick="{{ q.pick }}" style="font:500 11px Jost;letter-spacing:.2em;text-transform:uppercase;padding:9px 14px;border:1px solid oklch(0.74 0.12 76);color:oklch(0.74 0.12 76);cursor:pointer">{{ q.label }}</span></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSeq }}">
+<div style="margin-top:22px;animation:kfade .35s ease">
+<div style="display:flex;align-items:baseline;gap:14px"><span style="font:300 28px 'Cormorant Garamond',serif">Three things, one afternoon</span><span style="font:400 13px Jost;opacity:.7">The kids</span></div>
+<div style="margin-top:10px">
+<sc-for list="{{ steps }}" as="s">
+<div style="display:grid;grid-template-columns:70px 14px minmax(0,1fr) minmax(0,auto);gap:16px;align-items:start;padding:12px 0;border-top:1px solid oklch(0.975 0.012 85 / .12)">
+<span style="font:500 14px Jost;padding-top:3px">{{ s.time }}</span>
+<span style="width:7px;height:7px;margin-top:9px;background:oklch(0.74 0.12 76)"></span>
+<div style="min-width:0"><div style="font:300 23px/1.2 'Cormorant Garamond',serif">{{ s.title }}</div><div style="font:400 12.5px Jost;opacity:.7;margin-top:3px">{{ s.src }}</div></div>
+<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:6px 14px;font:400 14px Jost;padding-top:4px">
+<sc-if value="{{ s.known }}"><span style="white-space:nowrap">{{ s.dur }}</span></sc-if>
+<sc-if value="{{ s.asks }}"><span style="font:italic 300 18px 'Cormorant Garamond',serif;color:oklch(0.74 0.12 76);white-space:nowrap">{{ s.ask }}</span><sc-for list="{{ s.picks }}" as="p"><span onClick="{{ p.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ p.color }};border-bottom:1px solid {{ p.line }}">{{ p.label }}</span></sc-for></sc-if>
+</div>
+</div>
+</sc-for>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;padding:12px 0;border-top:1px solid oklch(0.975 0.012 85 / .12);font:400 14px Jost">
+<span style="opacity:.7">{{ travel }}</span>
+<sc-for list="{{ travelPicks }}" as="p"><span onClick="{{ p.pick }}" style="cursor:pointer;color:{{ p.color }};border-bottom:1px solid {{ p.line }}">{{ p.label }}</span></sc-for>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;padding-top:12px;border-top:1px solid oklch(0.975 0.012 85 / .12)">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;opacity:.6">Save as</span>
+<sc-for list="{{ saveAs }}" as="p"><span onClick="{{ p.pick }}" style="cursor:pointer;font:400 15px Jost;color:{{ p.color }};padding-bottom:3px;border-bottom:1px solid {{ p.line }}">{{ p.label }}</span></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFields }}">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:0 36px;margin-top:22px;animation:kfade .35s ease">
+<sc-for list="{{ fields }}" as="f">
+<div style="padding:12px 0 14px;border-top:1px solid oklch(0.975 0.012 85 / .14)">
+<div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;opacity:.6">{{ f.label }}</div>
+<sc-if value="{{ f.known }}"><div style="font:300 24px/1.25 'Cormorant Garamond',serif;margin-top:4px">{{ f.value }}</div><div style="font:400 12.5px Jost;color:oklch(0.74 0.12 76);margin-top:3px">{{ f.src }}</div></sc-if>
+<sc-if value="{{ f.asks }}"><div style="font:italic 300 22px 'Cormorant Garamond',serif;color:oklch(0.74 0.12 76);margin-top:4px">{{ f.ask }}</div><div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font:400 14px Jost"><sc-for list="{{ f.picks }}" as="p"><span onClick="{{ p.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ p.color }};border-bottom:1px solid {{ p.line }}">{{ p.label }}</span></sc-for></div></sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ isInbox }}">
+<div style="margin-top:22px;padding:14px 0;border-top:1px solid oklch(0.975 0.012 85 / .14);font:italic 300 22px/1.4 'Cormorant Garamond',serif;opacity:.85;animation:kfade .35s ease">Saved word for word to your inbox. Sort it when you’re ready – nothing is filed for you.</div>
+</sc-if>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin-top:22px">
+<span style="font:400 13px Jost;opacity:.65;text-wrap:pretty;flex:1;min-width:240px">{{ footnote }}</span>
+<span onClick="{{ save }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 22px;background:oklch(0.74 0.12 76);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">{{ saveLabel }}</span>
+</div>
+</sc-if>
+<sc-if value="{{ isPad }}">
+<div style="animation:kfade .3s ease">
+<textarea value="{{ pad }}" onChange="{{ onPad }}" placeholder="Jot anything. Nothing is filed – it just stays here." rows="7" style="display:block;width:100%;box-sizing:border-box;margin-top:14px;background:transparent;border:0;border-top:1px solid oklch(0.975 0.012 85 / .2);padding:16px 0 0;resize:vertical;outline:none;font:300 clamp(22px,2.2vw,27px)/1.5 'Cormorant Garamond',serif;color:oklch(0.975 0.012 85)"></textarea>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 24px;margin-top:16px;padding-top:14px;border-top:1px solid oklch(0.975 0.012 85 / .14);font:400 13px Jost">
+<span style="opacity:.65;flex:1;min-width:220px">{{ padNote }}</span>
+<span onClick="{{ padToSet }}" style="color:oklch(0.74 0.12 76);cursor:pointer;white-space:nowrap">Set the selected line down →</span>
+<span onClick="{{ padClear }}" style="opacity:.65;cursor:pointer;white-space:nowrap">Clear the page</span>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ hasToast }}"><div style="margin-top:14px;font:italic 300 20px 'Cormorant Garamond',serif;color:oklch(0.74 0.12 76)">{{ toast }}</div></sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KINDS=[['task','Task'],['event','Event'],['note','Note'],['email','Email'],['inbox','Just set it down']];
+const EX=[
+ {short:'Maya, piano, dinner',text:'Pick Maya up from school, take her to piano, then dinner',kind:'event',seq:true},
+ {short:'Aguarela with Joaquim',text:'7pm Today Aguarela II with Joaquim until 10pm repeat every week, remind 1 hour before',kind:'event'},
+ {short:'Dentist Tuesday',text:'Dentist Tuesday at 9am',kind:'event',fields:{event:[
+   {label:'When',value:'Tue 3 Nov, 09:00',src:'From your words'},
+   {label:'How long',value:'30 minutes',src:'Like your last two visits'},
+   {label:'Space',value:'Me',src:'Where the dentist usually goes'},
+   {label:'Remind me',value:'Monday evening, and at 8:15',src:'Your usual for appointments'}]}},
+ {short:'Call the plumber',text:'Call the plumber about the kitchen leak',kind:'task',fields:{task:[
+   {label:'Priority',ask:'How soon?',picks:['First','Soon','Whenever']},
+   {label:'How long',value:'About 10 minutes',src:'Your calls usually take this'},
+   {label:'Space',value:'The house',src:'From “kitchen leak”'},
+   {label:'Joins',value:'AquaFix email, Thursday',src:'Mentions the leak'}]}},
+ {short:'Email Priya',text:'Draft an email to Priya saying the Harlow draft will be late',kind:'email',fields:{email:[
+   {label:'To',value:'Priya Mendes',src:'From your contacts'},
+   {label:'Thread',value:'Harlow draft (3 emails)',src:'Replies in that thread'},
+   {label:'Draft',value:'Scribe writes it in your voice',src:'You read it before it goes'}]}},
+ {short:'Ines’s birthday',text:'Ines birthday present',kind:null,ask:['A task or a note?',['Task','Note']]}
+];
+const GENERIC={
+ task:[{label:'Priority',ask:'How soon?',picks:['First','Soon','Whenever']},{label:'How long',ask:'How long?',picks:['15m','30m','1h','2h','Skip']},{label:'Space',ask:'Which Space?',picks:['Me','The kids','The house','Work']}],
+ event:[{label:'When',ask:'When?',picks:['Today','Tomorrow','Pick a day…']},{label:'How long',ask:'How long?',picks:['15m','30m','1h','2h']},{label:'Space',ask:'Which Space?',picks:['Me','The kids','The house','Work']}],
+ note:[{label:'Space',ask:'Which Space?',picks:['Me','The kids','The house','Work']},{label:'Into',value:'A new page',src:'Or add it to an existing note'}],
+ email:[{label:'To',ask:'Who to?',picks:['Choose someone…']},{label:'Draft',value:'Scribe writes it in your voice',src:'You read it before it goes'}]
+};
+const DAYS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const TODAY=new Date(2026,10,2);
+const dLabel=d=>DAYS[d.getDay()].slice(0,3).replace(/^./,c=>c.toUpperCase())+' '+d.getDate()+' '+MON[d.getMonth()];
+const pad=n=>String(n).padStart(2,'0');
+const NUM={a:1,an:1,one:1,two:2,three:3,half:0.5};
+const parse=raw=>{let t=' '+raw+' ';const out={};const cut=re=>{const m=t.match(re);if(m)t=t.replace(m[0],' ');return m;};
+ let m=cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\s*(?:-|–|to|until|till)\s*(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i);
+ let sh,sm=0,eh,em=0;
+ if(m){sh=+m[1];sm=+(m[2]||0);eh=+m[4];em=+(m[5]||0);const ap1=(m[3]||m[6]||'').toLowerCase(),ap2=(m[6]||m[3]||'').toLowerCase();if(ap1==='pm'&&sh<12)sh+=12;if(ap2==='pm'&&eh<12)eh+=12;}
+ else{m=cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)\b/i)||cut(/\bat\s+(\d{1,2})[:.](\d\d)\b/i);if(m){sh=+m[1];sm=+(m[2]||0);if((m[3]||'').toLowerCase()==='pm'&&sh<12)sh+=12;}
+  const e=cut(/\b(?:until|till|to)\s+(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i);if(e){eh=+e[1];em=+(e[2]||0);if(((e[3]||'').toLowerCase()==='pm'||(sh>=12&&!e[3]))&&eh<12)eh+=12;}}
+ let day=null;const dm=cut(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+ if(dm){const w=dm[1].toLowerCase();day=new Date(TODAY);if(w==='tomorrow')day.setDate(day.getDate()+1);else if(DAYS.includes(w)){let k=(DAYS.indexOf(w)-day.getDay()+7)%7||7;day.setDate(day.getDate()+k);}out.dayWord=w==='today'||w==='tonight'?'Today, ':w==='tomorrow'?'Tomorrow, ':'';}
+ const rm=cut(/\b(?:and\s+)?(?:repeat(?:s|ing)?\s+)?(every\s+(?:day|week|fortnight|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|weekly|daily|monthly)\b/i);
+ const re=cut(/\b(?:and\s+)?remind(?:\s+me)?\s+(\d+|an?|one|two|three|half an?)\s*(hours?|hrs?|minutes?|mins?)\s+before\b/i);
+ const wm=cut(/\bwith\s+([A-ZÀ-Ý][\wÀ-ÿ’']+(?:\s+(?:and|&)\s+[A-ZÀ-Ý][\wÀ-ÿ’']+)?)/);
+ let title=t.replace(/\s+(at|on|from|and|,)\s*$/i,' ').replace(/^\s*(at|on|,)\s+/i,' ').replace(/\s{2,}/g,' ').replace(/[\s,]+$/,'').trim();
+ out.title=title?title.charAt(0).toUpperCase()+title.slice(1):'';
+ out.hasWhen=!!(day||sh!==undefined);out.hasTime=sh!==undefined;
+ if(out.hasWhen){const d=day||TODAY;out.when=(out.dayWord||'')+dLabel(d)+(sh!==undefined?', '+pad(sh)+':'+pad(sm)+(eh!==undefined?'–'+pad(eh)+':'+pad(em):''):'');out.wd=DAYS[d.getDay()];}
+ if(sh!==undefined&&eh!==undefined){let mins=(eh*60+em)-(sh*60+sm);if(mins<0)mins+=1440;out.dur=mins%60===0?(mins/60)+(mins===60?' hour':' hours'):(Math.floor(mins/60)?Math.floor(mins/60)+'h ':'')+(mins%60)+'m';}
+ if(rm){const r=rm[1].toLowerCase();const wd=out.wd||DAYS[TODAY.getDay()];const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  out.repeat=/week|weekly/.test(r)?'Every week, on '+cap(wd)+'s':/day|daily/.test(r)&&!/monday|tuesday|wednesday|thursday|friday|saturday|sunday/.test(r)?'Every day':/fortnight/.test(r)?'Every other '+cap(wd):/month/.test(r)?'Every month':'Every '+cap(r.replace('every ',''));}
+ if(re){const n=NUM[re[1].toLowerCase()]??(/half/.test(re[1])?0.5:+re[1]);const isH=/^h/i.test(re[2]);const mins=isH?n*60:n;out.remindTxt=isH?(n===1?'An hour before':n+' hours before'):mins+' minutes before';
+  if(sh!==undefined){let x=sh*60+sm-mins;x=(x+1440)%1440;out.remindTxt+=' – '+pad(Math.floor(x/60))+':'+pad(x%60);}}
+ if(wm)out.who=wm[1];
+ out.space=/aguarela|paint|watercolou?r|sketch/i.test(raw)?['Art','Where your painting lives']:/maya|school|piano/i.test(raw)?['The kids','From “'+(raw.match(/maya|school|piano/i)[0])+'”']:null;
+ return out;};
+const parsedFields=(raw,kind)=>{const p=parse(raw);const f=[{label:'Title',value:p.title||'Untitled',src:'What’s left once the details are lifted out'}];
+ if(kind==='task')f.push({label:'Priority',ask:'How soon?',picks:['First','Soon','Whenever']});
+ if(p.hasWhen)f.push({label:'When',value:p.when,src:'From your words'});else if(kind==='event')f.push({label:'When',ask:'When?',picks:['Today','Tomorrow','Pick a day…']});
+ if(kind==='event'){if(p.dur)f.push({label:'How long',value:p.dur,src:'From your words'});else f.push({label:'How long',ask:'How long?',picks:['30m','1h','2h','Open-ended']});}
+ if(p.repeat)f.push({label:'Repeats',value:p.repeat,src:'From your words'});
+ if(p.remindTxt)f.push({label:'Remind me',value:p.remindTxt,src:'From your words'});
+ if(p.who)f.push({label:'With',value:p.who,src:'From your contacts · they’ll get an invite if you like'});
+ f.push(p.space?{label:'Space',value:p.space[0],src:p.space[1]}:{label:'Space',ask:'Which Space?',picks:['Me','The kids','The house','Work','Art']});
+ return f;};
+const guess=t=>{const s=t.toLowerCase();
+ if(/\b(\d{1,2}\s?(am|pm)|until|repeat|every week|remind)\b/.test(s)&&!/\b(email|draft)\b/.test(s))return ['event',true];
+ if(/\b(email|draft|write to|reply)\b/.test(s))return ['email',true];
+ if(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|\d{1,2}(:\d\d)?\s?(am|pm)|at \d)\b/.test(s))return ['event',true];
+ if(/^(call|buy|book|send|pay|fix|order|ring|renew|sign|pick up)\b/.test(s))return ['task',true];
+ if(s.trim().split(/\s+/).length>12)return ['note',true];
+ return [null,false];};
+class Component extends DCLogic {
+  state={ex:1,text:EX[1].text,kind:null,ans:{},travel:null,saveAs:0,toast:null};
+  componentDidMount(){this.kd=e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='j'||e.key==='J')){e.preventDefault();this.setState({mode:'pad'});}else if((e.metaKey||e.ctrlKey)&&e.key==='.'){e.preventDefault();this.setState({mode:'set'});}};window.addEventListener('keydown',this.kd);}
+  componentWillUnmount(){window.removeEventListener('keydown',this.kd);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const mode=st.mode||'set';
+    const padText=st.pad??(localStorage.getItem('koyeba-notepad-demo')??'Ask Joaquim about cotton vs cellulose paper\nSeikuji – rooms are shared? check\nIdea: a small series of the Tejo at dusk, six paintings\nBuy gamboge');
+    const modeVals={isSet:mode==='set',isPad:mode==='pad',pad:padText,onPad:e=>{localStorage.setItem('koyeba-notepad-demo',e.target.value);set({pad:e.target.value,padEdited:Date.now()});},
+      padNote:st.padEdited?'Kept as you write · just now':'Kept as you write · last edited this morning',
+      padClear:()=>{localStorage.setItem('koyeba-notepad-demo','');set({pad:''});},
+      padToSet:()=>{const line=(padText.split('\n').find(l=>l.trim())||'').trim();set({mode:'set',text:line,kind:null,ans:{},toast:null});},
+      modes:[['set','Set down','⌘ .'],['pad','Notepad','⌘ J']].map(([id,label,key])=>({label,key,color:mode===id?'oklch(0.74 0.12 76)':'oklch(0.975 0.012 85 / .6)',line:mode===id?'oklch(0.74 0.12 76)':'transparent',pick:()=>set({mode:id})}))};
+    const ex=EX.find(e=>e.text===st.text);
+    let g=ex?ex.kind:guess(st.text)[0];
+    const askQ=ex&&ex.ask?ex.ask:(!ex&&st.text.trim()&&!g?['A task or a note?',['Task','Note']]:null);
+    const kind=st.kind||g;
+    const pk=(key,opts)=>opts.map(o=>{const on=st.ans[key]===o;return {label:o,color:on?'oklch(0.975 0.012 85)':'oklch(0.975 0.012 85 / .7)',line:on?'oklch(0.74 0.12 76)':'oklch(0.975 0.012 85 / .25)',pick:()=>set({ans:{...st.ans,[key]:o}})};});
+    const kinds=KINDS.map(([id,label])=>{const on=kind===id,isG=!st.kind&&g===id;return {label,tag:isG?'guess':'',color:on?'oklch(0.975 0.012 85)':'oklch(0.975 0.012 85 / .6)',line:on?(isG?'oklch(0.74 0.12 76 / .6)':'oklch(0.74 0.12 76)'):'transparent',pick:()=>set({kind:st.kind===id?null:id})};});
+    const isSeq=!!(ex&&ex.seq)&&kind==='event';
+    const steps=[
+      {time:'15:20',title:'Pick Maya up from school',src:'Her school day ends at 15:20 · from The kids',known:true,dur:'15 minutes',asks:false,picks:[]},
+      {time:'16:00',title:'Piano lesson',src:'Like last Monday',known:true,dur:'45 minutes',asks:false,picks:[]},
+      {time:'After',title:'Dinner',src:'Nothing in your words about how long',known:!!st.ans.dinner,dur:st.ans.dinner==='Open-ended'?'Open-ended':'Until '+st.ans.dinner,asks:!st.ans.dinner,ask:'Until when?',picks:pk('dinner',['Open-ended','18:30','19:00'])}];
+    const tp=['Yes','No'].map(o=>{const on=st.travel===o;return {label:o,color:on?'oklch(0.975 0.012 85)':'oklch(0.975 0.012 85 / .7)',line:on?'oklch(0.74 0.12 76)':'oklch(0.975 0.012 85 / .25)',pick:()=>set({travel:o})};});
+    const saveAs=['Three events','One block, 15:20 onwards','A task list'].map((l,i)=>({label:l,color:st.saveAs===i?'oklch(0.975 0.012 85)':'oklch(0.975 0.012 85 / .6)',line:st.saveAs===i?'oklch(0.74 0.12 76)':'transparent',pick:()=>set({saveAs:i})}));
+    let fields=[];
+    if(!isSeq&&kind&&kind!=='inbox'){const src=(ex&&ex.fields&&ex.fields[kind])||((kind==='event'||kind==='task')&&st.text.trim()?parsedFields(st.text,kind):GENERIC[kind]);
+      fields=src.map((f,i)=>{const key=kind+i,a=st.ans[key];if(f.ask&&!a)return {...f,known:false,asks:true,picks:pk(key,f.picks)};return {...f,known:true,asks:false,value:f.value||a,src:f.src||'You chose this'};});}
+    const hasQ=!!askQ&&!st.kind;
+    const label={task:'Set down as a task',event:isSeq?(['Add three events','Add one block','Add a task list'][st.saveAs]):'Add to calendar',note:'Save the note',email:'Start the draft',inbox:'Set it down'}[kind]||'Set it down';
+    return {...modeVals,examples:EX.map((e,i)=>({short:e.short,color:st.text===e.text?'oklch(0.22 0.018 60)':'oklch(0.46 0.022 70)',line:st.text===e.text?'oklch(0.72 0.13 75)':'transparent',pick:()=>set({text:e.text,kind:null,ans:{},travel:null,saveAs:0,toast:null})})),
+      text:st.text,onText:e=>set({text:e.target.value,kind:null,ans:{},toast:null}),kinds,
+      hasQuestion:hasQ,question:askQ?askQ[0]:'',qChoices:askQ?askQ[1].map(l=>({label:l,pick:()=>set({kind:l.toLowerCase()})})):[],
+      isSeq,steps,travel:st.travel==='Yes'?'15 minutes added between school and piano':st.travel==='No'?'No travel time added':'About 15 minutes from school to piano?',travelPicks:st.travel?[]:tp,saveAs,
+      isFields:!isSeq&&fields.length>0,fields,isInbox:kind==='inbox'||(!kind&&!hasQ&&!!st.text.trim()),
+      footnote:isSeq?'It saw three steps. Times come from Maya’s school and last week’s lesson; dinner it left to you.':kind?'Gold lines say where each detail came from. Tap any of them to change it.':'Not sure what this is yet – choose a kind above, or just set it down.',
+      saveLabel:label+' ↵',save:()=>{set({toast:'Done. Change any of it from where it landed.'});clearTimeout(this.t);this.t=setTimeout(()=>this.setState({toast:null}),3000);},
+      hasToast:!!st.toast,toast:st.toast||''};
+  }
+}
+</script>
+</body>
+</html>

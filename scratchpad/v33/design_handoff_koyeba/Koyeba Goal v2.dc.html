@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Goal – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-hdr:#fff;--k-card:#fff;--k-ink:oklch(0.17 0.015 60);--k-mute:oklch(0.38 0.02 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.5 0.11 68);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-hdr:oklch(0.19 0.02 160);--k-card:oklch(0.27 0.035 158);--k-ink:oklch(0.95 0.012 85);--k-mute:oklch(0.78 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.76 0.12 76);--k-goldt:oklch(0.82 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder,textarea::placeholder{color:var(--k-mute)}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;width:100%;height:28px;cursor:grab}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:transparent}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-8px;background:var(--k-gold);border:3px solid var(--k-card);box-shadow:0 0 0 1px var(--k-gold)}
+input[type=range]::-moz-range-track{height:6px;background:var(--k-soft)}
+input[type=range]::-moz-range-progress{height:6px;background:var(--k-gold)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:0;background:var(--k-gold);border:3px solid var(--k-card)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px;transition:background .4s ease,color .4s ease">
+<div style="border-bottom:1px solid var(--k-line);background:var(--k-hdr);position:sticky;top:0;z-index:40">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:68px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px;flex:none"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="flex:1;display:flex;gap:clamp(12px,1.5vw,24px);font:500 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span style="color:var(--k-ink)">Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="display:flex;align-items:baseline;gap:clamp(12px,1.5vw,22px);font:500 14px Jost;white-space:nowrap;color:var(--k-mute);flex:none"><span>Mail <span style="color:var(--k-goldt)">2</span></span><span>Notepad</span><span>Search</span><span>Menu</span><span onClick="{{ toggleNight }}" style="cursor:pointer">{{ nightLabel }}</span></div>
+</div>
+</div>
+
+<div style="max-width:1280px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:500 14px Jost;display:flex;gap:8px;align-items:baseline;white-space:nowrap"><span style="cursor:pointer;display:flex;gap:8px"><span style="color:var(--k-gold)">←</span><span>Goals</span></span><span style="color:var(--k-mute)">·</span><span style="color:var(--k-mute)">Business</span></div>
+
+<div style="display:grid;grid-template-columns:{{ cols }};gap:clamp(36px,4.5vw,80px);align-items:start;margin-top:28px">
+<div style="min-width:0">
+<div style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-goldt)">Goal · Business</div>
+<h1 style="font:500 clamp(34px,3.6vw,46px)/1.12 'Cormorant Garamond',serif;margin:10px 0 0;text-wrap:balance;max-width:760px">Get 10 people happily using Koyeba</h1>
+
+<div style="margin-top:28px;padding:24px 28px 20px;background:var(--k-card);border:1px solid var(--k-line)">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 22px">
+<span style="font:500 58px/1 'Cormorant Garamond',serif;color:var(--k-goldt)">{{ pct }}</span>
+<span style="font:500 16px Jost;color:{{ stateColor }}">{{ stateLine }}</span>
+<span style="margin-left:auto;font:400 14px Jost;color:var(--k-mute);white-space:nowrap">Drag to update</span>
+</div>
+<input type="range" min="0" max="100" step="5" value="{{ n }}" onChange="{{ onSlide }}" style="margin-top:14px;background:linear-gradient(to right,var(--k-gold) {{ pct }},var(--k-soft) {{ pct }}) center / 100% 6px no-repeat">
+<div style="display:flex;justify-content:space-between;font:400 12.5px Jost;color:var(--k-mute);margin-top:2px"><span>Just begun</span><span>Halfway</span><span>Done</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px 36px;margin-top:20px;padding-top:16px;border-top:1px solid var(--k-line)">
+<div><div style="font:500 17px Jost">27 days left</div><div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px">By Mon 30 November</div></div>
+<div><div style="font:500 17px Jost">{{ stepsLine }}</div><div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px">Steps towards it</div></div>
+<div><div style="font:500 17px Jost">Weekly</div><div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:2px">Check in</div></div>
+</div>
+</div>
+
+<sc-for list="{{ secs }}" as="s" hint-placeholder-count="4">
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ s.toggle }}" style="display:flex;align-items:baseline;gap:16px;padding:24px 0 12px;cursor:pointer"><span style="font:500 26px/1.1 'Cormorant Garamond',serif;white-space:nowrap">{{ s.title }}</span><span style="font:400 14.5px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ s.hint }}</span><span style="margin-left:auto;font:400 20px/1 Jost;color:var(--k-mute)">{{ s.sign }}</span></div>
+<sc-if value="{{ s.open }}">
+<div style="padding:0 0 24px;animation:kfade .35s ease">
+<sc-if value="{{ s.isWhy }}">
+<textarea value="{{ why }}" onChange="{{ onWhy }}" rows="2" style="width:100%;box-sizing:border-box;border:0;background:transparent;outline:none;resize:vertical;padding:0;font:italic 300 24px/1.45 'Cormorant Garamond',serif;color:var(--k-ink)"></textarea>
+</sc-if>
+<sc-if value="{{ s.isSteps }}">
+<sc-for list="{{ steps }}" as="st"><div style="display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--k-line)"><span onClick="{{ st.tick }}" style="width:12px;height:12px;border:1px solid var(--k-gold);background:{{ st.fill }};cursor:pointer;align-self:center"></span><span style="font:500 17px/1.35 Jost;color:{{ st.color }};text-decoration:{{ st.strike }}">{{ st.t }}</span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">{{ st.w }}</span></div></sc-for>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--k-line)"><span style="font:400 18px Jost;color:var(--k-goldt)">+</span><input value="{{ newStep }}" onChange="{{ onNewStep }}" onKeyDown="{{ addStep }}" placeholder="Add a step – it becomes a task" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 16px Jost;color:var(--k-ink)"></div>
+</sc-if>
+<sc-if value="{{ s.isThinking }}">
+<sc-for list="{{ thoughts }}" as="t"><div style="padding:12px 0;border-top:1px solid var(--k-line)"><div style="font:400 16px/1.6 Jost">{{ t.t }}</div><div style="font:500 12.5px Jost;color:var(--k-mute);margin-top:4px">{{ t.w }}</div></div></sc-for>
+<textarea placeholder="Add a thought…" rows="2" style="width:100%;box-sizing:border-box;margin-top:8px;border:1px solid var(--k-line);background:var(--k-card);outline:none;resize:vertical;padding:12px 14px;font:400 16px/1.6 Jost;color:var(--k-ink)"></textarea>
+</sc-if>
+<sc-if value="{{ s.isTiming }}">
+<div style="display:grid;gap:14px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-mute);white-space:nowrap;width:110px">By when</span><div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ whens }}" as="w"><span onClick="{{ w.pick }}" style="font:500 14.5px Jost;cursor:pointer;white-space:nowrap;padding:9px 16px;border:1px solid {{ w.border }};background:{{ w.bg }};color:{{ w.color }};transition:background .2s ease,border-color .2s ease" style-hover="border-color:var(--k-gold)">{{ w.label }}</span></sc-for></div><sc-if value="{{ isCustom }}"><input type="date" value="2026-11-30" style="border:0;border-bottom:1px solid var(--k-gold);background:transparent;outline:none;padding:3px 0;font:500 15px Jost;color:var(--k-ink)"></sc-if></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-mute);white-space:nowrap;width:110px">Check in</span><div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ revs }}" as="w"><span onClick="{{ w.pick }}" style="font:500 14.5px Jost;cursor:pointer;white-space:nowrap;padding:9px 16px;border:1px solid {{ w.border }};background:{{ w.bg }};color:{{ w.color }};transition:background .2s ease,border-color .2s ease" style-hover="border-color:var(--k-gold)">{{ w.label }}</span></sc-for></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 22px;font:500 14px Jost;padding-top:6px"><span style="cursor:pointer">Move to another Space</span><span style="color:var(--k-mute);cursor:pointer;font-weight:400">Archive goal</span></div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="min-width:0;position:sticky;top:92px">
+<div style="border-top:1px solid var(--k-ink);padding-top:14px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">Connected</span><span style="font:500 12.5px Jost;color:var(--k-mute)">{{ connN }}</span></div>
+<div style="margin-top:8px">
+<sc-for list="{{ conn }}" as="c"><div style="display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:11px 0;border-top:1px solid var(--k-line)"><span style="font:600 10.5px Jost;letter-spacing:.12em;text-transform:uppercase;color:var(--k-goldt)">{{ c.k }}</span><span style="font:500 16px Jost;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.t }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ c.s }}</span></div></sc-for>
+</div>
+<div style="padding:12px 0;border-top:1px solid var(--k-line);font:500 14px Jost;color:var(--k-goldt);cursor:pointer">+ Connect a note, person or event</div>
+<div style="font:400 13px/1.5 Jost;color:var(--k-mute)">Paste a link or type a name – Koyeba finds it.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state={n:40,o:{why:true,steps:true,thinking:false,timing:false},done:{s1:true,s2:true},extra:[],newStep:'',why:'Because then the dream has come true – a product people love.',w:'Custom date…',rv:'Weekly',night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);this.onR=()=>this.setState({wide:window.innerWidth>=1000});this.onR();window.addEventListener('resize',this.onR);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),mute='var(--k-mute)';
+    const STEPS=[['s1','Invite Helena and Sofia','Done'],['s2','Fix the mail encoding bug','Done'],['s3','Ask each of them what’s confusing','This week'],['s4','Invite five more from the waiting list','Nov'],['s5','A short welcome guide','Nov'],...st.extra.map((t,i)=>['x'+i,t,''])];
+    const steps=STEPS.map(([id,t,w])=>{const d=!!st.done[id];return {t,w:d?'Done':w,fill:d?'var(--k-gold)':'transparent',color:d?mute:'var(--k-ink)',strike:d?'line-through':'none',tick:()=>set({done:{...st.done,[id]:!d}})};});
+    const doneN=STEPS.filter(s=>st.done[s[0]]).length;
+    const n=st.n;
+    const stateLine=n>=100?'Achieved – well done.':n>=75?'Nearly there':n>=40?'Well on the way':n>0?'Under way':'Not started';
+    const S=[['why','Why this matters',st.why],['steps','How I’ll get there',doneN+' of '+STEPS.length+' done'],['thinking','Thinking','2 thoughts'],['timing','Timing and settings','By Mon 30 November · check in weekly']];
+    const secs=S.map(([id,title,hint])=>{const o=!!st.o[id];return {title,hint:o?'':hint,open:o,sign:o?'−':'+',toggle:()=>set({o:{...st.o,[id]:!o}}),isWhy:id==='why',isSteps:id==='steps',isThinking:id==='thinking',isTiming:id==='timing'};});
+    const opt=(k,list)=>list.map(l=>{const on=st[k]===l;return {label:l,color:on?'oklch(0.17 0.015 60)':'var(--k-ink)',bg:on?'var(--k-gold)':'var(--k-card)',border:on?'var(--k-gold)':'var(--k-line)',pick:()=>set({[k]:l})};});
+    const conn=[['Person','Helena Greene','using it'],['Person','Sofia Pulici','using it'],['Note','Feedback from the first users','Oct'],['Event','Koyeba demo with Peter','Thu']].map(([k,t,s])=>({k,t,s}));
+    return {n,pct:n+'%',onSlide:e=>set({n:+e.target.value}),stateLine,stateColor:n>=100?'var(--k-goldt)':'var(--k-ink)',stepsLine:doneN+' of '+STEPS.length+' done',
+      secs,steps,why:st.why,onWhy:e=>set({why:e.target.value}),newStep:st.newStep,onNewStep:e=>set({newStep:e.target.value}),addStep:e=>{if(e.key==='Enter'&&st.newStep.trim())set({extra:[...st.extra,st.newStep.trim()],newStep:''});},
+      thoughts:[{t:'The first two users both got lost in Mail. Fix that before inviting more.',w:'Sun'},{t:'Maybe a short video tour instead of a guide.',w:'Oct'}],
+      whens:opt('w',['This month','This quarter','This year','Custom date…','No date']),isCustom:st.w==='Custom date…',revs:opt('rv',['Weekly','Monthly','Quarterly','Never']),
+      conn,connN:String(conn.length),cols:st.wide===false?'minmax(0,1fr)':'minmax(0,1fr) minmax(260px,320px)',
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

@@ -13553,12 +13553,15 @@ async function areaNewEventOnDay(id, iso) {
 }
 async function areaAddTask() {
   const area = state.area_open && state.area_open.area; if (!area) return;
-  // Open the Tasks add form pre-tagged to this area, rather than pre-creating an
-  // empty placeholder task and hoping the naming step lands - that left orphaned,
-  // title-less tasks whenever the name never saved (e.g. a write failed).
-  state.taskAddArea = area.id;
-  state.taskAdding = true; state.taskFocusArm = Date.now();
-  await openTasks(); renderTasks();
+  // Mirror the other "Add to this Space" actions (Note, Goal, Contact): create the
+  // task already tagged to this space and open its card to name it, right here -
+  // rather than jumping to the full Tasks page, which Robin found jarring.
+  try {
+    const task = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title: '', props: { area: area.id, done: false } }) });
+    if (Array.isArray(state.tasks)) state.tasks.unshift(task);
+    await openTaskCard(task.id);
+    setTimeout(() => { const el = document.getElementById('taskcard-title'); if (el) el.focus(); }, 40);
+  } catch (e) { toast(e.message); }
 }
 // Add a reflection (journal or dream) filed to this space, then open it to
 // write. It then shows in the space's Reflections section. (Robin: everything
@@ -16311,7 +16314,7 @@ function mailSyncSoon() { clearTimeout(_mailSyncT); _mailSyncT = setTimeout(() =
 async function refreshMailUnread() {
   try {
     const r = await mailApi('/unread');
-    state.mailUnreadTotal = r.total || 0;
+    state.mailUnreadTotal = Math.max(0, r.total || 0);
     if (state.mail) state.mail.unseen = { ...(state.mail.unseen || {}), ...(r.unseen || {}) };
     setAppBadgeCount(state.mailUnreadTotal);   // keep the icon badge honest while the app is open
     renderNav();
@@ -22045,7 +22048,7 @@ function renderGoalCard() {
     : `<div class="gx-fact"><div class="gx-fact-n">No date</div><div class="gx-fact-l">No deadline set</div></div>`;
   const progBody = `
       <div class="gx-prog-top"><span class="gx-pct">${isDone ? '100%' : pctNum + '%'}</span><span class="gx-prog-state"><span class="gx-state">${esc(goalStateLine(isDone ? 100 : pctNum))}</span><span class="gx-drag">Drag to update</span></span></div>
-      <div class="gx-slide"><div class="gx-track"></div><div class="gc-bar gx-fill"><i style="width:${pctNum}%"></i></div><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
+      <div class="gx-slide"><input type="range" class="gx-slider gc-slider" min="0" max="100" step="5" value="${pctNum}" style="--p:${pctNum}%" data-goal-progress="${g.id}" aria-label="Progress: ${pctNum}%"></div>
       <div class="gx-slide-labels"><span>Just begun</span><span>Halfway</span><span>Done</span></div>
       <div class="gx-facts">${daysFact}${gtasks.length ? `<div class="gx-fact"><div class="gx-fact-n">${doneN} of ${gtasks.length} done</div><div class="gx-fact-l">Steps towards it</div></div>` : ''}<div class="gx-fact"><div class="gx-fact-n">${esc(goalCadenceLabel(p.checkin))}</div><div class="gx-fact-l">Looked at in your review</div></div></div>`;
   const stepsBody = `<div class="gx-steps">${gtasks.map(gcStepRow).join('') || '<div class="gx-steps-empty">No steps yet - add the first below.</div>'}</div><div class="gx-step-add"><span class="gx-step-plus">+</span><input class="gx-step-input" data-goal-stepadd="${g.id}" placeholder="Add a step - it becomes a task${spaceName ? ' in your ' + esc(spaceName) + ' space' : ''}" autocomplete="off"></div>`;
@@ -25833,6 +25836,8 @@ document.addEventListener('input', (e) => {
     // Works for a goal card (.gc-progress) and a Goals-tab list row (.glist-row).
     const wrap = e.target.closest('.gc-progress, .glist-row, .goal-card, .rvg-goal, .gr-goal, .gx-prog');
     if (wrap) { const fill = wrap.querySelector('.gc-bar > i, .glist-bar > i, [data-rvg-bar]'); if (fill) fill.style.width = v + '%'; const lab = wrap.querySelector('.gc-pct, .glist-pct, .rvg-pct, .gx-pct'); if (lab) lab.textContent = v + '%'; const stl = wrap.querySelector('.gx-state'); if (stl && typeof goalStateLine === 'function') stl.textContent = goalStateLine(v); }
+    // The gx-slider draws its own gold fill via a gradient hard-stop at --p.
+    if (e.target.classList.contains('gx-slider')) e.target.style.setProperty('--p', v + '%');
     e.target.setAttribute('aria-label', `Progress: ${v}%`);
     clearTimeout(window.__goalProgT); window.__goalProgT = setTimeout(() => saveGoalProgress(e.target.dataset.goalProgress, v), 450);
   }

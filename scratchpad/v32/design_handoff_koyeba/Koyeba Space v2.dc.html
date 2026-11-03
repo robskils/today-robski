@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Art – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:100px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:400 14px Jost;display:flex;gap:8px;align-items:baseline"><span style="color:var(--k-gold)">←</span><a href="#">Spaces</a><span style="color:var(--k-mute)">·</span><span>Art</span></div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:20px 40px;padding:34px 0 34px;border-bottom:1px solid var(--k-line)">
+<div style="flex:1;min-width:300px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Space III</span></div>
+<h1 style="font:300 clamp(80px,9vw,128px)/.88 'Cormorant Garamond',serif;margin:12px 0 0;letter-spacing:-.015em">Art</h1>
+<div style="font:italic 300 clamp(22px,2.2vw,28px)/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:14px;max-width:720px;text-wrap:pretty">Painting most of the time, and making a living out of it.</div>
+</div>
+<div style="display:flex;gap:clamp(24px,3vw,44px);padding-bottom:8px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4"><div><div style="font:300 40px/1 'Cormorant Garamond',serif">{{ s.n }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:6px;white-space:nowrap">{{ s.label }}</div></div></sc-for>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:clamp(40px,5vw,96px);align-items:start">
+<div style="min-width:0">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div onClick="{{ tNow }}" style="display:flex;align-items:center;gap:12px;padding:26px 0 18px;cursor:pointer"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">What matters now</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ sNow }}</span></div>
+<sc-if value="{{ oNow }}" hint-placeholder-val="{{ true }}">
+<div style="padding:0 0 28px;animation:kfade .4s ease">
+<p style="margin:0;font:300 clamp(26px,2.5vw,32px)/1.4 'Cormorant Garamond',serif;max-width:860px;text-wrap:pretty">Aguarela tonight, seven till ten, with Joaquim – he asked you to bring a big flat brush. <span style="color:var(--k-goldt)">Galeria Sete has been waiting four days for your images</span>; that’s the one to do first. The watercolours goal is close.</p>
+<div style="margin-top:24px">
+<sc-for list="{{ now }}" as="n" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:15px 0;border-top:1px solid var(--k-line)">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-goldt)">{{ n.kind }}</span>
+<div style="min-width:0"><div style="font:400 16.5px/1.4 Jost">{{ n.title }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:3px">{{ n.why }}</div></div>
+<span style="font:500 13px Jost;color:var(--k-goldt);white-space:nowrap;cursor:pointer">{{ n.act }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="padding-bottom:12px">
+<div onClick="{{ tNotes }}" style="display:flex;align-items:baseline;gap:16px;padding:30px 0 8px;cursor:pointer"><span style="font:300 44px/1 'Cormorant Garamond',serif">Notes</span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">{{ notesHint }}</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ sNotes }}</span></div>
+<sc-if value="{{ oNotes }}" hint-placeholder-val="{{ true }}">
+<div style="animation:kfade .4s ease">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 26px;padding:12px 0 4px">
+<div style="flex:1;min-width:240px;max-width:420px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--k-line);padding:8px 0"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Look through Art notes…" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 15px Jost;color:var(--k-ink)"><sc-if value="{{ hasQ }}"><span onClick="{{ clearQ }}" style="font:400 13px Jost;color:var(--k-mute);cursor:pointer">Clear</span></sc-if></div>
+<div style="display:flex;gap:18px;font:400 14.5px Jost"><sc-for list="{{ nViews }}" as="v"><span onClick="{{ v.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ v.color }};padding-bottom:3px;border-bottom:1px solid {{ v.line }}">{{ v.label }}</span></sc-for></div>
+<span style="margin-left:auto;font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">+ New note</span>
+</div>
+<sc-if value="{{ hasPinned }}">
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:baseline;margin-top:20px;padding:18px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line);cursor:pointer">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt)">Pinned</span>
+<div style="min-width:0"><span style="font:300 26px 'Cormorant Garamond',serif">{{ pinned.title }}</span><span style="font:italic 300 19px 'Cormorant Garamond',serif;color:var(--k-mute);margin-left:14px">{{ pinned.ex }}</span></div>
+<span style="font:500 13px Jost;color:var(--k-goldt)">Open</span>
+</div>
+</sc-if>
+<sc-if value="{{ isShelf }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:34px clamp(28px,3vw,48px);margin-top:28px">
+<sc-for list="{{ shelves }}" as="g" hint-placeholder-count="4">
+<div style="min-width:0">
+<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--k-gold)"><span style="font:300 26px/1.1 'Cormorant Garamond',serif">{{ g.label }}</span><span style="font:400 12.5px Jost;color:var(--k-mute)">{{ g.count }}</span></div>
+<sc-for list="{{ g.notes }}" as="n">
+<div style="padding:11px 0 11px {{ n.pad }};border-bottom:1px solid var(--k-line);cursor:pointer" style-hover="background:var(--k-soft)">
+<div style="font:{{ n.font }};display:flex;gap:8px;align-items:baseline"><span style="color:var(--k-gold);font:400 12px Jost">{{ n.mark }}</span><span>{{ n.title }}</span></div>
+<div style="font:400 13px/1.45 Jost;color:var(--k-mute);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ n.ex }}</div>
+</div>
+</sc-for>
+<div style="padding-top:9px;font:400 13px Jost;color:var(--k-mute);cursor:pointer" style-hover="color:var(--k-goldt)">+ Add to {{ g.label }}</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ isAZ }}">
+<div style="margin-top:20px;columns:2 300px;column-gap:48px">
+<sc-for list="{{ azNotes }}" as="n"><div style="break-inside:avoid;display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="font:300 22px/1.25 'Cormorant Garamond',serif;flex:1;min-width:0">{{ n.title }}</span><span style="font:400 12px Jost;color:var(--k-mute);white-space:nowrap">{{ n.group }}</span></div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ noMatch }}"><div style="padding:22px 0;font:italic 300 22px 'Cormorant Garamond',serif;color:var(--k-mute)">Nothing in Art notes matches that. Try Search for everywhere.</div></sc-if>
+<sc-if value="{{ hasSuggest }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;margin-top:26px;padding:14px 18px;background:var(--k-soft)">
+<span style="font:italic 300 21px/1.35 'Cormorant Garamond',serif;flex:1;min-width:260px">The three loose notes look like <span style="color:var(--k-goldt)">Technique</span>. Put them together?</span>
+<span onClick="{{ acceptSuggest }}" style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Group them</span>
+<span onClick="{{ dismissSuggest }}" style="font:400 13px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Not now</span>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+
+<div style="border-top:1px solid var(--k-line);margin-top:30px">
+<div onClick="{{ tRecent }}" style="display:flex;align-items:baseline;gap:16px;padding:26px 0 8px;cursor:pointer"><span style="font:300 38px/1 'Cormorant Garamond',serif">Recent</span><span style="font:400 13.5px Jost;color:var(--k-goldt);white-space:nowrap">{{ newCount }} new since Thursday</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ sRecent }}</span></div>
+<sc-if value="{{ oRecent }}" hint-placeholder-val="{{ true }}">
+<div style="animation:kfade .4s ease">
+<div style="display:flex;flex-wrap:wrap;gap:6px 22px;padding:10px 0 4px;font:400 14.5px Jost">
+<sc-for list="{{ filters }}" as="f" hint-placeholder-count="6"><span onClick="{{ f.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ f.color }};padding-bottom:3px;border-bottom:1px solid {{ f.line }}">{{ f.label }} <span style="color:var(--k-mute);font-size:12px">{{ f.n }}</span></span></sc-for>
+</div>
+<sc-for list="{{ recent }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:22px">
+<div style="display:flex;align-items:center;gap:12px;padding-bottom:4px"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div>
+<sc-for list="{{ g.items }}" as="it">
+<div style="display:grid;grid-template-columns:12px 70px minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line);cursor:pointer" style-hover="background:var(--k-soft)">
+<span style="width:6px;height:6px;background:{{ it.dot }};align-self:center"></span>
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute)">{{ it.kind }}</span>
+<div style="min-width:0"><div style="font:300 23px/1.2 'Cormorant Garamond',serif;text-decoration:{{ it.strike }}">{{ it.title }}</div><div style="font:400 13.5px/1.5 Jost;color:var(--k-mute);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.ex }}</div></div>
+<span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.when }}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<sc-if value="{{ noneRecent }}"><div style="padding:20px 0;font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-mute)">Nothing of this kind lately.</div></sc-if>
+<div style="padding:16px 0 0;font:500 13px Jost;color:var(--k-goldt);cursor:pointer">Everything in Art →</div>
+</div>
+</sc-if>
+</div>
+
+<sc-for list="{{ mainFolds }}" as="m" hint-placeholder-count="2">
+<div style="border-top:1px solid var(--k-line);margin-top:36px">
+<div onClick="{{ m.toggle }}" style="display:flex;align-items:baseline;gap:16px;padding:22px 0 8px;cursor:pointer"><span style="font:300 34px/1 'Cormorant Garamond',serif">{{ m.title }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ m.hint }}</span><span style="margin-left:auto;font:300 22px Jost;color:var(--k-mute)">{{ m.sign }}</span></div>
+<sc-if value="{{ m.open }}">
+<div style="animation:kfade .4s ease">
+<sc-for list="{{ m.groups }}" as="g">
+<sc-if value="{{ g.hasLabel }}"><div style="display:flex;align-items:center;gap:12px;padding:14px 0 2px"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div></sc-if>
+<sc-for list="{{ g.rows }}" as="r">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:18px;align-items:center;padding:13px 0;border-bottom:1px solid var(--k-line)">
+<div style="min-width:0"><div style="font:300 22px/1.25 'Cormorant Garamond',serif">{{ r.title }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px">{{ r.meta }}</div></div>
+<sc-if value="{{ r.hasPct }}"><div><div style="height:1px;background:var(--k-line);position:relative"><div style="position:absolute;left:0;top:-1px;height:3px;width:{{ r.pct }};background:var(--k-gold)"></div></div><div style="font:400 12px Jost;color:var(--k-mute);margin-top:7px;text-align:right">{{ r.pct }}</div></div></sc-if>
+<sc-if value="{{ r.noPct }}"><span style="font:400 13px Jost;color:var(--k-mute);text-align:right">{{ r.right }}</span></sc-if>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:26px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="3">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}">
+<div style="padding:0 0 22px;display:grid;gap:14px;animation:kfade .4s ease">
+<sc-for list="{{ p.items }}" as="it">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline"><span style="font:300 21px/1.25 'Cormorant Garamond',serif">{{ it.a }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.b }}</span><span style="grid-column:1/-1;font:400 12.5px Jost;color:{{ it.cColor }}">{{ it.c }}</span></div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const NOW=[
+ ['Event','Aguarela II with Joaquim','Tonight 19:00–22:00 · bring a big flat brush, from his email','Open'],
+ ['Mail','Galeria Sete – “Could you send three images?”','Waiting on you for four days','Reply'],
+ ['Task','Photograph the three Tejo paintings','First · needed for Galeria Sete','Start'],
+ ['Goal','Do some really good watercolours','55% · two more paintings and it’s done','See it']];
+const RECENT=[
+ ['Today',[['Note','Tejo at dusk – colour notes','Ultramarine and burnt sienna for the water; leave the paper white for the light.','09:40',1],['Task','Order Arches 300gsm paper','Done · Jackson’s Art','08:15',1,1]]],
+ ['Yesterday',[['Mail','Joaquim – tonight’s subject','Let’s try wet-on-wet skies. Bring a big flat brush.','18:02',1],['File','Tejo series – three photos','Added to Kept here','16:30',1]]],
+ ['This week',[['Mail','Galeria Sete – Could you send three images?','Marta · waiting for your reply','Thu'],['Event','Aguarela I with Joaquim','Three hours · notes taken after','Mon'],['Note','Pricing ideas','A4 originals €180–240. Prints €35, signed.','Mon'],['Task','Update the robinsavile.com gallery','Soon','Sun']]],
+ ['Earlier',[['Note','Mixing greens','Sap green is a cheat – try ultramarine with gamboge instead.','21 Oct'],['Task','Try Daniel Smith primaries','Whenever','18 Oct']]]];
+// [title, excerpt, when, order(days ago), pinned, children]
+const NOTES=[
+ ['Pinned',[['Art – vision','Painting most of the time, selling art for good coin…','12 Sep',50,1]]],
+ ['Lessons with Joaquim',[['Aguarela I','Wet-on-dry washes; keep the brush loaded.','Mon',1,0,[['Homework','Three skies, three greys','Mon',1]]],['Taster session','He likes Arches paper and big flat brushes.','19 Oct',14]]],
+ ['Technique',[['Mixing greens','Sap green is a cheat – try ultramarine with gamboge.','21 Oct',12]]],
+ ['Selling',[['Pricing ideas','A4 originals €180–240. Prints €35, signed.','Mon',1],['Galeria Sete','Marta · contact, terms, what they asked for','Thu',4]]],
+ ['Loose',[['Tejo at dusk – colour notes','Ultramarine and burnt sienna for the water.','09:40',0],['Paper and brushes','Arches 300gsm, a 1-inch flat, a size 12 round.','Oct',20],['Granulation','Some pigments settle into the paper – use it for stone.','Oct',25]]]];
+const FILTERS=[['all','All'],['Note','Notes'],['Task','Tasks'],['Mail','Mail'],['Event','Events'],['File','Files']];
+class Component extends DCLogic {
+  state={nv:'shelf',q:'',ng:{},grouped:false,noSug:false,f:'all',o:{now:true,recent:true,notes:true,tasks:false,goals:false,up:true,people:true,kept:false},night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),o=st.o,tg=k=>()=>set({o:{...o,[k]:!o[k]}}),sg=k=>o[k]?'−':'+';
+    const all=RECENT.flatMap(([,a])=>a);
+    const filters=FILTERS.map(([id,label])=>{const on=st.f===id;return {label,n:id==='all'?all.length:all.filter(x=>x[0]===id).length,color:on?'var(--k-ink)':'var(--k-mute)',line:on?'var(--k-gold)':'transparent',pick:()=>set({f:id})};});
+    const recent=RECENT.map(([label,a])=>({label,items:a.filter(x=>st.f==='all'||x[0]===st.f).map(([kind,title,ex,when,nw,done])=>({kind,title,ex,when,dot:nw?'var(--k-gold)':'transparent',strike:done?'line-through':'none'}))})).filter(g=>g.items.length);
+    const mainFolds=[
+     {id:'tasks',title:'Open tasks',hint:'2 first · 3 soon · 4 whenever',groups:[
+       {label:'First',count:2,rows:[{title:'Photograph the three Tejo paintings',meta:'For Galeria Sete',right:'Today'},{title:'Reply to Marta at Galeria Sete',meta:'From her email, Thursday',right:'Today'}]},
+       {label:'Soon',count:3,rows:[{title:'Update the robinsavile.com gallery',meta:'Touched Sunday',right:''},{title:'Price the Tejo series',meta:'See “Pricing ideas”',right:''},{title:'Buy a bigger flat brush',meta:'Joaquim’s suggestion',right:''}]},
+       {label:'Whenever',count:4,rows:[{title:'Try Daniel Smith primaries',meta:'And 3 more',right:''}]}]},
+     {id:'goals',title:'Goals',hint:'Watercolours 55% · mixing 20% · selling 0%',groups:[{label:'',rows:[
+       {title:'Do some really good watercolours',meta:'This quarter · 11 of 20 tasks',pct:'55%'},{title:'Get comfortable mixing colours',meta:'This quarter · 2 of 10 tasks',pct:'20%'},{title:'Sell some art from my website',meta:'This year · 0 of 4 tasks',pct:'0%'}]}]}
+    ].map(m=>({...m,open:!!o[m.id],sign:sg(m.id),toggle:tg(m.id),groups:m.groups.map(g=>({...g,hasLabel:!!g.label,rows:g.rows.map(r=>({...r,hasPct:!!r.pct,noPct:!r.pct}))}))}));
+    const side=[
+     {id:'up',title:'Coming up',items:[['Aguarela II','Tonight 19:00','With Joaquim · 3 hours'],['Aguarela III','Mon 9 Nov','Every week'],['Sketching at Belém','Sat 14 Nov','With Ana'],['Galeria Sete open evening','Fri 27 Nov','Marta invited you']]},
+     {id:'people',title:'People',items:[['Joaquim','Teacher','Mondays · emailed yesterday'],['Marta, Galeria Sete','Waiting on you','Four days'],['Ana','Sketching','Belém on the 14th']]},
+     {id:'kept',title:'Kept here',items:[['Art – vision','Note','Pinned'],['Tejo series','3 photos','Added yesterday'],['robinsavile.com','Link','Your site'],['Pricing ideas','Note','Monday']]}
+    ].map(p=>({title:p.title,count:p.items.length,open:!!o[p.id],sign:sg(p.id),toggle:tg(p.id),items:p.items.map(([a,b,c])=>({a,b,c,cColor:b==='Waiting on you'?'var(--k-goldt)':'var(--k-mute)'}))}));
+    let groups=NOTES.filter(g=>g[0]!=='Pinned').map(([l,a])=>[l,a.slice()]);
+    if(st.grouped){const loose=groups.find(g=>g[0]==='Loose');const tech=groups.find(g=>g[0]==='Technique');tech[1]=[...tech[1],...loose[1]];groups=groups.filter(g=>g[0]!=='Loose');}
+    const ql=(st.q||'').trim().toLowerCase(),hit=n=>!ql||(n[0]+' '+n[1]).toLowerCase().includes(ql);
+    const shelves=groups.map(([label,a])=>{const notes=[];a.forEach(n=>{const kids=(n[5]||[]).filter(hit);if(hit(n)||kids.length){notes.push({title:n[0],ex:n[1],mark:'',pad:'0',font:"300 23px/1.2 'Cormorant Garamond',serif"});kids.forEach(c=>notes.push({title:c[0],ex:c[1],mark:'└',pad:'18px',font:"300 20px/1.2 'Cormorant Garamond',serif"}));}});return {label,count:notes.length,notes};}).filter(g=>g.notes.length);
+    const az=groups.flatMap(([g,a])=>a.flatMap(n=>[[n[0],g],...(n[5]||[]).map(c=>[c[0],g])])).filter(([t])=>!ql||t.toLowerCase().includes(ql)).sort((a,b)=>a[0].localeCompare(b[0]));
+    const pin=NOTES[0][1][0];const total=NOTES.reduce((s,[,a])=>s+a.length+a.reduce((t,n)=>t+(n[5]?n[5].length:0),0),0);
+    const nViews=[['shelf','By group'],['az','A to Z']].map(([id,label])=>({label,color:st.nv===id?'var(--k-ink)':'var(--k-mute)',line:st.nv===id?'var(--k-gold)':'transparent',pick:()=>set({nv:id})}));
+    return {oNotes:o.notes,sNotes:sg('notes'),tNotes:tg('notes'),notesHint:total+' notes in '+(groups.length)+' groups',nViews,
+      q:st.q||'',onQ:e=>set({q:e.target.value}),hasQ:!!ql,clearQ:()=>set({q:''}),
+      hasPinned:!ql||hit(pin),pinned:{title:pin[0],ex:pin[1]},
+      isShelf:st.nv==='shelf'&&shelves.length>0,shelves,isAZ:st.nv==='az'&&az.length>0,azNotes:az.map(([title,group])=>({title,group})),
+      noMatch:!!ql&&(st.nv==='shelf'?shelves.length===0:az.length===0),
+      hasSuggest:!st.grouped&&!st.noSug&&!ql&&st.nv==='shelf',acceptSuggest:()=>set({grouped:true}),dismissSuggest:()=>set({noSug:true}),
+      stats:[{n:'1',label:'Tonight'},{n:'2',label:'First tasks'},{n:'1',label:'Waiting on you'},{n:'55%',label:'Nearest goal'}],
+      now:NOW.map(([kind,title,why,act])=>({kind,title,why,act})),oNow:o.now,sNow:sg('now'),tNow:tg('now'),
+      oRecent:o.recent,sRecent:sg('recent'),tRecent:tg('recent'),newCount:all.filter(x=>x[4]).length,filters,recent,noneRecent:recent.length===0,
+      mainFolds,side,dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

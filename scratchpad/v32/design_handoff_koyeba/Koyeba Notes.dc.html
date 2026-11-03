@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Notes – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input{font:inherit;color:inherit;background:transparent;border:0;outline:0}input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div onClick="{{ goIndex }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People<span style="font-size:11.5px;color:var(--k-goldt)"> 18</span></span><span>Plans</span><span style="color:var(--k-ink);border-bottom:1px solid var(--k-gold);padding-bottom:4px">Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span onClick="{{ toggleNight }}" style="color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+
+<sc-if value="{{ isIndex }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:clamp(40px,5vw,88px);padding-top:48px;animation:kfade .4s ease">
+<div style="min-width:0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Keep · Notes</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:14px 0 0">Notes</h1>
+<div style="font:italic 300 24px/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px">212 notes. You were last in <span style="color:var(--k-ink)">RLS Approach</span>, an hour ago.</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 34px;margin-top:36px;padding:14px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line)">
+<div style="flex:1;min-width:240px;display:flex;align-items:center;gap:12px"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Search notes – titles, words, links" style="flex:1;min-width:0;font:400 16px Jost"><span style="font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">/</span></div>
+<div style="display:flex;gap:22px;font:400 14.5px Jost;white-space:nowrap"><sc-for list="{{ orders }}" as="o"><span onClick="{{ o.pick }}" style="cursor:pointer;color:{{ o.color }};padding-bottom:3px;border-bottom:1px solid {{ o.line }}">{{ o.label }}</span></sc-for></div>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:12px 18px;background:var(--k-gold);color:oklch(0.22 0.018 60);white-space:nowrap;cursor:pointer">New note</span>
+</div>
+
+<sc-if value="{{ spaceOn }}"><div style="display:flex;align-items:baseline;gap:14px;padding:14px 0 0;font:400 14px Jost"><span style="color:var(--k-mute)">Only</span><span style="color:var(--k-goldt)">{{ spaceOn }}</span><span onClick="{{ clearSpace }}" style="color:var(--k-mute);cursor:pointer">Show all</span></div></sc-if>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:22px">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:300 18px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));column-gap:48px">
+<sc-for list="{{ g.items }}" as="n">
+<div onClick="{{ n.open }}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:16px 0;border-bottom:1px solid var(--k-line);cursor:pointer" style-hover="color:var(--k-goldt)">
+<div style="font:300 24px/1.2 'Cormorant Garamond',serif;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.title }}</div>
+<span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ n.when }}</span>
+<div style="grid-column:1 / -1;display:flex;gap:12px;align-items:baseline;min-width:0"><span style="font:400 13px Jost;color:var(--k-goldt);white-space:nowrap">{{ n.space }}</span><span style="font:400 14px Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{ n.snip }}</span></div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="padding-top:158px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="2">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}"><div style="padding:0 0 20px;display:grid">
+<sc-for list="{{ p.items }}" as="it"><div onClick="{{ it.go }}" style="display:flex;align-items:baseline;gap:12px;padding:9px 0;cursor:pointer;color:{{ it.color }}" style-hover="color:var(--k-goldt)"><span style="flex:1;font:300 21px 'Cormorant Garamond',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span><span style="font:400 12.5px Jost;color:var(--k-mute)">{{ it.n }}</span></div></sc-for>
+</div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isNote }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:clamp(40px,5vw,88px);padding-top:30px;animation:kfade .4s ease">
+<div style="min-width:0">
+<div style="display:flex;align-items:baseline;gap:10px;font:400 14px Jost;white-space:nowrap;overflow:hidden"><span onClick="{{ goIndex }}" style="color:var(--k-mute);cursor:pointer">Keep</span><span style="color:var(--k-line)">/</span><span onClick="{{ goIndex }}" style="color:var(--k-mute);cursor:pointer">Notes</span><span style="color:var(--k-line)">/</span><span style="overflow:hidden;text-overflow:ellipsis">{{ note.title }}</span></div>
+<div style="max-width:760px">
+<h1 style="font:300 clamp(52px,5vw,80px)/1 'Cormorant Garamond',serif;margin:30px 0 0;text-wrap:balance">{{ note.title }}</h1>
+<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-top:14px;font:400 14px Jost;color:var(--k-mute)"><span style="color:var(--k-goldt)">{{ note.space }}</span><span>{{ note.edited }}</span><span>{{ note.words }}</span></div>
+<div style="margin-top:34px;border-top:1px solid var(--k-line);padding-top:28px">
+<sc-for list="{{ note.blocks }}" as="b">
+<sc-if value="{{ b.isP }}"><p style="margin:0 0 18px;font:400 17.5px/1.75 Jost;text-wrap:pretty">{{ b.text }}</p></sc-if>
+<sc-if value="{{ b.isH }}">
+<div onClick="{{ b.toggle }}" style="display:flex;align-items:baseline;gap:16px;margin:34px 0 10px;padding-bottom:10px;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="font:300 32px/1.15 'Cormorant Garamond',serif;flex:1">{{ b.text }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ b.count }}</span><span style="font:300 20px Jost;color:var(--k-mute)">{{ b.sign }}</span></div>
+</sc-if>
+<sc-if value="{{ b.isQ }}"><p style="margin:0 0 14px;padding-left:22px;font:italic 300 23px/1.45 'Cormorant Garamond',serif;text-wrap:pretty">{{ b.text }}</p></sc-if>
+<sc-if value="{{ b.isLink }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--k-line)">
+<span style="font:400 16.5px/1.4 Jost">{{ b.text }}</span>
+<span style="font:400 13px Jost;color:var(--k-goldt);white-space:nowrap;cursor:pointer">{{ b.domain }} →</span>
+</div>
+</sc-if>
+<sc-if value="{{ b.isRich }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:22px;align-items:start;margin:6px 0 22px;padding:18px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line);cursor:pointer">
+<div style="min-width:0"><div style="font:300 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">{{ b.text }}</div><div style="font:400 14px/1.55 Jost;color:var(--k-mute);margin-top:6px;text-wrap:pretty">{{ b.desc }}</div><div style="font:400 13px Jost;color:var(--k-goldt);margin-top:10px">{{ b.domain }} →</div></div>
+<div style="height:100px;border:1px dashed var(--k-line);display:flex;align-items:center;justify-content:center;font:500 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">Link image</div>
+</div>
+</sc-if>
+</sc-for>
+<div style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-mute);padding-top:10px">Keep writing…</div>
+</div>
+</div>
+</div>
+
+<div style="padding-top:96px">
+<div style="display:flex;align-items:center;gap:18px;padding-bottom:18px">
+<span onClick="{{ toggleKept }}" style="display:flex;align-items:center;gap:8px;font:400 14px Jost;color:{{ keptColor }};cursor:pointer;white-space:nowrap"><span style="width:8px;height:8px;border:1px solid var(--k-gold);background:{{ keptFill }}"></span>{{ keptLabel }}</span>
+<span style="margin-left:auto;font:400 14px Jost;color:var(--k-mute);cursor:pointer">Share</span>
+<span style="font:400 18px Jost;color:var(--k-mute);cursor:pointer;letter-spacing:.1em">···</span>
+</div>
+<sc-for list="{{ about }}" as="p">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:15px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}"><div style="padding:0 0 18px;display:grid;gap:10px;animation:kfade .3s ease">
+<sc-for list="{{ p.items }}" as="it"><div style="display:flex;align-items:baseline;gap:12px"><span style="flex:1;font:{{ it.font }};min-width:0;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">{{ it.meta }}</span></div></sc-for>
+<span style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer">{{ p.add }}</span>
+</div></sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line);padding-top:16px;font:400 13px Jost;color:var(--k-mute);cursor:pointer">Delete this note</div>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="position:fixed;left:32px;bottom:24px;z-index:26;display:flex;align-items:baseline;gap:10px;padding:9px 16px;white-space:nowrap;background:var(--k-bg);border:1px solid var(--k-line)"><span style="font:italic 300 20px 'Cormorant Garamond',serif">Notepad</span></div>
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--k-deep);color:var(--k-ondeep);white-space:nowrap"><span style="font:300 20px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const NOTES=[
+ {id:'rls',title:'RLS Approach',space:'Somatic Studio',when:'An hour ago',g:'Today',snip:'Based on BBTRS and Zazen, and disidentification.',edited:'Edited an hour ago',words:'186 words',terms:['restless legs','somatic'],
+  blocks:[['p','Based on BBTRS and Zazen, and disidentification.'],['p','The goal is to be clear about what part has affected the nervous system, and how it still lives in sync with the nervous system.'],['h','Start with identification'],['q','What is the worst that could happen?'],['q','Who is it that cares so much?'],['q','What is the story?'],['q','Where do you feel it in the body? How does the rest of the body feel? How does the face feel, the eyes? The brain?'],['h','Then disidentify'],['q','Who is aware of this?'],['q','Can you rest as the one who notices?']]},
+ {id:'move',title:'Movement Instagram videos',space:'Body / Health',when:'Yesterday',g:'This week',snip:'18 links – drills, neck release, stretches before bed',edited:'Edited yesterday',words:'18 links',terms:['back stretches'],
+  blocks:[['h','Neck and upper back'],['l','2 exercises to remove the hump','instagram.com'],['l','Neck hump exercises','instagram.com'],['l','Mike Chang – stiff neck release','instagram.com'],['l','“Ultimate neck release”','instagram.com'],['l','Hump release using a stick','instagram.com'],['l','Upper back pain using a towel','instagram.com'],['h','Fluid and loose'],['l','5 drills to become more fluid','instagram.com'],['l','A movement praised by the world','instagram.com'],['l','Simple shake to change energy','instagram.com'],['l','Wake-up shake','instagram.com'],['h','Before bed'],['l','5 moves before bed','instagram.com'],['l','Gentle bed stretches','instagram.com'],['l','Lower back and hips','instagram.com'],['l','Pelvic tilts','instagram.com'],['l','5 exercises before sleeping','instagram.com']]},
+ {id:'brand',title:'Koyeba brand meaning',space:'Koyeba',when:'Yesterday',g:'This week',snip:'Logo says Koyeba in Mandombe script.',edited:'Edited yesterday',words:'14 words · 1 link',terms:['logo','Mandombe'],
+  blocks:[['p','Logo says Koyeba in Mandombe script.'],['p','Read more about Mandombe here:'],['r','Mandombe: a spiritual heritage in the service of African languages','nofi.media','A spiritual and cultural heritage of the Kimbanguists, used to write Kikongo, Lingala and more.']]},
+ {id:'w',title:'Watercolour',space:'Art',when:'Tuesday',g:'This week',snip:'Wet on wet, then lift with a dry brush. Ultramarine and burnt sienna for greys.',blocks:[['p','Wet on wet, then lift with a dry brush.']]},
+ {id:'shop',title:'Ideas for the shop',space:'Art',when:'Monday',g:'This week',snip:'Small originals first, prints later. Price by size.',blocks:[['p','Small originals first, prints later.']]},
+ {id:'frog',title:'The Frog – cancelled bookings',space:'Business',when:'28 Oct',g:'Earlier in October',snip:'Refund proposal. Reply to the three families by Friday.',blocks:[['p','Refund proposal.']]},
+ {id:'pt',title:'Portuguese – verbs that trip me up',space:'Língua Portuguesa',when:'24 Oct',g:'Earlier in October',snip:'Ficar, deixar, levar, trazer…',blocks:[['p','Ficar, deixar, levar, trazer.']]},
+ {id:'hp',title:'Holmes Place – routine',space:'Body / Health',when:'19 Oct',g:'Earlier in October',snip:'Mobility 10 min, then strength, then sauna.',blocks:[['p','Mobility, strength, sauna.']]},
+ {id:'zen',title:'Zazen – notes from Sunday sit',space:'Zen',when:'12 Oct',g:'Earlier in October',snip:'Counting breaths to ten. Losing count is the practice.',blocks:[['p','Counting breaths to ten.']]}
+];
+const SPACES=[['Art',23],['Body / Health',14],['Koyeba',9],['Somatic Studio',7],['Business',12],['Língua Portuguesa',6],['Zen',5]];
+class Component extends DCLogic {
+  state={view:'index',noteId:'rls',order:'recent',q:'',space:null,shut:{},hShut:{},side:{spaces:true,pinned:true},about:{spaces:true,find:true,linked:true,people:false},kept:{rls:true,brand:true},night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),q=st.q.trim().toLowerCase();
+    const open=id=>()=>{set({view:'note',noteId:id});window.scrollTo(0,0);};
+    let list=NOTES.filter(n=>(!st.space||n.space===st.space)&&(!q||(n.title+' '+n.snip+' '+n.space).toLowerCase().includes(q)));
+    let gs=[];
+    if(st.order==='recent'){['Today','This week','Earlier in October'].forEach(g=>{const it=list.filter(n=>n.g===g);if(it.length)gs.push([g,it]);});}
+    else if(st.order==='space'){[...new Set(list.map(n=>n.space))].forEach(s=>gs.push([s,list.filter(n=>n.space===s)]));}
+    else gs=[['A – Z',list.slice().sort((a,b)=>a.title.localeCompare(b.title))]];
+    const groups=gs.map(([label,it])=>{const o=!st.shut[label];return {label,count:it.length,open:o,sign:o?'−':'+',toggle:()=>set({shut:{...st.shut,[label]:o}}),items:it.map(n=>({...n,open:open(n.id)}))};});
+    const orders=[['recent','Recent'],['space','By Space'],['az','A – Z']].map(([id,label])=>({label,color:st.order===id?'var(--k-ink)':'var(--k-mute)',line:st.order===id?'var(--k-gold)':'transparent',pick:()=>set({order:id})}));
+    const pinned=NOTES.filter(n=>st.kept[n.id]);
+    const side=[
+      {id:'pinned',title:'Kept close',count:pinned.length,items:pinned.map(n=>({label:n.title,n:'',color:'var(--k-ink)',go:open(n.id)}))},
+      {id:'spaces',title:'By Space',count:SPACES.length,items:SPACES.map(([s,n])=>({label:s,n:String(n),color:st.space===s?'var(--k-goldt)':'var(--k-ink)',go:()=>set({space:st.space===s?null:s})}))}
+    ].map(p=>{const o=!!st.side[p.id];return {...p,open:o,sign:o?'−':'+',toggle:()=>set({side:{...st.side,[p.id]:!o}})};});
+    const n=NOTES.find(x=>x.id===st.noteId)||NOTES[0];
+    let curH=null,blocks=[];const hCount={};
+    n.blocks.forEach(b=>{if(b[0]==='h')curH=b[1];else if(curH)hCount[curH]=(hCount[curH]||0)+1;});
+    curH=null;
+    n.blocks.forEach((b,i)=>{const [k,text,dom,desc]=b;
+      if(k==='h'){curH=text;const o=!st.hShut[n.id+text];blocks.push({isH:true,text,count:o?'':hCount[text]+(n.id==='move'?' links':' lines'),sign:o?'−':'+',toggle:()=>set({hShut:{...st.hShut,[n.id+text]:o}})});return;}
+      if(curH&&st.hShut[n.id+curH])return;
+      blocks.push({isP:k==='p',isQ:k==='q',isLink:k==='l',isRich:k==='r',text,domain:dom||'',desc:desc||''});});
+    const kept=!!st.kept[n.id];
+    const linkedItems=n.id==='rls'?[['Task · Try the RLS approach for a week','Somatic Studio'],['Event · Session with Tara','Thu 18:00']]:n.id==='brand'?[['Email · Ana – logo feedback','Tue'],['File · mandombe-koyeba.svg','SVG']]:[['Task · Do the neck routine daily','Body / Health']];
+    const about=[
+      {id:'spaces',title:'In Spaces',count:'1',items:[{label:n.space,meta:'',font:"300 21px 'Cormorant Garamond',serif"}],add:'+ Add to another Space'},
+      {id:'find',title:'Also findable as',count:String((n.terms||[]).length),items:(n.terms||[]).map(t=>({label:t,meta:'',font:"italic 300 20px 'Cormorant Garamond',serif"})),add:'+ Add a word'},
+      {id:'linked',title:'Linked',count:String(linkedItems.length),items:linkedItems.map(([l,m])=>({label:l,meta:m,font:'400 14.5px/1.4 Jost'})),add:'+ Task · File · Scan · Link'},
+      {id:'people',title:'Shared with',count:'0',items:[],add:'+ Share this note'}
+    ].map(p=>{const o=!!st.about[p.id];return {...p,open:o,sign:o?'−':'+',toggle:()=>set({about:{...st.about,[p.id]:!o}})};});
+    return {isIndex:st.view==='index',isNote:st.view==='note',groups,orders,side,q:st.q,onQ:e=>set({q:e.target.value}),
+      spaceOn:st.space||'',clearSpace:()=>set({space:null}),
+      note:{...n,blocks},about,goIndex:()=>set({view:'index'}),
+      keptLabel:kept?'Kept close':'Keep close',keptFill:kept?'var(--k-gold)':'transparent',keptColor:kept?'var(--k-goldt)':'var(--k-mute)',toggleKept:()=>set({kept:{...st.kept,[n.id]:!kept}}),
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

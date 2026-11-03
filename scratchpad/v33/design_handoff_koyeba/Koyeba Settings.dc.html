@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Settings – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);gap:clamp(40px,5vw,96px)">
+<div style="min-width:0;padding-top:48px;max-width:980px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Menu · Settings</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:14px 0 0">Settings</h1>
+<div style="font:italic 300 24px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px">Six things to tune. Everything else stays out of the way.</div>
+<div style="display:flex;justify-content:flex-end;gap:22px;padding:28px 0 10px;font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)"><span onClick="{{ openAll }}" style="cursor:pointer">Open all</span><span onClick="{{ foldAll }}" style="cursor:pointer">Fold all</span></div>
+
+<sc-for list="{{ sections }}" as="s" hint-placeholder-count="6">
+<div id="{{ s.anchor }}" style="border-top:1px solid var(--k-line)">
+<div onClick="{{ s.toggle }}" style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:22px 0;cursor:pointer">
+<span style="font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ s.num }}</span>
+<div style="min-width:0"><div style="font:300 clamp(30px,3vw,38px)/1.05 'Cormorant Garamond',serif">{{ s.title }}</div><sc-if value="{{ s.closed }}"><div style="font:400 14px Jost;color:var(--k-mute);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.hint }}</div></sc-if></div>
+<span style="font:300 24px Jost;color:var(--k-mute)">{{ s.sign }}</span>
+</div>
+<sc-if value="{{ s.open }}">
+<div style="padding:0 0 30px 52px;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+<sc-for list="{{ s.groups }}" as="g">
+<sc-if value="{{ g.hasLabel }}"><div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-mute);padding:18px 0 6px">{{ g.label }}</div></sc-if>
+<sc-for list="{{ g.rows }}" as="r">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 24px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)">
+<div style="min-width:0"><div style="font:{{ r.font }};color:{{ r.color }}">{{ r.label }}</div><sc-if value="{{ r.hasSub }}"><div style="font:400 13px/1.5 Jost;color:var(--k-mute);margin-top:3px;text-wrap:pretty">{{ r.sub }}</div></sc-if></div>
+<div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 18px;font:400 14.5px Jost;white-space:nowrap">
+<sc-if value="{{ r.isToggle }}"><span onClick="{{ r.toggle }}" style="display:flex;align-items:center;gap:8px;cursor:pointer;color:{{ r.tColor }}"><span style="width:9px;height:9px;border:1px solid var(--k-gold);background:{{ r.tFill }}"></span>{{ r.tLabel }}</span></sc-if>
+<sc-for list="{{ r.choices }}" as="c"><span onClick="{{ c.pick }}" style="cursor:pointer;color:{{ c.color }};padding-bottom:2px;border-bottom:1px solid {{ c.line }}">{{ c.label }}</span></sc-for>
+<sc-for list="{{ r.links }}" as="l"><span style="cursor:pointer;color:{{ l.color }}">{{ l.label }}</span></sc-for>
+</div>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+</div>
+
+<div style="padding-top:220px">
+<div style="position:sticky;top:24px">
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--k-ink)">In Settings</div>
+<sc-for list="{{ index }}" as="i"><div onClick="{{ i.go }}" style="display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid var(--k-line);cursor:pointer"><span style="width:28px;font:italic 300 16px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ i.num }}</span><span style="font:300 21px 'Cormorant Garamond',serif">{{ i.title }}</span></div></sc-for>
+<div style="margin-top:28px;font:italic 300 19px/1.5 'Cormorant Garamond',serif;color:var(--k-mute)">Signed in as Robin Savile<br>Premium Plus</div>
+<div style="display:flex;gap:20px;margin-top:10px;font:400 14px Jost"><span style="color:var(--k-goldt);cursor:pointer">Admin</span><span style="color:var(--k-mute);cursor:pointer">Sign out</span></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const R=['I','II','III','IV','V','VI'];
+const T=(k,label,sub,def)=>({k,label,sub,type:'t',def});
+const C=(k,label,sub,opts,def)=>({k,label,sub,type:'c',opts,def});
+const L=(label,sub,links,muted)=>({label,sub,type:'l',links,muted});
+const SECTIONS=[
+ {id:'you',title:'You',hint:'Robin Savile · robin@lumley-savile.com · two-step sign-in on',groups:[
+  ['',[L('Robin Savile','robin@lumley-savile.com · +351 927 494 927',['Edit']),L('Also sign in with','robin@incremento.co, robin@robinsavile.com, robin@stonegrinder.co and 4 more',['Manage','+ Add']),L('Your Koyeba card','The card people get when they scan your code',['See it','Edit'])]],
+  ['Security',[T('twofa','Two-step sign-in','A code from your authenticator app after your email code',true)]]]},
+ {id:'plan',title:'Plan and AI',hint:'Premium Plus – the AI is run for you',groups:[
+  ['',[C('plan','Premium Plus · €13 a month','We run the AI for you – no keys, nothing to set up',['Premium Plus','Premium – your own key'],0),C('bill','Billing','Annual is the better value',['Monthly','Annual'],0),T('ai','Use AI at all','The master switch. Everything still works without it',true)]],
+  ['Where Koyeba uses AI',[T('a1','Reflection companion','Gentle coaching, dream reflections, Compass',true),T('a2','I Ching and horoscope','Readings and your daily horoscope',true),T('a3','Reviews','Sums up the period and matches open tasks',true),T('a4','Email Scribe','Drafts replies in your own voice',true),T('a5','Money','Reads statements into tidy transactions',true),T('a6','Event import','Reads events from a file, flyer, photo or page',true),T('a7','Voice journaling','Turns a recording into a written entry',true),T('a8','Smarter search','Finds what you meant, in other words and languages',true)]]]},
+ {id:'look',title:'How it looks and works',hint:'Night follows sunset · week starts Monday · euros · 23 October',groups:[
+  ['',[C('theme','Day and night','Auto follows your local sunrise and sunset',['Auto','Day','Night'],0),C('week','Week starts on','Sets your weekly review window',['Monday','Sunday'],0),C('cur','Currency','',['€ Euro','£ Pound','$ Dollar'],0),C('date','Dates read as','',['23 October','October 23','23/10'],0)]],
+  ['Tools you use',[T('t1','Mail','',true),T('t2','Calendar','',true),T('t3','Tasks','',true),T('t4','Notes','',true),T('t5','Discover','',true),T('t6','Goals','',true),T('t7','Money','',true),T('t8','Read and Watch','',true),T('t9','Flow','',true)]],
+  ['Reflection tools',[T('r1','Journal','',true),T('r2','Dreams','',true),T('r3','Coaching','',true),T('r4','Compass','',true),T('r5','Spirit cards','',true),T('r6','I Ching','',true),T('r7','Horoscope','',true),T('r10','Tarot','',true),T('r8','Meditation','',false),T('r9','Insights','',true)]],
+  ['Your phone’s Today',[L('Notepad · Kept close · First tasks · Keep in touch · People online','Today and What next always stay at the top',['Rearrange'])]],
+  ['Notifications',[T('n1','New mail','At most one nudge every 30 minutes, never one per email',true),T('n2','A daily quote','One line on Today',true),C('bdays','Birthday reminders','The usual for everyone – change it for anyone on their contact card',['On the day','A day before','A week before','Off'],1),T('n3','Who’s online','Shows who’s around, and when someone wants to connect',true)]]]},
+ {id:'conn',title:'Connections',hint:'Google Calendar · Portugal and UK holidays · Fulham, Benfica, Napoli',groups:[
+  ['Calendars',[L('Google Calendar','robin@lumley-savile.com · connected',['Disconnect'],true),L('Add another calendar','More Google accounts (read-only), or iCloud, Yahoo and CalDAV (two-way)',['+ Google','+ iCloud or other'])]],
+  ['On your calendar',[L('Public holidays','Portugal, United Kingdom',['Change']),L('Teams you follow','Fulham, Benfica, Napoli – kick-off in your local time',['Change'])]],
+  ['Mail',[L('Mail accounts','robin@lumley-savile.com, robin@robinsavile.com',['Manage'])]],
+  ['Bring things in',[L('Notes','From Evernote, Notion, Obsidian, Bear or Apple Notes – each becomes its own page',['Choose files']),L('Contacts','A vCard from any address book',['Choose a file'])]]]},
+ {id:'people',title:'Invitations',hint:'22 invited · 12 joined · 10 waiting',groups:[
+  ['',[L('Invite someone','We send the email – they click one link and they’re in',['+ Invite'])]],
+  ['Waiting',[L('emailmarkhill@gmail.com','Premium for 24 months · sent',['Resend','Copy link','Cancel']),L('info@eddbateman.com','Premium for 120 months · sent',['Resend','Copy link','Cancel']),L('katarina.becic@gmail.com','Premium for 120 months · sent',['Resend','Copy link','Cancel']),L('taralumley@icloud.com','Premium Plus for 120 months · sent',['Resend','Copy link','Cancel']),L('And 6 more','',['Show all'])]],
+  ['Joined',[L('peter@lumley-savile.com · tigochi@me.com · ines_lanza@yahoo.it · and 9 more','',['Show all'],true)]]]},
+ {id:'data',title:'Your data',hint:'Hosted by Koyeba · never sold, never used to train a model',groups:[
+  ['',[C('host','Where it lives','Your own storage is on the way',['Hosted by Koyeba','Your own storage'],0),L('Take everything with you','A full export, any time',['Download']),L('How we handle your data','',['Read it'])]],
+  ['Leaving',[L('Sign out of this device','Anything not saved to your account is cleared from this browser',['Sign out']),L('Close your account','Erases your Koyeba and everything in it. It can’t be undone',['Close account…'],'danger')]]]}
+];
+class Component extends DCLogic {
+  state={open:{you:true},v:{},night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const val=(r)=>st.v[r.k]??r.def;
+    const sections=SECTIONS.map((s,i)=>{const o=!!st.open[s.id];return {num:R[i],title:s.title,hint:s.hint,anchor:'set-'+s.id,open:o,closed:!o,sign:o?'−':'+',toggle:()=>set({open:{...st.open,[s.id]:!o}}),
+      groups:s.groups.map(([label,rows])=>({label,hasLabel:!!label,rows:rows.map(r=>{const v=val(r);const base={label:r.label,sub:r.sub||'',hasSub:!!r.sub,font:r.muted===true?'400 16px Jost':"300 23px/1.2 'Cormorant Garamond',serif",color:'var(--k-ink)',isToggle:false,choices:[],links:[]};
+        if(r.type==='t')return {...base,font:'400 16px/1.4 Jost',isToggle:true,tLabel:v?'On':'Off',tFill:v?'var(--k-gold)':'transparent',tColor:v?'var(--k-goldt)':'var(--k-mute)',toggle:()=>set({v:{...st.v,[r.k]:!v}})};
+        if(r.type==='c')return {...base,font:'400 16px/1.4 Jost',choices:r.opts.map((o,j)=>({label:o,color:j===v?'var(--k-ink)':'var(--k-mute)',line:j===v?'var(--k-gold)':'transparent',pick:()=>set({v:{...st.v,[r.k]:j}})}))};
+        return {...base,font:r.label.includes('@')||r.label.includes(' · ')?'400 16px/1.4 Jost':base.font,links:r.links.map((l,j)=>({label:l,color:r.muted==='danger'?'var(--k-goldt)':(j===0?'var(--k-goldt)':'var(--k-mute)')}))};})}))};});
+    const index=SECTIONS.map((s,i)=>({num:R[i],title:s.title,go:()=>{this.setState({open:{...st.open,[s.id]:true}},()=>{const el=document.getElementById('set-'+s.id);if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-20,behavior:'smooth'});});}}));
+    return {sections,index,openAll:()=>{const o={};SECTIONS.forEach(s=>o[s.id]=true);set({open:o});},foldAll:()=>set({open:{}}),
+      dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Journal – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-soft:oklch(0.27 0.035 158)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder,textarea::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:100px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap;color:var(--k-mute)"><span>Search ⌘K</span><span>Menu</span></div>
+</div>
+</div>
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="padding:18px 0 0;font:400 14px Jost;display:flex;gap:8px;align-items:baseline"><span style="color:var(--k-gold)">←</span><a href="#">Reflection</a><span style="color:var(--k-mute)">·</span><span>Journal</span></div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:clamp(40px,5vw,96px);align-items:start">
+<div style="min-width:0;max-width:980px">
+<div style="padding:34px 0 0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Reflection · Journal</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:12px 0 0">Journal</h1>
+<div style="font:italic 300 26px/1.3 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:10px">Monday 2 November – today’s page</div>
+</div>
+
+<div style="margin-top:34px;padding-top:18px;border-top:1px solid var(--k-ink)">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 22px">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute);white-space:nowrap">Start with</span>
+<sc-for list="{{ kinds }}" as="k" hint-placeholder-count="6"><span onClick="{{ k.pick }}" style="cursor:pointer;white-space:nowrap;font:400 15px Jost;color:{{ k.color }};padding-bottom:3px;border-bottom:1px solid {{ k.line }}">{{ k.label }}</span></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-top:22px;animation:kfade .35s ease">
+<span style="font:italic 300 clamp(26px,2.6vw,34px)/1.3 'Cormorant Garamond',serif;color:var(--k-goldt);flex:1;min-width:280px;text-wrap:pretty">{{ prompt }}</span>
+<sc-if value="{{ hasMore }}"><span onClick="{{ nextPrompt }}" style="font:400 13.5px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Another question · {{ promptPos }}</span></sc-if>
+</div>
+<textarea value="{{ text }}" onChange="{{ onText }}" placeholder="Begin anywhere…" rows="6" style="display:block;width:100%;box-sizing:border-box;margin-top:16px;border:0;background:transparent;outline:none;resize:vertical;padding:0;font:300 clamp(23px,2.2vw,27px)/1.6 'Cormorant Garamond',serif;color:var(--k-ink)"></textarea>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;padding:14px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line)">
+<span style="font:400 13px Jost;color:var(--k-mute);flex:1;min-width:200px">{{ status }}</span>
+<span style="display:flex;align-items:center;gap:8px;font:500 10px Jost;letter-spacing:.24em;color:var(--k-mute);cursor:pointer"><span style="width:6px;height:6px;background:var(--k-gold)"></span>SPEAK</span>
+<span onClick="{{ keep }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;color:{{ keepColor }};cursor:pointer;white-space:nowrap">Keep this page ↵</span>
+</div>
+</div>
+
+<div style="margin-top:44px">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 24px"><span style="font:300 40px/1 'Cormorant Garamond',serif">Your pages</span><span style="font:400 13.5px Jost;color:var(--k-mute)">{{ pageCount }}</span>
+<div style="margin-left:auto;display:flex;align-items:center;gap:10px;min-width:220px;border-bottom:1px solid var(--k-line);padding:6px 0"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Look through your pages…" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 14.5px Jost;color:var(--k-ink)"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:16px;font:400 14px Jost"><sc-for list="{{ filters }}" as="f"><span onClick="{{ f.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ f.color }};padding-bottom:3px;border-bottom:1px solid {{ f.line }}">{{ f.label }}</span></sc-for></div>
+<sc-for list="{{ months }}" as="m" hint-placeholder-count="2">
+<div style="margin-top:26px">
+<div onClick="{{ m.toggle }}" style="display:flex;align-items:center;gap:12px;padding-bottom:4px;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ m.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ m.count }} pages</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:400 14px Jost;color:var(--k-mute)">{{ m.sign }}</span></div>
+<sc-if value="{{ m.open }}">
+<sc-for list="{{ m.items }}" as="e">
+<div onClick="{{ e.toggle }}" style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:20px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--k-line);cursor:pointer">
+<div><div style="font:500 13px Jost">{{ e.day }}</div><div style="font:400 12px Jost;color:var(--k-mute);margin-top:3px">{{ e.kind }}</div></div>
+<div style="min-width:0;font:300 22px/1.5 'Cormorant Garamond',serif;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:{{ e.clamp }};-webkit-box-orient:vertical;overflow:hidden">{{ e.text }}</div>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:150px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="2">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}">
+<div style="padding:0 0 22px;display:grid;gap:14px;animation:kfade .4s ease">
+<sc-for list="{{ p.items }}" as="it"><div><div style="font:400 12.5px Jost;color:var(--k-goldt)">{{ it.a }}</div><div style="font:300 20px/1.35 'Cormorant Garamond',serif;margin-top:3px;text-wrap:pretty">{{ it.b }}</div></div></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+<div style="font:400 12.5px/1.5 Jost;color:var(--k-mute);margin-top:12px">Only you can read these pages.</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const KINDS=[['free','Free write',['Don’t stop to edit. Whatever is in your head right now – keep the words coming.']],
+ ['day','Reflect on the day',['What happened today that I want to remember?','What went well today, and what part did I play in it?','What drained me today, and what is it telling me?','What did I learn today – about the world, or about myself?']],
+ ['grat','Gratitude',['Three things I’m grateful for right now, and why each one matters.','Who made my day a little better, and how?','What ordinary thing would I miss most if it were suddenly gone?']],
+ ['work','Work through something',['What is weighing on me right now? Let me name it plainly.','What am I telling myself about this – and what is the evidence for and against it?','What here is in my control, and what is not?','If a good friend brought me this exact problem, what would I tell them?']],
+ ['int','Set an intention',['In one sentence, what do I want tomorrow to be about?','What is the one thing that, done, would make tomorrow a win?','What is most likely to trip me up – and what is my plan for it?']],
+ ['dream','A dream',['Describe the dream in as much detail as you can remember – people, places, what happened.','What was the strongest feeling in the dream, and did it linger?','What felt most strange, vivid or important?']]];
+const KL=Object.fromEntries(KINDS.map(k=>[k[0],k[1]]));
+const PAGES=[
+ ['October 2026',[['Mon 26 Oct','free','I’m doing well. I’m focusing on what is important – getting my body in order, and the rest follows. Soon I will feel it properly.'],['Mon 19 Oct','free','Today was good. Good to get back to Holmes. Hard class, but I feel like I’m a bit better for it, and I just need to keep going.'],['Thu 15 Oct','grat','Maya, and the fact that she’s flourishing.'],['Thu 15 Oct','free','Through exercise and through Zazen, I feel my nervous system is coming into regulation.'],['Sun 11 Oct','free','Yesterday it was so good to do the Zazen day. Great people, great community.'],['Tue 6 Oct','work','Yesterday I had a real insight: that I am free inside me, somehow.'],['Thu 1 Oct','free','Last night was a lesson in the power of action – not hiding away in frozen fear, but driving all the way and seeing it through.']]],
+ ['September 2026',[['Mon 28 Sep','free','Feeling good tonight. The lack of toxins and the strength in the body – energy. That’s so important.'],['Fri 25 Sep','free','Discipline. Zazen every day, moving my body, waking up with movement. Drinking lots of water.'],['Wed 9 Sep','free','Chi Kung every day – hopefully. Tidy up, take the dog for a walk.'],['Fri 4 Sep','work','I just spoke to my brother Pete, who is in Spain having a nice holiday with Mum. That’s all cool.']]],
+ ['August 2026',[['Sun 16 Aug','free','Today I see I’m reaping the benefits of not smoking.'],['Tue 18 Aug','day','Today I learned about loving Mum regardless, and having clear, open communication with her.']]]];
+class Component extends DCLogic {
+  state={kind:'free',pi:0,text:'',kept:[],q:'',f:'all',mo:{'November 2026':true,'October 2026':true},open:null,so:{otd:true,threads:true},night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const K=KINDS.find(k=>k[0]===st.kind),ps=K[2];
+    const kinds=KINDS.map(([id,label])=>({label,color:st.kind===id?'var(--k-ink)':'var(--k-mute)',line:st.kind===id?'var(--k-gold)':'transparent',pick:()=>set({kind:id,pi:0})}));
+    let pages=PAGES.map(([m,a])=>[m,a.slice()]);
+    if(st.kept.length)pages=[['November 2026',st.kept.map(x=>['Mon 2 Nov',x[0],x[1]])],...pages];
+    const ql=st.q.trim().toLowerCase();
+    const months=pages.map(([label,a])=>{const items=a.filter(e=>(st.f==='all'||e[1]===st.f)&&(!ql||e[2].toLowerCase().includes(ql)));const op=!!st.mo[label]||!!ql;
+      return {label,count:items.length,open:op,sign:op?'−':'+',toggle:()=>set({mo:{...st.mo,[label]:!op}}),items:items.map((e,i)=>{const id=label+i,o=st.open===id;return {day:e[0],kind:KL[e[1]],text:e[2],clamp:o?'unset':'2',toggle:()=>set({open:o?null:id})};})};}).filter(m=>m.count);
+    const total=pages.reduce((s,[,a])=>s+a.length,0);
+    const filters=[['all','All'],...KINDS.map(k=>[k[0],k[1]])].map(([id,label])=>({label,color:st.f===id?'var(--k-ink)':'var(--k-mute)',line:st.f===id?'var(--k-gold)':'transparent',pick:()=>set({f:id})}));
+    const side=[
+     {id:'otd',title:'On this day',items:[{a:'A month ago · Fri 2 Oct',b:'“The power of action – not hiding away in frozen fear.”'},{a:'Three months ago · Sun 2 Aug',b:'You wrote about Mum, and about being heard.'}]},
+     {id:'threads',title:'What keeps coming up',items:[{a:'Zazen · 6 pages',b:'Mostly on good days.'},{a:'The body and energy · 5 pages',b:'Since you stopped smoking.'},{a:'Mum · 4 pages',b:'Softer in October than in August.'}]}
+    ].map(p=>({title:p.title,items:p.items,open:!!st.so[p.id],sign:st.so[p.id]?'−':'+',toggle:()=>set({so:{...st.so,[p.id]:!st.so[p.id]}})}));
+    const keep=()=>{const t=st.text.trim();if(!t)return;set({kept:[[st.kind,t],...st.kept],text:'',mo:{...st.mo,'November 2026':true}});};
+    return {kinds,prompt:ps[st.pi%ps.length],hasMore:ps.length>1,promptPos:(st.pi%ps.length+1)+' of '+ps.length,nextPrompt:()=>set({pi:st.pi+1}),
+      text:st.text,onText:e=>set({text:e.target.value}),status:st.text.trim()?'Kept as you write · '+st.text.trim().split(/\s+/).length+' words':(st.kept.length?'Kept. Start another, or close the page.':'Nothing yet – one line is enough.'),
+      keep,keepColor:st.text.trim()?'var(--k-goldt)':'var(--k-mute)',pageCount:total+' pages since August',
+      q:st.q,onQ:e=>set({q:e.target.value}),filters,months,side,dayOn:!st.night,nightOn:st.night};
+  }
+}
+</script>
+</body>
+</html>

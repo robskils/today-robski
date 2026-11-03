@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Reflection – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input,textarea{font:inherit;color:inherit;background:transparent;border:0;outline:0;resize:none}input::placeholder,textarea::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:72px;display:flex;align-items:center;gap:30px">
+<div onClick="{{ goHub }}" style="display:flex;align-items:center;gap:10px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:24px;width:auto;display:block"></sc-if><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="display:flex;gap:24px;font:400 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span style="color:var(--k-ink);border-bottom:1px solid var(--k-gold);padding-bottom:4px">Reflection</span><span>Money</span></div>
+<div style="margin-left:auto;display:flex;gap:22px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Search ⌘K</span><span onClick="{{ toggleNight }}" style="color:var(--k-mute);cursor:pointer">{{ nightLabel }}</span><span style="padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<sc-if value="{{ deep }}"><div style="display:flex;align-items:baseline;gap:10px;padding-top:30px;font:400 14px Jost;white-space:nowrap"><span style="color:var(--k-mute)">Reflection</span><span style="color:var(--k-line)">/</span><span onClick="{{ goHub }}" style="color:var(--k-mute);cursor:pointer">Reflection</span><span style="color:var(--k-line)">/</span><span>{{ pageTitle }}</span></div></sc-if>
+
+<sc-if value="{{ isHub }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:clamp(40px,5vw,96px);padding-top:48px;animation:kfade .4s ease">
+<div style="min-width:0">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Reflection · Reflection</span></div>
+<h1 style="font:300 clamp(64px,6vw,96px)/.95 'Cormorant Garamond',serif;margin:14px 0 0">Reflection</h1>
+<div style="font:italic 300 24px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px;max-width:640px">A quiet corner to sit and check in. You last wrote three days ago – you said you were tired.</div>
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 26px;margin-top:40px;padding:14px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line)">
+<span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">Lately</span>
+<sc-for list="{{ filters }}" as="f"><span onClick="{{ f.pick }}" style="font:400 14.5px Jost;cursor:pointer;white-space:nowrap;color:{{ f.color }};padding-bottom:3px;border-bottom:1px solid {{ f.line }}">{{ f.label }}</span></sc-for>
+<span style="margin-left:auto;font:400 13px Jost;color:var(--k-mute);white-space:nowrap">38 entries · 3 this week</span>
+</div>
+<sc-for list="{{ lately }}" as="e" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:20px;align-items:baseline;padding:18px 0;border-bottom:1px solid var(--k-line)">
+<span style="font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">{{ e.kind }}</span>
+<div style="min-width:0"><div style="font:{{ e.font }};text-wrap:pretty">{{ e.title }}</div><sc-if value="{{ e.hasQ }}"><div style="font:italic 300 19px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:4px;text-wrap:pretty">{{ e.q }}</div></sc-if></div>
+<span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ e.when }}</span>
+</div>
+</sc-for>
+</div>
+<div style="padding-top:150px">
+<div style="padding:22px 0 24px;border-top:1px solid var(--k-gold);border-bottom:1px solid var(--k-line)"><div style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:var(--k-goldt)">Today’s card</div><div style="font:300 34px/1.1 'Cormorant Garamond',serif;margin-top:10px">Wonder</div><div style="font:italic 300 20px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:6px">Look again – you’ve stopped seeing what’s in front of you.</div></div>
+<div style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;padding:26px 0 6px">Practices</div>
+<sc-for list="{{ practices }}" as="p" hint-placeholder-count="8"><div onClick="{{ p.go }}" style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:baseline;padding:14px 0;border-top:1px solid var(--k-line);cursor:pointer" style-hover="color:var(--k-goldt)"><span style="font:italic 300 18px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ p.num }}</span><div><div style="font:300 26px/1.1 'Cormorant Garamond',serif">{{ p.label }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:3px">{{ p.hint }}</div></div></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCards }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(40px,6vw,120px);padding-top:40px;animation:kfade .4s ease;align-items:start">
+<div>
+<h1 style="font:300 clamp(56px,5vw,84px)/.95 'Cormorant Garamond',serif;margin:0">Spirit cards</h1>
+<div style="font:italic 300 22px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px;max-width:520px">Draw one when you need a word. Seventeen taken since September.</div>
+<div style="margin-top:40px;width:min(100%,380px);aspect-ratio:3/4.6;perspective:1600px">
+<div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .9s cubic-bezier(0.3,0.7,0.2,1);transform:{{ cardTurn }}">
+<div onClick="{{ flip }}" style="position:absolute;inset:0;cursor:pointer;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:oklch(0.22 0.035 158);background-image:repeating-linear-gradient(45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,oklch(0.74 0.12 76 / .08) 0 1px,transparent 1px 16px);border:1px solid oklch(0.74 0.12 76 / .7);outline:1px solid oklch(0.74 0.12 76 / .35);outline-offset:-10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px">
+<img src="assets/mandombe-ko-ivory.svg" alt="" style="width:30%;height:auto;opacity:.85">
+<span style="font:500 10px Jost;letter-spacing:.32em;text-transform:uppercase;color:oklch(0.72 0.13 75)">{{ backLabel }}</span>
+</div>
+<div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);background:oklch(0.975 0.012 85);color:oklch(0.22 0.018 60);border:1px solid oklch(0.72 0.13 75);padding:14px;box-sizing:border-box;display:flex;flex-direction:column">
+<div style="flex:1;min-height:0;position:relative;overflow:hidden;border:1px solid oklch(0.72 0.13 75 / .6);background:oklch(0.955 0.02 82)">
+<div style="position:absolute;left:0;right:0;top:{{ card.lineTop }};height:1px;background:oklch(0.72 0.13 75 / .7)"></div>
+<div style="position:absolute;left:50%;top:{{ card.cTop }};width:{{ card.cSize }};aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid oklch(0.72 0.13 75);border-radius:50%;background:{{ card.cFill }}"></div>
+<div style="position:absolute;left:50%;top:{{ card.c2Top }};width:{{ card.c2Size }};aspect-ratio:1;transform:translate(-50%,-50%);border:1px solid oklch(0.72 0.13 75 / .55);border-radius:50%"></div>
+<div style="position:absolute;left:50%;top:{{ card.gTop }};transform:translate(-50%,-50%);font:italic 300 clamp(96px,14vw,150px)/1 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70)">{{ card.initial }}</div>
+</div>
+<div style="text-align:center;padding:18px 12px 10px"><div style="font:italic 300 15px 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70)">{{ card.num }}</div><div style="font:300 38px/1 'Cormorant Garamond',serif;margin-top:6px">{{ card.name }}</div><div style="width:24px;height:1px;background:oklch(0.72 0.13 75);margin:12px auto"></div><div style="font:italic 300 19px/1.35 'Cormorant Garamond',serif;text-wrap:balance">{{ card.line }}</div></div>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:24px;font:400 14.5px Jost">
+<span onClick="{{ draw }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 20px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">Draw another</span>
+<span style="cursor:pointer;white-space:nowrap">Keep it in a Space…</span>
+<span style="color:var(--k-goldt);white-space:nowrap">Saved to your cards</span><span onClick="{{ flip }}" style="color:var(--k-mute);cursor:pointer;white-space:nowrap">Turn over</span>
+</div>
+</div>
+<div style="padding-top:10px">
+<div style="display:flex;flex-wrap:wrap;gap:12px;padding-bottom:22px"><sc-for list="{{ thumbs }}" as="t"><div style="flex:none;width:78px;height:108px;background:oklch(0.975 0.012 85);color:oklch(0.22 0.018 60);border:1px solid oklch(0.72 0.13 75);outline:1px solid oklch(0.72 0.13 75 / .5);outline-offset:-5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-sizing:border-box;padding:6px"><span style="font:italic 300 12px 'Cormorant Garamond',serif;color:oklch(0.55 0.11 70)">{{ t.num }}</span><span style="font:300 15px/1.1 'Cormorant Garamond',serif;text-align:center">{{ t.name }}</span></div></sc-for></div>
+<div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--k-ink)"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase">Cards you’ve taken</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ takenCount }}</span></div>
+<sc-for list="{{ taken }}" as="c" hint-placeholder-count="8"><div style="display:grid;grid-template-columns:72px 120px minmax(0,1fr);gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line);animation:{{ c.anim }}"><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ c.date }}</span><span style="font:300 23px 'Cormorant Garamond',serif;white-space:nowrap">{{ c.name }}</span><span style="font:italic 300 19px/1.35 'Cormorant Garamond',serif;color:var(--k-mute)">{{ c.line }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isChing }}">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,6vw,120px);padding-top:40px;animation:kfade .4s ease;align-items:start">
+<div>
+<h1 style="font:300 clamp(56px,5vw,84px)/.95 'Cormorant Garamond',serif;margin:0">I Ching</h1>
+<div style="font:italic 300 22px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px;max-width:540px">Hold a question in mind – open, not yes or no. Cast the coins six times and read what the moment reflects back.</div>
+<div style="margin-top:36px;padding:10px 0;border-bottom:1px solid var(--k-ink)"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="Your question, if you have one" style="width:100%;font:300 28px 'Cormorant Garamond',serif"></div>
+<div style="display:flex;align-items:center;gap:24px;margin-top:22px"><span onClick="{{ cast }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 20px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">{{ castLabel }}</span><span style="font:400 13px Jost;color:var(--k-mute)">{{ castHint }}</span></div>
+<sc-if value="{{ hasCast }}">
+<div key="{{ castKey }}" style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:28px;margin-top:36px;padding-top:28px;border-top:1px solid var(--k-gold);animation:kfade .6s ease">
+<div style="display:grid;gap:9px;align-content:start;padding-top:8px"><sc-for list="{{ hex.lines }}" as="l"><div style="display:flex;gap:{{ l.gap }}"><span style="height:7px;flex:1;background:{{ l.color }}"></span><sc-if value="{{ l.broken }}"><span style="height:7px;flex:1;background:{{ l.color }}"></span></sc-if></div></sc-for></div>
+<div><div style="display:flex;align-items:baseline;gap:14px"><span style="font:300 44px/1 serif">{{ hex.ch }}</span><span style="font:300 36px/1.1 'Cormorant Garamond',serif">{{ hex.name }}</span></div><div style="font:500 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;color:var(--k-goldt);margin-top:8px">{{ hex.sub }}</div><div style="font:400 16px/1.7 Jost;margin-top:14px;text-wrap:pretty">{{ hex.text }}</div></div>
+</div>
+</sc-if>
+</div>
+<div style="padding-top:10px">
+<div style="display:flex;align-items:baseline;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--k-ink)"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase">Past readings</span><span style="font:400 12px Jost;color:var(--k-mute)">12</span></div>
+<sc-for list="{{ readings }}" as="r" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:72px 64px minmax(0,1fr);gap:14px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--k-line)"><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ r.date }}</span><span style="font:300 24px serif;white-space:nowrap">{{ r.ch }}</span><div style="min-width:0"><div style="font:300 22px/1.2 'Cormorant Garamond',serif">{{ r.name }}</div><sc-if value="{{ r.hasQ }}"><div style="font:italic 300 18px/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:3px">{{ r.q }}</div></sc-if></div></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCompass }}">
+<div style="max-width:1100px;padding-top:40px;animation:kfade .4s ease">
+<h1 style="font:300 clamp(56px,5vw,84px)/.95 'Cormorant Garamond',serif;margin:0">Compass</h1>
+<div style="font:italic 300 22px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:12px;max-width:640px">Name the choice, then make the honest case for each side. Compass weighs it through a few lenses and shows where the weight falls. The call stays yours.</div>
+<div style="margin-top:36px;padding:10px 0;border-bottom:1px solid var(--k-ink)"><input placeholder="What are you deciding?" value="{{ dec }}" onChange="{{ onDec }}" style="width:100%;font:300 32px 'Cormorant Garamond',serif"></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px 56px;margin-top:30px">
+<sc-for list="{{ opts }}" as="o"><div><div style="display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--k-line)"><span style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ o.k }}</span><input placeholder="{{ o.ph }}" value="{{ o.name }}" onChange="{{ o.onName }}" style="flex:1;min-width:0;font:300 26px 'Cormorant Garamond',serif"></div><textarea rows="4" placeholder="The real case for it…" value="{{ o.why }}" onChange="{{ o.onWhy }}" style="width:100%;max-width:100%;box-sizing:border-box;margin-top:12px;font:400 16px/1.7 Jost;background-image:linear-gradient(var(--k-line) 1px,transparent 1px);background-size:100% 27.2px;background-position:0 26px"></textarea></div></sc-for>
+</div>
+<div style="margin-top:26px;font:300 24px/1.7 'Cormorant Garamond',serif;color:var(--k-mute)">It <span onClick="{{ cycUndo }}" style="color:var(--k-ink);border-bottom:1px dotted var(--k-gold);cursor:pointer">{{ undoWord }}</span>, it belongs to <span onClick="{{ cycSpace }}" style="color:var(--k-ink);border-bottom:1px dotted var(--k-gold);cursor:pointer">{{ spaceWord }}</span>, and it matters <span onClick="{{ cycTime }}" style="color:var(--k-ink);border-bottom:1px dotted var(--k-gold);cursor:pointer">{{ timeWord }}</span>.</div>
+<div style="display:flex;align-items:center;gap:24px;margin-top:26px"><span onClick="{{ weigh }}" style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:13px 20px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer;white-space:nowrap">Find my bearing</span></div>
+<sc-if value="{{ weighed }}">
+<div style="margin-top:36px;padding-top:26px;border-top:1px solid var(--k-gold);animation:kfade .6s ease">
+<div style="font:300 36px/1.2 'Cormorant Garamond',serif">The weight leans towards <i style="color:var(--k-goldt)">{{ leanName }}</i>.</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 40px;margin-top:20px"><sc-for list="{{ lenses }}" as="l"><div style="padding:14px 0;border-top:1px solid var(--k-line)"><div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt)">{{ l.k }}</div><div style="font:400 15px/1.6 Jost;margin-top:6px">{{ l.v }}</div></div></sc-for></div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isStars }}">
+<div style="max-width:900px;padding-top:40px;animation:kfade .4s ease">
+<h1 style="font:300 clamp(56px,5vw,84px)/.95 'Cormorant Garamond',serif;margin:0">Horoscope</h1>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:36px;padding:20px 0;border-top:1px solid var(--k-ink);border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ signs }}" as="s"><div><div style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">{{ s.k }}</div><div style="font:300 34px/1.1 'Cormorant Garamond',serif;margin-top:6px">{{ s.v }}</div></div></sc-for>
+</div>
+<div style="font:italic 300 22px/1.45 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:18px">Sun in Taurus – the bull: steady, sensual, devoted to what lasts.</div>
+<div style="margin-top:36px;padding-top:24px;border-top:1px solid var(--k-gold)"><div style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:var(--k-goldt)">Sunday 1 November</div>
+<div style="font:300 30px/1.35 'Cormorant Garamond',serif;margin-top:12px;text-wrap:pretty">A slow day suits you. Finish one thing properly rather than starting three – the Moon in your sixth house rewards care over speed.</div></div>
+<div style="display:flex;gap:26px;margin-top:22px;font:400 14px Jost;color:var(--k-mute)"><span style="cursor:pointer">Edit birth details</span><span>Born 13:43 · London</span></div>
+</div>
+</sc-if>
+</div>
+
+<div style="position:fixed;left:32px;bottom:24px;z-index:26;padding:9px 16px;white-space:nowrap;background:var(--k-bg);border:1px solid var(--k-line);font:italic 300 20px 'Cormorant Garamond',serif">Notepad</div>
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:26;display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--k-deep);color:var(--k-ondeep);white-space:nowrap"><span style="font:300 20px/1 Jost;color:var(--k-gold)">+</span><span style="font:italic 300 18px 'Cormorant Garamond',serif">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const CARDS=[['Wonder','Look again – you’ve stopped seeing what’s in front of you.'],['Beginning','You can start again, right now, in the middle of anything.'],['Enough','You are already enough. The rest is decoration.'],['Roots','Grow down before you grow up – depth is what holds the height.'],['Mystery','You don’t need the whole map to love the walk.'],['Faith','The sun doesn’t ask permission to rise. Neither should you.'],['Change','What feels like falling apart may be falling into place.'],['Patience','Some things only grow in the dark, and in their own time.'],['Stillness','The answer arrives when you stop chasing it.'],['Compassion','Everyone is carrying something unseen. Go gently, yourself included.']];
+const DATES=['1 Nov','28 Oct','27 Oct','27 Oct','26 Oct','23 Oct','15 Oct','11 Oct','29 Sep','23 Sep'];
+const READ=[['29 Oct','噬嗑','Biting Through → Innocence','“How is it all going? I feel like I’m just hanging in there.”'],['27 Oct','革','Revolution → Following','“Ok, as predicted, that was bad news. How does the future look afterwards?”'],['26 Oct','未濟','Before Completion → Conflict','“Will I be financially okay? I have great fear at the moment.”'],['24 Oct','晉','Progress',''],['23 Oct','臨','Approach → Great Possession',''],['11 Oct','豐','Abundance → Revolution','']];
+const HEX=[{ch:'泰',name:'Peace',sub:'Tài · Heaven and earth',text:'Heaven and earth in harmony – an open, flourishing time. Things flow and bonds thrive; enjoy it, and keep tending it.',l:[1,1,1,0,0,0],ch2:-1},{ch:'晉',name:'Progress',sub:'Jìn · The sun over the earth',text:'Steady advance, seen and recognised. Keep your light clear and let the progress be natural rather than forced.',l:[0,0,0,1,0,1],ch2:2}];
+const LATE=[['Card','Wonder','','Today'],['I Ching','Biting Through','“How is it all going? I feel like I’m just hanging in there and going a bit mad.”','3 days ago'],['Morning pages','I’m tired, often. Body I think is in recovery from years of abuse. Also absorbing the bad news about Bitmart.','','3 days ago'],['Card','Beginning','','4 days ago'],['Dream','I was at a party, or in a bar, and suddenly this loud group of wild people who were drinking a lot…','','4 days ago'],['I Ching','Revolution','“Ok, as predicted, that was bad news. How does the future look afterwards?”','4 days ago'],['Card','Enough','','4 days ago']];
+const PR=[['journal','Journal','Morning pages · last 3 days ago'],['dreams','Dreams','One this week'],['coach','Coaching','With your own key'],['compass','Compass','Weigh a decision'],['cards','Spirit cards','Wonder, today'],['ching','I Ching','Last cast 29 October'],['stars','Horoscope','Taurus · a slow day'],['insights','Insights','Patterns across your entries']];
+const R=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+const UND=['can be undone','can’t easily be undone'],SPS=['no Space in particular','Business','Money','Me'],TMS=['this year','this month','for years'];
+class Component extends DCLogic {
+  state={turned:true,view:'hub',filter:'all',card:0,draws:0,extra:[],q:'',cast:-1,casts:0,dec:'',opts:[{name:'',why:''},{name:'',why:''}],u:0,s:0,t:0,weighed:false,night:this.props.night??true};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),go=v=>()=>{set({view:v});window.scrollTo(0,0);};
+    const KF={all:null,journal:'Morning pages',dreams:'Dream',cards:'Card',ching:'I Ching'};
+    const lately=LATE.filter(([k])=>!KF[st.filter]||k===KF[st.filter]).map(([kind,title,q,when])=>({kind,title,q,hasQ:!!q,when,font:kind==='Morning pages'||kind==='Dream'?"italic 300 22px/1.4 'Cormorant Garamond',serif":"300 24px/1.2 'Cormorant Garamond',serif"}));
+    const filters=[['all','All'],['journal','Journal'],['dreams','Dreams'],['cards','Cards'],['ching','I Ching']].map(([id,label])=>({label,color:st.filter===id?'var(--k-ink)':'var(--k-mute)',line:st.filter===id?'var(--k-gold)':'transparent',pick:()=>set({filter:id})}));
+    const practices=PR.map(([id,label,hint],i)=>({num:R[i],label,hint,go:['cards','ching','compass','stars'].includes(id)?go(id):()=>{}}));
+    const c=CARDS[st.card%CARDS.length];
+    const taken=[...st.extra.map(e=>({...e,anim:'kfade .5s ease'})),...CARDS.map(([name,line],i)=>({date:DATES[i],name,line,anim:'none'}))];
+    const titles={cards:'Spirit cards',ching:'I Ching',compass:'Compass',stars:'Horoscope'};
+    const h=st.cast>=0?HEX[st.cast]:HEX[0];
+    const hex={...h,lines:h.l.slice().reverse().map((y,i)=>({broken:!y,gap:y?'0':'14px',color:(5-i)===h.ch2?'var(--k-gold)':'var(--k-ink)'}))};
+    const opts=st.opts.map((o,i)=>({k:i?'B':'A',ph:i?'Option B':'Option A',name:o.name,why:o.why,onName:e=>{const a=st.opts.slice();a[i]={...a[i],name:e.target.value};set({opts:a});},onWhy:e=>{const a=st.opts.slice();a[i]={...a[i],why:e.target.value};set({opts:a});}}));
+    const lean=st.opts[0].why.length>=st.opts[1].why.length?0:1;const ln=st.opts[lean].name||(lean?'B':'A');
+    return {isHub:st.view==='hub',isCards:st.view==='cards',isChing:st.view==='ching',isCompass:st.view==='compass',isStars:st.view==='stars',deep:st.view!=='hub',pageTitle:titles[st.view]||'',goHub:go('hub'),
+      lately,filters,practices,
+      card:(()=>{let h=0;for(const ch of c[0])h=(h*31+ch.charCodeAt(0))%997;const pick=(a)=>a[h%a.length];const v=pick([
+ {lineTop:'62%',cTop:'42%',cSize:'46%',cFill:'oklch(0.72 0.13 75 / .14)',c2Top:'42%',c2Size:'70%',gTop:'44%'},
+ {lineTop:'74%',cTop:'74%',cSize:'58%',cFill:'transparent',c2Top:'74%',c2Size:'86%',gTop:'50%'},
+ {lineTop:'38%',cTop:'60%',cSize:'34%',cFill:'oklch(0.72 0.13 75 / .18)',c2Top:'30%',c2Size:'18%',gTop:'58%'},
+ {lineTop:'50%',cTop:'50%',cSize:'64%',cFill:'transparent',c2Top:'50%',c2Size:'40%',gTop:'50%'},
+ {lineTop:'82%',cTop:'34%',cSize:'26%',cFill:'oklch(0.72 0.13 75 / .22)',c2Top:'34%',c2Size:'52%',gTop:'60%'}]);
+ return {name:c[0],line:c[1],num:R[st.card%10],initial:c[0][0],...v};})(),cardTurn:st.turned?'rotateY(180deg)':'none',backLabel:st.turned?'':'Tap to turn',flip:()=>set({turned:!st.turned}),thumbs:CARDS.slice(0,6).map(([n],i)=>({name:n,num:R[i]})),cardKey:'c'+st.draws,takenCount:String(17+st.extra.length),taken,
+      draw:()=>{const n=(st.card+1+Math.floor(Math.random()*8))%CARDS.length;set({turned:false,card:n,draws:st.draws+1,extra:[{date:'1 Nov',name:CARDS[n][0],line:CARDS[n][1]},...st.extra]});},
+      q:st.q,onQ:e=>set({q:e.target.value}),hasCast:st.cast>=0,castKey:'k'+st.casts,hex,castLabel:st.cast>=0?'Cast again':'Cast the coins',castHint:st.cast>=0?'Changing line in gold':'Six throws, all at once',
+      cast:()=>set({cast:(st.cast+1)%HEX.length,casts:st.casts+1}),
+      readings:READ.map(([date,ch,name,q])=>({date,ch,name,q,hasQ:!!q})),
+      dec:st.dec,onDec:e=>set({dec:e.target.value}),opts,
+      undoWord:UND[st.u],spaceWord:SPS[st.s],timeWord:TMS[st.t],cycUndo:()=>set({u:(st.u+1)%2}),cycSpace:()=>set({s:(st.s+1)%SPS.length}),cycTime:()=>set({t:(st.t+1)%3}),
+      weigh:()=>set({weighed:true}),weighed:st.weighed,leanName:ln,
+      lenses:[{k:'Regret',v:'In ten years, which would you be sorrier not to have tried?'},{k:'Undoing',v:st.u?'Hard to reverse – give it one more night.':'Easy to reverse – lean towards trying it.'},{k:'Your own words',v:'Your case for '+ln+' is the fuller one. That usually means something.'}],
+      signs:[{k:'Sun',v:'Taurus'},{k:'Moon',v:'Capricorn'},{k:'Rising',v:'Virgo'}],
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

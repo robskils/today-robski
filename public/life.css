@@ -5932,20 +5932,27 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 /* ── life areas ──────────────────────────────────── */
 /* the area picker on a note / table, styled as a quiet pill */
 .crumb-tools { display:flex; align-items:center; gap:8px; margin-left:auto; }
-.area-sel { padding:7px 12px; font-size:14.5px; background:var(--card); border:1px solid var(--line-2); border-radius:0; color:var(--ink-2); max-width:200px; }
+/* The picker is a quiet keyline control with its own chevron (appearance:none), so
+   it reads as Koyeba, not an OS form widget. The chevron sits inset from the right
+   edge, with text padded clear of it. (Robin.) */
+.area-pick { position:relative; display:inline-flex; }
+.area-pick::after { content:'⌄'; position:absolute; right:13px; top:50%; transform:translateY(-62%); font-size:13px; color:var(--mute); pointer-events:none; }
+.area-sel { -webkit-appearance:none; appearance:none; padding:8px 34px 8px 13px; font-size:14px; font-family:inherit; background:var(--card); border:1px solid var(--line-2); border-radius:0; color:var(--ink-2); max-width:220px; cursor:pointer; }
 .area-sel:hover { border-color:var(--accent); }
 .tbl-head .area-sel { margin-left:auto; }
 /* In the table header the whole life-areas group (chips + picker) sits right. */
 .tbl-head .note-areas { margin-left:auto; }
 .tbl-head .note-areas .area-sel { margin-left:0; }
-/* A note's life-area chips: one per area, each linking to its area and removable. */
-.note-areas { display:inline-flex; align-items:center; flex-wrap:wrap; gap:7px; }
-.area-chip-pick { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; font-size:13.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 42%,transparent); background:color-mix(in srgb,var(--c) 9%,transparent); border-radius:0; overflow:hidden; }
-.acp-link { display:inline-flex; align-items:center; gap:6px; padding:4px 5px 4px 11px; color:inherit; }
+/* A block's Space chips: one per space. The square keeps the space's colour; the
+   text and keyline stay on-brand (ivory on a keyline), never tinted - a tinted
+   chip read as a stray blue box on the forest. (Robin: make it less ugly.) */
+.note-areas { display:inline-flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.area-chip-pick { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:inline-flex; align-items:center; font-size:14px; color:var(--ink); border:1px solid var(--line-2); background:var(--card); border-radius:0; overflow:hidden; }
+.acp-link { display:inline-flex; align-items:center; gap:8px; padding:7px 7px 7px 12px; color:inherit; }
 .acp-link .cd { width:8px; height:8px; border-radius:0; background:var(--c); flex:none; }
 .acp-link:hover { text-decoration:underline; }
-.acp-x { padding:4px 9px 4px 5px; color:inherit; opacity:.5; font-size:15px; line-height:1; }
-.acp-x:hover { opacity:1; }
+.acp-x { padding:7px 11px 7px 6px; color:var(--mute); opacity:.75; font-size:15px; line-height:1; }
+.acp-x:hover { opacity:1; color:var(--ink); }
 
 .area-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; }
 .area-card { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); display:flex; align-items:center; gap:11px; text-align:left; padding:16px 17px; border:1px solid var(--line); border-left:4px solid var(--c); border-radius:0; background:var(--card); color:var(--ink); font-size:17px; box-shadow:var(--shadow); transition:border-color .12s,transform .08s; }
@@ -9937,17 +9944,16 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
    the thumb share one vertical centre (y=11 in a 22px-tall row); the ring is a
    box-shadow so it never shifts the thumb. (Robin: centre the box on the line.) */
 .gx-slide { position:relative; height:22px; margin-top:22px; }
-.gx-track { position:absolute; left:0; right:0; top:8px; height:6px; background:var(--k-soft); }
-.gx-slide .gc-bar { position:absolute; left:0; right:0; top:8px; height:6px; background:transparent; border:0; }
-.gx-slide .gc-bar > i { display:block; height:100%; background:var(--k-gold); }
-.gx-slider { position:absolute; left:0; top:0; width:100%; height:22px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; }
+/* The visible 6px line is drawn BY the native track itself (its background), not by a
+   separate overlay - so the browser centres the thumb on the real line by construction.
+   The gold fill rides a gradient hard-stop at --p (the live %). Thumb centres on the
+   6px track with the canonical margin-top:(track-thumb)/2 = (6-22)/2 = -8px. */
+.gx-slider { display:block; width:100%; height:22px; margin:0; padding:0; background:transparent; -webkit-appearance:none; appearance:none; cursor:pointer; }
 .gx-slider:focus { outline:none; }
-/* Runnable track fills the input's full height, so its centre is the row's centre;
-   the thumb then centres with margin-top:0 - sitting dead on the (absolutely-centred)
-   visual track, not above it. */
-.gx-slider::-webkit-slider-runnable-track { background:transparent; height:22px; border:0; }
-.gx-slider::-moz-range-track { background:transparent; height:22px; border:0; }
-.gx-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; margin-top:0; background:var(--k-gold); box-shadow:0 0 0 3px var(--k-panel),0 0 0 4px var(--k-gold); cursor:grab; transition:transform .12s ease; }
+.gx-slider::-webkit-slider-runnable-track { height:6px; border:0; border-radius:0; background:linear-gradient(90deg, var(--k-gold) 0, var(--k-gold) var(--p,0%), var(--k-soft) var(--p,0%), var(--k-soft) 100%); }
+.gx-slider::-moz-range-track { height:6px; border:0; border-radius:0; background:var(--k-soft); }
+.gx-slider::-moz-range-progress { height:6px; background:var(--k-gold); }
+.gx-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:22px; height:22px; margin-top:-8px; border-radius:0; background:var(--k-gold); box-shadow:0 0 0 3px var(--k-panel),0 0 0 4px var(--k-gold); cursor:grab; transition:transform .12s ease; }
 .gx-slider:active::-webkit-slider-thumb { transform:scale(1.08); }
 .gx-slider::-moz-range-thumb { box-sizing:border-box; width:22px; height:22px; background:var(--k-gold); border:3px solid var(--k-panel); box-shadow:0 0 0 1px var(--k-gold); border-radius:0; cursor:grab; }
 .gx-slider:focus-visible::-webkit-slider-thumb { outline:2px solid var(--k-gold); outline-offset:3px; }
@@ -12205,7 +12211,8 @@ body.mailsheet-open { overflow:hidden; }
 .cvx-foot-a { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); padding:0; }
 .cvx-foot-a:hover { color:var(--k-goldt); }
 .cvx-foot-del:hover { color:var(--k-goldt); }
-.cvx-cfoot2 { margin-top:22px; padding-bottom:48px; }
+.cvx-cfoot2 { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin-top:22px; padding-bottom:48px; }
+.cvx-cfoot2 .tf-label { margin:0; }
 .cv-coming-body { padding:4px 0 2px; }
 .cv-kitoff-l { margin:0; font-family:var(--k-serif); font-weight:300; font-size:20px; color:var(--k-mute); }
 .cv-kiton { margin-top:12px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); padding:0; }

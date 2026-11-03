@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Goals – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div id="top" style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:120px">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,48px);height:72px;display:flex;align-items:center;gap:clamp(16px,3vw,36px)">
+<a href="#top" style="display:flex;align-items:center;gap:12px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:26px;width:auto;display:block"></sc-if><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></a>
+<div style="display:flex;align-items:baseline;gap:12px;font:400 16px Jost;white-space:nowrap"><a href="#" style="color:var(--k-mute)">Reflection</a><span style="color:var(--k-line)">/</span><span>Goals</span></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:14px;width:min(300px,30vw);padding:9px 0;border-bottom:1px solid var(--k-line)"><span style="font:400 15px Jost;color:var(--k-mute);white-space:nowrap">Search</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">⌘K</span></div>
+<span onClick="{{ toggleNight }}" style="font:400 14px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">{{ nightLabel }}</span>
+</div>
+</div>
+
+<div style="max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,48px)">
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px;padding:52px 0 0">
+<div style="flex:1;min-width:300px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Reflection · Goals</span></div>
+<h1 style="font:300 clamp(72px,8vw,112px)/.9 'Cormorant Garamond',serif;margin:14px 0 0;letter-spacing:-.015em">Goals</h1>
+<div style="font:italic 300 clamp(22px,2.2vw,28px)/1.3 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:14px;text-wrap:pretty">{{ mood }}</div>
+</div>
+<div style="display:flex;align-items:center;gap:26px;padding-bottom:6px">
+<span onClick="{{ toggleBest }}" style="display:flex;align-items:center;gap:8px;font:400 14px Jost;color:{{ bestColor }};cursor:pointer;white-space:nowrap"><span style="width:8px;height:8px;border:1px solid var(--k-gold);background:{{ bestFill }}"></span>Highlight the best bits</span>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;background:var(--k-gold);color:oklch(0.22 0.018 60);white-space:nowrap;cursor:pointer">+ New goal</span>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 40px;margin-top:44px;border-bottom:1px solid var(--k-line)">
+<div style="display:flex;flex-wrap:wrap;gap:0 clamp(22px,3vw,44px)">
+<sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+<div onClick="{{ v.pick }}" style="padding:0 0 16px;border-bottom:1px solid {{ v.line }};margin-bottom:-1px;cursor:pointer;color:{{ v.color }}" style-hover="color:var(--k-goldt)">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:300 40px/1 'Cormorant Garamond',serif">{{ v.n }}</span><span style="font:400 16px Jost">{{ v.label }}</span></div>
+<div style="font:400 12.5px Jost;color:var(--k-mute);margin-top:6px;white-space:nowrap">{{ v.hint }}</div>
+</div>
+</sc-for>
+</div>
+<div style="margin-left:auto;display:flex;align-items:baseline;gap:18px;padding-bottom:18px;font:400 14px Jost">
+<span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)">Order</span>
+<sc-for list="{{ sorts }}" as="s" hint-placeholder-count="3"><span onClick="{{ s.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ s.color }}" style-hover="color:var(--k-goldt)">{{ s.label }}</span></sc-for>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:clamp(40px,5vw,80px);padding:0 0 60px;align-items:start">
+
+<div>
+<sc-if value="{{ isSpaces }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;justify-content:flex-end;gap:22px;padding:18px 0 10px;font:500 11px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-mute)"><span onClick="{{ openAll }}" style="cursor:pointer" style-hover="color:var(--k-goldt)">Open all</span><span onClick="{{ foldAll }}" style="cursor:pointer" style-hover="color:var(--k-goldt)">Fold all</span></div>
+<sc-for list="{{ spaces }}" as="s" hint-placeholder-count="6">
+<div style="border-top:1px solid var(--k-line)">
+<div onClick="{{ s.toggle }}" style="display:grid;grid-template-columns:30px minmax(0,1fr) auto auto;gap:18px;align-items:baseline;padding:22px 0;cursor:pointer">
+<span style="font:italic 300 21px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ s.num }}</span>
+<div style="min-width:0">
+<div style="display:flex;align-items:baseline;gap:14px;min-width:0"><span style="font:300 clamp(30px,3vw,38px)/1.05 'Cormorant Garamond',serif;white-space:nowrap">{{ s.name }}</span><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ s.count }}</span></div>
+<sc-if value="{{ s.closed }}"><div style="font:italic 300 19px/1.35 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.glimpse }}</div></sc-if>
+</div>
+<div style="display:flex;gap:6px;align-self:center">
+<sc-for list="{{ s.minis }}" as="mi"><span title="{{ mi.title }}" style="width:26px;height:1px;background:var(--k-line);position:relative"><span style="position:absolute;left:0;top:-1px;height:3px;width:{{ mi.pct }};background:var(--k-gold)"></span></span></sc-for>
+</div>
+<span style="font:300 24px Jost;color:var(--k-mute)">{{ s.sign }}</span>
+</div>
+<sc-if value="{{ s.open }}">
+<div style="padding:0 0 34px 48px;animation:kfade .45s cubic-bezier(0.2,0.7,0.2,1)">
+<sc-if value="{{ s.hasVision }}">
+<div style="display:grid;gap:14px;max-width:720px">
+<sc-for list="{{ s.vision }}" as="p">
+<p style="margin:0;font:italic 300 clamp(23px,2.2vw,27px)/1.45 'Cormorant Garamond',serif;text-wrap:pretty"><sc-for list="{{ p.parts }}" as="pt"><span style="color:{{ pt.color }};background:{{ pt.bg }};transition:color .4s ease,background .4s ease">{{ pt.t }}</span></sc-for></p>
+</sc-for>
+</div>
+<div style="display:flex;gap:24px;margin-top:16px;font:500 13px Jost"><span style="color:var(--k-mute);cursor:pointer" style-hover="color:var(--k-goldt)">Edit the vision</span></div>
+</sc-if>
+<sc-if value="{{ s.noVision }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px"><span style="font:italic 300 24px/1.4 'Cormorant Garamond',serif;color:var(--k-mute)">Picture this part of your life at its best.</span><span style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Write a vision →</span></div>
+</sc-if>
+<div style="margin-top:26px">
+<sc-for list="{{ s.goals }}" as="g">
+<div style="display:grid;grid-template-columns:18px minmax(0,1fr) 150px;gap:18px;align-items:center;padding:18px 0;border-top:1px solid var(--k-line)">
+<span onClick="{{ g.star }}" title="{{ g.starTitle }}" style="width:9px;height:9px;border:1px solid var(--k-gold);background:{{ g.starFill }};cursor:pointer;justify-self:center"></span>
+<div style="min-width:0"><div style="font:300 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">{{ g.title }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:4px">{{ g.meta }}</div></div>
+<div><div style="height:1px;background:var(--k-line);position:relative"><div style="position:absolute;left:0;top:-1px;height:3px;width:{{ g.pct }};background:var(--k-gold)"></div></div><div style="font:400 12px Jost;color:var(--k-mute);margin-top:8px;text-align:right">{{ g.pct }}</div></div>
+</div>
+</sc-for>
+<sc-if value="{{ s.noGoals }}"><div style="padding:16px 0;border-top:1px solid var(--k-line);font:400 14px Jost;color:var(--k-mute)">No goals yet.</div></sc-if>
+<div style="display:flex;gap:28px;padding-top:16px;border-top:1px solid var(--k-line);font:500 13px Jost"><span style="color:var(--k-goldt);cursor:pointer;white-space:nowrap">+ Add a goal</span><span style="color:var(--k-mute);cursor:pointer;white-space:nowrap">Open {{ s.name }} →</span></div>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+</sc-if>
+
+<sc-if value="{{ isList }}">
+<sc-for list="{{ listGroups }}" as="lg">
+<div style="margin-top:30px">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ lg.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ lg.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span></div>
+<sc-for list="{{ lg.goals }}" as="g">
+<div style="display:grid;grid-template-columns:18px minmax(0,1fr) 150px;gap:18px;align-items:center;padding:18px 0;border-bottom:1px solid var(--k-line);animation:kfade .4s ease">
+<span onClick="{{ g.star }}" style="width:9px;height:9px;border:1px solid var(--k-gold);background:{{ g.starFill }};cursor:pointer;justify-self:center"></span>
+<div style="min-width:0"><div style="font:300 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">{{ g.title }}</div><div style="font:400 13px Jost;margin-top:4px"><span style="color:var(--k-goldt)">{{ g.space }}</span><span style="color:var(--k-mute)"> · {{ g.meta }}</span></div></div>
+<div><div style="height:1px;background:var(--k-line);position:relative"><div style="position:absolute;left:0;top:-1px;height:3px;width:{{ g.pct }};background:var(--k-gold)"></div></div><div style="font:400 12px Jost;color:var(--k-mute);margin-top:8px;text-align:right">{{ g.pct }}</div></div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{ isBucket }}">
+<div style="padding:40px 0 0">
+<div style="font:italic 300 26px/1.4 'Cormorant Garamond',serif;color:var(--k-mute);max-width:620px;margin-bottom:28px">No deadlines, no progress bars. Just the things you’d like to have done, kept where you’ll see them again.</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:0 clamp(32px,4vw,64px)">
+<sc-for list="{{ bucket }}" as="b">
+<div onClick="{{ b.tick }}" style="display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;align-items:baseline;padding:20px 0;border-top:1px solid var(--k-line);cursor:pointer">
+<span style="font:italic 300 20px 'Cormorant Garamond',serif;color:var(--k-gold)">{{ b.num }}</span>
+<div><div style="font:300 26px/1.25 'Cormorant Garamond',serif;text-decoration:{{ b.strike }};color:{{ b.color }};text-wrap:pretty">{{ b.title }}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:4px">{{ b.meta }}</div></div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:30px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="2">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}">
+<div style="padding:0 0 24px;display:grid;gap:16px;animation:kfade .4s ease">
+<sc-for list="{{ p.items }}" as="it">
+<div><div style="font:300 20px/1.3 'Cormorant Garamond',serif;text-wrap:pretty">{{ it.text }}</div><div style="display:flex;gap:12px;align-items:baseline;margin-top:4px;font:400 12.5px Jost"><span style="color:var(--k-goldt)">{{ it.from }}</span><span style="margin-left:auto;color:var(--k-mute);white-space:nowrap">{{ it.act }}</span></div></div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line)"></div>
+</div>
+
+</div>
+</div>
+
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(760px,calc(100% - 40px));z-index:30;background:var(--k-deep);color:var(--k-ondeep);display:flex;align-items:center;gap:18px;padding:16px 24px;box-sizing:border-box">
+<span style="font:300 24px Jost;color:var(--k-gold)">+</span>
+<span style="flex:1;font:italic 300 22px 'Cormorant Garamond',serif;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Set something down…</span>
+<span style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.2);font:500 10px Jost;letter-spacing:.24em"><span style="width:6px;height:6px;background:var(--k-gold)"></span>SPEAK</span>
+<span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+// vision paragraphs: [text, best phrase]
+const SPACES=[
+ {id:'art',name:'Art',vision:[['Painting most of the time, selling art for good coin, and making a living out of it.','making a living out of it'],['RobinSavile.com doing great. I like the site, now it just needs some art.','now it just needs some art'],['Travelling around painting different beautiful places.','painting different beautiful places']],
+  goals:[['Do some really good watercolours','This quarter','11 of 20 tasks',55,true,3],['Get comfortable with mixing colours, and consistency','This quarter','2 of 10 tasks',20,false,5],['Sell some art from my website','This year','0 of 4 tasks',0,true,2]]},
+ {id:'body',name:'Body / Health',vision:[['Regular working out, cold showers, saunas, massages, eating fresh healthy food, leading to a very healthy, happy and strong body.','a very healthy, happy and strong body'],['Chi Kung, strength, yoga, flexible. No smoking, breathwork. Energy, strong, vibrant body. Keep going like this into old age.','Keep going like this into old age']],
+  goals:[['Get into peak physical condition','This quarter','7 of 10 tasks',70,true,1],['Holmes Place at least three times a week','This quarter','9 of 10 weeks',90,false,0]]},
+ {id:'business',name:'Business',vision:[['If I’m going to do it, stop fucking about, let’s get some serious money coming in. For my kids, for a house, for my wife. I need to provide.','For my kids, for a house, for my wife']],
+  goals:[['Get Stone Grinder going big time','This quarter','4 of 10 tasks',40,true,4],['Make the first euro from selling a product, digital or solid','This quarter','5 of 10 tasks',50,false,6]]},
+ {id:'lingua',name:'Língua Portuguesa',vision:[['Speaking Portuguese without thinking about it – at the market, with the neighbours, on the phone to the Câmara.','without thinking about it']],
+  goals:[['Pass the A2 exam','This year','14 of 24 lessons',58,true,8],['One conversation in Portuguese every day','This quarter','18 of 30 days',60,false,1]]},
+ {id:'music',name:'Music',vision:[['Making music most weeks, finishing tracks rather than starting them.','finishing tracks']],
+  goals:[['Finish three tracks','This quarter','1 of 3',33,false,9]]},
+ {id:'forro',name:'Forró',vision:[],goals:[['Dance at least once a week','This quarter','6 of 12 weeks',50,false,2]]},
+ {id:'books',name:'Books / Reading',vision:[],goals:[]},
+ {id:'zen',name:'Zen',vision:[['A calm mind most days. Twenty minutes of sitting, and kindness when I forget.','kindness when I forget']],
+  goals:[['Sit every morning for twenty minutes','This quarter','21 of 30 days',70,true,0]]}
+];
+const BUCKET=[['Paint for a week in the Alentejo','Art'],['A small show, somewhere in Lisbon','Art'],['Swim in the sea every month of a year','Body / Health'],['Read Pessoa in Portuguese','Língua Portuguesa'],['Dance forró in Caruaru, at São João','Forró'],['Release an album, even a small one','Music'],['Walk the Rota Vicentina','Body / Health'],['A ten-day silent retreat','Zen']];
+const VIEWS=[['spaces','By Space'],['starred','Starred'],['all','All goals'],['bucket','Bucket list']];
+const SORTS=[['starred','Starred first'],['close','Closest to done'],['touched','Recently touched']];
+const split=(text,best,on)=>{const i=best?text.indexOf(best):-1;if(i<0)return [{t:text,color:'inherit',bg:'transparent'}];
+  const dim=on?'var(--k-mute)':'inherit';return [{t:text.slice(0,i),color:dim,bg:'transparent'},{t:best,color:'var(--k-ink)',bg:on?'oklch(0.72 0.13 75 / .22)':'transparent'},{t:text.slice(i+best.length),color:dim,bg:'transparent'}];};
+class Component extends DCLogic {
+  state={view:'spaces',sort:'starred',open:{art:true},best:true,stars:{},bdone:{2:true},side:{starred:true,soon:true},night:!!this.props.night};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const isStar=(sid,g)=>st.stars[sid+g[0]]??g[4];
+    const order=(arr,sid)=>{const a=arr.slice();if(st.sort==='starred')a.sort((x,y)=>(isStar(sid||x._s,y)?1:0)-(isStar(sid||x._s,x)?1:0));else if(st.sort==='close')a.sort((x,y)=>y[3]-x[3]);else a.sort((x,y)=>x[5]-y[5]);return a;};
+    const mk=(sid,space,g)=>{const s=isStar(sid,g);return {title:g[0],space,meta:g[1]+' · '+g[2]+' · touched '+(g[5]===0?'today':g[5]+'d ago'),pct:g[3]+'%',starFill:s?'var(--k-gold)':'transparent',starTitle:s?'Starred':'Star',star:(e)=>{e.stopPropagation();set({stars:{...st.stars,[sid+g[0]]:!s}});}};};
+    const allGoals=SPACES.flatMap(s=>s.goals.map(g=>Object.assign(g.slice(),{_s:s.id,_n:s.name})));
+    const starredN=allGoals.filter(g=>isStar(g._s,g)).length;
+    const spaces=SPACES.map((s,i)=>{const open=!!st.open[s.id];return {name:s.name,num:ROMAN[i],count:s.goals.length?s.goals.length+(s.goals.length===1?' goal':' goals'):'No goals yet',
+      glimpse:s.vision.length?s.vision[0][0]:'No vision yet',open,closed:!open,sign:open?'−':'+',toggle:()=>set({open:{...st.open,[s.id]:!open}}),
+      minis:s.goals.map(g=>({pct:g[3]+'%',title:g[0]+' – '+g[3]+'%'})),
+      hasVision:s.vision.length>0,noVision:s.vision.length===0,vision:s.vision.map(([t,b])=>({parts:split(t,b,st.best)})),
+      goals:order(s.goals,s.id).map(g=>mk(s.id,s.name,g)),noGoals:s.goals.length===0};});
+    let listGroups=[];
+    if(st.view==='starred'||st.view==='all'){
+      const pool=allGoals.filter(g=>st.view==='all'||isStar(g._s,g));
+      const by=st.view==='starred'?[['Starred',pool]]:['This quarter','This year'].map(t=>[t,pool.filter(g=>g[1]===t)]);
+      listGroups=by.filter(([,a])=>a.length).map(([label,a])=>{const o=a.slice();if(st.sort==='close')o.sort((x,y)=>y[3]-x[3]);else if(st.sort==='touched')o.sort((x,y)=>x[5]-y[5]);else o.sort((x,y)=>(isStar(y._s,y)?1:0)-(isStar(x._s,x)?1:0));
+        return {label,count:a.length,goals:o.map(g=>mk(g._s,g._n,g))};});
+    }
+    const bucket=BUCKET.map(([t,sp],i)=>{const d=!!st.bdone[i];return {num:ROMAN[i],title:t,meta:d?sp+' · done':sp,strike:d?'line-through':'none',color:d?'var(--k-mute)':'inherit',tick:()=>set({bdone:{...st.bdone,[i]:!d}})};});
+    const counts={spaces:SPACES.length,starred:starredN,all:allGoals.length,bucket:BUCKET.length};
+    const hints={spaces:'Visions, then goals',starred:'What matters most',all:'Every goal, by when',bucket:'One day'};
+    const views=VIEWS.map(([id,label])=>{const on=st.view===id;return {label,n:counts[id],hint:hints[id],line:on?'var(--k-gold)':'transparent',color:on?'var(--k-ink)':'var(--k-mute)',pick:()=>set({view:id})};});
+    const sorts=SORTS.map(([id,label])=>({label,color:st.sort===id?'var(--k-ink)':'var(--k-mute)',pick:()=>set({sort:id})}));
+    const near=allGoals.filter(g=>g[3]>=60).sort((a,b)=>b[3]-a[3]);
+    const quiet=allGoals.filter(g=>g[5]>=5).sort((a,b)=>b[5]-a[5]);
+    const side=[
+      {id:'soon',title:'Nearly there',count:near.length,items:near.map(g=>({text:g[0],from:g._n,act:g[3]+'%'}))},
+      {id:'quiet',title:'Gone quiet',count:quiet.length,items:quiet.map(g=>({text:g[0],from:g._n,act:g[5]+' days'}))}
+    ].map(p=>{const open=!!st.side[p.id];return {...p,open,sign:open?'−':'+',toggle:()=>set({side:{...st.side,[p.id]:!open}})};});
+    const nearN=near.length;
+    return {views,sorts,spaces,listGroups,bucket,side,
+      isSpaces:st.view==='spaces',isList:st.view==='starred'||st.view==='all',isBucket:st.view==='bucket',
+      mood:st.view==='bucket'?'The bigger things, for one day.':allGoals.length+' goals across '+SPACES.length+' Spaces. '+['None','One','Two','Three','Four','Five'][nearN]+(nearN===1?' is':' are')+' nearly there.',
+      openAll:()=>{const o={};SPACES.forEach(s=>o[s.id]=true);set({open:o});},foldAll:()=>set({open:{}}),
+      toggleBest:()=>set({best:!st.best}),bestFill:st.best?'var(--k-gold)':'transparent',bestColor:st.best?'var(--k-goldt)':'var(--k-mute)',
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

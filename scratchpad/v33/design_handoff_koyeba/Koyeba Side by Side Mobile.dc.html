@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Side by side, mobile – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;background:#ebe8e1;font-family:'Jost',sans-serif;color:oklch(0.22 0.018 60)}
+a{color:oklch(0.22 0.018 60)}a:hover{color:oklch(0.55 0.11 70)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes kin{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes kback{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start;justify-content:center;padding:48px 32px">
+<div style="max-width:300px;padding-top:40px;display:grid;gap:14px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:oklch(0.72 0.13 75)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:oklch(0.55 0.11 70);white-space:nowrap">Side by side, on a phone</span></div>
+<div style="font:300 40px/1.05 'Cormorant Garamond',serif">One at a time, <i style="color:oklch(0.55 0.11 70)">never lost.</i></div>
+<div style="font:400 15px/1.65 Jost;color:oklch(0.46 0.022 70)">There’s no room for two panes, so the second one waits one tap away. The gold line at the top flips between them. Long-press an email to send it across.</div>
+<div style="display:grid;gap:8px;font:400 14px Jost;margin-top:6px">
+<span onClick="{{ demoPair }}" style="cursor:pointer;color:oklch(0.55 0.11 70)">Open Notes beside Mail →</span>
+<span onClick="{{ demoLong }}" style="cursor:pointer;color:oklch(0.55 0.11 70)">Long-press Ana’s email →</span>
+<span onClick="{{ reset }}" style="cursor:pointer;color:oklch(0.46 0.022 70)">Start again</span>
+</div>
+</div>
+
+<div style="width:390px;height:844px;background:oklch(0.975 0.012 85);border:1px solid rgba(0,0,0,.14);border-radius:46px;overflow:hidden;position:relative;box-sizing:border-box;flex:none">
+<div style="height:50px;display:flex;align-items:center;padding:0 32px;font:600 15px system-ui,sans-serif">09:14</div>
+
+<sc-if value="{{ hasPair }}">
+<div onClick="{{ flip }}" style="position:absolute;top:50px;left:0;right:0;height:40px;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid oklch(0.72 0.13 75);cursor:pointer;z-index:3;background:oklch(0.975 0.012 85);animation:kfade .35s ease">
+<span style="font:400 13.5px Jost;color:oklch(0.55 0.11 70);white-space:nowrap">{{ flipLabel }}</span>
+<span style="margin-left:auto;font:400 12.5px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">{{ pairName }}</span>
+<span onClick="{{ unpair }}" style="font:300 18px Jost;color:oklch(0.46 0.022 70);padding:8px 0 8px 10px">×</span>
+</div>
+</sc-if>
+
+<div key="{{ viewKey }}" style="position:absolute;top:{{ bodyTop }};left:0;right:0;bottom:88px;overflow:auto;padding:16px 24px 24px;animation:{{ viewAnim }}">
+<div style="font:500 10.5px Jost;letter-spacing:.26em;text-transform:uppercase;color:oklch(0.55 0.11 70)">{{ pane.group }}</div>
+<div style="font:300 48px/1 'Cormorant Garamond',serif;margin-top:8px">{{ pane.title }}</div>
+<div style="margin-top:18px;border-top:1px solid oklch(0.22 0.018 60)">
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+<div onClick="{{ r.tap }}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:15px 0;min-height:44px;box-sizing:border-box;border-bottom:1px solid oklch(0.88 0.014 80);background:{{ r.bg }};margin:0 -24px;padding-left:24px;padding-right:24px;cursor:pointer;animation:{{ r.anim }};transition:background .3s ease">
+<div style="min-width:0"><div style="font:{{ r.font }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.a }}</div><div style="font:400 14px/1.4 Jost;color:{{ r.bColor }};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.b }}</div></div>
+<span style="font:400 12.5px Jost;color:oklch(0.46 0.022 70);white-space:nowrap">{{ r.meta }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:88px;border-top:1px solid oklch(0.88 0.014 80);background:oklch(0.975 0.012 85);display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:10px 28px 0;box-sizing:border-box;z-index:4">
+<span style="justify-self:start;font:400 16px Jost;padding:12px 0">Contents</span>
+<span style="width:52px;height:52px;margin-top:-4px;display:flex;align-items:center;justify-content:center;background:oklch(0.72 0.13 75);font:300 30px/1 Jost">+</span>
+<span style="justify-self:end;font:400 16px Jost;padding:12px 0;color:oklch(0.46 0.022 70)">Search</span>
+</div>
+
+<sc-if value="{{ sheetOpen }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:oklch(0.22 0.018 60 / .28);z-index:6;animation:kfade .25s ease"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:oklch(0.99 0.006 85);border-top:1px solid oklch(0.88 0.014 80);padding:18px 24px 34px;z-index:7;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="width:36px;height:1px;background:oklch(0.46 0.022 70);margin:0 auto 18px"></div>
+<div style="font:300 26px/1.15 'Cormorant Garamond',serif">Ana Ribeiro</div>
+<div style="font:400 14px Jost;color:oklch(0.46 0.022 70);margin-top:2px">Class on Saturday</div>
+<div style="margin-top:16px;border-top:1px solid oklch(0.88 0.014 80)">
+<sc-for list="{{ sheetActs }}" as="a"><div onClick="{{ a.go }}" style="display:flex;align-items:baseline;gap:12px;padding:14px 0;min-height:44px;box-sizing:border-box;border-bottom:1px solid oklch(0.88 0.014 80);cursor:pointer"><span style="font:400 16.5px Jost;flex:1;color:{{ a.color }}">{{ a.label }}</span><span style="font:400 13px Jost;color:oklch(0.46 0.022 70)">{{ a.hint }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showToast }}">
+<div style="position:absolute;left:20px;right:20px;bottom:104px;z-index:5;display:flex;align-items:baseline;gap:14px;padding:14px 18px;background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85);font:400 14px Jost;animation:kfade .4s ease"><span style="flex:1">{{ toast }}</span><span onClick="{{ seeIt }}" style="font-weight:500;color:oklch(0.72 0.13 75);cursor:pointer;white-space:nowrap">See it</span></div>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const MAIL=[['Ana Ribeiro','Class on Saturday','18:42',true],['Sterling and Artefacto','My group starts on 16 November','08:01',true],['Priya Shah','Re: Harlow draft – a few notes','Yest',false],['Jackson’s Art','Your order is on its way','Yest',false],['Câmara Municipal de Lisboa','IMI – segunda prestação','Thu',false]];
+const NOTES=[['Watercolour','Wet on wet, then lift with a dry brush','1d'],['Colour mixing – what works','Three primaries only for a month','3d'],['Ideas for the shop','Small originals first, prints later','Oct'],['Artists to look at','Turner, Winslow Homer, Paula Rego','Oct']];
+class Component extends DCLogic {
+  state={view:'mail',pair:null,dir:0,k:0,sheet:false,linked:false,toast:null};
+  go(view,dir){this.setState(s=>({view,dir,k:s.k+1}));}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),isMail=st.view==='mail';
+    const rows=isMail?MAIL.map(([a,b,meta,u],i)=>({a,b,meta,font:u?"500 21px/1.15 'Cormorant Garamond',serif":"300 21px/1.15 'Cormorant Garamond',serif",bColor:'oklch(0.22 0.018 60)',bg:st.sheet&&i===0?'oklch(0.94 0.016 82)':'transparent',anim:'none',tap:i===0?()=>set({sheet:true}):undefined}))
+      :[...(st.linked?[{a:'Saturday class – wet on wet',b:'From Ana’s email',meta:'Now',font:"300 21px/1.15 'Cormorant Garamond',serif",bColor:'oklch(0.55 0.11 70)',bg:'transparent',anim:'kfade .6s ease'}]:[]),...NOTES.map(([a,b,meta])=>({a,b,meta,font:"300 21px/1.15 'Cormorant Garamond',serif",bColor:'oklch(0.46 0.022 70)',bg:'transparent',anim:'none'}))];
+    return {rows,pane:isMail?{group:'People',title:'Mail'}:{group:'Keep',title:'Notes'},
+      hasPair:!!st.pair,bodyTop:st.pair?'90px':'50px',flipLabel:isMail?'Notes is beside – tap to flip':'Back to Mail',pairName:'Mail with Notes',
+      flip:()=>this.go(isMail?'notes':'mail',isMail?1:-1),unpair:(e)=>{e.stopPropagation();set({pair:null});if(!isMail)this.go('mail',-1);},
+      viewKey:'v'+st.k,viewAnim:st.dir===1?'kin .45s cubic-bezier(0.2,0.7,0.2,1)':st.dir===-1?'kback .45s cubic-bezier(0.2,0.7,0.2,1)':'none',
+      sheetOpen:st.sheet,closeSheet:()=>set({sheet:false}),
+      sheetActs:[
+        {label:'Make a note beside',hint:'Notes',color:'oklch(0.55 0.11 70)',go:()=>{set({sheet:false,linked:true,pair:'notes',toast:'A linked note from Ana’s email, in Notes.'});}},
+        {label:'Make a task beside',hint:'Tasks',color:'oklch(0.55 0.11 70)',go:()=>set({sheet:false,toast:'A linked task from Ana’s email, in Tasks.'})},
+        {label:'Open Notes beside',hint:'Keep the pair',color:'oklch(0.22 0.018 60)',go:()=>set({sheet:false,pair:'notes'})},
+        {label:'Reply',hint:'',color:'oklch(0.22 0.018 60)',go:()=>set({sheet:false})}],
+      showToast:!!st.toast,toast:st.toast,seeIt:()=>{set({toast:null});this.go('notes',1);},
+      demoPair:()=>{set({pair:'notes',sheet:false,toast:null});if(!isMail)this.go('mail',-1);},
+      demoLong:()=>{if(!isMail)this.go('mail',-1);set({sheet:true,toast:null});},
+      reset:()=>this.setState({view:'mail',pair:null,dir:0,k:st.k+1,sheet:false,linked:false,toast:null})};
+  }
+}
+</script>
+</body>
+</html>

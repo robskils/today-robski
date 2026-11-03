@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Mail – Koyeba</title><style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;src:url('./fonts/CormorantGaramond-300-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;src:url('./fonts/CormorantGaramond-300.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-panel:oklch(0.99 0.006 85);--k-soft:oklch(0.94 0.016 82);--k-ink:oklch(0.22 0.018 60);--k-mute:oklch(0.46 0.022 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.55 0.11 70);--k-deep:oklch(0.28 0.04 155);--k-ondeep:oklch(0.975 0.012 85);background:var(--k-bg);color:var(--k-ink);transition:background .4s ease,color .4s ease}
+body.night{--k-bg:oklch(0.23 0.035 158);--k-panel:oklch(0.26 0.035 158);--k-soft:oklch(0.29 0.035 158);--k-ink:oklch(0.94 0.012 85);--k-mute:oklch(0.74 0.02 80);--k-line:oklch(0.36 0.03 158);--k-gold:oklch(0.74 0.12 76);--k-goldt:oklch(0.8 0.11 78);--k-deep:oklch(0.18 0.035 158);--k-ondeep:oklch(0.94 0.012 85)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input{font:inherit;color:inherit;background:transparent;border:0;outline:0}input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div id="top" style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:120px">
+
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,48px);height:72px;display:flex;align-items:center;gap:clamp(16px,3vw,36px)">
+<a href="#top" style="display:flex;align-items:center;gap:12px"><sc-if value="{{ dayOn }}" hint-placeholder-val="{{ true }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:26px;width:auto;display:block"></sc-if><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></a>
+<div style="display:flex;align-items:baseline;gap:12px;font:400 16px Jost;white-space:nowrap"><a href="#" style="color:var(--k-mute)">Tools</a><span style="color:var(--k-line)">/</span><span>Mail</span></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:14px;width:min(300px,30vw);padding:9px 0;border-bottom:1px solid var(--k-line)"><span style="font:400 15px Jost;color:var(--k-mute);white-space:nowrap">Search</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">⌘K</span></div>
+<span onClick="{{ toggleNight }}" style="font:400 14px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">{{ nightLabel }}</span>
+</div>
+</div>
+
+<div style="max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,48px)">
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px 40px;padding:52px 0 0">
+<div style="flex:1;min-width:300px">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:1px;background:var(--k-gold)"></span><span style="font:500 11px Jost;letter-spacing:.28em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">{{ eyebrow }}</span></div>
+<h1 style="font:300 clamp(72px,8vw,112px)/.9 'Cormorant Garamond',serif;margin:14px 0 0;letter-spacing:-.015em">Mail</h1>
+<div style="font:italic 300 clamp(22px,2.2vw,28px)/1.3 'Cormorant Garamond',serif;color:var(--k-mute);margin-top:14px">{{ mood }}</div>
+</div>
+<div style="display:flex;align-items:center;gap:26px;padding-bottom:6px">
+<div style="position:relative">
+<span onClick="{{ toggleAcct }}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--k-line);font:400 15px Jost;cursor:pointer;white-space:nowrap">{{ acctLabel }}<span style="font:300 16px Jost;color:var(--k-mute)">{{ acctSign }}</span></span>
+<sc-if value="{{ acctOpen }}">
+<div style="position:absolute;right:0;top:calc(100% + 8px);z-index:20;width:300px;background:var(--k-panel);border:1px solid var(--k-line);padding:8px 20px;animation:kfade .3s ease">
+<sc-for list="{{ accts }}" as="a">
+<div onClick="{{ a.pick }}" style="display:flex;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid var(--k-line);cursor:pointer;font:400 14.5px Jost;color:{{ a.color }}" style-hover="color:var(--k-goldt)"><span style="flex:1">{{ a.label }}</span><span style="font-size:12.5px;color:var(--k-mute)">{{ a.n }}</span></div>
+</sc-for>
+<div style="padding:12px 0 6px;font:500 13px Jost;color:var(--k-mute);cursor:pointer">Manage accounts →</div>
+</div>
+</sc-if>
+</div>
+<span style="font:400 14px Jost;color:var(--k-mute);cursor:pointer;white-space:nowrap">Guide</span>
+<span style="font:500 11px Jost;letter-spacing:.24em;text-transform:uppercase;padding:14px 22px;background:var(--k-gold);color:oklch(0.22 0.018 60);white-space:nowrap;cursor:pointer">Write</span>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 40px;margin-top:44px;border-bottom:1px solid var(--k-line)">
+<div style="display:flex;flex-wrap:wrap;gap:0 clamp(22px,3vw,44px)">
+<sc-for list="{{ piles }}" as="p" hint-placeholder-count="5">
+<div onClick="{{ p.pick }}" style="padding:0 0 16px;border-bottom:1px solid {{ p.line }};margin-bottom:-1px;cursor:pointer;color:{{ p.color }}" style-hover="color:var(--k-goldt)">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:300 40px/1 'Cormorant Garamond',serif">{{ p.n }}</span><span style="font:400 16px Jost">{{ p.label }}</span></div>
+<div style="font:400 12.5px Jost;color:var(--k-mute);margin-top:6px;white-space:nowrap">{{ p.hint }}</div>
+</div>
+</sc-for>
+</div>
+<div style="margin-left:auto;display:flex;gap:22px;padding-bottom:18px;font:400 14px Jost">
+<sc-for list="{{ folders }}" as="f" hint-placeholder-count="4"><span onClick="{{ f.pick }}" style="cursor:pointer;white-space:nowrap;color:{{ f.color }}" style-hover="color:var(--k-goldt)">{{ f.label }}</span></sc-for>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:clamp(40px,5vw,80px);padding:0 0 60px;align-items:start">
+
+<div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;padding:22px 0 8px">
+<div style="flex:1;min-width:220px;display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--k-line)"><input value="{{ q }}" onChange="{{ onQ }}" placeholder="{{ searchPh }}" style="flex:1;min-width:0;font:400 16px Jost"><span style="font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">/</span></div>
+<sc-if value="{{ isSort }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:14px;min-width:200px"><div style="flex:1;height:1px;background:var(--k-line);position:relative"><div style="position:absolute;left:0;top:-1px;height:3px;width:{{ sortedPct }};background:var(--k-gold);transition:width .6s cubic-bezier(0.2,0.7,0.2,1)"></div></div><span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ sortedLabel }}</span></div>
+</sc-if>
+</div>
+
+<sc-if value="{{ hasUndo }}">
+<div style="display:flex;align-items:baseline;gap:18px;padding:12px 0;font:400 14px Jost;color:var(--k-mute);animation:kfade .35s ease"><span>{{ undoText }}</span><span onClick="{{ undo }}" style="font-weight:500;color:var(--k-goldt);cursor:pointer">Undo</span></div>
+</sc-if>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<div style="margin-top:18px">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ g.label }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:300 18px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}">
+<sc-for list="{{ g.items }}" as="m">
+<div style="border-bottom:1px solid var(--k-line);background:{{ m.bg }};margin:0 -20px;padding:0 20px;transition:background .3s ease">
+<div onClick="{{ m.toggle }}" style="display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:18px 0;cursor:pointer">
+<span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">{{ m.time }}</span>
+<div style="min-width:0">
+<div style="display:flex;align-items:baseline;gap:12px;min-width:0"><span style="font:{{ m.fromFont }};white-space:nowrap">{{ m.from }}</span><sc-if value="{{ m.showAcct }}"><span style="font:400 12px Jost;color:var(--k-mute);white-space:nowrap">{{ m.acct }}</span></sc-if></div>
+<div style="font:{{ m.subjFont }};margin-top:3px;text-wrap:pretty">{{ m.subject }}</div>
+<sc-if value="{{ m.showPreview }}"><div style="font:400 14px/1.5 Jost;color:var(--k-mute);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.preview }}</div></sc-if>
+</div>
+<span style="display:flex;align-items:center;gap:10px"><sc-if value="{{ m.hasNotice }}"><span title="Koyeba noticed something" style="width:6px;height:6px;background:var(--k-gold)"></span></sc-if><span style="font:300 20px Jost;color:var(--k-mute)">{{ m.sign }}</span></span>
+</div>
+<sc-if value="{{ m.open }}">
+<div style="padding:0 0 24px 76px;animation:kfade .4s cubic-bezier(0.2,0.7,0.2,1)">
+<div style="font:400 15.5px/1.7 Jost;max-width:640px;text-wrap:pretty">{{ m.body }}</div>
+<sc-if value="{{ m.hasNotice }}">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;margin-top:20px;padding:14px 0;border-top:1px solid var(--k-line);border-bottom:1px solid var(--k-line)"><span style="font:600 10px Jost;letter-spacing:.22em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Noticed</span><span style="flex:1;min-width:200px;font:italic 300 19px/1.3 'Cormorant Garamond',serif">{{ m.notice }}</span><span onClick="{{ m.doNotice }}" style="font:500 13px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">{{ m.noticeAct }}</span></div>
+</sc-if>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:20px">
+<sc-if value="{{ m.canSort }}">
+<div style="display:flex;gap:6px">
+<sc-for list="{{ m.sorts }}" as="s"><span onClick="{{ s.go }}" style="display:flex;align-items:baseline;gap:8px;padding:10px 14px;border:1px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }};font:500 13px Jost;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--k-gold)">{{ s.label }}<span style="font:500 10px Jost;letter-spacing:.1em;opacity:.6">{{ s.key }}</span></span></sc-for>
+</div>
+</sc-if>
+<div style="display:flex;gap:20px;font:400 14px Jost;color:var(--k-mute)"><span style="cursor:pointer" style-hover="color:var(--k-goldt)">Make a task</span><span style="cursor:pointer" style-hover="color:var(--k-goldt)">Make a note</span><span style="cursor:pointer" style-hover="color:var(--k-goldt)">Add event</span></div>
+<div style="margin-left:auto;display:flex;gap:20px;font:400 14px Jost"><span style="cursor:pointer" style-hover="color:var(--k-goldt)">Reply</span><span style="color:var(--k-mute);cursor:pointer" style-hover="color:var(--k-goldt)">Forward</span></div>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-for>
+
+<sc-if value="{{ isEmpty }}">
+<div style="padding:72px 0;text-align:center;animation:kfade .5s ease">
+<div style="font:300 44px/1.1 'Cormorant Garamond',serif">{{ emptyTitle }}</div>
+<div style="font:400 15px Jost;color:var(--k-mute);margin-top:12px">{{ emptySub }}</div>
+</div>
+</sc-if>
+</div>
+
+<div style="position:sticky;top:24px;padding-top:30px">
+<sc-for list="{{ side }}" as="p" hint-placeholder-count="2">
+<div style="border-top:1px solid var(--k-ink)">
+<div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:16px 0;cursor:pointer"><span style="font:600 10.5px Jost;letter-spacing:.24em;text-transform:uppercase;white-space:nowrap">{{ p.title }}</span><span style="font:400 12px Jost;color:var(--k-mute)">{{ p.count }}</span><span style="margin-left:auto;font:300 20px Jost;color:var(--k-mute)">{{ p.sign }}</span></div>
+<sc-if value="{{ p.open }}">
+<div style="padding:0 0 24px;display:grid;gap:18px;animation:kfade .4s ease">
+<sc-for list="{{ p.items }}" as="it">
+<div><div style="font:400 14.5px/1.45 Jost;text-wrap:pretty">{{ it.text }}</div><div style="display:flex;gap:12px;align-items:baseline;margin-top:4px;font:400 12.5px Jost"><span style="color:var(--k-mute)">{{ it.from }}</span><span style="margin-left:auto;color:var(--k-goldt);font-weight:500;white-space:nowrap;cursor:pointer">{{ it.act }}</span></div></div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+<div style="border-top:1px solid var(--k-line);padding-top:16px;font:400 13px/1.6 Jost;color:var(--k-mute)">Keys while sorting: <span style="color:var(--k-ink)">U</span> urgent · <span style="color:var(--k-ink)">I</span> important · <span style="color:var(--k-ink)">L</span> later · <span style="color:var(--k-ink)">A</span> archive</div>
+</div>
+
+</div>
+</div>
+
+<div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(760px,calc(100% - 40px));z-index:30;background:var(--k-deep);color:var(--k-ondeep);display:flex;align-items:center;gap:18px;padding:16px 24px;box-sizing:border-box">
+<span style="font:300 24px Jost;color:var(--k-gold)">+</span>
+<span style="flex:1;font:italic 300 22px 'Cormorant Garamond',serif;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Set something down…</span>
+<span style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(255,255,255,.2);font:500 10px Jost;letter-spacing:.24em"><span style="width:6px;height:6px;background:var(--k-gold)"></span>SPEAK</span>
+<span style="font:500 10px Jost;letter-spacing:.2em;opacity:.6">⌘ .</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;preview&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;One line&quot;,&quot;None&quot;],&quot;default&quot;:&quot;One line&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showAccounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;night&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const MAIL=[
+ {id:'m1',day:'This morning',time:'10:00',from:'Novation',acct:'lumley-savile.com',subject:'Free plugin: download Klevgrand Revolv now',preview:'Klevgrand Revolv is now available to download from your Novation account.',body:'Klevgrand Revolv is now available to download from your Novation account. Sign in, go to My Software, and you’ll find it with the rest of your bundle.',unread:true},
+ {id:'m2',day:'This morning',time:'08:01',from:'Sterling and Artefacto',acct:'robinsavile.com',subject:'My group starts on 16 November – only ten places left',preview:'Book yours before midnight.',body:'The next small group starts on Monday 16 November and runs for six weeks, Mondays at seven. There are ten places left. Book yours before midnight to keep the early price.',notice:'A six-week group, Mondays at seven, from 16 November.',noticeAct:'Add to calendar →',unread:true},
+ {id:'m3',day:'This morning',time:'07:57',from:'Wise',acct:'lumley-savile.com',subject:'Transferência enviada (#2467083640)',preview:'Enviaste €240,00 para Atelier Graça.',body:'Enviaste €240,00 para Atelier Graça. O dinheiro deve chegar hoje.',notice:'€240 sent to Atelier Graça – looks like Art.',noticeAct:'File under Money · Art →',unread:true},
+ {id:'m4',day:'Yesterday',time:'18:42',from:'Ana Ribeiro',acct:'robinsavile.com',subject:'Class on Saturday',preview:'Bring the 300gsm paper if you have it – we’ll try wet on wet.',body:'Hi Robin – bring the 300gsm paper if you have it, we’ll try wet on wet. Ten o’clock as usual. Ana',notice:'Saturday at ten, with Ana. Already in your calendar.',noticeAct:'Open in Art →',unread:true},
+ {id:'m5',day:'Yesterday',time:'14:10',from:'Priya Shah',acct:'lumley-savile.com',subject:'Re: Harlow draft – a few notes',preview:'Mostly small things. Could we have it back by Wednesday?',body:'Mostly small things, all marked in the document. Could we have it back by Wednesday? Thank you – it’s coming together well.',notice:'Wanted back by Wednesday.',noticeAct:'Make a task →',unread:false},
+ {id:'m6',day:'Yesterday',time:'09:30',from:'Jackson’s Art',acct:'robinsavile.com',subject:'Your order is on its way',preview:'Order 448210 · arriving Tuesday.',body:'Good news – order 448210 left our warehouse this morning and should reach you on Tuesday.',unread:false},
+ {id:'m7',day:'Earlier this week',time:'Thu',from:'Câmara Municipal de Lisboa',acct:'lumley-savile.com',subject:'IMI – segunda prestação',preview:'Pagamento até 30 de novembro.',body:'A segunda prestação do IMI deve ser paga até 30 de novembro.',notice:'Property tax, due 30 November.',noticeAct:'Make a task →',unread:false},
+ {id:'m8',day:'Earlier this week',time:'Wed',from:'The Guardian',acct:'robinsavile.com',subject:'The long read: why we keep notebooks',preview:'On memory, paper and the pleasure of setting things down.',body:'On memory, paper and the pleasure of setting things down.',unread:false}
+];
+const SORTED=[
+ {id:'u1',pile:'urgent',day:'Today',time:'Fri',from:'Dalton Heating',acct:'lumley-savile.com',subject:'Monday at eight – please confirm access',preview:'Reply by Sunday so we can hold the slot.',body:'Reply by Sunday so we can hold the slot.'},
+ {id:'u2',pile:'urgent',day:'Today',time:'Thu',from:'Escola Básica',acct:'robinsavile.com',subject:'Visita de estudo – autorização',preview:'Assinar até segunda-feira.',body:'Assinar até segunda-feira.'},
+ {id:'i1',pile:'important',day:'This week',time:'Wed',from:'Accountant – Rui',acct:'lumley-savile.com',subject:'Q3 figures',preview:'When you have a moment, could you send the receipts folder?',body:'When you have a moment, could you send the receipts folder?'},
+ {id:'l1',pile:'later',day:'This week',time:'Tue',from:'Aeon',acct:'robinsavile.com',subject:'On the art of noticing',preview:'An essay for a slow evening.',body:'An essay for a slow evening.'},
+ {id:'a1',pile:'archive',day:'This week',time:'Mon',from:'TAP',acct:'lumley-savile.com',subject:'Your booking is confirmed',preview:'Lisbon – London, 12 December.',body:'Lisbon – London, 12 December.'}
+];
+const PILES=[['sort','To sort','One pass, then it’s clear',27],['urgent','Urgent','Today, or it’s late',20],['important','Important','Matters, not rushed',64],['later','Later','Worth a read, no hurry',70],['archive','Archive','Done',null]];
+const FOLDERS=[['drafts','Drafts'],['sent','Sent'],['spam','Spam'],['trash','Bin']];
+const SORTS=[['urgent','Urgent','U'],['important','Important','I'],['later','Later','L'],['archive','Archive','A']];
+const NAMES={urgent:'Urgent',important:'Important',later:'Later',archive:'Archive'};
+const ACCTS=[['all','All accounts'],['lumley-savile.com','robin@lumley-savile.com'],['robinsavile.com','robin@robinsavile.com']];
+class Component extends DCLogic {
+  state={pile:'sort',moved:{},openId:'m2',groupsShut:{},acct:'all',acctOpen:false,q:'',undo:null,side:{noticed:true,waiting:false},night:!!this.props.night,done:{}};
+  componentDidMount(){document.body.classList.toggle('night',this.state.night);
+    this.onKey=e=>{if(e.target.tagName==='INPUT'||this.state.pile!=='sort'||!this.state.openId)return;const k={u:'urgent',i:'important',l:'later',a:'archive'}[e.key.toLowerCase()];if(k)this.sortTo(this.state.openId,k);};
+    window.addEventListener('keydown',this.onKey);}
+  componentWillUnmount(){window.removeEventListener('keydown',this.onKey);}
+  componentDidUpdate(pp){if(pp.night!==this.props.night&&this.props.night!==undefined)this.setState({night:!!this.props.night});document.body.classList.toggle('night',this.state.night);}
+  sortTo(id,pile){const st=this.state;const left=this.visibleSort(st).filter(m=>m.id!==id);
+    this.setState({moved:{...st.moved,[id]:pile},openId:left[0]?left[0].id:null,undo:{id,pile}});}
+  visibleSort(st){const q=st.q.trim().toLowerCase();return MAIL.filter(m=>!st.moved[m.id]&&(st.acct==='all'||m.acct===st.acct)&&(!q||(m.from+' '+m.subject+' '+m.preview).toLowerCase().includes(q)));}
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o),q=st.q.trim().toLowerCase(),isSort=st.pile==='sort';
+    const prev=this.props.preview??'One line';
+    const movedCount=p=>Object.values(st.moved).filter(v=>v===p).length;
+    const sortedN=Object.keys(st.moved).length,total=MAIL.length;
+    const piles=PILES.map(([id,label,hint,n])=>{const on=st.pile===id;const c=id==='sort'?total-sortedN:(n===null?'':SORTED.filter(m=>m.pile===id).length+movedCount(id));
+      return {label,hint,n:c===''?'·':c,line:on?'var(--k-gold)':'transparent',color:on?'var(--k-ink)':'var(--k-mute)',pick:()=>set({pile:id,openId:null,undo:null})};});
+    const folders=FOLDERS.map(([id,label])=>({label,color:st.pile===id?'var(--k-goldt)':'var(--k-mute)',pick:()=>set({pile:id,openId:null,undo:null})}));
+    let list;
+    if(isSort)list=this.visibleSort(st);
+    else list=[...SORTED.filter(m=>m.pile===st.pile),...MAIL.filter(m=>st.moved[m.id]===st.pile).map(m=>({...m,day:'Just sorted'}))].filter(m=>(st.acct==='all'||m.acct===st.acct)&&(!q||(m.from+' '+m.subject).toLowerCase().includes(q)));
+    if(!isSort)list.sort((a,b)=>(a.day==='Just sorted'?-1:0)-(b.day==='Just sorted'?-1:0));
+    const days=[];list.forEach(m=>{let g=days.find(d=>d.label===m.day);if(!g){g={label:m.day,items:[]};days.push(g);}g.items.push(m);});
+    const groups=days.map(g=>{const open=!st.groupsShut[g.label];return {label:g.label,count:g.items.length,open,sign:open?'−':'+',toggle:()=>set({groupsShut:{...st.groupsShut,[g.label]:open}}),
+      items:g.items.map(m=>{const o=st.openId===m.id;const nd=st.done[m.id];return {...m,open:o,sign:o?'−':'+',bg:o?'var(--k-panel)':'transparent',
+        fromFont:m.unread?"500 23px/1.15 'Cormorant Garamond',serif":"300 23px/1.15 'Cormorant Garamond',serif",
+        subjFont:m.unread?'500 16px/1.45 Jost':'400 16px/1.45 Jost',
+        showAcct:st.acct==='all'&&(this.props.showAccounts??true),showPreview:prev==='One line'&&!o,
+        hasNotice:!!m.notice,noticeAct:nd?'Done':m.noticeAct,doNotice:()=>set({done:{...st.done,[m.id]:true}}),
+        canSort:isSort,
+        sorts:SORTS.map(([p,label,key],i)=>({label,key,go:()=>this.sortTo(m.id,p),border:i===0?'var(--k-ink)':'var(--k-line)',bg:'transparent',color:'var(--k-ink)'})),
+        toggle:()=>set({openId:o?null:m.id})};})};});
+    const pileName=PILES.find(p=>p[0]===st.pile);const fol=FOLDERS.find(f=>f[0]===st.pile);
+    const left=total-sortedN;
+    const mood=isSort?(left===0?'All sorted. Deal with the urgent ones first.':(left===1?'One left to sort.':['','One','Two','Three','Four','Five','Six','Seven','Eight'][left]+' to sort. Clear them in one pass.')):(pileName?pileName[2]+'.':(fol?fol[1]+'.':''));
+    const noticed=MAIL.filter(m=>m.notice).map(m=>({text:m.notice,from:m.from,act:st.done[m.id]?'Done':m.noticeAct.replace(' →','')}));
+    const side=[
+      {id:'noticed',title:'Noticed in your mail',count:noticed.length,items:noticed},
+      {id:'waiting',title:'Waiting on a reply',count:2,items:[{text:'You asked Miguel about framing three pieces.',from:'Sent Tuesday',act:'Nudge'},{text:'Quote request to Dalton Heating.',from:'Sent last week',act:'Nudge'}]}
+    ].map(p=>{const open=!!st.side[p.id];return {...p,open,sign:open?'−':'+',toggle:()=>set({side:{...st.side,[p.id]:!open}})};});
+    const accts=ACCTS.map(([id,label])=>({label,n:id==='all'?MAIL.length:MAIL.filter(m=>m.acct===id).length,color:st.acct===id?'var(--k-goldt)':'var(--k-ink)',pick:()=>set({acct:id,acctOpen:false})}));
+    return {piles,folders,groups,isSort,mood,side,accts,
+      eyebrow:isSort?'Tool · Mail':'Mail · '+(pileName?pileName[1]:(fol?fol[1]:'')),
+      sortedPct:Math.round(sortedN/total*100)+'%',sortedLabel:sortedN+' of '+total+' sorted',
+      hasUndo:!!st.undo,undoText:st.undo?'Moved to '+NAMES[st.undo.pile]+'.':'',undo:()=>{const m={...st.moved};delete m[st.undo.id];set({moved:m,openId:st.undo.id,undo:null});},
+      isEmpty:list.length===0,emptyTitle:isSort&&!q?'Nothing left to sort.':'Nothing here.',emptySub:isSort&&!q?'Start with Urgent – it’s waiting for you.':'Try another word, or another account.',
+      q:st.q,onQ:e=>set({q:e.target.value}),searchPh:isSort?'Search mail':'Search '+(pileName?pileName[1]:(fol?fol[1]:'')),
+      acctLabel:ACCTS.find(a=>a[0]===st.acct)[1],acctOpen:st.acctOpen,acctSign:st.acctOpen?'−':'+',toggleAcct:()=>set({acctOpen:!st.acctOpen}),
+      dayOn:!st.night,nightOn:st.night,nightLabel:st.night?'Day':'Night',toggleNight:()=>set({night:!st.night})};
+  }
+}
+</script>
+</body>
+</html>

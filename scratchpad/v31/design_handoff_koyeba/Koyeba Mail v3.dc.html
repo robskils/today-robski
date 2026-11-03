@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><title>Mail – Koyeba</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap" rel="stylesheet"><style>
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;src:url('./fonts/CormorantGaramond-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url('./fonts/Jost-400.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:500;src:url('./fonts/Jost-500.woff2') format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url('./fonts/Jost-600.woff2') format('woff2')}
+body{margin:0;font-family:'Jost',sans-serif;-webkit-font-smoothing:antialiased;--k-bg:oklch(0.975 0.012 85);--k-ink:oklch(0.17 0.015 60);--k-mute:oklch(0.38 0.02 70);--k-line:oklch(0.88 0.014 80);--k-gold:oklch(0.72 0.13 75);--k-goldt:oklch(0.5 0.11 68);--k-soft:oklch(0.94 0.016 82);background:var(--k-bg);color:var(--k-ink)}
+a{color:var(--k-ink);text-decoration:none}a:hover{color:var(--k-goldt)}
+input::placeholder{color:var(--k-mute)}
+@keyframes kfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></helmet>
+<div style="min-height:100vh;background:var(--k-bg);color:var(--k-ink);padding-bottom:110px">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="max-width:1600px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px);height:68px;display:flex;align-items:center;gap:30px">
+<div style="display:flex;align-items:center;gap:10px"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:24px;width:auto;display:block"><span style="font:500 28px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div style="flex:1;display:flex;gap:clamp(12px,1.5vw,24px);font:500 15px Jost;color:var(--k-mute);white-space:nowrap;min-width:0;overflow:hidden"><span>Spaces</span><span>People</span><span>Plans</span><span>Keep</span><span>Reflection</span><span>Money</span></div>
+<div style="display:flex;align-items:baseline;gap:clamp(12px,1.5vw,22px);font:500 14px Jost;white-space:nowrap;color:var(--k-mute)"><span style="color:var(--k-ink);padding-bottom:3px;border-bottom:1px solid var(--k-gold)">Mail <span style="color:var(--k-goldt)">{{ toSortN }}</span></span><span>Notepad</span><span>Search</span><span>Menu</span></div>
+</div>
+</div>
+
+<div style="max-width:1120px;margin:0 auto;padding:0 clamp(24px,3.5vw,64px)">
+<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:12px 28px;padding:30px 0 0">
+<h1 style="font:500 44px/1 'Cormorant Garamond',serif;margin:0">Mail</h1>
+<span style="font:400 15.5px Jost;color:var(--k-mute);white-space:nowrap">{{ mood }}</span>
+<div style="margin-left:auto;display:flex;align-items:center;gap:22px;white-space:nowrap">
+<span style="font:500 14.5px Jost;color:var(--k-mute);cursor:pointer">All accounts ▾</span>
+<span style="font:600 12px Jost;letter-spacing:.12em;text-transform:uppercase;padding:11px 18px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer">Write</span>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px clamp(18px,2.4vw,32px);margin-top:24px;border-bottom:1px solid var(--k-line)">
+<sc-for list="{{ piles }}" as="p" hint-placeholder-count="5">
+<div onClick="{{ p.pick }}" style="display:flex;align-items:baseline;gap:7px;padding:0 0 12px;border-bottom:2px solid {{ p.line }};margin-bottom:-1px;cursor:pointer;white-space:nowrap;color:{{ p.color }}" style-hover="color:var(--k-goldt)"><span style="font:500 16px Jost">{{ p.label }}</span><span style="font:600 13px Jost;color:{{ p.nColor }}">{{ p.n }}</span></div>
+</sc-for>
+<div style="margin-left:auto;display:flex;gap:18px;padding-bottom:13px;font:400 14px Jost;color:var(--k-mute);white-space:nowrap"><span style="cursor:pointer">Drafts</span><span style="cursor:pointer">Sent</span><span style="cursor:pointer">Spam</span><span style="cursor:pointer">Bin</span></div>
+</div>
+
+<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--k-line)">
+<input value="{{ q }}" onChange="{{ onQ }}" placeholder="Search mail" style="flex:1;min-width:0;border:0;background:transparent;outline:none;font:400 16px Jost;color:var(--k-ink)">
+<sc-if value="{{ hasWaiting }}"><span onClick="{{ showWaiting }}" style="font:500 13.5px Jost;color:var(--k-goldt);cursor:pointer;white-space:nowrap">2 waiting on a reply</span></sc-if>
+</div>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+<div onClick="{{ g.toggle }}" style="display:flex;align-items:baseline;gap:10px;padding:22px 0 8px;cursor:pointer"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase">{{ g.label }}</span><span style="font:500 12.5px Jost;color:var(--k-mute)">{{ g.count }}</span><span style="flex:1;height:1px;background:var(--k-line);align-self:center"></span><span style="font:400 17px Jost;color:var(--k-mute)">{{ g.sign }}</span></div>
+<sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{ g.items }}" as="m">
+<div style="border-bottom:1px solid var(--k-line)">
+<div style="background:{{ m.bg }};border:1px solid {{ m.border }};margin:{{ m.margin }};box-shadow:{{ m.shadow }};transition:background .25s ease">
+<div onClick="{{ m.toggle }}" style="display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:2px 14px;align-items:baseline;padding:{{ m.pad }};cursor:pointer" style-hover="background:var(--k-soft)">
+<span style="width:7px;height:7px;border-radius:50%;background:{{ m.dot }};align-self:center"></span>
+<div style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font:{{ m.fromFont }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.from }}</span><sc-if value="{{ m.hasAcct }}"><span style="font:400 12.5px Jost;color:var(--k-mute);white-space:nowrap">to {{ m.acct }}</span></sc-if></div>
+<span style="display:flex;align-items:baseline;gap:14px;white-space:nowrap"><sc-if value="{{ m.hasPile }}"><span style="font:600 10.5px Jost;letter-spacing:.12em;text-transform:uppercase;color:var(--k-goldt)">{{ m.pile }}</span></sc-if><span style="font:500 13.5px Jost;color:{{ m.timeColor }}">{{ m.time }}</span><sc-if value="{{ m.open }}"><span style="font:400 18px/1 Jost;color:var(--k-mute)">−</span></sc-if></span>
+<span></span><span style="grid-column:2/4;font:{{ m.subjFont }};white-space:{{ m.wrap }};overflow:hidden;text-overflow:ellipsis">{{ m.subj }}</span>
+<sc-if value="{{ m.closed }}"><span></span><span style="grid-column:2/4;font:400 14.5px/1.45 Jost;color:var(--k-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.prev }}</span></sc-if>
+</div>
+<sc-if value="{{ m.open }}">
+<div style="padding:4px 32px 30px 46px;animation:kfade .3s ease">
+<div style="max-width:680px;font:400 17px/1.7 'Source Serif 4',Georgia,serif;color:oklch(0.2 0.01 60);white-space:pre-line">{{ m.body }}</div>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{ m.open }}">
+<div style="padding:0 0 22px;animation:kfade .3s ease">
+<sc-if value="{{ m.hasNotice }}"><div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:10px 0;font:400 14.5px Jost"><span style="font:600 10.5px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-goldt);white-space:nowrap">Koyeba noticed</span><span style="flex:1;min-width:200px">{{ m.notice }}</span><span style="font-weight:500;color:var(--k-goldt);cursor:pointer;white-space:nowrap">{{ m.noticeAct }}</span></div></sc-if>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding-top:8px">
+<span style="font:600 12px Jost;letter-spacing:.1em;text-transform:uppercase;padding:10px 16px;background:var(--k-gold);color:oklch(0.22 0.018 60);cursor:pointer">Reply</span>
+<span style="font:500 14.5px Jost;cursor:pointer">Forward</span>
+<span style="width:1px;height:16px;background:var(--k-line)"></span>
+<sc-for list="{{ m.tri }}" as="t"><span onClick="{{ t.go }}" style="font:500 14.5px Jost;cursor:pointer" style-hover="color:var(--k-goldt)">{{ t.label }}</span></sc-for>
+<span style="width:1px;height:16px;background:var(--k-line)"></span>
+<span style="font:500 14.5px Jost;color:var(--k-mute);cursor:pointer">Make a task</span><span style="font:500 14.5px Jost;color:var(--k-mute);cursor:pointer">Add as event</span><span style="font:500 14.5px Jost;color:var(--k-mute);cursor:pointer">Keep as note</span>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</sc-if>
+</sc-for>
+<sc-if value="{{ isEmpty }}"><div style="padding:40px 0;font:400 16px Jost;color:var(--k-mute)">{{ emptyLine }}</div></sc-if>
+<sc-if value="{{ hasToast }}"><div style="position:fixed;left:50%;bottom:80px;transform:translateX(-50%);padding:10px 18px;background:var(--k-ink);color:var(--k-bg);font:500 14px Jost;display:flex;gap:16px;z-index:25;animation:kfade .25s ease;white-space:nowrap"><span>{{ toast }}</span><span onClick="{{ undo }}" style="color:var(--k-gold);cursor:pointer">Undo</span></div></sc-if>
+</div>
+
+<div style="position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:12px 20px;background:oklch(0.28 0.04 155);color:oklch(0.975 0.012 85);cursor:pointer;white-space:nowrap">
+<span style="font:400 20px Jost;color:oklch(0.74 0.12 76)">+</span><span style="font:500 15px Jost;opacity:.9">Set something down</span><span style="font:500 10px Jost;letter-spacing:.2em;opacity:.55">⌘ .</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// id, group, from, acct, subj, prev, time, unread, body, notice, noticeAct, pile
+const M=[
+ ['m1','morning','Marta Lopes','','The show in March','We’d love to see the Tejo pieces in person before we confirm the wall…','11:40',1,'Dear Robin,\n\nWe’d love to see the Tejo pieces in person before we confirm the March wall. Could you bring three on Friday afternoon? Any time after two is fine.\n\nWarmly,\nMarta','This mentions Friday after 14:00','Add as event',''],
+ ['m2','morning','EDP Comercial','robin@incremento.eu','Confirme o pagamento da sua fatura EDP','Fatura pendente – €48,20, vence a 9 de novembro','11:14',1,'Caro Cliente,\n\nTemos uma fatura EDP por liquidar no valor de €48,20, com vencimento a 9 de novembro.','A bill of €48,20 due 9 November','Add to Money',''],
+ ['m3','morning','BriefHub','robski@robski.uk','Confirm your email address','One click to finish setting up your account','11:06',0,'Hi Robin,\n\nConfirm your email address to finish setting up BriefHub.','','',''],
+ ['m4','morning','Autoridade Tributária','robin@lumley-savile.com','Newsletter #48 – outubro 2026','Novidades fiscais do mês e prazos de novembro','10:26',1,'Caro/a Contribuinte,\n\nEnviamos a newsletter de outubro com as novidades fiscais e os prazos de novembro.','','',''],
+ ['m5','yesterday','Mrs Okafor','','Year 4 trip – a gentle reminder','Trip forms and the €12 contribution are due back on Wednesday','Sun',0,'Dear parents,\n\nA gentle reminder that trip forms and the €12 contribution are due back on Wednesday. Ada’s is still outstanding.','Ada’s form is due Wednesday','Make a task',''],
+ ['m6','yesterday','Joaquim Reis','','Tonight','Washes tonight – bring the cotton paper if you have it','Sun',0,'We’ll do washes tonight – bring the big flat brush and the cotton paper if you have it.\n\nAté logo,\nJoaquim','','','']];
+const GL={morning:'This morning',yesterday:'Yesterday'};
+const PL=[['sort','To sort','Clear them in one pass'],['urgent','Urgent',''],['important','Important',''],['later','Later',''],['done','Archive','']];
+class Component extends DCLogic {
+  state={pile:'sort',open:'m1',sorted:{},shut:{},q:'',toast:null,read:{}};
+  renderVals(){
+    const st=this.state,set=o=>this.setState(o);
+    const pileOf=m=>st.sorted[m[0]]||'sort';
+    const ql=st.q.trim().toLowerCase();
+    const inPile=M.filter(m=>pileOf(m)===st.pile&&(!ql||(m[2]+' '+m[4]+' '+m[5]).toLowerCase().includes(ql)));
+    const counts={sort:M.filter(m=>pileOf(m)==='sort').length,urgent:20,important:64,later:72,done:0};
+    ['urgent','important','later','done'].forEach(p=>counts[p]+=M.filter(m=>pileOf(m)===p).length);
+    const piles=PL.map(([id,label])=>{const on=st.pile===id;return {label,n:id==='done'?'':String(counts[id]),color:on?'var(--k-ink)':'var(--k-mute)',nColor:id==='sort'||id==='urgent'?'var(--k-goldt)':'var(--k-mute)',line:on?'var(--k-gold)':'transparent',pick:()=>set({pile:id,open:null})};});
+    const tri=m=>[['Urgent','urgent'],['Important','important'],['Later','later'],['Archive','done']].map(([label,p])=>({label,go:()=>set({sorted:{...st.sorted,[m[0]]:p},open:null,toast:'Moved to '+label,last:m[0]})}));
+    const groups=['morning','yesterday'].map(g=>{const items=inPile.filter(m=>m[1]===g);const o=!st.shut[g];return {label:GL[g],count:String(items.length),open:o,sign:o?'−':'+',toggle:()=>set({shut:{...st.shut,[g]:o}}),
+      items:items.map(m=>{const op=st.open===m[0];const unread=m[7]&&!st.read[m[0]];return {from:m[2],acct:m[3],hasAcct:!!m[3],subj:m[4],prev:m[5],time:m[6],body:m[8],notice:m[9],hasNotice:!!m[9],noticeAct:m[10],pile:st.pile==='sort'?'':'',hasPile:false,
+        open:op,closed:!op,dot:unread?'var(--k-gold)':'transparent',fromFont:unread?'600 15px Jost':'500 15px Jost',subjFont:op?"600 24px/1.3 'Source Serif 4',Georgia,serif":(unread?'500 17.5px/1.35 Jost':'400 17.5px/1.35 Jost'),wrap:op?'normal':'nowrap',
+        timeColor:unread?'var(--k-goldt)':'var(--k-mute)',bg:op?'#fff':'transparent',border:op?'oklch(0.85 0.014 80)':'transparent',margin:op?'12px 0 6px':'0',shadow:op?'0 1px 0 oklch(0.88 0.014 80)':'none',pad:op?'22px 32px 16px 18px':'13px 0',
+        toggle:()=>set({open:op?null:m[0],read:{...st.read,[m[0]]:true}}),tri:tri(m)};})};}).filter(g=>g.items.length);
+    const n=counts.sort;
+    return {piles,groups,q:st.q,onQ:e=>set({q:e.target.value}),toSortN:String(n),mood:st.pile==='sort'?(n?n+' to sort – clear them in one pass.':'All sorted.'):'',
+      hasWaiting:true,showWaiting:()=>{},isEmpty:groups.length===0,emptyLine:ql?'Nothing matches that.':(st.pile==='sort'?'All sorted. Nothing new since you looked.':'Nothing here.'),
+      hasToast:!!st.toast,toast:st.toast||'',undo:()=>{const s={...st.sorted};delete s[st.last];set({sorted:s,toast:null});}};
+  }
+}
+</script>
+</body>
+</html>

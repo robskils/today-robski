@@ -1012,7 +1012,9 @@ export async function handleMail(request, env, url, json, err) {
       // Only accounts that still exist - a deleted mailbox left an orphan meta
       // row that kept the badge stuck on a ghost unread.
       const { results } = await env.DB.prepare("SELECT account, unseen FROM mail_cache_meta WHERE mailbox='INBOX' AND account IN (SELECT id FROM mail_accounts WHERE user_id = ?)").bind(env.uid).all();
-      const unseen = {}; let total = 0; (results || []).forEach((r) => { unseen[r.account] = r.unseen; total += r.unseen || 0; });
+      // Clamp per-account at zero: a cached meta row can briefly hold a negative
+      // (an optimistic decrement that underflowed) and must never show "-1 to sort".
+      const unseen = {}; let total = 0; (results || []).forEach((r) => { const n = Math.max(0, r.unseen || 0); unseen[r.account] = n; total += n; });
       return json({ unseen, total }, request);
     }
 
