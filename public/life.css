@@ -10577,14 +10577,19 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
    Unboxed Jost line, muted links, "/" separators, the current segment in ink.
    No box, no arrow, no background. Ancestors truncate before the current one;
    never wraps. On mobile just "‹ parent". ══ */
-.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:22px 0 24px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
-/* A crumb rendered straight into #pane (the reflection tools, notes, contacts,
-   goals, reviews…) sat flush to the window edge, while a crumb inside a .kwrap
-   (the Space page) lined up with the title. Give the loose ones the same inset
-   as .kwrap so breadcrumbs sit in one place everywhere. (Robin, 2026-11-03.) */
-#pane > .crumbbar-slim { width:100%; max-width:2240px; margin-left:auto; margin-right:auto; padding-left:clamp(20px,4vw,48px); padding-right:clamp(20px,4vw,48px); box-sizing:border-box; }
-@media (min-width:1600px){ #pane > .crumbbar-slim { padding-left:64px; padding-right:64px; } }
-@media (min-width:2200px){ #pane > .crumbbar-slim { padding-left:80px; padding-right:80px; } }
+/* Vertical rhythm: on a padded page the pane's top padding (30px desktop / 20px
+   mobile) sits above the crumb, so the crumb takes NO top margin of its own and
+   lands the same distance below the nav everywhere; full-bleed pages add that gap
+   back in the scoped rule. Bottom margin is the same on every page. (Robin,
+   2026-11-03: consistent spacing above and below, every page.) */
+.crumbbar-slim { position:static; display:flex; align-items:center; gap:12px; min-height:0; margin:0 0 22px; padding:0; background:none; border:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+/* The crumb is a direct child of .pane. On a normal (padded) page .pane already
+   provides the gutter, so the crumb must NOT add its own - it lines up with the
+   logo and the page title. Only the flattened full-bleed pages (.pane{padding:0},
+   content in a .kwrap) need the crumb to carry the gutter itself; that lives in
+   the scoped rule below. (Robin, 2026-11-03: align the crumb with the T of the
+   title across every page.) */
+#pane > .crumbbar-slim { width:100%; box-sizing:border-box; }
 .crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
 .crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
@@ -11855,20 +11860,47 @@ body.split-dragging .pane-div-line { background:var(--k-gold); }
 .mail-row-linked { display:inline-block; font-family:var(--k-sans); font-size:11px; color:var(--k-goldt); margin-right:8px; white-space:nowrap; }
 .mail-tb-beside { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14px; color:var(--k-goldt); border-bottom:1px solid var(--k-gold); padding:0 0 2px; }
 
-/* §19: the breadcrumb keeps the page gutter on flattened full-bleed pages
-   (area / goals / home set .pane{padding:0}, so the crumb - a child of .pane
-   outside .kwrap - would otherwise sit flush to the window edge). */
+/* §19: on flattened full-bleed pages (.pane{padding:0}, content in a .kwrap) the
+   crumb - a direct child of .pane, outside the .kwrap - would sit flush to the
+   window edge, so it carries the .kwrap gutter itself and lines up with the title.
+   Only these padding:0 views need it; padded pages inherit the pane gutter above.
+   A nested crumb (inside .kwrap already) never matches `.pane >`, so listing a
+   view here is harmless when its crumb isn't a direct child. */
 body[data-view="area"] .pane > .crumbbar-slim,
 body[data-view="goals"] .pane > .crumbbar-slim,
-body[data-view="home"] .pane > .crumbbar-slim { padding-left:clamp(20px,4vw,48px); padding-right:clamp(20px,4vw,48px); }
+body[data-view="goalcard"] .pane > .crumbbar-slim,
+body[data-view="notes"] .pane > .crumbbar-slim,
+body[data-view="calendar"] .pane > .crumbbar-slim,
+body[data-view="tasks"] .pane > .crumbbar-slim,
+body[data-view="wellbeing"] .pane > .crumbbar-slim,
+body[data-view="messages"] .pane > .crumbbar-slim,
+body[data-view="contacts"] .pane > .crumbbar-slim,
+body[data-view="settings"] .pane > .crumbbar-slim,
+body[data-view="home"] .pane > .crumbbar-slim { width:100%; max-width:2240px; margin:0 auto 22px; padding:30px clamp(20px,4vw,48px) 0; box-sizing:border-box; }
 @media (min-width:1600px){
   body[data-view="area"] .pane > .crumbbar-slim,
   body[data-view="goals"] .pane > .crumbbar-slim,
+  body[data-view="goalcard"] .pane > .crumbbar-slim,
+  body[data-view="notes"] .pane > .crumbbar-slim,
+  body[data-view="calendar"] .pane > .crumbbar-slim,
+  body[data-view="tasks"] .pane > .crumbbar-slim,
+  body[data-view="wellbeing"] .pane > .crumbbar-slim,
+  body[data-view="messages"] .pane > .crumbbar-slim,
+  body[data-view="contacts"] .pane > .crumbbar-slim,
+  body[data-view="settings"] .pane > .crumbbar-slim,
   body[data-view="home"] .pane > .crumbbar-slim { padding-left:64px; padding-right:64px; }
 }
 @media (min-width:2200px){
   body[data-view="area"] .pane > .crumbbar-slim,
   body[data-view="goals"] .pane > .crumbbar-slim,
+  body[data-view="goalcard"] .pane > .crumbbar-slim,
+  body[data-view="notes"] .pane > .crumbbar-slim,
+  body[data-view="calendar"] .pane > .crumbbar-slim,
+  body[data-view="tasks"] .pane > .crumbbar-slim,
+  body[data-view="wellbeing"] .pane > .crumbbar-slim,
+  body[data-view="messages"] .pane > .crumbbar-slim,
+  body[data-view="contacts"] .pane > .crumbbar-slim,
+  body[data-view="settings"] .pane > .crumbbar-slim,
   body[data-view="home"] .pane > .crumbbar-slim { padding-left:80px; padding-right:80px; }
 }
 

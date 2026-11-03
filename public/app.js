@@ -5584,7 +5584,7 @@ function navGroupsHtml(v) {
   const header = `<div class="knav-bar">
       ${wordmark}
       ${backBtn}
-      <div class="knav-crumb">${esc(crumb)}</div>
+      <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
         ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
