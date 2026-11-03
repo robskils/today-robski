@@ -7874,6 +7874,11 @@ function capParse2(raw0) {
     const e = cut(/\b(?:until|till|to)\s+(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i); if (e) { eh = +e[1]; em = +(e[2] || 0); if (((e[3] || '').toLowerCase() === 'pm' || (sh >= 12 && !e[3])) && eh < 12) eh += 12; } }
   let day = null; const dm = cut(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
   if (dm) { const w = dm[1].toLowerCase(); day = new Date(TODAY); if (w === 'tomorrow') day.setDate(day.getDate() + 1); else if (CAP_DAYS.includes(w)) { const k = (CAP_DAYS.indexOf(w) - day.getDay() + 7) % 7 || 7; day.setDate(day.getDate() + k); } out.dayWord = (w === 'today' || w === 'tonight') ? 'Today, ' : w === 'tomorrow' ? 'Tomorrow, ' : ''; }
+  // A part of the day ("Thursday evening", "in the morning") - lift it out of the
+  // title (it was leaving a dangling "on evening"), and if there's no clock time
+  // give the event a sensible default so it isn't an all-day thing. (Robin, 2026-11-03.)
+  const pod = cut(/\b(?:(?:on|in|this)\s+)?(?:the\s+)?(morning|afternoon|evening|night|midday|noon)\b/i);
+  if (pod && sh === undefined) { sh = ({ morning: 9, midday: 12, noon: 12, afternoon: 14, evening: 18, night: 20 })[pod[1].toLowerCase()]; sm = 0; if (!day) { day = new Date(TODAY); } }
   const rm = cut(/\b(?:and\s+)?(?:repeat(?:s|ing)?\s+)?(every\s+(?:day|week|fortnight|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|weekly|daily|monthly)\b/i);
   const re = cut(/\b(?:and\s+)?remind(?:\s+me)?\s+(\d+|an?|one|two|three|half an?)\s*(hours?|hrs?|minutes?|mins?)\s+before\b/i);
   const wm = cut(/\bwith\s+([A-ZÀ-Ý][\wÀ-ÿ'']+(?:\s+(?:and|&)\s+[A-ZÀ-Ý][\wÀ-ÿ'']+)?)/);
@@ -7893,7 +7898,9 @@ function capParse2(raw0) {
   return out;
 }
 const capDurFromAns = (a) => ({ '15m': 15, '30m': 30, '1h': 60, '2h': 120 }[a] ?? null);
-function capSpacePicks() { const names = (state.areas || []).map((a) => a.title).filter(Boolean).slice(0, 4); return names.length ? names : ['Me', 'The house', 'Work']; }
+// Every Space you can file into, not just the first four - you need to reach any
+// of them from the capture. (Robin, 2026-11-03.)
+function capSpacePicks() { const src = (typeof editableAreas === 'function' ? editableAreas() : null) || state.areas || []; const names = src.map((a) => a.title).filter(Boolean); return names.length ? names : ['Me', 'The house', 'Work']; }
 // Field tiles with provenance (known) or a question + quick picks (asks).
 function capFieldsFor(raw, kind, ans) {
   ans = ans || {}; const p = capParse2(raw); const F = [];
