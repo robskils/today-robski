@@ -12790,8 +12790,8 @@ function renderAreaV4() {
   const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, cover, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-area-cover>Change cover</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
 
   $('#pane').innerHTML = `
+    <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
     <div class="kwrap kpage kpage-area av3 av4">
-      <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
         <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
