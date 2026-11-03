@@ -19958,6 +19958,17 @@ function cvState() { if (!state.cv) state.cv = { cur: null, q: '', kitOpen: fals
 // Default: a day before (§42). 'off' switches reminders off everywhere unless a
 // contact sets its own. Mirrors the worker's resolution in homeAlerts.
 function bdayUsual() { const v = state.bdayDefault; return (v === 'off' || v === -1 || v === '-1') ? 'off' : (v == null || v === '') ? 1 : Number(v); }
+// A contact card's birthday-reminder options: 1 day / 1 week / 1 month / a custom
+// number of days / off. A set lead outside the three presets shows as Custom with
+// its value. (Robin, 2026-11-03.)
+function bdayLeadOpts(cur) {
+  const isCustom = typeof cur === 'number' && ![1, 7, 30].includes(cur);
+  const presets = [[1, '1 day before'], [7, '1 week before'], [30, '1 month before']]
+    .map(([v, l]) => `<span class="cv-bl${cur === v ? ' on' : ''}" data-cc-bdaylead="${v}">${l}</span>`).join('');
+  const custom = `<span class="cv-bl${isCustom ? ' on' : ''}" data-cc-bdaylead="custom">${isCustom ? esc(cur + ' days before') : 'Custom…'}</span>`;
+  const off = `<span class="cv-bl${cur === 'off' ? ' on' : ''}" data-cc-bdaylead="off">Off</span>`;
+  return presets + custom + off;
+}
 // Load the usual birthday-reminder lead once (kv_bday_default), for the contact
 // card's "your usual" and the Settings control.
 function loadBdayDefault() { if (state.bdayDefault !== undefined) return; state.bdayDefault = ''; api('/api/kv/bday_default').then((r) => { state.bdayDefault = (r && r.value) || ''; if (state.view && (state.view.type === 'contacts' || state.view.type === 'settings')) renderNav(); }).catch(() => {}); }
@@ -19965,7 +19976,16 @@ function loadBdayDefault() { if (state.bdayDefault !== undefined) return; state.
 // usual just for them.
 async function ccSetBdayLead(v) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
-  const val = v === 'off' ? 'off' : Number(v);
+  let val;
+  if (v === 'off') val = 'off';
+  else if (v === 'custom') {
+    const curN = (typeof (c.props || {}).bdayLead === 'number') ? c.props.bdayLead : '';
+    const ans = await uiPrompt('How many days before the birthday should I remind you?', { title: 'Custom reminder', okLabel: 'Set', placeholder: 'e.g. 14', value: curN ? String(curN) : '' });
+    if (ans == null) return;
+    const n = Math.max(1, Math.min(90, Math.round(Number(ans)) || 0));
+    if (!n) { toast('Enter a number of days (1-90).'); return; }
+    val = n;
+  } else val = Number(v);
   c.props = Object.assign({}, c.props, { bdayLead: val });
   const ix = (state.contacts || []).findIndex((x) => String(x.id) === String(c.id)); if (ix >= 0) state.contacts[ix].props = c.props;
   if (state.view && state.view.type === 'contacts') renderContacts();
@@ -20131,7 +20151,7 @@ function cvBirthdayHtml(c) {
   const days = Math.round((nx - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5); const turns = nx.getFullYear() - by;
   const usual = bdayUsual();
   const cur = (p.bdayLead === 'off' || p.bdayLead === -1) ? 'off' : (p.bdayLead == null || p.bdayLead === '') ? usual : Number(p.bdayLead);
-  const opts = [[0, 'On the day'], [1, '1 day before'], [3, '3 days'], [7, 'A week'], ['off', 'Off']].map(([v, l]) => `<span class="cv-bl${cur === v ? ' on' : ''}" data-cc-bdaylead="${v}">${l}</span>`).join('');
+  const opts = bdayLeadOpts(cur);
   const note = (p.bdayLead == null || p.bdayLead === '') ? 'your usual' : 'just for ' + esc((c.title || 'them').split(' ')[0]);
   return `<div class="cv-coming-body"><div class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</div><div class="cv-remind"><span class="cv-remind-l">Remind me</span><span class="cv-bls">${opts}</span><span class="cv-remind-note">${note}</span></div></div>`;
 }
@@ -20639,8 +20659,7 @@ function contactCardInner(c) {
     // usual (Settings default); a set value overrides it just for this person.
     const usual = bdayUsual();
     const cur = (p.bdayLead === 'off' || p.bdayLead === -1) ? 'off' : (p.bdayLead == null || p.bdayLead === '') ? usual : Number(p.bdayLead);
-    const opts = [[0, 'On the day'], [1, '1 day before'], [3, '3 days'], [7, 'A week'], ['off', 'Off']]
-      .map(([v, l]) => `<span class="cv-bl${cur === v ? ' on' : ''}" data-cc-bdaylead="${v}">${l}</span>`).join('');
+    const opts = bdayLeadOpts(cur);
     const unset = (p.bdayLead == null || p.bdayLead === '');
     const note = unset ? 'your usual' : 'just for ' + esc((c.title || 'them').split(' ')[0]);
     bday = `<div class="cv-coming"><span class="cv-coming-l">Coming up</span><span class="cv-coming-v">Birthday, ${bd} ${MON3[bm - 1]}${by > 1901 ? ` – turns ${turns} in ${days} day${days === 1 ? '' : 's'}` : ` – in ${days} day${days === 1 ? '' : 's'}`}</span>
