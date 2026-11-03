@@ -2399,6 +2399,58 @@ async function sharedAreas(env, uid) {
     return b;
   });
 }
+// ── Activity log (V36 §71) ───────────────────────────────────────────────────
+// Members of a shared Space see each other's doings in the Today feed ("finished
+// a task", "moved a goal to 70%", "added a note"). We record an event only when
+// it happens in a SHARED area (one with share rows) - a private area has no
+// audience. The table is created lazily, so there's no separate live migration.
+// (Robin, 2026-11-03.)
+let _activityReady = false;
+async function ensureActivity(env) {
+  if (_activityReady) return;
+  try {
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS activity (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_id INTEGER NOT NULL, type TEXT NOT NULL, area_id TEXT, block_id TEXT, title TEXT, meta TEXT, created_at TEXT NOT NULL)').run();
+    await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_activity_area ON activity(area_id, created_at)').run();
+    _activityReady = true;
+  } catch {}
+}
+async function areaIsShared(env, areaId) {
+  if (!areaId) return false;
+  const r = await env.DB.prepare('SELECT 1 FROM shares WHERE block_id = ? LIMIT 1').bind(areaId).first().catch(() => null);
+  return !!r;
+}
+// Record an event. ev: { type, areaId, blockId, title, meta }. Silent on any error
+// and a no-op when the area isn't shared, so it never breaks the action it rides on.
+async function logActivity(env, ev) {
+  try {
+    const areaId = ev && ev.areaId; if (!areaId || !env.uid) return;
+    if (!(await areaIsShared(env, areaId))) return;
+    await ensureActivity(env);
+    await env.DB.prepare('INSERT INTO activity (actor_id, type, area_id, block_id, title, meta, created_at) VALUES (?,?,?,?,?,?,?)')
+      .bind(env.uid, ev.type, areaId, ev.blockId || null, String(ev.title || '').slice(0, 300), ev.meta ? JSON.stringify(ev.meta) : null, new Date().toISOString()).run();
+  } catch {}
+}
+// Recent activity by OTHER people in Spaces the current user can see (owns or was
+// shared), for the Today feed's "What's been happening".
+async function activityForMe(env) {
+  await ensureActivity(env);
+  const uid = env.uid;
+  const { results } = await env.DB.prepare(
+    `SELECT a.*, ar.title AS area_title, u.name AS actor_name, u.subdomain AS actor_sub
+       FROM activity a
+       JOIN blocks ar ON ar.id = a.area_id AND ar.archived = 0
+       JOIN users u ON u.id = a.actor_id
+      WHERE a.actor_id != ?
+        AND (ar.user_id = ? OR EXISTS (SELECT 1 FROM shares s WHERE s.block_id = a.area_id AND s.friend_id = ?))
+      ORDER BY a.created_at DESC LIMIT 40`,
+  ).bind(uid, uid, uid).all().catch(() => ({ results: [] }));
+  const seen = (await getSetting(env, 'activity_seen')) || '';
+  const parse = (m) => { try { return m ? JSON.parse(m) : null; } catch { return null; } };
+  return {
+    items: (results || []).map((r) => ({ id: r.id, type: r.type, areaId: r.area_id, areaTitle: r.area_title, blockId: r.block_id, title: r.title, meta: parse(r.meta), who: r.actor_name || r.actor_sub || 'Someone', whoSub: r.actor_sub, at: r.created_at, isNew: String(r.created_at) > seen })),
+    seen,
+  };
+}
 // Blocks that MEMBERS of a shared folio have added to it (area-tagged, not
 // private): a folio you were given edit access to is genuinely collaborative, so
 // everyone with access sees each other's contributions - add a file, a page, a
@@ -2528,6 +2580,12 @@ async function updateBlock(request, env, id) {
   sets.push('updated_at = ?'); args.push(new Date().toISOString());
   args.push(id, oid);
   await env.DB.prepare(`UPDATE blocks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`).bind(...args).run();
+  // §71 feed: "moved a shared goal to N%" - when a goal's progress changes.
+  if (existing.kind === 'goal' && b.props && ('pct' in b.props || 'progress' in b.props)) {
+    let cur = {}; try { cur = existing.props ? JSON.parse(existing.props) : {}; } catch {}
+    const oldP = Math.round(Number(cur.pct ?? cur.progress ?? 0)); const newP = Math.round(Number((b.props.pct ?? b.props.progress) ?? oldP));
+    if (newP !== oldP && cur.area) logActivity(env, { type: 'goal_moved', areaId: cur.area, blockId: id, title: ('title' in b ? b.title : existing.title), meta: { pct: newP } });
+  }
 
   if (Array.isArray(b.links)) {
     await env.DB.prepare('DELETE FROM block_links WHERE from_id = ? AND user_id = ?').bind(id, oid).run();
@@ -3790,7 +3848,7 @@ function nextRepeatDate(repeat, anchorISO, today) {
 }
 
 async function setTaskDone(env, id, done) {
-  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND kind = 'task' AND user_id = ?").bind(id, env.uid).first();
+  const row = await env.DB.prepare("SELECT props, title FROM blocks WHERE id = ? AND kind = 'task' AND user_id = ?").bind(id, env.uid).first();
   let p = {}; try { p = row && row.props ? JSON.parse(row.props) : {}; } catch {}
   let slotDone = !!done;
   if (done && p.repeat) {
@@ -3836,6 +3894,8 @@ async function setTaskDone(env, id, done) {
           AND (SELECT COUNT(*) FROM slot_tasks x WHERE x.slot_id = slots.id AND x.user_id = ?) = 1`,
     ).bind(slotDone ? 1 : 0, env.uid, id, env.uid, env.uid),
   ]);
+  // §71 feed: "finished a task" - only on a genuine completion (not a repeat roll).
+  if (done && p.done === true && p.area && !p.kit) logActivity(env, { type: 'task_done', areaId: p.area, blockId: id, title: (row && row.title) || '' });
   return p;
 }
 
@@ -4018,6 +4078,7 @@ async function createTask(request, env) {
     `INSERT INTO blocks (id, kind, parent_id, position, title, body, props, created_at, updated_at, archived, user_id)
      VALUES (?, 'task', NULL, ?, ?, '', ?, ?, ?, 0, ?)`,
   ).bind(id, posRow.p, title, JSON.stringify(props), now, now, env.uid).run();
+  if (props.area) logActivity(env, { type: 'task_add', areaId: props.area, blockId: id, title });   // §71 feed
 
   return json({ ok: true, tana_id: id }, request, 201);
 }
@@ -5523,6 +5584,8 @@ export default {
       if (path === '/api/search/expand' && request.method === 'POST') return searchExpand(request, env, json, err);
       // Sharing: notes & tasks handed to a friend (Friends phase 3a).
       if (path === '/api/shared' && request.method === 'GET') { const sw = await sharedWithMe(env); sw.seen = (await getSetting(env, 'shares_seen')) || ''; let dz = []; try { dz = JSON.parse((await getSetting(env, 'shares_dismissed')) || '[]'); } catch {} sw.dismissed = Array.isArray(dz) ? dz : []; return json(sw, request); }
+      if (path === '/api/activity' && request.method === 'GET') return json(await activityForMe(env), request);
+      if (path === '/api/activity/seen' && request.method === 'POST') { await setSetting(env, 'activity_seen', new Date().toISOString()); return json({ ok: true }, request); }
       if (path === '/api/shared/mine' && request.method === 'GET') return json(await sharedByMe(env), request);
       // The unified Shared hub: everything shared in both directions, all types.
       // Notes/tables/Life Spaces come from the shares table; tasks come from
