@@ -22083,11 +22083,94 @@ function renderReviews() {
       ${reviewsTypeBody(rtype)}`;
     return;
   }
-  $('#pane').innerHTML = `${pageCrumb(t('nav.reviews'))}<div class="pane-head"><h1>${t('nav.reviews')}</h1></div>
+  // §73 Reviews page (V36): masthead + one-line, ask bar, Due now cards, a
+  // Looking-back bar timeline (height = wheel score), the Wheel of Life, and
+  // When reviews land. (Robin, 2026-11-03.)
+  $('#pane').innerHTML = `${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews') }])}
+    <div class="rv-mast"><div class="rv-mast-eyebrow">Plans · Looking back</div><h1 class="rv-mast-t">${t('nav.reviews')}</h1><div class="rv-mast-line">${esc(reviewsOneLine())}</div></div>
     ${reviewOverviewHtml()}
-    ${daily}
-    <p class="t2-sub" style="font-style:normal">And the weekly, monthly, quarterly and yearly check-ins.</p>
-    ${reviewsBody()}`;
+    ${reviewDueCardsHtml()}
+    ${reviewTimelineHtml()}
+    ${wheelOfLifeHtml()}
+    ${reviewsLandHtml()}`;
+}
+// One warm, specific line under the title (Koyeba's voice). Falls back gracefully.
+function reviewsOneLine() {
+  const done = (state.reviews || []).filter((r) => (r.props || {}).status === 'done');
+  const weeks = done.filter((r) => ((r.props || {}).rtype || 'weekly') === 'weekly').length;
+  const wol = wheelCurrentAvg();
+  const bits = [];
+  if (weeks >= 2) bits.push(`${weeks} weeks reviewed`); else if (done.length) bits.push(`${done.length} review${done.length === 1 ? '' : 's'} so far`);
+  if (wol) bits.push(`the wheel is at ${wol} out of 5`);
+  return bits.length ? bits.join(' · ') + '.' : 'A quiet moment to look back and take stock.';
+}
+function wheelCurrentAvg() {
+  const areas = (state.areas || []).filter((a) => a && a.title && !(a.props && a.props.reviewOff));
+  const scored = areas.map((a) => Math.min((a.props && a.props.wheelScore) || 0, 5)).filter((s) => s > 0);
+  return scored.length ? Math.round(scored.reduce((s, n) => s + n, 0) / scored.length * 10) / 10 : 0;
+}
+// Due now: one card per cadence (Daily forest green), its state, period, when it
+// lands and a single action.
+function reviewDueCardsHtml() {
+  const today = todayISO(); const cards = [];
+  if (reflectOn()) {
+    const todays = (state.dailyReviews || []).find((n) => String((n.props && n.props.date) || '').slice(0, 10) === today);
+    cards.push(`<div class="rvd-card rvd-daily"><div class="rvd-top"><span class="rvd-kind">Daily</span><span class="rvd-state${todays ? ' done' : ''}">${todays ? 'Done ✓' : 'Ready'}</span></div><div class="rvd-period">Today</div><div class="rvd-when">closes tonight</div><button class="rvd-btn" ${todays ? `data-open-jentry="${todays.id}"` : 'data-journal-dailyreview'}>${todays ? 'Look back' : 'Close today'}</button></div>`);
+  }
+  RTYPE_ORDER.forEach((k) => {
+    const w = activeReviewWindow(k, today);
+    const ex = (state.reviews || []).find((r) => ((r.props || {}).rtype || 'weekly') === k && (r.props || {}).to === w.to);
+    const done = ex && (ex.props || {}).status === 'done'; const prog = ex && (ex.props || {}).status === 'inprogress';
+    const pt = periodTitle(k, w.from, w.to);
+    const dueDate = new Date(w.to + 'T00:00'); const diff = Math.round((dueDate - new Date(today + 'T00:00')) / 86400000);
+    const lands = done ? 'Filed for this period' : diff > 0 ? `lands ${dueDate.toLocaleDateString(dloc(), { weekday: 'long' })}, in ${diff} day${diff === 1 ? '' : 's'}` : diff === 0 ? 'due today' : `${-diff} day${diff === -1 ? '' : 's'} past`;
+    const st = done ? 'Done ✓' : prog ? 'In progress' : 'Ready';
+    const cta = done ? 'Look back' : prog ? 'Continue' : 'Start';
+    const attr = ex ? `data-open-review="${ex.id}"` : `data-start-review="${k}"`;
+    cards.push(`<div class="rvd-card"><div class="rvd-top"><span class="rvd-kind">${esc(REVIEWS[k].label)}</span><span class="rvd-state${done ? ' done' : ''}">${st}</span></div><div class="rvd-period">${esc(pt.main)}</div><div class="rvd-when">${esc(lands)}</div><button class="rvd-btn" ${attr}>${cta}</button></div>`);
+  });
+  return `<div class="rv-due"><div class="feed-eyebrow"><span class="fe-l">Due now</span></div><div class="rvd-note">Each one counts for its date, even if you do it a little early or late.</div><div class="rvd-grid">${cards.join('')}</div></div>`;
+}
+// Looking back: tabs + a bar timeline whose height is each period's wheel score.
+function reviewTimelineHtml() {
+  const today = todayISO();
+  const k = RTYPE_ORDER.includes(state.reviewsTab) ? state.reviewsTab : 'weekly';
+  const recs = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === k);
+  let w = activeReviewWindow(k, today); const periods = [];
+  for (let i = 0; i < 12; i++) { periods.unshift(w); try { w = prevPeriodWindow(k, w); } catch { break; } }
+  const curTo = activeReviewWindow(k, today).to;
+  const shortLbl = (pw) => { const d = new Date(pw.to + 'T00:00'); return k === 'weekly' ? d.toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : k === 'monthly' ? d.toLocaleDateString(dloc(), { month: 'short' }) : k === 'yearly' ? String(d.getFullYear()) : 'Q' + (Math.floor(d.getMonth() / 3) + 1); };
+  const bars = periods.map((pw) => {
+    const ex = recs.find((r) => (r.props || {}).to === pw.to);
+    const done = ex && (ex.props || {}).status === 'done';
+    const score = ex ? Math.min(wheelAvg((ex.props || {}).wheel) || 0, 5) : 0;
+    const isCur = pw.to === curTo;
+    const h = score ? Math.max(8, Math.round((score / 5) * 100)) : 10;
+    const cls = done ? 'done' : isCur ? 'cur' : 'empty';
+    const stateTag = done ? 'done' : ex ? 'prog' : 'none';
+    return `<button class="rvt-bar ${cls}" data-rvt="${k}|${pw.from}|${pw.to}|${ex ? ex.id : ''}|${stateTag}" title="${esc(periodTitle(k, pw.from, pw.to).main)}"><span class="rvt-score">${score || ''}</span><span class="rvt-colwrap"><span class="rvt-col" style="height:${h}%"></span></span><span class="rvt-lbl">${esc(shortLbl(pw))}</span></button>`;
+  }).join('');
+  const counts = {}; recs.forEach(() => {}); RTYPE_ORDER.forEach((t) => { counts[t] = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === t && (r.props || {}).status === 'done').length; });
+  const tabs = RTYPE_ORDER.map((t) => `<span class="rvt-tab${k === t ? ' on' : ''}" data-reviews-tab="${t}" role="button" tabindex="0">${esc(REVIEWS[t].label)}${counts[t] ? ` <i>${counts[t]}</i>` : ''}</span>`).join('');
+  const sel = state.rvtSel && state.rvtSel.startsWith(k + '|') ? reviewTimelineSelHtml(state.rvtSel) : '';
+  return `<div class="rv-back"><div class="feed-eyebrow"><span class="fe-l">Looking back</span></div><div class="rvt-tabs">${tabs}</div><div class="rvt-strip">${bars}</div>${sel}</div>`;
+}
+function reviewTimelineSelHtml(sel) {
+  const [k, from, to, id, stateTag] = sel.split('|');
+  const pt = periodTitle(k, from, to);
+  const st = stateTag === 'done' ? 'Filed' : stateTag === 'prog' ? 'In progress' : 'Not filled in';
+  const act = stateTag === 'done' ? `<span class="rvt-sel-go" data-open-review="${id}" role="button" tabindex="0">Read the report →</span>`
+    : stateTag === 'prog' ? `<span class="rvt-sel-go" data-open-review="${id}" role="button" tabindex="0">Continue →</span>`
+      : `<span class="rvt-sel-go" data-start-review-period="${k}|${from}|${to}" role="button" tabindex="0">Fill it in →</span>`;
+  return `<div class="rvt-sel"><span class="rvt-sel-p">${esc(pt.main)}</span><span class="rvt-sel-st">${st}</span>${act}</div>`;
+}
+// When reviews land: a folded section, next date per cadence (settings live in §26).
+function reviewsLandHtml() {
+  const today = todayISO(); const open = rvSecOpen('land');
+  const head = rvSecH('land', 'When reviews land');
+  if (!open) return `<section class="home-sec rv-land-sec">${head}</section>`;
+  const rows = RTYPE_ORDER.map((k) => { const w = activeReviewWindow(k, today); const d = new Date(w.to + 'T00:00'); return `<div class="rv-land-row"><span class="rv-land-k">${esc(REVIEWS[k].label)}</span><span class="rv-land-d">next lands ${esc(d.toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</span></div>`; }).join('');
+  return `<section class="home-sec rv-land-sec">${head}<div class="rv-land-body"><div class="rv-land-note">Choose which day each review lands and when to be reminded in Settings.</div>${rows}<button class="rvd-btn rv-land-set" data-open-settings>Review settings →</button></div></section>`;
 }
 // A focused page for one cadence (Weekly / Monthly / …): whether this period's
 // review is done, when the next is due (or how overdue it is), and cards for
@@ -27120,6 +27203,8 @@ document.addEventListener('click', (e) => {
   { const ca = t.closest('[data-rev-cad-alert]'); if (ca) { const [k, n] = ca.dataset.revCadAlert.split(':'); setReviewCadAlert(k, +n); return; } }
   { const cr = t.closest('[data-rev-cad-resume]'); if (cr) { setReviewCadPause(cr.dataset.revCadResume, ''); toast('Resumed'); return; } }
   { const rf = t.closest('[data-reviews-filter]'); if (rf) { state.reviewsFilter = rf.dataset.reviewsFilter || ''; if (state.view.type === 'reviews') renderReviews(); else renderGoals(); return; } }
+  { const rtb = t.closest('[data-reviews-tab]'); if (rtb) { state.reviewsTab = rtb.dataset.reviewsTab; state.rvtSel = null; renderReviews(); return; } }
+  { const rvb = t.closest('[data-rvt]'); if (rvb) { state.rvtSel = (state.rvtSel === rvb.dataset.rvt) ? null : rvb.dataset.rvt; renderReviews(); return; } }
   const orv = t.closest('[data-open-review]'); if (orv) { openReviewCard(orv.dataset.openReview).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }
   if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }

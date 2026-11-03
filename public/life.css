@@ -12615,6 +12615,57 @@ body.mailsheet-open { overflow:hidden; }
 .fh-act { cursor:pointer; color:var(--k-ink); } .fh-act.prim { color:var(--k-goldt); }
 .fh-act:hover { color:var(--k-goldt); }
 .feed-empty { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; color:var(--k-mute); padding:40px 0; }
+
+/* §73 Reviews page (V36): masthead, Due now cards, Looking-back bar timeline,
+   When reviews land. The Wheel and the ask bar reuse their existing styles. */
+.rv-mast { padding:4px 0 0; }
+.rv-mast-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }
+.rv-mast-t { font-family:var(--k-serif); font-weight:500; font-size:clamp(40px,4.4vw,56px); line-height:1; margin:10px 0 0; color:var(--k-ink); }
+.rv-mast-line { font-family:var(--k-sans); font-weight:400; font-size:16px; color:var(--k-mute); margin-top:10px; }
+.rv-due { margin-top:30px; }
+.rvd-note { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); margin:0 0 12px; }
+.rvd-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:12px; }
+.rvd-card { background:var(--k-panel); border:1px solid var(--k-line); padding:16px 18px; display:flex; flex-direction:column; gap:6px; min-height:150px; box-sizing:border-box; }
+.rvd-daily { background:var(--k-deep); border-color:var(--k-deep); color:var(--k-ondeep); }
+.rvd-top { display:flex; align-items:baseline; gap:10px; }
+.rvd-kind { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); }
+.rvd-daily .rvd-kind { color:var(--k-gold); }
+.rvd-state { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-mute); white-space:nowrap; }
+.rvd-state.done { color:var(--k-goldt); }
+.rvd-daily .rvd-state { color:rgba(246,241,230,.72); }
+.rvd-period { font-family:var(--k-serif); font-weight:500; font-size:26px; line-height:1.1; color:var(--k-ink); }
+.rvd-daily .rvd-period { color:var(--k-ondeep); }
+.rvd-when { font-family:var(--k-sans); font-weight:400; font-size:13.5px; color:var(--k-mute); }
+.rvd-daily .rvd-when { color:rgba(246,241,230,.62); }
+.rvd-btn { margin-top:auto; align-self:flex-start; font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.22em; text-transform:uppercase; padding:11px 18px; border:1px solid var(--k-line); background:none; color:var(--k-ink); cursor:pointer; }
+.rvd-btn:hover { border-color:var(--k-gold); color:var(--k-goldt); }
+.rvd-daily .rvd-btn { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ondeep); }
+.rv-back { margin-top:34px; }
+.rvt-tabs { display:flex; flex-wrap:wrap; gap:20px; margin-bottom:14px; }
+.rvt-tab { font-family:var(--k-sans); font-weight:500; font-size:15px; color:var(--k-mute); cursor:pointer; padding-bottom:4px; border-bottom:2px solid transparent; }
+.rvt-tab:hover { color:var(--k-goldt); }
+.rvt-tab.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.rvt-tab i { font-style:normal; font-size:13px; color:var(--k-mute); }
+.rvt-strip { display:flex; align-items:flex-end; gap:clamp(8px,1.4vw,18px); background:var(--k-panel); border:1px solid var(--k-line); padding:18px 20px 12px; overflow-x:auto; }
+.rvt-bar { flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:40px; background:none; border:0; cursor:pointer; padding:0; }
+.rvt-score { font-family:var(--k-sans); font-weight:600; font-size:12px; color:var(--k-mute); height:14px; }
+.rvt-colwrap { height:110px; display:flex; align-items:flex-end; }
+.rvt-col { width:22px; display:block; background:var(--k-gold); transition:transform .4s ease; }
+.rvt-bar.cur .rvt-col { background:color-mix(in srgb,var(--k-gold) 40%,transparent); border:1.5px dashed var(--k-gold); box-sizing:border-box; }
+.rvt-bar.empty .rvt-col { background:none; border:1.5px dashed var(--k-line); box-sizing:border-box; }
+.rvt-lbl { font-family:var(--k-sans); font-weight:500; font-size:11px; color:var(--k-mute); white-space:nowrap; border-top:1px solid var(--k-ink); padding-top:6px; width:100%; text-align:center; }
+.rvt-bar:hover .rvt-lbl { color:var(--k-goldt); }
+.rvt-sel { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; margin-top:12px; padding:12px 16px; background:var(--k-panel); border:1px solid var(--k-line); }
+.rvt-sel-p { font-family:var(--k-serif); font-weight:500; font-size:19px; color:var(--k-ink); }
+.rvt-sel-st { font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-mute); }
+.rvt-sel-go { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-goldt); cursor:pointer; white-space:nowrap; }
+.rv-land-sec { margin-top:30px; }
+.rv-land-body { padding:6px 0 4px; }
+.rv-land-note { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); margin-bottom:10px; }
+.rv-land-row { display:flex; align-items:baseline; gap:12px; padding:10px 0; border-top:1px solid var(--k-line); }
+.rv-land-k { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-ink); min-width:90px; }
+.rv-land-d { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); }
+.rv-land-set { margin-top:14px; }
 .feed-since-head { display:flex; align-items:center; gap:12px; padding:16px 0 10px; }
 .feed-since-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
 .feed-since-rule { flex:1; height:1px; background:var(--k-line); }
