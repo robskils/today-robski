@@ -5492,7 +5492,7 @@ const KNAV_VIEW = {
   calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans', today: 'plans', practices: 'plans', practicecard: 'plans',
   notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
   goals: 'plans', goalcard: 'plans', bucketcard: 'plans', reviews: 'plans', reviewcard: 'plans',
-  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'inner',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'plans',
   money: 'money', financial: 'money',
 };
 // The top-nav group labels, keyed by group id - the "section" segment of every
@@ -18793,7 +18793,7 @@ function mailAccordionRow(x, count) {
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
   // as a bar that sticks to the top of the card while you read it.
   const triage = mailOpenTriageBar(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}${parts.make}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${parts.make}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // §58 + Robin: the sticky triage bar at the top of an open email - the same four
 // moves as the action row, reachable without scrolling to the end.
@@ -18849,13 +18849,14 @@ function mailOpenPanelHtml(o) {
   // flip line). Reflects the linked state once made ("Note linked").
   const besideActs = `<button class="mail-make mail-make-beside${bl && bl.note ? ' linked' : ''}" data-mail-note-beside>${bl && bl.note ? 'Note linked' : 'Make a note beside →'}</button><button class="mail-make mail-make-beside${bl && bl.task ? ' linked' : ''}" data-mail-task-beside>${bl && bl.task ? 'Task linked' : 'Make a task beside →'}</button>${besideMobile ? '' : '<span class="mail-make-hint">Or drag it across.</span>'}`;
   const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${besideActs}</div>`;
-  const replyActs = `<div class="mail-replyacts"><button class="mail-reply" data-mail-reply-all>Reply</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
+  const replyActs = `<div class="mail-replyacts"><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
     // bar at the top, not stranded at the bottom under the email.
     make: `<div class="mail-maketop">${makeActs}</div>`,
-    below: `${noticed}<div class="mail-ar-acts">${sorts}${replyActs}</div>`,
+    reply: replyActs,
+    below: noticed,
   };
 }
 // The "More" menu in the open row: everything §12 keeps but tucks away - Email

@@ -9897,6 +9897,13 @@ body.night .mail-ar-card .mail-text.mail-text-plain, :root[data-theme='dark'] .m
 .mail-make { background:none; border:0; font-family:var(--msans); font-size:14px; color:var(--ink-2); cursor:pointer; white-space:nowrap; }
 .mail-make:hover { color:var(--k-goldt); }
 .mail-replyacts { margin-left:auto; display:flex; gap:20px; }
+/* V-: Reply · Reply all · Forward sit in a clean row at the TOP of an open email
+   (was buried under the body). Matches the make row. (Robin, 2026-11-03.) */
+.mail-ar-replytop { padding:11px 0 12px 48px; background:#fff; border-bottom:1px solid oklch(0.9 0.012 80); }
+body.night .mail-ar-replytop, :root[data-theme='dark'] .mail-ar-replytop { background:oklch(0.96 0.006 85); }
+.mail-ar-replytop .mail-replyacts { margin-left:0; gap:12px 22px; flex-wrap:wrap; align-items:center; }
+.mail-ar-replytop .mail-reply-primary { color:var(--k-goldt); font-weight:600; }
+@media (max-width:620px){ .mail-ar-replytop { padding-left:0; } }
 .mail-reply { background:none; border:0; font-family:var(--msans); font-size:14px; color:var(--ink); cursor:pointer; white-space:nowrap; }
 .mail-reply-fwd { color:var(--ink-2); }
 .mail-reply:hover { color:var(--k-goldt); }
@@ -12947,7 +12954,7 @@ body.mailsheet-open { overflow:hidden; }
 .rr-words-k { font:600 10.5px var(--k-sans); letter-spacing:.12em; text-transform:uppercase; color:var(--k-goldt); }
 .rr-words-v { font:500 16px/1.5 var(--k-serif); color:var(--k-ink); }
 /* Sections — numeral + Cormorant title + Jost hint + sign */
-.rr-v37 .rr-sec { border-bottom:1px solid var(--k-line); }
+.rr-v37 .rr-sec { margin:0; padding-top:0; border-top:0; border-bottom:1px solid var(--k-line); }
 .rr-v37 .rr-h.rr-collap { display:flex; align-items:baseline; gap:16px; width:100%; padding:34px 0 14px; background:none; border:0; cursor:pointer; text-align:left; margin:0; }
 .rr-h-num { flex:none; width:26px; font:italic 300 18px var(--k-serif); color:var(--k-gold); }
 .rr-h-t { font:500 32px/1.05 var(--k-serif); color:var(--k-ink); white-space:nowrap; }
