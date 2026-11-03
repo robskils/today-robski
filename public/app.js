@@ -31568,7 +31568,14 @@ function showRequired2fa() {
     // your place. A deep-link route below still wins over all of this. (Robin:
     // desktop reopens the whole session; only the phone app resets to Home.)
     const installedApp = (() => { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; } })();
-    const forceHome = installedApp && reopenedAfterAWhile();
+    // "If it was closed, just take me to the top of Today" - every device (Robin,
+    // 2026-11-03). sessionStorage is the exact "was it closed" signal: it survives
+    // a refresh (keep your place) but is cleared when the app/tab is really closed,
+    // so a genuine cold open lands on Today. The installed app's after-a-while
+    // reset still applies as a fallback.
+    let freshOpen = false;
+    try { freshOpen = !sessionStorage.getItem('koyeba.ses'); sessionStorage.setItem('koyeba.ses', '1'); } catch {}
+    const forceHome = freshOpen || (installedApp && reopenedAfterAWhile());
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
@@ -31599,7 +31606,7 @@ function showRequired2fa() {
     // The default landing (the active tab's view) is a fallback, not a command:
     // if you tapped a sidebar item while the app was still booting, that click has
     // already navigated (navGen moved), so DON'T override it with the default page.
-    else if (navGen === 0) await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome());
+    else if (navGen === 0) { await Promise.resolve(openView(state.tabs.find((t) => t.id === state.activeTab).view)).catch(() => openHome()); if (forceHome) { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} } }
     startMailUnreadPoll();   // show the Mail unread badge from the moment the app loads
     startPresence();         // heartbeat so friends can see you're online
     startFriendStatusPoll(); // Contacts badge + Home "People" section
