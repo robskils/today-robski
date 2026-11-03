@@ -6125,12 +6125,12 @@ async function loadWeather() {
   state.weather = null;
   try { const c = JSON.parse(localStorage.getItem('life.weather')); if (c && c.at && Date.now() - c.at < 30 * 60000 && Number.isFinite(c.temp)) { state.weather = c; return; } } catch {}
   const loc = cachedLoc();
-  if (!loc) { ensureLoc(); setTimeout(() => { if (cachedLoc() && state.weather === null) { state.weather = undefined; if (state.view && state.view.type === 'home') renderHome(); } }, 4000); return; }
+  if (!loc) { ensureLoc(); setTimeout(() => { if (cachedLoc() && state.weather === null) { state.weather = undefined; renderHomeSoon(); } }, 4000); return; }
   try {
     const w = await api(`/api/weather?lat=${loc.lat}&lon=${loc.lng}`);
     state.weather = (w && w.temp != null) ? w : 'off';
     try { if (state.weather !== 'off') localStorage.setItem('life.weather', JSON.stringify(state.weather)); } catch {}
-    if (state.view && state.view.type === 'home') renderHome();
+    renderHomeSoon();
   } catch { state.weather = 'off'; }
 }
 const TBL_ICO = '<span class="ico-tbl">▦</span>';   // pink grid = table note
@@ -6138,6 +6138,19 @@ const NOTE_ICO = '<span class="ico-note">▤</span>';  // the note glyph, shown 
 const KIND_IC = { note: NOTE_ICO, table: TBL_ICO, task: '✓', row: TBL_ICO, area: '◈', journal: '✎' };
 const KIND_LABEL = { task: 'Tasks', note: 'Notes', table: 'Tables', area: 'Spaces' };
 
+// Opening Today fires off ~eight APIs (reviews, day, goals, tasks, friends,
+// shared, invites, folio feed, weather…), and each used to rebuild the whole
+// pane the moment it landed - so Today flashed as it repainted six-to-eight
+// times in half a second. renderHomeSoon coalesces that burst into a single
+// repaint on the next frame. (Robin: avoid the load flash.)
+let __homeRenderT = 0;
+function renderHomeSoon() {
+  if (__homeRenderT) return;   // one repaint per ~70ms window absorbs the whole burst
+  __homeRenderT = setTimeout(() => {
+    __homeRenderT = 0;
+    if (state.view && state.view.type === 'home') renderHome();
+  }, 70);
+}
 async function openHome() {
   const gen = bumpNav();
   state.view = { type: 'home' };
@@ -6156,7 +6169,7 @@ async function openHome() {
   if (state.home) renderHome();
   // Re-pull reviews each time Home opens, so a review filed on another device clears
   // the "due" nudge here (state.reviews would otherwise stay stale). (Robin.)
-  api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); } }).catch(() => {});
+  api('/api/blocks?kind=review').then((rv) => { if (Array.isArray(rv)) { state.reviews = rv; clearStaleReviewNotif(); renderHomeSoon(); } }).catch(() => {});
   const [favs, day, pad, rec, goals, alerts, spirit, order, mob, sideOrd, fd, palRec, tasksRaw] = await Promise.all([
     api('/api/favorites').catch(() => state.favs),
     api('/api/day').catch(() => ({ events: [] })),
@@ -6191,22 +6204,24 @@ async function openHome() {
   if (spirit && spirit.value) { try { const s = JSON.parse(spirit.value); if (s && s.name) { state.spiritCard = s; localStorage.setItem('life.spiritCard', spirit.value); } } catch {} }
   if (gen !== navGen) return;   // navigated away while Home was loading - don't clobber the new page
   state.favs = favs; state.home = { events: day.events || [], slots: day.slots || [], lanes: day.lanes || [], notepad: (pad && pad.value) || '', quote: day.quote || null, quoteMode: day.quoteMode || 'random', alerts: alerts || { birthdays: [], p1: 0 }, today: day.today || dayKey(new Date()), dayOffset: 0, dayData: null, tileOpen: 'today' };
-  renderNav(); renderHome();
+  // Coalesced: the instant cached paint above (if any) stays up, and this fresh
+  // paint plus every trailing feed below collapse into one repaint next frame.
+  renderNav(); renderHomeSoon();
   // If a today event names a person, load contacts once so the "· with <name>"
   // chip can resolve (the one-tap link works without them).
-  if ((state.home.events || []).some((e) => e.contact) && state.contacts === undefined) loadContacts().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {});
+  if ((state.home.events || []).some((e) => e.contact) && state.contacts === undefined) loadContacts().then(() => { renderHomeSoon(); }).catch(() => {});
   // Friend invitations surface on Home (towards the bottom), so refresh them each
   // time Home opens - Today is the wall of everything you need to know. (Robin.)
-  api('/api/friends').then((fr) => { if (fr) { state.friends = fr; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  api('/api/friends').then((fr) => { if (fr) { state.friends = fr; renderHomeSoon(); } }).catch(() => {});
   // Spaces/pages shared WITH me surface front and centre - a share you shouldn't
   // miss. New since last cleared is what shows; the × marks them seen. (Robin.)
-  api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; state.sharesDismissed = r.dismissed || []; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  api('/api/shared').then((r) => { if (r) { state.sharedItems = r.items || []; state.sharesSeen = r.seen || ''; state.sharesDismissed = r.dismissed || []; renderHomeSoon(); } }).catch(() => {});
   // Admins get a home alert for new invite requests (owner only for now).
-  if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  if (state.me && state.me.id === 1) api('/api/admin/invite-requests').then((r) => { if (r) { state.inviteReq = r; renderHomeSoon(); } }).catch(() => {});
   // What others have done in spaces you share - surfaced on the feed. Mark seen so
   // next visit only flags what's new since this one. (Robin, 2026-10-14.)
   api('/api/feed/folios').then((r) => {
-    if (r && r.updates) { state.home.folioFeed = r; if (state.view && state.view.type === 'home') renderHome(); if (r.updates.length) api('/api/feed/folios/seen', { method: 'POST' }).catch(() => {}); }
+    if (r && r.updates) { state.home.folioFeed = r; renderHomeSoon(); if (r.updates.length) api('/api/feed/folios/seen', { method: 'POST' }).catch(() => {}); }
   }).catch(() => {});
 }
 // Home "Today" = calendar events + the blocks placed on the Today tool (timed
