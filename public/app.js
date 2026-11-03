@@ -8715,6 +8715,9 @@ function homeTimeWeatherHtml() {
   if (w && typeof w === 'object' && w.temp != null) {
     const word = wxWord(w.code);
     segs.push(`${w.temp}°${word ? ' ' + word : ''}${place ? ', ' + place : ''}`);
+    // Today's high/low alongside the current temp - the worker already returns them
+    // (a nice touch Robin had before). (Robin, 2026-11-03.)
+    if (w.high != null && w.low != null) segs.push(`high ${w.high}°, low ${w.low}°`);
     if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push(`sunset ${sm[1]}`); }
     if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push(`tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}`); }
   } else if (place) { segs.push(place); }
@@ -26616,7 +26619,7 @@ document.addEventListener('click', (e) => {
   // toggle the row - so it's handled before the row's expand (data-home-read).
   { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarotReading(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
-  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; state.home = state.home || {}; state.home.ltab2 = 'mail'; try { localStorage.setItem('life.home.ltab2', 'mail'); } catch {} renderHome(); setTimeout(() => { const el = document.querySelector('.home-mmtabs'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); glanceMailToggle(har.dataset.homeArrRead); }, 90); return; } }
+  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; glanceMailOpenIn(har.dataset.homeArrRead); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
