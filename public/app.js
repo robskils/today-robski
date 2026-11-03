@@ -14235,7 +14235,9 @@ function eventsByDay() {
   for (const c of (state.contacts || [])) {
     const b = c.props && c.props.birthday; if (!b || !/^\d{4}-\d{2}-\d{2}$/.test(b)) continue;
     const [, bm, bd] = b.split('-').map(Number); if (!bm || !bd) continue;
-    for (const y of [yr, yr + 1]) {
+    // Cover the years you might scroll to (last year through two ahead), so a
+    // birthday shows whichever month you're looking at. (Robin: birthdays on the cal.)
+    for (const y of [yr - 1, yr, yr + 1, yr + 2]) {
       const iso = `${y}-${String(bm).padStart(2, '0')}-${String(bd).padStart(2, '0')}`;
       (map[iso] = map[iso] || []).push({ bday: true, allDay: true, date: iso, id: 'bday:' + c.id, contact: c.id, title: `${c.title || 'A contact'}’s birthday` });
     }
@@ -14473,6 +14475,9 @@ function evStyle(e, big) {
   return `font-family:var(--k-sans);font-weight:400;font-size:${big ? 16 : 13}px;line-height:1.4;color:var(--k-ink)`;
 }
 function renderCalendar() {
+  // Contacts power the birthday lines (eventsByDay synthesises them); make sure
+  // they're loaded even on a cold tab-restore, then repaint. (Robin: birthdays.)
+  if (state.contacts === undefined) loadContacts().then(() => { if (state.view && state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
   const c = state.cal, byDay = eventsByDay();
   // Never rebuild the event form out from under an active edit (its native picker
   // may be open); if a field in the open form has focus, skip this paint.
