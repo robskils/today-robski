@@ -1121,9 +1121,9 @@ const HELP = {
       <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the pages, tables and areas you keep returning to.</li></ul>
       <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
   tasks: { title: 'Tasks', tip: 'Everything you have to do, in one place you can bend to your own way of thinking. Filter it, sort it, tick it off anywhere - and it’s done everywhere at once.',
-    body: `<p>Every task lives here. A task has a title, a priority (P1-P4), an optional page and an optional due date.</p>
+    body: `<p>Every task lives here. A task has a title, a priority (First, Soon or Whenever), an optional page and an optional due date.</p>
       <ul><li><b>Add</b> one with <b>+ New</b> or the + by Tasks in the sidebar - it’s usable the instant you type it.</li>
-      <li><b>Filter</b> builds your own view: add conditions (priority is P1, area is Work, due this week…) and stack as many as you like.</li>
+      <li><b>Filter</b> builds your own view: add conditions (priority is First, area is Work, due this week…) and stack as many as you like.</li>
       <li><b>Sort</b> by clicking a column header.</li>
       <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
       <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
@@ -5906,7 +5906,7 @@ async function openTasks(filter) {
 function assignedSectionHtml() {
   const a = state.assignments || { pending: [], accepted: [] };
   if (!a.pending.length && !a.accepted.length) return '';
-  const prio = (p) => p ? `<span class="p-tag p-${p}">${p}</span>` : '';
+  const prio = (p) => p ? `<span class="p-tag p-${p}">${prioLabel(p)}</span> ` : '';
   const pend = a.pending.map((t) => `<div class="assigned-row pending"><span class="ar-body"><span class="ar-t">${esc(t.title || 'Untitled task')}</span><span class="ar-meta">from ${esc(t.from)}</span></span><span class="ar-acts"><button class="add-btn wide" data-assign-accept="${t.id}">Accept</button><button class="ghost" data-assign-decline="${t.id}">Decline</button></span></div>`).join('');
   const acc = a.accepted.map((t) => `<div class="assigned-row"><button class="ar-check-btn" data-assign-tick="${t.id}" data-done="${t.done ? 1 : 0}" title="${t.done ? 'Mark not done' : 'Mark done'}">${t.done ? '☑' : '☐'}</button><button class="ar-open" data-open-task="${t.id}"><span class="ar-t ${t.done ? 'struck' : ''}">${esc(t.title || 'Untitled task')}</span><span class="ar-meta">${prio(t.priority)}from ${esc(t.from)}</span></button></div>`).join('');
   return `<section class="assigned-sec">
@@ -8200,7 +8200,7 @@ function besideItemHtml(b, kind) {
   const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Beside')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close>Fold away</button></div></div>`;
   let body;
   if (kind === 'note') body = `<div class="pane2-body prose">${sanitizeProse(b.body || '') || '<p class="pane2-empty">Nothing in this note yet.</p>'}</div>`;
-  else if (kind === 'task') body = `<div class="pane2-body"><div class="pane2-meta">${p.priority ? esc(p.priority) + ' · ' : ''}${p.done ? 'Done' : 'Open'}${p.area && areaById(p.area) ? ' · ' + esc(areaById(p.area).title) : ''}</div>${b.body ? `<div class="prose">${sanitizeProse(b.body)}</div>` : ''}</div>`;
+  else if (kind === 'task') body = `<div class="pane2-body"><div class="pane2-meta">${prioLabel(p.priority) ? prioLabel(p.priority) + ' · ' : ''}${p.done ? 'Done' : 'Open'}${p.area && areaById(p.area) ? ' · ' + esc(areaById(p.area).title) : ''}</div>${b.body ? `<div class="prose">${sanitizeProse(b.body)}</div>` : ''}</div>`;
   else if (kind === 'goal') { const pct = gPct(b); body = `<div class="pane2-body"><div class="pane2-prog"><div class="kg-prog-line"><i style="width:${pct}%"></i></div><div class="kg-prog-pct">${pct}%</div></div><div class="pane2-meta">${esc(gGoalMeta(b))}</div>${p.why ? `<div class="pane2-why">${esc(p.why)}</div>` : ''}</div>`; }
   else if (kind === 'area') body = `<div class="pane2-body"><div class="pane2-vision">${esc((p.vision || '').trim() || 'No vision yet.')}</div></div>`;
   else if (kind === 'contact') body = `<div class="pane2-body"><div class="pane2-meta">${esc(p.role || p.email || '')}</div></div>`;
@@ -8411,7 +8411,7 @@ function homeWhatNextCandidates() {
     if (d <= 1) list.push({ pr: d < 0 ? 0 : 1, title: g.title || 'A goal', because: d < 0 ? `It is ${-d} day${d === -1 ? '' : 's'} late now, and it will feel lighter once it is moving.` : 'It comes due today - a small step keeps it alive.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', an(gp(g).area), d < 0 ? `${-d} days late` : 'due today'] });
   });
   if (modOn('mail')) { const n = mailHeaderCount(); if (n) list.push({ pr: 2, title: n === 1 ? 'Clear the one email waiting in your inbox.' : `Clear the ${n} emails waiting in your inbox.`, because: 'A few quick replies and it is off your mind.', verb: 'Open Mail', attr: 'data-open-mail', why: ['Mail', n + ' to sort'] }); }
-  const p1 = priorityTasks(); if (p1.length) { const tk = p1[0]; list.push({ pr: 3, title: tk.title || 'A task', because: 'You marked this a priority - worth doing first.', verb: 'Open it', attr: `data-open-task="${tk.id}"`, why: ['Task', 'P1', an(tk.props && tk.props.area)] }); }
+  const p1 = priorityTasks(); if (p1.length) { const tk = p1[0]; list.push({ pr: 3, title: tk.title || 'A task', because: 'You marked this a priority - worth doing first.', verb: 'Open it', attr: `data-open-task="${tk.id}"`, why: ['Task', prioLabel(tk.props && tk.props.priority) || 'First', an(tk.props && tk.props.area)] }); }
   (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active').forEach((g) => { const q = gQuietDays(g); if (q >= 14) list.push({ pr: 4, title: `Spend twenty minutes on "${g.title || 'a goal'}".`, because: 'You said this mattered, and it has been quiet for a while.', verb: 'Open it', attr: `data-open-goal="${g.id}"`, why: ['Goal', `quiet ${q} days`, an(gp(g).area)] }); });
   ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { list.push({ pr: 5, title: `Reach out to ${k.name || 'someone'}.`, because: k.last ? `You last spoke ${kitWhen(k.last)}.` : 'You meant to stay in touch.', verb: 'Open', attr: `data-open-contact="${k.id}"`, why: ['People'] }); });
   // §42: a birthday today is worth a nudge near the top; an upcoming one is a
@@ -8443,7 +8443,7 @@ function homeWnTasksBodyHtml() {
   if (!ts.length) ts = priorityTasks();
   const foot = `<div class="gln-panel-foot"><button class="gln-open" data-view-tasks>Open Tasks →</button></div>`;
   if (!ts.length) return `<div class="gln-panel-rows"><div class="gln-empty">Nothing to do - a clear run.</div></div>${foot}`;
-  const rows = ts.slice(0, 6).map((t) => { const a = (t.props && t.props.area) ? areaById(t.props.area) : null; const pr = (t.props && t.props.priority) || ''; const meta = [pr && /^p[1-4]$/i.test(pr) ? pr.toUpperCase() : '', a ? a.title : ''].filter(Boolean).join(' · '); return `<button class="gln-item" data-open-task="${esc(t.id)}"><span class="gln-item-b"><span class="gln-item-t">${esc(t.title || 'A task')}</span>${meta ? `<span class="gln-item-s">${esc(meta)}</span>` : ''}</span></button>`; }).join('');
+  const rows = ts.slice(0, 6).map((t) => { const a = (t.props && t.props.area) ? areaById(t.props.area) : null; const pr = (t.props && t.props.priority) || ''; const meta = [prioLabel(pr), a ? a.title : ''].filter(Boolean).join(' · '); return `<button class="gln-item" data-open-task="${esc(t.id)}"><span class="gln-item-b"><span class="gln-item-t">${esc(t.title || 'A task')}</span>${meta ? `<span class="gln-item-s">${esc(meta)}</span>` : ''}</span></button>`; }).join('');
   return `<div class="gln-panel-rows">${rows}</div>${foot}`;
 }
 function homeWnPracticesBodyHtml() {
@@ -12533,6 +12533,13 @@ function spSnip(b, n) { return (b && b.body || '').replace(/<[^>]+>/g, ' ').repl
 // on the Space page, so the stream shows filed emails + any event blocks present;
 // mail lives in IMAP. Type system 1a throughout.)
 const AV3_PRIO = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
+// Priority shows as First / Soon / Whenever everywhere (Robin, 2026-11-03). Stored
+// values stay P1-P4 so sorting is unchanged; P4 folds into Whenever (P3) for display,
+// pickers and filters. PRIO_PICK is the 3-level picker. (prioNorm folds P4->P3.)
+const PRIO_LABEL = AV3_PRIO;
+const prioLabel = (p) => PRIO_LABEL[p] || '';
+const prioNorm = (p) => (p === 'P4' ? 'P3' : (p || ''));
+const PRIO_PICK = [['P1', 'First'], ['P2', 'Soon'], ['P3', 'Whenever']];
 function av3Text(html) { return String(html || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim(); }
 function av3Due(iso) {
   if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return { t: '', gold: false };
@@ -13020,10 +13027,10 @@ function renderAreaOld() {
   // P1-P4 quick filter for this space's Tasks section, to the right of the
   // List/Board switch. Narrows only what's shown, never the counts. (Robin.)
   const aqp = state.areaTaskPrios instanceof Set ? state.areaTaskPrios : (state.areaTaskPrios = new Set());
-  const prioOk = (tk) => !aqp.size || aqp.has(tk.props.priority || '');
+  const prioOk = (tk) => !aqp.size || aqp.has(prioNorm(tk.props.priority));
   const areaBoardList = tasks.filter((tk) => !(tk.props.hideUntil && isSnoozed(tk) && !tk.props.done)).filter(prioOk);
   const openTsShown = openTs.filter(prioOk);
-  const areaPrioChips = `<div class="tq-prios area-tq-prios">${['P1', 'P2', 'P3', 'P4'].map((pp) => `<button class="tq-prio ${aqp.has(pp) ? 'on' : ''}" data-area-qprio="${pp}">${pp}</button>`).join('')}</div>`;
+  const areaPrioChips = `<div class="tq-prios area-tq-prios">${PRIO_PICK.map(([v, l]) => `<button class="tq-prio ${aqp.has(v) ? 'on' : ''}" data-area-qprio="${v}">${l}</button>`).join('')}</div>`;
   const tasksBody = `<div class="area-tasks-head">${tasksViewToggle('area')}${areaPrioChips}</div>${areaBoardOn()
     ? taskKanbanHtml(areaBoardList)
     : (openTsShown.length ? taskTableHtml(openTsShown, 'No open tasks here.') : `<div class="home-empty">No open tasks${aqp.size ? ' at that priority' : ''}.</div>`)}`;
@@ -15733,7 +15740,7 @@ function t2PracticesHtml() {
   const f = T.pracArea || '';
   const prios = T.pracPrios instanceof Set ? T.pracPrios : (T.pracPrios = new Set());
   const open = !!T.pracFilterOpen;
-  const shown = acts.filter((a) => (!f || a.area === f) && (!prios.size || prios.has(a.priority)));
+  const shown = acts.filter((a) => (!f || a.area === f) && (!prios.size || prios.has(prioNorm(a.priority))));
   const groups = new Map();
   shown.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
   const ordered = [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
@@ -15764,12 +15771,12 @@ function t2ColHead(name, count, kind, active, open) {
 function t2FilterBar(areas, f, prios, selAttr, prioAttr) {
   return `<div class="t2-filterbar">
     <select class="sel t2-tfilter" ${selAttr}><option value="">${t('filter.allareas')}</option>${areas.map((a) => `<option value="${a.id}" ${f === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}</option>`).join('')}</select>
-    ${prioAttr ? `<div class="t2-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>` : ''}
+    ${prioAttr ? `<div class="t2-prios">${PRIO_PICK.map(([v, l]) => `<button class="t2-prio ${prios.has(v) ? 'on' : ''}" ${prioAttr}="${v}">${l}</button>`).join('')}</div>` : ''}
   </div>`;
 }
-// The trusty P1-P4 toggles, always visible under a column header.
+// The First / Soon / Whenever toggles, always visible under a column header.
 function t2PrioRow(prios, prioAttr) {
-  return `<div class="t2-prios t2-prios-row">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="t2-prio ${prios.has(p) ? 'on' : ''}" ${prioAttr}="${p}">${p}</button>`).join('')}</div>`;
+  return `<div class="t2-prios t2-prios-row">${PRIO_PICK.map(([v, l]) => `<button class="t2-prio ${prios.has(v) ? 'on' : ''}" ${prioAttr}="${v}">${l}</button>`).join('')}</div>`;
 }
 function t2TasksHtml() {
   const T = state.today; const tasks = T.tasks || [];
@@ -15778,11 +15785,11 @@ function t2TasksHtml() {
   const prios = T.taskPrios instanceof Set ? T.taskPrios : (T.taskPrios = new Set());
   const open = !!T.taskFilterOpen;
   const areaHue = (id) => id ? (hueOf(areas.find((a) => a.id === id)) ?? 220) : 220;
-  const shown = tasks.filter((t) => (!f || t.area_id === f) && (!prios.size || prios.has(t.priority)));
-  // Life-area filter hides behind the filter icon; P1-P4 are always on show.
+  const shown = tasks.filter((t) => (!f || t.area_id === f) && (!prios.size || prios.has(prioNorm(t.priority))));
+  // Life-area filter hides behind the filter icon; First/Soon/Whenever are always on show.
   const filterBar = open ? t2FilterBar(areas, f, prios, 'data-t2-taskfilter', null) : '';
   const rows = shown.map((t) => `<div class="t2-trow t2-draggable" data-t2-drag="task" data-t2-drag-id="${esc(t.tana_id)}" data-t2-drag-label="${esc(t.title || 'Task')}" title="Drag onto your day to plan it" style="--h:${areaHue(t.area_id)}">
-    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${t.priority}</span>` : ''}
+    <span class="cd"></span><span class="t2-ttitle">${esc(t.title || 'Task')}</span>${t.priority ? `<span class="p-tag p-${t.priority}">${prioLabel(t.priority)}</span>` : ''}
   </div>`).join('') || `<div class="t2-emptycol">${tasks.length ? 'None match the filter.' : 'Nothing to plan.'}</div>`;
   return `<div class="t2-scroll t2-colscroll">${t2ColHead('Tasks', shown.length, 'task', (f ? 1 : 0), open)}${t2PrioRow(prios, 'data-t2-prio')}${filterBar}</div>
       <div class="t2-tlist t2-list">${rows}</div>
@@ -16027,7 +16034,7 @@ function openTaskPopover(taskId, slotId) {
       <div class="pe-body">
         <label class="pe-f"><span>Name</span><input class="sel" id="te-title" value="${esc(t.title || '')}" placeholder="What needs doing?" autocomplete="off"></label>
         <div class="pe-two">
-          <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${t.priority === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+          <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${PRIO_PICK.map(([v, l]) => `<option value="${v}" ${t.priority === v || (v === 'P3' && t.priority === 'P4') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" step="5" value="${t.duration || 30}"> min</span></label>
         </div>
         <label class="pe-f"><span>Space</span><select class="sel" id="te-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${t.area_id === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
@@ -18824,7 +18831,7 @@ function showQuickTask() {
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
       <label class="atf"><span>Space</span><select id="qt-area" class="sel">${opts}</select></label>
-      <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
+      <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option value="P1">First</option><option value="P2">Soon</option><option value="P3" selected>Whenever</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
       <label class="atf"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
@@ -19021,7 +19028,7 @@ async function mailToNote() {
 function mailTaskMenuHtml() {
   const tm = state.mail && state.mail.taskMenu; if (!tm) return '';
   const areas = state.areas || [];
-  const PRIOS = [['', 'No priority'], ['P1', 'P1 · Urgent'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4']];
+  const PRIOS = [['', 'No priority'], ['P1', 'First'], ['P2', 'Soon'], ['P3', 'Whenever']];
   return `<div class="mail-movebg" data-mail-task-bg><div class="mail-task-pop" style="top:${tm.y}px;left:${tm.x}px" role="dialog" aria-label="New task">
     <div class="mail-move-h">New task from this email</div>
     <input class="sel mtask-title" id="mtask-title" value="${esc(tm.title)}" placeholder="Task title" autocomplete="off">
@@ -19314,7 +19321,7 @@ function taskTableHtml(list, emptyMsg) {
     return `<tr class="tr-task ${t.props.done ? 'done' : ''}${privCls(t)}" style="--h:${hueOf(a)}" data-task-row="${t.id}">
       <td class="tc-done"><button class="check" data-check="${t.id}">✓</button></td>
       <td class="tc-title"><span class="t" data-edit-task="${t.id}">${taskTitleHtml(t.title)}</span>${taskBadges(t)}</td>
-      <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${p}</span>` : '<span class="ie-add">+</span>'}</span></td>
+      <td class="tc-prio"><span class="ie" data-edit-prio="${t.id}">${p ? `<span class="prio ${p}">${prioLabel(p)}</span>` : '<span class="ie-add">+</span>'}</span></td>
       <td class="tc-area"><span class="ie" data-edit-area="${t.id}">${a ? `<span class="tag">${esc(a.title)}</span>` : '<span class="ie-add ie-add-area">+ Space</span>'}</span></td>
       <td class="tc-date">${fmtDate(t.created_at)}</td>
       <td class="tc-act"><button class="row-open-btn" data-open-task="${t.id}" title="Open in focus">⤢</button><button class="star ${t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props.fav ? '★' : '☆'}</button><button class="x" data-del-task="${t.id}">×</button><button class="row-chev" data-open-task="${t.id}" title="Open" aria-label="Open task">›</button></td>
@@ -19349,7 +19356,7 @@ function tasksViewToggle(scope) {   // scope: 'tasks' | 'area'
 // A kanban board for a set of tasks (open AND done, so the Done column fills).
 function taskKanbanHtml(list) {
   const sorted = sortTasks(list.slice());
-  const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}${privCls(t)}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${p}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
+  const card = (t) => { const a = areaById(t.props.area); const p = t.props.priority; return `<div class="ktask ${t.props.done ? 'done' : ''}${privCls(t)}" draggable="true" data-ktask="${t.id}" style="--h:${hueOf(a)}"><span class="kt-grip" aria-hidden="true">⠿</span><button class="kt-open" data-open-task="${t.id}"><span class="kt-t">${taskTitleHtml(t.title)}</span>${(p || a) ? `<span class="kt-meta">${p ? `<span class="prio ${p}">${prioLabel(p)}</span>` : ''}${a ? `<span class="tag">${esc(a.title)}</span>` : ''}</span>` : ''}</button></div>`; };
   // Count each column first so Done can be held to the size of the busiest OTHER
   // column (but always at least 5). A long Done pile otherwise makes you scroll
   // past it to reach the next section; the rest stay as "+N more done". (Robin.)
@@ -19371,7 +19378,7 @@ function taskKanbanHtml(list) {
 // Each filter is { field, op, value }; they AND together. Definitions are
 // data-driven so a new filterable field is one entry here, not new UI code.
 const TASK_FIELDS = {
-  priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'P1'], ['P2', 'P2'], ['P3', 'P3'], ['P4', 'P4'], ['', 'None']], get: (t) => t.props.priority || '' },
+  priority: { label: 'Priority', ops: ['is', 'isnot'], choices: () => [['P1', 'First'], ['P2', 'Soon'], ['P3', 'Whenever'], ['', 'None']], get: (t) => prioNorm(t.props.priority) },
   area: { label: 'Space', ops: ['is', 'isnot'], choices: () => [['', 'None'], ...state.areas.map((a) => [a.id, a.title])], get: (t) => t.props.area || '' },
   duration: { label: 'Duration', ops: ['gte', 'lte', 'isset', 'notset'], kind: 'minutes', get: (t) => (t.props.duration != null && t.props.duration !== '' ? Number(t.props.duration) : null) },
   repeat: { label: 'Repeat', ops: ['isset', 'notset'], get: (t) => t.props.repeat || '' },
@@ -19568,10 +19575,10 @@ function renderTasksLegacy() {
   // Quick filters: P1-P4 toggles + a life-area dropdown, no filter to build.
   const qp = state.taskQuickPrios instanceof Set ? state.taskQuickPrios : (state.taskQuickPrios = new Set());
   const qa = state.taskQuickArea || '';
-  const quickMatch = (t) => (!qp.size || qp.has(t.props.priority || '')) && (!qa || blockAreas(t).includes(qa));
+  const quickMatch = (t) => (!qp.size || qp.has(prioNorm(t.props.priority))) && (!qa || blockAreas(t).includes(qa));
   const quickBar = `<div class="tq-bar">
     <select class="sel tq-area" data-task-qarea><option value="">${t('filter.allareas')}</option>${state.areas.map((a) => `<option value="${a.id}" ${qa === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>
-    <div class="tq-prios">${['P1', 'P2', 'P3', 'P4'].map((p) => `<button class="tq-prio ${qp.has(p) ? 'on' : ''}" data-task-qprio="${p}">${p}</button>`).join('')}</div>
+    <div class="tq-prios">${PRIO_PICK.map(([v, l]) => `<button class="tq-prio ${qp.has(v) ? 'on' : ''}" data-task-qprio="${v}">${l}</button>`).join('')}</div>
   </div>`;
   const inFilter = (t) => taskMatchesFilters(t) && quickMatch(t);
   const tq = (state.taskQuery || '').trim().toLowerCase();
@@ -19604,7 +19611,7 @@ function renderTasksLegacy() {
       <input id="task-title" type="text" placeholder="${t('task.whatneeds')}" autocomplete="off" required>
       <div class="atf-grid">
         <label class="atf"><span>${t('field.area')}</span><select id="task-area" class="sel">${opts}</select></label>
-        <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option>P1</option><option>P2</option><option selected>P3</option><option>P4</option></select></label>
+        <label class="atf"><span>${t('field.priority')}</span><select id="task-prio" class="sel"><option value="">—</option><option value="P1">First</option><option value="P2">Soon</option><option value="P3" selected>Whenever</option></select></label>
         <label class="atf"><span>${t('field.duration')}</span><select id="task-dur" class="sel">${durationOptionsHtml((state.taskDraft && state.taskDraft.dur) || '')}</select></label>
         <label class="atf"><span>Due Date</span>${dateFieldHtml('task-due', (state.taskDraft && state.taskDraft.due) || '')}</label>
         <label class="atf"><span>${t('field.repeat')}</span><select id="task-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
@@ -22025,7 +22032,7 @@ function reviewArchiveCardHtml(r) {
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(sd(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
     ${sentiment ? `<div class="rv-card-sentiment">${esc(sentiment)}<span class="rv-card-score">${wv}/5</span></div>` : '<div class="rv-card-sentiment rv-card-sentiment-none">Not scored</div>'}
-    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}</div>
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> First</span>` : ''}</div>
     <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
   </button>`;
 }
@@ -23163,7 +23170,7 @@ function reviewsBody() {
     <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span>${relTag}<span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(shortD(p.doneAt))}` : ''}`}</span></div>
     <div class="rv-card-period">${esc(periodMain)}</div>
     ${sentiment ? `<div class="rv-card-sentiment">${esc(sentiment)}<span class="rv-card-score">${wv}/5</span></div>` : '<div class="rv-card-sentiment rv-card-sentiment-none">Not scored</div>'}
-    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> P1</span>` : ''}</div>
+    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> First</span>` : ''}</div>
     <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
   </button>`; };
   // Anything you started but haven't finished sits up top, plainly labelled, so a
@@ -24368,7 +24375,7 @@ function reviewTopWin(m) {
   const gEx = items.find((t) => t.goal && goalName(t.goal));
   if (gEx) return { ...gEx, tag: `moved ${goalName(gEx.goal)} forward` };
   const p1 = items.find((t) => t.priority === 'P1');
-  if (p1) return { ...p1, tag: 'a P1, cleared' };
+  if (p1) return { ...p1, tag: 'a First, cleared' };
   return { ...items[0], tag: 'ticked off' };
 }
 function reviewWinsHtml(m, p, compact) {
@@ -24407,7 +24414,7 @@ function reviewWinsHtml(m, p, compact) {
   if (gEx) stand.push(`<button class="rvw-win" ${gEx.id ? `data-open-task="${gEx.id}"` : ''}><span class="rvw-win-tag">🎯 toward ${esc(goalName(gEx.goal))}</span><span class="rvw-win-t">${esc(gEx.title || 'Untitled')}</span></button>`);
   const usedIds = new Set([oldest && oldest.id, gEx && gEx.id].filter(Boolean));
   const p1 = items.find((t) => t.priority === 'P1' && !usedIds.has(t.id));
-  if (p1) stand.push(`<button class="rvw-win" ${p1.id ? `data-open-task="${p1.id}"` : ''}><span class="rvw-win-tag">⭐ a P1, done</span><span class="rvw-win-t">${esc(p1.title || 'Untitled')}</span></button>`);
+  if (p1) stand.push(`<button class="rvw-win" ${p1.id ? `data-open-task="${p1.id}"` : ''}><span class="rvw-win-tag">⭐ a First, done</span><span class="rvw-win-t">${esc(p1.title || 'Untitled')}</span></button>`);
   const standouts = stand.length ? `<div class="rvw-wins-h">Wins worth noting</div><div class="rvw-wins">${stand.join('')}</div>` : '';
 
   const full = `<details class="rvw-all"${(state.review_open && state.review_open.doneOpen) ? ' open' : ''} data-rvd-details><summary>See everything you ticked off · ${done.length}</summary><div class="rvw-all-body">${reviewDoneCards(m)}</div></details>`;
@@ -24957,7 +24964,7 @@ function noteConnectedPanel(n) {
   // Create, or search to link an existing one. New task inherits the note's Life
   // Space. Brings back the old right-column "+ New task". (Robin, 2026-10-28.)
   const tprio = (state.note && state.note.taskPrio) || 'P3';
-  const prioOpts = ['P1', 'P2', 'P3', 'P4'].map((p) => `<option value="${p}" ${tprio === p ? 'selected' : ''}>${p}</option>`).join('');
+  const prioOpts = PRIO_PICK.map(([v, l]) => `<option value="${v}" ${tprio === v || (v === 'P3' && tprio === 'P4') ? 'selected' : ''}>${l}</option>`).join('');
   const taskPane = `<form class="nx-weblink nx-taskform" data-note-taskadd><input class="sel nx-task-big" id="nx-task-input" data-nx-task-q placeholder="New task for this note, or search to link one…" value="${esc(tq)}" autocomplete="off"><select class="sel nx-task-prio" id="nx-task-prio" data-nx-task-prio title="Priority"><option value="">—</option>${prioOpts}</select><button type="submit" class="nx-weblink-add">Create</button></form><div class="nx-sugg" id="nx-task-list">${noteTaskPaneRows(tq)}</div>`;
   const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
   return `<div class="nx-wrap">
@@ -29003,7 +29010,7 @@ function editInlineSelect(span, cur, options, onPick) {
 }
 function editPrio(span) {
   const id = span.dataset.editPrio; const t = taskCopies(id)[0]; if (!t) return;
-  editInlineSelect(span, t.props.priority, [{ value: '', label: '—' }, ...['P1', 'P2', 'P3', 'P4'].map((p) => ({ value: p, label: p }))], (v) => patchTaskProps(id, { priority: v }));
+  editInlineSelect(span, prioNorm(t.props.priority), [{ value: '', label: '—' }, ...PRIO_PICK.map(([v, l]) => ({ value: v, label: l }))], (v) => patchTaskProps(id, { priority: v }));
 }
 function editArea(span) {
   const id = span.dataset.editArea; const t = taskCopies(id)[0]; if (!t) return;
@@ -29178,9 +29185,8 @@ function renderTaskCard() {
   const assignW = (t.sharedBy || !((state.friends && (state.friends.friends || []).length) || t.assignedCount)) ? '' : `<span class="tcx-act" data-assign-open="${id}" data-assign-title="${esc(t.title || '')}" role="button" tabindex="0">Assign${t.assignedCount ? ` · ${t.assignedCount}` : ''}</span>`;
   const delW = t.sharedBy ? '' : `<span class="tcx-act tcx-mute" data-del-task-cur role="button" tabindex="0">Delete</span>`;
   // Summary line under the title.
-  const prioLabel = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' }[p.priority] || '';
   const whenTxt = !due ? 'no date' : (due < today ? `due ${sd(due)} - overdue` : due === today ? 'today' : due === tom ? 'tomorrow' : `due ${sd(due)}`);
-  const summary = [prioLabel, whenTxt, p.duration ? `about ${durLabel(Number(p.duration))}` : ''].filter(Boolean).join(' · ');
+  const summary = [prioLabel(p.priority), whenTxt, p.duration ? `about ${durLabel(Number(p.duration))}` : ''].filter(Boolean).join(' · ');
   // The button rows of the details card. Each option: a keyline chip, filled gold when chosen.
   const opt = (label, on, attr) => `<span class="tcd-opt${on ? ' on' : ''}" ${attr} role="button" tabindex="0">${esc(label)}</span>`;
   const prioRow = [['First', 'P1'], ['Soon', 'P2'], ['Whenever', 'P3']].map(([l, v]) => opt(l, p.priority === v || (v === 'P3' && p.priority === 'P4'), `data-task-prio="${id}:${v}"`)).join('');
