@@ -24168,8 +24168,16 @@ function renderReviewReport() {
   const goalMoved = doneItems.filter((t) => t.goal).length;
   const prevDone = prevRev ? (prevRev.tasksDone != null ? prevRev.tasksDone : ((prevRev.mirror || {}).tasksDone || []).length) : null;
   const prevWheel = prevRev ? Math.min(wheelAvg(prevRev.wheel), 5) : null;
-  const figs = [doneN ? [doneN, 'ticked off', dTag(doneN, prevDone)] : null, nAreas > 1 ? [nAreas, 'areas moved', ''] : null, practicesK ? [practicesK, 'practices kept', ''] : null, goalMoved ? [goalMoved, 'toward goals', ''] : null, wAvg ? [`${wAvg}/5`, 'wheel of life', dTag(wAvg, prevWheel)] : null].filter(Boolean);
-  const figsHtml = figs.length ? `<span class="rr-label">By the numbers</span><div class="rr-figs">${figs.map(([n, l, d]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span></div>`).join('')}</div>` : '';
+  // Short history for the figure sparklines: the last few reviews of this type up
+  // to this one, so each number carries its recent run (this period the far-right,
+  // gold bar). (§72 figures.)
+  const histR = reviewSeries(p.rtype).filter((q) => !p.to || q.to <= p.to).slice(-8);
+  const doneHist = histR.map((q) => q.tasksDone != null ? q.tasksDone : ((q.mirror || {}).tasksDone || []).length);
+  const wheelHist = histR.map((q) => Math.min(wheelAvg(q.wheel), 5));
+  if (!histR.length || histR[histR.length - 1].to !== p.to) { doneHist.push(doneN); if (wAvg) wheelHist.push(wAvg); }
+  const sparkFig = (vals) => { const v = (vals || []).filter((x) => x != null).slice(-8); if (v.length < 2) return ''; const mx = Math.max(...v, 1); return `<span class="rr-fig-spark">${v.map((x, i) => `<span class="rr-fig-bar${i === v.length - 1 ? ' now' : ''}" style="height:${Math.max(12, Math.round(x / mx * 100))}%"></span>`).join('')}</span>`; };
+  const figs = [doneN ? [doneN, 'ticked off', dTag(doneN, prevDone), sparkFig(doneHist)] : null, nAreas > 1 ? [nAreas, 'areas moved', '', ''] : null, practicesK ? [practicesK, 'practices kept', '', ''] : null, goalMoved ? [goalMoved, 'toward goals', '', ''] : null, wAvg ? [`${wAvg}/5`, 'wheel of life', dTag(wAvg, prevWheel), sparkFig(wheelHist)] : null].filter(Boolean);
+  const figsHtml = figs.length ? `<span class="rr-label">By the numbers</span><div class="rr-figs">${figs.map(([n, l, d, sp]) => `<div class="rr-fig"><span class="rr-fig-n">${n}${d || ''}</span><span class="rr-fig-l">${l}</span>${sp || ''}</div>`).join('')}</div>` : '';
   // The record - the fuel behind the report - as tabs (By page / Goals / In
   // your words), inside a collapsible section below the commentary.
   const recTabs = [];
@@ -24206,7 +24214,7 @@ function renderReviewReport() {
       ${quote ? `<blockquote class="rr-quote">“${esc(quote)}”<cite>- your own words</cite></blockquote>` : ''}
       ${reviewTrendsHtml(p) ? rrSec('trends', 'Trends', reviewTrendsHtml(p)) : ''}
       ${reviewWheelHtml(p) ? rrSec('balance', 'The balance', reviewWheelHtml(p)) : ''}
-      ${(doneN || practicesK) ? rrSec('moved', 'What moved', `${doneN ? reviewWinsHtml(m, p, true) : ''}${reviewPracticesHtml(m)}`) : ''}
+      ${(doneN || practicesK) ? rrSec('moved', 'What moved', reviewMovedHtml(m, p)) : ''}
       ${recordHtml}
       ${deadlinesHtml}
       <div class="rr-coda"><span class="rr-coda-rule"></span><p class="rr-coda-line">${esc(codaLine)}</p><span class="rr-coda-mark">${MARK}</span></div>
@@ -24550,6 +24558,34 @@ function reviewTopWin(m) {
   const p1 = items.find((t) => t.priority === 'P1');
   if (p1) return { ...p1, tag: 'a First, cleared' };
   return { ...items[0], tag: 'ticked off' };
+}
+// §72 "What moved": three cards - Up (gold), Down (rust), Quiet (line) - read off
+// the wheel's movement on last time, then the full list of what you ticked off,
+// and the practices kept. Gold and the one sanctioned rust only.
+function reviewMovedHtml(m, p) {
+  const nm = (id) => { const a = areaById(id); return a ? a.title : null; };
+  const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
+  const pw = (prev && prev.wheel) || null;
+  const up = [], down = [];
+  if (pw && p.wheel) {
+    for (const id of Object.keys(p.wheel)) {
+      const now = Math.min(p.wheel[id] || 0, 5), was = Math.min(pw[id] || 0, 5);
+      if (!now || !was || now === was || !nm(id)) continue;
+      (now > was ? up : down).push({ id, d: now - was });
+    }
+    up.sort((a, b) => b.d - a.d); down.sort((a, b) => a.d - b.d);
+  }
+  const quiet = (m.quietAreas || []).filter((id) => nm(id)).map((id) => ({ id }));
+  const row = (x, cls, v) => `<button class="rr-moved-row" data-open-area="${x.id}"><span class="rr-moved-n">${esc(nm(x.id))}</span><span class="rr-moved-v${cls ? ' ' + cls : ''}">${v}</span></button>`;
+  const card = (cls, label, rows) => rows.length ? `<div class="rr-moved-card ${cls}"><div class="rr-moved-lbl">${label}</div><div class="rr-moved-rows">${rows}</div></div>` : '';
+  const cards = card('up', 'Up', up.map((x) => row(x, 'up', '▲' + x.d)).join(''))
+    + card('down', 'Down', down.map((x) => row(x, 'down', '▼' + (-x.d))).join(''))
+    + card('quiet', 'Quiet', quiet.map((x) => row(x, '', '-')).join(''));
+  const cardsHtml = cards.trim() ? `<div class="rr-moved-cards">${cards}</div>` : '';
+  const done = m.tasksDone || [];
+  const ticked = done.length ? `<div class="rr-ticked-h">Ticked off · ${done.length}</div><div class="rr-ticked">${done.slice(0, 14).map((t) => { const a = t.area ? areaById(t.area) : null; return `<button class="rr-ticked-row"${t.id ? ` data-open-task="${t.id}"` : ''}><span class="rr-ticked-dot"></span><span class="rr-ticked-t">${esc(t.title || 'Untitled')}</span><span class="rr-ticked-a">${a ? esc(a.title) : ''}</span></button>`; }).join('')}${done.length > 14 ? `<div class="rr-ticked-more">+ ${done.length - 14} more</div>` : ''}</div>` : '';
+  const practices = reviewPracticesHtml(m) || '';
+  return `${cardsHtml}${ticked}${practices}` || '<p class="rr-caption">A quiet one on the record.</p>';
 }
 function reviewWinsHtml(m, p, compact) {
   const done = m.tasksDone || [];

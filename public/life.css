@@ -1463,6 +1463,32 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-steer-go { font:600 12px var(--k-sans); letter-spacing:.1em; text-transform:uppercase; padding:11px 18px; background:var(--k-gold); color:var(--k-ongold); border:0; cursor:pointer; white-space:nowrap; }
 .rr-steer-go:hover { background:var(--k-goldt); color:var(--k-bg); }
 .crumb-actions { margin-left:auto; display:flex; align-items:center; gap:10px; flex:none; }
+/* §72 figures sparkline - the last few periods, this one the gold bar on the right. */
+.rr-fig-spark { display:flex; align-items:flex-end; gap:3px; height:26px; margin-top:7px; }
+.rr-fig-bar { width:5px; background:var(--k-line); }
+.rr-fig-bar.now { background:var(--k-gold); }
+/* §72 What moved - Up (gold) / Down (rust) / Quiet (line) cards, then the ticked list. */
+.rr-moved-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:14px; margin-bottom:4px; }
+.rr-moved-card { background:var(--k-panel); border:1px solid var(--k-line); border-top:3px solid var(--k-line); padding:16px 18px; }
+.rr-moved-card.up { border-top-color:var(--k-gold); }
+.rr-moved-card.down { border-top-color:var(--k-rust); }
+.rr-moved-lbl { font:600 11px var(--k-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); }
+.rr-moved-card.up .rr-moved-lbl { color:var(--k-goldt); }
+.rr-moved-card.down .rr-moved-lbl { color:var(--k-rust); }
+.rr-moved-rows { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.rr-moved-row { display:flex; align-items:baseline; gap:10px; width:100%; text-align:left; background:none; border:0; padding:0; cursor:pointer; }
+.rr-moved-n { flex:1; min-width:0; font:500 15.5px var(--k-sans); color:var(--k-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rr-moved-row:hover .rr-moved-n { color:var(--k-goldt); }
+.rr-moved-v { font:600 13px var(--k-sans); white-space:nowrap; color:var(--k-mute); font-variant-numeric:tabular-nums; }
+.rr-moved-v.up { color:var(--k-goldt); } .rr-moved-v.down { color:var(--k-rust); }
+.rr-ticked-h { margin:26px 0 2px; font:600 11px var(--k-sans); letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); }
+.rr-ticked { display:flex; flex-direction:column; }
+.rr-ticked-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:12px; align-items:center; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--k-line); padding:11px 0; cursor:pointer; }
+.rr-ticked-dot { width:10px; height:10px; background:var(--k-gold); }
+.rr-ticked-t { font:500 16px var(--k-sans); color:var(--k-ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rr-ticked-row:hover .rr-ticked-t { color:var(--k-goldt); }
+.rr-ticked-a { font:400 13.5px var(--k-sans); color:var(--k-mute); white-space:nowrap; }
+.rr-ticked-more { font:500 13.5px var(--k-sans); color:var(--k-goldt); padding:11px 0; }
 .rr-areas { display:flex; flex-direction:column; gap:10px; }
 .rr-area { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); padding:12px 14px; border:1px solid var(--line); border-left:3px solid var(--c); border-radius:0; background:var(--card); }
 .rr-area-h { display:flex; align-items:center; gap:10px; }
