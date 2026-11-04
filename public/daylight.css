@@ -397,6 +397,9 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 .pane2-frame { flex:1 1 auto; width:100%; min-height:0; border:0; background:transparent; }
 .in-split-frame :is(#nav, .knav-bottom, #tabbar, #cap-root, #mail-arrival-wrap, #light-preview) { display:none !important; }
 
+.home-cal-row[data-home-cal] { cursor:pointer; }
+.home-cal-row[data-home-cal]:hover .home-cal-t { color:var(--k-goldt); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
