@@ -216,11 +216,13 @@
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain a { color:#6E4C0C; }
 
 /* Move to, Action and Tools sit in one row, wrapping when the window is narrow. */
-.mail-ar-bar { position:sticky; top:var(--tabstrip-h,68px); z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:12px 34px; padding:12px 0; border-top:1px solid var(--glass-edge); border-bottom:1px solid var(--glass-edge); background:var(--glass); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
+.mail-ar-bar { position:sticky; top:var(--tabstrip-h,68px); z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px; padding:12px 0; border-top:1px solid var(--glass-edge); border-bottom:1px solid var(--glass-edge); background:var(--glass); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
 :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop) { position:static; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:0; margin:0; border:0; background:none; -webkit-backdrop-filter:none; backdrop-filter:none; }
 .mail-ar-bar .mail-replyacts, .mail-ar-bar .mail-makeacts { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0; }
 :root[data-light] .mail-ar-bar :is(.mail-ar-triage-l, .mail-ar-row-l) { flex:none; width:auto; margin-right:4px; }
 .mail-ar-bar .mail-make-hint { display:none; }
+:root[data-light] .mail-ar-bar :is(.mail-trg, .mail-reply, .mail-make) { padding:6px 10px; }
+:root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop, .mail-replyacts, .mail-makeacts) { gap:6px; }
 
 /* ── Pop-ups: their backdrops were tinted with the text colour, which is now pale,
    and washed the page white. A dark frosted veil instead, over any time of day. ─ */
