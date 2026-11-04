@@ -9731,9 +9731,18 @@ function renderNotesList() {
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No notes in this Space yet.</div>'}</div></section>`;
   } else {
     const favs = allNotes.filter((n) => n.props && n.props.fav);
-    const recent = recentItems().filter((x) => x && x.kind === 'note').map((x) => allNotes.find((n) => n.id === x.id)).filter(Boolean).slice(0, 8);
+    // Recent leads the page (Robin, 2026-11-04): the notes you opened most
+    // recently first, then topped up with the newest by edit time so it always
+    // fills about three rows - not just the two or three you happened to open.
+    const seen = new Set();
+    const opened = recentItems().filter((x) => x && x.kind === 'note').map((x) => allNotes.find((n) => n.id === x.id)).filter(Boolean);
+    opened.forEach((n) => seen.add(n.id));
+    const recent = [...opened, ...nxSortRecent(allNotes).filter((n) => !seen.has(n.id))].slice(0, 18);
     const all = nxSortRecent(allNotes);
-    sections = `${favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : ''}${recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : ''}<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${allNotes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+    const recentSec = recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : '';
+    const starredSec = favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : '';
+    const allSec = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${allNotes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+    sections = `${recentSec}${starredSec}${allSec}`;
   }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('nav.notes'))}
