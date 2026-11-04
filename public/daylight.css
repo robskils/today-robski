@@ -375,7 +375,7 @@
 :root[data-light] .t2-taskadd input { border:1px solid var(--glass-edge); background:var(--glass-face); color:var(--k-ink); font-size:15px; }
 :root[data-light] .t2-taskadd input::placeholder { color:var(--k-mute); opacity:1; }
 /* Today's Practices tab: no add button; Edit practices covers it. */
-.home-wn-prc .prc-addtoggle { display:none; }
+:root[data-light] .home-wn-prc .prc-addtoggle { display:none !important; }
 
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
