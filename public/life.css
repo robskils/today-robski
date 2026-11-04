@@ -4556,6 +4556,8 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .prc-add { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
 .prc-add .prc-lane-sel { flex:0 0 auto; max-width:150px; }
 .prc-add input { flex:1; min-width:120px; }
+.prc-addcancel { flex:0 0 auto; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:18px; line-height:1; color:var(--k-mute); padding:0 6px; align-self:center; }
+.prc-addcancel:hover { color:var(--k-goldt); }
 /* Management rows: schedule summary, badges, edit button, and the New button. */
 .prc-name .prc-sched { display:block; font-size:12.5px; color:var(--ink-3); font-weight:400; margin-top:2px; }
 .prc-badge { display:inline-block; margin-left:7px; font-size:11px; vertical-align:middle; }
@@ -10281,6 +10283,8 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 /* Persistent back arrow in the top bar (Robin: a normal, always-there back button). */
 .knav-back { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:400; font-size:23px; line-height:1; color:var(--k-goldt); padding:0 6px; margin:0 2px 0 -2px; flex:none; align-self:center; }
 .knav-back:hover { color:var(--k-gold); }
+/* The header back ‹ shows only on mobile (desktop has the breadcrumb ←). (Robin, 2026-11-04.) */
+.knav-inner .mtop-back { display:none; font-size:30px; padding:0 10px 0 0; margin:0; }
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
 .knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
@@ -10386,6 +10390,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
   .knav-inner { padding:0 20px; gap:12px; }
   .knav-brand .brand-word { font-size:24px; }
   .knav-groups, .knav-right { display:none; }
+  .knav-inner .mtop-back { display:inline-flex; align-items:center; }
   .knav-crumb { display:block; margin-left:auto; }
   .knav-sheet { display:none; }
   /* §24: Menu and Find open as full, OPAQUE layers - nothing from the page shows

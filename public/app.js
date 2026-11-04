@@ -1485,7 +1485,7 @@ const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contac
 // The back button that rides in the top line (to the right of the ☰ menu), shown
 // only when there is somewhere to go back to.
 function mobileBackHtml() {
-  return navHist.length ? '<button class="crumb-back mtop-back" data-nav-back title="Back" aria-label="Back">←</button>' : '';
+  return navHist.length ? '<button class="knav-back mtop-back" data-nav-back title="Back" aria-label="Back">‹</button>' : '';
 }
 function openView(v) {
   switch (v.type) {
@@ -5579,6 +5579,7 @@ function navGroupsHtml(v) {
   // as the page (max-width + gutter), so the logo, the breadcrumb and the page
   // title all share one left edge. (Robin, 2026-11-03.)
   const header = `<div class="knav-bar"><div class="knav-inner">
+      ${mobileBackHtml()}
       ${wordmark}
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
@@ -6995,8 +6996,11 @@ function practicesGroups(withWeek) {
   }).join('');
 }
 function practiceAddForm() {
-  const areas = state.areas || [];
-  return `<form class="prc-add" data-prc-add-form><select class="sel prc-lane-sel" id="prc-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><button class="add-btn wide" type="submit">Add</button></form>`;
+  // Hidden behind a button until you want it (Robin, 2026-11-04): the always-on
+  // "No space / New practice / Add" row was clutter. The name comes first, the
+  // Space second.
+  if (!state.pracAddOpen) return `<button class="add-btn wide prc-addtoggle" data-prc-addtoggle>＋ Add a practice</button>`;
+  return `<form class="prc-add" data-prc-add-form><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><select class="sel prc-lane-sel" id="prc-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><button class="add-btn wide" type="submit">Add</button><button type="button" class="prc-addcancel" data-prc-addtoggle title="Cancel" aria-label="Cancel">✕</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -27595,6 +27599,7 @@ document.addEventListener('click', (e) => {
   { const tx = t.closest('[data-prc-del]'); if (tx) { practiceDelete(tx.dataset.prcDel); return; } }
   { const na = t.closest('[data-prc-new-area]'); if (na) { openPracticeEditor(null, na.dataset.prcNewArea); return; } }
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
+  if (t.closest('[data-prc-addtoggle]')) { state.pracAddOpen = !state.pracAddOpen; rerenderPractices(); if (state.pracAddOpen) setTimeout(() => { const i = document.getElementById('prc-new'); if (i) i.focus(); }, 30); return; }
   { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del], [data-prc-grip], [data-prc-day], [data-prc-video], [data-prc-rename], .trk-cadsel')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
