@@ -4451,15 +4451,19 @@ async function maybePushMail(env, res) {
     // from <sender>" - it's the person who wrote it, not Koyéba. (Robin.)
     const sender = res.fromByUser && res.fromByUser[uid];
     const subj = (res.subjByUser && res.subjByUser[uid]) || '';
+    const mkey = (res.keyByUser && res.keyByUser[uid]) || '';
     const single = newUnread === 1 && sender;
     // Title = who it's from, body = the subject. iOS appends its own "from
     // Koyéba" source line under the title (web-app attribution we can't reword),
     // so we never say Koyéba in our text - that only made it read "X from
     // Koyéba from Koyéba". (Robin.)
+    // A single arrival deep-links to THAT email (tap opens it, not just the
+    // inbox); several share one "N new emails" push that lands on the inbox.
     await pushAll(env, {
       type: 'mail', unread: total,
       title: single ? sender : `${newUnread} new emails`,
       body: single ? (subj || 'Tap to read it in your inbox') : 'in your inbox',
+      ...(single && mkey ? { mailKey: mkey, url: `/mail?open=${encodeURIComponent(mkey)}` } : {}),
     }, Number(uid)).catch((e) => console.error('maybePushMail', uid, e.message));
   }
 }
@@ -4847,7 +4851,7 @@ export default {
   // health, and push each owner about their own new mail. Scales across many queue
   // invocations instead of one cron tick. (Robin, 2026-10-20: mail at scale.)
   async queue(batch, env, ctx) {
-    const metas = []; const byUser = {}; const fromByUser = {}; const subjByUser = {};
+    const metas = []; const byUser = {}; const fromByUser = {}; const subjByUser = {}; const keyByUser = {};
     const CHUNK = 4;
     const msgs = batch.messages || [];
     for (let i = 0; i < msgs.length; i += CHUNK) {
@@ -4857,7 +4861,7 @@ export default {
         try {
           const r = await queueSyncAccount(env, accountId, uid);
           metas.push({ uid, id: accountId, ok: true, msg: '', at: new Date().toISOString() });
-          if (r && r.newUnread) { byUser[uid] = (byUser[uid] || 0) + r.newUnread; if (r.newFrom) { fromByUser[uid] = r.newFrom; subjByUser[uid] = r.newSubject || ''; } }
+          if (r && r.newUnread) { byUser[uid] = (byUser[uid] || 0) + r.newUnread; if (r.newFrom) { fromByUser[uid] = r.newFrom; subjByUser[uid] = r.newSubject || ''; keyByUser[uid] = r.newKey || ''; } }
           m.ack();
         } catch (e) {
           metas.push({ uid, id: accountId, ok: false, msg: (e && e.message) || 'Could not connect', at: new Date().toISOString() });
@@ -4866,7 +4870,7 @@ export default {
       }));
     }
     ctx.waitUntil(recordMailHealth(env, metas).catch(() => {}));
-    ctx.waitUntil(maybePushMail(env, { byUser, fromByUser, subjByUser }).catch(() => {}));
+    ctx.waitUntil(maybePushMail(env, { byUser, fromByUser, subjByUser, keyByUser }).catch(() => {}));
   },
 
   async fetch(request, env, ctx) {

@@ -1787,6 +1787,18 @@ function openInNewTab(view) {
   state.activeTab = id;
   Promise.resolve(openView(view)).catch(() => openHome());
 }
+// Open Mail in a new tab AND land on one specific email - the deep-link a
+// single-email notification wants. Opens the new tab, then runs the same robust
+// opener the Today arrival line uses (explicit deep-link + re-assert after the
+// inbox loads), so a just-arrived email opens even before it's in the client's
+// cache. (Robin, 2026-11-04: the email alert opened the inbox, not the email.)
+function openMailMsgInNewTab(key) {
+  const id = uid();
+  const view = { type: 'mail', open: key };
+  state.tabs.push({ id, view, label: labelForView(view), pinned: false });
+  state.activeTab = id;
+  Promise.resolve(glanceMailOpenIn(key)).catch(() => openHome());
+}
 function switchTab(id) { if (id === state.activeTab) return; const tab = state.tabs.find((t) => t.id === id); if (!tab) return; commitTaskView(); state.activeTab = id; Promise.resolve(openView(tab.view)).catch(() => openHome()); }
 function closeTab(id) {
   if (state.tabs.length <= 1) return;
@@ -17070,7 +17082,12 @@ async function initPush() {
     // NEW tab, so the tab the user was on is left exactly as they had it.
     navigator.serviceWorker.addEventListener('message', (ev) => {
       const d = ev.data || {};
-      if (d.type === 'notification-open') openInNewTab({ type: d.target === 'mail' ? 'mail' : d.target === 'contacts' ? 'contacts' : 'home' });
+      if (d.type === 'notification-open') {
+        // A single-email mail push carries the email's key: open THAT email in a
+        // new tab, not just the inbox. Otherwise land on the section. (Robin.)
+        if (d.target === 'mail' && d.mailKey) openMailMsgInNewTab(d.mailKey);
+        else openInNewTab({ type: d.target === 'mail' ? 'mail' : d.target === 'contacts' ? 'contacts' : 'home' });
+      }
     });
     if (Notification.permission === 'granted') await subscribePush(reg);
   } catch (e) { /* SW unsupported/blocked - fine, app still works */ }
@@ -32505,7 +32522,7 @@ function showRequired2fa() {
     const mailtoParam = new URLSearchParams(location.search).get('mailto');
     if (mailtoParam) { history.replaceState(null, '', location.pathname); await openMailCompose(parseMailto(mailtoParam)).catch(() => openHome()); }
     else if (route === '/calendar') await openCalendar();
-    else if (route === '/mail') await openMail();
+    else if (route === '/mail') { const openK = new URLSearchParams(location.search).get('open'); if (openK) { history.replaceState(null, '', location.pathname); await glanceMailOpenIn(openK).catch(() => openMail()); } else await openMail(); }
     else if (route === '/wellbeing') await openWellbeing();
     else if (route === '/journal') await openJournal();
     else if (route === '/insights') await openInsights();

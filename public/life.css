@@ -10214,9 +10214,8 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
    just "Write it as you'd say it", and the type buttons sit up top. (Robin, 2026-11-03.) */
 @keyframes capup-m { from { transform:translateY(100%); } to { transform:translateY(0); } }
 @media (max-width:620px) {
-  /* Half-sheet (Robin, 2026-11-04): the top sits halfway down so Today shows behind,
-     and it stops above the 88px bottom bar so the + there still toggles it shut. */
-  .cap-drawer { top:50vh; bottom:88px; left:0; transform:translateY(0); width:100%; max-width:none; max-height:none; padding:20px 18px 24px; animation:capup-m .4s cubic-bezier(.2,.7,.2,1); }
+  /* Full-screen sheet (Robin, 2026-11-04: the half-sheet was a mistake, back to full). */
+  .cap-drawer { top:48px; bottom:0; left:0; transform:translateY(0); width:100%; max-width:none; max-height:none; padding:20px 18px calc(24px + env(safe-area-inset-bottom,0px)); animation:capup-m .4s cubic-bezier(.2,.7,.2,1); }
   .cap-hint-extra { display:none; }
   .cap-kinds { padding-top:14px; gap:8px 16px; }
 }

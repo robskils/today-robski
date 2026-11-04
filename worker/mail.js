@@ -776,7 +776,7 @@ export async function queueSyncAccount(env, accountId, uid, { skipFreshMs = 2000
   const acct = await getAcct(env, accountId, uid);
   if (!acct) return { id: accountId, uid, missing: true, newUnread: 0 };
   const r = await syncOneInbox(env, acct);
-  return { id: accountId, uid, newUnread: (r && r.newUnread) || 0, newFrom: (r && r.newFrom) || '', newSubject: (r && r.newSubject) || '' };
+  return { id: accountId, uid, newUnread: (r && r.newUnread) || 0, newFrom: (r && r.newFrom) || '', newSubject: (r && r.newSubject) || '', newKey: (r && r.newKey) || '' };
 }
 // ── background inbox cache (D1) ────────────────────────────────────────
 // The cron syncs the latest inbox headers into D1, so opening Mail reads from
@@ -844,17 +844,17 @@ export async function syncMailCache(env, { force = false } = {}) {
   // rejected = a real failure), so Mail accounts and Home can flag a bad account.
   const nowIso = new Date().toISOString();
   await recordMailHealth(env, accts.map((a, k) => { const r = results[k]; const ok = r && r.status === 'fulfilled'; return { uid: a.user_id, id: a.id, ok, msg: ok ? '' : ((r && r.reason && (r.reason.message || String(r.reason))) || 'Could not connect'), at: nowIso }; })).catch(() => {});
-  let newUnread = 0; const byUser = {}; const fromByUser = {}; const subjByUser = {};
+  let newUnread = 0; const byUser = {}; const fromByUser = {}; const subjByUser = {}; const keyByUser = {};
   for (const r of results) {
     if (r.status !== 'fulfilled' || !r.value) continue;
     const nu = r.value.newUnread || 0; newUnread += nu;
     const uid = acctUser[r.value.account];
     if (uid != null && nu) {
       byUser[uid] = (byUser[uid] || 0) + nu;
-      if (r.value.newFrom) { fromByUser[uid] = r.value.newFrom; subjByUser[uid] = r.value.newSubject || ''; }
+      if (r.value.newFrom) { fromByUser[uid] = r.value.newFrom; subjByUser[uid] = r.value.newSubject || ''; keyByUser[uid] = r.value.newKey || ''; }
     }
   }
-  return { newUnread, byUser, fromByUser, subjByUser };
+  return { newUnread, byUser, fromByUser, subjByUser, keyByUser };
 }
 async function syncOneInbox(env, acct) {
   const im = await imapOpen(env, acct);
@@ -909,13 +909,15 @@ async function syncOneInbox(env, acct) {
     await env.DB.batch(stmts);
     // Who the newest genuinely-new email is from, so the push can say "New email
     // from <sender>" rather than something that reads like it came from Koyéba.
-    let newFrom = '', newSubject = '';
+    let newFrom = '', newSubject = '', newKey = '';
     if (newUnread) {
       const fresh = msgs.filter((m) => !m.seen && m.messageId && !known.has(m.messageId))
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
-      if (fresh) { newFrom = String((fresh.from && (fresh.from.name || fresh.from.address)) || '').replace(/\s+/g, ' ').trim().slice(0, 80); newSubject = String(fresh.subject || '').replace(/\s+/g, ' ').trim().slice(0, 120); }
+      // The newest arrival's key, so a single-email push can open THAT email, not
+      // just the inbox. Same shape the client uses: account:mailbox:uid. (Robin.)
+      if (fresh) { newFrom = String((fresh.from && (fresh.from.name || fresh.from.address)) || '').replace(/\s+/g, ' ').trim().slice(0, 80); newSubject = String(fresh.subject || '').replace(/\s+/g, ' ').trim().slice(0, 120); newKey = `${acct.id}:INBOX:${fresh.uid}`; }
     }
-    return { account: acct.id, newUnread, unseen: effUnseen, newFrom, newSubject };
+    return { account: acct.id, newUnread, unseen: effUnseen, newFrom, newSubject, newKey };
   } finally { try { await im.logout(); } catch {} }
 }
 async function readCachedInbox(env, accountIds) {

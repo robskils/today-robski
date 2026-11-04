@@ -112,13 +112,16 @@ self.addEventListener('push', (event) => {
     // legacy default. (Connect requests send target:'contacts'.)
     const target = data.target || (data.type === 'mail' ? 'mail' : 'home');
     const url = data.url || (data.type === 'mail' ? '/mail' : '/');
+    // A single-email mail push carries the specific email's key so a tap opens
+    // THAT email, not just the inbox. (Robin, 2026-11-04.)
+    const mailKey = data.mailKey || '';
     await self.registration.showNotification(data.title || 'Koyéba', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: data.tag || (data.type === 'mail' ? 'robski-mail' : undefined),   // collapse repeats; a tagged push replaces its predecessor and can be cleared by tag
       renotify: !!(data.tag || data.type === 'mail'),
-      data: { url, target },
+      data: { url, target, mailKey },
     });
   })());
 });
@@ -132,7 +135,7 @@ self.addEventListener('notificationclick', (event) => {
     // SPA and wipes the tab the user was on). Focus it and ask the app to open
     // the target in a NEW tab, so their current tabs stay exactly as they are.
     for (const c of all) {
-      if ('focus' in c) { try { c.postMessage({ type: 'notification-open', target: d.target || 'home' }); } catch {} return c.focus(); }
+      if ('focus' in c) { try { c.postMessage({ type: 'notification-open', target: d.target || 'home', mailKey: d.mailKey || '' }); } catch {} return c.focus(); }
     }
     // No window open at all - only then open one at the target.
     if (self.clients.openWindow) return self.clients.openWindow(d.url || '/');
