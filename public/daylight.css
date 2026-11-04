@@ -254,10 +254,17 @@
 /* ── Page titles: one size everywhere. Today's greeting is the only exception. ─ */
 :is(.cx-h1, .cvx-title, .jx-title, .mp-title, .g-title, .sx-h1, .icx-h1, .mail-h1, .rw-title2, .nx-h1, .kg-h1, .tr-h1, .pane-head h1) { font-size:clamp(40px,4.4vw,56px) !important; font-weight:300 !important; line-height:1.05 !important; }
 
+/* ── Notes: the writing sheet is glass over the sky, not a dark green tint ─── */
+:root[data-light] { --note-surface:var(--glass-card); --note-edge:var(--glass-edge); }
+:root[data-light] .note-body { -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
 .knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }
-.knav-help-m { display:none; font-size:16px; }
+.knav-c-toprow { display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:1px solid var(--k-line); margin-top:4px; }
+.knav-c-toprow .knav-c-notepad { width:auto; border-bottom:0; margin-top:0; }
+.knav-c-help { display:none; background:none; border:0; padding:12px 0; cursor:pointer; font-family:var(--k-serif); font-weight:300; font-size:24px; color:var(--k-ink); }
+.knav-c-help:hover { color:var(--k-goldt); }
 
 /* ── Less empty space under every page: just enough to clear the capture bar ── */
 .main { padding-bottom:72px; }
@@ -288,7 +295,7 @@
   .knav-find, .knav-contents { bottom:calc(62px + env(safe-area-inset-bottom)); }
   .main { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
   .knav-crumb { margin-left:auto; }
-  .knav-help-m { display:inline-flex; }
+  .knav-c-help { display:inline-block; }
 }
 
 /* ── Staging and local only: see any time of day without waiting for it ───── */

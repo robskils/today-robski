@@ -5334,7 +5334,6 @@ function navGroupsHtml(v) {
       ${mobileBackHtml()}
       ${wordmark}
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
-      <button class="knav-help-m" data-guide-help aria-haspopup="dialog">Help</button>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
         <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Make something new">New</button>
@@ -5405,7 +5404,7 @@ function navGroupsHtml(v) {
     </div>`).join('');
     contents = `<div class="knav-contents">
       <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · type to search</span><button class="knav-c-x" data-knav-contents aria-label="Close" title="Close">Close</button></div>
-      <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
+      <div class="knav-c-toprow"><button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button><button class="knav-c-help" data-guide-help data-knav-pick aria-haspopup="dialog">Help</button></div>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
         ${themeLocked() ? '' : `<button class="nff" data-theme-toggle title="Theme">${themeLabel()}</button>`}
