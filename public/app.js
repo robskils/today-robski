@@ -19026,6 +19026,7 @@ function renderMail(loading) {
         <div class="mail-tb-main">
           <h1 class="mail-h1">Mail</h1>
           <div class="mail-mood">${esc(mailMood())}</div>
+          <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
         </div>
         <div class="mail-tb-act">
           ${accScope}
@@ -19038,7 +19039,6 @@ function renderMail(loading) {
       ${err}
       <div class="mail-main mail-main-full">
         <div class="mail-main-top">
-          <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
           ${mailWaitingLineHtml()}
           ${progress}
         </div>

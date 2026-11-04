@@ -271,6 +271,13 @@
 
 :root[data-light] .mail-ar.open :is(.mail-ar-from, .mail-ar-acct, .mail-ar-time) { color:var(--k-ink); opacity:1; visibility:visible; }
 .mail-rowsel { display:none; }
+/* Mail search: a glass box across the width, under the line about what's to sort. */
+.mail-tb-main { flex:1; min-width:0; }
+.mail-tb-main .mail-search2 { box-sizing:border-box; width:100%; min-width:0; margin-top:20px; padding:12px 16px; background:var(--glass-card); border:1px solid var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+.mail-tb-main .mail-search2:focus-within { border-color:#fff; }
+.mail-tb-main .mail-search2 input { color:var(--k-ink); }
+.mail-tb-main .mail-search2 input::placeholder { color:var(--k-mute); opacity:1; }
+.mail-tb-main .mail-search2-k { color:var(--k-mute); font-size:13px; letter-spacing:0; }
 /* Phones, an open email: no box; sender, then the title across the width, then the
    receiving address and time on one line; Move to, Action and Tools are dropdowns. */
 @media (max-width:767px) {
@@ -282,11 +289,20 @@
   .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-subj { grid-row:2; grid-column:1 / -1; margin:0; white-space:normal; }
   .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-acct { grid-row:3; grid-column:1; margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
   .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-time { grid-row:3; grid-column:2; justify-self:end; white-space:nowrap; font-size:14px; }
+  .mail-tb-main .mail-search2-k { display:none; }
+  .mail-tb-main { width:100%; }
+  .mail-tb-act { box-sizing:border-box; width:100%; gap:14px; }
+  .mail-tb-act .mail-tb-acctsel { flex:1 1 0; min-width:0; max-width:none; }
+  .mail-tb-act :is(.mail-tb-guide, .mail-tb-write) { flex:none; }
+  .mail-groups { overflow-x:clip; }
+  .mailv2ar .mail-ar-main { min-width:0; }
+  .mail-ar:not(.open) .mailv2ar .mail-ar-from { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop) { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
   .mail-ar-bar { position:static; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; padding:12px 0; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) { display:grid; grid-template-columns:76px minmax(0,1fr); align-items:center; gap:10px; width:100%; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-replytop, .mail-maketop) { display:block; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) > :is(button, details) { display:none; }
-  :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; }
+  :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffffff' stroke-width='1.7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; }
 }
 
 /* Messages sits straight under the email bar. */
