@@ -17294,7 +17294,10 @@ function renderMailArrival() {
   const main = document.querySelector('.main') || document.body;
   if (!el) { el = document.createElement('div'); el.id = 'mail-arrival-wrap'; }
   if (el.parentNode !== main || main.firstChild !== el) main.insertBefore(el, main.firstChild);
-  el.innerHTML = html;
+  // Only rewrite when the content actually changed: renderMailArrival runs on
+  // every renderNav, and .mail-arrival has a fade-in animation that would replay
+  // each time - the bar "flying around". (Robin, 2026-11-04.)
+  if (el._arrHtml !== html) { el.innerHTML = html; el._arrHtml = html; }
 }
 function renderMailSheet() {
   // §51: the sheet is retired. Keep this as a cleanup no-op for any stray node.
@@ -17726,20 +17729,33 @@ function htmlToPlain(html) {
 async function mailSend(to, cc, bcc, subject, bodyHtml, inReplyTo) {
   // Everything is inside the try: building the payload (signature, sanitise)
   // can throw too, and a silent throw here is a Send that "does nothing".
+  const draft = { ...(state.mail.composing || {}), to, cc, bcc, subject, body: bodyHtml, inReplyTo };
   try {
     const from = composeAcctId();
     if (!from) { toast('No account to send from'); return; }
     const acct = (state.mail.accounts || []).find((a) => a.id === from);
     const sig = acct && acct.signature;
     const attachments = (state.mail.composing && state.mail.composing.attachments) || [];
+    draft.attachments = attachments;
     const text = htmlToPlain(bodyHtml) + (sig ? `\n\n${sigToText(sig)}` : '');
     const html = `<div style="font-family:-apple-system,Segoe UI,Inter,sans-serif;font-size:15px;line-height:1.55;color:#1b1820">${sanitizeEmailHtml(bodyHtml || '')}</div>${sig ? `<br>${sig}` : ''}`;
     const payload = { account: from, to, cc, bcc, subject, text, html, inReplyTo, attachments };
+    // Close the compose at once and send in the background - a slow SMTP round-trip
+    // shouldn't leave the draft screen sitting open. If it fails, put the draft back
+    // with its content intact. (Robin, 2026-11-04: "after sending the draft should close".)
+    state.mail.composing = false; renderMail();
     toast('Sending…');
-    await mailApi('/send', { method: 'POST', body: JSON.stringify(payload) });
-    { const addr = (String(to || '').match(/[\w.+-]+@[\w.-]+\.[\w-]+/) || [])[0]; if (addr) kitAutoRoll({ email: addr }); }   // §48: emailing resets their keep-in-touch clock
-    toast('Sent'); clearDraft(); state.mail.composing = false; renderMail();
-  } catch (e) { toast(e && e.message ? e.message : 'Could not send'); }
+    mailApi('/send', { method: 'POST', body: JSON.stringify(payload) })
+      .then(() => {
+        const addr = (String(to || '').match(/[\w.+-]+@[\w.-]+\.[\w-]+/) || [])[0]; if (addr) kitAutoRoll({ email: addr });   // §48: emailing resets their keep-in-touch clock
+        clearDraft(); toast('Sent');
+      })
+      .catch((e) => {
+        state.mail.composing = draft;
+        if (state.view && state.view.type === 'mail') renderMail();
+        toast(e && e.message ? `Not sent - draft restored (${e.message})` : 'Could not send - your draft is back');
+      });
+  } catch (e) { state.mail.composing = draft; if (state.view && state.view.type === 'mail') renderMail(); toast(e && e.message ? e.message : 'Could not send'); }
 }
 // Upload a File to the mail attachment store; returns {id,name,type,size}.
 async function mailUploadAttachment(file) {
