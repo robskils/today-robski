@@ -18853,8 +18853,21 @@ function mailOpenTriageBar(o) {
     + `<button class="mail-trg" data-mail-quad-file="important">Important</button>`
     + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
     + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
+    + mailRowSelectHtml('Move to', ['Urgent', 'Important', 'Later', 'Archive'])
     + `</div>`;
 }
+// On a phone each of the email's rows (Move to, Action, Tools) is one dropdown. Its
+// options stand for the row's buttons, in order; choosing one clicks that button, so
+// every action keeps its one code path. (Robin, 2026-11-04.)
+function mailRowSelectHtml(label, opts) {
+  return `<select class="sel mail-rowsel" data-mail-rowsel aria-label="${esc(label)}"><option value="">Choose</option>${opts.map((t, i) => `<option value="${i}">${t}</option>`).join('')}</select>`;
+}
+function mailRowLabels(html) { return [...String(html).matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)].map((x) => x[1]); }
+document.addEventListener('change', (ev) => {
+  const sel = ev.target.closest && ev.target.closest('[data-mail-rowsel]'); if (!sel || sel.value === '') return;
+  const btn = sel.parentElement.querySelectorAll('button')[Number(sel.value)]; sel.selectedIndex = 0;
+  if (btn) btn.click();
+});
 // Does Koyéba notice anything in this email? (an invite, a meeting link, or that
 // it's already filed to a task/note). Returns a short italic line or null.
 function mailRowNotice(o) {
@@ -18895,9 +18908,10 @@ function mailOpenPanelHtml(o) {
   const k = esc(o._key);
   const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
   const addr = (o.from && o.from.address) ? esc(o.from.address) : '';
-  const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button></div>`;
+  const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${mailRowSelectHtml('Tools', ['Make a task', 'Make a note', 'Add event'])}</div>`;
   const spamBtn = inSpam ? `<button class="mail-reply" data-mail-notspam="${k}">Not spam</button>` : `<button class="mail-reply" data-mail-spam="${k}">Spam</button>`;
-  const replyActs = `<div class="mail-replyacts"><span class="mail-ar-row-l">Action</span><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}</div>`;
+  const replyBtns = `<button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}`;
+  const replyActs = `<div class="mail-replyacts"><span class="mail-ar-row-l">Action</span>${replyBtns}${mailRowSelectHtml('Action', mailRowLabels(replyBtns))}</div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
