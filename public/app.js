@@ -6030,7 +6030,7 @@ function homeTodayItems() {
   // snoozed-task surfacing are a today-only signal, so they don't ride along.
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (src.events || []).map((e) => ({ kind: 'event', allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
+  const items = (src.events || []).map((e) => ({ kind: 'event', eventId: e.id, date: e.date, allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
   // Birthdays now live in the Coming into view feed, not the Today calendar, so they're
   // no longer injected here (avoids listing them twice). (Robin, 2026-10-15.)
   for (const s of src.slots || []) {
@@ -9068,7 +9068,7 @@ function homeCalBodyHtml(off) {
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const note = it.kind === 'event' ? (it.location || '') : '';
-    return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.id || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
+    return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.eventId || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
   const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
