@@ -1356,7 +1356,7 @@ function addNewMenuHtml() {
   // Robin (2026-11-04): New lives once, in the menubar (left of Mail), not as a box
   // on every breadcrumb. Plain-text button to match Notepad/Search/Menu; clicking it
   // drops the same popover.
-  return `<span class="addnew knav-addnew"><button class="knav-new-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Make something new">New<span class="an-ch">⌄</span></button><div class="addnew-menu" hidden>${items}</div></span>`;
+  return `<span class="addnew knav-addnew"><button class="knav-new-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add to Koyéba">New<span class="an-ch">⌄</span></button><div class="addnew-menu" hidden>${items}</div></span>`;
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
@@ -5336,7 +5336,7 @@ function navGroupsHtml(v) {
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
-        <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Make something new">New</button>
+        <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Add to Koyéba">New</button>
         ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
@@ -8835,15 +8835,14 @@ function homeNewMake(kind) {
     else quickAdd('note');
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
-// The one New popover (Robin, 2026-11-04): a centred "Make something new" dialog,
+// The one New popover (Robin, 2026-11-04): a centred "Add to Koyéba" dialog,
 // opened from the menubar's New on any page - NOT a dropdown, and the only New box
 // in the app. Rendered on <body> so it floats over whatever view you're on.
 function newPopHtml() {
   const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Make something new">
-    <div class="newpop-h"><span class="newpop-eyebrow">Make something new</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+  return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Koyéba">
+    <div class="newpop-h"><span class="newpop-eyebrow">Add to Koyéba</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
-    <div class="newpop-foot">Or just write it as you'd say it - Set something down ${esc(PK('⌘.'))}</div>
   </div></div>`;
 }
 function renderNewPop() {
@@ -8988,7 +8987,7 @@ async function glanceMailOpenIn(key) {
 function homeGlanceHtml() {
   const newOpen = !!(state.home && state.home.newMenu);
   const newItems = HOME_NEW.map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}<div class="gln-new-foot">Or just write it – Set something down ${esc(PK('⌘.'))}</div></div></div>` : '';
+  const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}</div></div>` : '';
   const words = [['mail', 'Mail', modOn('mail'), mailHeaderCount()], ['messages', 'Messages', modOn('contacts'), unreadMsgs()], ['tasks', 'Tasks', true, (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).length], ['calendar', 'Calendar', modOn('calendar'), 0], ['notes', 'Notes', modOn('notes'), 0], ['goals', 'Goals', modOn('goals'), 0]].filter((w) => w[2]);
   const glance = state.home && state.home.glance;
   const wordHtml = words.map(([k, l, , n]) => `<span class="gln-word${glance === k ? ' on' : ''}" data-glance="${k}" role="button" tabindex="0">${esc(l)}${n ? `<i class="gln-n">${n}</i>` : ''}</span>`).join('');
@@ -9003,10 +9002,9 @@ function homeNewBtnHtml() {
   // The first four (Note/Task/Event/Email, the ones with shortcuts) are the "big
   // four" and the only ones shown on a phone. (Robin, 2026-11-03.)
   const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Make something new">
-    <div class="newpop-h"><span class="newpop-eyebrow">Make something new</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+  const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Koyéba">
+    <div class="newpop-h"><span class="newpop-eyebrow">Add to Koyéba</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
-    <div class="newpop-foot">Or just write it as you'd say it — Set something down ${esc(PK('⌘.'))}</div>
   </div></div>` : '';
   return `<span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${pop}</span>`;
 }
@@ -12909,7 +12907,7 @@ function renderAreaV4() {
   const strip = stripB.length ? `<div class="av3-strip">${stripB.join('')}</div>` : '';
 
   const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
-  const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, cover, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-area-cover>Change cover</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
+  const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
 
   $('#pane').innerHTML = `
     <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
@@ -13024,7 +13022,7 @@ function renderAreaV3() {
       <div class="av3-crumb" data-open-areas role="button" tabindex="0"><span class="av3-crumb-a">←</span> Spaces <span class="av3-crumb-dot">·</span> <span class="av3-crumb-nm">${esc(area.title || 'Space')}</span></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(areaNumeral(area.id))}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
-        <div class="av3-head-act">${addMenu}<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, cover, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-area-cover>Change cover</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span></div>
+        <div class="av3-head-act">${addMenu}<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span></div>
       </div>
       ${strip}
       ${tasksSec}
