@@ -30,7 +30,7 @@
   --line:rgba(18,17,12,.18); --line-2:rgba(18,17,12,.32);
 }
 :root[data-light='overcast'] {
-  --k-bg:#343E4C; --k-panel:#3E4958; --k-soft:#495565; --k-mine:#525F70;
+  --k-bg:#2A333F; --k-panel:#343E4C; --k-soft:#3F4A59; --k-mine:#485565;
   --k-ink:#FFFFFF; --k-mute:#EEF1F4; --k-goldt:#F6DFA8; --k-gold:#E3B765; --k-line:#5E6B7C;
   --k-deep:#1D242E; --k-ondeep:#FFFFFF;
   --glass:rgba(52,62,76,.3); --glass-edge:rgba(255,255,255,.28); --glass-card:rgba(52,62,76,.46); --glass-face:rgba(22,28,36,.52);
