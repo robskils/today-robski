@@ -11,7 +11,7 @@
      while scrolling. The app linkifies real http(s) URLs itself. -->
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>Koyéba</title>
-<link rel="icon" href="/favicon.svg?v=202611042254">
+<link rel="icon" href="/favicon.svg?v=202611042257">
 <!-- Installable to the home screen: launches full-screen with its own icon. -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.v21.png">
@@ -28,9 +28,9 @@
 <link rel="preload" as="font" type="font/woff2" href="/fonts/Jost-400.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/Jost-500.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/Jost-600.woff2" crossorigin>
-<link rel="stylesheet" href="/koyeba.css?v=202611042254">
-<link rel="stylesheet" href="/life.css?v=202611042254">
-<link rel="stylesheet" href="/daylight.css?v=202611042254">
+<link rel="stylesheet" href="/koyeba.css?v=202611042257">
+<link rel="stylesheet" href="/life.css?v=202611042257">
+<link rel="stylesheet" href="/daylight.css?v=202611042257">
 <script>
   try {
     // The light and the theme always travel together: see applyLight() in app.js.
@@ -40,7 +40,7 @@
     // The sky paints with the first frame; the app stays hidden until it has content,
     // then fades in once. A timer guarantees it can never stay hidden.
     (function () {
-      var r = document.documentElement, w = '/wash/' + r.dataset.light + '.webp?v=202611042254';
+      var r = document.documentElement, w = '/wash/' + r.dataset.light + '.webp?v=202611042257';
       r.style.background = 'url(' + w + ') top / cover no-repeat fixed';
       var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = w; document.head.appendChild(l);
       r.classList.add('booting');
@@ -80,8 +80,8 @@
   <button class="undo-fab" id="undo-fab" data-undo type="button" aria-label="Undo the last change" title="Undo"><span class="uf-ic" aria-hidden="true">↶</span><span class="uf-l">Undo</span></button>
   <div id="palette"></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/qrcode.min.js?v=202611042254"></script>
-  <script src="/app.js?v=202611042254"></script>
-  <script src="/guide.js?v=202611042254"></script>
+  <script src="/qrcode.min.js?v=202611042257"></script>
+  <script src="/app.js?v=202611042257"></script>
+  <script src="/guide.js?v=202611042257"></script>
 </body>
 </html>

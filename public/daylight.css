@@ -305,6 +305,37 @@
   :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffffff' stroke-width='1.7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; }
 }
 
+/* The Practices page: the same open rows as Today's Practices tab. No boxes. */
+.trk-dash { max-width:none; column-count:1; column-width:auto; display:block; }
+:root[data-light] .trk-area { background:transparent; border:0 !important; padding:0; margin:0 0 30px; box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none; break-inside:auto; }
+.trk-area-h { border-bottom:1px solid var(--k-line); padding-bottom:8px; margin-bottom:0; }
+.trk-area-name { font-family:'Jost',system-ui,sans-serif; font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--k-mute); }
+.trk-dayhdr { display:none; }
+:root[data-light] .trk-cadsel { background-color:transparent; border-color:var(--glass-edge); color:var(--k-mute); font-size:14px; }
+.trk-prow { gap:14px; padding:11px 2px; border-bottom:1px solid var(--k-line); }
+.trk-prow:last-child { border-bottom:1px solid var(--k-line); }
+.prc-row-click.trk-prow:hover { background:transparent; }
+.trk-prow .trk-pname { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:23px; line-height:1.2; color:var(--k-ink); }
+.trk-prow:hover .trk-pname { color:var(--k-goldt); }
+.trk-pname .trk-streak { display:inline; margin-left:12px; min-width:0; font-family:'Jost',system-ui,sans-serif; font-weight:400; font-size:14px; color:var(--k-goldt); white-space:nowrap; }
+.trk-pname :is(.t2-avoidtag, .trk-cad) { margin-left:10px; font-family:'Jost',system-ui,sans-serif; font-size:13px; font-weight:400; color:var(--k-mute); }
+.trk-prow .t2-avoidtag { font-size:11px; font-weight:600; color:var(--k-goldt); }
+.trk-prow .t2-tick { width:30px; height:30px; }
+.trk-prow .trk-play { width:auto; height:auto; padding:4px 6px; border:0; background:none; color:var(--k-goldt); font-size:12px; }
+.trk-prow .trk-week { gap:3px; }
+.trk-prow .trk-daycell, .trk-prow .trk-daycell.today-col, .trk-prow .trk-daycell.yest-col { width:auto; padding:0; background:none; }
+.trk-prow .trk-dot { width:23px; height:23px; }
+.trk-prow .trk-dot i { font-size:11px; }
+.trk-prow .trk-editp:hover { background:none; }
+:root[data-light] :is(.trk-dot.slip, .trk-dot.today.slip, .t2-tick-slip.on) { background:var(--k-gold); border-color:var(--k-gold); box-shadow:none; color:var(--k-deep); }
+@media (max-width:767px) {
+  body[data-view="tracker"] .trk-prow { flex-wrap:wrap; row-gap:8px; }
+  body[data-view="tracker"] .trk-pname { flex:1 1 calc(100% - 110px); white-space:normal; }
+  body[data-view="tracker"] .trk-hist { width:100%; justify-content:flex-end; order:9; }
+  body[data-view="tracker"] .trk-area-h { flex-wrap:nowrap; }
+  body[data-view="tracker"] .trk-cadsel { margin-left:auto; flex:0 1 150px; max-width:150px; }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
