@@ -11506,7 +11506,10 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 /* The right column scrolls on its own: a sticky panel with its own scroll area,
    so you can reach its foot without scrolling the main column all the way down.
    (Robin, 2026-11-03.) overscroll-behavior:contain stops it chaining to the page. */
-.home-aside { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); max-height:calc(100vh - var(--tabstrip-h,68px) - 32px); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; padding-right:4px; }
+/* Flows in the page, no inner scroll (Robin, 2026-11-04): the sticky max-height was
+   clipping Your Spaces so you had to scroll inside the sidebar. Now the whole capped
+   list shows, revealed by the normal page scroll like everything else. */
+.home-aside { padding-right:4px; }
 .home-aside::-webkit-scrollbar { width:8px; }
 .home-aside::-webkit-scrollbar-thumb { background:var(--k-line); border-radius:0; }
 .home-sa-head { display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--k-ink); }
