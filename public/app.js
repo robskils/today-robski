@@ -5476,7 +5476,7 @@ function knavGroups() {
     { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
       ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-      ['Daily review', 'data-open-reviews', ''], ['Weekly review', 'data-open-reviewtype="weekly"', ''], ['Monthly review', 'data-open-reviewtype="monthly"', ''], ['Quarterly review', 'data-open-reviewtype="quarterly"', ''], ['Year in review', 'data-open-reviewtype="yearly"', ''] ] },
+      ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
       ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
     { id: 'inner', label: 'Reflection', about: 'Room for the rest of you', tools: [
