@@ -38,7 +38,6 @@ const GUIDE_ANSWERS = {
   'event-add': { title: 'Add an event', lead: 'The quickest way is to write it as you\'d say it.', go: ['Open Calendar', 'data-open-calendar'], steps: [
     'Set it down with <kbd>⌘.</kbd> and a day and time, such as "Lunch with Ana Friday at 1".',
     'Or open <b>Calendar</b> and add it there, where you can also make it repeat.',
-    'Have a flyer, a photo or a link? If you\'ve added AI, <b>Add from a file</b> on the Calendar reads the events out of it.',
       ], next: ['set-down', 'holidays'] },
   holidays: { title: 'Add holidays and sport', lead: 'Show your country\'s public holidays and your team\'s fixtures on your calendar.', go: ['Open the settings', 'data-guide-settings="feeds"'], steps: [
     'Choose <b>Open the settings</b> above, to go to the calendar section.',
@@ -348,10 +347,12 @@ function renderHelp(key0) {
 }
 // The Help button on a page, and the panel it opens beside the page.
 function guideHelpFor(view) { const t = view && view.type; return (t && Object.prototype.hasOwnProperty.call(GUIDE_HELP_FOR, t) && GUIDE_HELP_FOR[t]) || null; }
-function guideHelpBtn() { return guideHelpFor(state.view) ? '<button type="button" class="g-help-btn" data-guide-help aria-haspopup="dialog">Help</button>' : ''; }
+// Help lives in the menubar now (renderNav), so pages no longer draw their own button.
+function guideHelpBtn() { return ''; }
 function guideClosePanel() { const el = document.getElementById('g-panel'); if (el) el.remove(); }
 function guideOpenPanel() {
-  const h = guideHelpFor(state.view); if (!h) return;
+  const h = guideHelpFor(state.view);
+  if (!h) { openHelp('index'); return; }   // a page with no guide of its own: the whole Guide
   guideClosePanel();
   const el = document.createElement('aside');
   el.id = 'g-panel'; el.className = 'g-panel'; el.setAttribute('aria-label', `Help with ${h[0]}`);

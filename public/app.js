@@ -1634,17 +1634,77 @@ function themeLocked() { return !!(state.me && state.me.id !== 1); }
 function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
 function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
+// The light: a painted wash that follows the real day (public/daylight.css).
+const LIGHTS = ['dawn', 'overcast', 'dusk', 'night'];
+const LIGHT_GROUND = { dawn: '#3B2B36', overcast: '#2A333F', dusk: '#2E2230', night: '#0D1220' };
+// Which part of the day it is where you are, from your sunrise and sunset. With no
+// location yet, a sensible clock guess (07:00 and 18:30) stands in for the sun.
+// Koyéba is dark at every hour now (Robin, 2026-11-04), so the theme is always dark.
+function lightIsDark() { return true; }
+function lightFromSun(now = new Date()) {
+  const loc = cachedLoc();
+  const s = loc ? sunTimes(now, loc.lat, loc.lng) : null;
+  let rise, set;
+  if (s && s.sunrise && s.sunset) { rise = s.sunrise.getTime(); set = s.sunset.getTime(); }
+  else { const d = new Date(now); d.setHours(7, 0, 0, 0); rise = d.getTime(); d.setHours(18, 30, 0, 0); set = d.getTime(); }
+  const t = now.getTime(), H = 3600 * 1000;
+  if (t < rise - 0.75 * H || t >= set + 0.75 * H) return 'night';
+  if (t < rise + H) return 'dawn';
+  if (t >= set - 1.25 * H) return 'dusk';
+  return 'overcast';
+}
+// Staging and local only: pick any time of day to look at it. Never on the live site.
+function lightPreviewAllowed() { return /(^|\.)workers\.dev$|^localhost$|^127\.0\.0\.1$/.test(location.hostname); }
+function lightPreview() { if (!lightPreviewAllowed()) return null; try { const v = localStorage.getItem('life.light.preview'); return LIGHTS.includes(v) ? v : null; } catch { return null; } }
+function currentLight() {
+  const p = lightPreview(); if (p) return p;
+  const m = themeMode();
+  if (m === 'dark') return 'night';
+  const l = lightFromSun();
+  if (m === 'light') return 'overcast';   // pinned to Day
+  return l;
+}
+function syncLightLayer(light) {
+  if (!document.body) return;
+  let el = document.getElementById('light-layer');
+  if (!el) { el = document.createElement('div'); el.id = 'light-layer'; el.setAttribute('aria-hidden', 'true'); document.body.prepend(el); }
+  const show = (img) => { el.querySelectorAll('img').forEach((i) => i.classList.toggle('on', i === img)); };
+  let img = el.querySelector(`img[data-l="${light}"]`);
+  if (img) { show(img); return; }
+  img = new Image(); img.alt = ''; img.dataset.l = light;
+  img.onload = () => { if (document.documentElement.dataset.light === light) show(img); };
+  img.src = `/wash/${light}.webp?v=3`;   // bump after repainting: these are cached for good
+  el.appendChild(img);
+}
+function syncLightPreview(light) {
+  if (!lightPreviewAllowed() || !document.body) return;
+  let el = document.getElementById('light-preview');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'light-preview'; el.setAttribute('role', 'group'); el.setAttribute('aria-label', 'Preview a time of day');
+    el.innerHTML = [...LIGHTS, 'auto'].map((k) => `<button type="button" data-l="${k}">${k[0].toUpperCase()}${k.slice(1)}</button>`).join('');
+    el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; try { if (b.dataset.l === 'auto') localStorage.removeItem('life.light.preview'); else localStorage.setItem('life.light.preview', b.dataset.l); } catch {} applyTheme(false); });
+    document.body.appendChild(el);
+  }
+  const p = lightPreview() || 'auto';
+  el.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.l === p));
+}
 function applyTheme(rerender) {
   const m = themeMode();
-  // Resolve to light/dark (auto follows the sun).
-  const theme = (m === 'dark' ? 'dark' : m === 'light' ? 'light' : (autoIsDark() ? 'dark' : 'light'));
+  // The one place the light is decided. Theme follows from it, so text colours and
+  // the wash can never disagree (pale text on a morning wash is unreadable).
+  const light = currentLight();
+  const theme = lightIsDark(light) ? 'dark' : 'light';
+  document.documentElement.dataset.light = light;
   document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('today.theme', theme); } catch {}
+  try { localStorage.setItem('today.theme', theme); localStorage.setItem('today.light', light); } catch {}
+  syncLightLayer(light);
+  syncLightPreview(light);
+  document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', LIGHT_GROUND[light]));
   if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
   else { const b = document.querySelector('[data-theme-toggle]'); if (b) b.textContent = themeLabel(); }
   clearTimeout(themeTimer);
-  // In auto mode, re-check every few minutes so it flips at sunrise/sunset.
-  if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 5 * 60 * 1000);
+  // In auto mode, re-check every couple of minutes so the light follows the day.
+  if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 2 * 60 * 1000);
 }
 // The nav button steps through the four in order; the Settings picker sets one directly.
 function cycleTheme() {
@@ -4795,15 +4855,7 @@ function ensureLoc() {
     (p) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude })); } catch {} applyTheme(false); },
     () => {}, { maximumAge: 6 * 3600 * 1000, timeout: 8000 });
 }
-function autoIsDark() {
-  const loc = cachedLoc();
-  if (!loc) return matchMedia('(prefers-color-scheme: dark)').matches;   // until we know where you are
-  const now = new Date();
-  const s = sunTimes(now, loc.lat, loc.lng);
-  if (!s.sunrise || !s.sunset) return matchMedia('(prefers-color-scheme: dark)').matches;  // polar day/night
-  const t = now.getTime();
-  return t < s.sunrise.getTime() || t >= s.sunset.getTime();
-}
+function autoIsDark() { return lightIsDark(lightFromSun()); }
 // Sunrise/sunset for a date + lat/lng (standard sunrise-equation), returning UTC
 // Date objects. Good to ~a minute, which is plenty for a theme switch.
 function sunTimes(date, lat, lng) {
@@ -5282,6 +5334,7 @@ function navGroupsHtml(v) {
       ${mobileBackHtml()}
       ${wordmark}
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
+      <button class="knav-help-m" data-guide-help aria-haspopup="dialog">Help</button>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
         <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Make something new">New</button>
@@ -5289,6 +5342,7 @@ function navGroupsHtml(v) {
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-split-btn${state.split ? ' on' : ''}" data-split-open title="Show something side by side">Split</button>
+        <button class="knav-help-btn" data-guide-help aria-haspopup="dialog">Help</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
     </div></div>`;
@@ -14703,7 +14757,7 @@ function renderCalendar() {
         <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today>Today</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
         <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
-        ${aiClientOn() ? '<button class="cx-file" data-open-flyer title="Read events from a flyer, photo, link or pasted text">Add from a file</button>' : ''}<button class="cx-new" data-cal-add>New event</button>
+        <button class="cx-new" data-cal-add>New event</button>
       </div>
       ${gcalBarHtml()}
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
@@ -27270,7 +27324,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
   { const kg = t.closest('[data-knav-group]'); if (kg) { const kn = state.knav || (state.knav = {}); const id = kg.dataset.knavGroup; const was = kn.group === id && !kn.contents && !kn.find; kn.group = was ? null : id; kn.contents = false; kn.find = false; renderNav(); return; } }
   if (t.closest('[data-knav-contents]')) { const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
-  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) { const el = document.querySelector('[data-knav-q]'); if (el) { try { el.focus({ preventScroll: true }); } catch { el.focus(); } } } return; }  // focus SYNCHRONOUSLY inside the tap - a setTimeout focus loses the user gesture, so iOS won't raise the keyboard or show the caret. renderNav() is synchronous (it has already moved .knav-find to <body> by the time it returns), so the input is in its final place now. (Robin: "put the cursor in the search box", 2026-11-04.)
   if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
   { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }

@@ -13396,6 +13396,3 @@ select.lk-act { max-width:none; width:auto; }
 .gw-line span { display:inline-block; width:10px; height:10px; margin-right:10px; background:var(--k-gold); }
 .gw-hint { margin:0; font-family:var(--k-sans); font-size:16px; color:var(--k-mute); }
 .su-hint { margin:0; font-family:var(--k-sans); font-size:16px; line-height:1.45; color:var(--k-mute); text-align:left; }
-.cx-file { appearance:none; min-height:44px; padding:0 4px; border:0; background:none; cursor:pointer; color:var(--k-mute); font-family:var(--k-sans); font-size:16px; white-space:nowrap; }
-.cx-file:hover { color:var(--k-goldt); }
-.cx-file:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
