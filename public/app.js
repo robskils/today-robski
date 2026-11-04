@@ -18778,14 +18778,13 @@ function mailAccordionRow(x, count) {
 // moves as the action row, reachable without scrolling to the end.
 function mailOpenTriageBar(o) {
   const k = esc(o._key);
+  // Move to = the four quadrant/archive moves only. Delete/Spam/Block are "Action"
+  // now, in the row below. (Robin, 2026-11-04.)
   return `<div class="mail-ar-triage"><span class="mail-ar-triage-l">Move to</span>`
     + `<button class="mail-trg" data-mail-quad-file="urgent">Urgent</button>`
     + `<button class="mail-trg" data-mail-quad-file="important">Important</button>`
     + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
     + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
-    + `<button class="mail-trg mail-trg-del" data-mail-del="${k}">Delete</button>`
-    + `<button class="mail-trg" data-mail-spam="${k}">Spam</button>`
-    + `<button class="mail-trg" data-mail-block="${k}" data-mail-from="${esc((o.from && o.from.address) || '')}">Block</button>`
     + `</div>`;
 }
 // Does Koyéba notice anything in this email? (an invite, a meeting link, or that
@@ -18822,13 +18821,15 @@ function mailOpenPanelHtml(o) {
   // bar at the top of the open email - dropped from this lower row to avoid the
   // double-up. The U/I/L/A keyboard shortcuts still work. (Robin.)
   const sorts = '';
-  const bl = (state.mail.besideLinked && state.mail.besideLinked[o._key]) || null;
-  const besideMobile = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
-  // §18: make a *linked* note/task that opens in the second pane (or, on mobile, a
-  // flip line). Reflects the linked state once made ("Note linked").
-  const besideActs = `<button class="mail-make mail-make-beside${bl && bl.note ? ' linked' : ''}" data-mail-note-beside>${bl && bl.note ? 'Note linked' : 'Make a note beside →'}</button><button class="mail-make mail-make-beside${bl && bl.task ? ' linked' : ''}" data-mail-task-beside>${bl && bl.task ? 'Task linked' : 'Make a task beside →'}</button>${besideMobile ? '' : '<span class="mail-make-hint">Or drag it across.</span>'}`;
-  const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${besideActs}</div>`;
-  const replyActs = `<div class="mail-replyacts"><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button>${mailMoreHtml(o)}</div>`;
+  // §9 (Robin, 2026-11-04): three labelled rows - Move to (above), Action (reply +
+  // the destructive moves), Tools (make). The old "make … beside" buttons are gone;
+  // splitting the view beside an email is its own control now.
+  const k = esc(o._key);
+  const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
+  const addr = (o.from && o.from.address) ? esc(o.from.address) : '';
+  const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button></div>`;
+  const spamBtn = inSpam ? `<button class="mail-reply" data-mail-notspam="${k}">Not spam</button>` : `<button class="mail-reply" data-mail-spam="${k}">Spam</button>`;
+  const replyActs = `<div class="mail-replyacts"><span class="mail-ar-row-l">Action</span><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}</div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
@@ -18843,16 +18844,13 @@ function mailOpenPanelHtml(o) {
 // (Robin chose to keep these behind "More" rather than lose them, 2026-11-01.)
 function mailMoreHtml(o) {
   const m = state.mail;
-  const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
-  const addr = o.from && o.from.address ? esc(o.from.address) : '';
+  // Delete / Spam / Block are first-class in the Action row now, so More keeps only
+  // the quieter extras. (Robin, 2026-11-04.)
   const items = [];
   items.push(`<button class="mail-more-item" data-mail-forward>Forward</button>`);
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
   items.push(`<button class="mail-more-item" data-mail-area>File in a Space</button>`);
-  items.push(inSpam ? `<button class="mail-more-item" data-mail-notspam="${esc(o._key)}">Not spam</button>` : `<button class="mail-more-item" data-mail-spam="${esc(o._key)}">Mark as spam</button>`);
-  items.push(`<button class="mail-more-item" data-mail-block="${esc(o._key)}" data-mail-from="${addr}">Block this sender</button>`);
-  items.push(`<button class="mail-more-item mail-more-del" data-mail-del="${esc(o._key)}">Delete</button>`);
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
