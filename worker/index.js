@@ -1,3 +1,4 @@
+import { sendBackupMail } from './backup-mail.js';
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT, signJWT } from './auth.js';
 import { inviteInfo, handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
@@ -3097,15 +3098,11 @@ async function sendSystemMail(env, { to, subject, html, text }) {
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
     const raw = buildMessage(acct, { to, subject, html, text });
-    await smtpSend(env, acct, { rcpts: [to], raw });
-  } else {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html }),
-    });
-    if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+    try { await smtpSend(env, acct, { rcpts: [to], raw }); return; }
+    catch (e) { console.error('smtp send failed, falling back to Cloudflare:', String((e && e.message) || e)); }
   }
+  const res = await sendBackupMail(env, { to, subject, html, text });
+  if (!res.ok) throw new Error(`backup mail ${res.status} ${await res.text()}`);
 }
 
 // ── the morning brief ─────────────────────────────────────────────────
@@ -3216,6 +3213,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const payload = { day: now.date, events, tasks, quote, siteUrl: home, calError: cal.error || null, unread: (mailRes && mailRes.n) || 0 };
     const subject = briefSubject(payload);
     const html = briefEmail(payload);
+    let sent = false;
     if (env.BRIEF_SMTP_PASS) {
       // Send as contact@daybook.fyi through Purelymail SMTP. daybook.fyi's mail
       // lives on Purelymail (SPF+DKIM+DMARC aligned), so a real mailbox there
@@ -3227,15 +3225,13 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
       };
       const text = `Your morning brief for ${now.date}.\n\nOpen ${home} for the full day.`;
       const raw = buildMessage(acct, { to, subject, html, text });
-      await smtpSend(env, acct, { rcpts: [to], raw });
-    } else {
-      // No SMTP secret yet: fall back to the Resend sender (today@incremento.co).
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html }),
-      });
-      if (!res.ok) throw new Error(`resend ${res.status} ${await res.text()}`);
+      try { await smtpSend(env, acct, { rcpts: [to], raw }); sent = true; }
+      catch (e) { console.error('smtp brief send failed, falling back to Cloudflare:', String((e && e.message) || e)); }
+    }
+    if (!sent) {
+      // No SMTP secret, or SMTP failed: the Cloudflare backup (today@incremento.co).
+      const res = await sendBackupMail(env, { to, subject, html });
+      if (!res.ok) throw new Error(`backup mail ${res.status} ${await res.text()}`);
     }
     return { sent: true, uid, events: events.length, tasks: tasks.length };
   } catch (e) {

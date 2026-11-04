@@ -182,6 +182,9 @@ BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the
 # portfolio is just more tenant-scoped tables, not the shared live portfolio DB.
+[[env.staging.send_email]]
+name = "EMAIL"
+
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "daybook-staging"
@@ -246,6 +249,10 @@ max_retries = 2
 # a re-fetch (it never carries message data), and everything degrades to the
 # existing polls if it isn't connected, so it can't break messaging. The DO
 # needs no stored state; it just coordinates the live connections.
+# Backup email: Cloudflare Email Service. The FROM_EMAIL domain must be enabled for sending.
+[[send_email]]
+name = "EMAIL"
+
 [[durable_objects.bindings]]
 name = "MSGHUB"
 class_name = "MsgHub"
