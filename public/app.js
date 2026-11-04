@@ -22476,9 +22476,11 @@ function rvlHeroHtml(k) {
     }
     strip = `<div class="rvl-week" role="img" aria-label="${esc(`${rvlRange(k, cur.from, cur.to)}. ${say}`)}">${cells.join('')}</div>`;
   }
-  return `<section class="rvl-hero${strip ? '' : ' rvl-hero-solo'}" aria-label="This ${word}">
+  // An unfiled period that has already ended stays the one to do, so it isn't "this" one.
+  const when = `${cur.to < todayI ? 'Last' : 'This'} ${word}`;
+  return `<section class="rvl-hero${strip ? '' : ' rvl-hero-solo'}" aria-label="${when}">
     <div class="rvl-hero-main">
-      <div class="rvl-hero-l">This ${word}</div>
+      <div class="rvl-hero-l">${when}</div>
       <div class="rvl-hero-d">${esc(rvlRange(k, cur.from, cur.to))}</div>
       <p class="rvl-hero-s">${esc(say)}</p>
       <button type="button" class="rvl-cta" ${attr}>${cta} →</button>
@@ -22519,7 +22521,7 @@ function rvlArcHtml(k) {
   </aside>`;
   return `<section class="rvl-sec" id="rvl-arc" data-rvl-sel="${sel.id}">${head}<div class="rvl-arc"><div class="rvl-chart"><div class="rvl-plot">
     <div class="rvl-grid" aria-hidden="true"><i style="top:0"><b>5</b></i><i style="top:40%"><b>3</b></i><i style="top:80%"><b>1</b></i><i class="rvl-base" style="top:100%"></i></div>
-    <div class="rvl-bars" style="grid-template-columns:repeat(${shown.length},minmax(46px,96px))">${bars}</div>
+    <div class="rvl-bars" style="--rvl-n:${shown.length}">${bars}</div>
   </div></div>${aside}</div></section>`;
 }
 function rvlRowHtml(k, w, selId) {
