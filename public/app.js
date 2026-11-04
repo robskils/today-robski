@@ -22201,10 +22201,10 @@ async function openGoals(tab) {
   state.view = { type: 'goals' };
   if (tab) {
     state.goalsTab = tab;
-    if (['areas', 'focus', 'list', 'bucket'].includes(tab)) { state.goalsView = tab; try { localStorage.setItem('life.goals.view', tab); } catch {} }
-    // "Goals" (the menu item) must land on the goals, never the Bucket list - even
-    // when Bucket was the last view open. (Robin, 2026-11-04.)
-    else if (tab === 'goals' && goalsView() === 'bucket') { state.goalsView = 'areas'; try { localStorage.setItem('life.goals.view', 'areas'); } catch {} }
+    // Map the entry point to a tab: "Goals" always lands on the goals list (never the
+    // Bucket, whatever was last open); legacy areas/list fold into Goals. (Robin.)
+    const v = ['vision', 'goals', 'focus', 'bucket'].includes(tab) ? tab : ((tab === 'list' || tab === 'areas') ? 'goals' : null);
+    if (v) { state.goalsView = v; try { localStorage.setItem('life.goals.view', v); } catch {} }
   }
   const [areas, goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
@@ -22733,13 +22733,20 @@ function saveGoalProgress(id, pct) {
 // line, then the §19 grid - the list in the main column, "Nearly there" and
 // "Gone quiet" in the side column. No coloured bars, boxed cards, ACTIVE chips,
 // ×, "+ Goal", sort dropdown or boxed tabs. One gold accent, square, flat.
-const GOAL_VIEWS = [['areas', 'By Space', 'Visions, then goals'], ['focus', 'Starred', 'What matters most'], ['list', 'All goals', 'Every goal, by when'], ['bucket', 'Bucket list', 'One day']];
-const GOAL_ORDERS = [['starred', 'Starred first'], ['close', 'Closest to done'], ['touched', 'Recently touched']];
-const goalsView = () => state.goalsView || (state.goalsView = (() => { try { const v = localStorage.getItem('life.goals.view') || 'areas'; return ['areas', 'focus', 'list', 'bucket'].includes(v) ? v : 'areas'; } catch { return 'areas'; } })());
+// Tabs (Robin, 2026-11-04): Vision (each Space + a has-vision filter), Goals (every
+// goal, orderable), Starred, Bucket list. "By Space" and "All goals" merged into one
+// orderable Goals list; "By Space" is now an ORDER within it (Spaces by goal count).
+const GOAL_VIEWS = [['vision', 'Vision', 'Each Space'], ['goals', 'Goals', 'Every goal'], ['focus', 'Starred', 'What matters most'], ['bucket', 'Bucket list', 'One day']];
+const GOAL_ORDERS = [['space', 'By Space'], ['recent', 'Recent'], ['lifespace', 'Life Space'], ['starred', 'Starred'], ['close', 'Closest']];
+const GOAL_VFILTERS = [['all', 'All'], ['with', 'With a vision'], ['without', 'Without']];
+const goalsView = () => state.goalsView || (state.goalsView = (() => { try { const v = localStorage.getItem('life.goals.view') || 'goals'; return ['vision', 'goals', 'focus', 'bucket'].includes(v) ? v : 'goals'; } catch { return 'goals'; } })());
+function gOrderDir() { return state.goalsOrderDir || (state.goalsOrderDir = (() => { try { return localStorage.getItem('life.goals.orderdir') === 'asc' ? 'asc' : 'desc'; } catch { return 'desc'; } })()); }
+function gRecentMs(g) { return Date.parse(g.updated_at || g.created_at || '') || 0; }
+function gSpaceName(g) { const a = areaById(gp(g).area); return a ? (a.title || '~') : '~~'; }
 // "Highlight the best bits" is one page-level toggle now (gold square), applied
 // to every vision, rather than a per-Space checkbox. On by default.
 function gBest() { try { return localStorage.getItem('life.goals.best') !== '0'; } catch { return true; } }
-function gOrder() { return state.goalsOrder || (state.goalsOrder = (() => { try { return localStorage.getItem('life.goals.order') || 'starred'; } catch { return 'starred'; } })()); }
+function gOrder() { return state.goalsOrder || (state.goalsOrder = (() => { try { const v = localStorage.getItem('life.goals.order') || 'space'; return ['space', 'recent', 'lifespace', 'starred', 'close'].includes(v) ? v : 'space'; } catch { return 'space'; } })()); }
 function gActiveGoals() { return (state.goals || []).filter((g) => (gp(g).status || 'active') === 'active'); }
 function gPct(g) { return Math.round(goalProgress(g) * 100); }
 function gQuietDays(g) { const t = g.updated_at || g.created_at; if (!t) return 0; return Math.max(0, Math.floor((Date.now() - new Date(t).getTime()) / 86400000)); }
@@ -22748,10 +22755,11 @@ function gTouched(g) { const d = gQuietDays(g); return 'touched ' + (d <= 0 ? 't
 function gGoalStatusLabel(g) { const st = gp(g).status || 'active'; return st === 'active' ? '' : ((GSTATUS.find(([v]) => v === st) || [])[1] || st); }
 function gGoalMeta(g) { const p = gp(g); const hz = (HORIZONS.find(([v]) => v === p.horizon) || [])[1] || ''; return [hz, goalMeasure(g), gTouched(g), gGoalStatusLabel(g)].filter(Boolean).join(' · '); }
 function gSortGoals(arr) {
-  const o = gOrder(); const a = arr.slice();
+  const o = gOrder(); const asc = gOrderDir() === 'asc'; const a = arr.slice();
   if (o === 'close') a.sort((x, y) => gPct(y) - gPct(x));
-  else if (o === 'touched') a.sort((x, y) => gQuietDays(x) - gQuietDays(y));
-  else a.sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (gPct(y) - gPct(x)));
+  else if (o === 'recent') a.sort((x, y) => asc ? gRecentMs(x) - gRecentMs(y) : gRecentMs(y) - gRecentMs(x));
+  else if (o === 'lifespace') a.sort((x, y) => (asc ? gSpaceName(x).localeCompare(gSpaceName(y)) : gSpaceName(y).localeCompare(gSpaceName(x))) || (gPct(y) - gPct(x)));
+  else a.sort((x, y) => ((gp(y).focus ? 1 : 0) - (gp(x).focus ? 1 : 0)) || (gPct(y) - gPct(x)));   // starred / within-space default
   return a;
 }
 // One goal row: a 9px star square (its own hit target, so it stars without
@@ -22795,35 +22803,39 @@ function renderGoals() {
   const nearN = active.filter((g) => gp(g).status !== 'done' && gPct(g) >= 60).length;
   const WORDS = ['None', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
   const spN = (state.areas || []).length;
+  const withV = (state.areas || []).filter((a) => ((a.props && a.props.vision) || '').trim()).length;
+  const titleOf = (v) => v === 'vision' ? 'Vision' : v === 'bucket' ? 'Bucket list' : 'Goals';
   const mood = view === 'bucket' ? 'The bigger things, for one day.'
+    : view === 'vision' ? `${spN} Space${spN === 1 ? '' : 's'}. ${withV} with a vision, ${spN - withV} still to write.`
     : `${active.length} goal${active.length === 1 ? '' : 's'} across ${spN} Space${spN === 1 ? '' : 's'}. ${WORDS[nearN] != null ? WORDS[nearN] : nearN} ${nearN === 1 ? 'is' : 'are'} nearly there.`;
-  const counts = { areas: spN, focus: active.filter((g) => gp(g).focus).length, list: active.length, bucket: (state.bucket || []).length };
+  const counts = { vision: spN, goals: active.length, focus: active.filter((g) => gp(g).focus).length, bucket: (state.bucket || []).length };
   const views = GOAL_VIEWS.map(([id, label, hint]) => `<button class="kg-view${view === id ? ' on' : ''}" data-goals-view="${id}"><span class="kg-view-top"><span class="kg-view-n">${counts[id]}</span><span class="kg-view-l">${label}</span></span><span class="kg-view-h">${hint}</span></button>`).join('');
-  const orders = GOAL_ORDERS.map(([id, label]) => `<span class="kg-order-o${gOrder() === id ? ' on' : ''}" data-goals-order="${id}">${label}</span>`).join('');
-  const best = gBest();
-  const body = view === 'focus' ? goalsFocusBody() : view === 'list' ? goalsListBody() : view === 'bucket' ? bucketBody() : goalsByAreaBody();
-  const showOrder = view !== 'bucket';
+  const orders = GOAL_ORDERS.map(([id, label]) => { const on = gOrder() === id; let lbl = label; if (on && id === 'recent') lbl = `Recent · ${gOrderDir() === 'asc' ? 'oldest' : 'newest'}`; if (on && id === 'lifespace') lbl = `Life Space · ${gOrderDir() === 'asc' ? 'A–Z' : 'Z–A'}`; return `<span class="kg-order-o${on ? ' on' : ''}" data-goals-order="${id}">${lbl}</span>`; }).join('');
+  const filters = GOAL_VFILTERS.map(([id, label]) => `<span class="kg-order-o${(state.goalsVisionFilter || 'all') === id ? ' on' : ''}" data-goals-vfilter="${id}">${label}</span>`).join('');
+  const body = view === 'focus' ? goalsFocusBody() : view === 'bucket' ? bucketBody() : view === 'vision' ? goalsVisionBody() : goalsAllBody();
+  const showOrder = view === 'goals';
+  const showFilter = view === 'vision';
+  const withSide = view === 'goals' || view === 'focus';
   $('#pane').innerHTML = `<div class="kwrap kpage kpage-goals">
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: view === 'bucket' ? 'Bucket list' : 'Goals' }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: titleOf(view) }])}
     <div class="kg-title">
       <div class="kg-title-l">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Plans · Goals</span></div>
-        <h1 class="kg-h1">${view === 'bucket' ? 'Bucket list' : 'Goals'}</h1>
+        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Plans · ${esc(titleOf(view))}</span></div>
+        <h1 class="kg-h1">${esc(titleOf(view))}</h1>
         <div class="kg-mood">${esc(mood)}</div>
       </div>
       <div class="kg-title-r">
-        <span class="kg-best${best ? ' on' : ''}" data-goals-best role="button" tabindex="0" title="Pull out the best phrase of each vision"><span class="kg-best-box"></span>Highlight the best bits</span>
         <button class="kg-newgoal" data-new-goal>+ New goal</button>
       </div>
     </div>
     <div class="kg-views">
       <div class="kg-views-l">${views}</div>
-      ${showOrder ? `<div class="kg-order"><span class="kg-order-l">Order</span>${orders}</div>` : ''}
+      ${showOrder ? `<div class="kg-order"><span class="kg-order-l">Order</span>${orders}</div>` : showFilter ? `<div class="kg-order"><span class="kg-order-l">Show</span>${filters}</div>` : ''}
     </div>
-    <div class="kgrid k-mainside">
+    ${withSide ? `<div class="kgrid k-mainside">
       <div class="k-a">${body}</div>
       <div class="k-c">${goalsSideCol()}</div>
-    </div>
+    </div>` : `<div class="kg-full">${body}</div>`}
   </div>`;
   loadVisionThumbs();
 }
@@ -22832,6 +22844,37 @@ function goalsFocusBody() {
   const pool = gSortGoals(gActiveGoals().filter((g) => gp(g).focus));
   if (!pool.length) return '<div class="kg-empty">Nothing starred yet. Tap the star on any goal to keep it close.</div>';
   return `<div class="kg-flat">${pool.map((g) => gGoalRow(g, true)).join('')}</div>`;
+}
+// The Goals tab (Robin, 2026-11-04): every goal, ordered. "By Space" groups them with
+// the Space that has the most goals first; the other orders are flat lists.
+function goalsAllBody() {
+  const active = gActiveGoals();
+  if (!active.length) return '<div class="kg-empty">No goals yet. Start one with “+ New goal”.</div>';
+  if (gOrder() === 'space') {
+    const byArea = {};
+    active.forEach((g) => { const id = gp(g).area || '~none'; (byArea[id] = byArea[id] || []).push(g); });
+    const groups = Object.keys(byArea).map((id) => { const a = areaById(id); return { name: a ? (a.title || 'Untitled') : 'No Space', goals: gSortGoals(byArea[id]) }; });
+    groups.sort((x, y) => (y.goals.length - x.goals.length) || x.name.localeCompare(y.name));
+    return groups.map((gr) => `<div class="kg-group"><div class="kg-group-h"><span class="kg-group-l">${esc(gr.name)}</span><span class="kg-group-c">${gr.goals.length}</span><span class="kg-group-rule"></span></div><div class="kg-flat">${gr.goals.map((g) => gGoalRow(g, false)).join('')}</div></div>`).join('');
+  }
+  const pool = gSortGoals(active);
+  return `<div class="kg-flat">${pool.map((g) => gGoalRow(g, true)).join('')}</div>`;
+}
+// The Vision tab (Robin, 2026-11-04): every Life Space, filterable to the ones with a
+// vision or the ones still without. A row opens the Space.
+function goalsVisionBody() {
+  const filter = state.goalsVisionFilter || 'all';
+  const hasV = (a) => !!((((a && a.props && a.props.vision) || '')).trim());
+  let spaces = (state.areas || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  if (filter === 'with') spaces = spaces.filter(hasV);
+  else if (filter === 'without') spaces = spaces.filter((a) => !hasV(a));
+  if (!spaces.length) return `<div class="kg-empty">${filter === 'with' ? 'No Spaces have a vision yet.' : filter === 'without' ? 'Every Space has a vision - lovely.' : 'No Spaces yet.'}</div>`;
+  return `<div class="kg-vis">${spaces.map((a) => {
+    const v = (((a.props && a.props.vision) || '')).trim();
+    const snip = v ? (v.split(/\n+/).map((s) => s.trim()).filter(Boolean)[0] || v) : '';
+    const gN = gActiveGoals().filter((g) => gp(g).area === a.id).length;
+    return `<button class="kg-vis-row" data-open-area="${a.id}"><span class="kg-vis-top"><span class="kg-vis-nm">${esc(a.title || 'Untitled')}</span><span class="kg-vis-c">${gN} goal${gN === 1 ? '' : 's'}</span></span>${v ? `<span class="kg-vis-txt">${esc(snip.slice(0, 180))}</span>` : '<span class="kg-vis-none">No vision yet - write one →</span>'}</button>`;
+  }).join('')}</div>`;
 }
 // All goals: flat rows grouped by horizon (This quarter / This year / ...),
 // the Space name in gold in the meta.
@@ -27809,7 +27852,8 @@ document.addEventListener('click', (e) => {
   { const gv = t.closest('[data-goals-view]'); if (gv) { state.goalsView = gv.dataset.goalsView; try { localStorage.setItem('life.goals.view', state.goalsView); } catch {} renderGoals(); return; } }
   { const gst = t.closest('[data-goal-star]'); if (gst) { e.stopPropagation(); toggleGoalStar(gst.dataset.goalStar); return; } }
   if (t.closest('[data-goals-best]')) { try { localStorage.setItem('life.goals.best', gBest() ? '0' : '1'); } catch {} renderGoals(); return; }
-  { const go = t.closest('[data-goals-order]'); if (go) { state.goalsOrder = go.dataset.goalsOrder; try { localStorage.setItem('life.goals.order', state.goalsOrder); } catch {} renderGoals(); return; } }
+  { const go = t.closest('[data-goals-order]'); if (go) { const k = go.dataset.goalsOrder; if (state.goalsOrder === k && (k === 'recent' || k === 'lifespace')) { state.goalsOrderDir = (gOrderDir() === 'asc' ? 'desc' : 'asc'); } else { state.goalsOrder = k; state.goalsOrderDir = (k === 'lifespace' ? 'asc' : 'desc'); } try { localStorage.setItem('life.goals.order', state.goalsOrder); localStorage.setItem('life.goals.orderdir', state.goalsOrderDir); } catch {} renderGoals(); return; } }
+  { const vf = t.closest('[data-goals-vfilter]'); if (vf) { state.goalsVisionFilter = vf.dataset.goalsVfilter; renderGoals(); return; } }
   if (t.closest('[data-goals-openall]')) { try { localStorage.setItem('life.goals.acollapse', '[]'); } catch {} renderGoals(); return; }
   if (t.closest('[data-goals-foldall]')) { try { localStorage.setItem('life.goals.acollapse', JSON.stringify((state.areas || []).map((a) => a.id))); } catch {} renderGoals(); return; }
   { const gsd = t.closest('[data-goals-side]'); if (gsd) { gToggleSide(gsd.dataset.goalsSide); return; } }
