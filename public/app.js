@@ -5422,7 +5422,7 @@ function navGroupsHtml(v) {
   // ── mobile bottom bar: Contents · gold + · Find ──
   const bottom = `<div class="knav-bottom">
       <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Menu</button>
-      <button class="knav-b-set" data-cap-open title="Set something down">+</button>
+      <button class="knav-b-set" data-cap-open title="Set something down">Set it down</button>
       <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Search${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
     </div>`;
   return `${header}${sheet}${find}${contents}${bottom}`;

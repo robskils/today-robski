@@ -233,7 +233,9 @@
 :root[data-light] .home-spaces-wide .home-sa-row { background:var(--glass-card); border:1px solid var(--glass-edge); padding:16px 18px; }
 .home-spaces-wide .home-sa-bodywrap > :not(.home-sa-row) { grid-column:1 / -1; justify-self:start; }
 @media (max-width:767px) {
-  .home-tabs-row { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:22px; }
+  /* Sideways only: overflow-x:auto alone lets the row wiggle up and down too. */
+  .home-tabs-row { flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; overscroll-behavior:contain auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:22px; }
+  .home-tabs-row .home-ltab { margin-bottom:0; }
   .home-tabs-row::-webkit-scrollbar { display:none; }
   .home-tabs-row .home-ltab { flex:none; white-space:nowrap; }
 }
@@ -467,7 +469,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 /* ── Phones: a slimmer bottom bar and less empty space under the page ─────── */
 @media (max-width:767px) {
   .knav-bottom { height:calc(62px + env(safe-area-inset-bottom)); padding:7px 24px env(safe-area-inset-bottom); align-items:start; }
-  .knav-b-set { width:48px; height:48px; margin-top:0; }
+  :root[data-light] .knav-b-set { width:auto; height:48px; margin-top:0; padding:0 10px; background:none; border:0; box-shadow:none; color:var(--k-ink); font-family:'Jost',system-ui,sans-serif; font-size:16px; font-weight:500; line-height:1; white-space:nowrap; }
   .knav-b-contents, .knav-b-find { padding:0; min-height:48px; align-self:start; }
   .knav-find, .knav-contents { bottom:calc(62px + env(safe-area-inset-bottom)); }
   .main { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
