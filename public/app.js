@@ -62,7 +62,7 @@ const T_EN = {
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Koyéba is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'What shall we call you?', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Koyéba is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
@@ -84,7 +84,7 @@ const T_PT = {
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Koyéba é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'Como devemos chamar-te?', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Koyéba é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
@@ -106,7 +106,7 @@ const T_IT = {
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
-  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Koyéba è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
+  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Come dobbiamo chiamarti?', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Koyéba è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
   'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
@@ -1332,7 +1332,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // Task page's Star · Share · Assign · Delete), so there's no second header row
   // to overlap. The crumb stays a direct #pane child, so its §70 alignment holds.
   const back = (typeof navHist !== 'undefined' && navHist && navHist.length) ? `<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
-  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.noHelp ? '' : guideHelpBtn()}${opts.actions || ''}</div>`;
+  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.noHelp || typeof guideHelpBtn !== 'function' ? '' : guideHelpBtn()}${opts.actions || ''}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -4216,7 +4216,6 @@ function renderSettingsLegacy() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('set.title'))}
     <div class="pane-head home-head"><h1>${t('set.title')}</h1></div>
-    ${state.account && !state.onbSeen ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
       <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span><span class="set-sec-h-r">${tab === 'account' && state.onbSeen ? `<button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Getting started</button>` : ''}${guideHelpBtn()}</span></div>
@@ -6846,7 +6845,7 @@ async function savePractice() {
   } catch (e) { toast(e.message); }
 }
 function trackerPanel() {
-  if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHome(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
+  if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHomeSoon(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
   const groups = practicesGroups(true);
   return `<div class="prc"><div class="prc-manage"><button class="ghost prc-edit-link" data-open-practices>✎ Edit practices</button></div>${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
 }
@@ -7100,7 +7099,7 @@ async function loadHomeMail(force) {
     h._mailAt = Date.now();
   } catch { h.mailPreview = h.mailPreview || []; h.mailProblems = h.mailProblems || []; }
   h._mailLoading = false;
-  if (state.view && state.view.type === 'home') renderHome();
+  if (state.view && state.view.type === 'home') renderHomeSoon();
 }
 function homeMailHtml() {
   const list = state.home && state.home.mailPreview;
@@ -7351,7 +7350,7 @@ function ensureHomeTomorrow() {
   const ds = addDaysStr(h.today || dayKey(new Date()), 1);
   api('/api/day?date=' + ds).then((r) => { h.tomorrow = { events: r.events || [], slots: r.slots || [] }; })
     .catch(() => { h.tomorrow = { events: [], slots: [] }; })
-    .finally(() => { h._tomLoading = false; if (state.view && state.view.type === 'home') renderHome(); });
+    .finally(() => { h._tomLoading = false; if (state.view && state.view.type === 'home') renderHomeSoon(); });
 }
 // This month's transactions, fetched once for the ledger's spend number (the
 // Money page loads the same blocks; here we just need the total). Re-renders Home.
@@ -7361,7 +7360,7 @@ function ensureHomeSpend() {
   h._spendLoading = true;
   api('/api/blocks?kind=txn').then((txns) => { f.txns = txns || []; })
     .catch(() => { f.txns = f.txns || []; })
-    .finally(() => { h._spendLoading = false; if (state.view && state.view.type === 'home') renderHome(); });
+    .finally(() => { h._spendLoading = false; if (state.view && state.view.type === 'home') renderHomeSoon(); });
 }
 // The ledger: up to four Cormorant numbers across the top of Home, each opening a
 // few rows and a way through to the full section. Mail, tasks, tomorrow, spend.
@@ -7502,7 +7501,7 @@ function homeMaybePrefetchTomorrow() {
   if (state.home.tomData || state.home.__tomLoading) return;
   state.home.__tomLoading = true;
   const ds = addDaysStr(state.home.today || dayKey(new Date()), 1);
-  api(`/api/day?date=${ds}`).then((d) => { state.home.tomData = d || { events: [], slots: [] }; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}).finally(() => { state.home.__tomLoading = false; });
+  api(`/api/day?date=${ds}`).then((d) => { state.home.tomData = d || { events: [], slots: [] }; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => {}).finally(() => { state.home.__tomLoading = false; });
 }
 // Your spaces, as tiles: each Space's numeral and name, with a soft sub-line when
 // there's something to say. Starred first, then alphabetical.
@@ -7814,8 +7813,8 @@ function capGrow(i) { if (!i) return; i.style.height = 'auto'; i.style.height = 
 function capRefreshHome() {
   if (!(state.view && state.view.type === 'home')) return;
   state.home.tomorrow = undefined; state.home._mailAt = 0; if (state.financial) state.financial.txns = null;
-  api('/api/day').then((d) => { if (d) { state.home.events = d.events || []; state.home.slots = d.slots || []; } }).catch(() => {}).finally(() => { if (state.view && state.view.type === 'home') renderHome(); });
-  api('/api/home/alerts').then((a) => { if (a) { state.home.alerts = a; if (state.view && state.view.type === 'home') renderHome(); } }).catch(() => {});
+  api('/api/day').then((d) => { if (d) { state.home.events = d.events || []; state.home.slots = d.slots || []; } }).catch(() => {}).finally(() => { if (state.view && state.view.type === 'home') renderHomeSoon(); });
+  api('/api/home/alerts').then((a) => { if (a) { state.home.alerts = a; if (state.view && state.view.type === 'home') renderHomeSoon(); } }).catch(() => {});
 }
 async function submitCap() {
   const c = capState(); const raw = (c.text || '').trim();
@@ -8273,7 +8272,7 @@ function homeWnTab() {
   return cur;
 }
 function homeWnTasksBodyHtml() {
-  if (!state.tasks && !state.__wnTasksLoad) { state.__wnTasksLoad = true; api('/api/blocks?kind=task').then((r) => { state.tasks = r || []; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); }
+  if (!state.tasks && !state.__wnTasksLoad) { state.__wnTasksLoad = true; api('/api/blocks?kind=task').then((r) => { state.tasks = r || []; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => {}); }
   let ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit);
   ts = sortP1(ts.slice());   // priority first, like the Tasks page
   if (!ts.length) ts = priorityTasks();
@@ -8398,7 +8397,7 @@ function homeSpacesAsideHtml() {
   // §46: only the lively ones. Needs-you (and pinned) first, then by most recent
   // activity; a Space quiet for 30+ days is never in the first 8 unless it needs
   // you. The foot line goes to the full Spaces page for the rest.
-  if (state.areaSummary === undefined) { state.areaSummary = null; api('/api/areas/summary').then((r) => { state.areaSummary = (r && r.summary) || {}; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.areaSummary = {}; }); }
+  if (state.areaSummary === undefined) { state.areaSummary = null; api('/api/areas/summary').then((r) => { state.areaSummary = (r && r.summary) || {}; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => { state.areaSummary = {}; }); }
   const sum = state.areaSummary || {};
   const now = Date.now();
   const scored = areas.map((a) => {
@@ -10762,33 +10761,32 @@ function renderWellbeing() {
   const shown = filt === 'all' ? items : items.filter((x) => x.cat === filt);
   const filters = [['all', 'All'], ['journal', 'Journal'], ['dreams', 'Dreams'], ['cards', 'Cards'], ['ching', 'I Ching']].map(([id, label]) => `<button class="rf-filter${filt === id ? ' on' : ''}" data-reflect-filter="${id}">${label}</button>`).join('');
   const rows = shown.length ? shown.map((x) => { const ital = x.cat === 'journal' || x.cat === 'dreams'; return `<button class="rf-row" ${x.attr}><span class="rf-row-k">${esc(x.label)}</span><span class="rf-row-t${ital ? ' ital' : ''}">${esc(stripEmoji(x.title || ''))}</span><span class="rf-row-when">${esc(rel(x.ts))}</span></button>`; }).join('') : '<div class="rf-empty">Nothing here yet. Start with a tool above.</div>';
-  // Side: today's cards (with the same card images as the Today page) + the
-  // practices list. (Robin: show the reading images here too, plural "cards".)
-  const card = (typeof currentSpirit === 'function') ? currentSpirit() : null;
+  // Full width, no sidebar (Robin, 2026-11-04). Today's cards - the readings you
+  // actually have today (horoscope / I Ching / spirit / tarot; the other tools
+  // make no card) - sit at the very top, however many there are. Then the eight
+  // tools, then Lately. Insights (a read-back, not one of the eight) is a quiet row.
   const readings = (typeof homeReadingItems === 'function') ? homeReadingItems() : [];
-  const cardHtml = readings.length
-    ? `<div class="rf-cards"><div class="rf-card-k">Today’s cards</div><div class="rf-cards-list">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`
+  const todayCards = readings.length
+    ? `<div class="rf-today"><div class="rf-card-k">Today’s cards</div><div class="rf-today-row">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`
     : '';
-  // The tools now lead the page as a set of forest-and-gold cards (above Lately),
-  // not a list in the sidebar. (Robin, 2026-11-04.) Insights isn't one of the
-  // eight - it reads BACK across your entries - so it keeps a quiet link in the side.
   const toolsGrid = reflectToolsGridHtml({ lastTs, rel });
-  const insightsLink = modOn('insights') ? `<button class="rf-side-link" data-open-insights><span class="rf-side-link-l">Insights</span><span class="rf-side-link-h">Patterns across your entries</span><span class="rf-side-link-x">→</span></button>` : '';
+  const insightsRow = modOn('insights') ? `<button class="rf-insights-row" data-open-insights><span class="rf-insights-l">Insights</span><span class="rf-insights-h">Patterns across your entries</span><span class="rf-insights-x">→</span></button>` : '';
   $('#pane').innerHTML = `
-    <div class="kpage-reflect">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect') }])}<div class="rf-grid">
-      <div class="rf-main">
+    <div class="kpage-reflect">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect') }])}
+      <div class="rf-full">
         <div class="nx-eyebrow">Room for the rest of you</div>
         <h1 class="nx-h1">${t('nav.reflect')}</h1>
         ${quoteOfDayHtml()}
         <div class="nx-lead">${esc(lead)}</div>
+        ${todayCards}
         ${toolsGrid}
+        ${insightsRow}
         <div class="rf-lately">
           <div class="rf-lately-h"><span class="rf-lately-l">Lately</span><div class="rf-filters">${filters}</div></div>
           <div class="rf-rows">${rows}</div>
         </div>
       </div>
-      <aside class="rf-side">${cardHtml}${insightsLink}</aside>
-    </div></div>`;
+    </div>`;
 }
 // The eight Reflection tools as forest-and-gold cards: a refined gold emblem (or
 // the hexagram), a Cormorant label and a one-line hint; a gold square marks a
@@ -27579,7 +27577,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-onb-finish]')) { finishOnboarding(); return; }   // dismiss: stop showing the card
   if (t.closest('[data-welcome-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.onbSeen = true; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }).catch(() => {}); renderSettings(); return; }   // hide the Getting started card
   if (t.closest('[data-welcome-reinstate]')) { state.onbSeen = false; api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '' }) }).catch(() => {}); try { localStorage.setItem('lf_welcome_open', '1'); } catch {} renderSettings(); return; }   // bring the Getting started card back
-  if (t.closest('[data-open-getstarted]')) { try { localStorage.setItem('lf_welcome_open', '1'); } catch {} openSettings('account'); return; }   // Home banner -> Settings, with Getting started open
+  if (t.closest('[data-open-getstarted]')) { openHelp('index'); return; }   // Home banner -> Settings, with Getting started open
   { const ml = t.closest('[data-modlink]'); if (ml) { e.preventDefault(); e.stopPropagation(); const k = ml.dataset.modlink; if (k === 'mail') openMailAccounts(); else if (k === 'calendar') openSettings('feeds'); else if (k === 'areas') openAreasList(); return; } }
   if (t.closest('[data-onb-close]')) { closeOnbHub(); return; }          // just close - come back later
   if (t.dataset && t.dataset.onbBg !== undefined) { closeOnbHub(); return; }   // click the dimmed backdrop
@@ -31478,6 +31476,35 @@ function showGate(sub) {
 // /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
 // never shows.
 const storedInvite = () => { try { return localStorage.getItem('life.invite') || ''; } catch { return ''; } };
+// The welcome on an invitation link: who invited you, their note, any gift, and
+// which plan you'll be on (Robin chose this 2026-11-04). The link is private to the
+// person it was sent to, so this is shown before sign-in.
+const gwMonths = (n) => `${({ 1: 'one', 2: 'two', 3: 'three', 6: 'six', 12: 'twelve' })[n] || n} month${n === 1 ? '' : 's'}`;
+function gwPlanLine(i) {
+  if (i.plan === 'free') return "You'll start on the Free plan. You can change that whenever you like.";
+  return i.months ? `You're on ${i.planLabel}, free for ${gwMonths(i.months)}.` : `You're on ${i.planLabel}.`;
+}
+function gwHtml(i) {
+  const first = String(i.name || '').trim().split(/\s+/)[0];
+  const note = i.note ? `<figure class="gw-note"><blockquote>${esc(i.note)}</blockquote><figcaption>${esc(i.from)}</figcaption></figure>` : '';
+  const line = (s) => `<p class="gw-line"><span aria-hidden="true"></span>${esc(s)}</p>`;
+  if (i.kind === 'asked') return `<h1 class="gw-h">Your place is ready${first ? `, ${esc(first)}` : ''}.</h1><p class="gw-p">You asked to join us, and we'd love to have you. Koyéba grows slowly, by word of mouth, so thank you for finding it.</p>${line(gwPlanLine(i))}`;
+  if (i.kind === 'robin') return `<h1 class="gw-h">${esc(i.from)}, who made Koyéba, has invited you.</h1>${note}${line(gwPlanLine(i))}`;
+  return `<h1 class="gw-h">${esc(i.from)} has invited you to Koyéba.</h1>${note}${i.months ? line(`${i.from} has also given you ${gwMonths(i.months)} of ${i.planLabel}, free.`) : ''}`;
+}
+async function loadInviteWelcome() {
+  const code = storedInvite(); if (!code) return;
+  let i = null;
+  try { const r = await fetch(`/api/invite-info?code=${encodeURIComponent(code)}`); if (r.ok) i = await r.json(); } catch {}
+  if (!i || !i.kind) return;
+  try { sessionStorage.setItem('life.invite.info', JSON.stringify(i)); } catch {}
+  const sub = document.getElementById('gate-sub'), card = document.getElementById('gate-form'); if (!sub || !card) return;
+  card.classList.add('gw-card');
+  const box = document.createElement('div'); box.className = 'gw'; box.innerHTML = gwHtml(i); sub.replaceWith(box);
+  const em = document.getElementById('gate-email'); if (em && i.email && !em.value) em.value = i.email;
+  const btn = document.getElementById('gate-btn'); if (btn) { btn.textContent = 'Accept and send my code →'; btn.insertAdjacentHTML('afterend', '<p class="gw-hint">No password. Just a six-digit code.</p>'); }
+}
+function inviteInfoSaved() { try { return JSON.parse(sessionStorage.getItem('life.invite.info') || 'null'); } catch { return null; } }
 function showSignup(email, inviteRequired, invited, notice) {
   // Prefill the username from the subdomain they arrived on (name.daybook.fyi),
   // else from their email, so most people only have to agree with it.
@@ -31490,12 +31517,14 @@ function showSignup(email, inviteRequired, invited, notice) {
   // everyone - and being asked for a code they had no way to produce is exactly
   // where the first invitations died.
   const needCode = inviteRequired && !invited && !preInvite;
+  const saved = inviteInfoSaved();
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>Koyéba</em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : needCode ? t('signup.byinvite') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
+      ${saved && saved.kind === 'friend' ? `<p class="su-hint">You and ${esc(saved.from)} will be connected, and we'll let ${esc(saved.from)} know you've arrived.</p>` : ''}
       ${needCode ? `<label class="signup-l">${t('signup.invitecode')}<input class="gate2-input" id="su-invite" placeholder="${t('signup.invitecode.ph')}" autocomplete="off" spellcheck="false" required>
         <span class="su-username-note">${t('signup.invitecode.note')}</span></label>` : ''}
       <button class="gate2-btn" id="su-btn" type="submit">${t('signup.create')}</button>
@@ -31506,6 +31535,7 @@ function showSignup(email, inviteRequired, invited, notice) {
   $('#signup-form').dataset.email = email;
   $('#signup-form').addEventListener('submit', signupSubmit);
   $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem('life.invite'); } catch {} clearToken(); location.reload(); });
+  if (saved && saved.name) $('#su-name').value = saved.name;
   $('#su-name').focus();
 }
 // Their Koyéba lives on its own subdomain - a different origin, with its own
@@ -31528,7 +31558,7 @@ async function signupSubmit(e) {
       subdomain: $('#su-sub').value.trim(),
       invite: inv ? inv.value.trim() : storedInvite(),
     }) });
-    if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} location.replace('/app'); return; }
+    if (d && d.user) { try { localStorage.removeItem('life.invite'); sessionStorage.removeItem('life.invite.info'); } catch {} location.replace('/app'); return; }
     throw new Error(t('signup.createfail'));
   } catch (e2) {
     // A code carried in from a link was refused and there's no field to fix it from:
@@ -32192,6 +32222,7 @@ function showRequired2fa() {
   } catch {}
   if (!token()) {
     showGate(invited ? "You've been invited to Koyéba. Sign in with your email to accept." : null);
+    if (invited) loadInviteWelcome();
     // They typed their email on the marketing sign-in box; prefill it and let them
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was

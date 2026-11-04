@@ -12355,8 +12355,20 @@ body[data-view="wellbeing"] .pane { max-width:none; padding:0; margin-top:0; bac
 .rf-prac:hover .rf-prac-l { color:var(--k-goldt); }
 .rf-prac-h { display:block; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); margin-top:3px; }
 /* §73 Reflection tools: a set of forest-and-gold cards above Lately. (2026-11-04.) */
-.rf-tools { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:30px 0 6px; }
-@media (max-width:640px){ .rf-tools { grid-template-columns:repeat(2,1fr); gap:12px; } }
+/* Full-width Reflection page (Robin, 2026-11-04): no sidebar, Today's cards on top. */
+.rf-full { animation:kfade .4s ease; }
+.rf-today { margin:28px 0 8px; }
+.rf-today .rf-card-k { color:var(--k-goldt); margin-bottom:14px; display:block; }
+.rf-today-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px 30px; }
+.rf-insights-row { display:block; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--k-line); padding:16px 0 0; margin:6px 0 2px; cursor:pointer; }
+.rf-insights-l { font-family:var(--k-serif); font-weight:500; font-size:19px; color:var(--k-ink); }
+.rf-insights-x { color:var(--k-goldt); margin-left:6px; }
+.rf-insights-row:hover .rf-insights-l, .rf-insights-row:hover .rf-insights-x { color:var(--k-goldt); }
+.rf-insights-h { display:block; font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); margin-top:3px; }
+/* Tools grid: four across full-width, down to two on a phone. */
+.rf-tools { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:26px 0 6px; }
+@media (max-width:1100px){ .rf-tools { grid-template-columns:repeat(3,1fr); } }
+@media (max-width:760px){ .rf-tools { grid-template-columns:repeat(2,1fr); gap:12px; } }
 .rf-tool { position:relative; display:flex; flex-direction:column; background:var(--k-panel); border:1px solid var(--k-line); border-radius:0; cursor:pointer; text-align:left; padding:0; overflow:hidden; font:inherit; color:inherit; transition:border-color .2s, transform .2s; }
 .rf-tool:hover { border-color:var(--k-gold); transform:translateY(-2px); }
 .rf-tool:hover .rf-tool-l { color:var(--k-goldt); }
@@ -13361,3 +13373,19 @@ select.lk-act { max-width:none; width:auto; }
 .g-part-h { margin:6px 0 8px; font-family:var(--k-sans); font-size:18px; font-weight:600; color:var(--k-ink); }
 .g-done { display:flex; align-items:center; gap:10px; color:var(--k-ink); }
 .g-tick-s { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; background:var(--k-gold); color:var(--k-ongold); font-size:15px; }
+
+/* The welcome on an invitation link (2026-11-04). */
+.gw-card { max-width:560px; text-align:left; }
+.gw-card .gate2-mark { text-align:left; }
+.gw-card .gate2-input { text-align:left; }
+.gw { display:flex; flex-direction:column; gap:20px; font-family:var(--k-sans); color:var(--k-ink); }
+.gw:has(~ #gate-codehead:not([hidden])) { display:none; }
+.gw-h { margin:0; font-family:var(--k-serif); font-weight:500; font-size:clamp(38px,8vw,54px); line-height:1.06; color:var(--k-ink); text-wrap:balance; }
+.gw-p { margin:0; font-size:19px; line-height:1.5; }
+.gw-note { margin:0; padding:22px 26px; background:var(--k-panel); border:1px solid var(--k-line); }
+.gw-note blockquote { margin:0; font-family:var(--k-read); font-size:18px; line-height:1.65; white-space:pre-wrap; color:var(--k-ink); }
+.gw-note figcaption { margin-top:10px; font-size:16px; color:var(--k-mute); }
+.gw-line { margin:0; padding:14px 0; border-top:1px solid var(--k-line); border-bottom:1px solid var(--k-line); font-size:18px; line-height:1.4; }
+.gw-line span { display:inline-block; width:10px; height:10px; margin-right:10px; background:var(--k-gold); }
+.gw-hint { margin:0; font-family:var(--k-sans); font-size:16px; color:var(--k-mute); }
+.su-hint { margin:0; font-family:var(--k-sans); font-size:16px; line-height:1.45; color:var(--k-mute); text-align:left; }
