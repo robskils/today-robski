@@ -296,6 +296,7 @@
   .main { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
   .knav-crumb { margin-left:auto; }
   .knav-c-help { display:inline-block; }
+  .knav-c-x { border:1px solid #fff; padding:7px 14px; color:var(--k-ink); }
 }
 
 /* ── Staging and local only: see any time of day without waiting for it ───── */
