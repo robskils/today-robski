@@ -39,7 +39,7 @@ const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Disco
 // The Reflection page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Reflection hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Reflection tools individually".)
-const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['meditation', 'Meditation'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['tarot', 'Tarot'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
+const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['tarot', 'Tarot'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
 // A tiny runtime translator: English is the source (every key here), Portuguese
@@ -144,7 +144,11 @@ const MOD_DEFAULT_OFF = new Set(['timer', 'meditation']);
 const HIDDEN_FEATURES = [
   { label: 'Meditation', where: 'Reflection', note: 'Timer, bells and logged sits', since: '30 Oct 2026' },
 ];
-const modOn = (k) => { const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
+// Modules hidden app-wide for now, whatever the saved setting: every entry point
+// is gated on modOn, so this takes them out of the nav, hubs and feeds in one place
+// and is trivially reversible. (Robin, 2026-11-04: hide Meditation for now.)
+const MOD_HIDDEN = new Set(['meditation']);
+const modOn = (k) => { if (MOD_HIDDEN.has(k)) return false; const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
 // True while any Reflection tool is on - gates the Reflection hub and its Home pins.
 const reflectOn = () => REFLECT_MODULES.some(([k]) => modOn(k));
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
@@ -1113,322 +1117,8 @@ const TAB_IC = { home: '⌂', tasks: '✓', taskcard: '✓', calendar: '◑', ma
 // nav glyphs. This SVG uses currentColor, so it matches them exactly. (Robin.)
 const MSG_ICO = '<svg class="nav-ic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12 7.6L3 21l1.9-5.1A8.4 8.4 0 1 1 21 11.5Z"/></svg>';
 // ── In-app guides ─────────────────────────────────────────────────────
-// The little i by the tabs. Hovering shows a one-line tip for whatever tool
-// you're on; clicking pins the full guide in its own tab. Content is plain and
-// task-focused - what the tool is for and how to drive it, not a feature list.
-const HELP = {
-  home: { title: 'Home', tip: 'Start here. Your day, your top tasks, a scratchpad and everything you’ve starred - the things that matter right now, on one calm screen, so nothing slips.',
-    body: `<p>Home is the first thing you see and the place to start your day. It pulls the pieces that matter <em>right now</em> into one screen so you don’t have to go looking.</p>
-      <ul><li><b>Today</b> - your calendar events and time blocks for the day.</li>
-      <li><b>Priority Tasks</b> - your open P1s, each on its own card, in the order you drag them. “See all” opens the full board.</li>
-      <li><b>Notepad</b> - a scratchpad that saves as you type, waiting for you next time.</li>
-      <li><b>Starred</b> and <b>Recently viewed</b> - one tap back to the pages, tables and areas you keep returning to.</li></ul>
-      <p>Drag sections’ tasks to reorder them, and collapse any section you don’t want with the arrow by its title. Choose which sections appear in <b>Settings › Sections</b>.</p>` },
-  tasks: { title: 'Tasks', tip: 'Everything you have to do, in one place you can bend to your own way of thinking. Filter it, sort it, tick it off anywhere - and it’s done everywhere at once.',
-    body: `<p>Every task lives here. A task has a title, a priority (First, Soon or Whenever), an optional page and an optional due date.</p>
-      <ul><li><b>Add</b> one with <b>+ New</b> or the + by Tasks in the sidebar - it’s usable the instant you type it.</li>
-      <li><b>Filter</b> builds your own view: add conditions (priority is First, area is Work, due this week…) and stack as many as you like.</li>
-      <li><b>Sort</b> by clicking a column header.</li>
-      <li><b>Priority</b> P1 is what surfaces on Home and in your morning brief, so keep it for what truly matters.</li></ul>
-      <p>Tick a task anywhere - Home, a note, the board - and it’s done everywhere at once.</p>` },
-  notes: { title: 'Notes', tip: 'Write freely, then weave it together: headings that fold, notes linked to one another, images and files dropped right in the page - and anything tagged to the parts of your life it belongs to.',
-    body: `<p>A page is for anything you want to write down and find again. Type freely; use the toolbar for <b>H1-H3 headings</b> (which fold, to collapse a long page), lists and links.</p>
-      <ul><li><b>Connected pages</b> - link pages to each other rather than burying one inside another. From any page, start a <b>new connected page</b> or <b>connect an existing</b> one; they gather in the panel alongside, so a project's pages sit together without a rigid hierarchy.</li>
-      <li><b>Related pages</b> appear on their own - any page sharing a space with this one is a tap away, so they find each other.</li>
-      <li><b>Link</b> highlighted text to another page or even a table row, to weave your writing together.</li>
-      <li><b>Spaces</b> - tag a page to one or several spaces (the chips up top); it then shows on each of those spaces, in that space's colour.</li>
-      <li>A note can become a <b>table</b> and back with the Note/Table toggle, and hold its own <b>tasks</b> in the panel alongside.</li></ul>
-      <p>Star a page to pin it to the sidebar; recently opened pages are always a click away there too.</p>` },
-  calendar: { title: 'Calendar', tip: 'Your whole calendar - and it works with no outside account at all, syncs with Google if you want it to, and can pull in your country’s holidays and your team’s fixtures.',
-    body: `<p>The calendar shows your events by month, with an agenda and search. It works on its own, and can also sync with your <b>Google Calendar</b> if you connect it.</p>
-      <ul><li><b>Add</b> an event with a title, a start date and time (or All day), and a length. All-day events can span several days.</li>
-      <li>Set a start date and the end follows to the same day - an event can never end before it begins.</li>
-      <li><b>Repeat</b> makes a series (daily, weekdays, weekly, monthly, yearly).</li>
-      <li>Events show on your <b>Today</b> page too, alongside the practices and tasks you plan there.</li></ul>
-      <p><b>Add holidays &amp; sport.</b> Tap <b>＋ Holidays &amp; sport</b> (or the ⚙ on this page) to open <b>Settings › Calendar</b>. Search for any <b>country</b> and its national public holidays appear on your calendar, and search for your <b>football team</b> (or any club) to add its upcoming fixtures with kick-off in your local time. These are read-only - untick a country or team to remove them.</p>` },
-  mail: { title: 'Mail', tip: 'Every inbox in one place - Gmail, Yahoo, iCloud, Outlook. Your mail stays where it is; you just get to do far more with it: triage to zero, turn email into tasks and notes, file it under a Space, and search your whole archive.',
-    body: `<p><b>Here's the deal.</b> Connect your email accounts and Koyéba becomes one calm inbox for all of them - but your mail never leaves home. We don't pull your whole mailbox into Koyéba; it stays exactly where it is, in Gmail, in Yahoo, wherever it lives. Koyéba is simply a window onto it, and a workshop for actually <em>doing</em> something with it. The best of both worlds.</p>
-      <h4>What's in it for you</h4>
-      <ul>
-      <li><b>One inbox for every account.</b> Gmail for work, iCloud for the family, that old Yahoo you still get the good stuff on - they pour into a single stream, so you check mail once, not five times.</li>
-      <li><b>Email becomes action.</b> An email is rarely just an email - it's a thing to do, a thing to remember, a thing that belongs to one corner of your life. Turn it into a <b>task</b>, make it a <b>note</b>, or file it under a <b>Space</b> in a tap, and it joins the rest of your world instead of rotting in a thread.</li>
-      <li><b>Reach zero, and stay there.</b> Every new email gets sorted into a few honest buckets and leaves the inbox. The point isn't a tidy inbox for its own sake - it's the quiet of knowing nothing's slipping through.</li>
-      <li><b>Find anything, ever.</b> Search reaches your <b>whole mailbox</b> on the server - your entire Gmail history, not just what's on screen - using Gmail's own search index under the hood. The past is all still there; you just don't have to carry it around.</li>
-      </ul>
-      <h4>Going forward, not hoarding backward</h4>
-      <p>Koyéba works on your mail <b>from the moment you connect</b>. It doesn't bulk-download years of old email, and it doesn't need to: new mail flows in to be triaged and used, and anything older is a search away. Nothing's duplicated, nothing's hoarded - your mailbox stays the single source of truth, and Koyéba just gives you better things to do with it.</p>
-      <h4>One inbox, triaged to zero</h4>
-      <p>New mail lands in the <b>Inbox</b> queue. File each email into one of three honest buckets - and it leaves the inbox:</p>
-      <ul><li><b>Urgent</b> - important and time-sensitive; do it now.</li>
-      <li><b>Important</b> - matters, but not a rush; plan it.</li>
-      <li><b>Read Later</b> - worth a read when you have the space.</li></ul>
-      <p>Along the top sit five pots, left to right as mail flows: <b>Inbox</b> (to sort) → <b>Urgent · Important · Read Later</b> → <b>Archive</b> (done). Tap a pot to see just that one; tap it again to come back to the queue. When the Inbox count hits zero, you're done. To file an email, open it and use <b>File into ▾</b>, tap the colour dot on its row, or drag the row onto a pot - the moment you do, it's <b>archived off your inbox</b>, out of your face, while the bucket keeps hold of it (Gmail or any IMAP account alike). Changed your mind? <b>File into ▾ → Back to Inbox</b>.</p>
-      <h4>Make something of it</h4>
-      <p>Open any email and the bar is one clean row: <b>Reply ▾</b> (all / sender / forward), <b>File into ▾</b>, <b>Archive</b>, <b>Delete</b>, <b>Space</b> (file it under a part of your life), <b>Transform ▾</b> (turn it into a <b>task</b> or a <b>note</b>, carrying the email's text with it), <b>Scribe</b> (draft a reply with AI), and <b>More ▾</b> (spam, block). That's the whole idea - email stops being a dead end and becomes the start of something.</p>
-      <h4>Which accounts can I connect?</h4>
-      <p>Almost any mailbox - anything that speaks <b>IMAP</b>, which is <b>Gmail</b>, Google Workspace, <b>Yahoo</b>, <b>iCloud</b>, <b>Outlook / Office 365</b>, Purelymail and nearly every other provider. There are one-tap presets for the big ones, and you can add anything else by typing its IMAP and SMTP host and port. Add as many as you like; they all merge into the one inbox, and adding one never touches another.</p>
-      <h4>How to add one</h4>
-      <ol>
-        <li>Open Mail and tap <b>Accounts</b> (top right), then <b>Add mailbox</b>.</li>
-        <li>Pick your <b>provider</b> - it fills in the hosts and ports for you (or stay custom and type your own).</li>
-        <li>Enter your <b>email address</b> and <b>password</b>. For Google, Yahoo and iCloud that's an <b>App Password</b> (below), not your everyday one.</li>
-        <li>Save. It connects, and your mail starts flowing in.</li>
-      </ol>
-      <h4>Passwords by provider</h4>
-      <ul>
-        <li><b>Gmail / Google Workspace</b> - a one-time <b>App Password</b>. Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, create one at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a> (type "Koyéba", Create), and paste the 16-character code. On <b>Workspace</b>, your admin must have IMAP enabled. App Passwords don't expire on a timer, but Google revokes them if you change your password or toggle 2-Step Verification - just make a new one.</li>
-        <li><b>iCloud</b> - an <b>app-specific password</b> from <a href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a> (Sign-In &amp; Security → App-Specific Passwords).</li>
-        <li><b>Yahoo</b> - an <b>app password</b> from your Yahoo Account Security settings (your normal password won't work for a mail app).</li>
-        <li><b>Outlook / Office 365</b> - your normal password usually works; with MFA, generate an app password in your Microsoft security settings.</li>
-        <li><b>Purelymail &amp; most others</b> - your normal mailbox password (or an app password if the provider uses two-factor).</li>
-      </ul>
-      <h4>Your mail, your business</h4>
-      <p>Your account passwords are <b>encrypted</b> so not even we can read them, your mail stays on your provider's own servers, and anything that <b>leaves</b> your account - a reply, a forward - always waits for you to press the button. Scribe drafts; it never sends on its own.</p>` },
-  contacts: { title: 'Contacts', tip: 'The people in your life, kept close - with a gentle nudge when it has been too long since you spoke, measured from when you last actually did.',
-    body: `<p>Contacts holds the people in your life - name, email, phone, birthday, address. Group them however you like, including straight from a page.</p>
-      <p>Contacts with an email are checked against Koyéba, so you can see which of your people are here and connect with them.</p>
-      <p><b>Keep in touch</b> is on each contact’s card. Tick it, choose how often you’d like to speak - weekly, monthly, every 3 or 6 months, once a year, or a cadence of your own - and they appear in the <b>Keep in touch</b> section on Home when it has been that long.</p>
-      <ul><li>The clock measures from the last time you were <b>actually</b> in touch, not from the calendar. Set <b>Last in touch</b> on their card (today is one tap away in the date picker), or tick the <b>✓</b> on Home, and it starts again.</li>
-      <li>So a nudge never arrives the morning after you’ve seen someone, and a call made three weeks late still buys you a full interval.</li>
-      <li>These stay off your Tasks board and out of your morning brief. Staying in touch isn’t admin, and it shouldn’t queue up behind it.</li></ul>` },
-  financial: { title: 'Money', tip: 'Spending, portfolio and a read on the markets in one glance - and your money lines up with your life, because your Spaces double as the spending categories.',
-    body: `<p><b>Money</b> opens on a <b>dashboard</b> that pulls the headline numbers from all three parts into one glance, with a way through to each. Switch between them with the tabs along the top.</p>
-      <h4>Portfolio</h4>
-      <p>What you own, valued at <b>live prices</b>. Add a holding - what it is and how much you hold - and Koyéba keeps its <b>current value</b>, your <b>gain or loss</b>, and the <b>split</b> across everything in one place. Tap a holding to edit or remove it; the totals redo themselves at once.</p>
-      <h4>Spending</h4>
-      <ul>
-      <li><b>Import a statement</b> (CSV or PDF) and Koyéba reads the transactions and sorts them for you, so you are not typing rows in by hand.</li>
-      <li>Your <b>pages double as spending categories</b>, so where your money goes lines up with what your life is actually about - rent under Home, strings under Music. Add extra categories in <b>Settings › Manage</b> for anything that does not fit a space.</li>
-      <li>The month reads back as <b>spend, income and net</b>, with your <b>top categories</b>, so the shape of the month is clear without a spreadsheet.</li>
-      </ul>
-      <h4>Advice</h4>
-      <p>Market <b>trends</b> and a <b>watchlist</b> of things you are following (as opposed to own), read by Claude for a plain-language take. This part uses AI, so it waits on your key or a Premium Plus plan - and it is general reading, never personal financial advice.</p>` },
-  goals: { title: 'Goals & Reviews', tip: 'Turn a vision for each part of your life into goals you can actually track, then look back honestly - weekly, monthly, quarterly, yearly - and watch the shape of your life change over time.',
-    body: `<p>Goals connect the big picture to daily action. Write a <b>vision</b> for a page, set <b>goals</b> under it, and track them.</p>
-      <ul>
-      <li><b>How to track</b> each goal: a <b>number you set</b>, or <b>everything connected</b> to it - tasks ticked off, notes and events - against a target. A simpler goal gets a slider to set how far along it feels.</li>
-      <li><b>Deadline</b> - give a goal a finish-by date right on its card. It feeds <b>Deadlines approaching</b> in your reviews, and you can sort goals by due date.</li>
-      <li><b>Starred</b> - tap the ★ on the goals you want front and centre; they gather on the <b>Starred</b> tab and in <b>Starred Goals</b> on Home. (The star is just your focus flag - separate from a goal’s horizon or deadline.)</li>
-      <li><b>Completed goals</b> fold into their own section on each area, so you can look back on what you’ve done.</li>
-      <li><b>Bucket list</b> - the things to do before you die; turn any into a goal.</li>
-      </ul>
-      <p><b>Reviews</b> are weekly, monthly, quarterly and yearly check-ins - each with its own page listing past reviews, whether this period’s is done, and when the next is due (or how overdue). A review gathers what you did, your written reflection, a <b>Wheel of Life</b> score per area, and the <b>deadlines approaching</b>. The Wheel shows each area’s score over time and its previous ratings.</p>` },
-  areas: { title: 'Spaces', tip: 'A home for every part of your life - an area, a project, even a person. Everything to do with it in one place, so you stop hunting across a dozen apps for the pieces.',
-    body: `<p>Koyéba keeps a <b>space for each part of your life</b> - the way a book of accounts keeps a separate space for each domain. A space can be an <b>area</b> (Health, Home, Work), a <b>project</b> (a house move, a wedding), even a <b>person</b> (a child, a parent, a client). Everything to do with it lives there, so you stop hunting across apps for the pieces.</p>
-      <p><b>One space gathers that whole corner of your life:</b></p>
-      <ul>
-      <li>Its <b>pages and tables</b>, <b>tasks</b>, <b>goals</b>, <b>events</b>, the <b>people</b> tied to it, <b>saved links</b>, and any <b>photos or files</b> you drop in.</li>
-      <li>A dashboard across the top with quick jumps and live counts, so one glance tells you where that part of your life stands.</li>
-      <li>Room for the bigger picture when you want it - a <b>vision</b>, a <b>Wheel of Life</b> and a <b>bucket list</b>.</li>
-      <li>Give each space a <b>colour</b> and it reads at a glance everywhere: a task, an event or a practice shows in its space's colour.</li>
-      <li><b>Share</b> a space with the people in it, so a family or a team work off the same one.</li>
-      </ul>
-      <p>Notes or tables - reach for whichever fits the material:</p>
-      <ul>
-      <li>A <b>note</b> is for words: thoughts, plans, meeting notes, a checklist - anything you would write out. Notes take headings, lists, links and rich text, and one note can live on more than one space.</li>
-      <li>A <b>table</b> is for rows and columns: a reading list, flats you are viewing, expenses, measurements - anything you would otherwise keep in a spreadsheet.</li>
-      </ul>
-      <p>Make a page or table straight from a space, or tag an existing one to it. Rename, recolour, share or add spaces whenever you like - the whole app follows.</p>` },
-  reflect: { title: 'Reflection', tip: 'A quiet corner of the app for the inner life - journal, coaching, dreams, meditation, and a few reflection tools for when you want a different lens. Each its own page, nothing on show.',
-    body: `<p><b>Reflection</b> is the home for your reflective practices. The hub shows every tool as a tile, your pinned readings, and a <b>Recent</b> feed of everything you’ve done across them. Each tool opens as its own page.</p>
-      <ul>
-      <li><b>Journal</b> - free-write (stream of consciousness, morning-pages style) or start from a prompt. <b>Dig deeper</b> asks one thoughtful follow-up question; <b>Empathy</b> offers a warm reflection; and you can <b>dictate</b> an entry by voice.</li>
-      <li><b>Coaching</b> - a running coaching conversation that builds over a session; past sessions are listed to read back.</li>
-      <li><b>Dreams</b> - write a dream and get a gentle interpretation; all your dreams gather on their own page.</li>
-      <li><b>Meditation</b> - a calm sit with real bells and optional interval gongs; each sit is logged, with room for a word about it.</li>
-      <li><b>Spirit cards</b> - draw a card for a moment’s reflection. Cards you keep are saved; tap any past card to see it again.</li>
-      <li><b>I Ching</b> - cast a real reading on a question, save it, and reopen any past reading in full.</li>
-      <li><b>Horoscope</b> - your <b>natal chart</b>, not just your sun sign. Add your birth time and place and it works out your <b>Moon</b> and <b>rising</b> signs too, then writes today’s reading from all three.</li>
-      <li><b>Insights</b> - reads back across your journal entries for the themes, what lifts you and what drains you. (Insights belong to the Journal.)</li>
-      </ul>
-      <p>A tool holding a live reading - I Ching, horoscope, spirit card - shows a dot on its tile; tap to reopen it.</p>` },
-  saved: { title: 'Read & Watch', tip: 'One calm list for everything you mean to get to - articles, videos, books, films, sites worth keeping - so it is off your mind until you have the time for it.',
-    body: `<p><b>Read &amp; Watch</b> is one calm list for everything you mean to get to later - an article to read, a video to watch, a book, a film, or a site worth keeping - so it is off your mind until you have the time for it.</p>
-      <h4>Adding something</h4>
-      <ul>
-      <li><b>Paste a link</b> and Koyéba fetches its title and source. A web article becomes <b>Article · To read</b>; a YouTube or Vimeo link becomes <b>Video · To watch</b>.</li>
-      <li><b>Type a book or film</b> title (tap <b>Book</b> or <b>Film</b> first if you want to be sure) and it looks up the cover, year and a link for you.</li>
-      <li>Quickest from anywhere: <b>+ New → Read or watch</b>, or the <b>+</b> beside Read &amp; Watch in the sidebar.</li>
-      </ul>
-      <h4>Five kinds, each worded to suit</h4>
-      <p><b>Article</b> (📰 To read) · <b>Website</b> (🔗 a reference site to visit) · <b>Video</b> (▶ To watch) · <b>Book</b> (📖, with a middle "Reading" stage) · <b>Film</b> (🎬 To watch). Koyéba guesses the kind from the link - if it ever guesses wrong, change it with the <b>Type</b> dropdown on the item.</p>
-      <h4>Working the list</h4>
-      <ul>
-      <li><b>Still-to-do on top, done below.</b> Tick the box to mark something read or watched and it drops to the done list, so the top of the page is only ever what is still waiting for you.</li>
-      <li><b>Filter by kind</b> with the chips, so it reads as "films I want to see" or "articles still to read".</li>
-      <li><b>Rate</b> anything out of five stars once you are through it, and <b>sort</b> by newest, title, type or your rating.</li>
-      <li><b>File it to a Space</b> and it sits with that part of your life, in that space's colour - your watercolour reading filed under Art, say.</li>
-      </ul>
-      <p><b>Save from anywhere, in one tap.</b> Set up the <b>bookmarklet</b> (desktop) or the <b>iOS Shortcut</b> from the tool, and you can save the page you are on straight to Read &amp; Watch without even opening Koyéba.</p>` },
-  timer: { title: 'Toolbox', tip: 'The small tools for doing the work: a focus timer that logs your deep-work sessions, a plain countdown for anything, and your practices.',
-    body: `<p>The Toolbox holds the small tools you reach for while you work. Pick one and it opens below.</p>
-      <ul><li><b>Focus</b> - a Pomodoro-style timer for a stretch of deep work. Say what you're focusing on (and its page, goal or task) and each finished block is logged, with a running list of your past sessions alongside.</li>
-      <li><b>Timer</b> - a plain countdown for anything at all; give it a label and a page and it keeps the same history.</li>
-      <li><b>Practices</b> - the things you do again and again, grouped by page. Edit them here; they're the same ones you plan and track on the Today page.</li></ul>
-      <p>(The <b>meditation</b> timer now lives in <b>Reflection</b> as its own page.)</p>` },
-  friends: { title: 'Contacts on Koyéba', tip: 'Connect with the people you know who are on Koyéba - then share Spaces, notes and tasks, keep a shared wall, chat, or jump on a call. Nothing of yours is shared until you choose it.',
-    body: `<p>Some of the people in your Contacts are on Koyéba too. <b>Connecting</b> with them is what opens up sharing - and nothing of yours is shared until you choose it, person by person.</p>
-      <h4>Connecting</h4>
-      <ul>
-      <li>At the top of <b>Contacts</b>, Koyéba quietly notices which of your people are already here. Tap <b>Connect</b> to send a request, or the <b>×</b> to hide a suggestion you don't want.</li>
-      <li>Or add someone straight off by <b>name or email</b>.</li>
-      <li>A request waits until they accept. <b>Incoming</b> requests are yours to accept or decline, and you can see the ones you have <b>sent</b>.</li>
-      </ul>
-      <h4>What connecting lets you do</h4>
-      <ul>
-      <li><b>Share a Space</b> with the people in it - a household runs the move off one shared space, co-parents keep the same calendar and to-dos.</li>
-      <li><b>Share a Note or a task</b>, view-only or to edit together.</li>
-      <li><b>Assign a task</b> to someone you are connected to, so it lands on their plate as well as yours.</li>
-      <li>Keep <b>shared notes</b>, <b>chat</b>, and <b>start a call</b> when it is quicker to talk.</li>
-      </ul>
-      <p>Your data stays yours: a person only ever sees the exact space, page or task you share with them, and you can stop sharing at any time.</p>` },
-  today: { title: 'Flow', tip: 'Plan your day by feel, not by force: drag your practices and tasks onto a timed day, tick off what you did, and let your streaks build. Practices are a palette, never a timetable.',
-    body: `<p><b>Flow</b> is where you plan and track your day. Three columns: your <b>Practices</b> on the left, the <b>day</b> down the middle as a timed timeline, and your <b>Tasks</b> on the right - the same list as the Tasks board, filtered by page and priority.</p>
-      <ul><li><b>Drag</b> a practice or task onto the day to plan it at a time - grab it anywhere and drop it on the timeline. Everything reads in its <b>life-area colour</b>.</li>
-      <li>Every placed block has a <b>tick box</b>: putting it on the day means you mean to do it, ticking it means you did. Ticking a practice on the day also ticks its <b>habit</b>.</li>
-      <li><b>Click a task</b> to open it and edit its name, priority, page or length.</li>
-      <li><b>Practices are a palette, not a timetable.</b> They're your options, grouped by page - the things you could do. Feel like something musical? Open Music, see your choices, and <b>drag</b> one onto the day or just <b>tick</b> what you did.</li>
-      <li>Got a calendar event that <b>is</b> a practice (a gym class that's your workout)? It shows a one-tap <b>＋ chip</b> to count it - the event then carries the practice's colour and tick, and ticking it feeds the streak. No need to add the practice twice.</li>
-      <li>The <b>Tracker</b> tab is your habits: every practice with tracking on, its streak and history. Set an <b>aim</b> per practice (every day, every other day) - a gentle target, never an alarm. Tick as you go, or on the day.</li>
-      <li><b>Practices</b> are the things you do again and again. Add one to set a page, a priority, a length (so you know how long it takes), a note or follow-along video.</li></ul>` },
-  tabs: { title: 'Tabs & getting around', tip: 'Keep a few places open at once like browser tabs, pin the ones you always want to hand, and jump anywhere in a couple of keystrokes with ⌘K.',
-    body: `<p>The row along the top is your <b>tabs</b>. Each one holds a place in Koyéba - a tool, a note, a guide - and they work like browser tabs, so you can keep a few things open and hop between them.</p>
-      <ul><li><b>Open a new tab</b> with the <b>+</b> at the end of the row. It starts on Home, and then follows you wherever you go.</li>
-      <li><b>A working tab</b> (not pinned) is reused as you move around: click Tasks, then Notes, and the same tab just changes. That’s what stops you drowning in tabs.</li>
-      <li><b>Pin a tab</b> with its <b>📌</b> to lock it to one place. A pinned tab never changes underfoot - navigate somewhere else and Koyéba opens a working tab for that instead, leaving your pinned one exactly as it was. Ideal for Mail, your Today page, or a note you keep returning to.</li>
-      <li><b>Unpin</b> by tapping the <b>📌</b> again; it becomes an ordinary working tab.</li>
-      <li><b>Close</b> a working tab with its <b>×</b> (it shows once you have more than one). Pinned tabs have no ×, so you can’t lose one by accident - unpin it first if you really want it gone.</li>
-      <li>Pinned tabs sit at the <b>front</b> of the row, and your whole set of tabs is remembered, so they’re waiting for you next time you open Koyéba.</li></ul>
-      <p>Two shortcuts worth knowing: tap the <b>ℹ</b> on any tool to pop its guide open in a pinned tab, and press <b>⌘K</b> (Ctrl+K) for the command palette to search or jump anywhere in a couple of keystrokes. The <b>breadcrumbs</b> under the tabs (Home › Notes › your note) step you back up at any time.</p>` },
-  settings: { title: 'Settings', tip: 'Your account, look and feel, which tools show, invites, and everything that manages your setup.',
-    body: `<p>Settings is organised into tabs. <b>Account</b> holds your name, sign-in addresses, phone and plan - and now your <b>Koyéba card</b> and <b>two-factor</b> sign-in security. <b>Appearance</b> sets the theme, accent colour and your default currency. <b>Plan</b> holds your AI keys and a switch to turn all AI off. <b>Notifications</b> gathers the morning brief, text alerts, the daily quote and online-contacts toggles. <b>Tools</b> turns whole sections on or off. <b>Calendar</b> adds holidays and fixtures. <b>Invites</b> emails someone an invitation to join. <b>Manage</b> gathers pages, mail accounts, spending categories and reminders.</p>` },
-  'settings-account': { title: 'Account', tip: 'Your details and sign-in, your Koyéba card, and two-factor security - all in one place.',
-    body: `<p>Your <b>name</b> is the wordmark at the top. Your <b>primary email</b> is fixed, but you can add other addresses that all sign into this one account (each is confirmed by a code). Your <b>phone</b> is used for text alerts. <b>Plan</b> shows what you're on.</p>
-      <ul><li><b>Your Koyéba card</b> sits at the top - tap <b>Edit card</b> to open it, then step back to Account when you're done.</li>
-      <li><b>Two-factor authentication</b> lives here too, under Security: add a second step at sign-in from your authenticator app.</li>
-      <li><b>Download your data</b> exports everything; <b>Close account</b> removes it.</li></ul>` },
-  'settings-appearance': { title: 'Appearance', tip: 'Theme, accent colour, the week start, and your default currency.',
-    body: `<p><b>Theme</b> follows your local sunrise and sunset by default; tap to override to light or dark. <b>Accent colour</b> recolours the whole app - pick a preset or your own. <b>Week starts on</b> sets your weekly-review window. <b>Default currency</b> is the symbol your money, spending and portfolio are shown in.</p>` },
-  'settings-ai': { title: 'Plan', tip: 'Your plan, and how the AI is powered.',
-    body: `<p>Every plan is the whole of Koyéba - they differ only in how the AI is powered. <b>Premium</b> (€9/mo, or <b>€60/yr</b> - five months free): you bring your own AI key - <b>Claude, ChatGPT or Gemini</b> - and pay the provider directly. <b>Premium Plus</b> (€13/mo, or <b>€130/yr</b>): we run the AI for you, no keys to manage. Switch between <b>Monthly</b> and <b>Annual</b> with the toggle above the plans; both start with a <b>21-day free trial</b>.</p><p>Below the plans, <b>Your AI</b> has a master switch to turn every AI feature on or off, your key (on Premium), and a per-feature list so you can switch off any use you'd rather it didn't make.</p>` },
-  'settings-notifications': { title: 'Notifications', tip: 'How and when Koyéba reaches you - the brief, text alerts, and a couple of Home touches.',
-    body: `<p><b>By email:</b> the <b>Morning brief</b> emails your day's calendar, open P1 tasks and the quote at 08:45, and you can get an email the morning a "surface on" task comes back.</p>
-      <p><b>By text:</b> a reminder 5 minutes before an item you've set a bell on in the Today planner, and a text when a surfaced task returns (add a phone in Account first).</p>
-      <p><b>Around the app:</b> the <b>daily inspirational quote</b> on Home, Today and the brief, and whether you <b>see online contacts</b> in the Home sidebar.</p>` },
-  'settings-sections': { title: 'Tools', tip: 'Turn any tool on or off - hide what you don\'t use.',
-    body: `<p>Tick a tool to show it, untick to hide it from the sidebar and Home. Nothing is deleted - turn it back on any time and your data is still there.</p>` },
-  'settings-invites': { title: 'Invites', tip: 'Bring people onto Koyéba.',
-    body: `<p>Put in someone's email and a note, and Koyéba emails them the invitation. They click one link, sign in and their own Koyéba is set up - there is no code for them to type. Leave the email blank if you'd rather have a code to pass on yourself. You can hold a few open invitations at a time.</p>` },
-  'settings-manage': { title: 'Manage', tip: 'Spaces, mail accounts, spending categories and reminders.',
-    body: `<p>Each tile opens a small subpage: <b>Spaces</b> (what Koyéba orbits), <b>Mail accounts</b> (inboxes you send and receive from), <b>Spending categories</b>, and <b>Reviews &amp; reminders</b> (cadence and nudges). Your daily <b>practices</b> live on the Today page now.</p>` },
-  'settings-import': { title: 'Import', tip: 'Bring notes and events in from elsewhere.',
-    body: `<p><b>Notes:</b> export from Obsidian, Bear, Apple Notes, Notion or anywhere that saves <b>Markdown</b> (<code>.md</code>) or plain text (<code>.txt</code>), then choose the files. Each becomes its own note - the first <code># heading</code> (or the filename) is the title, the rest keeps its formatting.</p><p><b>Events:</b> the <b>Add from a file</b> button on your Calendar reads events out of a <b>flyer, photo or screenshot</b>, a <b>webpage link</b> (Eventbrite, Meetup…), or pasted <b>text</b>. Check the ones you want, pick a page, and they drop onto your calendar. More importers (tasks, bookmarks) are on the way.</p>` },
-};
-// Cards and sub-pages fold into their tool's guide.
-function helpKey(v) {
-  if (v && v.type === 'help') return v.tool || 'home';
-  const t = (v && v.type) || 'home';
-  return ({ taskcard: 'tasks', note: 'notes', notes: 'notes', table: 'notes', tables: 'notes',
-    wellbeing: 'reflect', insights: 'reflect', meditation: 'reflect', iching: 'reflect', tarot: 'reflect', spirit: 'reflect', journal: 'reflect', journalentry: 'reflect', mailaccounts: 'mail', contactcard: 'contacts',
-    area: 'areas', goalcard: 'goals', bucketcard: 'goals', reviews: 'goals', reviewcard: 'goals', visioncard: 'goals', visionwall: 'goals',
-    toolbox: 'timer', readwatch: 'saved', money: 'financial' })[t] || t;
-}
-// The i beside the tabs, keyed to the tool you're on. Hover = the tip; click = pin
-// the full guide in its own tab.
-function helpIconHtml() {
-  // On Home the i opens the Guide's own start page (the whole guide), not a
-  // Home-specific topic - that's where you go to learn how everything works.
-  // (Robin, 2026-09-28.)
-  if (!state.view || state.view.type === 'home') {
-    return `<button class="help-btn" data-open-guide aria-label="Open the Guide" title="Open the Guide">i</button>`;
-  }
-  const key = helpKey(state.view); const h = HELP[key]; if (!h) return '';
-  // The popover is drawn on hover as a fixed element (below), so it isn't clipped
-  // by the tab strip's horizontal scroll.
-  return `<button class="help-btn" data-help-open="${key}" aria-label="How ${esc(h.title)} works" title="How ${esc(h.title)} works">i</button>`;
-}
-function showHelpPop(btn) {
-  const h = HELP[btn.dataset.helpOpen]; if (!h) return;
-  let el = document.getElementById('help-pop');
-  if (!el) { el = document.createElement('div'); el.id = 'help-pop'; el.className = 'help-pop'; document.body.appendChild(el); }
-  el.innerHTML = `<div class="help-pop-t">${esc(h.title)}</div><div class="help-pop-b">${h.tip}</div><div class="help-pop-hint">Click the i to pin the full guide →</div>`;
-  const w = Math.min(300, window.innerWidth - 24);
-  el.style.width = `${w}px`;
-  el.style.display = 'block';
-  const r = btn.getBoundingClientRect();
-  const ph = el.offsetHeight;   // now measurable (display set above)
-  // The icon sits at the bottom of the sidebar, so opening downward runs off the
-  // screen. Prefer below, but flip above whenever it wouldn't fit under the icon.
-  let top = r.bottom + 8;
-  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 8);
-  el.style.top = `${top}px`;
-  // Start at the icon's left edge and extend right, clamped fully on-screen.
-  el.style.left = `${Math.max(12, Math.min(r.left, window.innerWidth - w - 12))}px`;
-}
-function hideHelpPop() { const el = document.getElementById('help-pop'); if (el) el.style.display = 'none'; }
+function hideHelpPop() {}
 function openHelp(key) { state.view = { type: 'help', tool: key }; renderNav(); renderHelp(key); return Promise.resolve(); }
-// The tools listed on the Guide home page, in a sensible reading order.
-const GUIDE_TOPICS = ['home', 'tabs', 'today', 'tasks', 'calendar', 'mail', 'notes', 'reflect', 'financial', 'goals', 'areas', 'contacts', 'saved', 'timer', 'friends', 'settings'];
-// A quiet icon per guide, so the index reads at a glance. Mirrors the app's own
-// glyphs where it has one.
-const GUIDE_ICON = { home: '⌂', tabs: '⧉', today: '☀', tasks: '✓', calendar: '◑', mail: '✉', notes: '▤', reflect: '✎', financial: '💰', goals: '🎯', areas: '◈', contacts: '👤', saved: '🔖', timer: '🧰', friends: '👥', settings: '⚙' };
-function renderHelp(key) {
-  if (key === 'index' || !HELP[key]) return renderGuideIndex();
-  const h = HELP[key];
-  $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide', attr: 'data-open-guide' }, { label: h.title }])}
-    <div class="pane-head home-head"><h1>${esc(h.title)}</h1></div>
-    <div class="help-doc"><p class="help-lede">${h.tip}</p>${h.body}
-      <div class="help-feedback"><button class="add-btn wide help-feedback-btn" data-guide-feedback="${esc(h.title)}">💬 Give feedback on this</button></div>
-      <p class="help-foot"><button class="help-back-link" data-open-guide>← All guides</button></p>
-      <p class="guide-tagline">For a life well lived</p></div>`;
-}
-// The Guide home page: the joining checklist up top, then a card per tool guide.
-function renderGuideIndex() {
-  const cards = GUIDE_TOPICS.filter((k) => HELP[k]).map((k) => {
-    const h = HELP[k];
-    return `<button class="guide-card" data-help-open="${k}"><span class="guide-card-ic">${GUIDE_ICON[k] || '›'}</span><span class="guide-card-body"><span class="guide-card-t">${esc(h.title)}</span><span class="guide-card-s">${h.tip}</span></span></button>`;
-  }).join('');
-  $('#pane').innerHTML = `${pageCrumb('Koyéba Guide')}
-    <div class="pane-head home-head"><h1>Koyéba Guide</h1></div>
-    <div class="help-doc">
-      <div class="guide-ethos">
-        <div class="guide-ethos-mark">${MARK}</div>
-        <div class="guide-ethos-tag">For a life well lived</div>
-        <p class="guide-ethos-p">Koyéba holds the whole of your life in one calm place - your days and tasks, notes and people, money, goals and reflections - so nothing gets lost and what matters stays in view. Every part talks to the others, helping you join the dots and see how your life fits together. Use as much or as little as you like.</p>
-      </div>
-      <p class="help-lede">Here's how it all works. Pick a tool below to see its guide.</p>
-      <div class="guide-sec-h">All the guides</div>
-      <div class="guide-grid">${cards}</div>
-      <div class="guide-sec-h">Tell us what you think</div>
-      <p class="guide-start-p">Spotted something, hit a snag, or have an idea? We read every note.</p>
-      <button class="add-btn wide help-feedback-btn" data-guide-feedback="Guide">💬 Give feedback</button>
-      <div class="guide-sec-h">Privacy &amp; terms</div>
-      <p class="guide-start-p"><b>Your data belongs to you.</b> Koyéba is paid for by its subscribers, never by advertisers and never by selling what you put in - we don't read your notes, pass on your information, or use it to train AI. Your Koyéba is private to you, and your connected-account passwords are encrypted so not even we can read them. Take everything with you, or delete it for good, whenever you want.</p>
-      <div class="guide-legal">
-        <a class="guide-legal-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy Policy ↗</a>
-        <a class="guide-legal-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
-        <a class="guide-legal-link" href="mailto:contact@koyeba.co">Contact us ✉</a>
-      </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyéba · koyeba.co</p>
-      <div class="guide-signoff">
-        <p class="guide-tagline">For a life well lived</p>
-        <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
-      </div>
-    </div>`;
-}
-// Click the i: pin this tool's guide in its own tab. If it's already open, just go there.
-function openHelpTab(key) {
-  hideHelpPop();
-  const view = { type: 'help', tool: key };
-  const existing = state.tabs.find((t) => t.view.type === 'help' && t.view.tool === key);
-  if (existing) { if (!existing.pinned) { existing.pinned = true; } switchTab(existing.id); renderTabs(); saveTabs(); return; }
-  const id = uid();
-  state.tabs.push({ id, view, label: labelForView(view), pinned: true });
-  state.tabs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-  state.activeTab = id;
-  Promise.resolve(openView(view)).catch(() => openHome());
-  saveTabs();
-}
 // A one-word-ish summary of a single filter condition, for the tab label -
 // "P1", a life-area name, "Snoozed", "no Repeat". Falls back to the field name.
 function condShort(c) {
@@ -1449,7 +1139,7 @@ function taskTabLabel(v) {
 }
 function labelForView(v) {
   switch (v.type) {
-    case 'help': return v.tool === 'index' ? 'Guide' : `${(HELP[v.tool] || {}).title || 'Guide'} guide`;
+    case 'help': return (GUIDE_ANSWERS[v.tool] || {}).title || 'Guide';
     case 'tasks': return taskTabLabel(v);
     case 'taskcard': return (state.task_open && state.task_open.task.title) || 'Task';
     case 'calendar': return t('nav.calendar'); case 'mail': return t('nav.mail'); case 'today': return t('nav.planner'); case 'tracker': return t('today.tracker');
@@ -1642,7 +1332,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // Task page's Star · Share · Assign · Delete), so there's no second header row
   // to overlap. The crumb stays a direct #pane child, so its §70 alignment holds.
   const back = (typeof navHist !== 'undefined' && navHist && navHist.length) ? `<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
-  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.actions || ''}</div>`;
+  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.noHelp ? '' : guideHelpBtn()}${opts.actions || ''}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -1768,7 +1458,6 @@ function renderTabs() {
     // first (it carries the new-message alert), then the guide i, then Settings.
     // Sign out lives in Settings and the sidebar, not up here. (Robin, 2026-10-29.)
     + (state.me ? `<button class="tab-util tab-util-msg ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page data-tip="Messages" aria-label="Messages${navUnread() ? ` - ${navUnread()} new` : ''}">${MSG_ICO}${navUnread() ? `<span class="tab-util-dot">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '')
-    + helpIconHtml()
     + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`;
 }
 function newTab() {
@@ -4530,7 +4219,7 @@ function renderSettingsLegacy() {
     ${state.account && !state.onbSeen ? welcomeGuideHtml() : ''}
     ${seg}
     <section class="home-sec">
-      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span><span class="set-sec-h-r">${tab === 'account' && state.onbSeen ? `<button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Getting started</button>` : ''}${HELP['settings-' + tab] ? `<button class="help-btn set-help-btn" data-help-open="settings-${tab}" title="How ${esc(HELP['settings-' + tab].title)} works">i</button>` : ''}</span></div>
+      <div class="home-sec-h set-sec-h" style="margin-bottom:14px">${(TABS.find(([k]) => k === tab) || [])[1] || SUB_TITLE[tab] || ''}<span class="muted">${subs[tab] || ''}</span><span class="set-sec-h-r">${tab === 'account' && state.onbSeen ? `<button type="button" class="set-reinstate-link" data-welcome-reinstate>✦ Getting started</button>` : ''}${guideHelpBtn()}</span></div>
       ${panes[tab] || ''}
     </section>
     ${state.me ? `<p class="home-empty" style="padding:6px 0 0">Signed in as <b>${esc(state.me.name || state.me.email || '')}</b> · ${esc(planLabel(state.me.plan))} · ${state.me.id === 1 ? `<button class="su-signout" data-open-admin>Admin</button> · ` : ''}<button class="su-signout" data-account-signout>Sign out</button></p>` : ''}`;
@@ -10896,7 +10585,7 @@ function wbRecentItems() {
   (state.ichingHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '☯', label: 'I Ching', title: `${x.name || 'Reading'}${x.q ? ` · "${x.q}"` : ''}`, attr: (x.lines && x.lines.length) ? `data-iching-open-hist="${i}"` : 'data-open-iching' }));
   (state.spiritHistory || []).forEach((x, i) => out.push({ ts: Number(x.at) || 0, ic: '🃏', label: 'Spirit card', title: x.name || 'Card', attr: `data-spirit-open-hist="${i}"` }));
   const ho = currentHoro(); if (ho) out.push({ ts: Number(ho.at) || tm(ho.date), ic: '✶', label: 'Horoscope', title: ho.sign || 'Today', attr: 'data-horo-reopen' });
-  (medSessions() || []).slice(-12).forEach((s) => out.push({ ts: Number(s.ts) || 0, ic: '🧘', label: 'Meditation', title: `${s.mins} min sit`, attr: 'data-open-medi' }));
+  if (modOn('meditation')) (medSessions() || []).slice(-12).forEach((s) => out.push({ ts: Number(s.ts) || 0, ic: '🧘', label: 'Meditation', title: `${s.mins} min sit`, attr: 'data-open-medi' }));
   return out.filter((x) => x.ts).sort((a, b) => b.ts - a.ts).slice(0, 10);
 }
 // Which well-being tool, if any, a journal page is showing - drives the tile's
@@ -11078,20 +10767,11 @@ function renderWellbeing() {
   const cardHtml = readings.length
     ? `<div class="rf-cards"><div class="rf-card-k">Today’s cards</div><div class="rf-cards-list">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`
     : '';
-  const liveIch = (typeof currentIching === 'function') && currentIching(), liveHoro = (typeof currentHoro === 'function') && currentHoro(), liveSpirit = !!card;
-  const PRAC = [
-    ['journal', t('wb.journal'), 'data-open-journal', lastTs ? `Last wrote ${rel(lastTs).toLowerCase()}` : 'Write freely, or from a prompt'],
-    ['dreams', t('wb.dreams'), 'data-open-dreams', 'Write a dream, gently read'],
-    ['coaching', t('wb.coaching'), 'data-open-coaching', 'A running conversation'],
-    ['compass', t('wb.compass'), 'data-open-compass', 'Weigh a decision'],
-    ['meditation', t('wb.meditation'), 'data-open-medi', 'A calm sit, with bells'],
-    ['spirit', t('wb.spirit'), 'data-spirit-open', liveSpirit ? `${esc(card.name)}, today` : 'Draw a card'],
-    ['iching', t('wb.iching'), liveIch ? 'data-iching-reopen' : 'data-open-iching', liveIch ? 'A live reading' : 'Cast the coins'],
-    ['tarot', 'Tarot', 'data-open-tarot', 'Pictures to think with'],
-    ['horoscope', t('wb.horoscope'), 'data-open-horo', liveHoro ? (liveHoro.sign || 'Today') : 'Your daily horoscope'],
-    ['insights', t('wb.insights'), 'data-open-insights', 'Patterns across your entries'],
-  ].filter((p) => modOn(p[0]));
-  const pracHtml = PRAC.map(([id, label, attr, hint], i) => `<button class="rf-prac" ${attr}><span class="rf-prac-n">${RF_ROM[i] || ''}</span><span class="rf-prac-b"><span class="rf-prac-l">${esc(label)}</span><span class="rf-prac-h">${esc(hint)}</span></span></button>`).join('');
+  // The tools now lead the page as a set of forest-and-gold cards (above Lately),
+  // not a list in the sidebar. (Robin, 2026-11-04.) Insights isn't one of the
+  // eight - it reads BACK across your entries - so it keeps a quiet link in the side.
+  const toolsGrid = reflectToolsGridHtml({ lastTs, rel });
+  const insightsLink = modOn('insights') ? `<button class="rf-side-link" data-open-insights><span class="rf-side-link-l">Insights</span><span class="rf-side-link-h">Patterns across your entries</span><span class="rf-side-link-x">→</span></button>` : '';
   $('#pane').innerHTML = `
     <div class="kpage-reflect">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect') }])}<div class="rf-grid">
       <div class="rf-main">
@@ -11099,13 +10779,52 @@ function renderWellbeing() {
         <h1 class="nx-h1">${t('nav.reflect')}</h1>
         ${quoteOfDayHtml()}
         <div class="nx-lead">${esc(lead)}</div>
+        ${toolsGrid}
         <div class="rf-lately">
           <div class="rf-lately-h"><span class="rf-lately-l">Lately</span><div class="rf-filters">${filters}</div></div>
           <div class="rf-rows">${rows}</div>
         </div>
       </div>
-      <aside class="rf-side">${cardHtml}<div class="rf-prac-h2">Reflection tools</div>${pracHtml}</aside>
+      <aside class="rf-side">${cardHtml}${insightsLink}</aside>
     </div></div>`;
+}
+// The eight Reflection tools as forest-and-gold cards: a refined gold emblem (or
+// the hexagram), a Cormorant label and a one-line hint; a gold square marks a
+// live reading. Meditation is hidden for now (modOn gate). (Robin, 2026-11-04.)
+function rfToolEmblem(key) {
+  switch (key) {
+    case 'journal': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><path d="M50 13c-3 9-10 18-20 25l-9 3 3-9C31 22 41 15 50 13z"/><path d="M24 41l-6 7 8-2"/><path d="M19 52h20"/></svg>';
+    case 'dreams': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><path d="M44 16a18 18 0 1 0 3 34 15 15 0 0 1-3-34z"/><path d="M22 20l1.8 4.3 4.3 1.8-4.3 1.8L22 32l-1.8-4.1L16 26.1l4.2-1.8z" class="fillg"/><circle cx="30" cy="44" r="1.3" class="fillg"/></svg>';
+    case 'coaching': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><circle cx="32" cy="32" r="3" class="fillg"/><path d="M23 23a13 13 0 0 0 0 18"/><path d="M41 23a13 13 0 0 1 0 18"/><path d="M17 17a21 21 0 0 0 0 30" class="dim"/><path d="M47 17a21 21 0 0 1 0 30" class="dim"/></svg>';
+    case 'compass': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><circle cx="32" cy="32" r="21"/><path d="M32 15l4.5 16.5L32 49l-4.5-17.5z" class="fillg"/><path d="M15 32l17-4.5L49 32l-17 4.5z" class="dim"/><circle cx="32" cy="32" r="2.2" class="fillg"/></svg>';
+    case 'spirit': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" class="dim"/><path d="M32 14l4.5 13.5L50 32l-13.5 4.5L32 50l-4.5-13.5L14 32l13.5-4.5z"/></svg>';
+    case 'tarot': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><rect x="25" y="16" width="18" height="28" class="dim" transform="rotate(13 34 44)"/><rect x="20" y="16" width="18" height="28" transform="rotate(-6 29 44)"/><path d="M29 25l1.6 3.6 3.6 1.6-3.6 1.6L29 37l-1.6-3.6L23.8 30.2l3.6-1.6z" class="fillg"/></svg>';
+    case 'horoscope': return '<svg class="rf-tool-emb" viewBox="0 0 64 64"><ellipse cx="32" cy="32" rx="23" ry="9" class="dim" transform="rotate(-22 32 32)"/><circle cx="32" cy="32" r="8.5"/><path d="M32 12v7M32 45v7M12 32h7M45 32h7M18 18l5 5M41 41l5 5M46 18l-5 5M23 41l-5 5"/></svg>';
+    case 'iching': return '<span class="rf-tool-hex"><i class="n"><b></b><b></b></i><i class="n"><b></b><b></b></i><i class="y"></i><i class="y"></i><i class="n"><b></b><b></b></i><i class="n"><b></b><b></b></i></span>';
+    default: return '';
+  }
+}
+function reflectToolsGridHtml(opts) {
+  opts = opts || {};
+  const liveIch = (typeof currentIching === 'function') && !!currentIching();
+  const liveHoro = (typeof currentHoro === 'function') && !!currentHoro();
+  const liveSpirit = (typeof currentSpirit === 'function') && !!currentSpirit();
+  const liveTarot = (typeof currentTarot === 'function') && !!currentTarot();
+  const wrote = opts.lastTs ? `Last wrote ${opts.rel(opts.lastTs).toLowerCase()}` : 'Write freely, or from a prompt';
+  const TOOLS = [
+    ['journal', t('wb.journal'), 'data-open-journal', wrote, false],
+    ['dreams', t('wb.dreams'), 'data-open-dreams', 'Write a dream, gently read', false],
+    ['coaching', t('wb.coaching'), 'data-open-coaching', 'A running conversation', false],
+    ['compass', t('wb.compass'), 'data-open-compass', 'Weigh a decision, find your bearing', false],
+    ['spirit', t('wb.spirit'), 'data-spirit-open', liveSpirit ? 'Reopen your card' : 'Draw a card for a moment', liveSpirit],
+    ['iching', t('wb.iching'), liveIch ? 'data-iching-reopen' : 'data-open-iching', liveIch ? 'Reopen your reading' : 'Cast the coins on a question', liveIch],
+    ['tarot', 'Tarot', 'data-open-tarot', liveTarot ? 'Reopen your spread' : 'Pictures to think with', liveTarot],
+    ['horoscope', t('wb.horoscope'), 'data-open-horo', liveHoro ? 'Reopen today’s reading' : 'Your reading for today', liveHoro],
+  ].filter((x) => modOn(x[0]));
+  if (!TOOLS.length) return '';
+  const tiles = TOOLS.map(([key, label, attr, hint, live]) =>
+    `<button class="rf-tool" ${attr} title="${esc(label)}">${live ? '<span class="rf-tool-live" title="You have a live reading"></span>' : ''}<span class="rf-tool-face">${rfToolEmblem(key)}</span><span class="rf-tool-b"><span class="rf-tool-l">${esc(label)}</span><span class="rf-tool-h">${esc(hint)}</span></span></button>`).join('');
+  return `<div class="rf-tools">${tiles}</div>`;
 }
 // ── Insights (its own Well-being tool page) ──────────────────────────────
 // Insights read back across your Journal entries. They live on their own page
@@ -27443,8 +27162,6 @@ window.addEventListener('pagehide', () => { flushProse(); flushReviewAnswers(); 
 document.addEventListener('focusout', (e) => { if (e.target && e.target.matches && e.target.matches('[data-area-vision]')) flushVisionInline(); }, true);
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
 // one pair of document listeners covers the button however the tabs re-render.
-document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b) showHelpPop(b); });
-document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.help-btn'); if (b && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.help-btn'))) hideHelpPop(); });
 // Close an open Mail action dropdown (Reply / Transform) on any click outside it.
 document.addEventListener('click', (e) => { document.querySelectorAll('details.mail-dd[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); }); }, true);
 document.addEventListener('click', (e) => {
@@ -27513,7 +27230,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-palette]')) { openPalette(); return; }
   if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
   { const gf = t.closest('[data-guide-feedback]'); if (gf) { openFeedbackForm(gf.dataset.guideFeedback || ''); return; } }
-  const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); if (window.matchMedia('(max-width:820px)').matches) openHelp(hlp.dataset.helpOpen); else openHelpTab(hlp.dataset.helpOpen); return; }
+  const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); openHelp(hlp.dataset.helpOpen); return; }
   const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
