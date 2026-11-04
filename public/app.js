@@ -18173,9 +18173,27 @@ function wrapEmailHtml(html, blockImages) {
   // No <base target="_blank"> - instead we intercept link clicks and hand the URL
   // to the parent, which opens it in the OS default browser (a sandboxed iframe
   // can't do that itself, and its own scripts were already stripped).
-  return `<!doctype html><html><head><meta name="color-scheme" content="light">
-    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,var(--k-sans);font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+  return `<!doctype html><html><head><meta name="color-scheme" content="dark">
+    <style>html{overflow-x:hidden;color-scheme:dark;background:transparent}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,Jost,sans-serif;font-size:16px;line-height:1.55;color:#EEF0F5;background:transparent;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#E6C67C}table{max-width:100%}</style>
     </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){var busy=false;
+    // Glass reading: the email sits on the sky, so clear its light backgrounds and
+    // lighten dark text. Images and deliberately coloured blocks (a button, a banner)
+    // keep their own colours, along with the text on them, so nothing goes unreadable.
+    function rgb(c){var m=/rgba?\\(([\\d.]+)[, ]+([\\d.]+)[, ]+([\\d.]+)(?:[,/ ]+([\\d.]+))?/.exec(c||'');return m?{r:+m[1],g:+m[2],b:+m[3],a:m[4]===undefined?1:+m[4]}:null;}
+    function lum(c){return (0.2126*c.r+0.7152*c.g+0.0722*c.b)/255;}
+    function sat(c){return Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b);}
+    function glass(){var all=document.body.querySelectorAll('*'),kept=[],i,e,s,c;
+      for(i=0;i<all.length;i++){e=all[i];if(/^(IMG|SVG|PICTURE|VIDEO|SCRIPT|STYLE)$/i.test(e.tagName))continue;s=getComputedStyle(e);c=rgb(s.backgroundColor);
+        if(e.hasAttribute('bgcolor'))e.removeAttribute('bgcolor');
+        if(c&&c.a>0.1&&lum(c)>0.72&&sat(c)<70){e.style.setProperty('background-color','transparent','important');if(s.backgroundImage&&/gradient/.test(s.backgroundImage))e.style.setProperty('background-image','none','important');}
+        else if(c&&c.a>0.1){kept.push(e);}}
+      function onKept(e){for(var x=e;x&&x!==document.body;x=x.parentElement){if(kept.indexOf(x)>=0)return true;}return false;}
+      for(i=0;i<all.length;i++){e=all[i];if(/^(IMG|SVG|PICTURE|VIDEO|SCRIPT|STYLE)$/i.test(e.tagName))continue;if(onKept(e))continue;c=rgb(getComputedStyle(e).color);if(!c)continue;
+        var link=e.closest&&e.closest('a[href]');
+        if(lum(c)<0.62)e.style.setProperty('color',link?'#E6C67C':'#EEF0F5','important');
+        if(e.hasAttribute('color'))e.removeAttribute('color');
+        var bc=rgb(getComputedStyle(e).borderTopColor);if(bc&&bc.a>0.1&&lum(bc)>0.72&&sat(bc)<70&&getComputedStyle(e).borderTopWidth!=='0px')e.style.setProperty('border-color','rgba(220,228,255,.22)','important');}}
+    try{glass();}catch(e){}
     // Shrink-to-fit: a fixed-width email (a 600px bank/marketing table that ignores
     // max-width) would otherwise force sideways scrolling on a phone. Measure the
     // email's natural width and, if it's wider than the viewport, scale the whole

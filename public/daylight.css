@@ -203,6 +203,17 @@
 /* Text that was below 4.5:1 on real data. */
 :root[data-light] .t2-avoidtag { background:transparent; color:var(--k-goldt); }
 
+/* ── Mail: an opened email sits on glass over the sky, not white paper ─────── */
+:root[data-light] .mail-body-frame, :root[data-light] .mail-ar-panel .mail-body-frame { background:transparent; color-scheme:dark; }
+:root[data-light] :is(.mail-ar-card, .mail-maketop, .mail-ar-replytop) { background:var(--glass-card); border-color:var(--glass-edge); }
+:root[data-light] .mail-ar-card { -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+:root[data-light] .mail-ar-triage { background:var(--glass); border-color:var(--glass-edge); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
+:root[data-light] .mail-ar-card *:not(iframe) { color:var(--k-ink); border-color:var(--glass-edge); }
+:root[data-light] .mail-ar-card :is(a, .mail-make:hover, .mail-noticed-l, .mail-noticed-act) { color:var(--k-goldt); }
+:root[data-light] .mail-ar-card .mail-make { border-color:var(--glass-edge); background:transparent; font-size:14px; }
+:root[data-light] .mail-ar-card .mail-text.mail-text-plain { color:var(--k-ink); font-family:'Jost',sans-serif; }
+:root[data-light] .mail-ar-card :is(.mail-ar-triage-l, .mail-ar-row-l) { color:var(--k-mute); font-size:13px; }
+
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
 .knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }

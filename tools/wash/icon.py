@@ -1,5 +1,4 @@
-"""Paints Koyeba's app icon and email mark: the Mandombe "ko" on a pane of frosted
-glass over the night sky.
+"""Paints Koyeba's app icon and email mark: the Mandombe "ko" on the night sky.
 
 Usage: python3 tools/wash/icon.py public   (needs numpy and pillow; run paint.py first)
 """
@@ -35,23 +34,8 @@ def icon():
     base = sky.crop((w - side, 0, w, side)).resize((S, S), Image.LANCZOS)
     base = Image.eval(base, lambda v: min(255, int(v * 1.28))).convert('RGBA')
 
-    # The pane: the same sky, blurred and lifted, with a thin bright rim.
-    m = int(S * 0.17)
-    box = (m, m, S - m, S - m)
-    pane = base.crop(box).filter(ImageFilter.GaussianBlur(S * 0.03))
-    tint = Image.new('RGBA', pane.size, (170, 186, 235, 46))
-    pane = Image.alpha_composite(pane, tint)
-    base.paste(pane, box)
-    d = ImageDraw.Draw(base, 'RGBA')
-    rim = max(2, int(S * 0.0055))
-    d.rectangle(box, outline=(255, 255, 255, 120), width=rim)
-    # Light catching the top and left edges, as glass does.
-    d.line([(m, m), (S - m, m)], fill=(255, 255, 255, 215), width=rim)
-    d.line([(m, m), (m, S - m)], fill=(255, 255, 255, 150), width=rim)
-
     # The mark, centred on the pane.
-    span = S - 2 * m
-    scale = span * 0.56 / max(X1 - X0, Y1 - Y0)
+    scale = S * 0.56 / max(X1 - X0, Y1 - Y0)
     ox = S / 2 - (X0 + X1) / 2 * scale
     oy = S / 2 - (Y0 + Y1) / 2 * scale
     width = max(8, int(8 * scale))
@@ -66,7 +50,7 @@ def icon():
 
 
 art = icon()
-for name, size in (('icon-192.v20.png', 192), ('icon-512.v20.png', 512), ('apple-touch-icon.v20.png', 180),
+for name, size in (('icon-192.v21.png', 192), ('icon-512.v21.png', 512), ('apple-touch-icon.v21.png', 180),
                    ('icon-192.png', 192), ('icon-512.png', 512), ('apple-touch-icon.png', 180),
                    ('email-mark.png', 184), ('brand/koyeba-appicon-1024.png', 1024)):
     art.resize((size, size), Image.LANCZOS).save(f'{OUT}/{name}', optimize=True)
