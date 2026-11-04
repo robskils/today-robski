@@ -237,6 +237,12 @@
   .home-tabs-row::-webkit-scrollbar { display:none; }
   .home-tabs-row .home-ltab { flex:none; white-space:nowrap; }
 }
+/* Join a meeting: a small white-rimmed button at the right of the calendar row. */
+.home-cal-b:has(> .ev-join-link) { display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:16px; align-items:center; }
+.home-cal-b:has(> .ev-join-link) > :not(.ev-join-link) { grid-column:1; }
+.home-cal-b > .ev-join-link { grid-column:2; grid-row:1 / span 3; justify-self:end; display:inline-flex; align-items:center; gap:7px; margin:0; padding:8px 14px; border:1px solid #fff; font-family:'Jost',system-ui,sans-serif; font-size:14px; font-weight:400; letter-spacing:0; text-transform:none; line-height:1; color:var(--k-ink); white-space:nowrap; text-decoration:none; }
+.home-cal-b > .ev-join-link:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
