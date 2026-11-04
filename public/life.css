@@ -9864,8 +9864,8 @@ body.night .mail-ar-triage, :root[data-theme='dark'] .mail-ar-triage { backgroun
    there). Aligned to the triage row's left inset. (Robin.) */
 .mail-maketop { padding:11px 0 12px 48px; background:#fff; border-bottom:1px solid oklch(0.9 0.012 80); }
 body.night .mail-maketop, :root[data-theme='dark'] .mail-maketop { background:oklch(0.96 0.006 85); }
-.mail-maketop .mail-makeacts { gap:12px 20px; }
-.mail-maketop .mail-make { color:oklch(0.3 0.015 65); font-size:13px; }
+.mail-maketop .mail-makeacts { gap:8px 10px; }
+.mail-maketop .mail-make { color:oklch(0.22 0.012 60); font-size:12.5px; }
 .mail-maketop .mail-make:hover { color:var(--k-goldt); }
 .mail-maketop .mail-make-hint { color:oklch(0.5 0.02 70); }
 @media (max-width:620px){ .mail-maketop { padding-left:0; } }
@@ -9904,20 +9904,21 @@ body.night .mail-ar-card .mail-text.mail-text-plain, :root[data-theme='dark'] .m
 .mail-sortbtn.ink { border-color:var(--ink); }
 .mail-sortbtn:hover { border-color:var(--accent); }
 .mail-sortkey { font-family:var(--msans); font-weight:500; font-size:10px; letter-spacing:.1em; opacity:.6; }
-.mail-makeacts { display:flex; gap:20px; flex-wrap:wrap; }
-.mail-make { background:none; border:0; font-family:var(--msans); font-size:14px; color:var(--ink-2); cursor:pointer; white-space:nowrap; }
-.mail-make:hover { color:var(--k-goldt); }
-.mail-replyacts { margin-left:auto; display:flex; gap:20px; }
+.mail-makeacts { display:flex; gap:8px 10px; flex-wrap:wrap; }
+.mail-make { background:transparent; border:1px solid oklch(0.85 0.014 80); border-radius:0; padding:6px 13px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; white-space:nowrap; }
+.mail-make:hover { border-color:var(--k-gold); color:var(--k-goldt); }
+.mail-replyacts { margin-left:auto; display:flex; gap:8px 10px; }
 /* V-: Reply · Reply all · Forward sit in a clean row at the TOP of an open email
    (was buried under the body). Matches the make row. (Robin, 2026-11-03.) */
 .mail-ar-replytop { padding:11px 0 12px 48px; background:#fff; border-bottom:1px solid oklch(0.9 0.012 80); }
 body.night .mail-ar-replytop, :root[data-theme='dark'] .mail-ar-replytop { background:oklch(0.96 0.006 85); }
-.mail-ar-replytop .mail-replyacts { margin-left:0; gap:12px 22px; flex-wrap:wrap; align-items:center; }
-.mail-ar-replytop .mail-reply-primary { color:var(--k-goldt); font-weight:600; }
+.mail-ar-replytop .mail-replyacts { margin-left:0; gap:8px 10px; flex-wrap:wrap; align-items:center; }
+.mail-reply.mail-reply-primary { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); font-weight:600; }
+.mail-reply.mail-reply-primary:hover { background:var(--k-goldt); border-color:var(--k-goldt); color:var(--k-ongold); }
 @media (max-width:620px){ .mail-ar-replytop { padding-left:0; } }
-.mail-reply { background:none; border:0; font-family:var(--msans); font-size:14px; color:var(--ink); cursor:pointer; white-space:nowrap; }
+.mail-reply { background:transparent; border:1px solid oklch(0.85 0.014 80); border-radius:0; padding:6px 14px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; white-space:nowrap; }
 .mail-reply-fwd { color:var(--ink-2); }
-.mail-reply:hover { color:var(--k-goldt); }
+.mail-reply:hover { border-color:var(--k-gold); color:var(--k-goldt); }
 
 .mail-side { position:sticky; top:calc(var(--tabstrip-h,0px) + 8px); padding-top:30px; }
 .mail-side-panel { border-top:1px solid var(--ink); }
@@ -10385,6 +10386,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
    so the wordmark lines up with the content. Columns grow with the screen;
    sections never stretch, they move between columns. ══ */
 .kwrap { width:100%; max-width:2240px; margin:0 auto; padding:0 clamp(20px,4vw,48px); box-sizing:border-box; }
+.kwrap.kpage-cards { padding-bottom:48px; }   /* Notes + Tables card grids - breathing room at the foot */
 .kgrid { display:grid; gap:40px; align-items:start; grid-template-columns:minmax(0,1fr); grid-template-areas:"a" "b" "c"; }
 .kgrid > .k-a { grid-area:a; min-width:0; }
 .kgrid > .k-b { grid-area:b; min-width:0; }

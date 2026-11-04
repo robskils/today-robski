@@ -9405,12 +9405,12 @@ function openTablesList() {
   const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
   // Recently-viewed tables (life.recent), newest first - the twin of the Notes page.
   const recentTables = recentItems().filter((x) => x && x.kind === 'table').map((x) => (state.tables || []).find((tb) => tb.id === x.id)).filter(Boolean).slice(0, 8);
-  $('#pane').innerHTML = `
+  $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('title.tables'))}
     <div class="pane-head home-head"><h1>${t('title.tables')}</h1></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
     ${recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${cards(recentTables)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${(state.tables || []).length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${(state.tables || []).length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section></div>`;
 }
 
 function openNotesList() {
@@ -9560,12 +9560,12 @@ function renderNotesList() {
   const favs = notes.filter((n) => n.props && n.props.fav);
   const recent = recentItems().filter((x) => x && x.kind === 'note').map((x) => notes.find((n) => n.id === x.id)).filter(Boolean).slice(0, 8);
   const all = nxSortRecent(notes);
-  $('#pane').innerHTML = `
+  $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('nav.notes'))}
     <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
     ${favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : ''}
     ${recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${notes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${notes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section></div>`;
 }
 // Right-click a note (or table) in the list to file it into pages - the same
 // checkbox menu as contacts. Left-click still opens; this is the quick filer.
@@ -18808,7 +18808,7 @@ function mailOpenPanelHtml(o) {
   // flip line). Reflects the linked state once made ("Note linked").
   const besideActs = `<button class="mail-make mail-make-beside${bl && bl.note ? ' linked' : ''}" data-mail-note-beside>${bl && bl.note ? 'Note linked' : 'Make a note beside →'}</button><button class="mail-make mail-make-beside${bl && bl.task ? ' linked' : ''}" data-mail-task-beside>${bl && bl.task ? 'Task linked' : 'Make a task beside →'}</button>${besideMobile ? '' : '<span class="mail-make-hint">Or drag it across.</span>'}`;
   const makeActs = `<div class="mail-makeacts"><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${besideActs}</div>`;
-  const replyActs = `<div class="mail-replyacts"><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply mail-reply-fwd" data-mail-forward>Forward</button>${mailMoreHtml(o)}</div>`;
+  const replyActs = `<div class="mail-replyacts"><button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button>${mailMoreHtml(o)}</div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
@@ -18826,6 +18826,7 @@ function mailMoreHtml(o) {
   const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
   const addr = o.from && o.from.address ? esc(o.from.address) : '';
   const items = [];
+  items.push(`<button class="mail-more-item" data-mail-forward>Forward</button>`);
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
   items.push(`<button class="mail-more-item" data-mail-area>File in a Space</button>`);
@@ -19057,6 +19058,16 @@ const MAIL_JUNK = [
   /add us to your address book/i, /©\s*\d{4}/, /all rights reserved/i, /sent from this site/i, /visit our social/i,
 ];
 const mailIsJunk = (plain) => plain.length < 160 && MAIL_JUNK.some((re) => re.test(plain));
+// Some senders drop their stylesheet into the text/plain part, or a <style> block
+// slips through as literal text - either way it must never land in a note as prose.
+// A "paragraph" that is really CSS (an @-rule, or declarations inside braces) is
+// binned. (Robin, 2026-11-04: a Wix email leaked its whole stylesheet into a note.)
+const looksLikeCss = (s) => {
+  if (!s) return false;
+  if (/@(?:import|media|font-face|charset|supports|keyframes)\b/i.test(s)) return true;
+  const closes = (s.match(/\}/g) || []).length;
+  return closes >= 2 && /\{[^{}]*(?:margin|padding|font|width|height|colou?r|display|border|background|mso-|text-align|line-height|max-width)\s*:/i.test(s);
+};
 // Resolve an <img>'s real source. Newsletters lazy-load: the real picture sits
 // in data-src / data-original / srcset while src holds a transparent-gif
 // placeholder (which rendered as a broken thumbnail). Prefer the lazy source,
@@ -19082,7 +19093,7 @@ function mailHarvestText(html) {
   d.querySelectorAll('style, script, noscript, title, meta, link, head, [aria-hidden="true"], [hidden]').forEach((n) => n.remove());
   d.querySelectorAll('[style]').forEach((el) => { const s = (el.getAttribute('style') || '').replace(/\s+/g, '').toLowerCase(); if (/display:none|visibility:hidden|mso-hide:all/.test(s)) el.remove(); });
   d.querySelectorAll('p, div, br, li, tr, td, h1, h2, h3, h4, h5, h6, blockquote, table').forEach((el) => el.appendChild(d.createTextNode('\n')));
-  return mailCleanInvis(d.body.textContent || '').replace(/[^\S\n]+/g, ' ').split(/\n+/).map((s) => s.trim()).filter((s) => s && !mailIsJunk(s));
+  return mailCleanInvis(d.body.textContent || '').replace(/[^\S\n]+/g, ' ').split(/\n+/).map((s) => s.trim()).filter((s) => s && !mailIsJunk(s) && !looksLikeCss(s));
 }
 function emailToProse(html) {
   let doc; try { doc = new DOMParser().parseFromString(html || '', 'text/html'); } catch { return ''; }
@@ -19102,7 +19113,7 @@ function emailToProse(html) {
     const txt = mailCleanInvis(para.join('')).replace(/\s+/g, ' ').trim(); para = [];
     if (!txt) return;
     const plain = txt.replace(/<[^>]+>/g, '').trim();
-    if (!plain || mailIsJunk(plain)) return;
+    if (!plain || mailIsJunk(plain) || looksLikeCss(plain)) return;
     out.push(`<p>${txt}</p>`);
   };
   const BLOCK = /^(P|DIV|TR|TABLE|TBODY|THEAD|UL|OL|LI|BLOCKQUOTE|HR|TD|TH|FIGURE|SECTION|ARTICLE|HEADER|FOOTER|CENTER|NAV)$/;
@@ -19111,7 +19122,7 @@ function emailToProse(html) {
       if (c.nodeType === 3) { const t = mailCleanInvis(c.textContent); if (/\S/.test(t)) para.push(esc(t)); continue; }
       if (c.nodeType !== 1) continue;
       const tag = c.tagName;
-      if (/^H[1-6]$/.test(tag)) { flush(); const h = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (h && !mailIsJunk(h)) out.push(`<h3>${esc(h)}</h3>`); continue; }
+      if (/^H[1-6]$/.test(tag)) { flush(); const h = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (h && !mailIsJunk(h) && !looksLikeCss(h)) out.push(`<h3>${esc(h)}</h3>`); continue; }
       if (tag === 'IMG') { const src = mailImgSrc(c); if (src) { flush(); out.push(`<p><img src="${esc(src)}" alt="${esc(c.getAttribute('alt') || '')}"></p>`); } continue; }
       if (tag === 'A') {
         if (c.querySelector('img')) { walk(c); continue; }   // a linked image: keep the picture
