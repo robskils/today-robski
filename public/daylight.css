@@ -1,0 +1,170 @@
+/* Koyéba - the light. A painted wash behind every page that follows the real day
+   (dawn, morning, midday, dusk, night), with frosted glass on what floats and on
+   what you choose or glance at. Never glass on what you read closely.
+
+   `html[data-light]` and `html[data-theme]` are set together by applyLight() in
+   app.js (and the first-paint script in app.html), so text colours and the wash
+   can never disagree: pale text on a morning wash is unreadable.
+   Every text colour here is at least 4.5:1 on the strongest paint of its wash;
+   tools/wash/paint.py prints the figures when the washes are repainted. */
+
+:root[data-light='dawn'] {
+  --k-bg:#3B2B36; --k-panel:#46343F; --k-soft:#513D4A; --k-mine:#5A4552;
+  --k-ink:#FFFFFF; --k-mute:#F3EAE6; --k-goldt:#FAE6B8; --k-gold:#E8BC6A; --k-line:#6A5261;
+  --k-deep:#21161C; --k-ondeep:#FFFFFF;
+  --glass:rgba(70,50,62,.28); --glass-edge:rgba(255,240,235,.3); --glass-card:rgba(70,50,62,.44); --glass-face:rgba(28,18,24,.52);
+  --line:rgba(255,255,255,.2); --line-2:rgba(255,255,255,.34);
+}
+:root[data-light='morning'] {
+  --k-bg:#F8F5EE; --k-panel:#FDFBF6; --k-soft:#F0EBDF; --k-mine:#E9E2D2;
+  --k-ink:#211D14; --k-mute:#4C4636; --k-goldt:#6E4C0C; --k-gold:#BE8A2E; --k-line:#DDD6C7;
+  --k-deep:#2E2A26; --k-ondeep:#F8F5EE;
+  --glass:rgba(255,255,255,.28); --glass-edge:rgba(255,255,255,.65); --glass-card:rgba(255,255,255,.48); --glass-face:rgba(46,42,38,.84);
+  --line:rgba(33,29,20,.2); --line-2:rgba(33,29,20,.34);
+}
+:root[data-light='midday'] {
+  --k-bg:#F7F6EF; --k-panel:#FFFFFF; --k-soft:#EEEDE4; --k-mine:#E8E6DA;
+  --k-ink:#12110C; --k-mute:#37342C; --k-goldt:#523906; --k-gold:#BE8A2E; --k-line:#DEDCD1;
+  --k-deep:#2B2A28; --k-ondeep:#FBFBF7;
+  --glass:rgba(255,255,255,.3); --glass-edge:rgba(255,255,255,.75); --glass-card:rgba(255,255,255,.55); --glass-face:rgba(43,42,40,.84);
+  --line:rgba(18,17,12,.18); --line-2:rgba(18,17,12,.32);
+}
+:root[data-light='dusk'] {
+  --k-bg:#2E2230; --k-panel:#38293A; --k-soft:#433146; --k-mine:#4C3A50;
+  --k-ink:#F6EADF; --k-mute:#EFE3DD; --k-goldt:#F5D593; --k-gold:#E3AE55; --k-line:#54405A;
+  --k-deep:#1C141F; --k-ondeep:#F6EADF;
+  --glass:rgba(70,50,75,.26); --glass-edge:rgba(255,240,230,.3); --glass-card:rgba(70,50,75,.42); --glass-face:rgba(20,14,24,.5);
+  --line:rgba(246,234,223,.2); --line-2:rgba(246,234,223,.34);
+}
+:root[data-light='night'] {
+  --k-bg:#0D1220; --k-panel:#171D30; --k-soft:#212842; --k-mine:#2A3150;
+  --k-ink:#EEF0F5; --k-mute:#C6CAD8; --k-goldt:#E6C67C; --k-gold:#D9B45F; --k-line:#333B59;
+  --k-deep:#090D18; --k-ondeep:#EEF0F5;
+  --glass:rgba(34,40,70,.3); --glass-edge:rgba(220,228,255,.22); --glass-card:rgba(34,40,70,.42); --glass-face:rgba(8,11,22,.55);
+  --line:rgba(238,240,245,.16); --line-2:rgba(238,240,245,.3);
+}
+/* The older token names still paint much of the app: point them at the same light. */
+:root[data-light] {
+  --paper:var(--k-bg); --paper-2:var(--k-soft); --card:var(--k-panel);
+  --ink:var(--k-ink); --ink-2:var(--k-mute); --ink-3:var(--k-mute);
+  --accent-ink:#12100b;
+  --glass-blur:blur(14px) saturate(1.7);
+}
+
+/* ── The wash ─────────────────────────────────────────────────────────────── */
+:root[data-light] { background:var(--k-bg); transition:background-color 1.2s cubic-bezier(.2,.7,.2,1); }
+:root[data-light] body, :root[data-light] #pane { background:transparent; }
+:root[data-light] body::before { display:none; }
+#light-layer { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+#light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
+#light-layer img.on { opacity:1; }
+@media (prefers-reduced-motion:reduce) { #light-layer img, :root[data-light] { transition:none; } }
+
+/* ── Glass: what floats ───────────────────────────────────────────────────── */
+/* The menubar's parent is solid by default, which would hide the glass entirely. */
+:root[data-light] #nav { background:transparent; }
+:root[data-light] .knav-bar,
+:root[data-light] .knav-bottom,
+:root[data-light] .cap-bar,
+:root[data-light] .home-alerts > * {
+  background:var(--glass); background-image:none;
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  border-color:var(--glass-edge); box-shadow:none;
+}
+:root[data-light] .knav-bar { border-bottom:1px solid var(--glass-edge); }
+:root[data-light] .knav-bottom { border-top:1px solid var(--glass-edge); }
+:root[data-light] .cap-bar { border:1px solid var(--glass-edge); color:var(--k-ink); }
+:root[data-light] .cap-bar.cap-dim { opacity:1; }
+:root[data-light] .cap-bar * { color:var(--k-ink); opacity:1; }
+:root[data-light] .knav-g, :root[data-light] .knav-g-l,
+:root[data-light] .knav-right > *, :root[data-light] .knav-crumb,
+:root[data-light] .knav-b-contents, :root[data-light] .knav-b-find { color:var(--k-ink); opacity:1; }
+:root[data-light] .knav-b-set, :root[data-light] .knav-b-set * { color:#12100b; }
+:root[data-light] .gate2 { background:transparent; }
+
+/* ── Glass: what you choose or glance at ──────────────────────────────────── */
+:root[data-light] .rf-tool {
+  background:var(--glass-card); border-color:var(--glass-edge); box-shadow:none;
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+}
+:root[data-light] .rf-tool-face { background:var(--glass-face); }
+:root[data-light] .tr-table {
+  background:var(--glass-card); border:1px solid var(--glass-edge);
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+}
+:root[data-light] .tr-cap-pos { color:var(--k-goldt); }
+:root[data-light] .tr-cap-state { color:var(--k-ink); }
+:root[data-light] .tr-back { background-color:var(--glass-face); }
+:root[data-light] .sc-back-v2 { background-color:var(--glass-face) !important; }
+:root[data-light] .sc-front {
+  background:var(--glass-card); border-color:var(--glass-edge); box-shadow:none;
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+}
+:root[data-light] .sc-front, :root[data-light] .sc-front * { color:var(--k-ink); }
+:root[data-light] .sc-front .sc-sym, :root[data-light] .sc-front .sc-sym * { color:var(--k-gold); }
+:root[data-light] .cap-rec-stop { background:var(--k-deep); color:var(--k-ondeep); }
+:root[data-light] .rc-horo { background:var(--k-deep); }
+
+/* ── Today's cards, top of Reflections: one glass pane, three matching cards ── */
+:root[data-light] .rf-today {
+  padding:28px 32px; background:var(--glass-card); border:1px solid var(--glass-edge);
+  -webkit-backdrop-filter:blur(18px) saturate(1.7); backdrop-filter:blur(18px) saturate(1.7);
+}
+.rf-today .rf-card-k { font-size:14px; margin-bottom:18px; }
+.rf-today-row { grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px; }
+.rf-rdcard { flex-direction:column; gap:14px; min-width:0; }
+.rf-rdcard .home-rd-card { zoom:1.7; width:62px; height:100px; }
+.rf-rdcard .rc-tarot { padding:4px; background:none; }
+.rf-rdcard .rc-tarot .rc-tarot-img { position:static; width:100%; height:100%; object-fit:contain; display:block; }
+.rf-rdcard .rc-foot { font-size:5.5px; letter-spacing:.02em; }
+.rf-rdcard-tx { display:block; flex:1; padding-top:0; }
+.rf-rdcard-kind { display:block; font-size:13px; margin-bottom:6px; }
+.rf-rdcard-t { display:block; font-size:24px; line-height:1.15; margin-bottom:8px; }
+.rf-rdcard-l { display:block; font-size:18px; line-height:1.4; color:var(--k-ink); }
+@media (min-width:1200px) { .rf-rdcard { flex-direction:row; gap:18px; } .rf-rdcard-t { font-size:26px; } }
+@media (max-width:640px) {
+  :root[data-light] .rf-today { padding:22px 20px; }
+  .rf-today-row { grid-template-columns:minmax(0,1fr); }
+  .rf-rdcard { flex-direction:row; }
+}
+
+/* ── Help lives in the menubar with everything else ───────────────────────── */
+.knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
+.knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }
+.knav-help-m { display:none; font-size:16px; }
+
+/* ── iPad: the full top menu, not the phone bar. Only phones get the bottom bar. ── */
+@media (min-width:768px) and (max-width:1100px) {
+  .knav-bar { height:68px; }
+  .knav-inner { padding:0 24px; gap:clamp(12px,2vw,24px); }
+  .knav-brand .brand-word { font-size:28px; }
+  .knav-groups { display:flex; gap:clamp(12px,1.8vw,22px); }
+  .knav-right { display:flex; gap:clamp(12px,1.6vw,20px); margin-left:auto; }
+  .knav-split-btn { display:none; }
+  .knav-crumb, .knav-inner .mtop-back, .knav-bottom { display:none; }
+  .knav-sheet { display:block; }
+  .knav-find, .knav-contents { bottom:0; }
+  .cap-bar { display:flex !important; bottom:22px; width:auto; }
+  .main { padding-bottom:64px; }
+}
+@media (min-width:768px) and (max-width:900px) {
+  .knav-np-btn { display:none; }   /* still in Menu */
+  .knav-groups, .knav-right { gap:12px; }
+}
+
+/* ── Phones: a slimmer bottom bar and less empty space under the page ─────── */
+@media (max-width:767px) {
+  .knav-bottom { height:calc(62px + env(safe-area-inset-bottom)); padding:7px 24px env(safe-area-inset-bottom); align-items:start; }
+  .knav-b-set { width:48px; height:48px; margin-top:0; }
+  .knav-b-contents, .knav-b-find { padding:0; min-height:48px; align-self:start; }
+  .knav-find, .knav-contents { bottom:calc(62px + env(safe-area-inset-bottom)); }
+  .main { padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
+  .knav-crumb { margin-left:auto; }
+  .knav-help-m { display:inline-flex; }
+}
+
+/* ── Staging and local only: see any time of day without waiting for it ───── */
+#light-preview { position:fixed; left:16px; bottom:16px; z-index:90; display:flex; gap:2px; padding:4px; max-width:calc(100vw - 32px); flex-wrap:wrap; background:var(--glass); border:1px solid var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); font:500 16px 'Jost',sans-serif; }
+#light-preview button { min-height:44px; padding:0 12px; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--k-ink); font:inherit; cursor:pointer; }
+#light-preview button.on { border-bottom-color:var(--k-gold); }
+@media (max-width:767px) { #light-preview { bottom:calc(72px + env(safe-area-inset-bottom)); } }

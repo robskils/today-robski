@@ -348,10 +348,12 @@ function renderHelp(key0) {
 }
 // The Help button on a page, and the panel it opens beside the page.
 function guideHelpFor(view) { const t = view && view.type; return (t && Object.prototype.hasOwnProperty.call(GUIDE_HELP_FOR, t) && GUIDE_HELP_FOR[t]) || null; }
-function guideHelpBtn() { return guideHelpFor(state.view) ? '<button type="button" class="g-help-btn" data-guide-help aria-haspopup="dialog">Help</button>' : ''; }
+// Help lives in the menubar now (renderNav), so pages no longer draw their own button.
+function guideHelpBtn() { return ''; }
 function guideClosePanel() { const el = document.getElementById('g-panel'); if (el) el.remove(); }
 function guideOpenPanel() {
-  const h = guideHelpFor(state.view); if (!h) return;
+  const h = guideHelpFor(state.view);
+  if (!h) { openHelp('index'); return; }   // a page with no guide of its own: the whole Guide
   guideClosePanel();
   const el = document.createElement('aside');
   el.id = 'g-panel'; el.className = 'g-panel'; el.setAttribute('aria-label', `Help with ${h[0]}`);
