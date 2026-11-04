@@ -336,6 +336,41 @@
   body[data-view="tracker"] .trk-cadsel { margin-left:auto; flex:0 1 150px; max-width:150px; }
 }
 
+/* Flow: the day on glass; practices and tasks as open rows. No colours, no boxes. */
+:root[data-light] .t2-canvas { background:var(--glass-card); border-color:var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+.t2-hour { border-top-color:var(--k-line); }
+:root[data-light] .t2-hlab { background:none; color:var(--k-mute); font-size:13px; }
+:root[data-light] .t2-block { background:var(--glass-face); border:1px solid var(--glass-edge); }
+.t2-btime { font-size:13px; color:var(--k-mute); }
+.t2-btitle { font-size:15px; font-weight:500; color:var(--k-ink); }
+:root[data-light] .t2-countbtn { background:transparent; border-color:var(--glass-edge); color:var(--k-goldt); font-size:13px; }
+:root[data-light] .t2-stickytop { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.t2-colh h2 { font-weight:500; font-size:26px; }
+.t2-colcount, .t2-daysub { font-size:14px; color:var(--k-mute); }
+:root[data-light] .t2-filterbtn { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); }
+:root[data-light] :is(.t2-prow, .t2-trow) { background:transparent; border:0; border-bottom:1px solid var(--k-line); margin:0; padding:10px 2px; }
+:root[data-light] :is(.t2-prow, .t2-trow):hover { background:transparent; border-color:var(--k-line); }
+:root[data-light] :is(.t2-prow, .t2-trow) .cd { display:none; }
+:is(.t2-prow, .t2-trow) .p-tag { display:none; }
+.t2-pname { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:20px; line-height:1.2; color:var(--k-ink); }
+.t2-prow:hover .t2-pname, .t2-trow:hover .t2-ttitle { color:var(--k-goldt); }
+.t2-pname :is(.t2-avoidtag, .t2-vid-i) { font-family:'Jost',system-ui,sans-serif; font-size:11px; color:var(--k-goldt); }
+.t2-psched { font-size:13px; color:var(--k-mute); }
+.t2-streak { font-size:13px; color:var(--k-goldt); }
+.t2-ttitle { font-size:15px; font-weight:400; color:var(--k-ink); }
+.t2-pglabel { font-size:13px; color:var(--k-mute); margin:0 2px 2px; }
+.t2-pgroup { margin-bottom:22px; }
+:root[data-light] .t2-prio { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); font-size:14px; font-weight:400; }
+:root[data-light] .t2-prio.on { background:var(--glass-card); border-color:#fff; color:var(--k-ink); }
+:root[data-light] button.t2-newrow { display:inline-block; width:auto; flex:none; padding:8px 14px; border:1px solid #fff; color:var(--k-ink); background:transparent; font-size:14px; }
+:root[data-light] button.t2-newrow:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+.t2-plink { font-size:14px; font-weight:400; color:var(--k-mute); }
+.t2-col :is(.t2-scroll, .t2-colscroll) { scrollbar-width:thin; scrollbar-color:var(--glass-edge) transparent; }
+/* Today's tabs: Reflections uses the Reflection page's cards; message text is serif in white. */
+.home-todaytabs .rf-today { margin-top:0; }
+.home-todaytabs .home-rd-all { margin-top:16px; }
+.home-ltab-messages .gln-item-s { display:block; margin-top:3px; font-family:'Cormorant Garamond',serif; font-weight:500; font-size:20px; line-height:1.3; color:var(--k-ink); white-space:normal; overflow:visible; }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
