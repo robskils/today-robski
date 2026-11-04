@@ -1,0 +1,26 @@
+/* Older public pages (Journal, How it works, legal, support) in the current look.
+   They share older token names, so changing those carries most of it. Wording and
+   structure stay as they are. */
+@import url('/koyeba.css');
+@import url('/site-night.css?v=1');
+
+:root:root {
+  --paper:transparent; --paper-2:rgba(34,40,70,.42); --card:rgba(34,40,70,.42);
+  --ink:#EEF0F5; --ink-2:#C6CAD8; --ink-3:#C6CAD8;
+  --line:rgba(220,228,255,.22); --line-2:rgba(220,228,255,.34);
+  --rust:#E6C67C; --rust-deep:#D9B45F; --rust-soft:rgba(230,198,124,.12); --rust-ink:#12100b;
+  --pine:#E6C67C; --pine-soft:rgba(230,198,124,.12);
+  --accent:#D9B45F; --accent-ink:#12100b;
+  --crease:transparent; --facet-a:transparent; --facet-b:transparent;
+  --shadow:none; --shadow-sm:none;
+}
+html body { font-family:'Jost',sans-serif; background:transparent; background-image:none; }
+body::before, body::after { display:none !important; }
+h1, h2, h3, h4, .brand, .brand b, .wm-word { font-family:'Cormorant Garamond',serif !important; font-weight:500; font-style:normal; letter-spacing:0; text-transform:none; }
+* { border-radius:0 !important; box-shadow:none !important; }
+.callout { border-left:1px solid var(--line) !important; -webkit-backdrop-filter:blur(14px) saturate(1.7); backdrop-filter:blur(14px) saturate(1.7); }
+/* The Mandombe "ko", in place of older marks. */
+.brand svg, .brand img, .wm-mark { display:none !important; }
+.brand-mark { display:inline-block; width:30px; height:25px; background:url('/brand/mandombe-ko-ivory.svg') center / contain no-repeat !important; border:0 !important; }
+.brand-mark svg, .brand-mark img { display:none !important; }
+.brand:not(:has(.brand-mark))::before { content:''; display:inline-block; width:30px; height:25px; background:url('/brand/mandombe-ko-ivory.svg') center / contain no-repeat; }

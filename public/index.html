@@ -12,12 +12,9 @@
   try { if (new URLSearchParams(location.search).has('embed') || window.top !== window.self) document.documentElement.classList.add('embed'); } catch (e) { document.documentElement.classList.add('embed'); }
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#16151a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0D1220" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1220" media="(prefers-color-scheme: dark)">
 <title>Today</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script>
   // Resolve the theme before first paint. Without this the page flashes light
   // then corrects, and the CSS would need a prefers-color-scheme copy of every
@@ -30,8 +27,8 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   })();
 </script>
-<link rel="stylesheet" href="/today.css?v=202611042056">
-<link rel="icon" href="/favicon.svg?v=202611042056">
+<link rel="stylesheet" href="/today.css?v=202611042115">
+<link rel="icon" href="/favicon.svg?v=202611042115">
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
 .dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card,#fffdf8); border-top:1px solid var(--line,rgba(27,24,32,.12)); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink,#1b1820); }
@@ -72,6 +69,7 @@
   else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
 })();
 </script>
+<link rel="stylesheet" href="/site-legacy.css?v=202611042115">
 </head>
 <body>
 
@@ -362,6 +360,6 @@
 
 <div class="toast" id="toast" hidden></div>
 
-<script type="module" src="/today.js?v=202611042056"></script>
+<script type="module" src="/today.js?v=202611042115"></script>
 </body>
 </html>
