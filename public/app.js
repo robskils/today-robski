@@ -9203,7 +9203,10 @@ function homeMsgsSectionHtml() {
 // content shows below. (Messages and What next sit under it, as quieter things.)
 function homeLeftTab() {
   if (!state.home) return 'cal';
-  if (!state.home.ltab) { let v = 'cal'; try { v = localStorage.getItem('life.home.ltab') || 'cal'; } catch {} state.home.ltab = v; }
+  // Robin (2026-11-04): a fresh open always lands on Calendar, never The feed. The
+  // tab you pick is kept in memory for THIS session (state.home.ltab) but not
+  // restored from a previous open, so reopening Koyeba starts on Calendar.
+  if (!state.home.ltab) state.home.ltab = 'cal';
   let cur = state.home.ltab;
   // Mail now lives in its own band beside Messages; this band is Calendar · The feed.
   if (!['cal', 'radar'].includes(cur)) cur = 'cal';
@@ -9400,11 +9403,14 @@ function openTablesList() {
   if (!state.__tablesLoaded) { state.__tablesLoaded = true; api('/api/blocks?kind=table').then((r) => { if (Array.isArray(r)) state.tables = r; if (state.view && state.view.type === 'tables') openTablesList(); }).catch(() => { state.__tablesLoaded = false; }); }
   const favTables = (state.tables || []).filter((t) => t.props && t.props.fav);
   const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
+  // Recently-viewed tables (life.recent), newest first - the twin of the Notes page.
+  const recentTables = recentItems().filter((x) => x && x.kind === 'table').map((x) => (state.tables || []).find((tb) => tb.id === x.id)).filter(Boolean).slice(0, 8);
   $('#pane').innerHTML = `
     ${pageCrumb(t('title.tables'))}
-    <div class="pane-head home-head"><h1>${t('title.tables')}</h1><button class="add-btn wide" data-new-table>${t('btn.newtable')}</button></div>
+    <div class="pane-head home-head"><h1>${t('title.tables')}</h1></div>
     ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h">All tables · ${(state.tables || []).length}</div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+    ${recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${cards(recentTables)}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${(state.tables || []).length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section>`;
 }
 
 function openNotesList() {
@@ -9544,69 +9550,22 @@ function nxBucket(n) {
   return `${NX_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 function renderNotesList() {
-  const q = (state.notesQuery || '').trim().toLowerCase();
-  const order = notesOrder();
-  const fSpace = state.notesArea || '';
+  // Robin (2026-11-04): Notes is a plain grid of little cards - the same cards the
+  // Tables page uses - in three sections: Starred, Recent, All. No search bar,
+  // filters, folding groups or side panels (that was the "over-designed mess");
+  // find a note through ⌘K or the Space it lives in. Tables is its twin page.
   const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note');
-  const list = notes.filter((n) => (!fSpace || blockAreas(n).includes(fSpace)) && (!q || ((n.title || '') + ' ' + nxSnippet(n) + ' ' + nxSpaceName(n)).toLowerCase().includes(q)));
-  const lastRec = recentItems().find((x) => x && x.kind === 'note');
-  const lastNote = lastRec ? notes.find((n) => n.id === lastRec.id) : null;
-  // Build the folded groups for the chosen order.
-  let groups = [];
-  if (order === 'space') {
-    const by = new Map();
-    for (const n of list) { const ks = blockAreas(n); (ks.length ? ks : ['']).forEach((k) => { if (!by.has(k)) by.set(k, []); by.get(k).push(n); }); }
-    const keys = [...by.keys()].sort((a, b) => (a ? 0 : 1) - (b ? 0 : 1) || ((areaById(a) || {}).title || '').localeCompare((areaById(b) || {}).title || ''));
-    groups = keys.map((k) => [k ? ((areaById(k) || {}).title || 'Space') : 'No Space', nxSortRecent(by.get(k))]);
-  } else if (order === 'az') {
-    groups = [['A – Z', list.slice().sort((a, b) => (a.title || 'Untitled').localeCompare(b.title || 'Untitled'))]];
-  } else {
-    const buckets = new Map();
-    for (const n of nxSortRecent(list)) { const key = nxBucket(n); if (!buckets.has(key)) buckets.set(key, []); buckets.get(key).push(n); }
-    groups = [...buckets.entries()];
-  }
-  const groupsHtml = groups.map(([label, items]) => {
-    const closed = state.notesShut && state.notesShut[label];
-    const rows = items.map((n) => {
-      const sp = nxSpaceName(n), snip = nxSnippet(n);
-      return `<button class="nx-row" data-open-note="${n.id}"><span class="nx-row-t">${esc(n.title || 'Untitled')}</span><span class="nx-row-when">${esc(nxWhen(n))}</span><span class="nx-row-sub">${sp ? `<span class="nx-row-sp">${esc(sp)}</span>` : ''}${snip ? `<span class="nx-row-snip">${esc(snip)}</span>` : ''}</span></button>`;
-    }).join('');
-    return `<div class="nx-group"><button class="nx-group-h" data-notes-group="${esc(label)}"><span class="nx-group-l">${esc(label)}</span><span class="nx-group-n">${items.length}</span><span class="nx-group-rule"></span><span class="nx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="nx-rows">${rows}</div>`}</div>`;
-  }).join('') || `<div class="nx-empty">${q ? 'Nothing matches.' : fSpace ? 'No notes in this Space yet.' : 'No notes yet. Start one with New note.'}</div>`;
-  const orders = [['recent', 'Recent'], ['space', 'By Space'], ['az', 'A – Z']].map(([v, l]) => `<button class="nx-order${order === v ? ' on' : ''}" data-notes-order="${v}">${l}</button>`).join('');
-  // Side column: Kept close (favourites) and By Space (counts, click to filter).
+  const card = (n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic ico-note">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`;
+  const grid = (list) => list.map(card).join('');
   const favs = notes.filter((n) => n.props && n.props.fav);
-  const spaceCounts = new Map();
-  for (const n of notes) for (const k of blockAreas(n)) spaceCounts.set(k, (spaceCounts.get(k) || 0) + 1);
-  // Most notes first (Robin), then alphabetical for ties.
-  const spaceRows = [...spaceCounts.entries()].map(([k, c]) => [areaById(k), c]).filter(([a]) => a).sort((x, y) => (y[1] - x[1]) || (x[0].title || '').localeCompare(y[0].title || ''));
-  const sideOpen = (id) => !(state.notesSide && state.notesSide[id] === false);
-  const sidePanel = (id, title, count, body) => `<div class="nx-side-panel"><button class="nx-side-h" data-notes-side="${id}"><span class="nx-side-hl">${esc(title)}</span><span class="nx-side-n">${count}</span><span class="nx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
-  const keptBody = `<div class="nx-side-body">${favs.length ? favs.map((n) => `<button class="nx-side-row" data-open-note="${n.id}"><span class="nx-side-rt">${esc(n.title || 'Untitled')}</span></button>`).join('') : '<div class="nx-side-empty">No starred notes yet.</div>'}</div>`;
-  const spaceBody = `<div class="nx-side-body">${spaceRows.map(([a, c]) => `<button class="nx-side-row${fSpace === a.id ? ' on' : ''}" data-notes-space="${a.id}"><span class="nx-side-rt">${esc(a.title)}</span><span class="nx-side-rn">${c}</span></button>`).join('') || '<div class="nx-side-empty">No Spaces yet.</div>'}</div>`;
-  const lead = `${notes.length} note${notes.length === 1 ? '' : 's'}.${lastNote ? ` You were last in <span class="nx-last">${esc(lastNote.title || 'Untitled')}</span>.` : ''}`;
+  const recent = recentItems().filter((x) => x && x.kind === 'note').map((x) => notes.find((n) => n.id === x.id)).filter(Boolean).slice(0, 8);
+  const all = nxSortRecent(notes);
   $('#pane').innerHTML = `
-    <div class="kpage-notes">
-      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.notes') }])}
-      <div class="nx-grid">
-        <div class="nx-main">
-          <div class="nx-eyebrow">Keep · Notes</div>
-          <h1 class="nx-h1">${t('nav.notes')}</h1>
-          <div class="nx-lead">${lead}</div>
-          <div class="nx-searchbar${state.notesQuery ? ' active' : ''}"><span class="nx-sb-ic">⌕</span><input data-notes-q placeholder="Search your notes - titles, words, links" value="${esc(state.notesQuery || '')}" autocomplete="off"><span class="nx-sb-k">/</span></div>
-          <div class="nx-controls">
-            <div class="nx-orders">${orders}</div>
-            <button class="nx-new" data-new-note>New note</button>
-          </div>
-          ${fSpace ? `<div class="nx-only"><span class="nx-only-l">Only</span><span class="nx-only-sp">${esc((areaById(fSpace) || {}).title || 'this Space')}</span><button class="nx-only-clear" data-notes-space="">Show all</button></div>` : ''}
-          <div class="nx-groups">${groupsHtml}</div>
-        </div>
-        <aside class="nx-side">
-          ${sidePanel('pinned', 'Starred Notes', favs.length, keptBody)}
-          ${sidePanel('spaces', 'By Space', spaceRows.length, spaceBody)}
-        </aside>
-      </div>
-    </div>`;
+    ${pageCrumb(t('nav.notes'))}
+    <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
+    ${favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : ''}
+    ${recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : ''}
+    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${notes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
 }
 // Right-click a note (or table) in the list to file it into pages - the same
 // checkbox menu as contacts. Left-click still opens; this is the quick filer.
@@ -20152,11 +20111,9 @@ async function openContacts() {
   if (gen !== navGen) return;   // navigated away while contacts loaded
   state.friends = friends; state.sharedWithMe = shared;
   if (Array.isArray(areas)) state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  // Open a contact so the right column isn't blank on desktop: the one you had,
-  // else the first. On a phone the list leads.
-  const cv = cvState();
-  if (cv.cur != null) cvSelect(cv.cur);
-  else if ((state.contacts || []).length && !window.matchMedia('(max-width:899px)').matches) { const first = sortContacts(state.contacts.slice())[0]; if (first) cvSelect(first.id); }
+  // Show the list - never auto-open a contact. renderContacts renders a single
+  // contact FULL-SCREEN when one is open, so auto-opening the first (alphabetically
+  // "351…") hid the whole list. (Robin, 2026-11-04: Contacts kept jumping to 351 Startup.)
   renderContacts();
 }
 function contactCardHtml(c) {

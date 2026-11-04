@@ -6039,6 +6039,12 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .tc-mail { color:var(--ink-3); font-size:12.5px; flex:none; margin-right:2px; }
 .ico-tbl { color:var(--tbl-pink); }   /* table-note grid mark, everywhere it appears */
 .ico-note { color:var(--ink-3); }     /* plain-note mark, matching the sidebar */
+/* Robin (2026-11-04): a quiet "+ New" action lives in a card page's "All" section
+   header (Notes + Tables), in place of the old loud wide button beside the big
+   title. Small gold label, right-aligned, square - never a filled pill. */
+.home-sec-h.sec-head-act { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.sec-new { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); background:none; border:0; border-radius:0; cursor:pointer; padding:4px 0; white-space:nowrap; }
+.sec-new:hover { color:var(--ink); }
 .tc-star { color:var(--gold); flex:none; margin-left:auto; font-size:13px; }
 /* a life-area tag riding on a note card, pushed to the right */
 .area-tag { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--c); border:1px solid color-mix(in srgb,var(--c) 40%,transparent); padding:2px 9px; border-radius:0; flex:none; }
