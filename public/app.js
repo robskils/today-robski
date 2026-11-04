@@ -9058,6 +9058,7 @@ function homeArrivalHtml() {
 // never tasks - those live in On your radar. Practices sit as a tick row at the
 // foot, then Open Calendar →.
 function homeCalItems() { return homeTodayItems().filter((it) => it.kind === 'event' || (it.kind === 'slot' && !it.taskId)); }
+function homeDayISO(off) { const d = new Date(todayISO() + 'T12:00'); d.setDate(d.getDate() + (off || 0)); return d.toISOString().slice(0, 10); }
 function homeCalBodyHtml(off) {
   const items = homeCalItems();
   const pracs = items.filter((it) => it.badge === 'practice');
@@ -9067,7 +9068,7 @@ function homeCalBodyHtml(off) {
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const note = it.kind === 'event' ? (it.location || '') : '';
-    return `<div class="home-cal-row" ${it.kind === 'event' ? 'data-home-cal role="button" tabindex="0"' : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
+    return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.id || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
   const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
@@ -28274,7 +28275,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   { const dt = t.closest('[data-day-tick]'); if (dt) { e.preventDefault(); e.stopPropagation(); homeDayTick(dt.dataset.dayTick); return; } }
-  if (t.closest('[data-home-cal]')) { openCalendar(todayISO()).catch((x) => toast(x.message)); return; }
+  { const hc = t.closest('[data-home-cal]'); if (hc) { const p = hc.dataset.evId ? openEventHit({ id: hc.dataset.evId, date: hc.dataset.evDate }) : openCalendar(todayISO()); Promise.resolve(p).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-areas-scope]')) { state.areasScope = t.closest('[data-areas-scope]').getAttribute('data-areas-scope'); try { localStorage.setItem('life.areas.scope', state.areasScope); } catch {} renderAreasList(); return; }
