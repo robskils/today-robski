@@ -1,6 +1,6 @@
 import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT, signJWT } from './auth.js';
-import { handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
+import { inviteInfo, handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
 import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, assignedByMe, acceptAssignment, declineAssignment } from './assignments.js';
@@ -4551,6 +4551,9 @@ async function handleInviteRequest(request, env, json, err) {
   const why = String(b.why || '').trim().slice(0, 1200);
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('Please add your name and a valid email.', request, 400);
   let stored = false, mailed = false;
+  // Only the first request from an address gets an acknowledgement, so this form
+  // can't be used to fill someone's inbox.
+  const seenBefore = await env.DB.prepare('SELECT 1 FROM invite_requests WHERE email = ? LIMIT 1').bind(email).first().catch(() => true);
   try {
     await env.DB.prepare('INSERT INTO invite_requests (name, email, why, source, created_at) VALUES (?,?,?,?,?)')
       .bind(name, email, why, String(b.source || '').slice(0, 300), new Date().toISOString()).run();
@@ -4567,6 +4570,13 @@ async function handleInviteRequest(request, env, json, err) {
   } catch (e) { console.error('invite-request mail:', e.message); }
   // Lost both ways: say so, so the form can offer the email address, not a false "thank you".
   if (!stored && !mailed) return err('We could not save that just now.', request, 503);
+  if (!seenBefore && stored) {
+    try {
+      const first = name.split(/\s+/)[0];
+      const html = brandedSystemEmail({ home: 'https://koyeba.co', eyebrow: 'Your invitation', headline: `Thank you, ${escHtml(first)}.`, bodyHtml: "<p>We've got your request. Koyéba grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.</p>", ctaHref: 'https://koyeba.co', ctaLabel: 'See what Koyéba is', preheader: "We've got your request.", title: 'Your Koyéba invitation' });
+      await sendSystemMail(env, { to: email, subject: "We've got your request for Koyéba", html, text: `Thank you, ${first}.\n\nWe've got your request. Koyéba grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.\n\nhttps://koyeba.co` });
+    } catch (e) { console.error('invite-request ack:', e.message); }
+  }
   return json({ ok: true }, request);
 }
 // Admin: the invite requests people have submitted, newest first, with a count of
@@ -5183,6 +5193,7 @@ export default {
 
     // Public: someone asking for an invite from the marketing site. Stored + emailed.
     if (path === '/api/invite-request' && request.method === 'POST') return handleInviteRequest(request, env, json, err);
+    if (path === '/api/invite-info' && request.method === 'GET') return json(await inviteInfo(env, url.searchParams.get('code')), request);
 
     // Google Calendar OAuth callback: unauthenticated (Google redirects the
     // member's browser here on the apex, with no Koyéba session), so trust

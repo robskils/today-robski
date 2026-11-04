@@ -11618,6 +11618,13 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-cal-sq { width:7px; height:7px; background:var(--k-gold); align-self:center; justify-self:center; }
 .home-cal-t { font-family:var(--k-sans); font-weight:500; font-size:18px; line-height:1.35; color:var(--k-ink); }
 .home-cal-note { font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); margin-top:2px; }
+/* The gold "Join" link on an event that carries a meeting link - on Today's
+   calendar list and the day timeline alike (see eventJoinLinkHtml). Label tier:
+   small, uppercase, gold, square. Its own line under the title/location, with a
+   roomy tap target for the phone. Gold only, per the one-accent rule. */
+.ev-join-link { display:inline-flex; align-items:center; gap:7px; margin-top:7px; padding:3px 0; font-family:var(--k-sans); font-weight:600; font-size:12px; letter-spacing:.16em; text-transform:uppercase; line-height:1; color:var(--k-goldt); text-decoration:none; }
+.ev-join-link:hover { color:var(--k-gold); }
+.ev-join-link .ejl-tri { font-size:8px; letter-spacing:0; transform:translateY(0.5px); }
 .home-cal-prac { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 20px; padding:14px 0 0; }
 .home-cal-prac-l { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
 .home-cal-chip { display:flex; align-items:center; gap:8px; font-family:var(--k-sans); font-weight:500; font-size:15px; color:var(--k-ink); cursor:pointer; white-space:nowrap; }

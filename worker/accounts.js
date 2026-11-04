@@ -94,6 +94,28 @@ async function resolveInvite(env, typed, email) {
   return inv;
 }
 
+// What an invitation link says about itself, for the welcome before sign-in. The
+// code is the credential and is private to whoever it was sent to.
+const PLAN_LABEL = { free: 'Free', byok: 'Premium', managed: 'Premium Plus' };
+export async function inviteInfo(env, code0) {
+  const code = String(code0 || '').trim().toUpperCase().slice(0, 24);
+  if (!code) return {};
+  const open = OPEN_INVITES[code];
+  const inv = open
+    ? { code, email: null, plan: open.plan, free: 1, free_months: open.free_months, created_by: open.created_by, note: null, used_by: null }
+    : await env.DB.prepare('SELECT code, email, plan, free, free_months, note, created_by, used_by FROM invites WHERE code = ?').bind(code).first().catch(() => null);
+  if (!inv || inv.used_by) return {};
+  const who = inv.created_by ? await env.DB.prepare('SELECT name FROM users WHERE id = ?').bind(inv.created_by).first().catch(() => null) : null;
+  const from = inv.created_by === 1 ? 'Robin' : String((who && who.name) || 'A friend').trim().split(/\s+/)[0];
+  const asked = inv.created_by === 1 && !open
+    ? await env.DB.prepare('SELECT value FROM settings WHERE user_id = 1 AND key = ?').bind(`invite_asked_${code}`).first().catch(() => null) : null;
+  return {
+    kind: asked ? 'asked' : inv.created_by === 1 ? 'robin' : 'friend',
+    from, name: asked ? asked.value : '', note: asked ? '' : (inv.note || ''), email: inv.email || '',
+    plan: inv.plan || 'free', planLabel: PLAN_LABEL[inv.plan] || 'Free', months: inv.free ? (inv.free_months || 0) : 0,
+  };
+}
+
 // Claim an account for a signed-in, allow-listed email.
 export async function handleSignup(request, env, email, json, err) {
   const existing = await getUserByEmail(env, email);
@@ -140,6 +162,17 @@ export async function handleSignup(request, env, email, json, err) {
   const uid = res.meta.last_row_id;
   if (code) await env.DB.prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?').bind(uid, now, code).run();
   await seedNewUser(env, uid);
+  // A friend's invitation connects you both, and tells them you've arrived. Robin's
+  // own invitations don't, or everyone with his card would land in his contacts.
+  if (invitedBy && invitedBy !== 1) {
+    try {
+      await env.DB.batch([
+        env.DB.prepare("INSERT OR IGNORE INTO friends (user_id, friend_id, status, created_at) VALUES (?,?,'accepted',?)").bind(uid, invitedBy, now),
+        env.DB.prepare("INSERT OR IGNORE INTO friends (user_id, friend_id, status, created_at) VALUES (?,?,'accepted',?)").bind(invitedBy, uid, now),
+      ]);
+      await env.DB.prepare('INSERT INTO messages (from_id, to_id, body, ts) VALUES (?,?,?,?)').bind(uid, invitedBy, `${name} has joined Koyéba from your invitation.`, now).run();
+    } catch (e) { console.error('invite connect:', e.message); }
+  }
   return json({ user: await getUserByEmail(env, email), free: !!free }, request, 201);
 }
 
@@ -308,6 +341,14 @@ export async function createInvite(env, input) {
     } else if (note) {
       await env.DB.prepare('UPDATE invites SET note = ? WHERE code = ?').bind(note, code).run();
     }
+  }
+
+  // Inviting someone who asked: remember their name, so their welcome can use it.
+  if (admin && email) {
+    try {
+      const asked = await env.DB.prepare('SELECT name FROM invite_requests WHERE email = ? ORDER BY created_at DESC LIMIT 1').bind(email).first();
+      if (asked && asked.name) await env.DB.prepare('INSERT OR REPLACE INTO settings (user_id, key, value) VALUES (1, ?, ?)').bind(`invite_asked_${code}`, String(asked.name).slice(0, 120)).run();
+    } catch (e) { console.error('invite asked:', e.message); }
   }
 
   let sent = false, sendError = null;

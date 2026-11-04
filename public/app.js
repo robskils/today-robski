@@ -7419,7 +7419,7 @@ function homeTimelineHtml() {
     return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar">
       <span class="ktl-time">${time}</span>
       <span class="ktl-rail"><span class="ktl-dot"></span></span>
-      <span class="ktl-body"><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}</span>
+      <span class="ktl-body"><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}${eventJoinLinkHtml(it)}</span>
     </div>`;
   }).join('');
   let now = '';
@@ -7449,7 +7449,7 @@ function homeDayRowHtml(it) {
   return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}${tickable ? ' ktl-tickable' : ''}"${tickable ? '' : ' data-home-cal role="button" tabindex="0" title="Open in the calendar"'}>
     <span class="ktl-time">${time}</span>
     ${box}
-    <span class="ktl-body"${tickable ? ' data-home-cal role="button" tabindex="0" title="Open in the calendar"' : ''}><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}</span>
+    <span class="ktl-body"${tickable ? ' data-home-cal role="button" tabindex="0" title="Open in the calendar"' : ''}><span class="ktl-t">${esc(it.title)}</span>${meta.length ? `<span class="ktl-sub">${meta.join(' · ')}</span>` : ''}${eventJoinLinkHtml(it)}</span>
   </div>`;
 }
 async function homeDayTick(id) {
@@ -8993,7 +8993,7 @@ function homeCalBodyHtml(off) {
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const note = it.kind === 'event' ? (it.location || '') : '';
-    return `<div class="home-cal-row" ${it.kind === 'event' ? 'data-home-cal role="button" tabindex="0"' : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}</div></div>`;
+    return `<div class="home-cal-row" ${it.kind === 'event' ? 'data-home-cal role="button" tabindex="0"' : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
   const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
@@ -14779,6 +14779,19 @@ function eventJoinUrl(e) {
   const s = String((e && e.notes) || ''); if (!s) return '';
   BARE_URL.lastIndex = 0; const m = BARE_URL.exec(s);
   return m ? m[0] : '';
+}
+// A compact gold "Join" link for an event row on Today and the agenda, shown when
+// the event carries a meeting / web link (its Link field, or one pasted into its
+// notes - see eventJoinUrl). Mirrors the event card's "Join the meeting" button,
+// so a link brought in from an invitation is one tap away from Today, not buried
+// in the opened event. The global click handler sends any http(s) <a> through
+// openExternal before the row's data-home-cal, so Join opens the meeting without
+// also opening the calendar. (Robin, 2026-11-04 - "we used to have it right there".)
+function eventJoinLinkHtml(it) {
+  if (!it || it.kind !== 'event') return '';
+  const u = eventJoinUrl(it);
+  if (!u) return '';
+  return `<a class="ev-join-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="Join the meeting"><span class="ejl-tri" aria-hidden="true">▶</span>Join</a>`;
 }
 function noteLinksHtml(notes) {
   const s = String(notes || ''); const seen = new Set(); const links = []; let m; BARE_URL.lastIndex = 0;
