@@ -1567,8 +1567,9 @@ function navBack() {
     renderHome(); return;
   }
   navLastKey = null; navLastView = null;           // openView re-seeds without re-pushing
-  // §63: restore the scroll position of the page we're going back to.
-  const sc = prev._scroll || 0;
+  // §63: restore the scroll position of the page we're going back to - but Today
+  // always returns to the top, never partway down. (Robin, 2026-11-04.)
+  const sc = prev.type === 'home' ? 0 : (prev._scroll || 0);
   Promise.resolve(openView(prev)).then(() => {
     if (!sc) return;
     let n = 0;
@@ -9437,6 +9438,10 @@ function renderHome() {
     if (a) { const delta = a.getBoundingClientRect().top - _anchorTop; if (Math.abs(delta) > 0.5) window.scrollBy(0, delta); }
     else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
   } else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
+  // A FRESH open of Today always starts at the top - not partway down where a prior
+  // scroll or the tab band left it. (Robin, 2026-11-04.) The in-place re-render keeps
+  // its anchor above.
+  else if (!_homeShown) { try { window.scrollTo(0, 0); } catch {} }
   if (_prevSideScroll) { const el = document.querySelector('.home-aside'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
@@ -22160,7 +22165,13 @@ async function delTracker(id) {
 }
 async function openGoals(tab) {
   state.view = { type: 'goals' };
-  if (tab) { state.goalsTab = tab; if (['areas', 'focus', 'list', 'bucket'].includes(tab)) { state.goalsView = tab; try { localStorage.setItem('life.goals.view', tab); } catch {} } }
+  if (tab) {
+    state.goalsTab = tab;
+    if (['areas', 'focus', 'list', 'bucket'].includes(tab)) { state.goalsView = tab; try { localStorage.setItem('life.goals.view', tab); } catch {} }
+    // "Goals" (the menu item) must land on the goals, never the Bucket list - even
+    // when Bucket was the last view open. (Robin, 2026-11-04.)
+    else if (tab === 'goals' && goalsView() === 'bucket') { state.goalsView = 'areas'; try { localStorage.setItem('life.goals.view', 'areas'); } catch {} }
+  }
   const [areas, goals, bucket, reviews] = await Promise.all([api('/api/blocks?kind=area'), api('/api/blocks?kind=goal'), api('/api/blocks?kind=bucket'), api('/api/blocks?kind=review')]);
   state.areas = areas.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   state.goals = goals; state.bucket = bucket; state.reviews = reviews;
