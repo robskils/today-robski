@@ -20136,7 +20136,8 @@ function readCardAddresses() {
 async function openContacts() {
   const gen = bumpNav();
   state.view = { type: 'contacts' };
-  cvState();
+  { const cv = cvState(); cv.cur = null; }   // the Contacts list, not the last-opened card - it was staying stuck on a contact (Robin, 2026-11-04)
+  state.contact_open = null;
   loadBdayDefault();   // the "your usual" on each card's Remind me
   renderNav();
   renderContacts();   // paint at once from cache
