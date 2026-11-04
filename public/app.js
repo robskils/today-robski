@@ -5655,6 +5655,7 @@ function navGroupsHtml(v) {
       <div class="knav-c-foot">
         ${themeLocked() ? '' : `<button class="nff" data-theme-toggle title="Theme">${themeLabel()}</button>`}
         <button class="nff ${v.type === 'settings' ? 'on' : ''}" data-open-settings>${t('nav.settings')}</button>
+        ${state.me && state.me.id === 1 ? `<button class="nff ${v.type === 'admin' ? 'on' : ''}" data-open-admin>${t('nav.admin')}</button>` : ''}
         <button class="nff" data-open-guide>${t('nav.guide')}</button>
         <button class="nff" data-open-getstarted>Welcome</button>
         <span class="knav-c-name">${esc((state.me && (state.me.name || state.me.email)) || '')}</span>
