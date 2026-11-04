@@ -8995,17 +8995,21 @@ function homeTimeWeatherHtml() {
 const HOME_NEW = [['journal', 'Note', '⌥N'], ['task', 'Task', '⌥T'], ['event', 'Event', '⌥E'], ['email', 'Email', '⌥M'], ['message', 'Message', ''], ['table', 'Table', ''], ['goal', 'Goal', ''], ['contact', 'Contact', ''], ['space', 'Space', ''], ['review', 'Review', '']];
 function homeNewMake(kind) {
   if (state.home) state.home.newMenu = false;
+  // Each item MAKES the new thing (opens its create flow), not just the page -
+  // routed through the same creators the nav's +New uses. (Robin, 2026-11-04:
+  // "Note" was opening the Journal page instead of making a note.)
   try {
-    if (kind === 'task') { openTasks(); }
-    else if (kind === 'event') { openCalendar().then(() => { state.cal.adding = true; state.cal.editing = null; renderCalendar(); }); }
-    else if (kind === 'email') { openMail().then(() => { state.mail.composing = { to: '', subject: '', body: '' }; renderMail(); }).catch(() => {}); }
-    else if (kind === 'message') { openMessages(); }
-    else if (kind === 'table') { openNotesList(); }
-    else if (kind === 'goal') { openGoals('goals'); }
-    else if (kind === 'contact') { openContacts().then(() => cvNewContact()); }
-    else if (kind === 'space') { const b = document.querySelector('[data-new-area]'); if (b) b.click(); else openAreasList(); }
-    else if (kind === 'review') { openReviews(); }
-    else { openJournal(); }   // Note -> a journal page / note
+    if (kind === 'journal' || kind === 'note') quickAdd('note');   // "Note" -> a new note
+    else if (kind === 'task') quickAdd('task');                    // -> Tasks, adding a task
+    else if (kind === 'event') quickAdd('event');                  // -> Calendar, new event
+    else if (kind === 'email') quickAdd('mail');                   // -> Mail, a new draft
+    else if (kind === 'message') Promise.resolve(openMessages()).catch(() => {});
+    else if (kind === 'table') newTable().catch((x) => toast(x.message));
+    else if (kind === 'goal') quickAdd('goal');                    // -> Goals, new goal
+    else if (kind === 'contact') quickAdd('contact');              // -> Contacts, adding a contact
+    else if (kind === 'space') newArea().catch((x) => toast(x.message));
+    else if (kind === 'review') Promise.resolve(openReviews()).catch(() => {});
+    else quickAdd('note');
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
 // The one New popover (Robin, 2026-11-04): a centred "Make something new" dialog,
