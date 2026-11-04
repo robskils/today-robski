@@ -10759,7 +10759,7 @@ function renderWellbeing() {
   const items = wbRecentItems().map((x) => ({ ...x, cat: rfCat(x.label) }));
   const shown = filt === 'all' ? items : items.filter((x) => x.cat === filt);
   const filters = [['all', 'All'], ['journal', 'Journal'], ['dreams', 'Dreams'], ['cards', 'Cards'], ['ching', 'I Ching']].map(([id, label]) => `<button class="rf-filter${filt === id ? ' on' : ''}" data-reflect-filter="${id}">${label}</button>`).join('');
-  const rows = shown.length ? shown.map((x) => { const ital = x.cat === 'journal' || x.cat === 'dreams'; return `<button class="rf-row" ${x.attr}><span class="rf-row-k">${esc(x.label)}</span><span class="rf-row-t${ital ? ' ital' : ''}">${esc(stripEmoji(x.title || ''))}</span><span class="rf-row-when">${esc(rel(x.ts))}</span></button>`; }).join('') : '<div class="rf-empty">Nothing here yet. Start with a practice on the right.</div>';
+  const rows = shown.length ? shown.map((x) => { const ital = x.cat === 'journal' || x.cat === 'dreams'; return `<button class="rf-row" ${x.attr}><span class="rf-row-k">${esc(x.label)}</span><span class="rf-row-t${ital ? ' ital' : ''}">${esc(stripEmoji(x.title || ''))}</span><span class="rf-row-when">${esc(rel(x.ts))}</span></button>`; }).join('') : '<div class="rf-empty">Nothing here yet. Start with a tool above.</div>';
   // Side: today's cards (with the same card images as the Today page) + the
   // practices list. (Robin: show the reading images here too, plural "cards".)
   const card = (typeof currentSpirit === 'function') ? currentSpirit() : null;
