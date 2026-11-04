@@ -9193,7 +9193,7 @@ function homeArrivalHtml() {
   const lead = items.length === 1
     ? `A new email from ${who}, just now${subj}`
     : `${items.length} new emails – ${who} and ${items.length - 1} more`;
-  return `<div class="home-arr"><span class="home-arr-dot"></span><span class="home-arr-t" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><button class="home-arr-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
+  return `<div class="home-arr" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0"><span class="home-arr-dot"></span><span class="home-arr-t" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">${lead}</span><span class="home-arr-read" data-home-arr-read="${esc(m._key)}" role="button" tabindex="0">Read ${items.length === 1 ? 'it' : 'them'}</span><button class="home-arr-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
 }
 // §62 Calendar section: confirmed events (and plain slots), Today · Tomorrow;
 // never tasks - those live in On your radar. Practices sit as a tick row at the
@@ -9816,7 +9816,7 @@ function openTarotReading() {
   if (!spKey || TAROT_SPREADS[spKey].pos.length !== dis.length) spKey = Object.keys(TAROT_SPREADS).find((k) => TAROT_SPREADS[k].pos.length === dis.length) || 'one';
   const cards = dis.slice(0, TAROT_SPREADS[spKey].pos.length).map((di, i) => ({ di, reversed: !!revs[i], turned: true }));
   state.tarot = { q: ta.q || '', spread: spKey, cards, drawn: true, saved: true, at: ta.at || Date.now() };
-  state.tarot.synth = tarotTemplate(state.tarot); state.tarot.sit = tarotSit(state.tarot);
+  state.tarot.synth = ta.synth || tarotTemplate(state.tarot); state.tarot.sit = ta.sit || tarotSit(state.tarot);
   state.view = { type: 'tarot' };
   renderNav(); renderTarot();
   if (state.tarotHistory === undefined) { state.tarotHistory = null; api('/api/kv/tarot_history').then((r) => { try { state.tarotHistory = (r && r.value) ? JSON.parse(r.value) : []; } catch { state.tarotHistory = []; } if (state.view && state.view.type === 'tarot') renderTarot(); }).catch(() => { state.tarotHistory = []; }); }
@@ -9856,6 +9856,10 @@ async function tarotEnhance(t) {
     if (r && r.synthesis) { t.synth = r.synthesis; if (r.question) t.sit = r.question; }
   } catch {}
   t.enhancing = false; renderTarot();
+  // Keep the companion's synthesis for good (Robin, 2026-11-04): on the pinned card
+  // and its past-reading record, so reopening shows it rather than the plain template.
+  if (state.tarotCard && state.tarotCard.at === t.at) { state.tarotCard.synth = t.synth || ''; state.tarotCard.sit = t.sit || ''; try { localStorage.setItem('life.tarotCard', JSON.stringify(state.tarotCard)); } catch {} api('/api/kv/tarot_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.tarotCard) }) }).catch(() => {}); }
+  { const h = state.tarotHistory || []; const rec = h.find((x) => x && x.at === t.at); if (rec) { rec.synth = t.synth || ''; rec.sit = t.sit || ''; api('/api/kv/tarot_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(h) }) }).catch(() => {}); } }
 }
 function tarotSave(t) {
   const names = t.cards.map((c) => TAROT_DECK[c.di][0] + (c.reversed ? ' (r)' : '')).join(' · ');
@@ -9863,11 +9867,11 @@ function tarotSave(t) {
   // art (the first card's picture) and the spread label. (Robin: show tarot.)
   const dis = t.cards.map((c) => c.di); const revs = t.cards.map((c) => !!c.reversed); const spread = TAROT_SPREADS[t.spread].label;
   state.tarotHistory = state.tarotHistory || [];
-  state.tarotHistory.unshift({ kind: spread, cards: names, q: t.q || '', at: t.at });
+  state.tarotHistory.unshift({ kind: spread, cards: names, q: t.q || '', synth: t.synth || '', sit: t.sit || '', at: t.at });
   state.tarotHistory = state.tarotHistory.slice(0, 200);
   api('/api/kv/tarot_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.tarotHistory) }) }).catch(() => {});
-  // Pin for Reflections on Today.
-  const pin = { cards: names, dis, revs, spread, q: t.q || '', at: t.at };
+  // Pin for Reflections on Today (keep the synthesis + sit so a reopen shows them).
+  const pin = { cards: names, dis, revs, spread, q: t.q || '', synth: t.synth || '', sit: t.sit || '', at: t.at };
   state.tarotCard = pin;
   try { localStorage.setItem('life.tarotCard', JSON.stringify(pin)); } catch {}
   api('/api/kv/tarot_current', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(pin) }) }).catch(() => {});
@@ -10430,7 +10434,11 @@ async function reflectIChing() {
       transformed: transformed ? `${transformed.n} ${transformed.name} - ${transformed.text}` : '',
     }) });
     s.reflection = (r && r.text) || ''; s.reflecting = false; renderIChing();
-    if (currentIching()) saveIchingCard(s);   // keep the reflection on the pinned reading
+    // Keep the interpretation for good (Robin, 2026-11-04): on the live card (Home +
+    // reopen) AND on the matching past-reading record, so it's still there when you
+    // look at the reading again, however you got back to it.
+    saveIchingCard(s);
+    { const h = state.ichingHistory || []; const key = JSON.stringify(s.lines); const rec = h.find((x) => x && JSON.stringify(x.lines) === key); if (rec && rec.reflection !== s.reflection) { rec.reflection = s.reflection; api('/api/kv/iching_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(h) }) }).catch(() => {}); } }
   } catch (e) { s.reflecting = false; renderIChing(); toast(e.message || 'Could not reach Claude.'); }
 }
 function closeIChing() { const el = document.getElementById('iching'); if (el) el.remove(); state.iching = null; }
@@ -17052,10 +17060,10 @@ function mailSenderName(m) {
 function mailArrivalLine() {
   const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs());
   if (!items.length || state.mailSheet || state.mailArrivalHidden) return '';
-  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A new email from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`; }
+  if (items.length === 1) { const m = items[0]; return `<div class="mail-arrival" data-mail-arrival-read role="button" tabindex="0"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">A new email from ${esc(mailSenderName(m))}${m.subject ? ` – “${esc(String(m.subject).slice(0, 60))}”` : ''}</span><span class="mail-arrival-a" data-mail-arrival-read>Read it</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`; }
   const names = items.slice(0, 3).map(mailSenderName);
   const who = names.length === items.length ? names.join(', ').replace(/, ([^,]*)$/, ' and $1') : `${items.length} new emails`;
-  return `<div class="mail-arrival"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new emails – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
+  return `<div class="mail-arrival" data-mail-arrival-read role="button" tabindex="0"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${items.length} new emails – ${esc(who)}</span><span class="mail-arrival-a" data-mail-arrival-read>Read them</span><button class="mail-arrival-x" data-mail-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
 }
 // §51: the "New mail" sheet is gone. "Mail {count}" and ⌘E just open the Mail
 // page (on the New/to-sort list, newest first). Kept the name so existing
@@ -27529,7 +27537,7 @@ document.addEventListener('click', (e) => {
   // toggle the row - so it's handled before the row's expand (data-home-read).
   { const ro = t.closest('[data-home-read-open]'); if (ro) { e.preventDefault(); e.stopPropagation(); const k = ro.dataset.homeReadOpen; if (k === 'iching') openIChing(currentIching()); else if (k === 'spirit') openSpiritCards(); else if (k === 'tarot') openTarotReading(); else if (k === 'horo') openHoroscope(); else if (k === 'compass') openCompass(); return; } }
   { const hr = t.closest('[data-home-read]'); if (hr) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.readOpen = state.home.readOpen === hr.dataset.homeRead ? null : hr.dataset.homeRead; renderHome(); return; } }
-  { const har = t.closest('[data-home-arr-read]'); if (har) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; glanceMailOpenIn(har.dataset.homeArrRead); return; } }
+  { const har = t.closest('[data-home-arr-read]'); if (har && !t.closest('[data-mail-arrival-dismiss]')) { e.preventDefault(); e.stopPropagation(); mailMarkLooked(); state.mailArrivalHidden = true; glanceMailOpenIn(har.dataset.homeArrRead); return; } }
   { const ra = t.closest('[data-refl-away]'); if (ra) { reflPutAway(ra.dataset.reflAway); return; } }
   { const rl = t.closest('[data-radar-later]'); if (rl) { e.preventDefault(); e.stopPropagation(); radarLater(rl.dataset.radarLater); return; } }
   // ── V38 feed actions. Each clears to a muted "{what} · Undo" line (state.home.feed.gone)
@@ -27933,7 +27941,7 @@ document.addEventListener('click', (e) => {
   { const qs = t.closest('[data-mail-quad-set]'); if (qs) { e.preventDefault(); e.stopPropagation(); const s = qs.dataset.mailQuadSet, i = s.lastIndexOf(':'); mailToQuad(s.slice(0, i), s.slice(i + 1)); return; } }
   // §43 New-mail sheet + arrival line.
   if (t.closest('[data-mail-sheet]')) { toggleMailSheet(); return; }   // §51: opens the Mail page
-  { const mar = t.closest('[data-mail-arrival-read]'); if (mar) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key, { explicit: true, row: items[0] }).catch((x) => toast(x.message)); return; } }
+  { const mar = t.closest('[data-mail-arrival-read]'); if (mar && !t.closest('[data-mail-arrival-dismiss]')) { const items = mailNewItems().filter((m) => mailMsgTs(m) > mailLookedTs()); mailMarkLooked(); state.mailArrivalHidden = true; openMail(items[0] && items[0]._key, { explicit: true, row: items[0] }).catch((x) => toast(x.message)); return; } }
   // The × just closes the banner and marks the new mail as "seen the alert" - it
   // leaves every email exactly where it is, in the Inbox. (Robin: don't move them
   // all to read later.)
@@ -31275,6 +31283,13 @@ function positionBubble() {
   const rect = sel.getRangeAt(0).getBoundingClientRect();
   if (!rect.width && !rect.height) { b.hidden = true; return; }
   b.hidden = false;
+  // Light up what the selection already IS, in gold (Robin, 2026-11-04): the block
+  // format (¶ / H1 / H2 / H3 / quote / list) plus bold/italic if active.
+  const tag = currentBlockTag();
+  const inList = (() => { const s2 = window.getSelection(); if (!s2 || !s2.rangeCount) return ''; let n = s2.getRangeAt(0).startContainer; n = n.nodeType === 1 ? n : n.parentElement; const li = n && n.closest && n.closest('li'); if (!li) return ''; const l = li.parentElement; return l && l.tagName === 'OL' ? 'ol' : 'ul'; })();
+  const blockFmt = inList || (tag === 'H1' ? 'h1' : tag === 'H2' ? 'h2' : tag === 'H3' ? 'h3' : tag === 'BLOCKQUOTE' ? 'quote' : 'normal');
+  let boldOn = false, italicOn = false; try { boldOn = document.queryCommandState('bold'); } catch {} try { italicOn = document.queryCommandState('italic'); } catch {}
+  b.querySelectorAll('button[data-fmt]').forEach((btn) => { const f = btn.getAttribute('data-fmt'); btn.classList.toggle('on', f === blockFmt || (f === 'bold' && boldOn) || (f === 'italic' && italicOn)); });
   b.style.top = `${window.scrollY + rect.top - b.offsetHeight - 9}px`;
   b.style.left = `${Math.max(8, window.scrollX + rect.left + rect.width / 2 - b.offsetWidth / 2)}px`;
 }
