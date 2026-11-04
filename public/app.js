@@ -14757,7 +14757,7 @@ function renderCalendar() {
         <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today>Today</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
         <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
-        <button class="cx-new" data-cal-add>New event</button>
+        ${aiClientOn() ? '<button class="cx-file" data-open-flyer title="Read events from a flyer, photo, link or pasted text">Add from a file</button>' : ''}<button class="cx-new" data-cal-add>New event</button>
       </div>
       ${gcalBarHtml()}
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
