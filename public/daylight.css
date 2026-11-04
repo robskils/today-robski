@@ -168,7 +168,7 @@
 .agc-today.on { color:var(--k-goldt); }
 
 /* ── The main button: white rim, frosted glass, words in the middle ────────── */
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn) {
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary) {
   display:inline-flex; align-items:center; justify-content:center; text-align:center;
   min-height:46px; padding:0 22px;
   background:rgba(255,255,255,.1); background-image:none;
@@ -176,8 +176,8 @@
   border:1px solid rgba(255,255,255,.78); box-shadow:none;
   color:#fff; font-family:var(--k-sans); font-size:16px; font-weight:500; letter-spacing:.01em; text-transform:none; filter:none;
 }
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn):hover { background:rgba(255,255,255,.2); filter:none; }
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn):active { transform:none; }
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):hover { background:rgba(255,255,255,.2); filter:none; }
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):active { transform:none; }
 
 :root[data-light] .add-btn.wide, :root[data-light] .dz-add { width:auto !important; flex:0 0 auto !important; align-self:flex-start; max-width:100%; }
 :root[data-light] .gate2-btn { width:auto; align-self:center; }
@@ -203,16 +203,30 @@
 /* Text that was below 4.5:1 on real data. */
 :root[data-light] .t2-avoidtag { background:transparent; color:var(--k-goldt); }
 
-/* ── Mail: an opened email sits on glass over the sky, not white paper ─────── */
-:root[data-light] .mail-body-frame, :root[data-light] .mail-ar-panel .mail-body-frame { background:transparent; color-scheme:dark; }
+/* ── Mail: the email itself stays on white paper; the box around it is glass ─ */
 :root[data-light] :is(.mail-ar-card, .mail-maketop, .mail-ar-replytop) { background:var(--glass-card); border-color:var(--glass-edge); }
 :root[data-light] .mail-ar-card { -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
 :root[data-light] .mail-ar-triage { background:var(--glass); border-color:var(--glass-edge); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
 :root[data-light] .mail-ar-card *:not(iframe) { color:var(--k-ink); border-color:var(--glass-edge); }
 :root[data-light] .mail-ar-card :is(a, .mail-make:hover, .mail-noticed-l, .mail-noticed-act) { color:var(--k-goldt); }
 :root[data-light] .mail-ar-card .mail-make { border-color:var(--glass-edge); background:transparent; font-size:14px; }
-:root[data-light] .mail-ar-card .mail-text.mail-text-plain { color:var(--k-ink); font-family:'Jost',sans-serif; }
 :root[data-light] .mail-ar-card :is(.mail-ar-triage-l, .mail-ar-row-l) { color:var(--k-mute); font-size:13px; }
+:root[data-light] .mail-ar-card .mail-text.mail-text-plain { background:#fff; padding:20px 24px; max-width:none; }
+:root[data-light] .mail-ar-card .mail-text.mail-text-plain, :root[data-light] .mail-ar-card .mail-text.mail-text-plain * { color:#1b1820; }
+:root[data-light] .mail-ar-card .mail-text.mail-text-plain a { color:#6E4C0C; }
+
+/* ── Pop-ups: their backdrops were tinted with the text colour, which is now pale,
+   and washed the page white. A dark frosted veil instead, over any time of day. ─ */
+:root[data-light] :is(#chat .chat-bg, #capture .chat-bg, #spirit .spirit-bg, .ic-bg, .mv-bg, .fly-bg, .cvm-scrim, .dp-bg, .pal-bg, .sc-bg, .pe-bg, .cap-scrim, .rwp-scrim, .newpop-scrim, .mail-sc-bg) {
+  background:rgba(6,9,18,.38); -webkit-backdrop-filter:blur(12px) saturate(1.4); backdrop-filter:blur(12px) saturate(1.4);
+}
+:root[data-light] .ic-sheet { background:var(--glass-card); border-color:var(--glass-edge); -webkit-backdrop-filter:blur(22px) saturate(1.7); backdrop-filter:blur(22px) saturate(1.7); }
+:root[data-light] .ic-sheet .ic-btn { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); }
+:root[data-light] .ic-sheet .ho-chip { background:transparent; border-color:var(--glass-edge); }
+.ho-chip-g, .ho-coin { font-family:'Noto Sans Symbols',serif; font-variant-emoji:text; color:var(--k-gold); }
+
+/* ── Page titles: one size everywhere. Today's greeting is the only exception. ─ */
+:is(.cx-h1, .cvx-title, .jx-title, .mp-title, .g-title, .sx-h1, .icx-h1, .mail-h1, .rw-title2, .nx-h1, .kg-h1, .tr-h1, .pane-head h1) { font-size:clamp(40px,4.4vw,56px) !important; font-weight:300 !important; line-height:1.05 !important; }
 
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
