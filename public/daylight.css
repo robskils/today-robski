@@ -224,6 +224,23 @@
 :root[data-light] .mail-ar-bar :is(.mail-trg, .mail-reply, .mail-make) { padding:6px 10px; }
 :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop, .mail-replyacts, .mail-makeacts) { gap:6px; }
 
+/* ── Today: one row of tabs, no sidebar, Your Spaces underneath ────────────── */
+.home-today { margin-top:30px; }
+.home-tabs-row { gap:6px clamp(16px,2.2vw,32px); }
+.home-todaytabs .home-ltab-body { padding-top:20px; min-height:280px; }
+.home-spaces-wide { margin-top:48px; }
+.home-spaces-wide .home-sa-bodywrap { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr)); gap:14px; margin-top:16px; }
+:root[data-light] .home-spaces-wide .home-sa-row { background:var(--glass-card); border:1px solid var(--glass-edge); padding:16px 18px; }
+.home-spaces-wide .home-sa-bodywrap > :not(.home-sa-row) { grid-column:1 / -1; justify-self:start; }
+@media (max-width:767px) {
+  .home-tabs-row { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; gap:22px; }
+  .home-tabs-row::-webkit-scrollbar { display:none; }
+  .home-tabs-row .home-ltab { flex:none; white-space:nowrap; }
+}
+/* Messages sits straight under the email bar. */
+#mail-arrival-wrap { flex-direction:column; align-items:center; }
+.home-arr + .home-arr-msg { margin-top:-8px; }
+
 /* ── Pop-ups: their backdrops were tinted with the text colour, which is now pale,
    and washed the page white. A dark frosted veil instead, over any time of day. ─ */
 :root[data-light] :is(#chat .chat-bg, #capture .chat-bg, #spirit .spirit-bg, .ic-bg, .mv-bg, .fly-bg, .cvm-scrim, .dp-bg, .pal-bg, .sc-bg, .pe-bg, .cap-scrim, .rwp-scrim, .newpop-scrim, .mail-sc-bg) {

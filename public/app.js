@@ -2986,7 +2986,7 @@ async function refreshFriendStatus() {
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
           const nm = friendName(id);
-          toast(`💬 ${nm || 'A Koyéba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
+          toast(`${nm || 'A Koyéba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
         }
       });
     }
@@ -9168,9 +9168,9 @@ function homeReadCardHtml(r) {
   }
   return `<div class="home-rd-card rc-plain" ${open}><span class="rc-in"></span><span class="rc-init">${esc((r.kind || '?').charAt(0))}</span></div>`;
 }
-function homeReadingsSectionHtml() {
+function homeReadingsSectionHtml(inTab) {
   if (!reflectOn()) return '';
-  const open = kOpen('kreading');
+  const open = inTab ? true : kOpen('kreading');
   const items = homeReadingItems();
   const rows = items.length ? items.map((r) => {
     const exp = state.home && state.home.readOpen === r.key;
@@ -9178,7 +9178,7 @@ function homeReadingsSectionHtml() {
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.
-  const h = `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Reflections</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = inTab ? '' : `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Reflections</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}<div class="home-rd-all" data-open-wellbeing role="button" tabindex="0">All reflections →</div></div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
@@ -9190,6 +9190,60 @@ function homeQuoteLineHtml() {
   const q = dayQuote(); if (!q || !q.text) return '';
   if (quoteHidden()) return '';
   return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div>`;
+}
+// Today's one row of tabs (Robin, 2026-11-04): everything sits behind one line, with
+// counts on the tabs so what needs you still shows. Remembers the last tab opened.
+function homeTodayTabDefs() {
+  const defs = [];
+  const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
+  const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
+  defs.push(['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]);
+  if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
+  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
+  if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
+  if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
+  if (reflectOn()) defs.push(['reflections', 'Reflections', 0, false]);
+  defs.push(['next', 'What next', 0, false]);
+  return defs;
+}
+function homeTodayTabBody(k, off) {
+  if (k === 'radar') return homeRadarBodyHtml();
+  if (k === 'mail' || k === 'messages') return homeGlancePanelHtml(k);
+  if (k === 'tasks') return homeWnTasksBodyHtml();
+  if (k === 'practices') return homeWnPracticesBodyHtml();
+  if (k === 'reflections') return homeReadingsSectionHtml(true);
+  if (k === 'next') return homeWhatNextBandHtml();
+  return homeCalBodyHtml(off);
+}
+function homeTodayTabsHtml(off) {
+  const defs = homeTodayTabDefs();
+  state.home = state.home || {};
+  if (!state.home.tab) { try { state.home.tab = localStorage.getItem('life.home.tab') || ''; } catch {} }
+  const cur = defs.some((d) => d[0] === state.home.tab) ? state.home.tab : 'cal';
+  const strip = defs.map(([k, l, n, hot]) => `<button class="home-ltab${cur === k ? ' on' : ''}" data-home-tab="${k}" role="tab" aria-selected="${cur === k ? 'true' : 'false'}">${esc(l)}${n ? `<i class="home-ltab-n${hot ? ' hot' : ''}">${n}</i>` : ''}</button>`).join('');
+  return `<div class="home-ltabwrap home-todaytabs"><div class="home-ltabs home-tabs-row" role="tablist">${strip}</div><div class="home-ltab-body home-ltab-${cur}">${homeTodayTabBody(cur, off)}</div></div>`;
+}
+// The Messages bar, under the email bar: on Today inline, elsewhere from renderMailArrival.
+function msgArrivalParts() {
+  if (!modOn('contacts') || (state.view && state.view.type === 'messages')) return null;
+  const n = unreadMsgs();
+  if (!n || (state.msgArrivalHidden && state.msgArrivalHidden >= n)) return null;
+  const by = (state.friendStatus && state.friendStatus.unreadBy) || {};
+  const ids = Object.keys(by).filter((k) => by[k] > 0);
+  let who = '';
+  if (ids.length === 1) { const f = ((state.friends && state.friends.friends) || []).find((x) => x.id === Number(ids[0])); who = (f && f.name) || ''; }
+  const lead = ids.length > 1 ? `${n} new messages from ${ids.length} people`
+    : who ? (n === 1 ? `A new message from ${esc(who)}` : `${n} new messages from ${esc(who)}`)
+    : (n === 1 ? 'A new message' : `${n} new messages`);
+  return { lead, read: n === 1 ? 'Read it' : 'Read them' };
+}
+function homeMsgArrivalHtml() {
+  const p = msgArrivalParts(); if (!p) return '';
+  return `<div class="home-arr home-arr-msg" data-open-messages role="button" tabindex="0"><span class="home-arr-dot"></span><span class="home-arr-t">${p.lead}</span><span class="home-arr-read">${p.read}</span><button class="home-arr-x" data-msg-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
+}
+function msgArrivalLine() {
+  const p = msgArrivalParts(); if (!p) return '';
+  return `<div class="mail-arrival msg-arrival" data-open-messages role="button" tabindex="0"><span class="mail-arrival-dot"></span><span class="mail-arrival-t">${p.lead}</span><span class="mail-arrival-a">${p.read}</span><button class="mail-arrival-x" data-msg-arrival-dismiss aria-label="Dismiss" title="Dismiss">×</button></div>`;
 }
 function renderHome() {
   if (document.activeElement && document.activeElement.id === 'hw-input') queueMicrotask(() => { const i = document.getElementById('hw-input'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch {} } });
@@ -9226,13 +9280,14 @@ function renderHome() {
   const kitDue = ((state.home.alerts && state.home.alerts.keepInTouch) || []).length;
   const kitH = `<div class="home-fold-h" data-hfold="kkit" role="button" tabindex="0"><span class="hf-name">Keep in touch</span><span class="hf-hint">${kitDue ? `${kitDue} due` : 'Who to catch up with'}</span><span class="hf-sign" aria-hidden="true">${kOpen('kkit') ? '−' : '+'}</span></div>`;
   const kit = modOn('contacts') ? `<section class="home-sec2 home-kit">${kitH}${kOpen('kkit') ? homeKeepInTouchHtml() : ''}</section>` : '';
-  const alerts = `${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
+  const alerts = `${homeInvitesHtml()}${homeReqAlertHtml()}`;
   // §41 Today v2: one column - greeting, What next, the day (+ birthdays),
   // Reflections, Keep in touch, the Notepad line, then the quote and the mark.
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-home">
     <div class="home home-v3">
       ${homeArrivalHtml()}
+      ${homeMsgArrivalHtml()}
       ${alerts ? `<div class="home-alerts">${alerts}</div>` : ''}
       <div id="qt-wrap"></div>
       <div class="home-flow">
@@ -9245,24 +9300,16 @@ function renderHome() {
           </div>
         </div>
         ${homeWelcomeHtml()}
-        <div class="home-cols home-cols-v3">
-          <div class="home-main">
-            ${homeLeftTabsHtml(off)}
-            <div class="home-below2">
-              ${homeLowerTabsHtml()}
-              ${homeWhatNextTabsHtml()}
-            </div>
-          </div>
-          <aside class="home-aside">
-            ${homeReadingsSectionHtml()}
-            ${homeSpacesAsideHtml()}
-          </aside>
+        <div class="home-today">
+          ${homeTodayTabsHtml(off)}
+          <section class="home-spaces-wide">${homeSpacesAsideHtml()}</section>
         </div>
       </div>
       <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba" /><span class="kmark-cap">Koyéba</span></button>
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
+  { const row = document.querySelector('.home-tabs-row'); const on = row && row.querySelector('.home-ltab.on'); if (on && row.scrollWidth > row.clientWidth) row.scrollLeft = on.offsetLeft - row.offsetLeft - 20; }
   startHomeClock();         // keep the time beside the date ticking
   // Restore the scroll (see the capture at the top): a header tap that
   // collapses/expands a section should leave you exactly where you were.
@@ -17072,7 +17119,7 @@ function renderMailArrival() {
   // On Today the arrival line is rendered inline (homeArrivalHtml, left-aligned),
   // so suppress this global floating one there to avoid a duplicate. (Robin.)
   const onHome = state.view && state.view.type === 'home';
-  const html = (modOn('mail') && !state.mailSheet && !onHome) ? mailArrivalLine() : '';
+  const html = onHome ? '' : `${(modOn('mail') && !state.mailSheet) ? mailArrivalLine() : ''}${msgArrivalLine()}`;
   if (!html) { if (el) el.remove(); return; }
   // Mount it at the TOP of the content column, in normal flow, so it PUSHES the page
   // down rather than floating over the breadcrumb - and it scrolls away under the
@@ -27415,13 +27462,13 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mp-send]')) { mpSend(); return; }
   { const mr = t.closest('[data-mp-react]'); if (mr) { mpReact(mr.dataset.mpReact); return; } }
   { const mt = t.closest('[data-mp-turn]'); if (mt) { mpTurnInto(mt.dataset.mpTurn); return; } }
-  if (t.closest('[data-open-messages]')) { openMessages(); return; }
+  if (t.closest('[data-open-messages]') && !t.closest('[data-msg-arrival-dismiss]')) { openMessages(); return; }
   if (t.closest('[data-open-requests]')) { openRequests(); return; }
   { const dz = t.closest('[data-shared-dismiss]'); if (dz) { const id = dz.getAttribute('data-shared-dismiss'); const arr = state.sharesDismissed = (state.sharesDismissed || []); if (!arr.map(String).includes(String(id))) arr.push(id); renderHome(); api('/api/shared/dismiss', { method: 'POST', body: JSON.stringify({ id }) }).catch(() => {}); return; } }
   // §70 The feed: filter chips, "mark all seen", and the "what next" prompt.
   { const ff = t.closest('[data-feed-filter]'); if (ff) { e.preventDefault(); state.home = state.home || {}; state.home.feedF = ff.dataset.feedFilter; renderHome(); return; } }
   { const ss = t.closest('[data-shares-seen]'); if (ss) { e.preventDefault(); state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; } }
-  { const wnx = t.closest('[data-wn-next]'); if (wnx) { e.preventDefault(); state.home = state.home || {}; state.home.wntab = 'next'; try { localStorage.setItem('life.home.wntab', 'next'); } catch {} renderHome(); setTimeout(() => { const b = document.querySelector('.home-wntabs'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); return; } }
+  { const wnx = t.closest('[data-wn-next]'); if (wnx) { e.preventDefault(); state.home = state.home || {}; state.home.wntab = 'next'; state.home.tab = 'next'; try { localStorage.setItem('life.home.wntab', 'next'); } catch {} renderHome(); setTimeout(() => { const b = document.querySelector('.home-wntabs'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); return; } }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
@@ -27542,6 +27589,8 @@ document.addEventListener('click', (e) => {
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
   { const kf = t.closest('[data-hfold]'); if (kf) { kToggle(kf.dataset.hfold); return; } }
   if (t.closest('[data-home-foldall]')) { homeFoldAll(); return; }
+  { const lt = t.closest('[data-home-tab]'); if (lt) { state.home = state.home || {}; state.home.tab = lt.dataset.homeTab; try { localStorage.setItem('life.home.tab', state.home.tab); } catch {} if (lt.dataset.homeTab === 'mail') state.home.glanceMail = null; renderHome(); return; } }
+  if (t.closest('[data-msg-arrival-dismiss]')) { e.preventDefault(); e.stopPropagation(); state.msgArrivalHidden = unreadMsgs(); renderNav(); if (state.view && state.view.type === 'home') renderHome(); return; }
   { const lt = t.closest('[data-home-ltab]'); if (lt) { state.home = state.home || {}; state.home.ltab = lt.dataset.homeLtab; try { localStorage.setItem('life.home.ltab', state.home.ltab); } catch {} if (lt.dataset.homeLtab === 'mail') state.home.glanceMail = null; renderHome(); return; } }
   { const lt = t.closest('[data-home-ltab2]'); if (lt) { state.home = state.home || {}; state.home.ltab2 = lt.dataset.homeLtab2; try { localStorage.setItem('life.home.ltab2', state.home.ltab2); } catch {} if (lt.dataset.homeLtab2 === 'mail') state.home.glanceMail = null; renderHome(); return; } }
   { const wt = t.closest('[data-home-wntab]'); if (wt) { state.home = state.home || {}; state.home.wntab = wt.dataset.homeWntab; try { localStorage.setItem('life.home.wntab', state.home.wntab); } catch {} renderHome(); return; } }
