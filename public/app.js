@@ -12076,14 +12076,14 @@ function renderAreasList() {
     const keyArea = !!(a.props && a.props.reviewStar);
     const wheelBadge = tracked ? `<span class="agc-wheel${keyArea ? ' key' : ''}" style="--sc:${wscore};--wh:${hue}" title="In your Wheel of Life${keyArea ? ' · a key area' : ''}${wscore ? ` · last score ${wscore}/5` : ' · not scored yet'}" aria-label="Tracked in Wheel of Life"></span>` : '';
     const chips = [
-      `<span class="agc-chip agc-chip-t">✓ ${s.tasks || 0}</span>`,
-      s.goals ? `<span class="agc-chip agc-chip-g">🎯 ${s.goals}</span>` : '',
-      s.notes ? `<span class="agc-chip">▤ ${s.notes}</span>` : '',
-      s.members ? `<span class="agc-chip">👥 ${s.members}</span>` : '',
+      `<span class="agc-chip agc-chip-t">${s.tasks || 0} tasks</span>`,
+      s.goals ? `<span class="agc-chip agc-chip-g">${s.goals} goal${s.goals === 1 ? '' : 's'}</span>` : '',
+      s.notes ? `<span class="agc-chip">${s.notes} note${s.notes === 1 ? '' : 's'}</span>` : '',
+      s.members ? `<span class="agc-chip">${s.members} shared</span>` : '',
     ].join('');
     return `<div class="area-gcard" style="--h:${hue}" ${canDrag ? `draggable="true" data-area-drag="${a.id}"` : `data-area-drag="${a.id}"`}>
       <button class="agc-open" data-open-area="${a.id}">
-        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-topright">${wheelBadge}<span class="agc-act agc-act-${act.cls}" title="How active this area has been">${act.label}</span></span></span>
+        <span class="agc-toprow"><span class="agc-mono">${areaNumeral(a.id)}</span><span class="agc-topright">${wheelBadge}<span class="agc-act agc-act-${act.cls}" title="How active this area has been">${act.label}</span></span></span>
         <span class="agc-name">${esc(a.title || 'Untitled')}</span>
         ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : '<span class="agc-vision agc-vision-empty">Add a vision to steer by</span>'}
         <span class="agc-metrics">${chips}</span>
@@ -12099,7 +12099,7 @@ function renderAreasList() {
     const vision = (a.props && (a.props.vision || '').trim()) || '';
     return `<div class="area-gcard area-gcard-shared" style="--h:${hue}">
       <button class="agc-open" data-open-area="${a.id}">
-        <span class="agc-toprow"><span class="agc-mono">${esc(initial(a.title || '?'))}</span><span class="agc-topright"><span class="agc-shared-tag" title="Shared with you by ${esc(a.sharedBy || 'someone')}">👥 ${esc(a.sharedBy || 'Shared')}</span></span></span>
+        <span class="agc-toprow"><span class="agc-mono">${areaNumeral(a.id)}</span><span class="agc-topright"><span class="agc-shared-tag" title="Shared with you by ${esc(a.sharedBy || 'someone')}">👥 ${esc(a.sharedBy || 'Shared')}</span></span></span>
         <span class="agc-name">${esc(a.title || 'Untitled')}</span>
         ${vision ? `<span class="agc-vision">${esc(vision.slice(0, 84))}${vision.length > 84 ? '…' : ''}</span>` : ''}
         <span class="agc-metrics"><span class="agc-chip agc-chip-shared">${a.canEdit ? '✎ Can edit' : '🔎 View only'}</span></span>

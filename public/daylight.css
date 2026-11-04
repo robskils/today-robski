@@ -139,18 +139,44 @@
 /* ── Spaces carry no colours: their name is enough (Robin, 2026-11-04) ─────── */
 .prc-lane-dot, .cd, .ca-dot, .wt-dot, .set-area-dot { display:none !important; }
 
-/* Space cards: gold rule and quiet badges in place of each Space's own colour. */
+/* ── Spaces: frosted cards, a Roman numeral, words instead of chips ───────── */
+.pane-head.home-head { display:flex; flex-flow:row wrap; align-items:center; justify-content:space-between; gap:16px; }
+.pane-head.home-head h1 { margin:0; }
+.area-gcards { grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr)); gap:18px; }
 [class*="agc"], .area-gcard { --c:var(--k-gold) !important; --wh:40 !important; }   /* set inline per Space, hence !important */
-.area-gcard::before { background:var(--k-gold) !important; }
-:root[data-light] .agc-mono { background:var(--k-soft); color:var(--k-ink); box-shadow:none; }
-:root[data-light] [class*="agc-act"] { background:transparent; border:1px solid var(--k-gold); color:var(--k-ink); }
-:root[data-light] .agc-chip-t { background:var(--k-soft); }
+:root[data-light] .area-gcard { background:var(--glass-card); border:1px solid var(--glass-edge); box-shadow:none; -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+:root[data-light] .area-gcard:hover { transform:none; border-color:var(--k-gold); box-shadow:none; }
+.area-gcard::before, .agc-wheel { display:none !important; }
+.agc-open { gap:10px; padding:22px 22px 18px; }
+.agc-toprow { align-items:baseline; }
+:root[data-light] .agc-mono { width:auto; height:auto; background:none; box-shadow:none; color:var(--k-goldt); font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:26px; line-height:1; text-transform:none; }
+:root[data-light] [class*="agc-act"] { background:none; border:0; padding:0; color:var(--k-mute); font-size:14px; font-weight:400; letter-spacing:0; text-transform:none; }
+.agc-topright { margin-right:26px; }
+.agc-name { font-family:var(--k-serif); font-weight:500; font-size:28px; line-height:1.1; }
+.agc-vision { font-size:16px; line-height:1.4; font-style:normal; color:var(--k-mute); }
+.agc-metrics { gap:6px 16px; margin-top:6px; }
+:root[data-light] .agc-chip { background:none; padding:0; font-size:15px; font-weight:400; color:var(--k-ink); }
+.agc-star { top:18px; right:16px; }
+.agc-foot { padding:12px 22px; justify-content:flex-start; border-top-color:var(--glass-edge); }
+.agc-today { font-size:14px; font-weight:400; letter-spacing:0; text-transform:none; color:var(--k-mute); padding:0; min-height:28px; }
+.agc-today.on { color:var(--k-goldt); }
+
+/* ── The main button: white rim, frosted glass, words in the middle ────────── */
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save) {
+  display:inline-flex; align-items:center; justify-content:center; text-align:center;
+  min-height:46px; padding:0 22px;
+  background:rgba(255,255,255,.1); background-image:none;
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  border:1px solid rgba(255,255,255,.78); box-shadow:none;
+  color:#fff; font-family:var(--k-sans); font-size:16px; font-weight:500; letter-spacing:.01em; text-transform:none; filter:none;
+}
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save):hover { background:rgba(255,255,255,.2); filter:none; }
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save):active { transform:none; }
 
 /* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
 .prc-addtoggle, .gcal-addbtn { width:fit-content; align-self:flex-start; }
 
 /* Text that was below 4.5:1 on real data. */
-:root[data-light] .mail-tb-write { background:var(--k-gold); color:#12100b; }
 :root[data-light] .t2-avoidtag { background:transparent; color:var(--k-goldt); }
 
 /* ── Help lives in the menubar with everything else ───────────────────────── */
