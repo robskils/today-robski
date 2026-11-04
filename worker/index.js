@@ -4976,6 +4976,10 @@ export default {
       // /app is the app's home at the apex now that everyone lives at lifebook.fyi
       // (no more per-user subdomains): the marketing page forwards signed-in visitors
       // here, and the installed app's start_url points at it. (Robin, 2026-10-15.)
+      // The page behind the QR code on Robin's business card.
+      if (path === '/invite/robin' || path === '/invite/robin/') {
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/invite-robin.html', url.origin), request)));
+      }
       // Invitations already sent can point at an old domain. Nobody is signed in yet
       // at this stage, so send them home instead of signing up on the old origin.
       if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) && ['daybook.fyi', 'lifebook.fyi', 'lifefold.co', 'shizu.fyi'].some((d) => host === d || host === 'www.' + d)) {

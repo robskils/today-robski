@@ -60,6 +60,10 @@ export async function hasPendingInvite(env, email) {
   return !!(await pendingInvite(env, email));
 }
 
+// Printed invitations, reusable up to a cap. ROBIN is on Robin's business card
+// (koyeba.co/invite/robin): Premium is bring-your-own-key, so it carries no AI bill.
+const OPEN_INVITES = { ROBIN: { plan: 'byok', free_months: 2, created_by: 1, cap: 250 } };
+
 // Which invite is this signup running on? A typed code wins (someone was given
 // one by hand); otherwise we look for the invitation emailed to this address.
 // Returns the row, null (none), or a reason string the caller turns into an error.
@@ -71,6 +75,15 @@ export async function hasPendingInvite(env, email) {
 async function resolveInvite(env, typed, email) {
   const code = String(typed || '').trim().toUpperCase();
   if (!code) return (await pendingInvite(env, email)) || null;
+  // A code printed on something can't be single-use. An invitation made out to this
+  // person is better than a printed one, so it wins; otherwise it counts its uses.
+  const open = OPEN_INVITES[code];
+  if (open) {
+    const live = await pendingInvite(env, email); if (live) return live;
+    const c = await env.DB.prepare('SELECT COUNT(*) AS n FROM users WHERE voucher = ?').bind(code).first().catch(() => null);
+    if (!c || (c.n || 0) >= open.cap) return 'full';
+    return { code, email: null, plan: open.plan, free: 1, free_months: open.free_months, created_by: open.created_by, used_by: null };
+  }
   const inv = await env.DB.prepare('SELECT code, email, plan, free, free_months, created_by, used_by FROM invites WHERE code = ?')
     .bind(code).first().catch(() => null);
   // A stale code left in the browser must not beat a live invitation to this
@@ -95,6 +108,7 @@ export async function handleSignup(request, env, email, json, err) {
   const publicSignup = await isPublicSignup(env);
   const inv = await resolveInvite(env, b.invite, email);
   if (inv === 'unknown') return err('That invite code is not valid.', request, 400);
+  if (inv === 'full') return err('These invitations have all been taken. You can ask for one at koyeba.co.', request, 400);
   if (inv === 'used') return err('That invitation has already been used. Ask whoever invited you to send a fresh one.', request, 400);
   if (!inv && !publicSignup) return err('Koyéba is invite-only for now - you need an invitation from a member.', request, 403);
 
