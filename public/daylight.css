@@ -62,7 +62,7 @@
 :root[data-light] :is(.crumb,.tx-row-sp,.tx-row-due,.tx-pile-h,.rf-tool-h,.kg-view-h,.home-sa-when,.home-sa-alltxt,.home-rd-act,.home-rd-all,.sec-new) { font-size:14px; }
 
 /* Tasks' piles: each keeps its own width, so their labels can't run together. */
-.tx-piles { row-gap:12px; column-gap:clamp(26px,3vw,44px); }
+.tx-piles-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px clamp(26px,3vw,44px); }
 .tx-pile { flex:none; }
 
 /* ── Glass: what floats ───────────────────────────────────────────────────── */
