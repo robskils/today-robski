@@ -1635,11 +1635,11 @@ function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.
 function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 // The light: a painted wash that follows the real day (public/daylight.css).
-const LIGHTS = ['dawn', 'morning', 'midday', 'dusk', 'night'];
-const LIGHT_GROUND = { dawn: '#3B2B36', morning: '#F8F5EE', midday: '#F7F6EF', dusk: '#2E2230', night: '#0D1220' };
+const LIGHTS = ['dawn', 'morning', 'midday', 'overcast', 'dusk', 'night'];   // overcast: a moody daytime, preview only for now
+const LIGHT_GROUND = { dawn: '#3B2B36', morning: '#F8F5EE', midday: '#F7F6EF', overcast: '#343E4C', dusk: '#2E2230', night: '#0D1220' };
 // Which part of the day it is where you are, from your sunrise and sunset. With no
 // location yet, a sensible clock guess (07:00 and 18:30) stands in for the sun.
-function lightIsDark(l) { return l === 'dawn' || l === 'dusk' || l === 'night'; }
+function lightIsDark(l) { return l === 'dawn' || l === 'overcast' || l === 'dusk' || l === 'night'; }
 function lightFromSun(now = new Date()) {
   const loc = cachedLoc();
   const s = loc ? sunTimes(now, loc.lat, loc.lng) : null;

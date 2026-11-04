@@ -17,17 +17,24 @@
 }
 :root[data-light='morning'] {
   --k-bg:#F8F5EE; --k-panel:#FDFBF6; --k-soft:#F0EBDF; --k-mine:#E9E2D2;
-  --k-ink:#211D14; --k-mute:#4C4636; --k-goldt:#6E4C0C; --k-gold:#BE8A2E; --k-line:#DDD6C7;
+  --k-ink:#14110A; --k-mute:#322D22; --k-goldt:#523906; --k-gold:#BE8A2E; --k-line:#DDD6C7;
   --k-deep:#2E2A26; --k-ondeep:#F8F5EE;
   --glass:rgba(255,255,255,.28); --glass-edge:rgba(255,255,255,.65); --glass-card:rgba(255,255,255,.48); --glass-face:rgba(46,42,38,.84);
   --line:rgba(33,29,20,.2); --line-2:rgba(33,29,20,.34);
 }
 :root[data-light='midday'] {
   --k-bg:#F7F6EF; --k-panel:#FFFFFF; --k-soft:#EEEDE4; --k-mine:#E8E6DA;
-  --k-ink:#12110C; --k-mute:#37342C; --k-goldt:#523906; --k-gold:#BE8A2E; --k-line:#DEDCD1;
+  --k-ink:#0C0B07; --k-mute:#2A2821; --k-goldt:#463005; --k-gold:#BE8A2E; --k-line:#DEDCD1;
   --k-deep:#2B2A28; --k-ondeep:#FBFBF7;
   --glass:rgba(255,255,255,.3); --glass-edge:rgba(255,255,255,.75); --glass-card:rgba(255,255,255,.55); --glass-face:rgba(43,42,40,.84);
   --line:rgba(18,17,12,.18); --line-2:rgba(18,17,12,.32);
+}
+:root[data-light='overcast'] {
+  --k-bg:#343E4C; --k-panel:#3E4958; --k-soft:#495565; --k-mine:#525F70;
+  --k-ink:#FFFFFF; --k-mute:#EEF1F4; --k-goldt:#F6DFA8; --k-gold:#E3B765; --k-line:#5E6B7C;
+  --k-deep:#1D242E; --k-ondeep:#FFFFFF;
+  --glass:rgba(52,62,76,.3); --glass-edge:rgba(255,255,255,.28); --glass-card:rgba(52,62,76,.46); --glass-face:rgba(22,28,36,.52);
+  --line:rgba(255,255,255,.2); --line-2:rgba(255,255,255,.34);
 }
 :root[data-light='dusk'] {
   --k-bg:#2E2230; --k-panel:#38293A; --k-soft:#433146; --k-mine:#4C3A50;
@@ -59,6 +66,22 @@
 #light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
 #light-layer img.on { opacity:1; }
 @media (prefers-reduced-motion:reduce) { #light-layer img, :root[data-light] { transition:none; } }
+
+/* ── Legibility ───────────────────────────────────────────────────────────── */
+/* By day, a veil of the ground over the paint: keeps the sky but calms it behind text. */
+#light-layer::after { content:""; position:absolute; inset:0; background:var(--k-bg); opacity:0; transition:opacity 1.2s; }
+:root[data-light='morning'] #light-layer::after { opacity:.34; }
+:root[data-light='midday'] #light-layer::after { opacity:.42; }
+/* Thin type on a light ground needs its full weight. */
+:root[data-light='morning'] body, :root[data-light='midday'] body { -webkit-font-smoothing:auto; -moz-osx-font-smoothing:auto; }
+:root[data-light='morning'] :is(.nx-lead,.qod-text,.kg-mood,.cx-mood,.sx-lead,.rf-rdcard-l,.home-rd-l,.home-empty-i),
+:root[data-light='midday'] :is(.nx-lead,.qod-text,.kg-mood,.cx-mood,.sx-lead,.rf-rdcard-l,.home-rd-l,.home-empty-i) { -webkit-text-stroke:.25px currentColor; }
+/* These used the fill gold, or a faded ink, as text: illegible on paint. */
+:root[data-light] :is(.home-rd-kind,.home-rd-act,.home-rd-all,.home-sa-alltxt,.sec-new,.sx-num,.sx-idx-num,.cvx-ava,.cx-side-add,.home-sa-k2,.home-sa-new) { color:var(--k-goldt); opacity:1; }
+:root[data-light] :is(.home-sa-when,.home-sa-item,.kmark-cap,.qod-author,.tx-pile-h,.kg-view-h,.rf-tool-h,.cvx-card-sub) { color:var(--k-mute); opacity:1; }
+/* The smallest labels, up to something readable. */
+:root[data-light] :is(.nx-eyebrow,.kg-eyebrow-t,.cx-eyebrow,.sx-eyebrow-t,.cx-side-eyebrow,.home-sub-eyebrow,.kg-order-l,.home-rd-kind,.home-sa-k2,.qod-author,.kmark-cap) { font-size:13px; }
+:root[data-light] :is(.crumb,.tx-row-sp,.tx-row-due,.tx-pile-h,.rf-tool-h,.kg-view-h,.home-sa-when,.home-sa-alltxt,.home-rd-act,.home-rd-all,.sec-new) { font-size:14px; }
 
 /* ── Glass: what floats ───────────────────────────────────────────────────── */
 /* The menubar's parent is solid by default, which would hide the glass entirely. */
