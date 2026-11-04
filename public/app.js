@@ -339,7 +339,7 @@ document.addEventListener('keydown', (ev) => {
 });
 // §45: swipe left/right on the day list to move between Today and Tomorrow (mobile).
 let _homeSwipe = null;
-document.addEventListener('touchstart', (ev) => { const sec = ev.target.closest && ev.target.closest('.home-today'); if (!sec || ev.touches.length !== 1) { _homeSwipe = null; return; } const t = ev.touches[0]; _homeSwipe = { x: t.clientX, y: t.clientY }; }, { passive: true });
+document.addEventListener('touchstart', (ev) => { const sec = ev.target.closest && ev.target.closest('.home-ltab-cal'); if (!sec || ev.touches.length !== 1) { _homeSwipe = null; return; } const t = ev.touches[0]; _homeSwipe = { x: t.clientX, y: t.clientY }; }, { passive: true });
 document.addEventListener('touchend', (ev) => {
   const s = _homeSwipe; _homeSwipe = null; if (!s || !(state.view && state.view.type === 'home')) return;
   const t = (ev.changedTouches && ev.changedTouches[0]); if (!t) return;
@@ -6737,11 +6737,11 @@ function practicesGroups(withWeek) {
   return ordered.map((g) => {
     const rows = g.items.map((a) => {
       const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
-      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge">🎥</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
+      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge" title="Has a video">▶</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
       return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="prc-name prc-name-link">${esc(a.title)}${badges}${withWeek ? '' : len}</span>
-        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>${(() => { const s = practiceStreak(a.id); return s > 1 ? `<span class="trk-streak">🔥 ${s}${a.avoid ? ' clean' : ''}</span>` : ''; })()}` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
+        <span class="prc-name prc-name-link">${esc(a.title)}${(() => { const s = withWeek ? practiceStreak(a.id) : 0; return s > 1 ? `<span class="trk-streak">${s}${a.avoid ? ' clean' : ' days'}</span>` : ''; })()}${badges}${withWeek ? '' : len}</span>
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
     }).join('');
@@ -9249,6 +9249,7 @@ function msgArrivalLine() {
 function renderHome() {
   if (document.activeElement && document.activeElement.id === 'hw-input') queueMicrotask(() => { const i = document.getElementById('hw-input'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch {} } });
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
+  const tabRowWas = (() => { const r = document.querySelector('.home-tabs-row'); const o = r && r.querySelector('.home-ltab.on'); return r ? { x: r.scrollLeft, tab: o && o.dataset.homeTab } : null; })();
   // §41: "Keep in touch" folds shut by default; Reflections and the day stay
   // open. Seed the collapse store once so kOpen/kToggle treats kkit as closed.
   try { const _c = homeCollapsed(); if (!('kkit' in _c)) { _c.kkit = true; localStorage.setItem('life.home.collapsed', JSON.stringify(_c)); } } catch {}
@@ -9310,7 +9311,13 @@ function renderHome() {
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
-  { const row = document.querySelector('.home-tabs-row'); const on = row && row.querySelector('.home-ltab.on'); if (on && row.scrollWidth > row.clientWidth) row.scrollLeft = on.offsetLeft - row.offsetLeft - 20; }
+  // On a phone the row slides: a repaint leaves it where you put it, and it only moves
+  // itself when a newly chosen tab would otherwise sit out of sight.
+  { const row = document.querySelector('.home-tabs-row'); const on = row && row.querySelector('.home-ltab.on');
+    if (on && row.scrollWidth > row.clientWidth) {
+      const x = tabRowWas ? tabRowWas.x : 0; row.scrollLeft = x;
+      if (!tabRowWas || tabRowWas.tab !== on.dataset.homeTab) { const l = on.offsetLeft - row.offsetLeft; if (l < x || l + on.offsetWidth > x + row.clientWidth) row.scrollLeft = l - 20; }
+    } }
   startHomeClock();         // keep the time beside the date ticking
   // Restore the scroll (see the capture at the top): a header tap that
   // collapses/expands a section should leave you exactly where you were.
@@ -15928,7 +15935,7 @@ function t2PracticesHtml() {
       <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
       <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${len}</span>
       ${a.priority ? `<span class="p-tag p-${a.priority}">${a.priority}</span>` : ''}
-      ${streak ? `<span class="t2-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}
+      ${streak ? `<span class="t2-streak">${streak}${a.avoid ? ' clean' : ' days'}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
   const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
@@ -15994,7 +16001,7 @@ function t2HabitsHtml() {
   const toTick = tracked.filter((a) => !practiceMarked(a.id, today)).length;
   const chips = tracked.map((a) => { const on = practiceMarked(a.id, today); const s = practiceStreak(a.id); return `<div class="t2-habit ${on ? 'done' : ''}">
     <button class="t2-tick ${on ? 'on' : ''}" data-prc-tick="${a.id}" title="${on ? 'Done today' : 'Tick'}">✓</button>
-    <span class="t2-hname">${esc(a.title)}</span>${s ? `<span class="t2-streak">🔥${s}</span>` : ''}</div>`; }).join('');
+    <span class="t2-hname">${esc(a.title)}</span>${s ? `<span class="t2-streak">${s} days</span>` : ''}</div>`; }).join('');
   return `<section class="t2-habits"><div class="t2-habh"><h2>Habits</h2>${toTick ? `<span class="t2-tocnt">${toTick} to tick</span>` : '<span class="t2-alldone">all ticked ✓</span>'}<span class="t2-habnote">tick as you go</span></div><div class="t2-habgrid">${chips}</div></section>`;
 }
 // startMin given (a drag drop) = pinned to that time. startMin omitted (the ＋
@@ -24520,8 +24527,8 @@ function reviewKeyPoints(m, p, r) {
   // Practices: name the most consistent one, not just the total.
   const prc = (m.practices || []).slice().sort((a, b) => b.count - a.count);
   const pk = prc.reduce((a, x) => a + x.count, 0);
-  if (prc[0] && prc[0].title) pts.push(['🔥', `<b>${esc(prc[0].title)}</b> kept ${prc[0].count}×${prc.length > 1 ? `, ${pk} practice sessions in all` : ''}`]);
-  else if (pk) pts.push(['🔥', `<b>${pk}</b> practice session${pk > 1 ? 's' : ''} kept going`]);
+  if (prc[0] && prc[0].title) pts.push(['✓', `<b>${esc(prc[0].title)}</b> kept ${prc[0].count}×${prc.length > 1 ? `, ${pk} practice sessions in all` : ''}`]);
+  else if (pk) pts.push(['✓', `<b>${pk}</b> practice session${pk > 1 ? 's' : ''} kept going`]);
   const gm = done.filter((t) => t.goal).length;
   if (gm) pts.push(['🎯', `<b>${gm}</b> moved a goal forward`]);
   const quietIds = (m.quietAreas || []).filter((id) => nm(id));
