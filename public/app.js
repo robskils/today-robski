@@ -302,6 +302,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' && capState().open && !document.getElementById('flyer')) { ev.preventDefault(); capCancel(); return; }
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.notepad && state.notepad.open) { ev.preventDefault(); toggleNotepad(false); } });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.home && state.home.newMenu) { ev.preventDefault(); state.home.newMenu = false; try { renderNewPop(); renderNav(); } catch {} } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.cv && state.cv.merge) { ev.preventDefault(); cvMergeClose(); } });
 document.addEventListener('click', (ev) => {
   const t = ev.target; if (!t.closest) return;
@@ -5578,7 +5579,7 @@ function navGroupsHtml(v) {
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
-        ${addNewMenuHtml()}
+        <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Make something new">New</button>
         ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
@@ -5701,7 +5702,7 @@ function renderNav() {
   // §43: the Mail arrival line and the "New since you looked" sheet live on
   // <body>, fixed under the top bar, so they show on every page. Warm the inbox
   // once so the header's to-sort count is right before the sheet is opened.
-  try { renderMailArrival(); renderMailSheet(); renderNotepadPanel(); } catch {}
+  try { renderMailArrival(); renderMailSheet(); renderNotepadPanel(); renderNewPop(); } catch {}
   if (modOn('mail') && !state.__mailWarmKicked) { state.__mailWarmKicked = true; setTimeout(() => { try { warmMailForSheet(); } catch {} }, 1500); }
   // §24: lock page scroll behind the full-screen Menu/Find layer (mobile), and
   // open the keyboard with Find focused the moment it rises.
@@ -9002,6 +9003,24 @@ function homeNewMake(kind) {
     else { openJournal(); }   // Note -> a journal page / note
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
+// The one New popover (Robin, 2026-11-04): a centred "Make something new" dialog,
+// opened from the menubar's New on any page - NOT a dropdown, and the only New box
+// in the app. Rendered on <body> so it floats over whatever view you're on.
+function newPopHtml() {
+  const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Make something new">
+    <div class="newpop-h"><span class="newpop-eyebrow">Make something new</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+    <div class="newpop-grid">${items}</div>
+    <div class="newpop-foot">Or just write it as you'd say it - Set something down ${esc(PK('⌘.'))}</div>
+  </div></div>`;
+}
+function renderNewPop() {
+  let el = document.getElementById('newpop-root');
+  if (!(state.home && state.home.newMenu)) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'newpop-root'; document.body.appendChild(el); }
+  el.innerHTML = newPopHtml();
+  setTimeout(() => { const f = el.querySelector('.newpop-item'); if (f) f.focus(); }, 20);
+}
 // Robin: the Mail glance should show what's in the inbox, not only the untriaged
 // "to sort" subset. Prefer to-sort; if there's nothing to sort, show the most recent
 // inbox mail so the tab never reads empty while the inbox has mail.
@@ -9391,7 +9410,6 @@ function renderHome() {
             ${homeTimeWeatherHtml()}
             ${homeQuoteLineHtml()}
           </div>
-          ${homeNewBtnHtml()}
         </div>
         <div class="home-cols home-cols-v3">
           <div class="home-main">
@@ -27578,9 +27596,9 @@ document.addEventListener('click', (e) => {
     const fsa = t.closest('[data-feed-seenall]'); if (fsa) { e.preventDefault(); const now = new Date().toISOString(); state.activitySeen = now; state.sharesSeen = now; const fs = feedS(); (state.activity || []).forEach((a) => { fs.gone['act:' + a.id] = 'Seen'; }); (state.sharedItems || []).forEach((s) => { fs.gone['shw:' + s.id] = 'Seen'; }); renderHome(); api('/api/activity/seen', { method: 'POST', body: '{}' }).catch(() => {}); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; }
     const frc = t.closest('[data-feed-contact]'); if (frc) { e.preventDefault(); const v = frc.dataset.feedContact; const i = v.indexOf(':'); feedReach(v.slice(0, i), v.slice(i + 1)); return; } }
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
-  if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderHome(); return; }
-  if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderHome(); return; }
-  { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); return; } }
+  if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderNewPop(); renderNav(); return; }
+  if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderNewPop(); renderNav(); return; }
+  { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); renderNewPop(); return; } }
   if (t.closest('[data-glance-fold]')) { if (state.home) { state.home.glance = null; state.home.glanceMail = null; } renderHome(); return; }
   { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glanceMail = null; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
   { const gmr = t.closest('[data-glance-mail-reply]'); if (gmr) { e.preventDefault(); e.stopPropagation(); glanceMailReply(gmr.dataset.glanceMailReply); return; } }
