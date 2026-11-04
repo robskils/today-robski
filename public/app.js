@@ -8034,7 +8034,7 @@ function openBeside(kind, id) {
 function closeBeside() { state.split = null; document.body.classList.remove('split'); const d = document.getElementById('pane-div'); if (d) d.remove(); const p = document.getElementById('pane2'); if (p) p.remove(); }
 function besideItemHtml(b, kind) {
   const p = b.props || {};
-  const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Beside')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
+  const head = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[kind] || 'Side by side')}</div><div class="pane2-title">${esc(b.title || 'Untitled')}</div></div><div class="pane2-acts"><button class="pane2-open" data-open-${kind}="${b.id}">Open fully →</button><span class="pane2-sep">|</span><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
   let body;
   if (kind === 'note') body = `<div class="pane2-body prose">${sanitizeProse(b.body || '') || '<p class="pane2-empty">Nothing in this note yet.</p>'}</div>`;
   else if (kind === 'task') body = `<div class="pane2-body"><div class="pane2-meta">${prioLabel(p.priority) ? prioLabel(p.priority) + ' · ' : ''}${p.done ? 'Done' : 'Open'}${p.area && areaById(p.area) ? ' · ' + esc(areaById(p.area).title) : ''}</div>${b.body ? `<div class="prose">${sanitizeProse(b.body)}</div>` : ''}</div>`;
@@ -8046,9 +8046,9 @@ function besideItemHtml(b, kind) {
 }
 async function renderBeside() {
   const s = state.split; if (!s || s.tool) return; const { p2 } = splitEls(); if (!p2) return;
-  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Beside')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">${esc(BESIDE_GROUP[s.kind] || 'Side by side')}</div><div class="pane2-title">Loading…</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`;
   try { const b = await api('/api/blocks/' + s.id); if (state.split && state.split.id === s.id) p2.innerHTML = besideItemHtml(b, s.kind); }
-  catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`; }
+  catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`; }
 }
 
 // ── §18b Side by side: the Split button + "what to show here" search picker ──
@@ -8168,7 +8168,7 @@ function besideToolListHtml(tool, loading) {
   const linkedRows = linked.map((l) => besideToolRowHtml({ ...l, _new: true, _from: l.from, _meta: 'Just now' }, tool)).join('');
   if (loading && !base.length && !linkedRows) return `${linkedRows}<div class="beside-loading">Loading…</div>`;
   const rows = linkedRows + base.map((it) => besideToolRowHtml(it, tool)).join('');
-  return rows || '<div class="pane2-empty beside-empty">Nothing here yet. Drag an email across, or make one beside.</div>';
+  return rows || '<div class="pane2-empty beside-empty">Nothing here yet. Drag an email across.</div>';
 }
 function besideTimeAgo(iso) { const t = Date.parse(iso || ''); return isNaN(t) ? '' : timeAgo(t); }
 function besideTaskMeta(tk) {
@@ -19031,8 +19031,6 @@ function renderMail(loading) {
         </div>
         <div class="mail-tb-act">
           ${accScope}
-          ${(!(state.split && state.split.tool) && !(window.matchMedia && window.matchMedia('(max-width:820px)').matches)) ? '<button class="mail-tb-beside" data-beside-open-picker>Open beside…</button>' : ''}
-          <button class="mail-tb-guide" data-help-open="mail">Guide</button>
           <button class="mail-tb-write" data-mail-compose>Write</button>
         </div>
       </div>
