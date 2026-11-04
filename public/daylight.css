@@ -136,6 +136,13 @@
 /* Mail and Notepad had their own padding, which sat their words 2px above the rest. */
 .knav-mail-btn, .knav-np-btn { display:inline-flex; align-items:center; padding:6px 0 5px; }   /* 5px + their 1px underline = the 6px their neighbours have */
 
+/* ── Spaces carry no colours: their name is enough (Robin, 2026-11-04) ─────── */
+.prc-lane-dot, .cd, .ca-dot, .wt-dot, .set-area-dot { display:none !important; }
+
+/* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
+.prc-addtoggle { width:fit-content; align-self:flex-start; min-height:44px; padding:0 18px; background:transparent; border:1px solid var(--k-gold); color:var(--k-ink); font-size:16px; font-weight:500; }
+.prc-addtoggle:hover { background:transparent; border-color:var(--k-goldt); color:var(--k-goldt); filter:none; }
+
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
 .knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }

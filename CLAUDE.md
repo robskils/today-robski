@@ -12,10 +12,10 @@ Koyéba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole 
 1. **One accent colour: gold.** No red, green, blue, orange or purple, not even for urgency or status. Show urgency with a filled gold square, importance with an outlined gold square, and lesser items with a grey square.
 2. **Square corners.** `border-radius: 0` on everything: cards, buttons, inputs, chips, avatars, tiles. No pills.
 3. **No shadows.** The one exception is the capture drawer's top shadow. No gradients. **Frosted glass only on what floats or what you choose or glance at** (the bars, Reflections and drawn cards, the tarot table), never on what you read closely (mail, notes, task lists, tables). See `public/daylight.css`. (Robin, 2026-11-04.)
-4. **1px warm keylines** (`--k-line`) separate things. No thick borders and no coloured left-border stripes.
+4. **Spaces have no colours:** a Space is its name, never a coloured dot, chip or tint. **1px warm keylines** (`--k-line`) separate things. No thick borders and no coloured left-border stripes.
 5. **No sidebar of buttons.** Navigation is seven folding sections: Today, Spaces, Tools, People, Money, Inner life, Reviews. Only one is open at a time.
 6. **Every titled section folds open and shut**, with a `+` / `−` glyph on the right. No chevron icons.
-7. **No full-width buttons.** Buttons are small: Jost 500, 11px, uppercase, 0.22em tracking, padding `11px 22px`.
+7. **No full-width buttons, ever.** A button is as wide as its words, and never stretches to fill a row or column (check it inside flex and grid parents, which stretch by default). Buttons are small: Jost 500, 11px, uppercase, 0.22em tracking, padding `11px 22px`. (Robin, 2026-11-04: "no ugly full width buttons".)
 8. **Large, legible text.** Body text is never under 13px; list rows are 15–17px.
 9. **No icon libraries and no emoji.** Unicode glyphs only: `+ − → ✓ ✕ ⌘ · ‹ › ▶ ▼ ⌄`.
 10. **Type is system 1a (§59).** Cormorant Garamond **500** for display only - page titles, section titles (30px), an opened item's title, big readings and glyphs. Cormorant **300 italic** only for the quote of the day and one-line reading texts. **Jost does all the rest**, in five levels: Item 17-18/500 · Body 16-16.5/1.65 · Meta 14/muted · Label 11/600 caps · the sender/person over an item 15/600. **Never set list rows, body or meta in Cormorant, and never Cormorant 300 upright.** Emails and other people's words go on **white paper in Source Serif 4**. Eyebrows are Jost 500, 11px, uppercase, 0.28em tracking, gold, after a 28×1px gold rule.
