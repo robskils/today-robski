@@ -3,6 +3,9 @@
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';
+// Set only inside Split's second pane: the tool that pane should show.
+const SPLIT_FRAME_TOOL = (() => { try { return window.self !== window.top ? new URLSearchParams(location.search).get('splittool') : null; } catch { return null; } })();
+if (SPLIT_FRAME_TOOL) document.documentElement.classList.add('in-split-frame');
 // The wordmark: <first name> Koyéba. The name comes from the signed-in account
 // (see firstName), never from a constant - a hard-coded owner is how every member
 // ended up looking at somebody else's name on their own Koyéba.
@@ -1360,7 +1363,7 @@ function addNewMenuHtml() {
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
-function saveTabs() { try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); localStorage.setItem('life.lastActive', String(Date.now())); } catch {} }
+function saveTabs() { if (SPLIT_FRAME_TOOL) return; try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); localStorage.setItem('life.lastActive', String(Date.now())); } catch {} }
 // After a long time away, open straight on Home at the top rather than restoring
 // whatever page you happened to leave on. A quick reopen keeps your place.
 const REOPEN_FRESH_MS = 60 * 60 * 1000;   // an hour counts as "in a while"
@@ -8090,17 +8093,35 @@ function besidePickerItems(q) {
 }
 function besidePickResultsHtml() {
   const s = state.split; const q = ((s && s.q) || '').trim().toLowerCase();
-  const PAGES = [['notes', 'Notes', 'Keep'], ['tasks', 'Tasks', 'Plans']];
-  const pages = PAGES.filter(([, l]) => !q || l.toLowerCase().includes(q)).map(([tool, l, g]) => `<button class="beside-pick" data-beside-pick-page="${tool}"><span class="beside-pick-t">${esc(l)}</span><span class="beside-pick-k">${esc(g)} · page</span></button>`).join('');
+  const pages = splitToolList().filter((x) => !q || x.label.toLowerCase().includes(q)).map((x) => `<button class="beside-pick" data-beside-pick-tool="${esc(x.label)}"><span class="beside-pick-t">${esc(x.label)}</span><span class="beside-pick-k">${esc(x.group)}</span></button>`).join('');
   const items = besidePickerItems(q).map((it) => `<button class="beside-pick" data-beside-pick-item="${it.kind}:${esc(it.id)}"><span class="beside-pick-t">${esc(it.title)}</span><span class="beside-pick-k">${esc(it.sub)}</span></button>`).join('');
   if (!pages && !items) return `<div class="beside-pick-empty">${q ? `Nothing matches &ldquo;${esc(s.q)}&rdquo;.` : 'Start typing to find a note, task or Space.'}</div>`;
-  return `${pages ? `<div class="beside-pick-grp">Pages</div>${pages}` : ''}${items ? `<div class="beside-pick-grp">${q ? 'Matches' : 'Recent'}</div>${items}` : ''}`;
+  return `${pages ? `<div class="beside-pick-grp">Tools</div>${pages}` : ''}${items ? `<div class="beside-pick-grp">${q ? 'Matches' : 'Recent'}</div>${items}` : ''}`;
+}
+// Every tool in the menu, for Split. Spaces come up in the search below instead.
+function splitToolList() {
+  const out = [];
+  knavGroups().filter((g) => g.id !== 'spaces').forEach((g) => (g.tools || []).forEach(([label, attrs]) => out.push({ label, attrs, group: g.label })));
+  return out;
+}
+// A tool's main page in the second pane: the app itself in a same-origin frame, without
+// its nav, opened to that tool. Beside Mail, Notes and Tasks stay the list you can
+// drag emails onto. (Robin, 2026-11-04.)
+function openSplitTool(label) {
+  const key = { Notes: 'notes', Tasks: 'tasks' }[label];
+  if (key && state.view && state.view.type === 'mail') { openBesideTool(key); return; }
+  const ratio = (state.split && state.split.ratio) || 0.5;
+  state.split = { frame: label, ratio };
+  document.body.classList.add('split');
+  const { main, p2 } = splitEls(); if (!p2) return;
+  if (main) main.style.setProperty('--split-ratio', (ratio * 100) + '%');
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">${esc(label)}</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div><iframe class="pane2-frame" title="${esc(label)}" src="/app?splittool=${encodeURIComponent(label)}"></iframe>`;
 }
 function besideRenderPickResults() { const el = document.getElementById('beside-pickres'); if (el) el.innerHTML = besidePickResultsHtml(); }
 function renderBesidePicker() {
   const s = state.split; if (!s || !s.picker) return; const { p2 } = splitEls(); if (!p2) return;
   p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">What to show here</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>
-    <div class="beside-pickwrap"><input class="beside-pickq" data-beside-pickq placeholder="Search for a note, task, Space…" value="${esc(s.q || '')}" autocomplete="off" spellcheck="false"><div class="beside-pickres" id="beside-pickres">${besidePickResultsHtml()}</div></div>`;
+    <div class="beside-pickwrap"><input class="beside-pickq" data-beside-pickq placeholder="Search for a tool, note, task, Space…" value="${esc(s.q || '')}" autocomplete="off" spellcheck="false"><div class="beside-pickres" id="beside-pickres">${besidePickResultsHtml()}</div></div>`;
   setTimeout(() => { const i = p2.querySelector('[data-beside-pickq]'); if (i && document.activeElement !== i) i.focus(); }, 30);
 }
 // ── §18 Side by side: tool mode (Mail beside Notes/Tasks) ────────────────────
@@ -27807,7 +27828,7 @@ document.addEventListener('click', (e) => {
   // §18b Split: the menubar button toggles the side-by-side pane; the picker's rows
   // open a page (Notes/Tasks list) or an item beside.
   if (t.closest('[data-split-open]')) { if (state.split) closeBeside(); else openSplitPicker(); return; }
-  { const pp = t.closest('[data-beside-pick-page]'); if (pp) { openBesideTool(pp.getAttribute('data-beside-pick-page')); return; } }
+  { const pp = t.closest('[data-beside-pick-tool]'); if (pp) { openSplitTool(pp.getAttribute('data-beside-pick-tool')); return; } }
   { const pi = t.closest('[data-beside-pick-item]'); if (pi) { const v = pi.getAttribute('data-beside-pick-item') || ''; const i = v.indexOf(':'); if (i > 0) openBeside(v.slice(0, i), v.slice(i + 1)); return; } }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
@@ -32422,7 +32443,7 @@ function showRequired2fa() {
     // reset still applies as a fallback.
     let freshOpen = false;
     try { freshOpen = !sessionStorage.getItem('koyeba.ses'); sessionStorage.setItem('koyeba.ses', '1'); } catch {}
-    const forceHome = freshOpen || (installedApp && reopenedAfterAWhile());
+    const forceHome = !!SPLIT_FRAME_TOOL || freshOpen || (installedApp && reopenedAfterAWhile());
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
@@ -32481,4 +32502,18 @@ function showRequired2fa() {
     api('/api/account').then((a) => { if (a) { state.account = a; try { localStorage.setItem('life.weekStart', String(a.weekStart)); } catch {} if (state.view && state.view.type === 'reviews') renderReviews(); } }).catch(() => {});
     maybeOnboard();          // first-run welcome guide, once per new account
   } catch (e) { toast(e.message); renderNav(); }
+})();
+
+// Inside Split's second pane: no nav, and open the chosen tool once the app is up.
+(function splitFrameBoot() {
+  if (!SPLIT_FRAME_TOOL) return;
+  let n = 0;
+  const t = setInterval(() => {
+    if (++n > 150) { clearInterval(t); return; }
+    if (!document.querySelector('.knav-inner') || !state.view) return;
+    clearInterval(t);
+    const tool = splitToolList().find((x) => x.label === SPLIT_FRAME_TOOL); if (!tool) return;
+    const w = document.createElement('div'); w.hidden = true; w.innerHTML = `<button ${tool.attrs}></button>`;
+    document.body.appendChild(w); w.firstChild.click(); w.remove();
+  }, 100);
 })();

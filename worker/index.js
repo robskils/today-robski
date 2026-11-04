@@ -4171,7 +4171,8 @@ const HSTS = 'max-age=31536000';
 // can't post data off-site. Inline scripts stay allowed ('unsafe-inline') for the
 // pre-paint theme stamp - moving those to a nonce is the next step up. img-src is
 // deliberately broad (email bodies and YouTube posters pull external images);
-// frame-src allows only the YouTube player; framing of us is denied.
+// frame-src allows the YouTube player and ourselves (Split's second pane); only our
+// own origin may frame us. (Robin approved, 2026-11-04.)
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -4185,8 +4186,8 @@ const CSP = [
   // so it adds nothing an inline script couldn't already do. (Robin, 2026-10-29.)
   "worker-src 'self' blob:",
   "connect-src 'self'",
-  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
-  "frame-ancestors 'none'",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-ancestors 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "form-action 'self'",
@@ -4198,7 +4199,7 @@ function withHsts(res) {
   if (ct.includes('text/html')) {
     h.set('Content-Security-Policy', CSP);
     h.set('X-Content-Type-Options', 'nosniff');
-    h.set('X-Frame-Options', 'DENY');
+    h.set('X-Frame-Options', 'SAMEORIGIN');
     h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
