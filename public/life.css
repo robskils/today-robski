@@ -13148,3 +13148,45 @@ h2.rvl-fold-t { padding:10px 0; }
   .rvl-day-f { display:none; }
   .rvl-day-n { font-size:26px; }
 }
+
+/* Linked & attached: one list with filters (Robin chose direction B, 2026-11-04). */
+.lk-wrap { color:var(--k-ink); font-family:var(--k-sans); }
+.lk-wrap.cc-boxes { display:block; }
+.lk-h { margin:0; font:inherit; }
+.lk-fold { appearance:none; display:flex; align-items:baseline; gap:12px; width:100%; min-height:44px; padding:0 0 6px; border:0; background:none; cursor:pointer; text-align:left; color:var(--k-ink); font-family:var(--k-serif); font-weight:500; font-size:28px; line-height:1.2; }
+.lk-fold:hover { color:var(--k-goldt); }
+.lk-sign { margin-left:auto; font-family:var(--k-sans); font-weight:400; font-size:22px; color:var(--k-mute); }
+.lk-wrap.is-closed .lk-body { display:none; }
+.lk-body { display:flex; flex-direction:column; gap:12px; padding-top:6px; }
+.lk-search .nx-field input, .lk-pane input.sel { width:100%; max-width:none; box-sizing:border-box; min-height:48px; padding:0 14px; border:1px solid var(--k-line); background:var(--k-panel); color:var(--k-ink); font-family:var(--k-sans); font-size:16px; }
+.lk-search .nx-field input::placeholder, .lk-pane input.sel::placeholder { color:var(--k-mute); }
+.lk-search .nx-sugg { margin-top:6px; gap:0; border-top:1px solid var(--k-line); }
+.lk-search .nx-sugg:empty { display:none; border:0; }
+.lk-wrap .nx-sugg-row { width:100%; min-height:44px; padding:10px 12px; border:0; border-bottom:1px solid var(--k-line); background:var(--k-panel); color:var(--k-ink); font-family:var(--k-sans); font-size:16px; text-align:left; cursor:pointer; }
+.lk-wrap .nx-sugg-row:hover { background:var(--k-soft); color:var(--k-goldt); }
+.lk-wrap .nx-sugg-row .ic { display:none; }
+.lk-wrap .nx-sugg-row .kind { font-weight:400; font-size:16px; letter-spacing:0; text-transform:none; color:var(--k-mute); }
+.lk-wrap .nx-sugg-hint { color:var(--k-mute); font-size:16px; padding:10px 2px; }
+.lk-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.lk-act { appearance:none; display:inline-flex; align-items:center; min-height:44px; padding:0 14px; border:1px solid var(--k-line); background:var(--k-panel); color:var(--k-ink); font-family:var(--k-sans); font-size:16px; cursor:pointer; }
+select.lk-act { max-width:none; width:auto; }
+.lk-act:hover, .lk-act.on { border-color:var(--k-goldt); color:var(--k-goldt); }
+.lk-filters { display:flex; flex-wrap:wrap; gap:4px 16px; padding-top:10px; border-bottom:1px solid var(--k-line); }
+.lk-filter { appearance:none; min-height:40px; padding:0 2px; border:0; border-bottom:2px solid transparent; margin-bottom:-1px; background:none; cursor:pointer; color:var(--k-mute); font-family:var(--k-sans); font-size:16px; }
+.lk-filter:hover { color:var(--k-ink); }
+.lk-filter.on { color:var(--k-ink); font-weight:600; border-bottom-color:var(--k-gold); }
+.lk-filters + .lk-list { margin-top:-12px; }
+.lk-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr)); column-gap:28px; }
+.lk-row { display:flex; align-items:center; gap:10px; min-width:0; padding:0 4px 0 12px; border-bottom:1px solid var(--k-line); background:var(--k-panel); }
+.lk-row[hidden] { display:none; }
+.lk-main { flex:1 1 auto; min-width:0; display:block; padding:12px 0; }
+.lk-open { appearance:none; display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; text-align:left; color:var(--k-ink); font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1.3; overflow-wrap:anywhere; text-decoration:none; }
+.lk-open:hover { color:var(--k-goldt); }
+.lk-sub { display:block; margin-top:2px; color:var(--k-mute); font-size:16px; line-height:1.3; overflow-wrap:anywhere; }
+.lk-row .nx-thumb { flex:none; width:44px; height:44px; object-fit:cover; }
+.lk-x { appearance:none; flex:none; display:flex; align-items:center; justify-content:center; width:32px; height:44px; padding:0; border:0; background:none; cursor:pointer; color:var(--k-mute); font-size:18px; opacity:0; transition:opacity .12s; }
+.lk-row:hover .lk-x, .lk-x:focus-visible { opacity:1; }
+.lk-x:hover { color:var(--k-goldt); }
+.lk-fold:focus-visible, .lk-act:focus-visible, .lk-filter:focus-visible, .lk-open:focus-visible, .lk-x:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
+.lk-empty { margin:0; color:var(--k-mute); font-size:16px; }
+@media (hover:none) { .lk-x { opacity:1; } }

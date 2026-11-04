@@ -7082,25 +7082,13 @@ function peAttachHtml() {
   m.links.forEach((l, i) => {
     const url = /^https?:\/\//i.test(l.url) ? l.url : 'https://' + l.url;
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(l.title || prettyLinkLabel(l.url))}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-pe-del-link="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+    rows.push(lkLinkRow(url, l.title || prettyLinkLabel(l.url), host, `data-pe-del-link="${i}"`));
   });
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : '';
   const noteResults = nres.length ? `<div class="nx-sugg">${nres.map((n) => `<button type="button" class="nx-sugg-row" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ic">▤</span>${esc(n.title || 'Untitled')}<span class="kind">Note</span></button>`).join('')}</div>` : '';
-  return `<div class="nx-wrap">
-    <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}">
-      ${items}
-      <div class="nx-attach">
-        <div class="nx-field"><input class="sel" data-pe-note-q placeholder="Search a page to link…" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off"></div>
-        ${noteResults}
-        <div class="nx-addrow">
-          <button type="button" class="nx-choose" data-pe-new-note>▤ New note</button>
-          <button type="button" class="nx-choose" data-pe-add-link>🌐 Add web link</button>
-          <select class="nx-choose nx-choose-sel" data-pe-add-contact><option value="">👤 Link a contact…</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  return lkPanelHtml({ scope: 'practice', rows, search: `<div class="nx-field"><input class="sel" data-pe-note-q placeholder="Link a page" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off"></div>${noteResults}`, actions: `
+    <button type="button" class="lk-act" data-pe-new-note>New note</button>
+    <button type="button" class="lk-act" data-pe-add-link>Web link</button>
+    <select class="lk-act" data-pe-add-contact><option value="">Link a contact</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>` });
 }
 function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
 async function peNewNote() {
@@ -20766,7 +20754,7 @@ function contactLinkedRows(c) {
     const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
     const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(raw);
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+    rows.push(lkLinkRow(url, label, host, `data-xlink-del data-xlink-kind="contact" data-xlink-id="${c.id}" data-xlink-idx="${i}"`));
   });
   return rows;
 }
@@ -20775,7 +20763,7 @@ function contactLinkedRows(c) {
 function contactLinkSearchRows(q) {
   const co = state.contact_open; if (!co) return '';
   const ql = (q || '').trim().toLowerCase();
-  if (ql.length < 1) return '<div class="nx-sugg-hint">Search your notes, tasks and events to connect them to this person.</div>';
+  if (ql.length < 1) return '';
   const linkedN = new Set((co.linkedNotes || []).map((n) => String(n.id)));
   const linkedT = new Set((co.linkedTasks || []).map((t) => String(t.id)));
   const linkedE = new Set((co.linkedEvents || []).map((e) => String(e.id || '').split('::')[0]));
@@ -20789,27 +20777,13 @@ function contactLinkSearchRows(q) {
 function contactBoxesHtml(c) {
   const co = state.contact_open || {};
   const rows = contactLinkedRows(c);
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : '';
-  const tab = co.cxTab || 'none';
   const q = co.cxQ || '';
-  const connectPane = `<div class="nx-field"><input class="sel" data-cx-q placeholder="Search your notes, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="cx-link-list">${contactLinkSearchRows(q)}</div>`;
-  const pane = tab === 'connect' ? connectPane : '';
-  return `<div class="nx-wrap cc-boxes">
-    <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}">
-      ${items}
-      <div class="nx-attach">
-        <div class="nx-addrow">
-          <button type="button" class="nx-choose ${tab === 'connect' ? 'on' : ''}" data-cx-tab="connect">🔗 Koyéba Connect</button>
-          <button type="button" class="nx-choose" data-contact-new-note="${c.id}">▤ New Note</button>
-          <button type="button" class="nx-choose" data-contact-new-task="${c.id}">✓ New Task</button>
-          <button type="button" class="nx-choose" data-contact-new-event="${c.id}">📅 New Event</button>
-          <button type="button" class="nx-choose" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">🌐 Add Web Link</button>
-        </div>
-        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
-      </div>
-    </div>
-  </div>`;
+  const connectPane = `<div class="nx-field"><input class="sel" data-cx-q placeholder="Link a note, task or event" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="cx-link-list">${contactLinkSearchRows(q)}</div>`;
+  return lkPanelHtml({ scope: `contact:${c.id}`, rows, extraClass: 'cc-boxes', search: connectPane, actions: `
+    <button type="button" class="lk-act" data-contact-new-note="${c.id}">New note</button>
+    <button type="button" class="lk-act" data-contact-new-task="${c.id}">New task</button>
+    <button type="button" class="lk-act" data-contact-new-event="${c.id}">New event</button>
+    <button type="button" class="lk-act" data-xlink-add data-xlink-kind="contact" data-xlink-id="${c.id}">Web link</button>` });
 }
 // Re-render just the Connect boxes (keeps the search box's focus + caret on a
 // live search, without rebuilding the whole card).
@@ -25524,9 +25498,69 @@ function noteUnlinkContact(cid) {
 // web links and files - with a Link search (anything in Koyéba, or a web
 // address) and file upload beneath. Reuses every existing link/unlink/add action
 // via their data-attributes, so nothing new touches the storage. (Robin, 2026-10-26.)
-function nxOpenRow(icon, name, kind, meta, openAttr, removeAttr) {
-  return `<div class="nx-row"><span class="nx-ic">${icon}</span><button class="nx-open" ${openAttr}>${esc(name || 'Untitled')}</button>${kind ? `<span class="nx-kind">${kind}</span>` : ''}${meta ? `<span class="nx-meta">${meta}</span>` : ''}<button class="nx-x" ${removeAttr} title="Remove" aria-label="Remove">×</button></div>`;
+// ── Linked & attached: one list with filters (Robin chose direction B, 2026-11-04) ──
+// Note, task, contact and practice pages all render through lkPanelHtml. Rows keep
+// their existing open/unlink data-attributes, so storage and handlers are untouched.
+// Filtering and folding only touch the DOM, so nothing being typed is lost.
+const LK_GROUP = { Note: 'Notes', Table: 'Tables', Task: 'Tasks', Person: 'People', Contact: 'People', Goal: 'Goals', Event: 'Events', 'Web link': 'Links', Link: 'Links', File: 'Files' };
+const LK_SINGULAR = { Contact: 'Person', Link: 'Web link' };
+const lkFilter = {};
+const lkClosed = () => { try { return localStorage.getItem('life.lk.closed') === '1'; } catch { return false; } };
+function lkRowHtml(kind, mainHtml, meta, removeAttr, name, thumb) {
+  const shown = LK_SINGULAR[kind] || kind || '';
+  const group = LK_GROUP[kind] || (kind ? `${kind}s` : 'Other');
+  const sub = [shown, meta].filter(Boolean).join(' · ');
+  return `<div class="lk-row" data-lk-group="${esc(group)}">${thumb || ''}<span class="lk-main">${mainHtml}${sub ? `<span class="lk-sub">${sub}</span>` : ''}</span><button type="button" class="lk-x" ${removeAttr} title="Remove" aria-label="Remove ${esc(name || '')}">✕</button></div>`;
 }
+function lkLinkRow(url, label, host, removeAttr) {
+  return lkRowHtml('Web link', `<a class="lk-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`, host ? `${esc(host)} ↗` : '', removeAttr, label);
+}
+function lkFileRow(a, thumb) {
+  return lkRowHtml('File', `<button type="button" class="lk-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button>`, fmtBytes(a.size), `data-att-del="${a.id}"`, a.name, thumb);
+}
+function nxOpenRow(icon, name, kind, meta, openAttr, removeAttr) {
+  return lkRowHtml(kind, `<button type="button" class="lk-open" ${openAttr}>${esc(name || 'Untitled')}</button>`, meta, removeAttr, name || 'Untitled');
+}
+function lkPanelHtml({ scope, rows, search = '', actions = '', pane = '', zone = '', extraClass = '', readOnly = false }) {
+  const groups = [];
+  rows.forEach((r) => { const g = (r.match(/data-lk-group="([^"]*)"/) || [])[1]; if (g && !groups.find((x) => x.g === g)) groups.push({ g, n: 0 }); const hit = groups.find((x) => x.g === g); if (hit) hit.n += 1; });
+  if (!groups.find((x) => x.g === lkFilter[scope])) lkFilter[scope] = 'All';
+  const cur = lkFilter[scope];
+  const list = rows.map((r) => (cur === 'All' || r.includes(`data-lk-group="${cur}"`) ? r : r.replace('<div class="lk-row"', '<div hidden class="lk-row"')));
+  const fbtn = (g, n) => `<button type="button" class="lk-filter${g === cur ? ' on' : ''}" data-lk-filter="${esc(g)}" aria-pressed="${g === cur}">${esc(g)} ${n}</button>`;
+  const filters = groups.length > 1 ? `<div class="lk-filters" role="group" aria-label="Show">${fbtn('All', rows.length)}${groups.map((x) => fbtn(x.g, x.n)).join('')}</div>` : '';
+  const closed = lkClosed();
+  return `<div class="nx-wrap lk-wrap${closed ? ' is-closed' : ''}${extraClass ? ` ${extraClass}` : ''}" data-lk-scope="${esc(scope)}">
+    <h2 class="lk-h"><button type="button" class="lk-fold" data-lk-fold aria-expanded="${!closed}"><span>Linked &amp; attached</span><span class="lk-sign" aria-hidden="true">${closed ? '+' : '−'}</span></button></h2>
+    <div class="lk-body"${zone ? ` data-att-zone="${esc(zone)}"` : ''}>
+      ${search ? `<div class="lk-search">${search}</div>` : ''}
+      ${actions ? `<div class="lk-actions">${actions}</div>` : ''}
+      ${pane ? `<div class="lk-pane">${pane}</div>` : ''}
+      ${filters}
+      ${rows.length ? `<div class="lk-list">${list.join('')}</div>` : (readOnly ? '<p class="lk-empty">Nothing linked or attached.</p>' : '')}
+    </div>
+  </div>`;
+}
+function lkPickFilter(btn) {
+  const wrap = btn.closest('.lk-wrap'); if (!wrap) return;
+  const g = btn.dataset.lkFilter; lkFilter[wrap.dataset.lkScope] = g;
+  wrap.querySelectorAll('.lk-filter').forEach((b) => { const on = b === btn; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  wrap.querySelectorAll('.lk-row').forEach((r) => { r.hidden = g !== 'All' && r.dataset.lkGroup !== g; });
+}
+function lkToggleFold(btn) {
+  const wrap = btn.closest('.lk-wrap'); if (!wrap) return;
+  const closed = wrap.classList.toggle('is-closed');
+  try { localStorage.setItem('life.lk.closed', closed ? '1' : '0'); } catch {}
+  btn.setAttribute('aria-expanded', String(!closed));
+  const s = btn.querySelector('.lk-sign'); if (s) s.textContent = closed ? '+' : '−';
+}
+// The search box is always on show now, so load what it searches on first focus,
+// not every time a page opens.
+document.addEventListener('focusin', (e) => {
+  const el = e.target; if (!el || !el.matches) return;
+  if (el.matches('[data-note-link-q]')) ensureLinkPool();
+  else if (el.matches('[data-conn-q]') && state.view && state.view.type === 'taskcard' && state.contacts === undefined) loadContacts().catch(() => {});
+});
 function noteLinkedRows(n) {
   const rows = [];
   for (const c of (state.note.connected || [])) { const isT = isTableNote(c); rows.push(nxOpenRow(isT ? '▦' : '▤', c.title, isT ? 'Table' : 'Note', '', `data-open-${isT ? 'table' : 'note'}="${c.id}"`, `data-note-unlink="${c.id}"`)); }
@@ -25543,17 +25577,17 @@ function noteLinkedRows(n) {
     const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
     const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(raw);
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="note" data-xlink-id="${n.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+    rows.push(lkLinkRow(url, label, host, `data-xlink-del data-xlink-kind="note" data-xlink-id="${n.id}" data-xlink-idx="${i}"`));
   });
   const inlineIds = inlineAttIds(n);   // images placed inline in the body aren't also listed here
-  for (const a of ((n.props && n.props.attachments) || [])) { if (inlineIds.has(a.id)) continue; const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : attIcon(a.type); rows.push(`<div class="nx-row"><span class="nx-ic nx-ic-file">${ic}</span><button class="nx-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button><span class="nx-meta">${fmtBytes(a.size)}</span><button class="nx-x" data-att-del="${a.id}" title="Remove" aria-label="Remove">×</button></div>`); }
+  for (const a of ((n.props && n.props.attachments) || [])) { if (inlineIds.has(a.id)) continue; const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : ''; rows.push(lkFileRow(a, ic)); }
   return rows;
 }
 function noteLinkSearchRows(q) {
   const n = state.note && state.note.current; if (!n) return '';
   const raw = (q || '').trim(); const ql = raw.toLowerCase();
   const out = [];
-  if (ql.length < 1) return out.join('') || '<div class="nx-sugg-hint">Search your pages, goals, spaces, people, tasks and events.</div>';
+  if (ql.length < 1) return out.join('');
   const connIds = new Set((state.note.connected || []).map((c) => String(c.id)));
   let count = 0;
   for (const c of [...(state.noteTops || []), ...(state.tables || [])]) { if (count >= 18) break; if (!c || String(c.id) === String(n.id) || connIds.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; const isT = isTableNote(c); out.push(`<button class="nx-sugg-row" data-note-connect="${c.id}"><span class="ic">${isT ? '▦' : '▤'}</span>${esc(c.title || 'Untitled')}<span class="kind">${isT ? 'Table' : 'Note'}</span></button>`); count++; }
@@ -25620,15 +25654,13 @@ function noteConnectedPanel(n) {
   const rows = noteLinkedRows(n);
   // When empty, show nothing above the buttons (the buttons speak for themselves);
   // keep a one-liner only on a view-only share, where there are no buttons. (Robin.)
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : (canEdit ? '' : '<div class="nx-items nx-items-empty">Nothing linked or attached.</div>');
-  if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${n.id}">${items}</div></div>`;
+  if (!canEdit) return lkPanelHtml({ scope: `note:${n.id}`, rows, zone: n.id, readOnly: true });
   // One flat row of entry points (Robin: "idiot proof"). Connect/Web link reveal a
   // field; Attach/Camera/Scan fire straight away. 'none' = just the row, nothing open.
   const addTab = (state.note && state.note.addTab) || 'none';
   const q = (state.note && state.note.linkQuery) || '';
   const tq = (state.note && state.note.taskQuery) || '';
-  if (addTab === 'connect') ensureLinkPool();
-  const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Search your pages, goals, spaces, people, tasks &amp; events…" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
+  const connectPane = `<div class="nx-field"><input class="sel" data-note-link-q placeholder="Link a page, person, task or event" value="${esc(q)}" autocomplete="off"></div><div class="nx-sugg" id="nx-link-list">${noteLinkSearchRows(q)}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-note-weblink><input class="sel" id="nx-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
   // Make a task to come back to this note: type a title, pick a priority and
   // Create, or search to link an existing one. New task inherits the note's Life
@@ -25636,30 +25668,23 @@ function noteConnectedPanel(n) {
   const tprio = (state.note && state.note.taskPrio) || 'P3';
   const prioOpts = PRIO_PICK.map(([v, l]) => `<option value="${v}" ${tprio === v || (v === 'P3' && tprio === 'P4') ? 'selected' : ''}>${l}</option>`).join('');
   const taskPane = `<form class="nx-weblink nx-taskform" data-note-taskadd><input class="sel nx-task-big" id="nx-task-input" data-nx-task-q placeholder="New task for this note, or search to link one…" value="${esc(tq)}" autocomplete="off"><select class="sel nx-task-prio" id="nx-task-prio" data-nx-task-prio title="Priority"><option value="">—</option>${prioOpts}</select><button type="submit" class="nx-weblink-add">Create</button></form><div class="nx-sugg" id="nx-task-list">${noteTaskPaneRows(tq)}</div>`;
-  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
-  return `<div class="nx-wrap">
-    <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}" data-att-zone="${n.id}">
-      ${items}
-      <div class="nx-attach">
-        <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-note-addtab="connect">🔗 Koyéba Connect</button>
-          <button type="button" class="nx-choose ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">✓ Add Task</button>
-          <label class="nx-choose"><input type="file" multiple hidden data-att-input="${n.id}">📎 Attach File</label>
-          <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">📷 Camera</label>
-          <button type="button" class="nx-choose" data-scan="${n.id}">🖨 Scan</button>
-          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">🌐 Add Web Link</button>
-        </div>
-        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
-      </div>
-    </div>
-  </div>`;
+  const pane = addTab === 'weblink' ? weblinkPane : addTab === 'task' ? taskPane : '';
+  return lkPanelHtml({ scope: `note:${n.id}`, rows, zone: n.id, search: connectPane, pane, actions: `
+    <button type="button" class="lk-act ${addTab === 'task' ? 'on' : ''}" data-note-addtab="task">New task</button>
+    <button type="button" class="lk-act ${addTab === 'weblink' ? 'on' : ''}" data-note-addtab="weblink">Web link</button>
+    <label class="lk-act"><input type="file" multiple hidden data-att-input="${n.id}">Attach file</label>
+    <label class="lk-act"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${n.id}">Camera</label>
+    <button type="button" class="lk-act" data-scan="${n.id}">Scan</button>` });
 }
 // The Link search spans notes, tables, people and events, but opening a note
 // doesn't load those lists - so make sure they're in hand (each once), and repaint
 // when they land. Without this the search showed only events. (Robin, 2026-10-26.)
 function ensureLinkPool() {
-  const rr = () => { if (state.view && state.view.type === 'note') renderNote(); };
+  const rr = () => {
+    if (!state.view || state.view.type !== 'note') return;
+    const live = document.activeElement && document.activeElement.matches('[data-note-link-q]') && document.getElementById('nx-link-list');
+    if (live) live.innerHTML = noteLinkSearchRows(state.note.linkQuery || ''); else renderNote();
+  };
   if (!Array.isArray(state.noteTops)) { state.noteTops = []; api('/api/blocks?kind=note').then((r) => { state.noteTops = r || []; rr(); }).catch(() => {}); }
   if (!Array.isArray(state.tables)) { state.tables = []; api('/api/blocks?kind=table').then((r) => { state.tables = r || []; rr(); }).catch(() => {}); }
   if (!Array.isArray(state.noteEvents)) loadNoteEvents();
@@ -27110,7 +27135,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-website]')) { state.card = state.card || {}; state.card.website = e.target.value; cardLivePreview(); clearTimeout(window.__cardWs); window.__cardWs = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-note-conn-q]') && state.note) { state.note.connQuery = e.target.value; const el = document.getElementById('nconn-list'); if (el) el.innerHTML = noteConnListRows(); return; }
-  if (e.target.matches('[data-note-link-q]') && state.note) { state.note.linkQuery = e.target.value; const el = document.getElementById('nx-link-list'); if (el) el.innerHTML = noteLinkSearchRows(e.target.value); return; }
+  if (e.target.matches('[data-note-link-q]') && state.note) { ensureLinkPool(); state.note.linkQuery = e.target.value; const el = document.getElementById('nx-link-list'); if (el) el.innerHTML = noteLinkSearchRows(e.target.value); return; }
   if (e.target.matches('[data-nx-task-q]') && state.note) { state.note.taskQuery = e.target.value; const el = document.getElementById('nx-task-list'); if (el) el.innerHTML = noteTaskPaneRows(e.target.value); return; }
   if (e.target.matches('[data-nx-task-prio]') && state.note) { state.note.taskPrio = e.target.value; return; }
   if (e.target.matches('[data-card-link-url]') || e.target.matches('[data-card-link-label]')) {
@@ -27745,6 +27770,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }
   if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
+  { const lf = t.closest('[data-lk-filter]'); if (lf) { lkPickFilter(lf); return; } const lb = t.closest('[data-lk-fold]'); if (lb) { lkToggleFold(lb); return; } }
   { const rb = t.closest('[data-rvl-bar]'); if (rb) { const [rk, rid] = rb.dataset.rvlBar.split('|'); rvlPickBar(rk, rid); return; } }
   { const rs = t.closest('[data-rvsec]'); if (rs) { rvSecToggle(rs.dataset.rvsec); return; } }
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
@@ -30082,12 +30108,12 @@ function taskLinkedRows(t) {
     const rawu = linkUrlOf(l); const url = /^https?:\/\//i.test(rawu) ? rawu : 'https://' + rawu;
     const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(rawu);
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-    rows.push(`<div class="nx-row"><span class="nx-ic">🌐</span><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>${host ? `<span class="nx-meta">${esc(host)} ↗</span>` : ''}<button class="nx-x" data-xlink-del data-xlink-kind="task" data-xlink-id="${t.id}" data-xlink-idx="${i}" title="Remove" aria-label="Remove">×</button></div>`);
+    rows.push(lkLinkRow(url, label, host, `data-xlink-del data-xlink-kind="task" data-xlink-id="${t.id}" data-xlink-idx="${i}"`));
   });
   // Attachments (R2-backed files).
   for (const a of ((t.props && t.props.attachments) || [])) {
-    const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : attIcon(a.type);
-    rows.push(`<div class="nx-row"><span class="nx-ic nx-ic-file">${ic}</span><button class="nx-open" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}">${esc(a.name)}</button><span class="nx-meta">${fmtBytes(a.size)}</span><button class="nx-x" data-att-del="${a.id}" title="Remove" aria-label="Remove">×</button></div>`);
+    const ic = isImgType(a.type) ? `<img class="nx-thumb" data-att-thumb="${a.id}" alt="">` : '';
+    rows.push(lkFileRow(a, ic));
   }
   return rows;
 }
@@ -30099,7 +30125,7 @@ function taskLinkSearchRows() {
   const cp = state.connPick || { q: '', results: [] };
   const raw = (cp.q || '').trim(); const out = [];
   if (/^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(raw)) out.push(`<button class="nx-sugg-row" data-conn-addurl="${esc(raw)}"><span class="ic">🌐</span>Link this web address<span class="kind">${esc(raw.replace(/^https?:\/\//, '').slice(0, 36))}</span></button>`);
-  if (!raw) return out.join('') || '<div class="nx-sugg-hint">Search your notes, tasks, people, events and goals - or paste a web address.</div>';
+  if (!raw) return out.join('');
   if (cp.loading && !(cp.results || []).length) return out.join('') + '<div class="nx-sugg-hint">Searching…</div>';
   const have = new Set([...connCurrentIds(connCtx()).map(String), ...taskGoalIds(t).map(String)]); have.add(String(t.id));
   const rows = (cp.results || []).filter((r) => CONN_KINDS.includes(r.kind) && !have.has(String(r.id))).slice(0, 14);
@@ -30111,29 +30137,16 @@ function taskConnectedPanel(t) {
   const rows = taskLinkedRows(t);
   // When empty, show nothing above the buttons (the buttons speak for themselves);
   // keep a one-liner only on a view-only share, where there are no buttons. (Robin.)
-  const items = rows.length ? `<div class="nx-items">${rows.join('')}</div>` : (canEdit ? '' : '<div class="nx-items nx-items-empty">Nothing linked or attached.</div>');
-  if (!canEdit) return `<div class="nx-wrap"><div class="nx-lbl">Linked &amp; attached</div><div class="nx-panel" data-att-zone="${t.id}">${items}</div></div>`;
+  if (!canEdit) return lkPanelHtml({ scope: `task:${t.id}`, rows, zone: t.id, readOnly: true });
   const addTab = (state.task_open && state.task_open.addTab) || 'none';
-  if (addTab === 'connect' && state.contacts === undefined) loadContacts().then(() => { if (state.view.type === 'taskcard') renderTaskCard(); }).catch(() => {});
-  const connectPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Search your pages, goals, people, tasks &amp; events…" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
+  const connectPane = `<div class="nx-field"><input class="sel" data-conn-q placeholder="Link a page, person, task or event" value="${esc((state.connPick && state.connPick.q) || '')}" autocomplete="off"></div><div class="nx-sugg" id="conn-list">${taskLinkSearchRows()}</div>`;
   const weblinkPane = `<form class="nx-weblink" data-conn-weblink><input class="sel" id="conn-weblink-input" placeholder="Paste a web address (https://…)" inputmode="url" autocomplete="off"><button type="submit" class="nx-weblink-add">Add link</button></form>`;
-  const pane = addTab === 'connect' ? connectPane : addTab === 'weblink' ? weblinkPane : '';
-  return `<div class="nx-wrap">
-    <div class="nx-lbl">Linked &amp; attached</div>
-    <div class="nx-panel${rows.length ? '' : ' nx-panel-noitems'}" data-att-zone="${t.id}">
-      ${items}
-      <div class="nx-attach">
-        <div class="nx-addrow">
-          <button type="button" class="nx-choose ${addTab === 'connect' ? 'on' : ''}" data-task-addtab="connect">🔗 Koyéba Connect</button>
-          <label class="nx-choose"><input type="file" multiple hidden data-att-input="${t.id}">📎 Attach File</label>
-          <label class="nx-choose"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">📷 Camera</label>
-          <button type="button" class="nx-choose" data-scan="${t.id}">🖨 Scan</button>
-          <button type="button" class="nx-choose ${addTab === 'weblink' ? 'on' : ''}" data-task-addtab="weblink">🌐 Add Web Link</button>
-        </div>
-        ${pane ? `<div class="nx-addbody">${pane}</div>` : ''}
-      </div>
-    </div>
-  </div>`;
+  const pane = addTab === 'weblink' ? weblinkPane : '';
+  return lkPanelHtml({ scope: `task:${t.id}`, rows, zone: t.id, search: connectPane, pane, actions: `
+    <button type="button" class="lk-act ${addTab === 'weblink' ? 'on' : ''}" data-task-addtab="weblink">Web link</button>
+    <label class="lk-act"><input type="file" multiple hidden data-att-input="${t.id}">Attach file</label>
+    <label class="lk-act"><input type="file" accept="image/*" capture="environment" hidden data-att-input="${t.id}">Camera</label>
+    <button type="button" class="lk-act" data-scan="${t.id}">Scan</button>` });
 }
 // Add a web address straight to a block's props.links (no prompt) - used by the
 // task/goal Link tab when the typed query is a URL.
