@@ -5658,7 +5658,7 @@ function navGroupsHtml(v) {
       <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
     </div>`).join('');
     contents = `<div class="knav-contents">
-      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · Esc to close · type to search</span></div>
+      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · type to search</span><button class="knav-c-x" data-knav-contents aria-label="Close" title="Close">✕</button></div>
       <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
@@ -8035,7 +8035,7 @@ function renderCapBar(force) {
     }
   }
 }
-function capOpen() { const c = capState(); c.open = true; renderCapBar(true); }
+function capOpen() { const c = capState(); if (c.open && c.mode === 'set') c.open = false; else { capSetMode('set'); c.open = true; } renderCapBar(true); }
 function capCancel() { const c = capState(); if (c.rec) capStopRec(); c.open = false; renderCapBar(true); }
 function capStartRec() {
   const c = capState(); if (c.rec) return;
@@ -8653,7 +8653,7 @@ function homeSpacesAsideHtml() {
     </div>`;
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
-  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">All ${areas.length} Spaces →</span></button>`;
+  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>`;
   const open = kOpen('spaces');
   return `<div class="home-sa-head" data-hfold="spaces" role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><span class="home-sa-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>${open ? `<div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button></div>` : ''}`;
 }
