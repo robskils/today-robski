@@ -11,7 +11,7 @@ Koyéba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole 
 ## Rules — never break these
 1. **One accent colour: gold.** No red, green, blue, orange or purple, not even for urgency or status. Show urgency with a filled gold square, importance with an outlined gold square, and lesser items with a grey square.
 2. **Square corners.** `border-radius: 0` on everything: cards, buttons, inputs, chips, avatars, tiles. No pills.
-3. **No shadows.** The one exception is the capture drawer's top shadow. No gradients. **Frosted glass only on what floats or what you choose or glance at** (the bars, Reflections and drawn cards, the tarot table), never on what you read closely (mail, notes, task lists, tables). See `public/daylight.css`. (Robin, 2026-11-04.)
+3. **No shadows.** The one exception is the capture drawer's top shadow. No gradients. **Frosted glass only on what floats or what you choose or glance at** (the bars, Reflections and drawn cards, the tarot table), and on the note sheet (Robin, 2026-11-04), never on other close reading (mail text, task lists, tables). See `public/daylight.css`. (Robin, 2026-11-04.)
 4. **Spaces have no colours:** a Space is its name, never a coloured dot, chip or tint. **1px warm keylines** (`--k-line`) separate things. No thick borders and no coloured left-border stripes.
 5. **No sidebar of buttons.** Navigation is seven folding sections: Today, Spaces, Tools, People, Money, Inner life, Reviews. Only one is open at a time.
 6. **Every titled section folds open and shut**, with a `+` / `−` glyph on the right. No chevron icons.
