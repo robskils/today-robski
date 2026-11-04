@@ -65,6 +65,12 @@
 .tx-piles-row { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px clamp(26px,3vw,44px); }
 .tx-pile { flex:none; }
 
+/* ── A calm start: the sky is there from the first frame, and the app fades in once,
+   when it has something to show, instead of arriving in pieces. ───────────────── */
+:root.booting :is(#nav, .main, #cap-root) { opacity:0; }
+:root.reveal :is(#nav, .main, #cap-root) { transition:opacity .22s ease-out; }
+#light-layer.first img { transition:none; }
+
 /* ── Glass: what floats ───────────────────────────────────────────────────── */
 /* The menubar's parent is solid by default, which would hide the glass entirely. */
 :root[data-light] #nav { background:transparent; }
@@ -162,7 +168,7 @@
 .agc-today.on { color:var(--k-goldt); }
 
 /* ── The main button: white rim, frosted glass, words in the middle ────────── */
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save) {
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn) {
   display:inline-flex; align-items:center; justify-content:center; text-align:center;
   min-height:46px; padding:0 22px;
   background:rgba(255,255,255,.1); background-image:none;
@@ -170,8 +176,26 @@
   border:1px solid rgba(255,255,255,.78); box-shadow:none;
   color:#fff; font-family:var(--k-sans); font-size:16px; font-weight:500; letter-spacing:.01em; text-transform:none; filter:none;
 }
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save):hover { background:rgba(255,255,255,.2); filter:none; }
-:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save):active { transform:none; }
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn):hover { background:rgba(255,255,255,.2); filter:none; }
+:root[data-light] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn):active { transform:none; }
+
+:root[data-light] .add-btn.wide, :root[data-light] .dz-add { width:auto !important; flex:0 0 auto !important; align-self:flex-start; max-width:100%; }
+:root[data-light] .gate2-btn { width:auto; align-self:center; }
+.dz-add.done { border-color:var(--glass-edge) !important; opacity:.8; }
+
+/* ── Every other page: panels let the sky through. No blur on these: a list can hold
+   hundreds of them, and blur on that many would make scrolling crawl. ─────────── */
+:root[data-light] :is(.tbl-card, .trk-area, .g-row, .g-tile, .g-start, .g-input, .dz-card, .mny-link, .mny-card, .tbx-card, .mail-acct, .set-mod, .j-ins-item, .j-insights-page, .rr-keys, .wheeltrack-row, .am-row, .fin-chip, .fh-wrap, .fin-rates, .cn-band, .gcal-bar, .gcal-extra, .rw-filterbar, .rw-savebar, .src-chip, .list-search, .seg, .sel, .mp-row.sel) {
+  background-color:var(--glass-card); background-image:none; border-color:var(--glass-edge); box-shadow:none;
+}
+:root[data-light] .mp-msg.mine { background-color:rgba(255,255,255,.14); }
+/* Left-edge colour stripes and per-Space dots: gone. */
+:root[data-light] .trk-area { border-left:1px solid var(--glass-edge) !important; }
+.wheeltrend-dot, .nt-sub-dot, .rr-key-ic, .jrs-sym { display:none !important; }
+:root[data-light] .rv-bar { background:var(--k-gold); background-image:none; }
+:root[data-light] .ma-status { color:var(--k-mute); background:none; }
+/* The smallest labels, up to something readable. */
+:root[data-light] :is(.kg-prog-pct,.kg-group-l,.kg-side-l,.kg-side-c,.tx-group-l,.tx-side-hl,.tx-side-n,.jx-page-kind,.jx-month-lbl,.jx-month-count,.jx-side-title,.jx-eyebrow-lbl,.jx-starts-lbl,.rw-si-kind,.rw-cov-top,.rw-cov-fin,.rw-cov-by,.rw-eyebrow,.tr-past-kind,.tr-past-date,.tr-spreads-l,.tr-cap-pos,.trk-dh,.trk-cad,.icx-hmonth-l,.icx-hrow-when,.icx-side-h,.dz-src,.src-chip-n,.mp-who,.mp-day-l,.mp-grp-l,.mp-send,.nt-sub-t,.am-fcount,.j-ins-list-h,.rr-keys-h,.wol-trend-h,.mail-blocked-h,.sx-idx-h,.lab,.fh-r) { font-size:13px; }
 
 /* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
 .prc-addtoggle, .gcal-addbtn { width:fit-content; align-self:flex-start; }

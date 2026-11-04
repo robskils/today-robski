@@ -1667,8 +1667,8 @@ function currentLight() {
 function syncLightLayer(light) {
   if (!document.body) return;
   let el = document.getElementById('light-layer');
-  if (!el) { el = document.createElement('div'); el.id = 'light-layer'; el.setAttribute('aria-hidden', 'true'); document.body.prepend(el); }
-  const show = (img) => { el.querySelectorAll('img').forEach((i) => i.classList.toggle('on', i === img)); };
+  if (!el) { el = document.createElement('div'); el.id = 'light-layer'; el.className = 'first'; el.setAttribute('aria-hidden', 'true'); document.body.prepend(el); }
+  const show = (img) => { el.querySelectorAll('img').forEach((i) => i.classList.toggle('on', i === img)); if (el.classList.contains('first')) requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('first'))); };
   let img = el.querySelector(`img[data-l="${light}"]`);
   if (img) { show(img); return; }
   img = new Image(); img.alt = ''; img.dataset.l = light;
@@ -1944,7 +1944,7 @@ const cardLinkText = (l) => (l.label || '').trim() || cardLinkMeta(l.url)[1] || 
 // Build the contact/link chips for a normalised card object.
 function cardChipsHtml(d) {
   const chips = [];
-  if (d.location) chips.push(`<span class="dbc-chip">📍 ${esc(d.location)}</span>`);
+  if (d.location) chips.push(`<span class="dbc-chip">${esc(d.location)}</span>`);
   if (d.website) { const w = String(d.website).replace(/^https?:\/\//, '').replace(/\/$/, ''); chips.push(`<a class="dbc-chip" href="${esc(cardHref(d.website))}" target="_blank" rel="noopener">🔗 ${esc(w)}</a>`); }
   (d.links || []).forEach((l) => { if (!l.url) return; const [ic] = cardLinkMeta(l.url); chips.push(`<a class="dbc-chip" href="${esc(cardHref(l.url))}" target="_blank" rel="noopener"><span class="dbc-lk-ic">${ic}</span> ${esc(cardLinkText(l))}</a>`); });
   const emails = d.emails && d.emails.length ? d.emails : (d.email ? [d.email] : []);
@@ -4556,7 +4556,7 @@ function renderFlyerImport() {
       <div class="fly-done-emoji">🎉</div>
       <h3>${f.done} event${f.done === 1 ? '' : 's'} on your calendar</h3>
       <p>Lovely. Go take a look, or feed it another.</p>
-      <div class="fly-done-acts"><button class="fly-find" data-flyer-view>View calendar</button><button class="linkish" data-flyer-again>✨ Add another</button></div>
+      <div class="fly-done-acts"><button class="fly-find" data-flyer-view>View calendar</button><button class="linkish" data-flyer-again>Add another</button></div>
     </div>`;
   } else {
     const dropInner = f.image
@@ -4576,7 +4576,7 @@ function renderFlyerImport() {
       <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste some text, or a webpage link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
       <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
       ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
-      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading…' : '✨ Find the events'}</button>`}`;
+      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading…' : 'Find the events'}</button>`}`;
   }
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
@@ -4733,7 +4733,7 @@ function discoverCardHtml(e) {
       ${meta ? `<div class="dz-when">${esc(meta)}</div>` : ''}
       <div class="dz-title">${esc(e.title)}</div>
       ${e.run ? `<div class="dz-run">↻ ${esc(e.run)}</div>` : ''}
-      ${e.location ? `<div class="dz-venue">📍 ${esc(e.location)}</div>` : ''}
+      ${e.location ? `<div class="dz-venue">${esc(e.location)}</div>` : ''}
       ${(e.price || src) ? `<div class="dz-metarow">${e.price ? `<span class="dz-price">${esc(e.price)}</span>` : ''}${src ? `<span class="dz-src">${esc(src)}</span>` : ''}</div>` : ''}
       <div class="dz-acts">
         <button class="dz-add ${added ? 'done' : ''}" data-dz-add="${esc(key)}" ${added ? 'disabled' : ''}>${added ? '✓ On your calendar' : '+ Add to calendar'}</button>
@@ -6238,7 +6238,7 @@ function renderToolbox() {
       ${badge || ''}
     </button>`; }).join('');
   const open = TBX_TOOLS.find((t) => t.k === active);
-  $('#pane').innerHTML = `${pageCrumb(t('nav.timer'))}<div class="pane-head"><h1>🧰 ${t('nav.timer')}</h1></div>
+  $('#pane').innerHTML = `${pageCrumb(t('nav.timer'))}<div class="pane-head"><h1>${t('nav.timer')}</h1></div>
     <div class="tbx-grid">${cards}</div>
     ${open ? `<div class="tbx-panel tbx-${open.k}"><div class="tbx-panel-h"><span class="tbx-ic">${open.ic}</span>${open.label}</div>${open.panel()}</div>` : '<p class="tbx-hint">Pick a tool to open it.</p>'}`;
 }
@@ -6640,7 +6640,7 @@ function renderPracticeCard() {
     ar ? `<span class="pc-chip pc-area"><span class="cd"></span>${esc(ar.title)}</span>` : '',
     (a.timed && a.duration) ? `<span class="pc-chip">${a.duration} min</span>` : (!a.timed ? '<span class="pc-chip">habit</span>' : ''),
     aim ? `<span class="pc-chip">Aim: ${esc(aim)}</span>` : '',
-    streak ? `<span class="pc-chip">🔥 ${streak}${a.avoid ? ' clean' : ''}</span>` : '',
+    streak ? `<span class="pc-chip">${streak} day${streak === 1 ? '' : 's'}${a.avoid ? ' clean' : ''}</span>` : '',
   ].filter(Boolean).join('');
   $('#pane').innerHTML = `${crumb}
     <div class="page-kicker" style="--h:${hue}">Practice</div>
@@ -7158,7 +7158,7 @@ async function loadHomeMail(force) {
 function homeMailHtml() {
   const list = state.home && state.home.mailPreview;
   if (list == null) { loadHomeMail(); return '<div class="home-empty">Fetching your inbox…</div>'; }
-  if (!list.length) return '<div class="home-empty">Your inbox is clear. ✨</div>';
+  if (!list.length) return '<div class="home-empty">Your inbox is clear.</div>';
   const rows = list.slice(0, 4).map((m) => {
     const from = m.from ? (m.from.name || m.from.address || 'Unknown') : 'Unknown';
     const when = m.date ? timeAgo(new Date(m.date).getTime()) : '';
@@ -10935,8 +10935,8 @@ function renderInsights() {
   const reading = list.find((x) => x.id === j.readingInsight);
   const body = `<div class="j-insights j-insights-page">
       <div class="j-ins-actions">
-        <button class="add-btn wide" data-journal-insights-read ${list.length ? '' : 'disabled'}>📖 Read insights</button>
-        <button class="add-btn wide" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? '✨ Reading your entries…' : '✨ Create insights'}</button>
+        <button class="add-btn wide" data-journal-insights-read ${list.length ? '' : 'disabled'}>Read insights</button>
+        <button class="add-btn wide" data-journal-insights ${j.insightsLoading ? 'disabled' : ''}>${j.insightsLoading ? 'Reading your entries…' : 'Create insights'}</button>
       </div>
       ${reading ? `<div class="j-ins-read">
         <div class="j-ins-read-h"><span>${esc(insDate(reading))}${reading.props && reading.props.from ? ` · from your last ${reading.props.from} entries` : ''}</span><button class="ghost j-ins-close" data-journal-insights-close title="Close">×</button></div>
@@ -12269,7 +12269,7 @@ function areaWheelPanel(area) {
   const isPB = revs.length >= 2 && curScore >= best && curScore > (prev || 0);
   const bars = revs.slice(-16).map((r, i, arr) => `<span class="awt-bar ${i === arr.length - 1 ? 'now' : ''}" style="--h:${hue};--bh:${Math.max(10, Math.round(r.score / 5 * 100))}%" title="${esc(evShortDate(r.date))} · ${r.score}/5"></span>`).join('');
   const pills = [];
-  if (curScore === 5) pills.push('<span class="awg-pill full">✨ Thriving</span>');
+  if (curScore === 5) pills.push('<span class="awg-pill full">Thriving</span>');
   if (isPB) pills.push('<span class="awg-pill pb">🏆 Personal best</span>');
   else if (run >= 3) pills.push(`<span class="awg-pill">📈 ${run} up in a row</span>`);
   pills.push(`<span class="awg-pill">🏅 Best ${best}/5</span>`);
@@ -13092,7 +13092,7 @@ function renderAreaOld() {
     : (visionSnip ? `<div class="area-vision-ro">${esc(visionSnip)}</div>` : '<div class="home-empty">Nothing yet.</div>');
   const hlQuotes = (visionHl && visionSnip) ? visionHighlights(visionSnip) : [];
   const hlHtml = hlQuotes.length ? `<div class="vision-hl">${hlQuotes.map((q) => `<blockquote class="vision-hl-q">${esc(q)}</blockquote>`).join('')}</div>` : '';
-  const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>✨ Highlight the best bits</span></label>` : '';
+  const hlToggle = (visionSnip && canEditArea) ? `<label class="vision-hl-tog"><input type="checkbox" data-area-vision-hl="${area.id}" ${visionHl ? 'checked' : ''}><span>Highlight the best bits</span></label>` : '';
   // Like the Goals tool: once there's a highlight to show, the full editable text
   // collapses behind "Edit", so you just see the highlighted bits; expand to tweak
   // the words. Only for the owner (a viewer always sees whatever text is there).
@@ -15741,7 +15741,7 @@ function t2TrackerHtml(manage) {
         <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">🔥${streak}${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
+        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">${streak} days${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
