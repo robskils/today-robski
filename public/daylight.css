@@ -248,6 +248,27 @@
   :root[data-light] .cap-drawer { background:var(--glass-card); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
 }
 
+/* Practices: names in the serif, in white; the count sits beside the name. */
+.prc-group + .prc-group { margin-top:28px; }
+.prc-lane { color:var(--k-mute); margin-bottom:4px; }
+.prc-row { gap:16px; padding:11px 2px; border-bottom-color:var(--k-line); }
+.prc-row .prc-name, .prc-row .prc-name-link { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:23px; line-height:1.2; color:var(--k-ink); }
+.prc-row-click:hover { background:transparent; }
+.prc-row-click:hover .prc-name-link { color:var(--k-goldt); }
+.prc-row .prc-name .trk-streak { display:inline; margin-left:12px; font-family:'Jost',system-ui,sans-serif; font-weight:400; font-size:14px; color:var(--k-goldt); white-space:nowrap; min-width:0; }
+.prc-row .prc-name :is(.prc-badge, .t2-avoidtag) { font-family:'Jost',system-ui,sans-serif; font-size:11px; }
+.prc-row .prc-name .prc-badge:not(.dim) { color:var(--k-goldt); }
+.prc-row .trk-week { gap:3px; }
+.prc-row .trk-dot { width:23px; height:23px; }
+.prc-row .trk-dot i { font-size:11px; }
+.prc-row .trk-del:hover { color:var(--k-goldt); }
+@media (max-width:767px) {
+  .prc-row { flex-wrap:wrap; row-gap:8px; }
+  .prc-row .prc-name { flex:1 1 calc(100% - 90px); white-space:normal; }
+  .prc-row .trk-week { order:3; margin-left:46px; }
+  .prc-row .trk-del { order:2; }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
