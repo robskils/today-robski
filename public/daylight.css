@@ -1,10 +1,10 @@
 /* Koyéba - the light. A painted wash behind every page that follows the real day
-   (dawn, morning, midday, dusk, night), with frosted glass on what floats and on
+   (dawn, overcast by day, dusk, night), with frosted glass on what floats and on
    what you choose or glance at. Never glass on what you read closely.
 
    `html[data-light]` and `html[data-theme]` are set together by applyLight() in
    app.js (and the first-paint script in app.html), so text colours and the wash
-   can never disagree: pale text on a morning wash is unreadable.
+   can never disagree: pale text on a light wash is unreadable.
    Every text colour here is at least 4.5:1 on the strongest paint of its wash;
    tools/wash/paint.py prints the figures when the washes are repainted. */
 
@@ -14,20 +14,6 @@
   --k-deep:#21161C; --k-ondeep:#FFFFFF;
   --glass:rgba(70,50,62,.28); --glass-edge:rgba(255,240,235,.3); --glass-card:rgba(70,50,62,.44); --glass-face:rgba(28,18,24,.52);
   --line:rgba(255,255,255,.2); --line-2:rgba(255,255,255,.34);
-}
-:root[data-light='morning'] {
-  --k-bg:#F8F5EE; --k-panel:#FDFBF6; --k-soft:#F0EBDF; --k-mine:#E9E2D2;
-  --k-ink:#14110A; --k-mute:#322D22; --k-goldt:#523906; --k-gold:#BE8A2E; --k-line:#DDD6C7;
-  --k-deep:#2E2A26; --k-ondeep:#F8F5EE;
-  --glass:rgba(255,255,255,.28); --glass-edge:rgba(255,255,255,.65); --glass-card:rgba(255,255,255,.48); --glass-face:rgba(46,42,38,.84);
-  --line:rgba(33,29,20,.2); --line-2:rgba(33,29,20,.34);
-}
-:root[data-light='midday'] {
-  --k-bg:#F7F6EF; --k-panel:#FFFFFF; --k-soft:#EEEDE4; --k-mine:#E8E6DA;
-  --k-ink:#0C0B07; --k-mute:#2A2821; --k-goldt:#463005; --k-gold:#BE8A2E; --k-line:#DEDCD1;
-  --k-deep:#2B2A28; --k-ondeep:#FBFBF7;
-  --glass:rgba(255,255,255,.3); --glass-edge:rgba(255,255,255,.75); --glass-card:rgba(255,255,255,.55); --glass-face:rgba(43,42,40,.84);
-  --line:rgba(18,17,12,.18); --line-2:rgba(18,17,12,.32);
 }
 :root[data-light='overcast'] {
   --k-bg:#2A333F; --k-panel:#343E4C; --k-soft:#3F4A59; --k-mine:#485565;
@@ -68,20 +54,16 @@
 @media (prefers-reduced-motion:reduce) { #light-layer img, :root[data-light] { transition:none; } }
 
 /* ── Legibility ───────────────────────────────────────────────────────────── */
-/* By day, a veil of the ground over the paint: keeps the sky but calms it behind text. */
-#light-layer::after { content:""; position:absolute; inset:0; background:var(--k-bg); opacity:0; transition:opacity 1.2s; }
-:root[data-light='morning'] #light-layer::after { opacity:.34; }
-:root[data-light='midday'] #light-layer::after { opacity:.42; }
-/* Thin type on a light ground needs its full weight. */
-:root[data-light='morning'] body, :root[data-light='midday'] body { -webkit-font-smoothing:auto; -moz-osx-font-smoothing:auto; }
-:root[data-light='morning'] :is(.nx-lead,.qod-text,.kg-mood,.cx-mood,.sx-lead,.rf-rdcard-l,.home-rd-l,.home-empty-i),
-:root[data-light='midday'] :is(.nx-lead,.qod-text,.kg-mood,.cx-mood,.sx-lead,.rf-rdcard-l,.home-rd-l,.home-empty-i) { -webkit-text-stroke:.25px currentColor; }
 /* These used the fill gold, or a faded ink, as text: illegible on paint. */
 :root[data-light] :is(.home-rd-kind,.home-rd-act,.home-rd-all,.home-sa-alltxt,.sec-new,.sx-num,.sx-idx-num,.cvx-ava,.cx-side-add,.home-sa-k2,.home-sa-new) { color:var(--k-goldt); opacity:1; }
 :root[data-light] :is(.home-sa-when,.home-sa-item,.kmark-cap,.qod-author,.tx-pile-h,.kg-view-h,.rf-tool-h,.cvx-card-sub) { color:var(--k-mute); opacity:1; }
 /* The smallest labels, up to something readable. */
 :root[data-light] :is(.nx-eyebrow,.kg-eyebrow-t,.cx-eyebrow,.sx-eyebrow-t,.cx-side-eyebrow,.home-sub-eyebrow,.kg-order-l,.home-rd-kind,.home-sa-k2,.qod-author,.kmark-cap) { font-size:13px; }
 :root[data-light] :is(.crumb,.tx-row-sp,.tx-row-due,.tx-pile-h,.rf-tool-h,.kg-view-h,.home-sa-when,.home-sa-alltxt,.home-rd-act,.home-rd-all,.sec-new) { font-size:14px; }
+
+/* Tasks' piles: each keeps its own width, so their labels can't run together. */
+.tx-piles { row-gap:12px; column-gap:clamp(26px,3vw,44px); }
+.tx-pile { flex:none; }
 
 /* ── Glass: what floats ───────────────────────────────────────────────────── */
 /* The menubar's parent is solid by default, which would hide the glass entirely. */

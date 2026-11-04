@@ -1635,11 +1635,12 @@ function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.
 function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 // The light: a painted wash that follows the real day (public/daylight.css).
-const LIGHTS = ['dawn', 'morning', 'midday', 'overcast', 'dusk', 'night'];   // overcast: a moody daytime, preview only for now
-const LIGHT_GROUND = { dawn: '#3B2B36', morning: '#F8F5EE', midday: '#F7F6EF', overcast: '#2A333F', dusk: '#2E2230', night: '#0D1220' };
+const LIGHTS = ['dawn', 'overcast', 'dusk', 'night'];
+const LIGHT_GROUND = { dawn: '#3B2B36', overcast: '#2A333F', dusk: '#2E2230', night: '#0D1220' };
 // Which part of the day it is where you are, from your sunrise and sunset. With no
 // location yet, a sensible clock guess (07:00 and 18:30) stands in for the sun.
-function lightIsDark(l) { return l === 'dawn' || l === 'overcast' || l === 'dusk' || l === 'night'; }
+// Koyéba is dark at every hour now (Robin, 2026-11-04), so the theme is always dark.
+function lightIsDark() { return true; }
 function lightFromSun(now = new Date()) {
   const loc = cachedLoc();
   const s = loc ? sunTimes(now, loc.lat, loc.lng) : null;
@@ -1650,7 +1651,7 @@ function lightFromSun(now = new Date()) {
   if (t < rise - 0.75 * H || t >= set + 0.75 * H) return 'night';
   if (t < rise + H) return 'dawn';
   if (t >= set - 1.25 * H) return 'dusk';
-  return t < (rise + set) / 2 - 1.25 * H ? 'morning' : 'midday';
+  return 'overcast';
 }
 // Staging and local only: pick any time of day to look at it. Never on the live site.
 function lightPreviewAllowed() { return /(^|\.)workers\.dev$|^localhost$|^127\.0\.0\.1$/.test(location.hostname); }
@@ -1660,7 +1661,7 @@ function currentLight() {
   const m = themeMode();
   if (m === 'dark') return 'night';
   const l = lightFromSun();
-  if (m === 'light' && lightIsDark(l)) return 'midday';
+  if (m === 'light') return 'overcast';   // pinned to Day
   return l;
 }
 function syncLightLayer(light) {
@@ -1672,7 +1673,7 @@ function syncLightLayer(light) {
   if (img) { show(img); return; }
   img = new Image(); img.alt = ''; img.dataset.l = light;
   img.onload = () => { if (document.documentElement.dataset.light === light) show(img); };
-  img.src = `/wash/${light}.webp?v=2`;   // bump after repainting: these are cached for good
+  img.src = `/wash/${light}.webp?v=3`;   // bump after repainting: these are cached for good
   el.appendChild(img);
 }
 function syncLightPreview(light) {
