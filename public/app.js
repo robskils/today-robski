@@ -7833,6 +7833,8 @@ function renderCapBar(force) {
       // Enter sends it (like a message); Shift+Enter drops to a new line. A long
       // line now wraps and the box grows instead of running off the side.
       i.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCap(); } else if (e.key === 'Escape') { e.preventDefault(); capCancel(); } });
+      // Focus inside the tap as well: an iPhone only shows the cursor and keyboard for that.
+      i.focus();
       setTimeout(() => { i.focus(); const v = i.value; i.value = ''; i.value = v; capGrow(i); }, 60);
     }
   }
