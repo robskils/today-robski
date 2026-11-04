@@ -134,7 +134,7 @@
 }
 
 /* Mail and Notepad had their own padding, which sat their words 2px above the rest. */
-.knav-mail-btn, .knav-np-btn { display:inline-flex; align-items:center; padding:6px 0; }
+.knav-mail-btn, .knav-np-btn { display:inline-flex; align-items:center; padding:6px 0 5px; }   /* 5px + their 1px underline = the 6px their neighbours have */
 
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
