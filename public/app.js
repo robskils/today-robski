@@ -21471,6 +21471,14 @@ async function spendCatAdd() {
   if (spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) { toast('That category already exists (Spaces are categories too)'); return; }
   saveSpendExtras([...spendExtras(), name]);
 }
+// "+ New category…" chosen from a transaction's dropdown: make the category (if it
+// isn't one already) and file this transaction under it in one step. (Robin, 2026-11-04.)
+async function spendCatNewFor(txnId) {
+  const name = String(await uiPrompt('New spending category:', { placeholder: 'e.g. Savings' }) || '').trim();
+  if (!name) { renderFinancial(); return; }   // cancelled - reset the dropdown
+  if (!spendCats().some((c) => c.toLowerCase() === name.toLowerCase())) saveSpendExtras([...spendExtras(), name]);
+  spendSetCat(txnId, name);
+}
 async function spendCatRename(oldName) {
   if (spendIsArea(oldName)) { toast('This is a Space - rename it in the Spaces section.'); return; }
   const name = String(await uiPrompt('Rename category:', { value: oldName }) || '').trim();
@@ -21873,7 +21881,7 @@ function spendRow(t) {
   return `<div class="sp-txn ${t.amount < 0 ? 'out' : 'in'}">
     <span class="sp-date">${esc(t.date.slice(8, 10))}/${esc(t.date.slice(5, 7))}</span>
     <span class="sp-desc" title="${esc(t.description || '')}">${esc(t.description || '—')}</span>
-    <select class="sel sp-cat" data-sp-cat="${t.id}">${opts}</select>
+    <select class="sel sp-cat" data-sp-cat="${t.id}">${opts}<option disabled>──────</option><option value="__newcat__">+ New category…</option></select>
     <span class="sp-amt">${eurSigned(t.amount)}</span>
   </div>`;
 }
@@ -28378,7 +28386,7 @@ document.addEventListener('change', (e) => {
   const cag = e.target.closest('[data-contact-add-group]'); if (cag) { const cid = cag.dataset.contactAddGroup, v = e.target.value; e.target.value = ''; if (v === '__new') addContactViaNewGroup(cid); else if (v) addContactToGroup(cid, v); return; }
   if (e.target.matches('[data-contact-area-sel]')) { state.contactsArea = e.target.value || null; renderContacts(); return; }
   if (e.target.id === 'sp-file' && e.target.files && e.target.files[0]) { spendOpenFile(e.target.files[0]); e.target.value = ''; return; }
-  const spc = e.target.closest('[data-sp-cat]'); if (spc) { spendSetCat(spc.dataset.spCat, e.target.value); return; }
+  const spc = e.target.closest('[data-sp-cat]'); if (spc) { if (e.target.value === '__newcat__') spendCatNewFor(spc.dataset.spCat); else spendSetCat(spc.dataset.spCat, e.target.value); return; }
   const tcc = e.target.closest('[data-trk-cat]'); if (tcc) { setTrackerCat(tcc.dataset.trkCat, e.target.value); return; }
   const spmap = e.target.closest('[data-sp-map]'); if (spmap && state.financial.spendImport) { state.financial.spendImport.map[spmap.dataset.spMap] = e.target.value; renderFinancial(); return; }
   // Pick which account this message sends from. Snapshot the in-progress fields
