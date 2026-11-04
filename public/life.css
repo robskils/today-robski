@@ -11661,8 +11661,11 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .rc-horo .rc-ring { position:absolute; left:50%; top:44px; width:40px; height:40px; transform:translate(-50%,-50%); border:1px solid var(--k-gold); border-radius:50%; opacity:.8; }
 .rc-horo .rc-zc { position:absolute; left:0; right:0; top:44px; transform:translateY(-50%); text-align:center; font-family:'Noto Sans Symbols','Jost',sans-serif; font-size:26px; line-height:1; color:var(--k-gold); }
 .rc-horo .rc-foot-gold { color:var(--k-gold); }
-.rc-ich .rc-bars { position:absolute; left:14px; right:14px; top:20px; bottom:26px; display:flex; flex-direction:column; justify-content:space-between; gap:5px; }
-.rc-ich .rc-bar { height:5px; display:flex; }
+.rc-ich .rc-bars { position:absolute; left:14px; right:14px; top:20px; bottom:26px; display:flex; flex-direction:column; justify-content:space-between; gap:4px; }
+/* flex:none + gap:0 + nowrap: a yin line's two segments must NOT inherit the
+   generic .rc-bar gap/flex-wrap, or they wrap to a 2nd row and the six-line
+   hexagram collapses to a couple of bars. (Robin, 2026-11-04: "it should have 6 lines".) */
+.rc-ich .rc-bar { height:5px; flex:none; display:flex; gap:0; flex-wrap:nowrap; align-items:stretch; }
 .rc-ich .rc-bar.yang { background:var(--k-ink); }
 .rc-ich .rc-bar.yin { justify-content:space-between; }
 .rc-ich .rc-bar.yin i { width:44%; background:var(--k-ink); }
