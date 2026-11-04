@@ -3056,7 +3056,7 @@ async function runEventRemindersForUser(env, user) {
   }
   if (!fired.length) { if (changed) await setSetting(uenv, 'event_alarm_sent', JSON.stringify(sentMap)).catch(() => {}); return 0; }
 
-  const home = `https://${user.subdomain || 'robski'}.daybook.fyi`;
+  const home = 'https://koyeba.co';
   const phRow = await env.DB.prepare("SELECT value FROM settings WHERE user_id=? AND key='phone'").bind(uid).first().catch(() => null);
   const phone = (phRow && phRow.value) || (uid === 1 ? env.ALERT_PHONE : '');
   const email = uid === 1 ? (env.BRIEF_EMAIL || user.email) : user.email;
@@ -3211,7 +3211,7 @@ async function runDailyBrief(env, { force = false, user = null } = {}) {
     const to = owner ? (env.BRIEF_EMAIL || (user && user.email) || (env.user && env.user.email))
                      : (user ? user.email : (env.user && env.user.email));
     if (!to) return { sent: false, reason: 'no recipient' };
-    const home = `https://${(user && user.subdomain) || 'robski'}.daybook.fyi`;
+    const home = 'https://koyeba.co';
 
     const payload = { day: now.date, events, tasks, quote, siteUrl: home, calError: cal.error || null, unread: (mailRes && mailRes.n) || 0 };
     const subject = briefSubject(payload);
@@ -4546,9 +4546,11 @@ async function handleInviteRequest(request, env, json, err) {
   const email = String(b.email || '').trim().toLowerCase().slice(0, 200);
   const why = String(b.why || '').trim().slice(0, 1200);
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('Please add your name and a valid email.', request, 400);
+  let stored = false, mailed = false;
   try {
     await env.DB.prepare('INSERT INTO invite_requests (name, email, why, source, created_at) VALUES (?,?,?,?,?)')
       .bind(name, email, why, String(b.source || '').slice(0, 300), new Date().toISOString()).run();
+    stored = true;
   } catch (e) { console.error('invite-request store:', e.message); }
   try {
     const to = env.BRIEF_EMAIL || 'contact@daybook.fyi';
@@ -4557,7 +4559,10 @@ async function handleInviteRequest(request, env, json, err) {
       ${why ? `<p style="color:#574e44;border-left:3px solid #a8844a;padding-left:12px">${escHtml(why)}</p>` : ''}
       <p style="color:#8b7f72;font-size:13px">Reply to them at ${escHtml(email)}.</p></div>`;
     await sendSystemMail(env, { to, subject: `Koyéba invite request — ${name}`, html, text: `${name} <${email}>\n\n${why}` });
+    mailed = true;
   } catch (e) { console.error('invite-request mail:', e.message); }
+  // Lost both ways: say so, so the form can offer the email address, not a false "thank you".
+  if (!stored && !mailed) return err('We could not save that just now.', request, 503);
   return json({ ok: true }, request);
 }
 // Admin: the invite requests people have submitted, newest first, with a count of
@@ -4971,6 +4976,11 @@ export default {
       // /app is the app's home at the apex now that everyone lives at lifebook.fyi
       // (no more per-user subdomains): the marketing page forwards signed-in visitors
       // here, and the installed app's start_url points at it. (Robin, 2026-10-15.)
+      // Invitations already sent can point at an old domain. Nobody is signed in yet
+      // at this stage, so send them home instead of signing up on the old origin.
+      if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) && ['daybook.fyi', 'lifebook.fyi', 'lifefold.co', 'shizu.fyi'].some((d) => host === d || host === 'www.' + d)) {
+        return Response.redirect('https://koyeba.co' + url.pathname + url.search, 301);
+      }
       if (/^\/join(\/[A-Za-z0-9-]{4,24})?$/.test(path) || path === '/signin' || path === '/app') {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/app.html', url.origin), request)));
       }

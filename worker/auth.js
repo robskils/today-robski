@@ -411,7 +411,7 @@ export function codeEmail(code, kind) {
         <tr><td style="padding:16px 38px;border-top:1px solid #e4ddcf">
           <p style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#8b7f72;text-align:center">For a life well lived</p>
           <p style="margin:0;font-size:11px;color:#8b7f72;text-align:center">
-            <a href="https://lifefold.co" style="color:#a8844a;text-decoration:none">daybook.fyi</a>
+            <a href="https://koyeba.co" style="color:#a8844a;text-decoration:none">koyeba.co</a>
           </p>
         </td></tr>
 

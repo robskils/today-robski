@@ -71,7 +71,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
         </td></tr>
 
         <tr><td style="padding:20px 38px 0">
-          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The link signs you in and sets up your Koyéba - there is no code to enter. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#a8844a;text-decoration:none">${escHtml(link)}</a></p>
+          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The button takes you to Koyéba, where we'll send a short sign-in code to confirm your email. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#a8844a;text-decoration:none">${escHtml(link)}</a></p>
         </td></tr>
 
         <tr><td style="padding:26px 38px 8px" align="center">

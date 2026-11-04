@@ -62,7 +62,7 @@ const T_EN = {
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'The code in the email that invited you.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'Your invitation is accepted - now make it yours.', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Koyéba is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
@@ -84,7 +84,7 @@ const T_PT = {
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'O código no email que te convidou.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'O teu convite foi aceite - agora torna-o teu.', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Koyéba é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
@@ -106,7 +106,7 @@ const T_IT = {
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
-  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': "Il codice nell'email che ti ha invitato.", 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
+  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Il tuo invito è accettato - ora rendilo tuo.', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Koyéba è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
   'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
@@ -1409,7 +1409,7 @@ function renderGuideIndex() {
         <a class="guide-legal-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service ↗</a>
         <a class="guide-legal-link" href="mailto:contact@koyeba.co">Contact us ✉</a>
       </div>
-      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyéba · daybook.fyi</p>
+      <p class="guide-copyright">Questions or anything at all? Email <a href="mailto:contact@koyeba.co">contact@koyeba.co</a>.<br>© ${new Date().getFullYear()} Koyéba · koyeba.co</p>
       <div class="guide-signoff">
         <p class="guide-tagline">For a life well lived</p>
         <button class="guide-home-logo" data-guide-home aria-label="Back to the top of Home" title="Back to the top of Home">${MARK}</button>
@@ -2279,7 +2279,7 @@ function contactRemovePhoto() {
 function myCardData() {
   const a = state.account || {}; const c = cardProfile();
   return {
-    name: a.name || firstName() || 'You', handle: a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : '', subdomain: a.subdomain || '',
+    name: a.name || firstName() || 'You', handle: a.subdomain ? `koyeba.co/u/${a.subdomain}` : '', subdomain: a.subdomain || '',
     photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
     tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
     emails: cardChosenEmails(c), phone: c.showPhone ? (a.phone || '') : '',
@@ -2341,7 +2341,7 @@ function cardEditorHtml() {
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
         ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Koyéba</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://koyeba.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">lifebook.fyi/u/${esc(a.subdomain)}</span></div>
+          <div class="dbc-qrwrap">${qrSvg('https://koyeba.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">koyeba.co/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
@@ -2379,7 +2379,7 @@ async function openPublicCard(id, seed) {
 function renderPublicCard() {
   let el = document.getElementById('viewcard'); if (!el) { el = document.createElement('div'); el.id = 'viewcard'; document.body.appendChild(el); }
   const v = state.viewCard || {}; const d = v.data;
-  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `lifebook.fyi/u/${d.subdomain}` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
+  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `koyeba.co/u/${d.subdomain}` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
   const isMe = d && state.me && d.id === state.me.id;
   const friends = (state.friends && state.friends.friends) || [];
   const connected = d && d.id && friends.some((f) => f.id === d.id);
@@ -3070,7 +3070,7 @@ function inviteToKoyeba(prefill) {
       const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
       close();
       await loadInvites();
-      if (r.sent) toast(`Invitation sent to ${r.email}`);
+      if (r.sent) toast(r.reused ? `${r.email} already had an invitation - sent it again` : `Invitation sent to ${r.email}`);
       // The invite exists even when the send failed, so hand its link over
       // rather than losing it to an error toast.
       else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
@@ -3129,7 +3129,7 @@ function adminInvite(prefill, onDone) {
       const r = await api('/api/invites', { method: 'POST', body: JSON.stringify(body) });
       close(); await loadInvites();
       if (onDone) try { onDone(); } catch {}
-      if (r.sent) toast(`Invitation sent to ${r.email}`);
+      if (r.sent) toast(r.reused ? `${r.email} already had an invitation - sent it again` : `Invitation sent to ${r.email}`);
       else if (r.email) copyJoinLink(r.link, `Invite made, but the email didn't send (${r.sendError || 'unknown error'}). Its link is copied - send it yourself.`);
       else copyJoinLink(r.link, 'Invite link copied - share it with anyone');
     } catch (e) { fail(e.message); }
@@ -13675,7 +13675,7 @@ function areaOverviewHtml(area, c, blocks) {
     const a = state.account || {};
     const name = a.name || (state.me && state.me.name) || 'You';
     const subd = a.subdomain || (state.me && state.me.subdomain) || '';
-    const sub = subd ? `lifebook.fyi/u/${esc(subd)}` : 'owner';
+    const sub = subd ? `koyeba.co/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
     return `<button class="ov-person ov-person-me" data-open-card title="Edit your Koyéba card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
@@ -18009,7 +18009,7 @@ function sigBuilderInner(a) {
       ${f('name', 'Name', 'Robin Lumley-Savile')}
       <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Koyéba')}</div>
       <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
-      ${f('website', 'Website', 'daybook.fyi', 'url')}
+      ${f('website', 'Website', 'yoursite.com', 'url')}
       ${f('address', 'Address / location', 'Lisbon, Portugal')}
       ${f('tagline', 'Tagline (optional)', 'A life well lived')}
       <label class="sig-f sig-accent"><span>Accent colour</span><span class="sig-accent-row">
@@ -20285,7 +20285,7 @@ function contactCardHtml(c) {
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
   const a = state.account || {}; const name = a.name || firstName() || 'You';
-  const sub = a.subdomain ? `lifebook.fyi/u/${a.subdomain}` : t('ct.self.sub');
+  const sub = a.subdomain ? `koyeba.co/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
   return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Koyéba card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
@@ -31644,7 +31644,7 @@ function showGate(sub) {
 // /api/me returns needsSignup; on the single-tenant app /api/me 404s and this
 // never shows.
 const storedInvite = () => { try { return localStorage.getItem('life.invite') || ''; } catch { return ''; } };
-function showSignup(email, inviteRequired, invited) {
+function showSignup(email, inviteRequired, invited, notice) {
   // Prefill the username from the subdomain they arrived on (name.daybook.fyi),
   // else from their email, so most people only have to agree with it.
   let presub = '';
@@ -31659,17 +31659,19 @@ function showSignup(email, inviteRequired, invited) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><em>Koyéba</em></div>
-      <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : t('signup.welcome')}</p>
+      <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : needCode ? t('signup.byinvite') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
       ${needCode ? `<label class="signup-l">${t('signup.invitecode')}<input class="gate2-input" id="su-invite" placeholder="${t('signup.invitecode.ph')}" autocomplete="off" spellcheck="false" required>
         <span class="su-username-note">${t('signup.invitecode.note')}</span></label>` : ''}
       <button class="gate2-btn" id="su-btn" type="submit">${t('signup.create')}</button>
-      <p class="gate2-err" id="su-err" hidden></p>
+      <p class="gate2-err" id="su-err"${notice ? '' : ' hidden'}>${esc(notice || '')}</p>
+      ${needCode ? `<p class="gate2-alt"><a href="/#invite">${t('signup.noinvite')}</a></p>` : ''}
       <p class="gate2-alt su-foot">${t('signup.signedinas', { email: esc(email) })} · <button type="button" class="su-signout" id="su-signout">${t('signup.signout')}</button></p>
     </form></div>`);
+  $('#signup-form').dataset.email = email;
   $('#signup-form').addEventListener('submit', signupSubmit);
-  $('#su-signout').addEventListener('click', () => { clearToken(); location.reload(); });
+  $('#su-signout').addEventListener('click', () => { try { localStorage.removeItem('life.invite'); } catch {} clearToken(); location.reload(); });
   $('#su-name').focus();
 }
 // Their Koyéba lives on its own subdomain - a different origin, with its own
@@ -31694,7 +31696,18 @@ async function signupSubmit(e) {
     }) });
     if (d && d.user) { try { localStorage.removeItem('life.invite'); } catch {} location.replace('/app'); return; }
     throw new Error(t('signup.createfail'));
-  } catch (e2) { err.textContent = e2.message || t('signup.createfail'); err.hidden = false; btn.disabled = false; }
+  } catch (e2) {
+    // A code carried in from a link was refused and there's no field to fix it from:
+    // drop it and show the field, keeping what they typed.
+    if (!inv && storedInvite() && /invit/i.test(e2.message || '')) {
+      const form = $('#signup-form'), nm = $('#su-name').value;
+      try { localStorage.removeItem('life.invite'); } catch {}
+      const email = form.dataset.email; $('#signup').remove();
+      showSignup(email, true, false, e2.message); $('#su-name').value = nm;
+      return;
+    }
+    err.textContent = e2.message || t('signup.createfail'); err.hidden = false; btn.disabled = false;
+  }
 }
 // Ask for a code by email (default) or SMS. SMS is the way in once the mailbox
 // you would fetch the email from lives behind this very gate.
@@ -31841,7 +31854,7 @@ function welcomeItems() {
   // Import isn't a checklist step - it's two buttons under the grid (you may have
   // nothing to bring in). (Robin, 2026-10-29.)
   const items = [
-    { id: 'identity', ic: '🎨', label: 'Make it yours', done: !!((a.name || '').trim() || card.photo || savedAccent()) },
+    { id: 'identity', ic: '🎨', label: 'Make it yours', done: !!(card.photo || card.tagline) },
     { id: 'folios', ic: '◈', label: 'Your Spaces', done: (state.areas || []).length > 0 },
     { id: 'email', ic: '✉', label: 'Connect your email', done: mailConnected },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', done: (state.gcalAccounts || []).length > 0 || !!a.isOwner },
@@ -32152,7 +32165,7 @@ function renderOnboarding() {
   const onManaged = a.isOwner || isManagedPlan(a.plan);
   const calConnected = (state.gcalAccounts || []).length > 0 || !!a.isOwner;
   const TILES = [
-    { id: 'identity', ic: '🎨', label: 'Make it yours', hint: 'Your name, a colour, a photo', done: !!((a.name || '').trim() || card.photo || savedAccent()), body: onbIdentity },
+    { id: 'identity', ic: '🎨', label: 'Make it yours', hint: 'A photo and a line about you', done: !!(card.photo || card.tagline), body: onbIdentity },
     { id: 'folios', ic: '◈', label: 'Your Spaces', hint: 'The parts of your life', done: (state.areas || []).length > 0, body: onbAreas },
     { id: 'email', ic: '✉', label: 'Connect your email', hint: 'Gmail, Outlook, iCloud…', opt: true, done: mailConnected, body: onbEmail },
     { id: 'calendar', ic: '📅', label: 'Add your calendar', hint: 'Google, iCloud or Yahoo', opt: true, done: calConnected, body: onbCalendar },
@@ -32164,7 +32177,8 @@ function renderOnboarding() {
   // AI is handled for you on Premium Plus, so there's nothing to add there.
   if (!onManaged) TILES.push({ id: 'ai', ic: '✦', label: 'Add AI', hint: 'Optional - it all works without it', opt: true, done: !!(a.aiAnySet || a.aiAnthropicSet || a.aiGeminiSet || a.aiOpenaiSet), body: onbAi });
   // The two foundations - making it yours and your Spaces - count toward
-  // "all set". Every connection and safety step is genuinely optional and must
+  // "all set". Signup fills in a name and seeds Spaces, so a name alone can't count
+  // or a brand-new member is told they're finished on first open. Every connection and safety step is genuinely optional and must
   // never make a new member look unfinished or imply it's required. (Robin.)
   const countable = TILES.filter((x) => ('done' in x) && !x.opt);
   const doneN = countable.filter((x) => x.done).length;

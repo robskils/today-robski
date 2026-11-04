@@ -53,7 +53,7 @@ async function subdomainTaken(env, sub) {
 // code - they click the link in the email, sign in, and we find their invite.
 async function pendingInvite(env, email) {
   return env.DB.prepare(
-    'SELECT code, email, plan, free, free_months, created_by, used_by FROM invites WHERE email = ? AND used_by IS NULL ORDER BY created_at DESC LIMIT 1',
+    'SELECT code, email, plan, free, free_months, note, created_by, used_by FROM invites WHERE email = ? AND used_by IS NULL ORDER BY created_at DESC LIMIT 1',
   ).bind(String(email || '').toLowerCase()).first().catch(() => null);
 }
 export async function hasPendingInvite(env, email) {
@@ -73,6 +73,9 @@ async function resolveInvite(env, typed, email) {
   if (!code) return (await pendingInvite(env, email)) || null;
   const inv = await env.DB.prepare('SELECT code, email, plan, free, free_months, created_by, used_by FROM invites WHERE code = ?')
     .bind(code).first().catch(() => null);
+  // A stale code left in the browser must not beat a live invitation to this
+  // address: that was a dead end, with no field to fix it from.
+  if (!inv || inv.used_by) { const live = await pendingInvite(env, email); if (live) return live; }
   if (!inv) return 'unknown';
   if (inv.used_by) return 'used';
   return inv;
@@ -228,7 +231,7 @@ export async function giftsUsed(env) {
   return c ? (c.n || 0) : 0;
 }
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-export const joinLink = (code) => `https://lifefold.co/join/${code}`;
+export const joinLink = (code) => `https://koyeba.co/join/${code}`;
 
 // Create an invite and, when it names an address, *send it*. The inviter types
 // their friend's email and a note and the invitation lands in their inbox with a
@@ -254,13 +257,13 @@ export async function createInvite(env, input) {
   }
 
   const gift = !!input.gift;
-  if (gift && !existing && (await giftsUsed(env)) >= GIFT_LIMIT) {
+  if (gift && !(existing && existing.free) && (await giftsUsed(env)) >= GIFT_LIMIT) {
     throw new Error(`You've given out all ${GIFT_LIMIT} of your free 6-month gifts.`);
   }
 
   const code = existing ? existing.code
     : (String(input.code || '').trim() || randomCode()).toUpperCase().slice(0, 24);
-  if (!existing) {
+  {
     let plan, free, fm;
     // The owner (admin) gets the full range: pick the plan outright, and set any
     // free period (in months) on top - not just the members' one-tap 6-month gift.
@@ -276,15 +279,26 @@ export async function createInvite(env, input) {
       free = gift ? 1 : 0;
       fm = gift ? GIFT_MONTHS : null;
     }
-    const note = admin ? (input.note || null) : null;
-    await env.DB.prepare(
-      'INSERT INTO invites (code, email, plan, free, free_months, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    ).bind(code, email, plan, free, fm, note, env.uid, new Date().toISOString()).run();
+    const note = String(input.message || input.note || '').trim().slice(0, 600) || null;
+    const ownerChoice = admin && (input.plan !== undefined || input.freeMonths !== undefined);
+    if (!existing) {
+      await env.DB.prepare(
+        'INSERT INTO invites (code, email, plan, free, free_months, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ).bind(code, email, plan, free, fm, note, env.uid, new Date().toISOString()).run();
+    } else if (ownerChoice || (gift && !existing.free)) {
+      // Asking again with a plan (owner) or a gift (anyone) changes the standing
+      // invitation. Silently keeping the old terms lost both. A gift counts
+      // against whoever gave it, so the invitation moves to them.
+      await env.DB.prepare('UPDATE invites SET plan = ?, free = ?, free_months = ?, note = COALESCE(?, note), created_by = ? WHERE code = ?')
+        .bind(plan, free, fm, note, ownerChoice ? existing.created_by : env.uid, code).run();
+    } else if (note) {
+      await env.DB.prepare('UPDATE invites SET note = ? WHERE code = ?').bind(note, code).run();
+    }
   }
 
   let sent = false, sendError = null;
   if (email && input.send !== false) {
-    try { await sendInviteMail(env, { to: email, code, message: input.message }); sent = true; }
+    try { await sendInviteMail(env, { to: email, code, message: input.message || (existing && existing.note) || '' }); sent = true; }
     catch (e) { sendError = e.message || 'Could not send the email.'; }
   }
   return { code, email, link: joinLink(code), sent, sendError, reused: !!existing };
@@ -294,12 +308,12 @@ export async function createInvite(env, input) {
 // invite got lost without minting a second code.
 export async function resendInvite(env, code) {
   const c = String(code || '').trim().toUpperCase();
-  const inv = await env.DB.prepare('SELECT code, email, created_by, used_by FROM invites WHERE code = ?').bind(c).first().catch(() => null);
+  const inv = await env.DB.prepare('SELECT code, email, note, created_by, used_by FROM invites WHERE code = ?').bind(c).first().catch(() => null);
   if (!inv) throw new Error('No such invite.');
   if (env.uid !== 1 && inv.created_by !== env.uid) throw new Error('That is not your invite.');
   if (inv.used_by) throw new Error('That invitation has already been used.');
   if (!inv.email) throw new Error('That invite has no email address on it - share its link instead.');
-  await sendInviteMail(env, { to: inv.email, code: inv.code });
+  await sendInviteMail(env, { to: inv.email, code: inv.code, message: inv.note || '' });
   return { code: inv.code, email: inv.email, sent: true };
 }
 
@@ -328,7 +342,7 @@ async function sendInviteMail(env, { to, code, message }) {
   let tagline = '', accent = '';
   try { const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'card_profile'").bind(env.uid).first(); if (row && row.value) { const c = JSON.parse(row.value) || {}; tagline = String(c.tagline || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 140); accent = c.accent || ''; } } catch {}
   const html = inviteEmail({ from, message, link, tagline, accent });
-  const text = `${from} has invited you to join Koyéba.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nKoyeba is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
+  const text = `${from} has invited you to join Koyéba.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nKoyéba is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
   const replyTo = (env.user && env.user.email) || null;
 
   if (env.BRIEF_SMTP_PASS) {
@@ -405,7 +419,7 @@ export async function patchAccount(env, body) {
     const sub = normSubdomain(body.subdomain);
     if (!sub) throw new Error('That username has invalid characters or is reserved. Use a-z, 0-9 and hyphens.');
     const taken = await env.DB.prepare('SELECT id FROM users WHERE subdomain = ? AND id <> ?').bind(sub, env.uid).first().catch(() => null);
-    if (taken) throw new Error(`"${sub}.daybook.fyi" is taken - try another.`);
+    if (taken) throw new Error(`"${sub}" is taken - try another.`);
     await env.DB.prepare('UPDATE users SET subdomain = ? WHERE id = ?').bind(sub, env.uid).run();
   }
   if (body.phone !== undefined) await env.DB.prepare("INSERT INTO settings (user_id, key, value) VALUES (?, 'phone', ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value").bind(env.uid, String(body.phone).slice(0, 40)).run();

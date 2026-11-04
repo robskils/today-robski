@@ -24,7 +24,7 @@ test('the link is the whole action - no code to type', () => {
   const html = inviteEmail({ from: 'Robin', link: LINK });
   assert.ok(html.includes(`href="${LINK}"`), 'the button links to the join URL');
   assert.match(html, /Accept the invitation/);
-  assert.match(html, /there is no code to enter/);
+  assert.match(html, /send a short sign-in code/);
 });
 
 test('escapes the inviter name', () => {
