@@ -435,6 +435,12 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 .gln-mail-when { font-family:'Jost',system-ui,sans-serif; font-size:15px; color:var(--k-mute); white-space:nowrap; align-self:baseline; }
 @media (max-width:767px) { .home-todaytabs .gln-mail-b { flex-direction:column; gap:3px; } .home-todaytabs .gln-mail-from { max-width:100%; } }
 
+/* Phones: notifications sit right on top of the bottom bar, across the width. */
+@media (max-width:767px) {
+  :root[data-light] :is(.toast, .toast.toast-wide, .np-toast) { left:0; right:0; bottom:calc(62px + env(safe-area-inset-bottom)); width:100%; max-width:none; box-sizing:border-box; transform:none; background:var(--glass-face); border:0; border-top:1px solid var(--glass-edge); -webkit-backdrop-filter:blur(28px) saturate(1.7); backdrop-filter:blur(28px) saturate(1.7); white-space:normal; animation:capfade .2s ease-out; }
+  :root[data-light] .toast .toast-msg { color:var(--k-ink); }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
