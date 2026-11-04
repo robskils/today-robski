@@ -414,8 +414,9 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 @keyframes capfade { from { opacity:0; } to { opacity:1; } }
 
 /* Today's Mail tab: email titles in the serif, in white. */
-:is(.home-todaytabs) :is(.gln-mail-subj, .gln-mail-from) { display:block; font-family:'Cormorant Garamond',serif; font-weight:500; font-size:26px; line-height:1.2; color:var(--k-ink); }
-.home-todaytabs .gln-mail-from { color:var(--k-goldt); }
+.home-todaytabs .gln-mail-b { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 14px; min-width:0; }
+.home-todaytabs :is(.gln-mail-subj, .gln-mail-from) { display:inline; margin:0; font-family:'Cormorant Garamond',serif; font-weight:500; font-size:26px; line-height:1.2; color:var(--k-ink); white-space:normal; overflow:visible; }
+.home-todaytabs .gln-mail-from { color:var(--k-goldt); white-space:nowrap; flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 
 /* Capture on a phone: words, or a photo or scan that becomes a new note. */
 .cap-l-phone, .cap-media { display:none; }
