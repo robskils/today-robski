@@ -377,6 +377,9 @@
 /* Today's Practices tab: no add button; Edit practices covers it. */
 :root[data-light] .home-wn-prc .prc-addtoggle { display:none !important; }
 
+/* Flow doesn't work on a phone, so it isn't offered there. */
+@media (max-width:767px) { [data-open-today] { display:none !important; } }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
