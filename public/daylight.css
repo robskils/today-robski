@@ -140,8 +140,7 @@
 .prc-lane-dot, .cd, .ca-dot, .wt-dot, .set-area-dot { display:none !important; }
 
 /* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
-.prc-addtoggle { width:fit-content; align-self:flex-start; min-height:44px; padding:0 18px; background:transparent; border:1px solid var(--k-gold); color:var(--k-ink); font-size:16px; font-weight:500; }
-.prc-addtoggle:hover { background:transparent; border-color:var(--k-goldt); color:var(--k-goldt); filter:none; }
+.prc-addtoggle { width:fit-content; align-self:flex-start; }
 
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
