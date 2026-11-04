@@ -4,8 +4,8 @@
 <script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Koyéba - um lar tranquilo para toda a sua vida</title>
-<meta name="description" content="O Koyéba mantém o correio, o calendário, as tarefas, as notas, o dinheiro e a vida interior num só lugar privado, ligados pelos Spaces. Pouse, e volta quando precisar. Os seus dados são seus.">
+<title>Koyéba - os seus mundos interior e exterior, em sintonia</title>
+<meta name="description" content="Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos entre os seus mundos interior e exterior, para que aquilo em que trabalha todos os dias seja o que lhe importa.">
 <link rel="canonical" href="https://koyeba.co/pt">
 <link rel="alternate" hreflang="en" href="https://koyeba.co/">
 <link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt">
@@ -21,18 +21,18 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Koyéba">
-<meta property="og:title" content="Koyéba - pouse, e volta quando precisar">
-<meta property="og:description" content="Um lar tranquilo e privado para toda a sua vida: correio, calendário, tarefas, notas, dinheiro e a vida interior, ligados pelos Spaces. Os seus dados são seus.">
+<meta property="og:title" content="Koyéba - os seus mundos interior e exterior, em sintonia">
+<meta property="og:description" content="Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos entre os seus mundos interior e exterior, para que aquilo em que trabalha todos os dias seja o que lhe importa.">
 <meta property="og:url" content="https://koyeba.co/pt">
 <meta property="og:image" content="https://koyeba.co/brand/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Koyéba - set it down, and it comes back when you need it">
+<meta property="og:image:alt" content="Koyéba - os seus mundos interior e exterior, em sintonia">
 <meta property="og:locale" content="pt_PT">
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Koyéba - pouse, e volta quando precisar">
-<meta name="twitter:description" content="Um lar tranquilo e privado para toda a sua vida. Pouse, e volta quando precisar.">
+<meta name="twitter:title" content="Koyéba - os seus mundos interior e exterior, em sintonia">
+<meta name="twitter:description" content="Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos entre os seus mundos interior e exterior, para que aquilo em que trabalha todos os dias seja o que lhe importa.">
 <meta name="twitter:image" content="https://koyeba.co/brand/og-image.png">
 <!-- Structured data -->
 <script type="application/ld+json">
@@ -45,7 +45,7 @@
       "url": "https://koyeba.co/",
       "name": "Koyéba",
       "slogan": "Para uma vida bem vivida",
-      "description": "Um lar tranquilo e privado para toda a sua vida - correio, calendário, tarefas, notas, dinheiro e a vida interior, ligados pelos Spaces.",
+      "description": "Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos entre os seus mundos interior e exterior, para que aquilo em que trabalha todos os dias seja o que lhe importa.",
       "inLanguage": "pt-PT"
     },
     {
@@ -55,7 +55,7 @@
       "url": "https://koyeba.co/",
       "applicationCategory": "ProductivityApplication",
       "operatingSystem": "Web, iOS, Android",
-      "description": "O Koyéba é um lar tranquilo e privado para tudo o que traz consigo - correio, calendário, tarefas, notas, dinheiro e a vida interior. Pouse, e volta quando precisar. Os seus dados são privados, e a IA é opcional, com a sua própria chave.",
+      "description": "Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos entre os seus mundos interior e exterior, para que aquilo em que trabalha todos os dias seja o que lhe importa.",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
     }
   ]
@@ -72,24 +72,25 @@
 @font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
 
-/* ── Tokens: ivory day (default), deep-forest night (§3) ── */
+/* ── Tokens: ivory day (default), deep-forest night ── */
 :root{
-  --k-bg:#f8f4ec; --k-panel:#fdfbf7; --k-soft:#efe9dc;
-  --k-ink:#2a2620; --k-mute:#6b6357; --k-faint:#9a9082; --k-line:#e0d9cc;
-  --k-gold:#c99a3e; --k-goldt:#8f6c2a; --k-deep:#2c4a3a; --k-ondeep:#f8f4ec; --k-ongold:#2a2620;
-  /* The two forest panels stay forest in both themes, so their colours are fixed. */
-  --k-forest:#2c4a3a; --k-forest-deep:#13241d; --k-onforest:#f8f4ec;
-  --k-forest-line:rgba(248,244,236,.16); --k-forest-mute:rgba(248,244,236,.78);
+  --k-bg:oklch(0.975 0.012 85); --k-panel:oklch(0.99 0.006 85); --k-soft:oklch(0.94 0.016 82);
+  --k-ink:oklch(0.17 0.015 60); --k-mute:oklch(0.38 0.02 70); --k-faint:oklch(0.45 0.02 70); --k-line:oklch(0.88 0.014 80);
+  --k-gold:oklch(0.72 0.13 75); --k-goldt:oklch(0.5 0.11 68);
+  --k-deep:oklch(0.28 0.04 155); --k-ondeep:oklch(0.975 0.012 85); --k-ongold:oklch(0.22 0.018 60);
+  --k-deepline:oklch(0.975 0.012 85 / .2);
+  --k-forest-line:var(--k-deepline); --k-forest-mute:var(--k-ondeep); --k-onforest:var(--k-ondeep);
   --k-serif:'Cormorant Garamond', Georgia, serif;
   --k-sans:'Jost', system-ui, sans-serif;
-  --maxw:1240px;
   font-synthesis:none;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --k-bg:#13241d; --k-panel:#1a2e25; --k-soft:#20362b;
-    --k-ink:#eef1e6; --k-mute:#b4bbac; --k-faint:#8a9385; --k-line:#33463d;
-    --k-gold:#d8b25e; --k-goldt:#e2c37a; --k-deep:#0e1a14; --k-ondeep:#eef1e6; --k-ongold:#2a2620;
+    --k-bg:oklch(0.23 0.035 158); --k-panel:oklch(0.26 0.035 158); --k-soft:oklch(0.29 0.035 158);
+    --k-ink:oklch(0.94 0.012 85); --k-mute:oklch(0.74 0.02 80); --k-faint:oklch(0.7 0.02 80); --k-line:oklch(0.36 0.03 158);
+    --k-gold:oklch(0.74 0.12 76); --k-goldt:oklch(0.8 0.11 78);
+    --k-deep:oklch(0.18 0.035 158); --k-ondeep:oklch(0.94 0.012 85);
+    --k-deepline:oklch(0.94 0.012 85 / .2);
   }
 }
 
@@ -120,7 +121,6 @@ i, em, .i { font-style: italic; }
 .btn-ghost:hover { border-color: var(--k-ink); }
 .link-gold { font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); }
 .link-gold:hover { color: var(--k-gold); }
-
 /* ── nav ── */
 nav { position: sticky; top: 0; z-index: 50; background: var(--k-bg); border-bottom: 1px solid var(--k-line); }
 .nav-in { display: flex; align-items: center; gap: clamp(16px,3vw,40px); height: 84px; }
@@ -138,159 +138,6 @@ nav { position: sticky; top: 0; z-index: 50; background: var(--k-bg); border-bot
 .nav-cta .sign:hover { color: var(--k-goldt); }
 @media (max-width: 860px) { .nav-links { display: none; } }
 @media (max-width: 640px) { .nav-cta .btn-primary { display: none; } }
-
-/* ── section rhythm ── */
-.sec { border-top: 1px solid var(--k-line); }
-.sec-in { padding-top: clamp(64px,8vw,112px); padding-bottom: clamp(64px,8vw,112px); }
-.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,420px), 1fr)); gap: clamp(40px,6vw,96px); }
-.two.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); }
-.lead { font-size: 17px; line-height: 1.7; color: var(--k-mute); text-wrap: pretty; }
-h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px; }
-.set-head { margin-top: 20px; }
-
-/* ── hero ── */
-.hero-in { padding-top: clamp(56px,8vw,112px); padding-bottom: clamp(64px,8vw,120px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: clamp(40px,6vw,88px); align-items: center; }
-.hero h1 { font-size: clamp(52px,6.4vw,86px); line-height: 1; letter-spacing: -.01em; margin-top: 22px; }
-.hero h1 i { color: var(--k-gold); }
-.hero-sub { font-size: 18px; line-height: 1.65; color: var(--k-mute); max-width: 500px; margin-top: 28px; text-wrap: pretty; }
-.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; margin-top: 40px; }
-
-/* hero demo card (flat, square, no shadow) */
-.demo { background: var(--k-panel); border: 1px solid var(--k-line); padding: 30px 32px 28px; }
-.demo-line { font-family: var(--k-serif); font-weight: 300; font-size: clamp(28px,3vw,38px); line-height: 1.2; padding: 22px 0 14px; border-bottom: 1px solid var(--k-ink); min-height: 46px; display: flex; align-items: flex-end; margin-top: 12px; }
-.demo-caret { width: 2px; height: 34px; margin-left: 3px; margin-bottom: 4px; background: var(--k-gold); }
-.demo-rows { display: grid; padding-top: 8px; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
-.demo-row { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
-.demo-rk { font-family: var(--k-sans); font-weight: 600; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-mute); }
-.demo-rv { font-family: var(--k-sans); font-size: 15px; line-height: 1.45; }
-.demo-foot { display: flex; align-items: center; gap: 14px; padding-top: 18px; }
-.demo-foot .df-t { font-size: 13px; color: var(--k-mute); }
-.demo-set { margin-left: auto; font-family: var(--k-sans); font-weight: 500; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; padding: 10px 16px; background: var(--k-gold); color: var(--k-ongold); white-space: nowrap; }
-
-/* ── the idea ── */
-.idea-body { display: grid; gap: 18px; padding-top: 8px; font-size: 17px; line-height: 1.7; color: var(--k-mute); }
-.idea-body .know { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 21px; color: var(--k-ink); }
-
-/* ── tools: two columns of folding rows, no icons ── */
-.tools-head { max-width: 760px; }
-.tools-head .lead { max-width: 620px; margin-top: 20px; }
-.tool-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,460px), 1fr)); gap: 0 clamp(40px,5vw,80px); margin-top: 56px; }
-.tg-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--k-ink); }
-.tg-label { font-family: var(--k-sans); font-weight: 600; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
-.tg-count { font-family: var(--k-sans); font-size: 12px; color: var(--k-mute); }
-.tool { border-bottom: 1px solid var(--k-line); }
-.tool-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
-.tool-name { font-family: var(--k-serif); font-weight: 300; font-size: 28px; line-height: 1.1; min-width: 150px; color: var(--k-ink); }
-.tool-line { flex: 1; font-family: var(--k-sans); font-size: 14px; line-height: 1.45; color: var(--k-mute); }
-.tool-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
-.tool-body { padding: 0 0 22px 168px; display: grid; gap: 10px; }
-.tool-desc { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; text-wrap: pretty; }
-.tool-joins { font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-goldt); }
-@media (max-width: 560px) { .tool-h { flex-wrap: wrap; gap: 4px 14px; } .tool-name { min-width: 0; } .tool-line { flex-basis: 100%; } .tool-body { padding-left: 0; } }
-
-/* ── spaces (forest panel) ── */
-.forest { background: var(--k-forest); color: var(--k-onforest); }
-.forest button { color: inherit; }   /* buttons default to black, which reads as muddy "blue on green" on the forest - never that; inherit the ivory */
-.forest .lead { color: var(--k-forest-mute); }
-.forest .eyebrow { color: var(--k-gold); }
-.forest h2 i { color: var(--k-gold); }
-.share { margin-top: 40px; border-top: 1px solid var(--k-forest-line); }
-.share-h { display: flex; align-items: baseline; gap: 16px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--k-forest-line); }
-.share-h .st { font-family: var(--k-serif); font-weight: 300; font-size: 26px; color: var(--k-onforest); }
-.share-h .ss { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-forest-mute); }
-.share-body { padding: 18px 0 4px; display: grid; gap: 14px; }
-.share-body[hidden] { display: none; }
-.share-body p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-forest-mute); text-wrap: pretty; }
-.share-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 28px; font-family: var(--k-sans); font-size: 14px; }
-.spacecard { border: 1px solid var(--k-forest-line); padding: 30px 32px; }
-.sc-top { display: flex; align-items: baseline; gap: 14px; }
-.sc-num { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 20px; color: var(--k-gold); }
-.sc-name { font-family: var(--k-serif); font-weight: 300; font-size: 38px; line-height: 1; }
-.sc-who { margin-left: auto; font-family: var(--k-sans); font-size: 12.5px; color: var(--k-forest-mute); }
-.sc-groups { margin-top: 22px; }
-.sc-group { border-top: 1px solid var(--k-forest-line); }
-.sc-gh { display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
-.sc-gl { font-family: var(--k-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; }
-.sc-gc { font-family: var(--k-sans); font-size: 12px; color: var(--k-forest-mute); }
-.sc-gs { margin-left: auto; font-family: var(--k-sans); font-weight: 300; font-size: 18px; color: var(--k-forest-mute); }
-.sc-items { display: grid; gap: 10px; padding: 0 0 16px; }
-.sc-item { display: flex; gap: 14px; align-items: baseline; font-family: var(--k-sans); font-size: 14.5px; line-height: 1.4; }
-.sc-item .it-t { flex: 1; }
-.sc-item .it-m { font-size: 12.5px; color: var(--k-forest-mute); white-space: nowrap; }
-.sc-join { border-top: 1px solid var(--k-forest-line); padding-top: 16px; font-family: var(--k-sans); font-size: 13px; line-height: 1.5; color: var(--k-gold); }
-
-/* ── the inner life (centred) ── */
-.inner-in { max-width: 880px; margin: 0 auto; text-align: center; }
-.inner-in .lead { margin: 24px auto 0; max-width: 620px; }
-.inner-more { margin-top: 28px; font-family: var(--k-sans); font-weight: 500; font-size: 14px; color: var(--k-goldt); cursor: pointer; background: none; border: 0; }
-.inner-extra { margin: 18px auto 0; max-width: 620px; }
-
-/* ── private by design (folding points, no ticks) ── */
-.priv-points { border-top: 1px solid var(--k-line); }
-.priv { border-bottom: 1px solid var(--k-line); }
-.priv-h { display: flex; align-items: baseline; gap: 18px; padding: 18px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; }
-.priv-num { width: 26px; flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-gold); }
-.priv-title { flex: 1; font-family: var(--k-serif); font-weight: 300; font-size: 25px; line-height: 1.2; color: var(--k-ink); }
-.priv-sign { font-family: var(--k-sans); font-weight: 300; font-size: 22px; color: var(--k-mute); }
-.priv-body { padding: 0 0 20px 44px; font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); text-wrap: pretty; }
-
-/* ── made to be quick (three columns) ── */
-.quick-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,280px), 1fr)); gap: clamp(28px,4vw,56px); margin-top: 48px; }
-.quick-step { border-top: 1px solid var(--k-ink); padding-top: 22px; }
-.quick-n { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 26px; color: var(--k-gold); }
-.quick-t { font-family: var(--k-serif); font-weight: 300; font-size: 30px; line-height: 1.15; margin-top: 10px; }
-.quick-p { font-family: var(--k-sans); font-size: 15px; line-height: 1.6; color: var(--k-mute); margin-top: 10px; }
-
-/* ── invite (deep-forest panel) ── */
-.invite { background: var(--k-forest-deep); color: var(--k-onforest); }
-.invite-in { max-width: 760px; margin: 0 auto; padding-top: clamp(72px,9vw,128px); padding-bottom: clamp(72px,9vw,128px); text-align: center; display: flex; flex-direction: column; align-items: center; }
-.invite-script { width: 220px; height: auto; opacity: .9; }
-.invite .eyebrow { margin-top: 44px; color: var(--k-gold); }
-.invite h2 { font-size: clamp(44px,5vw,66px); line-height: 1.05; margin-top: 20px; }
-.invite-lead { font-family: var(--k-sans); font-size: 17px; line-height: 1.7; color: var(--k-forest-mute); margin-top: 22px; max-width: 520px; text-wrap: pretty; }
-.invite-form { width: min(100%,520px); margin-top: 40px; text-align: left; }
-.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.inv-field { border-bottom: 1px solid var(--k-forest-line); }
-.inv-field + .inv-field { margin-top: 4px; }
-.inv-field input { width: 100%; background: transparent; border: 0; padding: 15px 2px; font-family: var(--k-sans); font-size: 16px; color: var(--k-onforest); }
-.inv-field input::placeholder { color: var(--k-forest-mute); }
-.inv-field input:focus { outline: none; }
-.inv-field:focus-within { border-bottom-color: var(--k-gold); }
-.invite-form .if-actions { display: flex; justify-content: center; margin-top: 26px; }
-.invite-form .if-note { margin-top: 16px; font-size: 14px; color: var(--k-gold); text-align: center; }
-.invite-thanks { text-align: center; padding: 8px 0; }
-.invite-thanks h3 { font-family: var(--k-serif); font-size: 28px; font-weight: 300; }
-.invite-thanks p { margin: 12px auto 0; max-width: 42ch; color: var(--k-forest-mute); font-size: 16.5px; line-height: 1.6; }
-.inv-have { margin-top: 22px; font-family: var(--k-sans); font-size: 14px; color: var(--k-onforest); opacity: .75; }
-.inv-have:hover { opacity: 1; }
-
-/* ── footer ── */
-.foot-in { padding-top: 56px; padding-bottom: 40px; }
-.foot-top { display: flex; flex-wrap: wrap; gap: 32px 64px; align-items: flex-start; }
-.foot-brand { display: grid; gap: 10px; }
-.foot-tag { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 19px; color: var(--k-mute); }
-.foot-col { display: grid; gap: 10px; font-family: var(--k-sans); font-size: 14px; }
-.foot-col a { color: var(--k-ink); } .foot-col a:hover { color: var(--k-goldt); }
-.foot-meta { margin-left: auto; font-family: var(--k-sans); font-size: 13px; line-height: 1.7; color: var(--k-mute); text-align: right; }
-.foot-lisboa { font-style: italic; color: var(--k-goldt); font-family: var(--k-serif); font-size: 15px; }
-.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 4px; }
-.foot-lang-label { font-size: 13px; color: var(--k-faint); }
-.foot-mark { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 80px; opacity: .5; transition: opacity .6s ease; }
-.foot-mark:hover { opacity: 1; }
-.foot-mark img { width: 240px; max-width: 72vw; height: auto; }
-.dict { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 26px; text-align: center; }
-.dict-head { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 14px; }
-.dict-word { font-family: var(--k-serif); font-weight: 500; font-size: 24px; line-height: 1; }
-.dict-say { font-family: var(--k-sans); font-size: 14px; color: var(--k-mute); white-space: nowrap; }
-.dict-pos { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 18px; color: var(--k-goldt); white-space: nowrap; }
-.dict-def { font-family: var(--k-serif); font-weight: 300; font-size: 20px; line-height: 1.3; color: var(--k-mute); }
-
-/* language switcher (filled by i18n.js) */
-.lang-switch { display: inline-flex; align-items: center; gap: 1px; }
-.lang-switch a { display: inline-block; padding: 4px 7px; font-size: 12.5px; font-weight: 500; letter-spacing: .04em; color: var(--k-faint); transition: color .16s, background .16s; }
-.lang-switch a:hover { color: var(--k-ink); background: var(--k-soft); }
-.lang-switch a.on { color: var(--k-goldt); }
-
 /* ── sign-in modal (kept from the old homepage) ── */
 .signin-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: color-mix(in oklab, var(--k-ink) 46%, transparent); }
 .signin-overlay[hidden] { display: none; }
@@ -309,11 +156,177 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
 .signin-foot a { color: var(--k-goldt); font-weight: 500; }
 .signin-smslink { display: block; width: fit-content; max-width: 100%; margin: 16px auto 0; padding: 11px 20px; background: none; border: 1px solid var(--k-gold); text-align: center; font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--k-goldt); cursor: pointer; font-family: var(--k-sans); transition: background .18s, color .18s; }
 .signin-smslink:hover { background: var(--k-gold); color: var(--k-ongold); }
-
 /* ── reveal on scroll ── */
 .reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); }
 .reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .demo-rows { transition: none; } }
+
+/* ── page furniture ── */
+body { font-size: 18px; }
+h1, h2, h3 { font-weight: 500; }
+.wrap { max-width: 1336px; }
+.nav-links a { font-size: 17px; }
+.nav-cta .sign { font-size: 11px; }
+.band { padding-top: clamp(72px,9vw,136px); padding-bottom: clamp(72px,9vw,136px); }
+.rule-top { border-top: 1px solid var(--k-line); }
+.h2 { margin: 22px 0 0; font-family: var(--k-serif); font-weight: 500; font-size: clamp(40px,4.8vw,68px); line-height: 1.04; letter-spacing: -.005em; text-wrap: balance; }
+.h2 i { font-weight: 300; color: var(--k-goldt); }
+.h3 { margin: 0; font-family: var(--k-serif); font-weight: 500; font-size: 30px; line-height: 1.1; }
+.lead { margin: 0; font-size: clamp(18px,1.5vw,21px); line-height: 1.65; color: var(--k-mute); text-wrap: pretty; }
+.two { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,440px),1fr)); gap: clamp(40px,6vw,96px); }
+.link-gold { font-size: 17px; }
+.link-gold:hover { color: var(--k-ink); }
+.eyebrow-c { display: flex; justify-content: center; }
+.say-it { font-family: var(--k-serif); font-weight: 300; font-style: italic; color: var(--k-goldt); }
+
+/* ── hero ── */
+.hero-in { padding-top: clamp(56px,7vw,112px); padding-bottom: clamp(64px,7vw,112px); }
+.hero h1 { margin: 28px 0 0; font-size: clamp(56px,9.6vw,140px); line-height: .98; letter-spacing: -.015em; text-wrap: balance; }
+.hero h1 i { font-weight: 300; color: var(--k-goldt); }
+.hero-row { margin-top: clamp(36px,4.4vw,64px); align-items: end; }
+.hero-sub { font-size: clamp(20px,1.8vw,25px); line-height: 1.5; color: var(--k-mute); max-width: 34em; text-wrap: pretty; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; }
+
+/* ── forest bands ── */
+.forest { background: var(--k-deep); color: var(--k-ondeep); }
+.forest button { color: inherit; }
+.forest .eyebrow { color: var(--k-gold); }
+.forest .h2 i { color: var(--k-gold); }
+.forest .lead { color: var(--k-ondeep); }
+.forest :focus-visible { outline: 2px solid var(--k-gold); outline-offset: 3px; }
+.forest .btn-primary { color: var(--k-ongold); }
+.forest .btn-primary:hover { background: var(--k-ondeep); color: var(--k-deep); }
+
+/* ── joining the dots: one spine, square gold markers ── */
+.pairs { margin-top: clamp(56px,6vw,88px); }
+.pair-grid, .pair { display: grid; grid-template-columns: minmax(0,1fr) clamp(32px,6vw,88px) minmax(0,1fr); }
+.pair-grid { padding-bottom: 18px; font-family: var(--k-serif); font-weight: 500; font-size: clamp(26px,2.6vw,36px); line-height: 1.1; }
+.pair-grid > :first-child { text-align: right; }
+.pair-row { border-top: 1px solid var(--k-deepline); }
+.pair-end { border-top: 1px solid var(--k-deepline); }
+.pair { width: 100%; padding: 0; background: none; border: 0; cursor: pointer; text-align: left; font: inherit; color: var(--k-ondeep); }
+.pair-side { display: block; padding: 26px 0; }
+.pair-side.in { text-align: right; }
+.pair-from { display: block; font-size: 16px; line-height: 1.4; opacity: .84; }
+.pair-in { display: block; margin-top: 8px; font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: clamp(23px,2.5vw,36px); line-height: 1.22; }
+.pair-out { display: block; margin-top: 8px; font-weight: 500; font-size: clamp(18px,1.6vw,23px); line-height: 1.35; }
+.spine { position: relative; display: flex; justify-content: center; padding-top: 34px; }
+.spine::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--k-gold); opacity: .55; }
+.mark { position: relative; width: 13px; height: 13px; border: 1px solid var(--k-gold); background: var(--k-deep); transition: background .35s ease; }
+.pair-row.on .mark, .pair:hover .mark { background: var(--k-gold); }
+.pair-join { padding: 0 0 26px; text-align: center; font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: clamp(21px,2vw,27px); line-height: 1.3; color: var(--k-gold); animation: kfade .5s cubic-bezier(.2,.7,.2,1); }
+@keyframes kfade { from { opacity: 0; transform: translateY(6px); } }
+
+/* ── why it matters ── */
+.why { text-align: center; }
+.why-big { max-width: 15em; margin: 26px auto 0; font-family: var(--k-serif); font-weight: 500; font-size: clamp(44px,6.6vw,96px); line-height: 1.02; letter-spacing: -.01em; text-wrap: balance; }
+.why-big i { font-weight: 300; color: var(--k-goldt); }
+.why .two { margin-top: clamp(56px,6vw,88px); text-align: left; }
+.princ { border-top: 1px solid var(--k-ink); padding-top: 22px; }
+.princ-n { font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: 26px; line-height: 1.2; color: var(--k-goldt); }
+.princ h3 { margin: 10px 0 0; font-size: clamp(30px,3vw,42px); line-height: 1.1; }
+.princ .lead { margin-top: 14px; }
+
+/* ── the name ── */
+.name { background: var(--k-soft); border-top: 1px solid var(--k-line); border-bottom: 1px solid var(--k-line); }
+.name-word { margin-top: 26px; font-family: var(--k-serif); font-weight: 500; font-size: clamp(88px,20vw,290px); line-height: .9; letter-spacing: -.02em; }
+.name-word span { color: var(--k-gold); }
+.name-dict { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 24px; margin-top: clamp(24px,2.6vw,40px); padding-bottom: clamp(24px,2.6vw,40px); border-bottom: 1px solid var(--k-ink); }
+.name-say { font-size: clamp(19px,1.6vw,23px); color: var(--k-mute); white-space: nowrap; }
+.name-pos { font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: clamp(23px,2vw,29px); line-height: 1.2; color: var(--k-goldt); white-space: nowrap; }
+.name-def { flex: 1 1 320px; font-family: var(--k-serif); font-weight: 500; font-size: clamp(28px,3vw,42px); line-height: 1.1; text-align: right; text-wrap: balance; }
+.name-two { margin-top: clamp(40px,4.4vw,64px); }
+.name-two .lead { margin-top: 14px; }
+.name-hear { margin: 14px 0 0; font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: clamp(27px,2.5vw,34px); line-height: 1.2; color: var(--k-goldt); }
+.name-two .name-hear + .lead { margin-top: 6px; }
+.logo-block { display: flex; flex-direction: column; align-items: center; margin-top: clamp(64px,7vw,104px); text-align: center; }
+.script { display: block; width: min(100%,640px); height: auto; margin: clamp(28px,3vw,44px) auto; }
+.logo-block .lead { max-width: 32em; }
+.know { max-width: 20em; margin: clamp(64px,7vw,104px) auto 0; text-align: center; font-family: var(--k-serif); font-weight: 500; font-size: clamp(36px,4.8vw,68px); line-height: 1.08; }
+.know i { font-weight: 300; color: var(--k-goldt); }
+
+/* ── made to be quick: the capture demo ── */
+.quick { align-items: center; }
+.quick .lead { margin-top: 24px; max-width: 30em; }
+.panel { background: var(--k-panel); border: 1px solid var(--k-line); padding: clamp(24px,2.6vw,36px); }
+.demo-line { min-height: 64px; margin-top: 14px; padding: 18px 0 12px; border-bottom: 1px solid var(--k-ink); font-family: var(--k-serif); font-weight: 300; font-size: clamp(27px,2.8vw,38px); line-height: 1.2; }
+.demo-caret { display: inline-block; width: 2px; height: .95em; margin-left: 3px; vertical-align: -.1em; background: var(--k-gold); }
+.demo-rows { min-height: 196px; opacity: 0; transform: translateY(8px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+.demo-rows.on { opacity: 1; transform: none; }
+.demo-row { display: grid; grid-template-columns: 84px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
+.demo-rk { font-size: 16px; color: var(--k-mute); }
+.demo-rv { font-size: 17px; line-height: 1.4; }
+.demo-foot { padding-top: 16px; font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: 22px; line-height: 1.25; color: var(--k-goldt); }
+
+/* ── tools, as hints ── */
+.hints { margin-top: clamp(48px,5vw,72px); }
+.hint { border-top: 1px solid var(--k-ink); padding-top: 18px; }
+.hint-t { margin: 14px 0 0; font-family: var(--k-serif); font-weight: 500; font-size: clamp(30px,3vw,42px); line-height: 1.22; text-wrap: pretty; }
+.hint-t i { font-weight: 300; color: var(--k-goldt); }
+.taste { margin-top: clamp(32px,3.4vw,48px); }
+
+/* ── spaces ── */
+.sp-card-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; padding-bottom: 18px; border-bottom: 1px solid var(--k-ink); }
+.sp-n { font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: 22px; line-height: 1; color: var(--k-goldt); }
+.sp-name { font-family: var(--k-serif); font-weight: 500; font-size: 38px; line-height: 1; }
+.sp-who { margin-left: auto; font-size: 16px; color: var(--k-mute); }
+.sp-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 18px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--k-line); }
+.sp-t { font-weight: 500; font-size: 17px; line-height: 1.35; }
+.sp-m { font-size: 16px; color: var(--k-mute); white-space: nowrap; }
+.sp-k { grid-column: 1 / -1; font-size: 16px; line-height: 1.4; color: var(--k-mute); }
+.sp-foot { margin: 16px 0 0; font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: 22px; line-height: 1.25; color: var(--k-goldt); }
+
+/* ── ethos ── */
+.ethos { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,250px),1fr)); gap: 40px clamp(28px,3vw,48px); margin-top: 56px; }
+.ethos > div { border-top: 1px solid var(--k-ink); padding-top: 20px; }
+.ethos-w { font-family: var(--k-serif); font-weight: 500; font-size: clamp(36px,3.5vw,50px); line-height: 1.05; }
+.ethos .lead { margin-top: 12px; }
+
+/* ── private by design ── */
+.priv-points { border-top: 1px solid var(--k-line); margin-top: 22px; }
+.priv { border-bottom: 1px solid var(--k-line); }
+.priv-h { display: flex; align-items: baseline; gap: 18px; padding: 16px 0; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; font: inherit; color: inherit; }
+.priv-num { width: 28px; flex: none; font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 21px; line-height: 1.2; color: var(--k-goldt); }
+.priv-title { flex: 1; font-weight: 500; font-size: 18px; line-height: 1.3; }
+.priv-sign { font-size: 22px; line-height: 1; color: var(--k-mute); }
+.priv-body { padding: 0 0 20px 46px; font-size: 17px; line-height: 1.6; color: var(--k-mute); text-wrap: pretty; }
+
+/* ── invite ── */
+.invite-in { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.invite-in .lead { margin-top: 22px; max-width: 30em; }
+.invite-form { width: min(100%,540px); margin-top: 40px; text-align: left; }
+.invite-form #if-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.inv-field { border-bottom: 1px solid var(--k-deepline); }
+.inv-field + .inv-field { margin-top: 4px; }
+.inv-field input { width: 100%; background: transparent; border: 0; padding: 15px 2px; font-family: var(--k-sans); font-size: 18px; color: var(--k-ondeep); }
+.inv-field input::placeholder { color: var(--k-ondeep); opacity: .84; }
+.inv-field input:focus { outline: none; }
+.inv-field:focus-within { border-bottom-color: var(--k-gold); }
+.invite-form .if-actions { display: flex; justify-content: center; margin-top: 26px; }
+.invite-form .if-note { margin-top: 16px; font-size: 16px; color: var(--k-gold); text-align: center; }
+.invite-thanks { text-align: center; padding: 8px 0; }
+.invite-thanks h3 { font-family: var(--k-serif); font-size: 30px; font-weight: 500; }
+.invite-thanks p { margin: 12px auto 0; max-width: 42ch; font-size: 17px; line-height: 1.6; }
+.inv-have { margin-top: 24px; font-size: 17px; }
+.inv-have:hover { color: var(--k-gold); }
+
+/* ── footer ── */
+.foot-in { padding-top: 56px; padding-bottom: 48px; }
+.foot-top { display: flex; flex-wrap: wrap; gap: 32px 72px; align-items: flex-start; }
+.foot-brand { display: grid; gap: 10px; }
+.foot-tag { font-family: var(--k-serif); font-style: italic; font-weight: 300; font-size: 22px; line-height: 1.2; color: var(--k-mute); }
+.foot-col { display: grid; gap: 8px; font-size: 17px; }
+.foot-col a:hover { color: var(--k-goldt); }
+.foot-meta { margin-left: auto; font-size: 16px; line-height: 1.7; color: var(--k-mute); text-align: right; }
+.foot-lang { display: inline-flex; align-items: center; gap: 9px; flex-basis: 100%; padding-top: 4px; }
+.foot-lang-label { font-size: 16px; color: var(--k-mute); }
+.lang-switch { display: inline-flex; align-items: center; gap: 1px; }
+.lang-switch a { display: inline-block; padding: 4px 7px; font-size: 16px; font-weight: 500; color: var(--k-mute); transition: color .16s, background .16s; }
+.lang-switch a:hover { color: var(--k-ink); background: var(--k-soft); }
+.lang-switch a.on { color: var(--k-goldt); }
+
+@media (max-width: 640px) { .priv-body { padding-left: 0; } .eyebrow { white-space: normal; letter-spacing: .2em; } .eyebrow::before { align-self: center; } .know { font-size: 32px; } }
+@media (prefers-reduced-motion: reduce) { .pair-join, .mark, .demo-rows { transition: none; animation: none; } }
+
 </style>
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
 <style>
@@ -365,6 +378,7 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
     </a>
     <ul class="nav-links">
       <li><a href="#idea">A ideia</a></li>
+      <li><a href="#name">O nome</a></li>
       <li><a href="#tools">Ferramentas</a></li>
       <li><a href="#private">Privacidade</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
@@ -374,120 +388,187 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
       <a class="btn btn-primary" href="#invite">Pedir um convite</a>
     </div>
   </div>
+  </div>
 </nav>
 
-<header id="top">
-  <div class="wrap hero-in">
-    <div class="hero-copy reveal">
-      <div class="eyebrow">Só por convite · acesso antecipado</div>
-      <h1>Pouse.<br><i>Volta</i> quando precisar.</h1>
-      <p class="hero-sub">Um lar tranquilo e privado para o seu correio, o calendário, as tarefas, as notas e o resto da sua vida – ligados pelos Spaces, para que tudo encontre o seu lugar e regresse no momento certo.</p>
+<header id="top" class="hero">
+  <div class="wrap hero-in reveal">
+    <div class="eyebrow">Só por convite · acesso antecipado</div>
+    <h1>Os seus mundos interior e exterior, <i>em sintonia.</i></h1>
+    <div class="two hero-row">
+      <p class="hero-sub">Tem ferramentas para escrever um diário. Tem ferramentas de produtividade. O Koyéba liga os pontos, para que aquilo em que trabalha todos os dias seja o que lhe importa.</p>
       <div class="hero-actions">
-        <a class="btn btn-ink" href="#invite">Pedir um convite</a>
-        <a class="link-gold" href="#idea">Como funciona →</a>
+        <a class="btn btn-primary" href="#invite">Pedir um convite</a>
+        <a class="link-gold" href="#idea">Veja como tudo se liga →</a>
       </div>
     </div>
-    <div class="reveal">
-      <div class="demo" aria-hidden="true">
+  </div>
+</header>
+
+<section class="forest" id="idea">
+  <div class="wrap band">
+    <div class="eyebrow">Ligar os pontos</div>
+    <div class="two reveal" style="align-items:end">
+      <h2 class="h2">Ligá-las entre si - <i>isso nunca aconteceu.</i></h2>
+      <p class="lead">O seu diário sabe o que lhe importa. O seu calendário sabe para onde foi a sua semana. Nunca falaram um com o outro. O Koyéba liga os seus mundos interior e exterior, para garantir que estão em sintonia.</p>
+    </div>
+    <div class="pairs reveal" id="pairs">
+      <div class="pair-grid"><div>O seu mundo interior</div><div></div><div>O seu mundo exterior</div></div>
+      <div class="pair-row on">
+        <button class="pair" type="button" aria-pressed="true">
+          <span class="pair-side in"><span class="pair-from">Diário, domingo</span><span class="pair-in">Continuo a dizer que vou voltar a pintar.</span></span>
+          <span class="spine" aria-hidden="true"><span class="mark"></span></span>
+          <span class="pair-side"><span class="pair-from">Calendário, sábado</span><span class="pair-out">Duas horas de aguarelas, a partir das dez</span></span>
+        </button>
+        <div class="pair-join">Dito no domingo. Na agenda no sábado.</div>
+      </div>
+      <div class="pair-row">
+        <button class="pair" type="button" aria-pressed="false">
+          <span class="pair-side in"><span class="pair-from">Um objetivo para este ano</span><span class="pair-in">Estar mais presente para os filhos.</span></span>
+          <span class="spine" aria-hidden="true"><span class="mark"></span></span>
+          <span class="pair-side"><span class="pair-from">Tarefas, esta semana</span><span class="pair-out">Sair às quatro na sexta para a natação da Ada</span></span>
+        </button>
+        <div class="pair-join" hidden>A sua semana, lida à luz do que disse que importa.</div>
+      </div>
+      <div class="pair-row">
+        <button class="pair" type="button" aria-pressed="false">
+          <span class="pair-side in"><span class="pair-from">Revisão, outubro</span><span class="pair-in">O trabalho está a ocupar demasiado de mim.</span></span>
+          <span class="spine" aria-hidden="true"><span class="mark"></span></span>
+          <span class="pair-side"><span class="pair-from">Correio, por organizar</span><span class="pair-out">12 emails, e só 2 precisam de si</span></span>
+        </button>
+        <div class="pair-join" hidden>O resto pode esperar, e agora consegue ver que pode.</div>
+      </div>
+      <div class="pair-end"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap band why reveal">
+    <div class="eyebrow-c"><div class="eyebrow center">Porque importa</div></div>
+    <p class="why-big">É assim que vive a sua melhor vida - <i>uma vida bem vivida.</i></p>
+    <div class="two">
+      <div class="princ"><div class="princ-n">I</div><h3>Trabalhe no que importa</h3><p class="lead">Garanta que aquilo em que está a trabalhar é o que lhe importa. Defina as suas intenções uma vez e veja os seus dias à luz delas.</p></div>
+      <div class="princ"><div class="princ-n">II</div><h3>Tire o atrito do caminho</h3><p class="lead">Removemos todo o atrito que conseguimos, para que esteja a viver a sua vida, e não preso nas suas ferramentas.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="name" id="name">
+  <div class="wrap band">
+    <div class="eyebrow">O nome</div>
+    <div class="name-word reveal">Koyéba<span>.</span></div>
+    <div class="name-dict">
+      <span class="name-say">koh-YEH-bah</span>
+      <span class="name-pos">verbo, lingala</span>
+      <span class="name-def">Saber - factos, lugares, pessoas.</span>
+    </div>
+    <div class="two name-two reveal">
+      <div><h3 class="h3">De onde vem</h3><p class="lead">O lingala é falado por milhões de pessoas nos dois Congos. Koyéba é a sua palavra de todos os dias para saber.</p></div>
+      <div><h3 class="h3">Como o ouviria</h3><p class="name-hear" lang="ln">Nasepeli koyeba yo.</p><p class="lead">Prazer em conhecê-lo.</p></div>
+    </div>
+    <div class="logo-block reveal">
+      <h3 class="h3">O que está por trás do nosso logótipo</h3>
+      <svg class="script" viewBox="194 199 447 135" role="img" aria-label="Koyéba, escrito em Mandombe" fill="none" stroke-linecap="square" stroke-linejoin="miter" stroke-width="6">
+        <path d="M237,220 H275 M237,220 V245 H272 V272 H237 M237,258 H200 V285 H237 V313 H200" stroke="var(--k-ink)"></path>
+        <path d="M275,220 H315 V272" stroke="var(--k-gold)"></path>
+        <polygon points="274.19,240.83 318,270.4 318,275 314.07,275 270.83,245.81" fill="var(--k-gold)" stroke="none"></polygon>
+        <g transform="translate(-262,0)">
+          <path d="M645,205 H607 V262 H645 V272 H682 V300 H645 V328 H682" stroke="var(--k-ink)"></path>
+          <path d="M682,328 H715 V272 H740 M715,300 H740" stroke="var(--k-gold)"></path>
+        </g>
+        <g transform="translate(-517,0)">
+          <path d="M1030,255 H1103 V283 H1030 Z M1065,228 V307 H1030 M1065,228 H1103" stroke="var(--k-ink)"></path>
+          <path d="M1103,228 H1140 L1108,252 H1140 V283 H1152" stroke="var(--k-gold)"></path>
+        </g>
+      </svg>
+      <p class="lead">Koyéba, escrito em Mandombe, uma escrita nascida no Congo em 1978. A primeira sílaba é o pequeno sinal ao lado do nosso nome.</p>
+    </div>
+    <p class="know reveal">Saber onde estão as coisas.<br>Saber o que vem a seguir.<br><i>Saber quem é.</i></p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap band">
+    <div class="eyebrow">Feito para ser rápido</div>
+    <div class="two quick reveal">
+      <div>
+        <h2 class="h2">A viver a sua vida, <i>não preso nas suas ferramentas.</i></h2>
+        <p class="lead">Escreva como diria. Encontra o seu lugar e aparece quando é útil, não antes. Dois toques, e pode largar.</p>
+      </div>
+      <div class="panel" aria-hidden="true">
         <div class="eyebrow">Pouse algo</div>
         <div class="demo-line"><span id="demoTyped"></span><span class="demo-caret" id="demoCaret"></span></div>
         <div class="demo-rows" id="demoRows"></div>
       </div>
     </div>
   </div>
-</header>
+</section>
 
-<section class="sec" id="idea">
-  <div class="wrap sec-in two">
-    <div class="reveal">
-      <div class="eyebrow">A ideia</div>
-      <h2 class="big">Carregamos demais de uma só vez.</h2>
+<section class="rule-top" id="tools">
+  <div class="wrap band reveal">
+    <div class="eyebrow">Ferramentas</div>
+    <h2 class="h2">Um só conjunto de ferramentas, <i>a falar entre si.</i></h2>
+    <div class="two hints">
+      <div class="hint"><div class="lead">Para o seu mundo interior</div><p class="hint-t">Uma página para cada dia. <i>Um olhar para trás sobre a semana, e um rumo para a seguinte.</i> Os poucos objetivos que persegue. <i>Os livros que quer mesmo ler, e os planos maiores para um dia.</i></p></div>
+      <div class="hint"><div class="lead">Para o seu mundo exterior</div><p class="hint-t">Uma caixa de entrada que se limpa de uma só vez. <i>Uma agenda que sabe quem vem.</i> O que é preciso fazer hoje, e o que pode esperar. <i>Quanto custa realmente o cão.</i></p></div>
     </div>
-    <div class="idea-body reveal">
-      <p>Tarefas a meio lembradas, ideias que queríamos guardar, dinheiro que queríamos vigiar. Agarrado sem firmeza, escapa-se – para pedaços de papel, para dez aplicações diferentes, ou perde-se em silêncio.</p>
-      <p>Em lingala, Koyéba quer dizer <span class="know">saber</span>. Pouse algo uma vez e saberá sempre onde está – a tarefa quando o dia a pedir, a página quando estiver a planear, o pensamento quando parar.</p>
-    </div>
+    <p class="lead taste">Uma amostra do que lá está. O resto é para descobrir.</p>
   </div>
 </section>
 
-<section class="sec" id="tools">
-  <div class="wrap sec-in">
-    <div class="tools-head reveal">
-      <div class="eyebrow">Ferramentas</div>
-      <h2 class="big">Tudo o que usa, <i>a falar entre si.</i></h2>
-      <p class="lead">Abra qualquer uma para ver o que faz, e aonde leva.</p>
-    </div>
-    <div class="tool-cols reveal" id="toolCols"></div>
-  </div>
-</section>
-
-<section class="forest" id="spaces">
-  <div class="wrap sec-in two wide">
-    <div class="reveal">
-      <div class="eyebrow">Spaces</div>
-      <h2 class="big">Cada parte da sua vida <i>ganha um Space.</i></h2>
-      <p class="lead">Os filhos, a casa, o cão, o negócio. Um email torna-se tarefa, um pagamento arquiva-se sozinho, um evento encontra as suas pessoas – e tudo se reúne no Space a que pertence.</p>
-      <div class="share">
-        <button class="share-h" type="button" data-share><span class="st">Partilhe um Space com as pessoas que fazem parte dele</span><span class="ss" id="shareSign">+</span></button>
-        <div class="share-body" id="shareBody" hidden>
-          <p>Abra uma parte da sua vida às pessoas que a vivem consigo – e só essa parte.</p>
-          <div class="share-grid">
-            <span><span class="gold">Co-pais</span> nos filhos</span><span><span class="gold">Uma família</span> em movimento</span><span><span class="gold">Amigos</span> num fim de semana fora</span><span><span class="gold">Um casal</span> nas contas</span>
-          </div>
-        </div>
+<section class="rule-top" id="spaces">
+  <div class="wrap band">
+    <div class="eyebrow">Spaces</div>
+    <div class="two reveal">
+      <div>
+        <h2 class="h2">Cada parte da sua vida <i>ganha um Space.</i></h2>
+        <p class="lead" style="margin-top:24px">Os filhos, a casa, o cão, o negócio. Um email torna-se tarefa, um pagamento arquiva-se sozinho, um evento encontra as suas pessoas - e tudo se reúne no Space a que pertence.</p>
+        <p class="lead" style="margin-top:16px">Abra uma parte da sua vida às pessoas que a vivem consigo - e só essa parte.</p>
+      </div>
+      <div class="panel">
+        <div class="sp-card-top"><span class="sp-n">II</span><span class="sp-name">Os filhos</span><span class="sp-who">Partilhado com Sam</span></div>
+        <div class="sp-row"><span class="sp-t">Assinar a autorização da visita da Ada</span><span class="sp-m">Seg</span><span class="sp-k">Tarefas</span></div>
+        <div class="sp-row"><span class="sp-t">Mrs Okafor, visita de estudo do 4.º ano</span><span class="sp-m">Qui</span><span class="sp-k">Correio</span></div>
+        <div class="sp-row"><span class="sp-t">Natação da Ada</span><span class="sp-m">Sex 16:00</span><span class="sp-k">Calendário</span></div>
+        <div class="sp-row"><span class="sp-t">Ideias para a interrupção letiva</span><span class="sp-m"></span><span class="sp-k">Notas</span></div>
+        <p class="sp-foot">O email da Mrs Okafor, agora uma autorização para assinar até segunda.</p>
       </div>
     </div>
-    <div class="spacecard reveal">
-      <div class="sc-top"><span class="sc-num">II</span><span class="sc-name">Os filhos</span><span class="sc-who">Ada &amp; Tom</span></div>
-      <div class="sc-groups" id="spaceGroups"></div>
-      <div class="sc-join">Email da Mrs Okafor → Assinar a autorização da visita, até segunda</div>
+  </div>
+</section>
+
+<section class="rule-top">
+  <div class="wrap band reveal">
+    <div class="eyebrow">O nosso ethos</div>
+    <h2 class="h2">Cada detalhe, fiel a <i>quatro palavras.</i></h2>
+    <div class="ethos">
+      <div><div class="ethos-w">Encantador</div><p class="lead">Um prazer de abrir, como um bom caderno.</p></div>
+      <div><div class="ethos-w">Inspirador</div><p class="lead">Mantém à vista aquilo a que aspira.</p></div>
+      <div><div class="ethos-w">Revelador</div><p class="lead">Os seus próprios dias, devolvidos como algo com que pode agir.</p></div>
+      <div><div class="ethos-w">Belo</div><p class="lead">Porque é aqui que a sua vida vai parar, e ela merece-o.</p></div>
     </div>
   </div>
 </section>
 
-<section class="sec" id="inner">
-  <div class="wrap sec-in">
-    <div class="inner-in reveal">
-      <div class="eyebrow center">A vida interior</div>
-      <h2 class="big">Espaço para o fazer, <i>e para o resto de si.</i></h2>
-      <p class="lead">O diário, as revisões, os objetivos e um acompanhamento sereno ficam ao lado das suas tarefas e planos, para que cada um dê mais sentido ao outro. Ali quando os quer, fora do caminho quando não.</p>
-      <button class="inner-more" type="button" data-inner id="innerMore">Ler mais +</button>
-      <p class="lead inner-extra" id="innerExtra" hidden>A maioria das ferramentas cuida da vida de fora e deixa o resto à porta. O Koyéba guarda um lugar tranquilo para os pensamentos, os sentimentos e o sentido de tudo isto – uma pequena consciência para os dias comuns, e uma forma de reparar na vida que realmente vive.</p>
+<section class="rule-top" id="private">
+  <div class="wrap band">
+    <div class="eyebrow">Privado de raiz</div>
+    <div class="two reveal">
+      <div>
+        <h2 class="h2">Seus. <i>A sério.</i></h2>
+        <p class="lead" style="margin-top:24px">O Koyéba guarda as partes mais pessoais da sua vida, por isso construímos um negócio assente na confiança, e não em vendê-lo.</p>
+      </div>
+      <div class="priv-points" id="privPoints"></div>
     </div>
   </div>
 </section>
 
-<section class="sec" id="private">
-  <div class="wrap sec-in two">
-    <div class="reveal">
-      <div class="eyebrow">Privado de raiz</div>
-      <h2 class="big">Seus. <i>A sério.</i></h2>
-      <p class="lead">O Koyéba guarda as partes mais pessoais da sua vida, por isso construímos um negócio assente na confiança, e não em vendê-lo.</p>
-    </div>
-    <div class="priv-points reveal" id="privPoints"></div>
-  </div>
-</section>
-
-<section class="sec">
-  <div class="wrap sec-in">
-    <div class="reveal">
-      <div class="eyebrow">Feito para ser rápido</div>
-      <h2 class="big">Dois toques, depois <i>deixe ir.</i></h2>
-    </div>
-    <div class="quick-cols reveal">
-      <div class="quick-step"><div class="quick-n">I</div><div class="quick-t">Abra e anote</div><p class="quick-p">Uma tarefa, uma data, um número, um sentimento – o que quer que traga consigo.</p></div>
-      <div class="quick-step"><div class="quick-n">II</div><div class="quick-t">Encontra o seu lugar</div><p class="quick-p">Na ferramenta certa, associado ao Space a que pertence.</p></div>
-      <div class="quick-step"><div class="quick-n">III</div><div class="quick-t">Surge à vista</div><p class="quick-p">No seu dia, nos seus planos ou na sua revisão – quando é útil, não antes.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="invite" id="invite">
-  <div class="wrap invite-in reveal">
-    <img class="invite-script" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba, escrito em Mandombe">
+<section class="forest" id="invite">
+  <div class="wrap band invite-in reveal">
     <div class="eyebrow center">Acesso antecipado</div>
-    <h2>Venha pousar o que traz.</h2>
-    <p class="invite-lead">O Koyéba cresce devagar, boca a boca, para se manter calmo e bem cuidado. Conte-nos um pouco sobre si e arranjamos-lhe um lugar.</p>
+    <h2 class="h2">Venha <i>ligar os pontos.</i></h2>
+    <p class="lead">O Koyéba cresce devagar, boca a boca. Conte-nos um pouco sobre si e arranjamos-lhe um lugar.</p>
     <form class="invite-form" id="invite-form" novalidate>
       <input type="text" id="if-hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="inv-field"><input id="if-name" placeholder="O seu nome" autocomplete="name" required></div>
@@ -512,21 +593,13 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
         <span class="foot-tag">Para uma vida bem vivida</span>
       </div>
       <div class="foot-col">
-        <a href="#idea">A ideia</a><a href="#tools">Ferramentas</a><a href="#private">Privacidade</a><a href="/pt/jornal">Jornal</a>
+<a href="#idea">A ideia</a><a href="#name">O nome</a><a href="#tools">Ferramentas</a><a href="#private">Privacidade</a><a href="/pt/jornal">Jornal</a>
       </div>
       <div class="foot-col">
         <a href="/privacy">Política de privacidade</a><a href="/terms">Termos</a><a href="#" data-cookie-settings>Definições de cookies</a><a href="mailto:contact@koyeba.co">contact@koyeba.co</a>
       </div>
       <div class="foot-meta">Feito em Lisboa<br>© <span id="yr">2026</span> Koyéba</div>
       <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    </div>
-    <a class="foot-mark" href="#top" title="Voltar ao topo">
-      <img class="ko-ink" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba">
-      <img class="ko-ivory" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba">
-    </a>
-    <div class="dict">
-      <div class="dict-head"><span class="dict-word">Koyéba</span><span class="dict-say">koh-YEH-bah</span><span class="dict-pos">verbo, lingala</span></div>
-      <div class="dict-def">Saber – factos, lugares, pessoas.</div>
     </div>
   </div>
 </footer>
@@ -555,91 +628,29 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
 <script>
 (function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
-
-  // ── Tools: two columns of folding rows, one open at a time, Mail open first ──
-  var TOOLS = [
-    { label: 'Para o fazer', items: [
-      ['Correio', 'Triagem numa só passagem', 'Marque cada email como urgente, importante ou para depois e a caixa de entrada fica limpa. Transforme qualquer mensagem numa tarefa, numa nota ou num evento.', 'Liga-se a Tarefas, Calendário, Spaces'],
-      ['Calendário', 'Os seus dias, ligados', 'Os eventos chegam do correio e do que pousa, cada um com as notas e as pessoas de que precisa.', 'Liga-se a Correio, Tarefas, Contactos'],
-      ['Tarefas', 'O urgente agora, e o longo prazo', 'O que é preciso fazer hoje vem à frente; o resto espera em silêncio no seu Space.', 'Liga-se a Correio, Calendário, Objetivos'],
-      ['Notas', 'Páginas e tabelas', 'Escreva à vontade, ou transforme uma página em tabela quando precisar de colunas.', 'Liga-se a Spaces, Tarefas'],
-      ['Mensagens', 'Saiba quando alguém escreve', 'Conversas com as pessoas dos seus Spaces, com um aviso sereno quando chega uma.', 'Liga-se a Contactos, Partilha'],
-      ['Dinheiro', 'As despesas, já arquivadas', 'Os pagamentos caem no Space certo, para ver quanto custam de verdade a casa ou o cão.', 'Liga-se a Spaces, Correio'],
-      ['Contactos', 'As pessoas que tem por perto', 'Todas as pessoas a quem escreve, com quem se encontra e com quem partilha, num só lugar.', 'Liga-se a Correio, Mensagens, Partilha'] ] },
-    { label: 'Para a vida interior', items: [
-      ['Diário', 'Uma página para cada dia', 'Escreva uma linha ou uma página. Fica ao lado do que aconteceu realmente nesse dia.', 'Liga-se a Calendário, Revisões'],
-      ['Reflexão', 'Estar com o que importa', 'Sugestões serenas para quando quiser pôr as ideias em ordem.', 'Liga-se a Diário, Objetivos'],
-      ['Revisões', 'Olhar para trás, depois para a frente', 'Um olhar semanal e mensal sobre o que avançou, o que não avançou, e o que se segue.', 'Liga-se a Tarefas, Objetivos, Diário'],
-      ['Objetivos', 'O longo prazo', 'Guarde aquilo por que trabalha, dividido em passos que se tornam tarefas.', 'Liga-se a Tarefas, Revisões'],
-      ['Acompanhamento', 'Um incentivo discreto', 'Orientação opcional com a sua própria chave de IA – nunca a nossa, nunca treinada consigo.', 'Liga-se a Reflexão, Objetivos'],
-      ['Ler e Ver', 'O que deixou para depois', 'Livros, filmes e artigos, guardados até ter a noite certa para eles.', 'Liga-se a Notas, Spaces'],
-      ['Lista de desejos', 'Um dia', 'Os sonhos maiores, guardados num sítio onde voltará a vê-los.', 'Liga-se a Objetivos'] ] }
-  ];
-  var openTool = 'Correio';
-  var cols = document.getElementById('toolCols');
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
-  function renderTools() {
-    cols.innerHTML = TOOLS.map(function (g) {
-      var rows = g.items.map(function (it) {
-        var name = it[0], line = it[1], body = it[2], joins = it[3], on = openTool === name;
-        return '<div class="tool"><button class="tool-h" type="button" data-tool="' + esc(name) + '">'
-          + '<span class="tool-name">' + esc(name) + '</span>'
-          + '<span class="tool-line">' + esc(line) + '</span>'
-          + '<span class="tool-sign">' + (on ? '−' : '+') + '</span></button>'
-          + (on ? '<div class="tool-body"><div class="tool-desc">' + esc(body) + '</div><div class="tool-joins">' + esc(joins) + '</div></div>' : '')
-          + '</div>';
-      }).join('');
-      return '<div class="tool-group"><div class="tg-head"><span class="tg-label">' + esc(g.label) + '</span><span class="tg-count">' + g.items.length + '</span></div>' + rows + '</div>';
-    }).join('');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Joining the dots: one pair lit at a time, cycling until someone clicks ──
+  var rows = [].slice.call(document.querySelectorAll('#pairs .pair-row')), lit = 0, touched = false;
+  function light(i) {
+    lit = i;
+    rows.forEach(function (r, n) {
+      var on = n === i;
+      r.classList.toggle('on', on);
+      r.querySelector('.pair').setAttribute('aria-pressed', on ? 'true' : 'false');
+      r.querySelector('.pair-join').hidden = !on;
+    });
   }
-  cols.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-tool]'); if (!b) return;
-    var n = b.getAttribute('data-tool'); openTool = (openTool === n) ? null : n; renderTools();
-  });
-  renderTools();
-
-  // ── Spaces: the sample Space's folding groups (Mail + Tasks open) ──
-  var SPACE = [
-    ['Correio', [['Mrs Okafor – visita de estudo do 4.º ano', 'Qui'], ['Clube de natação – novos horários', 'Ter']]],
-    ['Tarefas', [['Assinar a autorização da visita da Ada', 'Seg'], ['Tom: disfarce para sexta', 'Próx. sem.']]],
-    ['Calendário', [['Natação da Ada', 'Sex 16:00'], ['Reunião de pais', 'Qua 18:30']]],
-    ['Notas', [['Lista do equipamento de natação', ''], ['Ideias para a interrupção letiva', '']]]
-  ];
-  var sg = { Correio: true, Tarefas: true };
-  var sgWrap = document.getElementById('spaceGroups');
-  function renderSpace() {
-    sgWrap.innerHTML = SPACE.map(function (g) {
-      var label = g[0], items = g[1], open = !!sg[label];
-      var rows = open ? '<div class="sc-items">' + items.map(function (it) {
-        return '<div class="sc-item"><span class="it-t">' + esc(it[0]) + '</span><span class="it-m">' + esc(it[1]) + '</span></div>';
-      }).join('') + '</div>' : '';
-      return '<div class="sc-group"><button class="sc-gh" type="button" data-sg="' + esc(label) + '"><span class="sc-gl">' + esc(label) + '</span><span class="sc-gc">' + items.length + '</span><span class="sc-gs">' + (open ? '−' : '+') + '</span></button>' + rows + '</div>';
-    }).join('');
-  }
-  sgWrap.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-sg]'); if (!b) return;
-    var n = b.getAttribute('data-sg'); sg[n] = !sg[n]; renderSpace();
-  });
-  renderSpace();
-
-  // Share fold
-  var shareOpen = false, shareBody = document.getElementById('shareBody'), shareSign = document.getElementById('shareSign');
-  document.querySelector('[data-share]').addEventListener('click', function () {
-    shareOpen = !shareOpen; shareBody.hidden = !shareOpen; shareSign.textContent = shareOpen ? '−' : '+';
-  });
-
-  // Inner "Read more"
-  var innerOpen = false, innerExtra = document.getElementById('innerExtra'), innerMore = document.getElementById('innerMore');
-  document.querySelector('[data-inner]').addEventListener('click', function () {
-    innerOpen = !innerOpen; innerExtra.hidden = !innerOpen; innerMore.textContent = innerOpen ? 'Recolher −' : 'Ler mais +';
-  });
+  rows.forEach(function (r, i) { r.querySelector('.pair').addEventListener('click', function () { touched = true; light(i); }); });
+  if (!reduce) setInterval(function () { if (!touched && !document.hidden) light((lit + 1) % rows.length); }, 6000);
 
   // ── Private: five folding points I–V, one open at a time, first open ──
   var PRIV = [
     ['Autenticação em dois passos', 'O seu Koyéba fica bem trancado, e os seus dados são encriptados em repouso.'],
     ['Nunca explorado, nunca vendido', 'Nada do que é seu é usado para publicidade nem entregue ao modelo de quem quer que seja.'],
     ['Traga a sua própria IA', 'A IA é opcional, com a sua própria chave. Deixe-a desligada e o Koyéba funciona na mesma.'],
-    ['Exportar tudo', 'Leve tudo num só toque, a qualquer momento – ou guarde no seu próprio armazenamento.'],
+    ['Exportar tudo', 'Leve tudo num só toque, a qualquer momento - ou guarde no seu próprio armazenamento.'],
     ['Saia quando quiser', 'Feche a conta e leve tudo consigo.']
   ];
   var ROMAN = ['I', 'II', 'III', 'IV', 'V'];
@@ -657,34 +668,36 @@ h2.big { font-size: clamp(40px,4.4vw,58px); line-height: 1.05; margin-top: 20px;
   });
   renderPriv();
 
-  // ── Hero capture demo: types a phrase, then the readout fades up; cycles three ──
+  // ── Capture demo: types a phrase, then the readout fades up; cycles three ──
+  function nextDay(dow) {
+    var d = new Date(), add = (dow - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + add);
+    return d.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/,/g, '');
+  }
   var DEMOS = [
-    { text: 'Dentista na terça às nove', rows: [['Para', 'Eu'], ['Como', 'Calendário · ter 3 nov, 09:00'], ['Lembra', 'Segunda à noite, e às 08:15 no próprio dia']], foot: 'Nada mais a fazer.' },
-    { text: 'A autorização da Ada é para segunda', rows: [['Para', 'Os filhos'], ['Como', 'Tarefa · para seg 2 nov'], ['Liga a', 'email da Mrs Okafor · “visita de estudo do 4.º ano”']], foot: 'Ligada ao email de onde veio.' },
-    { text: 'Pipeta antipulgas do Biscuit, €18.40', rows: [['Para', 'Biscuit'], ['Como', 'Dinheiro · gasto hoje'], ['Liga a', 'Gastos com o animal este mês · €46.20']], foot: 'Arquivado no Space certo.' }
+    { text: 'Dentista na terça às nove', rows: [['Para', 'Eu'], ['Como', 'Calendário, {tue}, 09:00'], ['Lembra', 'Segunda à noite, e às 08:15 no próprio dia']], foot: 'Nada mais a fazer.' }, { text: 'A autorização da Ada é para segunda', rows: [['Para', 'Os filhos'], ['Como', 'Tarefa, para {mon}'], ['Liga a', 'email da Mrs Okafor, “visita de estudo do 4.º ano”']], foot: 'Ligada ao email de onde veio.' }, { text: 'Pipeta antipulgas do Biscuit, 18,40 €', rows: [['Para', 'Biscuit'], ['Como', 'Dinheiro, gasto hoje'], ['Liga a', 'Gastos com o animal este mês, 46,20 €']], foot: 'Arquivado no Space certo.' }
   ];
+  DEMOS.forEach(function (d) { d.rows.forEach(function (r) { r[1] = r[1].replace('{tue}', nextDay(2)).replace('{mon}', nextDay(1)); }); });
   var typed = document.getElementById('demoTyped'), caret = document.getElementById('demoCaret'), rowsEl = document.getElementById('demoRows');
   function paintRows(demo) {
     rowsEl.innerHTML = demo.rows.map(function (r) {
       return '<div class="demo-row"><span class="demo-rk">' + esc(r[0]) + '</span><span class="demo-rv">' + esc(r[1]) + '</span></div>';
-    }).join('') + '<div class="demo-foot"><span class="df-t">' + esc(demo.foot) + '</span><span class="demo-set">Pousar ↵</span></div>';
+    }).join('') + '<div class="demo-foot">' + esc(demo.foot) + '</div>';
   }
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) {
-    typed.textContent = DEMOS[0].text; caret.style.opacity = '0'; paintRows(DEMOS[0]); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none';
+    typed.textContent = DEMOS[0].text; caret.style.opacity = '0'; paintRows(DEMOS[0]); rowsEl.classList.add('on');
   } else {
-    var di = 0, n = 0, phase = 'type', timer;
-    paintRows(DEMOS[0]); rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)';
-    function tick() {
+    var di = 0, n = 0, phase = 'type';
+    paintRows(DEMOS[0]);
+    (function tick() {
       var demo = DEMOS[di];
       if (phase === 'type') {
-        if (n < demo.text.length) { n++; typed.textContent = demo.text.slice(0, n); caret.style.opacity = '1'; timer = setTimeout(tick, 55 + Math.random() * 50); }
-        else { timer = setTimeout(function () { phase = 'show'; paintRows(demo); rowsEl.style.opacity = '1'; rowsEl.style.transform = 'none'; caret.style.opacity = '0'; timer = setTimeout(tick, 3800); }, 500); }
+        if (n < demo.text.length) { n++; typed.textContent = demo.text.slice(0, n); caret.style.opacity = '1'; setTimeout(tick, 55 + Math.random() * 50); }
+        else { setTimeout(function () { phase = 'show'; paintRows(demo); rowsEl.classList.add('on'); caret.style.opacity = '0'; setTimeout(tick, 4200); }, 500); }
       } else {
-        phase = 'type'; n = 0; di = (di + 1) % DEMOS.length; typed.textContent = ''; rowsEl.style.opacity = '0'; rowsEl.style.transform = 'translateY(8px)'; timer = setTimeout(tick, 700);
+        phase = 'type'; n = 0; di = (di + 1) % DEMOS.length; typed.textContent = ''; rowsEl.classList.remove('on'); setTimeout(tick, 700);
       }
-    }
-    timer = setTimeout(tick, 900);
+    })();
   }
 
   // ── Sign-in modal (kept) ──
