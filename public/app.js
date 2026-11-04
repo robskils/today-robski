@@ -18785,7 +18785,7 @@ function mailAccordionRow(x, count) {
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
   // as a bar that sticks to the top of the card while you read it.
   const triage = mailOpenTriageBar(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${triage}${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${parts.make}<div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-bar">${triage}${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${parts.make}</div><div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // §58 + Robin: the sticky triage bar at the top of an open email - the same four
 // moves as the action row, reachable without scrolling to the end.
