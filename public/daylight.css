@@ -152,17 +152,15 @@
   .knav-brand .brand-word { font-size:28px; }
   .knav-groups { display:flex; gap:clamp(12px,1.8vw,22px); }
   .knav-right { display:flex; gap:clamp(12px,1.6vw,20px); margin-left:auto; }
-  .knav-split-btn { display:none; }
   .knav-crumb, .knav-inner .mtop-back, .knav-bottom { display:none; }
   .knav-sheet { display:block; }
   .knav-find, .knav-contents { bottom:0; }
   .cap-bar { display:flex !important; bottom:22px; width:auto; }
   .main { padding-bottom:72px; }
 }
-@media (min-width:768px) and (max-width:900px) {
-  .knav-np-btn { display:none; }   /* still in Menu */
-  .knav-groups, .knav-right { gap:12px; }
-}
+@media (min-width:768px) and (max-width:900px) { .knav-groups, .knav-right { gap:12px; } }
+/* Below 821px there's no room, and side by side is a desktop view anyway; Notepad stays in Menu. */
+@media (min-width:768px) and (max-width:820px) { .knav-np-btn, .knav-split-btn { display:none; } }
 
 /* ── Phones: a slimmer bottom bar and less empty space under the page ─────── */
 @media (max-width:767px) {
