@@ -7813,7 +7813,7 @@ function renderCapBar(force) {
   // §47: the Notepad is the header panel now, not a mode here.
   if (c.mode === 'pad') c.mode = 'set';
   const modeTabs = '<span class="cap-eyebrow">Set it down</span>';
-  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" placeholder="I’ve got the dentist on Tuesday at 9am" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
+  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
     <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close title="Close" aria-label="Close">✕</button></div>
     ${bodyHtml}
