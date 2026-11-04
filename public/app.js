@@ -6593,7 +6593,6 @@ function practicesManageHtml() {
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
       <div class="pm-rows">${rows}</div>
-      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}
     </div>`;
   }).join('');
   return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
@@ -15793,10 +15792,10 @@ function t2TrackerHtml(manage) {
       return `<div class="trk-prow prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="trk-pname">${nameInner}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+        <span class="trk-pname">${nameInner}${streak > 1 ? `<span class="trk-streak">${streak}${a.avoid ? ' clean' : ' days'}</span>` : ''}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
-        <span class="trk-hist">${streak > 1 ? `<span class="trk-streak">${streak} days${a.avoid ? ' clean' : ''}</span>` : ''}<span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
+        <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
       </div>`;
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
@@ -15806,7 +15805,7 @@ function t2TrackerHtml(manage) {
       ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yest' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
       ${areaStat && areaStat.status === 'slipping' && areaStat.label ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>
-      ${g.areaId ? `<button class="trk-addp" data-prc-new-area="${g.areaId}">＋ add a practice</button>` : ''}` : ''}
+      ` : ''}
     </div>`;
   }).join('');
   return `<div class="trk-dash">${body}</div>`;
