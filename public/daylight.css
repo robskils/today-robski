@@ -261,7 +261,7 @@
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
 .knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }
-.knav-c-toprow { display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:1px solid var(--k-line); margin-top:4px; }
+.knav-c-toprow { display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-top:4px; }
 .knav-c-toprow .knav-c-notepad { width:auto; border-bottom:0; margin-top:0; }
 .knav-c-help { display:none; background:none; border:0; padding:12px 0; cursor:pointer; font-family:var(--k-serif); font-weight:300; font-size:24px; color:var(--k-ink); }
 .knav-c-help:hover { color:var(--k-goldt); }
