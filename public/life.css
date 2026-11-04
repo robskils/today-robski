@@ -10415,6 +10415,10 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
    sections never stretch, they move between columns. ══ */
 .kwrap { width:100%; max-width:2240px; margin:0 auto; padding:0 clamp(20px,4vw,48px); box-sizing:border-box; }
 .kwrap.kpage-cards { padding-bottom:48px; }   /* Notes + Tables card grids - breathing room at the foot */
+/* The crumb inside a card page (Notes/Tables) is nested in .kwrap, so the
+   .pane > .crumbbar-slim rule can't reach it - give it the same 38px drop below the
+   nav every other page's crumb has. (Robin, 2026-11-04: consistent breadcrumb padding.) */
+.kwrap.kpage-cards > .crumbbar-slim { margin-top:0; padding-top:38px; }
 .kgrid { display:grid; gap:40px; align-items:start; grid-template-columns:minmax(0,1fr); grid-template-areas:"a" "b" "c"; }
 .kgrid > .k-a { grid-area:a; min-width:0; }
 .kgrid > .k-b { grid-area:b; min-width:0; }
@@ -12037,7 +12041,7 @@ body[data-view="home"] .pane > .crumbbar-slim { width:100%; max-width:2240px; ma
 }
 
 /* ══ §21 Notes - index (grouped rows on the §19 grid; replaces the card grid) ══ */
-body[data-view="notes"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
+body[data-view="notes"] .pane, body[data-view="tables"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
 .kpage-notes { max-width:1600px; margin:0 auto; padding:48px clamp(24px,3.5vw,64px) 0; box-sizing:border-box; }
 .nx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,340px); gap:clamp(40px,5vw,88px); animation:kfade .4s ease; }
 .nx-main { min-width:0; }

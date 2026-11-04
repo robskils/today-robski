@@ -9400,17 +9400,38 @@ function openTablesList() {
   renderNav();
   // Tables load alongside Notes; if you came straight here, fetch them first so
   // the page isn't wrongly empty. (Robin: Tables showed the Notes page.)
-  if (!state.__tablesLoaded) { state.__tablesLoaded = true; api('/api/blocks?kind=table').then((r) => { if (Array.isArray(r)) state.tables = r; if (state.view && state.view.type === 'tables') openTablesList(); }).catch(() => { state.__tablesLoaded = false; }); }
-  const favTables = (state.tables || []).filter((t) => t.props && t.props.fav);
-  const cards = (list) => list.map((t) => `<button class="tbl-card" data-open-table="${t.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(t.title || 'Untitled')}</span></button>`).join('');
-  // Recently-viewed tables (life.recent), newest first - the twin of the Notes page.
-  const recentTables = recentItems().filter((x) => x && x.kind === 'table').map((x) => (state.tables || []).find((tb) => tb.id === x.id)).filter(Boolean).slice(0, 8);
+  if (!state.__tablesLoaded) { state.__tablesLoaded = true; api('/api/blocks?kind=table').then((r) => { if (Array.isArray(r)) state.tables = r; if (state.view && state.view.type === 'tables') renderTablesList(); }).catch(() => { state.__tablesLoaded = false; }); }
+  // Spaces power the Space filter; load them if we came straight here.
+  if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view && state.view.type === 'tables') renderTablesList(); } }).catch(() => {});
+  renderTablesList();
+}
+function renderTablesList() {
+  // Twin of renderNotesList: plain card grid in Starred / Recent / All, with the
+  // same Space-filter pill row. (Robin, 2026-11-04: Tables needs the Notes filter.)
+  const space = state.tablesArea || '';
+  const all = state.tables || [];
+  const spaces = (state.areas || []).filter((a) => a && a.title).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const card = (tb) => `<button class="tbl-card" data-open-table="${tb.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(tb.title || 'Untitled')}</span></button>`;
+  const grid = (list) => list.map(card).join('');
+  const chip = (id, label, on) => `<button class="nsp${on ? ' on' : ''}" data-tables-space="${id}">${esc(label)}</button>`;
+  const spaceRow = spaces.length
+    ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
+    : '';
+  let sections;
+  if (space) {
+    const sp = areaById(space);
+    const inSpace = all.filter((tb) => blockAreas(tb).includes(space));
+    sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No tables in this Space yet.</div>'}</div></section>`;
+  } else {
+    const favTables = all.filter((tb) => tb.props && tb.props.fav);
+    const recentTables = recentItems().filter((x) => x && x.kind === 'table').map((x) => all.find((tb) => tb.id === x.id)).filter(Boolean).slice(0, 8);
+    sections = `${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favTables)}</div></section>` : ''}${recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recentTables)}</div></section>` : ''}<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${all.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+  }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('title.tables'))}
     <div class="pane-head home-head"><h1>${t('title.tables')}</h1></div>
-    ${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${cards(favTables)}</div></section>` : ''}
-    ${recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${cards(recentTables)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${(state.tables || []).length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${cards(state.tables || []) || '<div class="empty">No tables yet.</div>'}</div></section></div>`;
+    ${spaceRow}
+    ${sections}</div>`;
 }
 
 function openNotesList() {
@@ -24597,7 +24618,7 @@ function renderReviewReport() {
     rrSec('next', 'V', 'Next week', aheadItems.length ? `${aheadItems.length} on the horizon` : 'A clear horizon', aheadHtml),
   ].join('');
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: sibLbl(r) || `${cfg.label} review` }], null, null, { actions: `<span class="rr-crumb-acts">${sib.prev ? `<button class="rr-sibnav" data-open-review="${sib.prev.id}">‹ ${esc(prevL)}</button>` : ''}${sib.next ? `<button class="rr-sibnav" data-open-review="${sib.next.id}">${esc(nextL)} ›</button>` : ''}<button class="ghost rr-edit-btn" data-review-edit>Edit</button></span>` })}
+    ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${cfg.label} reviews`, attr: `data-open-reviewtype="${p.rtype || 'weekly'}"` }, { label: sibLbl(r) || `${cfg.label} review` }], null, null, { actions: `<span class="rr-crumb-acts">${sib.prev ? `<button class="rr-sibnav" data-open-review="${sib.prev.id}">‹ ${esc(prevL)}</button>` : ''}${sib.next ? `<button class="rr-sibnav" data-open-review="${sib.next.id}">${esc(nextL)} ›</button>` : ''}<button class="ghost rr-edit-btn" data-review-edit>Edit</button></span>` })}
     <article class="rr rr-v37">
       <div class="rr-hero">
         <div class="rr-eyebrow">${eyebrowTxt}</div>
@@ -27236,6 +27257,7 @@ document.addEventListener('click', (e) => {
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
   const nxOrd = t.closest('[data-notes-order]'); if (nxOrd) { state.notesOrder = nxOrd.dataset.notesOrder; try { localStorage.setItem('life.notesOrder', state.notesOrder); } catch {} renderNotesList(); return; }
   const nxSp = t.closest('[data-notes-space]'); if (nxSp) { state.notesArea = nxSp.dataset.notesSpace || ''; renderNotesList(); return; }
+  const tbSp = t.closest('[data-tables-space]'); if (tbSp) { state.tablesArea = tbSp.dataset.tablesSpace || ''; renderTablesList(); return; }
   const nxGr = t.closest('[data-notes-group]'); if (nxGr) { const k = nxGr.dataset.notesGroup; state.notesShut = state.notesShut || {}; state.notesShut[k] = !state.notesShut[k]; renderNotesList(); return; }
   const nxSd = t.closest('[data-notes-side]'); if (nxSd) { const k = nxSd.dataset.notesSide; state.notesSide = state.notesSide || {}; state.notesSide[k] = state.notesSide[k] === false ? true : false; renderNotesList(); return; }
   const txOrd = t.closest('[data-task-order]'); if (txOrd) { state.taskOrder = txOrd.dataset.taskOrder; try { localStorage.setItem('life.taskOrder', state.taskOrder); } catch {} state.taskPile = null; renderTasks(); return; }
