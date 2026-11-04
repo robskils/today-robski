@@ -10289,9 +10289,18 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-g.open { color:var(--ink); border-bottom-color:var(--accent); }
 .knav-g-b { font-family:'Jost',system-ui,sans-serif; font-size:11.5px; color:var(--k-goldt); }
 .knav-right { margin-left:auto; display:flex; align-items:center; gap:22px; flex:none; }
+/* New + Split added two items; on narrower laptops tighten gaps and drop the ⌘K hint
+   so the menubar still fits on one line. (Robin, 2026-11-04.) */
+@media (max-width:1240px){ .knav-right { gap:16px; } .knav-groups { gap:14px; } .knav-find-btn kbd { display:none; } }
 .knav-find-btn, .knav-contents-btn { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; gap:6px; padding:6px 0; }
 .knav-find-btn kbd { font:inherit; font-size:11px; letter-spacing:.08em; color:var(--ink-3); }
 .knav-find-btn:hover, .knav-contents-btn:hover { color:var(--k-goldt); }
+/* Menubar New (left of Mail) + Split - plain text like the siblings. (Robin, 2026-11-04.) */
+.knav-new-btn, .knav-split-btn { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; gap:4px; padding:6px 0; }
+.knav-new-btn:hover, .knav-new-btn[aria-expanded="true"], .knav-split-btn:hover, .knav-split-btn.on { color:var(--k-goldt); }
+.knav-new-btn .an-ch { font-size:11px; color:var(--ink-3); }
+.knav-addnew { position:relative; margin-left:0; flex:none; }
+.knav-addnew .addnew-menu { left:0; right:auto; }
 .knav-find-btn.on { color:var(--ink); border-bottom:1px solid var(--accent); }
 /* Menu matches the other top-right items - no permanent underline; only the gold
    underline when the menu is actually open (like Search). (Robin.) */
@@ -11991,6 +12000,19 @@ body.split-dragging .pane-div-line { background:var(--k-gold); }
 .bp-label.it { font-style:italic; }
 .bp-when { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
 .beside-pick-tip { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); padding-top:10px; border-top:1px solid var(--k-line); margin-top:2px; }
+/* §18b the "what to show here" search picker in the second pane. (Robin, 2026-11-04.) */
+.beside-pickwrap { padding:8px clamp(18px,2vw,28px) 24px; }
+.beside-pickq { width:100%; box-sizing:border-box; background:var(--k-soft,var(--paper-2)); border:1px solid var(--k-line); border-radius:0; padding:12px 14px; font-family:var(--k-sans); font-size:15.5px; color:var(--k-ink); }
+.beside-pickq:focus { outline:0; border-color:var(--k-gold); }
+.beside-pickq::placeholder { color:var(--k-mute); }
+.beside-pickres { display:flex; flex-direction:column; }
+.beside-pick-grp { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--k-mute); padding:16px 0 2px; }
+.beside-pick { display:flex; align-items:baseline; justify-content:space-between; gap:12px; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--k-line); padding:11px 2px; cursor:pointer; }
+.beside-pick-grp + .beside-pick { border-top:0; }
+.beside-pick-t { font-family:var(--k-serif); font-weight:300; font-size:20px; color:var(--k-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.beside-pick:hover .beside-pick-t { color:var(--k-goldt); }
+.beside-pick-k { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); flex:none; }
+.beside-pick-empty { padding:24px 2px; font-family:var(--k-serif); font-style:italic; font-size:19px; color:var(--k-mute); }
 .mail-make-beside.linked { color:var(--k-goldt); cursor:default; }
 .mail-make-hint { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); align-self:center; }
 .mail-row-linked { display:inline-block; font-family:var(--k-sans); font-size:11px; color:var(--k-goldt); margin-right:8px; white-space:nowrap; }

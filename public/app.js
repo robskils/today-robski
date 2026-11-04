@@ -1658,7 +1658,10 @@ function addNewMenuHtml() {
     modOn('goals') ? item('bucket', '✦', 'Bucket list') : '',
   ].filter(Boolean).join('');
   if (!items) return '';
-  return `<div class="addnew"><button class="addnew-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add something new"><span class="an-plus">＋</span>New<span class="an-ch">▾</span></button><div class="addnew-menu" hidden>${items}</div></div>`;
+  // Robin (2026-11-04): New lives once, in the menubar (left of Mail), not as a box
+  // on every breadcrumb. Plain-text button to match Notepad/Search/Menu; clicking it
+  // drops the same popover.
+  return `<span class="addnew knav-addnew"><button class="knav-new-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Make something new">New<span class="an-ch">⌄</span></button><div class="addnew-menu" hidden>${items}</div></span>`;
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
@@ -1717,27 +1720,8 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 })();
-// The +New add menu belongs on EVERY breadcrumb bar. crumbNav() bakes it in, but
-// the inline .note-crumbs bars (mail reader, notes, goals, tasks, contacts…) don't
-// - so top them up after each paint. One place, everywhere.
-(function crumbAddEverywhere() {
-  const fill = () => {
-    const pane = document.getElementById('pane'); if (!pane) return;
-    pane.querySelectorAll('.note-crumbs:not(:has(.addnew))').forEach((el) => {
-      const html = addNewMenuHtml(); if (!html) return;
-      const tools = el.querySelector('.crumb-tools');
-      el.insertAdjacentHTML('beforeend', html);
-      const menu = el.querySelector(':scope > .addnew');
-      if (tools && menu) el.insertBefore(menu, tools);
-    });
-  };
-  const start = () => {
-    const pane = document.getElementById('pane'); if (!pane) return void setTimeout(start, 200);
-    try { new MutationObserver(fill).observe(pane, { childList: true }); } catch {}
-    fill();
-  };
-  start();
-})();
+// Robin (2026-11-04): New is no longer a box on every breadcrumb - it lives once in
+// the menubar (left of Mail). So the universal breadcrumb injection is retired.
 // A tab must own an INDEPENDENT copy of its view. A Tasks view carries mutable
 // filters/sort; a shallow copy leaves every Tasks tab pointing at one shared
 // array, so they all show identical content (the "two tabs, same content" bug).
@@ -5594,9 +5578,11 @@ function navGroupsHtml(v) {
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
       <div class="knav-groups">${groupTabs}</div>
       <div class="knav-right">
+        ${addNewMenuHtml()}
         ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
+        <button class="knav-split-btn${state.split ? ' on' : ''}" data-split-open title="Show something side by side">Split</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
     </div></div>`;
@@ -8248,6 +8234,58 @@ async function renderBeside() {
   catch (e) { p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-title">Couldn't open this beside.</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>`; }
 }
 
+// ── §18b Side by side: the Split button + "what to show here" search picker ──
+// (Robin, 2026-11-04: rethink "note beside". One Split button opens a second pane
+// with a search - type to find a note, task, Space… or pick the Notes/Tasks page.)
+function openSplitPicker() {
+  if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) { toast('Side by side is a desktop view.'); return; }
+  state.split = { picker: true, q: '', ratio: (state.split && state.split.ratio) || 0.5 };
+  document.body.classList.add('split');
+  const { main } = splitEls();
+  if (main) main.style.setProperty('--split-ratio', (state.split.ratio * 100) + '%');
+  besidePickWarm();
+  renderBesidePicker();
+}
+// Lazily pull the lists the search looks through, so it finds things wherever you
+// opened the split from. Re-renders just the results as each arrives.
+function besidePickWarm() {
+  const rr = () => { if (state.split && state.split.picker) besideRenderPickResults(); };
+  if (!Array.isArray(state.noteTops)) api('/api/blocks?kind=note').then((r) => { if (Array.isArray(r)) state.noteTops = r; rr(); }).catch(() => {});
+  if (!Array.isArray(state.areas) || !state.areas.length) api('/api/blocks?kind=area').then((r) => { if (Array.isArray(r)) state.areas = r; rr(); }).catch(() => {});
+  if (!Array.isArray(state.goals) || !state.goals.length) api('/api/blocks?kind=goal').then((r) => { if (Array.isArray(r)) state.goals = r; rr(); }).catch(() => {});
+  if (!Array.isArray(state.tasks) || !state.tasks.length) api('/api/tasks').then((r) => { if (r && Array.isArray(r.tasks)) state.tasks = r.tasks; rr(); }).catch(() => {});
+  if (!Array.isArray(state.contacts) || !state.contacts.length) api('/api/blocks?kind=contact').then((r) => { if (Array.isArray(r)) state.contacts = r; rr(); }).catch(() => {});
+}
+const BESIDE_PICK_LABEL = { note: 'Note', task: 'Task', goal: 'Goal', area: 'Space', contact: 'Contact' };
+function besidePickerItems(q) {
+  if (!q) {
+    return recentItems().filter((x) => x && x.title && BESIDE_PICK_LABEL[x.kind]).slice(0, 8)
+      .map((x) => ({ kind: x.kind, id: x.id, title: x.title, sub: BESIDE_PICK_LABEL[x.kind] }));
+  }
+  const out = [];
+  const add = (arr, kind) => (arr || []).forEach((b) => { if (out.length < 40 && b && (b.title || '').toLowerCase().includes(q)) out.push({ kind, id: b.id, title: b.title || 'Untitled', sub: BESIDE_PICK_LABEL[kind] }); });
+  add((state.noteTops || []).filter((n) => (n.kind || 'note') === 'note'), 'note');
+  add(state.areas, 'area');
+  add(state.goals, 'goal');
+  add(state.tasks, 'task');
+  add(state.contacts, 'contact');
+  return out.slice(0, 40);
+}
+function besidePickResultsHtml() {
+  const s = state.split; const q = ((s && s.q) || '').trim().toLowerCase();
+  const PAGES = [['notes', 'Notes', 'Keep'], ['tasks', 'Tasks', 'Plans']];
+  const pages = PAGES.filter(([, l]) => !q || l.toLowerCase().includes(q)).map(([tool, l, g]) => `<button class="beside-pick" data-beside-pick-page="${tool}"><span class="beside-pick-t">${esc(l)}</span><span class="beside-pick-k">${esc(g)} · page</span></button>`).join('');
+  const items = besidePickerItems(q).map((it) => `<button class="beside-pick" data-beside-pick-item="${it.kind}:${esc(it.id)}"><span class="beside-pick-t">${esc(it.title)}</span><span class="beside-pick-k">${esc(it.sub)}</span></button>`).join('');
+  if (!pages && !items) return `<div class="beside-pick-empty">${q ? `Nothing matches &ldquo;${esc(s.q)}&rdquo;.` : 'Start typing to find a note, task or Space.'}</div>`;
+  return `${pages ? `<div class="beside-pick-grp">Pages</div>${pages}` : ''}${items ? `<div class="beside-pick-grp">${q ? 'Matches' : 'Recent'}</div>${items}` : ''}`;
+}
+function besideRenderPickResults() { const el = document.getElementById('beside-pickres'); if (el) el.innerHTML = besidePickResultsHtml(); }
+function renderBesidePicker() {
+  const s = state.split; if (!s || !s.picker) return; const { p2 } = splitEls(); if (!p2) return;
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">What to show here</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>
+    <div class="beside-pickwrap"><input class="beside-pickq" data-beside-pickq placeholder="Search for a note, task, Space…" value="${esc(s.q || '')}" autocomplete="off" spellcheck="false"><div class="beside-pickres" id="beside-pickres">${besidePickResultsHtml()}</div></div>`;
+  setTimeout(() => { const i = p2.querySelector('[data-beside-pickq]'); if (i && document.activeElement !== i) i.focus(); }, 30);
+}
 // ── §18 Side by side: tool mode (Mail beside Notes/Tasks) ────────────────────
 // The join-the-dots half of §18. From Mail you open a Notes or Tasks list in the
 // second pane (the switcher swaps between them), then make a *linked* note or
@@ -25888,7 +25926,7 @@ function renderNote() {
   const nFloat = canEditNote ? `<div class="note-float-ins" hidden aria-hidden="true"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
-      <div class="nc-top"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}${addNewMenuHtml()}</div>
+      <div class="nc-top"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
     </div>
     <div class="note-cq"><div class="note-layout note-layout-side">
       <div class="note-main">
@@ -27100,6 +27138,7 @@ document.addEventListener('input', (e) => {
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages(true); }, 500); }
+  if (e.target.matches('[data-beside-pickq]')) { if (state.split) state.split.q = e.target.value; besideRenderPickResults(); }
   // Signature bar colour: live-recolour the bar; swatch and hex box stay synced.
   if (e.target.matches('[data-sig-hex]')) applySigColor(e.target.dataset.sigHex, e.target.value, 'hex');
   if (e.target.matches('[data-sig-color-sw]')) applySigColor(e.target.dataset.sigColorSw, e.target.value, 'sw');
@@ -27658,6 +27697,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-wheel]')) { openWheel().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-reviews-tool]') || t.closest('[data-open-reviews]')) { openReviews().catch((x) => toast(x.message)); return; }
   { const ort = t.closest('[data-open-reviewtype]'); if (ort) { openReviews(ort.dataset.openReviewtype).catch((x) => toast(x.message)); return; } }
+  // §18b Split: the menubar button toggles the side-by-side pane; the picker's rows
+  // open a page (Notes/Tasks list) or an item beside.
+  if (t.closest('[data-split-open]')) { if (state.split) closeBeside(); else openSplitPicker(); return; }
+  { const pp = t.closest('[data-beside-pick-page]'); if (pp) { openBesideTool(pp.getAttribute('data-beside-pick-page')); return; } }
+  { const pi = t.closest('[data-beside-pick-item]'); if (pi) { const v = pi.getAttribute('data-beside-pick-item') || ''; const i = v.indexOf(':'); if (i > 0) openBeside(v.slice(0, i), v.slice(i + 1)); return; } }
   if (t.closest('[data-open-toolbox]')) { openToolbox(); return; }
   if (t.closest('[data-open-practices]')) { openPractices().catch((x) => toast(x.message)); return; }
   { const nga = t.closest('[data-new-goal-area]'); if (nga) { newGoal(nga.dataset.newGoalArea || null).catch((x) => toast(x.message)); return; } }
