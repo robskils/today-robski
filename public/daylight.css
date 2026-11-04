@@ -405,6 +405,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 :root[data-light] .cc-adr-view { background:transparent; border:1px solid var(--glass-edge); }
 :root[data-light] .cc-adr-link { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); }
 
+.cv-name-in { font-size:clamp(40px,4.4vw,56px); line-height:1.05; }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
