@@ -111,7 +111,7 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 # account's own address, and codes go to robin@lumley-savile.com.
 FROM_EMAIL = "Koyeba <today@incremento.co>"
 
-# Koyeba sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
+# Koyéba sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
 # from contact@koyeba.co through Purelymail SMTP: a real mailbox on a fully
 # SPF/DKIM/DMARC-aligned domain (koyeba.co passes all four, incl. DMARC), so
 # nothing depends on a Resend-verified domain. BRIEF_SMTP_PASS (secret) is this
@@ -127,7 +127,7 @@ BRIEF_SMTP_USER = "contact@koyeba.co"
 # matching secret is GCAL_MEMBER_CLIENT_SECRET (wrangler secret). Redirect URI
 # in worker/gcal.js is https://koyeba.co/api/gcal/callback - it must also be
 # registered in the Google Cloud console (Daybook Calendar project > Credentials
-# > Authorized redirect URIs) or the consent screen rejects it. (Koyeba, 2026-10-31.)
+# > Authorized redirect URIs) or the consent screen rejects it. (Koyéba, 2026-10-31.)
 GCAL_MEMBER_CLIENT_ID = "238117536975-kcef30rm0s1jnk9oit00cnu0bh5van8k.apps.googleusercontent.com"
 
 # Where the 08:45 morning brief lands. One address, not the ADMIN_EMAILS list:

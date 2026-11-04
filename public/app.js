@@ -7538,7 +7538,7 @@ function lifebookFeedInner() {
 // The day at a glance, in the prototype's grammar: a two-line greeting, a ledger
 // of Cormorant numbers, then Today + Your spaces beside Coming into view, a line
 // for the evening and the Notepad. Built from the app's real data; see
-// design/koyeba/Koyéba App.dc.html for the reference.
+// design/koyeba/Koyeba App.dc.html for the reference.
 //
 // A Roman numeral - the quiet connector the prototype uses for a Space instead of
 // colour. Falls back to the number for anything daft.
@@ -7776,7 +7776,7 @@ function homeLineEveningHtml() {
 // which Space and the reminders, shows a readout you can tap to correct, then
 // files it into the real app - a calendar event, a task, a note or a spend.
 // Speak uses the browser's own speech recognition where available.
-// Reference: design/koyeba/Koyéba App.dc.html. (Robin, 2026-10-31.)
+// Reference: design/koyeba/Koyeba App.dc.html. (Robin, 2026-10-31.)
 const CAP_WD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const CAP_TYPES = ['Event', 'Task', 'Note', 'Spend'];
 function capState() { if (!state.cap) { let mode = 'set'; try { const m = localStorage.getItem('life.cap.mode'); if (m === 'set' || m === 'pad') mode = m; } catch {} state.cap = { open: false, text: '', kind: null, ans: {}, rec: false, recT: 0, mode }; } return state.cap; }
@@ -8935,7 +8935,7 @@ function homeRadarBodyHtml() {
   return `<div style="display:flex;flex-direction:column;gap:34px">${parts.join('')}</div>${foot}`;
 }
 // V38 feed: reach a keep-in-touch / birthday person the way their card allows -
-// WhatsApp (wa.me + a short draft), Email (a Koyeba Mail compose, addressed) or a
+// WhatsApp (wa.me + a short draft), Email (a Koyéba Mail compose, addressed) or a
 // phone Call. Falls back to opening their card when there's no number/email on
 // file, or while contacts are still loading. (Robin, 2026-11-03.)
 function feedReach(mode, id) {
@@ -9251,7 +9251,7 @@ function homeLeftTab() {
   if (!state.home) return 'cal';
   // Robin (2026-11-04): a fresh open always lands on Calendar, never The feed. The
   // tab you pick is kept in memory for THIS session (state.home.ltab) but not
-  // restored from a previous open, so reopening Koyeba starts on Calendar.
+  // restored from a previous open, so reopening Koyéba starts on Calendar.
   if (!state.home.ltab) state.home.ltab = 'cal';
   let cur = state.home.ltab;
   // Mail now lives in its own band beside Messages; this band is Calendar · The feed.

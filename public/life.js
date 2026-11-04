@@ -1,4 +1,4 @@
-// Koyeba — tasks + areas on the block core, sharing Today's login.
+// Koyéba — tasks + areas on the block core, sharing Today's login.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';

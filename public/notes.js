@@ -1,4 +1,4 @@
-// Koyeba — Notes. Nested pages (parent_id), prose Markdown bodies, no bullets.
+// Koyéba — Notes. Nested pages (parent_id), prose Markdown bodies, no bullets.
 
 const $ = (s, r = document) => r.querySelector(s);
 const KEY = 'today.token';

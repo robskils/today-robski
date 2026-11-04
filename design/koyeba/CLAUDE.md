@@ -1,6 +1,6 @@
-# CLAUDE.md — Koyeba front end
+# CLAUDE.md — Koyéba front end
 
-Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole life: mail, calendar, tasks, notes and tables, messages, money and the inner life, joined up through **Spaces**. Domain: **koyeba.co** (moving from shizu.fyi). "Koyeba" is Lingala for "to know": things come into view when you need them.
+Koyéba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole life: mail, calendar, tasks, notes and tables, messages, money and the inner life, joined up through **Spaces**. Domain: **koyeba.co** (moving from shizu.fyi). "Koyéba" is Lingala for "to know": things come into view when you need them.
 
 ## Source of truth
 - The design lives in `design/koyeba/`: `README.md` (the full spec), `Koyeba App.dc.html` (the interactive prototype), `Koyeba Brand Pack.dc.html` (logo, colour, type, voice, do's and don'ts) and `Koyeba Logo.dc.html`.
@@ -47,7 +47,7 @@ Koyeba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole l
 - No user-facing "Shizu", "Daybook" or "Lifebook" anywhere, in any language.
 
 ## Brand
-- **Logo:** the wordmark "Koyeba" in Cormorant Garamond 500, with a gold full stop.
+- **Logo:** the wordmark "Koyéba" in Cormorant Garamond 500, with a gold full stop.
 - **Mandombe "ko"** (`assets/mandombe-ko-*.svg`) sits before the wordmark in the header and replaces 静 everywhere.
 - **App icon / favicon:** `mandombe-ko-tile-gold.svg`.
 - **The full Mandombe "koyeba"** appears only at the foot of Today (click it to go back to the top), on the welcome screen and on the website. Never behind text.

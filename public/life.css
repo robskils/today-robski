@@ -1,4 +1,4 @@
-/* Koyeba — shares the Zen palette with Today, tuned for a working app.
+/* Koyéba — shares the Zen palette with Today, tuned for a working app.
    Large type throughout; light and dark defined once each. */
 
 :root {
@@ -12,7 +12,7 @@
 :root[data-theme='light'] {
   /* Cool slate neutrals (60%) instead of warm beige - the coral accent (10%) now
      pops against them. (Robin, 2026-10-30: the beige was the problem.) */
-  /* Koyeba day: warm ivory paper, ink, one gold accent (per the Brand Pack). */
+  /* Koyéba day: warm ivory paper, ink, one gold accent (per the Brand Pack). */
   --paper:#f8f4ec; --paper-2:#efe9dc; --card:#fdfbf7;
   --ink:#2a2620; --ink-2:rgba(42,38,32,.62); --ink-3:rgba(42,38,32,.70); /* ink-3 raised .42->.70: never very-light text on a light surface (Robin's eyesight) */
   --line:rgba(42,38,32,.12); --line-2:rgba(42,38,32,.22); --pat-ink:rgba(42,38,32,.05); --fold-pat:rgba(201,154,62,.34); --body-crease:rgba(42,38,32,.045); --facet-a:rgba(255,255,255,.60); --facet-b:rgba(42,38,32,.05);
@@ -28,7 +28,7 @@
   --glass-shadow:none;
   --zen-far:#b6c1cb; --zen-mid:#93a2ae; --zen-near:#73838f; --zen-mist:#eef1f4;
 }
-/* Koyeba night: deep forest, one gold accent (per the Brand Pack). Never navy. */
+/* Koyéba night: deep forest, one gold accent (per the Brand Pack). Never navy. */
 :root[data-theme='dark'] {
   --paper:oklch(0.23 0.035 158); --paper-2:oklch(0.29 0.035 158); --card:oklch(0.26 0.035 158);   /* v7 night: lighter, warmer deep-forest (§14) */
   --ink:#ece7df; --ink-2:rgba(236,231,223,.64); --ink-3:rgba(236,231,223,.42);
@@ -63,7 +63,7 @@
   --zen-far:#cabfa6; --zen-mid:#a2977b; --zen-near:#7a6f54; --zen-mist:#f4efe3;
 }
 
-/* Koyeba Pages read brighter: a near-white canvas and crisp pure-white panels
+/* Koyéba Pages read brighter: a near-white canvas and crisp pure-white panels
    instead of the warm-grey paper, which felt heavy on a whole-page dashboard. The
    warm paper stays everywhere else (it's the brand); this is light theme + the
    Page view only. (Robin: too much grey gets you down; white's better here.) */
@@ -121,7 +121,7 @@ body::before {
     radial-gradient(150% 110% at 50% -24%, var(--facet-a), transparent 58%),
     radial-gradient(85% 65% at 88% 116%, var(--facet-b), transparent 62%);
 }
-/* The Koyeba ground: sumi-e mountains rising into mist at the foot of the screen,
+/* The Koyéba ground: sumi-e mountains rising into mist at the foot of the screen,
    theme-aware, fixed, behind the whole app - the world it floats on. (2026-10-30.) */
 /* A real Sesshu ink painting, desaturated to sit on the slate, heavily blurred and
    low-opacity so it's atmosphere not clutter. inset negative so the blur's faded
@@ -129,7 +129,7 @@ body::before {
 .zen-bg { position:fixed; inset:-26px; z-index:-1; pointer-events:none;
   background:url('/zen-ink.jpg?v=1') center 64% / cover no-repeat;
   filter:grayscale(.92) contrast(1.03) blur(6px); opacity:.16; }
-/* (dark .zen-bg removed with the navy theme — Koyeba redesign) */
+/* (dark .zen-bg removed with the navy theme — Koyéba redesign) */
 /* Calm's ground IS a real Japanese ink painting - warm, crisp - that the frosted
    panes above blur into shoji screens (the mockup, finally). It shows at ~0.6 over
    the warm washi paper beneath, so it reads as atmosphere; the hero sits on its
@@ -428,7 +428,7 @@ button { cursor:pointer; background:none; border:0; }
 .cg-bar { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px; align-items:center; }
 .cts-area-sel { display:none; }   /* desktop: use the chip bar */
 /* Contacts header: the search box and the group chips sit together, actions right. */
-/* Auto "who's on Koyeba" banner at the top of Contacts */
+/* Auto "who's on Koyéba" banner at the top of Contacts */
 .cts-dbbanner { margin:0 0 18px; padding:14px 16px; border:1px solid color-mix(in srgb,var(--accent) 34%,var(--line)); border-radius:0; background:color-mix(in srgb,var(--accent) 7%,var(--card)); }
 .cts-dbbanner.cts-dbb-load, .cts-dbbanner.cts-dbb-none { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink-3); font-size:14px; }
 .cts-dbb-h { display:flex; align-items:center; justify-content:space-between; gap:12px; font-weight:600; color:var(--ink); margin-bottom:12px; }
@@ -451,7 +451,7 @@ button { cursor:pointer; background:none; border:0; }
 .cts-head .cg-bar { flex:1 1 auto; margin:0; min-width:0; }
 .cts-head .cts-acts { display:flex; gap:8px; flex:none; margin-left:auto; }
 .contacts-mine { margin-bottom:6px; }
-/* Koyeba friends: its own section, set apart from your contacts above. */
+/* Koyéba friends: its own section, set apart from your contacts above. */
 .ppl-sec { border-top:1px solid var(--line); padding-top:8px; margin-top:24px; }
 @media (max-width:640px){ .cts-head .cts-search { flex:1 1 100%; } .cts-head .cts-acts { margin-left:0; }
   /* The life-area filter becomes a single dropdown on mobile, not a row of chips. */
@@ -1509,7 +1509,7 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .rr-a { font-size:16px; line-height:1.6; color:var(--ink); white-space:pre-wrap; }
 .rr-free { font-size:16px; line-height:1.6; color:var(--ink); margin-top:6px; }
 /* The inspiring sign-off: a centred serif line between two short accent rules,
-   with the Koyeba mark beneath - a magazine's closing flourish. */
+   with the Koyéba mark beneath - a magazine's closing flourish. */
 .rr-coda { display:flex; flex-direction:column; align-items:center; gap:14px; margin:40px 0 8px; text-align:center; }
 .rr-coda-rule { width:54px; height:2px; border-radius:0; background:color-mix(in srgb,var(--c) 70%,transparent); }
 .rr-coda-line { font-family:var(--k-serif); font-style:italic; font-size:22px; line-height:1.4; color:var(--ink-2); margin:0; max-width:34ch; text-wrap:balance; }
@@ -2417,7 +2417,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-title:focus-visible { outline:none; }
 
 /* The writing surface: a classy, semi-transparent "sheet" floating on the folded
-   Koyeba background, so prose reads easily over the pattern instead of sitting
+   Koyéba background, so prose reads easily over the pattern instead of sitting
    straight on it. Translucent + a soft backdrop blur (near-white in light, near-
    black in dark - heading that way, never fully opaque). (Robin, 2026-10-27.) */
 .note-body {
@@ -2738,19 +2738,19 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    customised accent makes the logo their own. Dark theme keeps gold (below).
    (Robin, 2026-10-21: light version - more highlight, less gold.) */
 .nav-brand em { font-style:normal; color:var(--accent); }
-/* "Koyeba" is one word; only "book" leans italic, at natural spacing after the
+/* "Koyéba" is one word; only "book" leans italic, at natural spacing after the
    roman "Life" (the old -.07em tuck closed Day's loose y-b gap; Life's e-b sits
    right on its own). The mark carries the colour. (Brand, 2026-10-15.) */
 .wm-bk { font-style:normal; margin-left:0; }
-/* The sign:  (Koyeba) rendered as text, the octagram retired. Sizes come from
+/* The sign:  (Koyéba) rendered as text, the octagram retired. Sizes come from
    font-size per context (was width/height for the old SVG). (Robin, 2026-10-30.) */
 /* The mark is the Mandombe "ko" (ink consonants, gold vowels), sized by font-size
    like the old glyph; width tracks the ~1.22:1 art via background contain. Night
-   swaps to the ivory-stroke version. (Koyeba, 2026-10-30.) */
+   swaps to the ivory-stroke version. (Koyéba, 2026-10-30.) */
 .brand-mark { display:inline-block; width:1.22em; height:1em; margin:0 .24em; vertical-align:-.14em;
   background:url(/brand/mandombe-ko-ink.svg) center/contain no-repeat; }
 body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:url(/brand/mandombe-ko-ivory.svg); }
-/* The wordmark: "Koyeba" in Cormorant Garamond 500 with a gold full stop. */
+/* The wordmark: "Koyéba" in Cormorant Garamond 500 with a gold full stop. */
 .brand-word { font-family:var(--k-serif); font-style:normal; font-weight:500; letter-spacing:0; text-transform:none; }
 .brand-dot { color:var(--k-gold,#c99a3e); font-style:normal; }
 .nav-brand em.brand-word, .nav-drawer-brand em.brand-word, .mark-lockup em.brand-word { color:var(--ink); }
@@ -2758,7 +2758,7 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
    Appearance flips :root[data-mark-ring="1"] to wear it ("starred ring"). */
 .brand-ring { display:none; }
 :root[data-mark-ring="1"] .brand-ring { display:inline; }
-/* A quiet Koyeba mark closing the Home main column, in the chosen accent. */
+/* A quiet Koyéba mark closing the Home main column, in the chosen accent. */
 .home-mark { display:flex; justify-content:center; margin:36px auto 6px; padding:8px; background:none; border:0; border-radius:0; cursor:pointer; transition:transform .16s cubic-bezier(.2,.8,.2,1), background .16s; }
 .home-mark .brand-mark { font-size:46px; margin:0; color:var(--accent); opacity:.9; }
 .home-mark:hover { transform:translateY(-2px); background:color-mix(in srgb,var(--accent) 10%,transparent); }
@@ -2842,7 +2842,7 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .nav-lead-box, .nav-lead-box:first-of-type { margin-top:6px; }
 .nav-lead-box .nav-item { width:100%; }
 .nav-sec-items { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3px 3px; }
-/* The live Koyeba-people list sits in the same People box, under a collapsible
+/* The live Koyéba-people list sits in the same People box, under a collapsible
    header (a hairline divides it from the buttons). */
 .nav-people-wrap { margin-top:6px; padding-top:5px; border-top:1px solid var(--line); }
 .nav-people-h { display:flex; align-items:center; gap:6px; width:100%; text-align:left; background:none; border:0; cursor:pointer;
@@ -2907,7 +2907,7 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 /* Home quick-action "you've got some" dot (tasks) - shown on mobile too, unlike the
    numeric count. */
 .home-qa-open .hqa-dot { flex:none; margin-left:3px; width:8px; height:8px; border-radius:0; background:var(--accent); }
-/* Unread Koyeba messages: a red, gently pulsing badge so it's impossible to
+/* Unread Koyéba messages: a red, gently pulsing badge so it's impossible to
    miss - on the Contacts item, and on the mobile ☰ button (always on screen). */
 .nav-badge.has-msg { background:var(--danger,#c4412e); color:#fff; animation:msg-badge-pulse 1.5s ease-in-out infinite; }
 .nav-menu-badge { position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:0; background:var(--danger,#c4412e); color:#fff; font-size:11.5px; font-weight:600; line-height:1; box-shadow:0 0 0 2px var(--paper); }
@@ -2957,7 +2957,7 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .nav-cards .nav-sub.on { border-color:hsl(var(--h,220) 60% 52%); box-shadow:0 0 0 1px hsl(var(--h,220) 60% 52% / .35), var(--shadow); }
 .nav-cards .nav-sub.muted { background:none; border:0; box-shadow:none; padding:7px 12px; }
 .nav-2col .nav-sub-wide { grid-column:1 / -1; }
-/* Sidebar People section: connected Koyeba folk, online first, offline greyed. */
+/* Sidebar People section: connected Koyéba folk, online first, offline greyed. */
 .nav-people { gap:1px; }
 .nav-person { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:6px 12px; border-radius:0; color:var(--ink-2); font-size:15px; overflow:hidden; cursor:pointer; background:none; border:0; }
 .nav-person:hover { background:color-mix(in srgb,var(--ink) 5%,transparent); color:var(--ink); }
@@ -3221,7 +3221,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .emo { border:0; background:transparent; font-size:23px; line-height:1; padding:7px 0; border-radius:0; cursor:pointer; transition:background .1s; }
 .emo:hover { background:color-mix(in srgb,var(--accent) 14%,var(--card)); }
 .emo:active { transform:scale(.9); }
-/* Friends on Koyeba. */
+/* Friends on Koyéba. */
 .friend-row { display:flex; align-items:center; gap:13px; padding:11px 14px; border:1px solid var(--line); border-radius:0; background:var(--card); margin-bottom:8px; }
 .fr-av { flex:none; width:40px; height:40px; border-radius:0; display:grid; place-items:center; background:var(--paper-2,var(--paper)); color:var(--ink-2); font-weight:600; font-size:16px; position:relative; }
 .fr-av.online::after { content:''; position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:0; background:#3fae5a; border:2px solid var(--card); }
@@ -3279,22 +3279,22 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .fr-scan-note { font-size:13.5px; color:var(--ink-2); margin:2px 0 10px; }
 .fr-results:not(:empty) { margin:-8px 0 20px; }
 /* Invite button lives in the section header now, pushed to the right. */
-/* The connect row: a wide "find someone on Koyeba" box, then Connect + Invite. */
+/* The connect row: a wide "find someone on Koyéba" box, then Connect + Invite. */
 .fr-connect-row { flex-wrap:wrap; }
 /* The find box just flexes to fill its own row now. */
 .list-head.fr-connect-row .fr-connect { flex:1 1 240px; width:auto; min-width:200px; max-width:none; }
 .fr-connect-row .add-btn.wide { flex:none; }
-/* Auto-surfaced: your contacts already on Koyeba, given a soft-tinted card so
+/* Auto-surfaced: your contacts already on Koyéba, given a soft-tinted card so
    they stand out as the easy first connections. */
 .fr-suggest { margin:2px 0 18px; padding:4px 14px 12px; border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line)); border-radius:0; background:color-mix(in srgb,var(--accent) 5%,transparent); }
 .fr-suggest .ppl-sub { margin-top:12px; color:var(--accent); }
 .fr-intro { margin:2px 0 14px; font-size:14.5px; line-height:1.55; color:var(--ink-2); max-width:640px; }
 .fr-suggest .friend-row { background:var(--card); }
-/* Sub-groups inside "Contacts on Koyeba" (Requests, Pending, Suggestions…). */
+/* Sub-groups inside "Contacts on Koyéba" (Requests, Pending, Suggestions…). */
 .ppl-sub { display:flex; align-items:center; gap:8px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; margin:18px 0 9px; }
 .ppl-sub-req { color:var(--accent); margin-top:4px; }
 .ppl-sub .fr-rescan { margin-left:2px; padding:2px 7px; font-size:13px; }
-/* The "find someone on Koyeba" box: full width, and visible on mobile (it isn't
+/* The "find someone on Koyéba" box: full width, and visible on mobile (it isn't
    a per-page .list-search, so the mobile hide-rule leaves it alone). */
 .list-head .fr-connect { flex:1; width:auto; min-width:0; margin:0; }
 /* Webinars (Friends). */
@@ -3396,7 +3396,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-cost-t { font-family:var(--k-serif); font-size:23px; font-weight:300; color:var(--ink); font-variant-numeric:lining-nums tabular-nums; margin-left:auto; line-height:1; }
 .adm-plan-chip { font-size:13px; padding:4px 12px; border:1px solid var(--line); border-radius:0; color:var(--ink-2); text-transform:capitalize; }
 .adm-signup .scope { font-size:12.5px; color:var(--ink-3); font-weight:400; }
-/* Integration health panel - the outside services Koyeba leans on. */
+/* Integration health panel - the outside services Koyéba leans on. */
 .adm-health-badge { font-size:12px; font-weight:600; padding:2px 9px; border-radius:0; vertical-align:middle; margin-left:6px; }
 .adm-health-badge.ok { color:#2f7d4f; background:color-mix(in srgb,#2f7d4f 12%,var(--card)); }
 .adm-health-badge.down { color:var(--danger,#c4412e); background:color-mix(in srgb,var(--danger,#c4412e) 12%,var(--card)); }
@@ -3750,7 +3750,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .ho-loading { font-size:15px; color:var(--ink-3); text-align:center; padding:14px 0; }
 .ho-meta { font-size:12.5px; color:var(--ink-3); }
 
-/* ── Your Koyeba card ────────────────────────────────────────────────── */
+/* ── Your Koyéba card ────────────────────────────────────────────────── */
 .set-cardlink { display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; padding:16px 18px; margin-bottom:16px; }
 .set-cardlink:hover { border-color:var(--accent); }
 .set-cardlink-ic { font-size:26px; flex:none; }
@@ -3973,7 +3973,7 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .imp-flyer-art { font-size:40px; letter-spacing:4px; }
 .imp-flyer-teaser .imp-lead { max-width:46ch; }
 .imp-flyer-teaser .add-btn.wide { max-width:320px; }
-/* Account tab order: your details first, then the Koyeba card + Security side by
+/* Account tab order: your details first, then the Koyéba card + Security side by
    side, then Your data. */
 .set-account, .set-acct-cols { margin-bottom:16px; }
 .set-acct-cols { display:flex; gap:16px; align-items:stretch; }
@@ -5003,7 +5003,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .tabstrip .tab-util { flex:none; width:27px; height:27px; margin-left:5px; border-radius:0; display:inline-flex; align-items:center; justify-content:center; font-size:14px; line-height:1; color:var(--ink-3); border:1.5px solid var(--line-2); background:var(--card); transition:color .12s,border-color .12s,background .12s; }
 .tabstrip .tab-util:hover { color:var(--accent); border-color:var(--accent); background:var(--paper); }
 .tabstrip .tab-util.on { color:var(--accent); border-color:var(--accent); }
-/* The top-right cluster (i, messages, settings) reads in Koyeba's accent so it's
+/* The top-right cluster (i, messages, settings) reads in Koyéba's accent so it's
    clearly part of the app, filling on hover / when active. */
 .tabstrip .help-btn, .tabstrip .tab-util { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 46%, var(--line-2)); }
 .tabstrip .help-btn:hover, .tabstrip .tab-util:hover, .tabstrip .tab-util.on { color:var(--accent-ink); background:var(--accent); border-color:var(--accent); }
@@ -5046,7 +5046,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .help-back-link:hover { text-decoration:underline; }
 /* Guide home page: the welcome-checklist card, then a grid of tool guides. */
 /* The ethos band - the tagline earns a proper moment here, where we're explaining
-   what Koyeba is FOR. Prominent in the Guide only; a quiet whisper elsewhere. */
+   what Koyéba is FOR. Prominent in the Guide only; a quiet whisper elsewhere. */
 .guide-ethos { text-align:center; margin:8px 0 24px; padding:34px 26px 36px; border-radius:0; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); background:linear-gradient(170deg, color-mix(in srgb,var(--accent) 9%,var(--card)), var(--card) 72%); }
 .guide-ethos-mark { line-height:0; margin-bottom:12px; }
 .guide-ethos-mark .brand-mark { width:52px; height:52px; color:var(--accent); margin:0; }
@@ -5056,7 +5056,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 .guide-ethos .guide-ethos-p { max-width:560px; margin:40px auto 0; font-size:16.5px; line-height:1.65; color:var(--ink-2); }
 /* The discreet footer whisper on individual guides and the index bottom. */
 .guide-tagline { text-align:center; font-family:var(--k-serif); font-style:italic; font-size:17px; color:var(--ink-3); margin:26px 0 2px; letter-spacing:.01em; }
-/* The sign-off: the tagline with the Koyeba mark beneath it, the mark a quiet
+/* The sign-off: the tagline with the Koyéba mark beneath it, the mark a quiet
    button home to the top. */
 .guide-signoff { display:flex; flex-direction:column; align-items:center; gap:12px; margin:30px 0 8px; }
 .guide-signoff .guide-tagline { margin:0; font-size:19px; }
@@ -5094,7 +5094,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 /* A sub-section title inside a set-card (e.g. Security on the Account page). */
 .set-sec-title { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; }
 .set-account-sec { gap:0; }
-/* The back link that replaces the tab bar on a settings sub-page (Koyeba card). */
+/* The back link that replaces the tab bar on a settings sub-page (Koyéba card). */
 .set-subback { display:inline-flex; align-items:center; gap:7px; width:auto; height:auto; padding:8px 15px; border-radius:0; font-size:14px; font-weight:600; color:var(--ink-2); border:1px solid var(--line); background:var(--card); cursor:pointer; }
 .set-subback:hover { border-color:var(--accent); color:var(--accent); }
 .set-block { border-top:1px solid var(--line); padding-top:18px; }
@@ -5532,7 +5532,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 .home-head h1 { font-family:var(--k-serif); font-size:clamp(30px,4.5vw,42px); font-weight:300; }
 .home-head h1 .hi-name { color:var(--accent); font-style:italic; }
 .home-hi { min-width:0; }
-/* ── Koyeba home hero: editorial, spacious,  breathing behind it. ── */
+/* ── Koyéba home hero: editorial, spacious,  breathing behind it. ── */
 .home { position:relative; }
 .home-kanji { position:absolute; top:-3vh; right:-1.5vw; z-index:0; font-family:var(--k-serif); font-weight:300; font-size:min(64vh,640px); line-height:.78; color:var(--ink); opacity:.045; pointer-events:none; user-select:none; }
 .home-top, .home-scroll { position:relative; z-index:1; }
@@ -5829,14 +5829,14 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
      override the sections below via inline `order`, and hide any with .mob-hide. */
   .home-sec-today { order:1; } .home-launch { order:2; } .home-sec-p1 { order:3; }
   .home-sec-focus { order:4; } .home-sec-notepad { order:5; } .home-sec-favs { order:6; }
-  /* On mobile the .home-lead wrapper dissolves so its blocks (Today, My Koyeba,
-     Do-next, Tracker…) become orderable flex children. Today and My Koyeba are
+  /* On mobile the .home-lead wrapper dissolves so its blocks (Today, My Koyéba,
+     Do-next, Tracker…) become orderable flex children. Today and My Koyéba are
      pinned first and second; everything else orders after them. The notepad's
      !important beats the inline order the mobile-arrangement writes. */
   .home-lead { display:contents; }
   .home .lead-block { order:5; }
   .home .lead-day { order:0; }        /* Today - pinned first */
-  .home .lead-lifebook { order:1; }   /* My Koyeba - pinned second, right under Today (Robin, 2026-10-16) */
+  .home .lead-lifebook { order:1; }   /* My Koyéba - pinned second, right under Today (Robin, 2026-10-16) */
   .home .home-sec-notepad { order:2 !important; }
   .home .lead-priority { order:3; }
   .home .lead-tracker { order:4; }
@@ -6064,7 +6064,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 /* the area picker on a note / table, styled as a quiet pill */
 .crumb-tools { display:flex; align-items:center; gap:8px; margin-left:auto; }
 /* The picker is a quiet keyline control with its own chevron (appearance:none), so
-   it reads as Koyeba, not an OS form widget. The chevron sits inset from the right
+   it reads as Koyéba, not an OS form widget. The chevron sits inset from the right
    edge, with text padded clear of it. (Robin.) */
 .area-pick { position:relative; display:inline-flex; }
 .area-pick::after { content:'⌄'; position:absolute; right:13px; top:50%; transform:translateY(-62%); font-size:13px; color:var(--mute); pointer-events:none; }
@@ -6572,7 +6572,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
    what, newest first. (Robin, 2026-10-11.) */
 .area-updates { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); margin-top:24px; border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); padding:18px 20px; }
 .upd-wall { display:flex; flex-direction:column; margin-top:10px; }
-/* "My Koyeba" feed: one reverse-chronological stream of birthdays, nudges,
+/* "My Koyéba" feed: one reverse-chronological stream of birthdays, nudges,
    snooze-returns and shared-Life-Space activity, newest first, each row clearable
    with an ×. (Robin, 2026-10-15.) */
 .lead-lifebook .lb-feed { display:flex; flex-direction:column; }
@@ -7832,7 +7832,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
      Chromium clamps to the whole grid and hides the bug. Plain block flow makes
      both sticky bars clamp to the tall shell, so they pin correctly everywhere. */
   .app-shell { display:block; grid-template-columns:1fr; }
-  /* The sidebar collapses to a fixed top header: the Robski Koyeba wordmark plus
+  /* The sidebar collapses to a fixed top header: the Robski Koyéba wordmark plus
      a ⋯ toggle. It stays pinned to the top of the screen; primary navigation is
      the bottom tab bar, and the breadcrumb pins just below this header. */
   .nav {
@@ -7841,8 +7841,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
     border-bottom:1px solid var(--line);
     background:color-mix(in srgb,var(--paper) 94%,transparent); backdrop-filter:blur(12px);
   }
-  /* ☰ menu · ← back · "Koyeba <Tool>" - all left-aligned on one row. */
-  /* ☰ menu on the left, the Koyeba logo dead-centre, ✉ messages on the right.
+  /* ☰ menu · ← back · "Koyéba <Tool>" - all left-aligned on one row. */
+  /* ☰ menu on the left, the Koyéba logo dead-centre, ✉ messages on the right.
      The 1fr flanks keep the logo centred whether or not the messages button is
      showing. No current-tool name after it - the bottom tab bar says where you
      are. (Robin, 2026-10-24.) */
@@ -7927,7 +7927,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   .nav-mlist .nav-item .nav-lbl { flex:1 1 auto; min-width:0; font-weight:500; }
   .nav-mlist .nav-item .nav-quick { display:none; }   /* keep the drawer clean - add via the tool itself */
   .nav-mlist .nav-item .nav-badge { margin-left:auto; }
-  /* Koyeba Contacts list in the mobile drawer (the desktop grid People box is
+  /* Koyéba Contacts list in the mobile drawer (the desktop grid People box is
      hidden on a phone). Bigger rows than desktop, for easy tapping + reading. */
   .nav-mpeople { display:block; margin:14px 0 2px; padding-top:13px; border-top:1px solid var(--line); }
   .nav-mpeople .nav-people-h { padding:6px 4px; font-size:12px; }
@@ -8014,8 +8014,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   .list-search:not(.mail-search) { display:none; }
   body[data-view="mail"] .nav-k { display:none; }
   /* Contacts on mobile: searching your own contacts is the box that matters, so
-     keep it; the "find someone else on Koyeba" box + Connect are dropped
-     (the surfaced "already on Koyeba" suggestions cover connecting). Invite
+     keep it; the "find someone else on Koyéba" box + Connect are dropped
+     (the surfaced "already on Koyéba" suggestions cover connecting). Invite
      stays, full width. */
   body[data-view="contacts"] .list-head { flex-wrap:wrap; }
   body[data-view="contacts"] .list-search[data-contacts-q] { display:block; flex:1 1 100%; }
@@ -8130,7 +8130,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
   box-shadow:var(--shadow); }
 .gate2-mark { font-family:var(--k-serif); font-size:40px; font-weight:500; letter-spacing:-.01em; }
 .gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 5px; }
-/* Keep the sunrise mark on the same line as "Koyeba" when the wordmark wraps. */
+/* Keep the sunrise mark on the same line as "Koyéba" when the wordmark wraps. */
 .mark-lockup { white-space:nowrap; }
 /* The tagline lives inside .gate2-mark rather than beside it: the card is a
    flex column with a 16px gap, which would push it away from the wordmark. */
@@ -8160,7 +8160,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* The text route: a clearly tappable SECONDARY button under the primary (outlined,
    not filled - so it reads as the alternative, not a co-equal). It texts the code to
    THEIR own saved phone - the way in when the mailbox you'd read the code from lives
-   inside Koyeba. Bordered by default so it never reads as un-clickable text. */
+   inside Koyéba. Bordered by default so it never reads as un-clickable text. */
 .gate2-smslink { display:block; width:100%; background:var(--card); border:1px solid var(--line-2); margin:10px 0 0;
   padding:12px 14px; border-radius:0; font-size:15px; line-height:1.45; color:var(--ink-2); cursor:pointer; text-wrap:balance;
   transition:background .12s, border-color .12s, color .12s; }
@@ -8317,7 +8317,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose :is(h1,h2,h3) + :is(h1,h2,h3) { margin-top:2px; }
 .prose h4, .prose h5, .prose h6 { font-size:18.5px; font-weight:600; margin:16px 0 4px; color:var(--ink-2); }
 .prose a { color:var(--accent); }
-/* Internal links (to another Koyeba page) read as a subtle dotted underline. */
+/* Internal links (to another Koyéba page) read as a subtle dotted underline. */
 .prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
 
@@ -9685,9 +9685,9 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* Notepad lives at the very bottom now, full width with a little air above it. */
 .area-notepad-full { margin-top:26px; }
 
-/* ── Koyeba seven-fold nav (desktop sidebar) - the prototype's left column.
+/* ── Koyéba seven-fold nav (desktop sidebar) - the prototype's left column.
    One fold open at a time; Cormorant fold titles, Jost items, gold for current.
-   Styles translated from design/koyeba/Koyeba App.dc.html. (Koyeba, 2026-10-31.) */
+   Styles translated from design/koyeba/Koyeba App.dc.html. (Koyéba, 2026-10-31.) */
 /* flex:1 fills the gap between search and the pinned account cluster; overflow-y
    lets a long fold (e.g. 16 Spaces) scroll WITHIN that gap instead of spilling
    over the Guide/Settings/Sign-out cluster and footer below it. min-height:0 is
@@ -9718,7 +9718,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .kfi-more .kfi-l { color:var(--k-goldt); font-size:14px; }
 @media (max-width:820px){ .nav-folds-wrap { display:none; } .nav-k { display:none; } }
 
-/* ══ Koyeba Home — the reimagined Today ════════════════════════════════════════
+/* ══ Koyéba Home — the reimagined Today ════════════════════════════════════════
    Ledger of Cormorant numbers, then Today + Your spaces beside Coming into view,
    a line for the evening and the Notepad. Built on the app's theme-aware tokens
    (--paper/--ink/--line/--accent) so it flips ivory↔forest with everything else.
@@ -9805,7 +9805,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .ksp-more { display:inline-block; margin-top:16px; padding:4px 0; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-goldt); }
 .ksp-more:hover { opacity:.72; }
 
-/* ── Koyeba Mail page (§12): piles row + day-grouped accordion + sticky side.
+/* ── Koyéba Mail page (§12): piles row + day-grouped accordion + sticky side.
    Colours come from the app's data-theme tokens so night mode is correct today;
    --k-goldt is gold text (reads on ivory and forest). No literal colours. */
 .mail2 { --mserif:'Cormorant Garamond',Georgia,serif; --msans:'Jost',system-ui,sans-serif; }
@@ -9859,7 +9859,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .mail-ar { border-bottom:1px solid var(--line); margin:0 -20px; padding:0 20px; transition:background .3s ease; }
 .mail-ar.open { background:transparent; }
 /* §58: an opened email sits on white paper, its own content in Source Serif, so
-   you can always tell the email from Koyeba's own Jost interface around it. */
+   you can always tell the email from Koyéba's own Jost interface around it. */
 .mail-ar-card { background:#fff; border:1px solid oklch(0.85 0.014 80); margin:12px 0 2px; padding:0 24px; }
 body.night .mail-ar-card, :root[data-theme='dark'] .mail-ar-card { background:oklch(0.96 0.006 85); }
 .mail-ar-card .mail-ar-head { padding:20px 0 14px; }
@@ -10250,7 +10250,7 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
   .cap-bar-t { font-size:19px; }
 }
 
-/* ══ Koyeba nav foot + width cleanup (Robin, 2026-10-31) ═══════════════════════
+/* ══ Koyéba nav foot + width cleanup (Robin, 2026-10-31) ═══════════════════════
    The seven folds end in quiet text links (the prototype), not boxed buttons;
    Admin and Sign out moved into Settings. The sidebar is a fixed clamp width now -
    no collapse toggle, no drag-resize handle, no origami right-margin. */
@@ -10456,7 +10456,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 @media (min-width:2200px){ .knav-inner { padding-left:80px; padding-right:80px; } }
 @keyframes kfade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 
-/* ══ §13 Goals page (Koyeba) ══════════════════════════════════════════════
+/* ══ §13 Goals page (Koyéba) ══════════════════════════════════════════════
    Flat ground, the §19 grid, no coloured bars / boxed cards / chips / × /
    sort dropdown / boxed tabs. One gold accent, square, 1px keylines. ══ */
 body[data-view="goals"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
@@ -11151,7 +11151,7 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
 /* ══ §36 Journal v2 ═════════════════════════════════════════════════════════
    Today's page at the top (one question at a time, an unboxed page that keeps
    itself as you write), then your pages grouped by month, and a sticky right
-   column. Reference: Koyeba Journal.dc.html. */
+   column. Reference: Koyéba Journal.dc.html. */
 .jx-head { padding:6px 0 0; }
 .jx-eyebrow { display:flex; align-items:center; gap:12px; }
 .jx-eyebrow-rule { width:28px; height:1px; background:var(--k-gold); }
@@ -12988,7 +12988,7 @@ body.mailsheet-open { overflow:hidden; }
    own deliberately-distinctive size. */
 .pane-head h1, .cal-head h1, .tbl-head h1, .mail-h1, .kg-h1, .icx-h1, .tr-h1, .adm2-h1, .nx-h1 { font-size:clamp(40px,4.4vw,56px); }
 
-/* ════ V37 Weekly Review report — matches Koyeba Weekly Review.dc.html.
+/* ════ V37 Weekly Review report — matches Koyéba Weekly Review.dc.html.
    Cormorant Garamond for anything that speaks, Jost for anything that labels,
    no other fonts. Scoped to .rr-v37 so no other page is touched. (Robin, 2026-11-03.) */
 .rr-v37 { max-width:960px; margin:0 auto; }

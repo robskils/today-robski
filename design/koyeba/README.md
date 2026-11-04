@@ -1,6 +1,6 @@
-# Handoff: Koyeba front-end redesign
+# Handoff: Koyéba front-end redesign
 
-Koyeba is the new name for Shizu (before that Daybook and Lifebook). Repo: `robskils/today-robski`. New domain: **koyeba.co**.
+Koyéba is the new name for Shizu (before that Daybook and Lifebook). Repo: `robskils/today-robski`. New domain: **koyeba.co**.
 
 **Read this whole file before touching any UI code.** The design is deliberately restrained, and most of its quality comes from what it leaves out. If a change you're about to make adds a box, a shadow, a pill, a colour, an icon or a rounded corner, it is almost certainly wrong.
 
@@ -89,7 +89,7 @@ Fonts are self-hosted in `fonts/` (latin woff2): Cormorant Garamond 300, 300 ita
 | Field label | Jost 600, 10px, `.2em`, uppercase, muted |
 | Button | Jost 500, 11px, `.22–.24em`, uppercase |
 | Space numeral | Cormorant 300 italic, 15–17px, `--k-goldt` (I, II, III, IV, V) |
-| Logo wordmark | Cormorant 500, 28–32px, "Koyeba" followed by a gold "." |
+| Logo wordmark | Cormorant 500, 28–32px, "Koyéba" followed by a gold "." |
 
 ### Spacing and shape
 - **Page padding:** `52px clamp(24px,4vw,64px) 160px`. The 160px bottom leaves room for the capture bar.
@@ -237,7 +237,7 @@ A centred overlay, 760px, on a 35% ink scrim. A 38px Cormorant input. Results ar
 ### 6.11 Capture: "Set it down" (⌘. or the bar)
 A drawer slides up from the bottom (800px wide, `--k-panel`, top shadow only). It has the eyebrow "SET IT DOWN", the input "I've got the dentist on Tuesday at 9am", and "Esc · fold away".
 - **Empty:** "Just write it as you'd say it. Try …" with three clickable examples.
-- **While typing**, a live readout: "Koyeba reads this as — tap a line to change it". Its rows are **What** · **As** (tap to cycle Event, Task, Note, Spend) · **When** · **Into** (tap to cycle Spaces; shows "guessed from 'dentist'") · **Remind** (with a one-line reason).
+- **While typing**, a live readout: "Koyéba reads this as — tap a line to change it". Its rows are **What** · **As** (tap to cycle Event, Task, Note, Spend) · **When** · **Into** (tap to cycle Spaces; shows "guessed from 'dentist'") · **Remind** (with a one-line reason).
 - **Parsing is rule-based, not AI** (the brand promise is that it works without AI):
   - Strip lead-ins ("I've got", "remind me to"…). Normalise curly apostrophes first.
   - Day: today, tomorrow and weekdays; "next" adds 7 days. Time: 9am, 9:30, 14:00, "at ten", noon. A bare hour below 8 is taken as pm.
@@ -278,7 +278,7 @@ These were not designed in this pass: Goals, Contacts, Dreams, Compass, Coaching
 
 ## 7. Logo and brand
 
-- **The primary logo is the wordmark:** "Koyeba" in Cormorant Garamond 500, with a gold full stop.
+- **The primary logo is the wordmark:** "Koyéba" in Cormorant Garamond 500, with a gold full stop.
 - **Mandombe** (the script) spells *ko-ye-ba*. Its vowel strokes are gold (red in the source, recoloured). See `Koyeba Logo.dc.html` for the uses:
   - **2a/2b:** the full lockup (script, a short gold rule, the wordmark, "TO KNOW"), for the website, print and the welcome screen.
   - **2c:** the app icon. **Just "ko"** on a gold tile (`assets/mandombe-ko-tile-gold.svg`) or a forest tile (night). Use it for the favicon and apple-touch and 192/512 icons, replacing all the `public/icon-*.png` and `apple-touch-icon*.png` files.
@@ -286,7 +286,7 @@ These were not designed in this pass: Goals, Contacts, Dreams, Compass, Coaching
   - **2f:** the welcome screen.
   - **Today:** the full word at the foot of the page (see 6.1). **Not** behind the greeting; Robin tried that and it was too busy.
 - ⚠️ The strokes were traced by eye from a screenshot. **Have a Mandombe reader verify them** before public launch.
-- The meaning of Koyeba is "to know" in Lingala. *Nasepeli koyeba yo* means "pleased to know you".
+- The meaning of Koyéba is "to know" in Lingala. *Nasepeli koyeba yo* means "pleased to know you".
 
 ### Assets (`assets/`)
 | File | Use |
@@ -299,9 +299,9 @@ These were not designed in this pass: Goals, Contacts, Dreams, Compass, Coaching
 
 ---
 
-## 8. Rename and domain move (Shizu → Koyeba, shizu.fyi → koyeba.co)
+## 8. Rename and domain move (Shizu → Koyéba, shizu.fyi → koyeba.co)
 
-- **Copy:** replace every user-facing "Shizu", "Daybook" and "Lifebook" with **Koyeba**. That includes `public/*.html`, `/blog`, and the `pt/`, `fr/`, `es/`, `de/` and `it/` pages and their journal posts, `i18n.js`, the invite and OTP emails (`worker/invite-email.js`, `worker/auth.js`), push notifications, and `robots`/`sitemap` in `worker/index.js`.
+- **Copy:** replace every user-facing "Shizu", "Daybook" and "Lifebook" with **Koyéba**. That includes `public/*.html`, `/blog`, and the `pt/`, `fr/`, `es/`, `de/` and `it/` pages and their journal posts, `i18n.js`, the invite and OTP emails (`worker/invite-email.js`, `worker/auth.js`), push notifications, and `robots`/`sitemap` in `worker/index.js`.
 - "My Shizu" becomes **"Coming into view"**; "Life Spaces" becomes **"Spaces"**; the brand mark 静 becomes the Mandombe "ko".
 - **`wrangler.toml`:** add the koyeba.co routes and custom domain, and update the `FROM_EMAIL` brand name. Check `ADMIN_EMAILS`.
 - **Google OAuth:** add koyeba.co to the authorised origins and redirects.

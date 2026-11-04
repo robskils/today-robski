@@ -1,7 +1,7 @@
 // CalDAV: connect any CalDAV calendar (iCloud, Yahoo, Fastmail, a self-hosted
 // server) with an email + an app-specific password, and read/write it two-way.
 // Stored as a calendar_accounts row (provider='caldav'); its events merge onto
-// the Koyeba calendar like the extra Google accounts, with the same
+// the Koyéba calendar like the extra Google accounts, with the same
 // acct:<id>:<uid> id scheme so writes route back here.
 //
 // Robin doesn't use Yahoo himself - this is for members who do (2026-10-25). It's

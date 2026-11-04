@@ -25,7 +25,7 @@ input,textarea{font:inherit;color:inherit}input::placeholder,textarea::placehold
 <sc-if value="{{ isIndex }}">
 <div style="flex:none;border-bottom:1px solid var(--k-line);background:var(--k-bg);position:relative;z-index:5">
 <div style="display:flex;align-items:center;gap:36px;height:72px;padding:0 40px">
-<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:26px;width:auto;display:block"></img></sc-if><span style="font:500 30px/1 'Cormorant Garamond',serif">Koyéba<span style="color:var(--k-gold)">.</span></span></div>
 <div style="display:flex;gap:28px;height:100%">
 <sc-for list="{{ indexTabs }}" as="t" hint-placeholder-count="7">
 <div onClick="{{ t.toggle }}" style="display:flex;align-items:center;gap:6px;height:100%;box-sizing:border-box;border-bottom:1px solid {{ t.line }};margin-bottom:-1px;cursor:pointer;font:400 16px Jost;color:{{ t.color }};transition:color .4s ease">{{ t.label }}<span style="font-size:12px;color:var(--k-goldt)">{{ t.badge }}</span></div>
@@ -54,7 +54,7 @@ input,textarea{font:inherit;color:inherit}input::placeholder,textarea::placehold
 
 <sc-if value="{{ isFolds }}">
 <div style="width:clamp(210px,21vw,280px);flex:none;border-right:1px solid var(--k-line);overflow:auto;padding:30px clamp(18px,2vw,30px) 120px;box-sizing:border-box;display:flex;flex-direction:column">
-<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><span style="font:500 32px/1 'Cormorant Garamond',serif">Koyeba<span style="color:var(--k-gold)">.</span></span></div>
+<div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;cursor:pointer"><sc-if value="{{ dayOn }}"><img src="assets/mandombe-ko-ink.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><sc-if value="{{ nightOn }}"><img src="assets/mandombe-ko-ivory.svg" alt="" style="height:28px;width:auto;display:block"></img></sc-if><span style="font:500 32px/1 'Cormorant Garamond',serif">Koyéba<span style="color:var(--k-gold)">.</span></span></div>
 <div onClick="{{ openSearch }}" style="display:flex;align-items:center;gap:12px;margin:26px 0 22px;padding:10px 0;border-bottom:1px solid var(--k-line);cursor:text"><span style="font:400 15px Jost;color:var(--k-mute);white-space:nowrap">Find…</span><span style="margin-left:auto;font:500 10px Jost;letter-spacing:.2em;color:var(--k-mute)">⌘K</span></div>
 <sc-for list="{{ folds }}" as="f" hint-placeholder-count="7">
 <div style="border-top:1px solid var(--k-line)">
@@ -184,9 +184,9 @@ input,textarea{font:inherit;color:inherit}input::placeholder,textarea::placehold
 </div>
 <div style="display:flex;justify-content:center;margin-top:96px">
 <div onClick="{{ toTop }}" title="Back to the top" style="display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;opacity:.55;transition:opacity .6s ease" style-hover="opacity:1">
-<sc-if value="{{ dayOn }}"><img src="assets/mandombe-koyeba-ink.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></img></sc-if>
-<sc-if value="{{ nightOn }}"><img src="assets/mandombe-koyeba-ivory.svg" alt="Koyeba" style="width:240px;height:auto;display:block"></img></sc-if>
-<span style="font:500 10.5px Jost;letter-spacing:.32em;text-transform:uppercase;color:var(--k-mute)">Koyeba · to know</span>
+<sc-if value="{{ dayOn }}"><img src="assets/mandombe-koyeba-ink.svg" alt="Koyéba" style="width:240px;height:auto;display:block"></img></sc-if>
+<sc-if value="{{ nightOn }}"><img src="assets/mandombe-koyeba-ivory.svg" alt="Koyéba" style="width:240px;height:auto;display:block"></img></sc-if>
+<span style="font:500 10.5px Jost;letter-spacing:.32em;text-transform:uppercase;color:var(--k-mute)">Koyéba · to know</span>
 </div>
 </div>
 </div>
@@ -546,7 +546,7 @@ input,textarea{font:inherit;color:inherit}input::placeholder,textarea::placehold
 </sc-if>
 <sc-if value="{{ capEmpty }}"><div style="display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:16px;font:400 14.5px Jost;color:var(--k-mute)"><span>Write it, or press Speak and say it. Try</span><sc-for list="{{ capExamples }}" as="x"><span onClick="{{ x.use }}" style="color:var(--k-goldt);cursor:pointer;white-space:nowrap">“{{ x.t }}”</span></sc-for></div></sc-if>
 <sc-if value="{{ capHas }}">
-<div style="margin-top:16px;font:italic 300 18px 'Cormorant Garamond',serif;color:var(--k-mute)">Koyeba reads this as — tap a line to change it</div>
+<div style="margin-top:16px;font:italic 300 18px 'Cormorant Garamond',serif;color:var(--k-mute)">Koyéba reads this as — tap a line to change it</div>
 <div style="display:grid;grid-template-columns:76px minmax(0,1fr);margin-top:8px;border-top:1px solid var(--k-line)">
 <sc-for list="{{ capRows }}" as="r">
 <span style="padding:11px 0;border-bottom:1px solid var(--k-soft);font:600 10px Jost;letter-spacing:.2em;text-transform:uppercase;color:var(--k-mute);align-self:stretch;display:flex;align-items:center">{{ r.k }}</span>
@@ -618,7 +618,7 @@ const SP=[
   cards:{Tasks:[['Book booster jab','Today'],['Order kibble','Sat']],Calendar:[['Vet — booster','Tue 10:00'],['Walk with Sam','Weekdays 12:30']],Mail:[['Greenway Vets — booster','9:12']],Notes:[['Insurance PF-28841','Pinned']],Money:[['Kibble, 12kg','€58'],['Walker, October','€38']],People:[['Sam','Walker']]}},
  {id:'work',num:'IV',name:'Work',line:'Sintra proposal in draft',pct:'55%',foot:'Proposal due Wed',
   stats:[['6','Open tasks'],['3','Meetings'],['€120','October'],['2','Waiting on']],
-  cards:{Tasks:[['Reply to Geeza — The Frog','Today'],['Finish the Sintra proposal','Wed']],Calendar:[['Studio check-in','Mon 09:30'],['Call with Priya','Tue 15:00']],Mail:[['Geeza — cancelled bookings','11:40'],['Priya — proposal notes','Thu']],Notes:[['Koyeba — principles','Today'],['Sintra proposal','Yesterday']],Money:[['Software','€48'],['Train to Porto','€72']],People:[['Priya','Client'],['Geeza','The Frog']]}},
+  cards:{Tasks:[['Reply to Geeza — The Frog','Today'],['Finish the Sintra proposal','Wed']],Calendar:[['Studio check-in','Mon 09:30'],['Call with Priya','Tue 15:00']],Mail:[['Geeza — cancelled bookings','11:40'],['Priya — proposal notes','Thu']],Notes:[['Koyéba — principles','Today'],['Sintra proposal','Yesterday']],Money:[['Software','€48'],['Train to Porto','€72']],People:[['Priya','Client'],['Geeza','The Frog']]}},
  {id:'me',num:'V',name:'Body & mind',line:'Zazen five mornings of seven',pct:'71%',foot:'Steady this week',
   stats:[['5 / 7','Mornings sat'],['2','Classes'],['€84','October'],['3','Journal entries']],
   cards:{Tasks:[['Call Mum','Every 3 weeks'],['Renew passport','Nov']],Calendar:[['Zazen, Ryumonji','Daily 07:15'],['Dentist','Thu 14:20']],Mail:[['Practice — appointment','Tue']],Notes:[['Watercolour notes','Draft'],['Books to read','Table']],Money:[['Yoga Download','€14'],['Ryumonji, dana','€70']],People:[['Mum','Every 3 weeks']]}}
@@ -682,10 +682,10 @@ const TASKS=[
   {id:'t10',title:'Redirect the post',s:'move',meta:'Back 4 Nov',prio:'P3',rel:''}]}
 ];
 const NOTES=[
- {id:'n1',s:'work',title:'Koyeba — principles',edited:'Edited today',blocks:[
+ {id:'n1',s:'work',title:'Koyéba — principles',edited:'Edited today',blocks:[
   {k:'toggle',id:'p',h:'Principles',lines:['Capture it quick, make it easy to process.','Set it down, and trust it to come back.','Show what you need to know, when you need to know it.']},
-  {k:'toggle',id:'d',h:'Design',lines:['Avoid the standard look and feel.','Be true to the word Koyeba — to know. Things come into view; they don’t shout.','Every titled section folds away. Large, legible type.']},
-  {k:'table',h:'Names we’ve had',cols:['Name','Meaning','When'],rows:[['Lifebook','A book of a life','2025'],['Daybook','The day, kept','Oct 2026'],['Shizu','静 — quiet','Oct 2026'],['Koyeba','Lingala — to know','Now']]}]},
+  {k:'toggle',id:'d',h:'Design',lines:['Avoid the standard look and feel.','Be true to the word Koyéba — to know. Things come into view; they don’t shout.','Every titled section folds away. Large, legible type.']},
+  {k:'table',h:'Names we’ve had',cols:['Name','Meaning','When'],rows:[['Lifebook','A book of a life','2025'],['Daybook','The day, kept','Oct 2026'],['Shizu','静 — quiet','Oct 2026'],['Koyéba','Lingala — to know','Now']]}]},
  {id:'n2',s:'work',title:'Sintra proposal',edited:'Yesterday',blocks:[{k:'para',t:'Two days. The first in the hills — Pena early, before the coaches; Regaleira after lunch. The second by the sea at Cabo da Roca, with time to do nothing at all.'}]},
  {id:'n3',s:'move',title:'Movers — quotes',edited:'Sunday',blocks:[{k:'table',h:'Quotes',cols:['Firm','Price','Date','Notes'],rows:[['Mudanças Tejo','€820','11 Nov','Includes packing'],['Lisboa Leve','€640','11 Nov','No piano'],['Two men & a van','€390','12 Nov','Cash only']]}]},
  {id:'n4',s:'kids',title:'Swimming kit list',edited:'Tuesday',blocks:[{k:'para',t:'Goggles, cap, the blue towel, flip-flops, €2 for the locker. Snack for after — they’re always starving.'}]},
@@ -732,7 +732,7 @@ const THREADS=[
 const REMINDERS=['At the time','5 min','30 min','1 hour','1 day','1 week'];
 const STARTERS=['Body / Health','Family','Hobbies','Money','People','Personal','Reflect','Work'];
 const ONB=[
- {eyebrow:'Nasepeli koyeba yo',title:'Pleased to know you.',lead:'Koyeba is Lingala for “to know”, written above in Mandombe. Set things down here and you’ll always know where they are — and they’ll come back to you when it matters. First, what should we call you?',cta:'Continue',skip:'',isName:true},
+ {eyebrow:'Nasepeli koyeba yo',title:'Pleased to know you.',lead:'Koyéba is Lingala for “to know”, written above in Mandombe. Set things down here and you’ll always know where they are — and they’ll come back to you when it matters. First, what should we call you?',cta:'Continue',skip:'',isName:true},
  {eyebrow:'Your Spaces',title:'The parts of your life.',lead:'Pick a few to start. Mail, events, tasks and notes will gather in whichever space they belong to. You can rename or add more any time.',cta:'Continue',skip:'Back',isSpaces:true},
  {eyebrow:'Your tools',title:'Bring your tools in.',lead:'Connect what you already use. Nothing is read by anyone but you, and nothing is sent without you.',cta:'Continue',skip:'Later',isTools:true},
  {eyebrow:'Better together',title:'Share a space, if you like.',lead:'Open one part of your life to the people who live it with you — and only that part.',cta:'Begin',skip:'Not now',isShare:true}
@@ -900,7 +900,7 @@ class Component extends DCLogic {
       noteLine:st.noteMode==='note'?'var(--k-gold)':'transparent',tableLine:st.noteMode==='table'?'var(--k-gold)':'transparent',
       innerCols,week,spendBars,payments,
       capClosed:!st.cap,openCap:()=>set({cap:true}),closeCap:()=>{this.endRec();set({cap:false,rec:false});},drawerT:st.cap?'translate(-50%,0)':'translate(-50%,110%)',
-      capRef:this.capRef,capText:st.capText,onCapText:e=>set({capText:e.target.value,capOv:{}}),onCapKey:e=>{if(e.key==='Enter')submitCap();},capRows,submitCap,capEmpty:!st.capText.trim()&&!st.rec,notRec:!st.rec,isRec:st.rec,startRec:()=>this.startRec(),startRecBar:e=>{e.stopPropagation();this.startRec();},stopRec:()=>this.stopRec(),recLabel:st.capText?'Heard':'Listening…',hasInterim:st.rec&&!!st.capText,recTime:'0:'+String(st.recT).padStart(2,'0'),recLevels:(st.recLv.length?st.recLv:Array(48).fill(0.15)).map(v=>({h:Math.round(v*100)+'%',o:0.35+v*0.65})),capFoot:st.recVia?'Your voice is transcribed, then the recording is discarded.':'Nothing is sent anywhere. It stays in your Koyeba.',capHas:!!st.capText.trim()&&!st.rec,capExamples,
+      capRef:this.capRef,capText:st.capText,onCapText:e=>set({capText:e.target.value,capOv:{}}),onCapKey:e=>{if(e.key==='Enter')submitCap();},capRows,submitCap,capEmpty:!st.capText.trim()&&!st.rec,notRec:!st.rec,isRec:st.rec,startRec:()=>this.startRec(),startRecBar:e=>{e.stopPropagation();this.startRec();},stopRec:()=>this.stopRec(),recLabel:st.capText?'Heard':'Listening…',hasInterim:st.rec&&!!st.capText,recTime:'0:'+String(st.recT).padStart(2,'0'),recLevels:(st.recLv.length?st.recLv:Array(48).fill(0.15)).map(v=>({h:Math.round(v*100)+'%',o:0.35+v*0.65})),capFoot:st.recVia?'Your voice is transcribed, then the recording is discarded.':'Nothing is sent anywhere. It stays in your Koyéba.',capHas:!!st.capText.trim()&&!st.rec,capExamples,
       isMsgs:st.screen==='messages',threads,thread,msgUnreadLine:msgUnread?msgUnread+' unread':'All read',draft:st.draft,onDraft:e=>set({draft:e.target.value}),onDraftKey:e=>{if(e.key==='Enter')sendDraft();},sendDraft,
       showIncoming:st.incoming&&!st.incomingSeen&&!st.threadRead.joana&&!(st.screen==='messages'&&st.thread==='joana'),replyIncoming:()=>{set({incomingSeen:true,thread:'joana',threadRead:{...st.threadRead,joana:true}});this.go('messages');},laterIncoming:()=>set({incomingSeen:true}),
       hasToast:!!st.toast,toast:st.toast,

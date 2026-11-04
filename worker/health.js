@@ -1,6 +1,6 @@
 // Integration health monitor. Robin: "we don't like silent breakages."
 //
-// Koyeba leans on a handful of free external services. When one dies - as
+// Koyéba leans on a handful of free external services. When one dies - as
 // TheSportsDB's old free key did, returning a 200 with a plain-text "key
 // disabled" error that the code swallowed as an empty list - every call just
 // quietly returns nothing, and the only way anyone finds out is by trying to use
