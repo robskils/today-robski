@@ -139,8 +139,18 @@
 /* ── Spaces carry no colours: their name is enough (Robin, 2026-11-04) ─────── */
 .prc-lane-dot, .cd, .ca-dot, .wt-dot, .set-area-dot { display:none !important; }
 
+/* Space cards: gold rule and quiet badges in place of each Space's own colour. */
+[class*="agc"] { --c:var(--k-gold); --wh:40; }
+:root[data-light] .agc-mono { background:var(--k-soft); color:var(--k-ink); box-shadow:none; }
+:root[data-light] [class*="agc-act"] { background:transparent; border:1px solid var(--k-gold); color:var(--k-ink); }
+:root[data-light] .agc-chip-t { background:var(--k-soft); }
+
 /* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
-.prc-addtoggle { width:fit-content; align-self:flex-start; }
+.prc-addtoggle, .gcal-addbtn { width:fit-content; align-self:flex-start; }
+
+/* Text that was below 4.5:1 on real data. */
+:root[data-light] .mail-tb-write { background:var(--k-gold); color:#12100b; }
+:root[data-light] .t2-avoidtag { background:transparent; color:var(--k-goldt); }
 
 /* ── Help lives in the menubar with everything else ───────────────────────── */
 .knav-help-btn, .knav-help-m { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; display:inline-flex; align-items:center; padding:0; min-height:44px; }
