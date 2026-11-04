@@ -14682,15 +14682,15 @@ function caldavFormHtml() {
   const hint = caldavHint(p);
   return `<div class="caldav-form">
     <div class="caldav-form-h">Connect a calendar</div>
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">◑</span>Provider</span>
+    <label class="ce-field"><span class="ce-flbl">Provider</span>
       <select id="caldav-provider" class="sel">
         <option value="icloud" ${p === 'icloud' ? 'selected' : ''}>iCloud</option>
         <option value="yahoo" ${p === 'yahoo' ? 'selected' : ''}>Yahoo</option>
         <option value="other" ${p === 'other' ? 'selected' : ''}>Other (CalDAV URL)</option>
       </select></label>
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">✉</span>Account email</span><input id="caldav-email" class="sel" type="email" inputmode="email" placeholder="you@icloud.com" autocomplete="username"></label>
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔑</span>App-specific password</span><input id="caldav-pass" class="sel" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off"></label>
-    <label class="ce-field" id="caldav-url-row" ${p === 'other' ? '' : 'hidden'}><span class="ce-flbl"><span class="ce-fic">🔗</span>CalDAV URL</span><input id="caldav-url" class="sel" type="url" inputmode="url" placeholder="https://caldav.example.com"></label>
+    <label class="ce-field"><span class="ce-flbl">Account email</span><input id="caldav-email" class="sel" type="email" inputmode="email" placeholder="you@icloud.com" autocomplete="username"></label>
+    <label class="ce-field"><span class="ce-flbl">App-specific password</span><input id="caldav-pass" class="sel" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off"></label>
+    <label class="ce-field" id="caldav-url-row" ${p === 'other' ? '' : 'hidden'}><span class="ce-flbl">CalDAV URL</span><input id="caldav-url" class="sel" type="url" inputmode="url" placeholder="https://caldav.example.com"></label>
     <div class="caldav-form-btns"><button class="add-btn wide" data-caldav-save>Connect</button><button class="ghost" data-caldav-cancel>Cancel</button></div>
     <div class="caldav-hint">${hint}</div>
   </div>`;
@@ -15007,13 +15007,30 @@ const ordinalNum = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; ret
 // pattern (a weekly event's weekday, a monthly's day-of-month) - the series keeps
 // the same pattern, so any occurrence's date names it. (Robin.)
 function recurDescribe(ev) {
-  const r = ev && ev.repeat; const d = (ev && ev.date) ? new Date(ev.date + 'T00:00') : null;
-  if (r === 'daily') return 'Every day';
-  if (r === 'weekdays') return 'Every weekday (Mon–Fri)';
-  if (r === 'weekly') return d ? `Every week on ${DOW_FULL[d.getDay()]}` : 'Every week';
-  if (r === 'monthly') return d ? `Every month on the ${ordinalNum(d.getDate())}` : 'Every month';
-  if (r === 'yearly') return d ? `Every year on ${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}` : 'Every year';
+  const d = (ev && ev.date) ? new Date(ev.date + 'T00:00') : null;
+  const dayName = d ? DOW_FULL[d.getDay()] : '';
+  const r = (ev && ev.repeat) || recurInferred(ev);
+  if (r === 'daily') return 'Repeats daily';
+  if (r === 'weekdays') return 'Repeats on weekdays';
+  if (r === 'weekly') return d ? `Repeats weekly, on ${dayName}s` : 'Repeats weekly';
+  if (r === 'fortnightly') return d ? `Repeats every two weeks, on ${dayName}s` : 'Repeats every two weeks';
+  if (r === 'monthly') return d ? `Repeats monthly, on the ${ordinalNum(d.getDate())}` : 'Repeats monthly';
+  if (r === 'yearly') return d ? `Repeats yearly, on ${d.getDate()} ${MONTHS_LONG[d.getMonth()].slice(0, 3)}` : 'Repeats yearly';
   return 'Repeats';
+}
+// Events from Google say only that they belong to a series, so read the pattern from
+// the series' other dates in the loaded calendar. Too few dates to tell: plain "Repeats".
+function recurInferred(ev) {
+  if (!ev || !ev.recurringId) return '';
+  const days = [...new Set(((state.cal && state.cal.events) || []).filter((e) => e.recurringId === ev.recurringId && e.date).map((e) => e.date))].sort();
+  if (days.length < 2) return '';
+  const gaps = days.slice(1).map((x, i) => Math.round((new Date(x + 'T12:00') - new Date(days[i] + 'T12:00')) / 86400000));
+  if (gaps.every((g) => g === 1)) return 'daily';
+  if (gaps.every((g) => g === 7)) return 'weekly';
+  if (gaps.every((g) => g === 14)) return 'fortnightly';
+  if (gaps.every((g) => g >= 28 && g <= 31)) return 'monthly';
+  if (days.every((x) => { const w = new Date(x + 'T12:00').getDay(); return w >= 1 && w <= 5; }) && gaps.every((g) => g === 1 || g === 3)) return 'weekdays';
+  return '';
 }
 function ceQuickBar(ev) {
   const hasArea = !!(ev && ev.area);
@@ -15052,20 +15069,20 @@ function showCalView(ev) {
   const loc = (ev.location || '').trim();
   const q = encodeURIComponent(loc);
   const contact = ev.contact ? findContact(ev.contact) : null;
-  const row = (ic, body) => `<div class="ce-view-row"><span class="ce-view-ic">${ic}</span><span class="ce-view-rt">${body}</span></div>`;
+  const row = (ic, body) => `<div class="ce-view-row"><span class="ce-view-rt">${body}</span></div>`;
   const repeats = (ev.repeat && ev.repeat !== 'none') || ev.recurringId;
   $('#cal-form').innerHTML = `<div class="ce-view" data-ev="${esc(ev.id)}">
     <div class="ce-head"><span class="ce-head-t">Event</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <h2 class="ce-view-title">${esc(ev.title || 'Untitled event')}</h2>
-    ${loc ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">🧭 Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">🗺 Map</a></div>` : ''}
-    ${ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
+    ${loc ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">Map</a></div>` : ''}
+    ${ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">Join the meeting</a>` : ''}
     <div class="ce-view-rows">
       ${row('🕒', esc(calWhenLabel(ev)))}
       ${loc ? row('📍', esc(loc)) : ''}
       ${area ? row('◈', `<span class="ce-view-area" style="--h:${hueOf(area)}"><span class="ce-view-dot"></span>${esc(area.title)}</span>`) : ''}
       ${contact ? row('👤', esc(contact.title || 'Contact')) : ''}
       ${(() => { const al = eventAlarmList(ev); return al.length ? row('🔔', esc(al.map((m) => m === 0 ? 'at the time' : `${alarmChipLabel(m)} before`).join(' · '))) : ''; })()}
-      ${repeats ? row('↻', esc(recurDescribe(ev) || 'Repeats')) : ''}
+      ${repeats ? row('↻', esc(recurDescribe(ev))) : ''}
       ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a>`) : ''}
     </div>
     ${ev.notes ? `<div class="ce-view-notes">${linkifyText(ev.notes)}</div>` : ''}
@@ -15100,12 +15117,12 @@ function showCalForm(ev) {
     <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
-      <label class="ce-field ce-arealab"><span class="ce-flbl"><span class="ce-fic">◈</span>Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
-      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyéba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
-      ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl"><span class="ce-fic">◑</span>Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
+      <label class="ce-field ce-arealab"><span class="ce-flbl">Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl">Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyéba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
+      ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl">Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
     ${ceQuickBar(ev)}
-    ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">🎥 Join the meeting</a>` : ''}
+    ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">Join the meeting</a>` : ''}
     <div class="ce-when">
       <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}${timeFieldHtml('ce-time', startTime)}</span>
       <label class="ce-allday"><input type="checkbox" id="ce-allday" ${allDay ? 'checked' : ''}> All day</label>
@@ -15113,8 +15130,8 @@ function showCalForm(ev) {
       <span class="ce-wcell"><span class="ce-wlbl">End</span>${dateFieldHtml('ce-enddate', endDate)}${timeFieldHtml('ce-endtime', endTime)}</span>
     </div>
     <div class="ce-grid">
-      <label class="ce-field ce-loc-wrap"><span class="ce-flbl"><span class="ce-fic">📍</span>Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">🧭 Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
-      ${(() => { const sel = eventAlarmList(ev); return `<div class="ce-field ce-rem-field"><span class="ce-flbl"><span class="ce-fic">🔔</span>Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
+      <label class="ce-field ce-loc-wrap"><span class="ce-flbl">Location<button type="button" class="ce-directions" id="ce-directions" data-ce-directions ${loc ? '' : 'hidden'} title="Open directions in Google Maps">Directions</button></span><input id="ce-loc" class="sel" placeholder="Where? Search a contact or place…" autocomplete="off" value="${esc(loc)}"><div class="ce-loc-sugg" id="ce-loc-sugg" hidden></div></label>
+      ${(() => { const sel = eventAlarmList(ev); return `<div class="ce-field ce-rem-field"><span class="ce-flbl">Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
         <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
         <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
@@ -15131,7 +15148,7 @@ function showCalForm(ev) {
         const endMode = (ev && ev.until) ? 'date' : (ev && ev.count) ? 'count' : 'never';
         const opt = (v, l, on) => `<option value="${v}" ${on === v ? 'selected' : ''}>${l}</option>`;
         return `<label class="ce-field ce-repeat-field">
-          <span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span>
+          <span class="ce-flbl">Repeat</span>
           <div class="ce-rep-controls">
             <select id="ce-repeat" class="sel ce-rep-sel">${opt('none', 'Does not repeat', repSel)}${opt('daily', 'Daily', repSel)}${opt('weekly', 'Weekly', repSel)}${opt('monthly', 'Monthly', repSel)}${opt('yearly', 'Yearly', repSel)}${opt('custom', 'Custom…', repSel)}</select>
             <span class="ce-end" id="ce-end-wrap" ${repSel === 'none' ? 'hidden' : ''}>
@@ -15145,14 +15162,14 @@ function showCalForm(ev) {
         </label>`;
       })()}
     </div>
-    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl"><span class="ce-fic">↻</span>Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">↻ ${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">📅 Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `⏹ Until ${esc(ends)}` : '∞ No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
-    <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">📝</span>Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
+    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `Until ${esc(ends)}` : 'No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
+    <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
       <summary class="ce-links-h">${(ev && (ev.url || ev.contact)) ? 'Connected' : 'Connect'}<span class="ce-links-hint">a website, a contact, notes</span></summary>
       <div class="ce-links3">
-        <label class="ce-field"><span class="ce-flbl"><span class="ce-fic">🔗</span>Website</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
-        ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">👤</span>Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
+        <label class="ce-field"><span class="ce-flbl">Website</span><input id="ce-url" class="sel" type="url" inputmode="url" placeholder="https://…" autocomplete="off" value="${esc((ev && ev.url) || '')}"></label>
+        ${(() => { const withName = (ev && ev.contact) ? ((findContact(ev.contact) || {}).title || '') : ''; return `<label class="ce-field"><span class="ce-flbl">Contact</span><input id="ce-contact-search" class="sel" list="ce-contact-dl" placeholder="Search…" autocomplete="off" value="${esc(withName)}"><input type="hidden" id="ce-contact" value="${ev && ev.contact ? esc(ev.contact) : ''}"><datalist id="ce-contact-dl">${(state.contacts || []).slice().sort((a, b) => (a.title || '').localeCompare(b.title || '')).map((c) => `<option value="${esc(c.title || 'Unnamed')}"></option>`).join('')}</datalist></label>`; })()}
         ${eventNoteSearchField(ev)}
       </div>
       ${eventNotesHtml(ev)}
@@ -25442,7 +25459,7 @@ function loadEvNotePool() {
 // beneath it via eventNotesHtml, so a busy note list never squeezes the row.
 function eventNoteSearchField(ev) {
   // Shown for a new event too - the picks are held as a draft until it's saved.
-  return `<label class="ce-field"><span class="ce-flbl"><span class="ce-fic">▤</span>Note</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
+  return `<label class="ce-field"><span class="ce-flbl">Note</span><input class="sel nt-search" data-ev-note-q placeholder="Search…" value="${esc((state.cal && state.cal.noteQuery) || '')}" autocomplete="off"></label>`;
 }
 function eventNotesHtml(ev) {
   const isNew = !(ev && ev.id);   // a new event links via state.cal.draftNotes
