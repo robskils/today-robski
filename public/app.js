@@ -5422,7 +5422,7 @@ function navGroupsHtml(v) {
   // ── mobile bottom bar: Contents · gold + · Find ──
   const bottom = `<div class="knav-bottom">
       <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Menu</button>
-      <button class="knav-b-set" data-cap-open title="Set something down">Set it down</button>
+      <button class="knav-b-set" data-cap-open title="Capture">Capture</button>
       <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Search${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
     </div>`;
   return `${header}${sheet}${find}${contents}${bottom}`;
@@ -7814,8 +7814,8 @@ function renderCapBar(force) {
   root.className = 'cap-open';
   // §47: the Notepad is the header panel now, not a mode here.
   if (c.mode === 'pad') c.mode = 'set';
-  const modeTabs = '<span class="cap-eyebrow">Set it down</span>';
-  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
+  const modeTabs = '<span class="cap-eyebrow"><span class="cap-l-wide">Set it down</span><span class="cap-l-phone">Capture</span></span>';
+  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div><div class="cap-media"><label class="cap-media-btn"><input type="file" accept="image/*" capture="environment" hidden data-cap-photo>Take a photo</label><button type="button" class="cap-media-btn" data-cap-scan>Scan</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
     <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close title="Close" aria-label="Close">✕</button></div>
     ${bodyHtml}
@@ -7842,6 +7842,14 @@ function renderCapBar(force) {
   }
 }
 function capOpen() { const c = capState(); if (c.open && c.mode === 'set') c.open = false; else { capSetMode('set'); c.open = true; } renderCapBar(true); }
+// Phone: Capture's photo and scan each make a new note and go into it. The note is made
+// only once there's a picture, so backing out of the camera leaves nothing behind.
+async function capNoteWith(files) {
+  const c = capState(); const title = (c.text || '').trim(); c.text = ''; capCancel();
+  const note = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body: '', parent_id: null }) });
+  await openNote(note.id);
+  await uploadFiles(note.id, files);
+}
 function capCancel() { const c = capState(); if (c.rec) capStopRec(); c.open = false; renderCapBar(true); }
 function capStartRec() {
   const c = capState(); if (c.rec) return;
@@ -28047,6 +28055,7 @@ document.addEventListener('click', (e) => {
   const tao = t.closest('[data-tatt-open]'); if (tao) { const [rid, aid] = tao.dataset.tattOpen.split(':'); openTableAttachment(rid, aid, tao.dataset.tattName, tao.dataset.tattType); return; }
   // document scanner
   const scn = t.closest('[data-scan]'); if (scn) { openScanner(scn.dataset.scan); return; }
+  if (t.closest('[data-cap-scan]')) { capCancel(); openScanner(null); return; }
   if (t.closest('[data-scan-close]')) { closeScanner(); return; }
   if (t.closest('[data-scan-capture]')) { scanCapture(); return; }
   if (t.closest('[data-scan-save]')) { scanSave(); return; }
@@ -28835,6 +28844,7 @@ document.addEventListener('change', (e) => {
   }
   if (state.view.type === 'visioncard' && e.target.id === 'visioncard-text') patchVisionText(state.vision_open.area.id, e.target.value);
   if (e.target.matches('[data-area-vision]')) { patchVisionInline(e.target.dataset.areaVision, e.target.value); return; }
+  const cp = e.target.closest('[data-cap-photo]'); if (cp && cp.files && cp.files.length) { const fs = Array.from(cp.files); capNoteWith(fs).catch((x) => toast(x.message)); return; }
   const fi = e.target.closest('[data-att-input]'); if (fi && fi.files && fi.files.length) { uploadFiles(fi.dataset.attInput, fi.files); fi.value = ''; }
   const tfi = e.target.closest('[data-tatt-input]'); if (tfi && tfi.files && tfi.files.length) { uploadCellFiles(tfi.dataset.tattInput, tfi.files); tfi.value = ''; }
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
@@ -31103,11 +31113,13 @@ function scanAddPage() {
 async function scanSave() {
   if (!scan.pages.length) return;
   const blockId = scan.block;
+  const toNewNote = !blockId;
   const pdf = jpegsToPdf(scan.pages);
   const name = `Scan ${new Date().toISOString().slice(0, 10)}.pdf`;
   const file = new File([pdf], name, { type: 'application/pdf' });
   closeScanner();
   toast('Saving scan…');
+  if (toNewNote) { await capNoteWith([file]); return; }
   await uploadFiles(blockId, [file]);
 }
 function closeScanner() { stopCam(); const el = document.getElementById('scanner'); if (el) el.remove(); scan.src = null; scan.pages = []; }
