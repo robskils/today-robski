@@ -38,7 +38,6 @@ const GUIDE_ANSWERS = {
   'event-add': { title: 'Add an event', lead: 'The quickest way is to write it as you\'d say it.', go: ['Open Calendar', 'data-open-calendar'], steps: [
     'Set it down with <kbd>⌘.</kbd> and a day and time, such as "Lunch with Ana Friday at 1".',
     'Or open <b>Calendar</b> and add it there, where you can also make it repeat.',
-    'Have a flyer, a photo or a link? If you\'ve added AI, <b>Add from a file</b> on the Calendar reads the events out of it.',
       ], next: ['set-down', 'holidays'] },
   holidays: { title: 'Add holidays and sport', lead: 'Show your country\'s public holidays and your team\'s fixtures on your calendar.', go: ['Open the settings', 'data-guide-settings="feeds"'], steps: [
     'Choose <b>Open the settings</b> above, to go to the calendar section.',
