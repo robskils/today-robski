@@ -13358,3 +13358,6 @@ select.lk-act { max-width:none; width:auto; }
 .g-fold:focus-visible, .g-tile:focus-visible, .g-row:focus-visible, .g-cta:focus-visible, .g-help-btn:focus-visible, .g-panel-x:focus-visible, .g-panel-all:focus-visible, .g-inline:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
 .g-start-go:focus-visible, .g-start .g-tile:focus-visible { outline:2px solid var(--k-gold); outline-offset:2px; }
 @media (max-width:820px) { .g-panel { top:0; bottom:88px; width:100vw; border-left:0; z-index:58; } }
+.g-part-h { margin:6px 0 8px; font-family:var(--k-sans); font-size:18px; font-weight:600; color:var(--k-ink); }
+.g-done { display:flex; align-items:center; gap:10px; color:var(--k-ink); }
+.g-tick-s { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; background:var(--k-gold); color:var(--k-ongold); font-size:15px; }

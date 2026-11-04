@@ -152,11 +152,31 @@ const GUIDE_ANSWERS = {
     'Your Spaces double as spending categories, so your money lines up with your life.',
   ], next: ['set-down', 'spaces'] },
 
-  phone: { title: 'Put Koyéba on your phone', lead: 'It installs from your browser in a moment, with no app store.', go: ['Show me how', 'data-onb-open-hub="appphone"'], steps: [
-    'Open <b>koyeba.co</b> in Safari on an iPhone, or Chrome on Android, and sign in.',
-    'Choose <b>Add to Home Screen</b> from the browser\'s Share or menu button.',
-    'Open it from your home screen. The <b>+</b>, the Menu and Search sit along the bottom.',
-  ], next: ['set-down', 'twofa'] },
+  phone: { title: 'Put Koyéba on your phone', lead: 'It installs from your browser in a moment, with no app store, and opens full screen like any other app.', installed: 'phone', parts: [
+    ['iPhone', [
+      'Open <b>koyeba.co</b> in <b>Safari</b> and sign in.',
+      'Tap <b>Share</b>, the square with an arrow, at the bottom of the screen.',
+      'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.',
+    ]],
+    ['Android', [
+      'Open <b>koyeba.co</b> in <b>Chrome</b> and sign in.',
+      'Tap the <b>⋮</b> menu at the top right.',
+      'Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.',
+    ]],
+  ], note: 'Open it from your home screen from now on. The +, the Menu and Search sit along the bottom.', next: ['desktop', 'set-down', 'twofa'] },
+  desktop: { title: 'Put Koyéba on your computer', lead: 'It opens in its own clean window, from your Dock or taskbar, with no browser tabs or address bar.', installed: 'computer', parts: [
+    ['Mac, in Safari', [
+      'Open <b>koyeba.co</b> in Safari and sign in.',
+      'Click <b>Share</b>, the square with an arrow, in the toolbar.',
+      'Choose <b>Add to Dock</b>. This needs a recent version of macOS.',
+    ]],
+    ['Mac or Windows, in Chrome or Edge', [
+      'Open <b>koyeba.co</b> and sign in.',
+      'Click the <b>install icon</b>, a small screen with a down arrow, at the right-hand end of the address bar.',
+      'Click <b>Install</b>.',
+      'No icon? In Chrome, open the <b>⋮</b> menu at the top right and look for <b>Install Koyéba</b>. Menu wording changes between browser versions, so it may sit under <b>Cast, save and share</b>. In Edge, it is under <b>Apps</b> in the <b>…</b> menu.',
+    ]],
+  ], note: 'Koyéba now lives in your Dock on a Mac, or can be pinned to your taskbar on Windows.', next: ['phone', 'set-down', 'find'] },
   twofa: { title: 'Turn on two-factor sign-in', lead: 'A second step at sign-in, from an authenticator app. It becomes required 90 days after you join.', go: ['Set it up', 'data-onb-open-hub="twofa"'], steps: [
     'Choose <b>Set it up</b> above.',
     'Scan the code with your authenticator app.',
@@ -207,7 +227,8 @@ const GUIDE_START = [
   ['calendar', () => (state.gcalAccounts || []).length > 0, 'Connect'],
   ['email', () => !!(state.mail && (state.mail.accounts || []).length), 'Connect'],
   ['spaces', () => !!homeWelcomeSteps().spaces, 'Open'],
-  ['phone', () => appInstalled('phone'), 'Show me'],
+  ['phone', () => guideInstalled('phone'), 'Show me'],
+  ['desktop', () => guideInstalled('computer'), 'Show me'],
 ];
 const GUIDE_HOW = [
   ['Every day', ['set-down', 'find', 'notepad', 'side-by-side', 'linked']],
@@ -216,7 +237,7 @@ const GUIDE_HOW = [
   ['Keep', ['note-start', 'table-start', 'read-watch', 'import']],
   ['Spaces', ['spaces', 'share-space']],
   ['Reflection and Money', ['journal', 'spending']],
-  ['Your account', ['phone', 'twofa', 'ai', 'tools', 'data']],
+  ['Your account', ['phone', 'desktop', 'twofa', 'ai', 'tools', 'data']],
 ];
 const GUIDE_TOOLS = [
   { id: 'tool-spaces', title: 'Spaces', sub: 'Each part of your life', lead: 'A Space gathers one part of your life: its notes and tables, tasks, goals, events, people, links and files. Give each one the people who belong in it.', go: ['Open Spaces', 'data-open-areas'], list: ['spaces', 'share-space'] },
@@ -240,6 +261,14 @@ const GUIDE_HELP_FOR = {
   readwatch: ['Read & Watch', ['read-watch', 'find']], wellbeing: ['Reflection', ['tool-reflection', 'journal']], journal: ['Journal', ['journal', 'ai']], money: ['Money', ['tool-money', 'spending']], financial: ['Money', ['spending', 'tool-money']],
   settings: ['Settings', ['ai', 'tools', 'data', 'twofa']], admin: null,
 };
+// Installing happens on one device, but the list shows on all of them, so it's kept
+// on the account as well as noticed from the installed app itself.
+function guideInstalled(which) {
+  if (homeWelcomeSteps()[which]) return true;
+  if (!appInstalled(which)) return false;
+  if (state.hwSteps !== undefined) homeWelcomeMark(which);
+  return true;
+}
 const guideEsc = (s) => esc(String(s).replace(/<[^>]+>/g, ''));
 function guideOpen(k) { try { const s = JSON.parse(localStorage.getItem('life.guide.fold') || '{}'); return s[k] !== false; } catch { return true; } }
 function guideFold(k, title, meta) {
@@ -249,7 +278,7 @@ function guideFold(k, title, meta) {
 const guideRow = (id, label) => `<button type="button" class="g-row" data-help-open="${id}"><span>${esc(label || GUIDE_ANSWERS[id].title)}</span><span class="g-arrow" aria-hidden="true">→</span></button>`;
 function guideEnsureLoaded() {
   if (state._guideLoaded) return; state._guideLoaded = true;
-  const rr = () => { if (state.view && state.view.type === 'help' && (state.view.tool === 'index') && !document.activeElement.matches('[data-guide-q]')) renderGuideIndex(); };
+  const rr = () => { if (state.view && state.view.type === 'help' && !document.activeElement.matches('[data-guide-q]')) renderHelp(state.view.tool); };
   api('/api/kv/onb_steps').then((r) => { state.hwSteps = (r && r.value) || '{}'; rr(); }).catch(() => {});
   if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; rr(); }).catch(() => {}); }
   state.mail = state.mail || {};
@@ -285,7 +314,7 @@ function guideSearch(q) {
   if (!words.length) { box.hidden = true; box.innerHTML = ''; rest.hidden = false; return; }
   const hits = Object.keys(GUIDE_ANSWERS).map((id) => {
     const a = GUIDE_ANSWERS[id];
-    const title = a.title.toLowerCase(), text = `${a.lead} ${a.sub || ''} ${(a.steps || []).join(' ')}`.replace(/<[^>]+>/g, ' ').toLowerCase();
+    const title = a.title.toLowerCase(), text = `${a.lead} ${a.sub || ''} ${(a.steps || []).concat(...(a.parts || []).map((x) => [x[0], ...x[1]])).join(' ')}`.replace(/<[^>]+>/g, ' ').toLowerCase();
     if (!words.every((w) => title.includes(w) || text.includes(w))) return null;
     return { id, score: words.filter((w) => title.includes(w)).length };
   }).filter(Boolean).sort((x, y) => y.score - x.score);
@@ -296,9 +325,13 @@ function renderHelp(key0) {
   const key = GUIDE_ANSWERS[key0] ? key0 : (GUIDE_OLD_KEYS[key0] || 'index');
   if (key === 'index') return renderGuideIndex();
   const a = GUIDE_ANSWERS[key];
+  const stepList = (steps) => `<ol class="g-steps">${steps.map((s, i) => `<li class="g-step"><span class="g-step-n" aria-hidden="true">${i + 1}</span><div>${s}</div></li>`).join('')}</ol>`;
   const body = a.list
     ? `<div class="g-rows g-tool-list">${a.list.map((id) => guideRow(id)).join('')}</div>`
-    : `<ol class="g-steps">${a.steps.map((s, i) => `<li class="g-step"><span class="g-step-n" aria-hidden="true">${i + 1}</span><div>${s}</div></li>`).join('')}</ol>`;
+    : a.parts ? a.parts.map(([h, steps]) => `<section><h2 class="g-part-h">${esc(h)}</h2>${stepList(steps)}</section>`).join('')
+    : stepList(a.steps);
+  if (a.installed) guideEnsureLoaded();
+  const installed = a.installed ? `<div>${guideInstalled(a.installed) ? '<p class="g-note g-done"><span class="g-tick-s" aria-hidden="true">✓</span> Done, and ticked off in your first steps.</p>' : `<button type="button" class="g-cta" data-guide-installed="${a.installed}">I've done this ✓</button>`}</div>` : '';
   const next = (a.next || []).filter((id) => GUIDE_ANSWERS[id]);
   $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide', attr: 'data-open-guide' }, { label: a.title }], null, null, { omitGroup: true, noHelp: true })}
     <article class="g-page g-answer">
@@ -307,6 +340,7 @@ function renderHelp(key0) {
       ${a.go ? `<div><button type="button" class="g-cta" ${a.go[1]}>${esc(a.go[0])} →</button></div>` : ''}
       ${body}
       ${a.note ? `<p class="g-note">${esc(a.note)}</p>` : ''}
+      ${installed}
       ${next.length ? `<section><h2 class="g-next-h">Next, you might like</h2><div class="g-rows">${next.map((id) => guideRow(id)).join('')}</div></section>` : ''}
       <p class="g-foot">Something missing or wrong here? <button type="button" class="g-inline" data-guide-feedback="${esc(a.title)}">Tell us</button>.</p>
     </article>`;
@@ -335,5 +369,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-guide-help]')) { if (document.getElementById('g-panel')) guideClosePanel(); else guideOpenPanel(); return; }
   if (t.closest('[data-guide-help-close]')) { guideClosePanel(); return; }
   if (t.closest('#g-panel [data-help-open], #g-panel [data-open-guide]')) { guideClosePanel(); return; }
+  const gi = t.closest('[data-guide-installed]');
+  if (gi) { markAppInstalled(gi.dataset.guideInstalled); homeWelcomeMark(gi.dataset.guideInstalled); if (state.view && state.view.type === 'help') renderHelp(state.view.tool); return; }
   const gs = t.closest('[data-guide-settings]'); if (gs) { openSettings(gs.dataset.guideSettings); }
 });

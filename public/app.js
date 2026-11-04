@@ -6940,6 +6940,8 @@ function homeWelcomeHtml() {
     ['Bring in your calendar', 'See your days alongside everything else.', (state.gcalAccounts || []).length > 0, 'Connect', 'data-onb-open-hub="calendar"'],
     ['Bring in your email', 'Sort your inbox, and turn messages into tasks.', !!(state.mail && (state.mail.accounts || []).length), 'Connect', 'data-onb-open-hub="email"'],
     ['Shape your Spaces', 'The parts of your life, and who shares them.', !!done.spaces, 'Open', 'data-hw-spaces'],
+    ['Put Koyéba on your phone', 'It opens full screen, like any other app.', guideInstalled('phone'), 'Show me', 'data-help-open="phone"'],
+    ['Put Koyéba on your computer', 'Its own window, from your Dock or taskbar.', guideInstalled('computer'), 'Show me', 'data-help-open="desktop"'],
   ];
   const n = steps.filter((x) => x[2]).length;
   const open = kOpen('kwelcome');
