@@ -779,6 +779,11 @@ body[data-view="settings"] .home-sec { margin-top:0; }
 .sp-sum .v { font-family:var(--k-serif); font-size:27px; font-weight:300; font-variant-numeric:tabular-nums; }
 .sp-sum.in .v { color:var(--done); } .sp-sum.out .v { color:var(--accent); }
 .sp-sec-h { font-size:16px; font-weight:600; margin:22px 0 12px; padding-top:8px; border-top:1px solid var(--line); }
+/* Spending: "To sort" filters the list to uncategorised entries. (Robin, 2026-11-04.) */
+.sp-txns-h { display:flex; align-items:baseline; gap:12px; }
+.sp-uncat { margin-left:auto; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:var(--k-goldt); background:none; border:1px solid var(--k-line); padding:6px 12px; cursor:pointer; white-space:nowrap; }
+.sp-uncat:hover { border-color:var(--k-gold); }
+.sp-uncat.on { border-color:var(--k-gold); background:var(--k-soft); color:var(--k-goldt); }
 .sp-cats { display:flex; flex-direction:column; gap:9px; }
 .sp-catrow { display:grid; grid-template-columns:130px 1fr auto; align-items:center; gap:12px; font-size:15px; }
 .sp-catname { color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

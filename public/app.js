@@ -21848,7 +21848,11 @@ function spendingBody() {
   const maxCat = cats.length ? cats[0][1] : 1;
   const catBars = cats.map(([c, v]) => `<div class="sp-catrow"><span class="sp-catname">${esc(c)}</span><div class="sp-cattrack"><i style="width:${Math.round(v / maxCat * 100)}%"></i></div><span class="sp-catval">${eur0(v)}</span></div>`).join('') || '<div class="home-empty">No spending this month.</div>';
   // transaction list
-  const list = rows.slice().sort((a, b) => b.date.localeCompare(a.date)).map(spendRow).join('');
+  // "To sort": entries with no category yet - the ones that need your attention.
+  const isUncat = (t) => !t.category || t.category === 'Uncategorised';
+  const uncatN = rows.filter(isUncat).length;
+  const shownTxns = (f.spendUncatOnly && uncatN) ? rows.filter(isUncat) : rows;
+  const list = shownTxns.length ? shownTxns.slice().sort((a, b) => b.date.localeCompare(a.date)).map(spendRow).join('') : '<div class="home-empty">All sorted - nothing uncategorised this month.</div>';
   // monthly trend (last 8)
   const trend = spendTrend(months.slice(0, 8).reverse());
   return `${importBar}${catManage}
@@ -21857,7 +21861,7 @@ function spendingBody() {
     ${trend}
     <div class="sp-sec-h">Where it went</div>
     <div class="sp-cats">${catBars}</div>
-    <div class="sp-sec-h">Transactions · ${rows.length}</div>
+    <div class="sp-sec-h sp-txns-h"><span>Transactions · ${rows.length}</span>${uncatN ? `<button class="sp-uncat${f.spendUncatOnly ? ' on' : ''}" data-sp-uncat title="Show only entries that still need a category">${f.spendUncatOnly ? '✓ To sort' : 'To sort'} · ${uncatN}</button>` : ''}</div>
     <div class="sp-txns">${list}</div>`;
 }
 function spendRow(t) {
@@ -27492,6 +27496,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-sp-import-cancel]')) { state.financial.spendImport = null; renderFinancial(); return; }
   if (t.closest('[data-sp-clear]')) { spendClear(); return; }
   if (t.closest('[data-sp-cat-manage]')) { state.financial.spendCatsOpen = !state.financial.spendCatsOpen; renderFinancial(); return; }
+  if (t.closest('[data-sp-uncat]')) { state.financial.spendUncatOnly = !state.financial.spendUncatOnly; renderFinancial(); return; }
   { const sct = t.closest('[data-sp-cat-type]'); if (sct) { const ds = sct.dataset.spCatType; const i = ds.lastIndexOf(':'); spendCatToggleType(ds.slice(0, i), ds.slice(i + 1)); return; } }
   if (t.closest('[data-sp-cat-add]')) { spendCatAdd(); return; }
   const scr = t.closest('[data-sp-cat-rename]'); if (scr) { spendCatRename(scr.dataset.spCatRename); return; }
