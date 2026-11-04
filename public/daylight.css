@@ -140,7 +140,7 @@
 .prc-lane-dot, .cd, .ca-dot, .wt-dot, .set-area-dot { display:none !important; }
 
 /* Space cards: gold rule and quiet badges in place of each Space's own colour. */
-[class*="agc"] { --c:var(--k-gold); --wh:40; }
+[class*="agc"] { --c:var(--k-gold) !important; --wh:40 !important; }   /* set inline per Space, hence !important */
 :root[data-light] .agc-mono { background:var(--k-soft); color:var(--k-ink); box-shadow:none; }
 :root[data-light] [class*="agc-act"] { background:transparent; border:1px solid var(--k-gold); color:var(--k-ink); }
 :root[data-light] .agc-chip-t { background:var(--k-soft); }
