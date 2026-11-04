@@ -19746,7 +19746,7 @@ function renderTasks() {
     if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'now';
   }
   const pileCount = (id) => id === 'done' ? doneT.length : openT.filter((t) => pileOf(t) === id).length;
-  const piles = pileDefs.map(([id, label, hint]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-n">${pileCount(id)}</span><span class="tx-pile-l">${label}</span></span><span class="tx-pile-h">${esc(hint)}</span></button>`).join('');
+  const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-n">${pileCount(id)}</span><span class="tx-pile-l">${label}</span></span></button>`).join('');
   const orders = [['priority', 'By priority'], ['date', 'By date']].map(([v, l]) => `<button class="tx-order${order === v ? ' on' : ''}" data-task-order="${v}">${l}</button>`).join('');
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
