@@ -12255,8 +12255,8 @@ function removeContactFromArea(contactId) {
 // story of how this one part of your life has moved.
 function areaWheelSeries(area) {
   return (state.reviews || [])
-    .filter((r) => { const p = r.props || {}; return p.wheel && p.wheel[area.id] != null && Math.min(p.wheel[area.id], 5) > 0; })
-    .map((r) => { const p = r.props || {}; return { id: r.id, score: Math.min(p.wheel[area.id], 5), date: p.to || '', rtype: p.rtype || 'weekly' }; })
+    .filter((r) => { const p = r.props || {}; return p.wheel && p.wheel[area.id] != null && wheelRating(p.wheel, area.id) > 0; })
+    .map((r) => { const p = r.props || {}; return { id: r.id, score: wheelRating(p.wheel, area.id), date: p.to || '', rtype: p.rtype || 'weekly' }; })
     .sort((a, b) => String(a.date).localeCompare(String(b.date)));
 }
 function areaWheelCommentary(revs, cur, area) {
@@ -22250,7 +22250,7 @@ function reviewsV39Html() {
   if (lineSeries.length >= 3) { let lo = 0; lineSeries.forEach((s, i) => { if (s.v < lineSeries[lo].v) lo = i; }); if (lo > 0 && lo < lineSeries.length - 1) { const q = weekly.slice(-12)[lo]; const hl = q && reviewHeadline(q); if (hl) lineSeries[lo].note = hl.split(/[.!?]/)[0].slice(0, 22); } }
   const last = weekly[weekly.length - 1]; const base = weekly.length >= 6 ? weekly[weekly.length - 6] : weekly[0];
   const lw = (last && last.wheel) || {}; const bw = (base && base.wheel) || {};
-  const deltas = areas.map((a) => ({ n: a.title, now: Math.min(lw[a.id] || 0, 5), was: Math.min(bw[a.id] || 0, 5) })).filter((d) => d.now > 0);
+  const deltas = areas.map((a) => ({ n: a.title, now: wheelRating(lw, a.id), was: wheelRating(bw, a.id) })).filter((d) => d.now > 0);
   const rising = deltas.filter((d) => d.now > d.was).sort((x, y) => (y.now - y.was) - (x.now - x.was)).slice(0, 3);
   const asking = deltas.filter((d) => d.now <= 2).sort((x, y) => x.now - y.now).slice(0, 3).map((d) => ({ ...d, note: d.was > d.now ? `down from ${d.was}` : `at ${d.now}` }));
   const STOP = new Set('the a an and to of in it is i my me for on with was that this but so at as had have has be been just not out up about from more some one two all very really still get got day days week weeks month been feel felt lot bit more most into over also them they you your our we us her him his she he not dont didnt'.split(/\s+/));
@@ -22266,7 +22266,7 @@ function reviewsV39Html() {
 
   // ── The wheel of life ──
   const wheelSrc = last ? (last.wheel || {}) : Object.fromEntries(areas.map((a) => [a.id, Math.min((a.props && a.props.wheelScore) || 0, 5)]));
-  const wdata = areas.map((a) => ({ a: { title: a.title }, score: Math.min(wheelSrc[a.id] || 0, 5) })).filter((d) => d.score > 0);
+  const wdata = areas.map((a) => ({ a: { title: a.title }, score: wheelRating(wheelSrc, a.id) })).filter((d) => d.score > 0);
   const wavg = wdata.length ? Math.round(wdata.reduce((s, d) => s + d.score, 0) / wdata.length * 10) / 10 : 0;
   const petal = wdata.length ? roseSvg(wdata, { center: wavg ? String(wavg) : '–', label: 'Your wheel of life' }) : '';
   const BANDS = [['Flourishing', [4, 5], 'scored 4 or 5'], ['Steady', [3], 'scored 3'], ['Getting by', [2], 'scored 2'], ['Asking for you', [1], 'scored 1']];
@@ -23536,7 +23536,7 @@ function renderWheel() {
   const avgVals = revs.slice(-12).map((r) => Math.min(wheelAvg(r.props.wheel), 5));
   const avgDelta = avgVals.length >= 2 ? Math.round((avgVals[avgVals.length - 1] - avgVals[avgVals.length - 2]) * 10) / 10 : 0;
   // Per-area series across reviews.
-  const areaVals = (aid) => revs.map((r) => Math.min((r.props.wheel || {})[aid] || 0, 5)).filter((v) => v > 0);
+  const areaVals = (aid) => revs.map((r) => wheelRating(r.props.wheel, aid)).filter((v) => v > 0);
   // "What to know": highest/lowest, biggest mover vs last review, balance, quiet.
   const sortedScored = scored.slice().sort((a, b) => b.score - a.score);
   const highest = sortedScored[0], lowest = sortedScored[sortedScored.length - 1];
@@ -23545,7 +23545,7 @@ function renderWheel() {
   let mover = null, dropper = null;
   if (last && prev) {
     const lw = last.props.wheel || {}, pw = prev.props.wheel || {}; const deltas = [];
-    data.forEach((d) => { const now = Math.min(lw[d.a.id] || 0, 5), was = Math.min(pw[d.a.id] || 0, 5); if (now && was && now !== was) deltas.push({ a: d.a, d: now - was, now }); });
+    data.forEach((d) => { const now = wheelRating(lw, d.a.id), was = wheelRating(pw, d.a.id); if (now && was && now !== was) deltas.push({ a: d.a, d: now - was, now }); });
     deltas.sort((x, y) => y.d - x.d);
     if (deltas[0] && deltas[0].d > 0) mover = deltas[0];
     const dn = deltas[deltas.length - 1]; if (dn && dn.d < 0) dropper = dn;
@@ -23901,7 +23901,13 @@ function setReviewCadDow(k, dow) { const c = ensureCad(k); c.dow = dow; if (k !=
 function setReviewCadMode(k, mode) { const c = ensureCad(k); c.mode = mode; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadAlert(k, n) { const c = ensureCad(k); c.alertBefore = Math.max(0, Math.min(14, n)); c.on = true; reviewCadSettle(k); saveReviewRem(); reReviewRems(); }
 function setReviewCadPause(k, dateISO) { const c = ensureCad(k); c.pausedUntil = (dateISO && /^\d{4}-\d\d-\d\d$/.test(dateISO)) ? dateISO : null; saveReviewRem(); reReviewRems(); }
-const wheelAvg = (w) => { const v = Object.values(w || {}).map(Number).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
+// Reviews before 5 Sept 2026 were rated 1-10. A wheel with any rating above 5 is on
+// that scale, so each rating is read in its 1-5 bucket (1-2 -> 1 ... 9-10 -> 5). Stored
+// values stay as they are; bands and dots rely on whole numbers.
+const wheelOldScale = (w) => Object.values(w || {}).some((n) => Number(n) > 5);
+const wheelRating = (w, id) => { const n = Number((w || {})[id]) || 0; return n > 0 && wheelOldScale(w) ? Math.ceil(n / 2) : Math.min(n, 5); };
+const wheelOnFive = (w) => Object.fromEntries(Object.keys(w || {}).map((id) => [id, wheelRating(w, id)]));
+const wheelAvg = (w) => { const v = Object.keys(w || {}).map((id) => wheelRating(w, id)).filter((n) => n > 0); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : 0; };
 // One review per (type, period). A submit → edit → resubmit must update the same
 // block, never mint a new one. Stale state or a double-tap have minted a few
 // duplicates; collapse each (rtype,to) group to one canonical block - preferring a
@@ -24015,7 +24021,7 @@ function reviewInsight(m, p) {
     const prev = (state.reviews || []).map((r) => r.props || {}).filter((q) => q.rtype === p.rtype && q.wheel && q.to && q.to < p.to).sort((a, b) => String(b.to).localeCompare(String(a.to)))[0];
     if (prev && prev.wheel) {
       const deltas = [];
-      for (const aid of Object.keys(p.wheel)) { const now = Math.min(p.wheel[aid] || 0, 5), was = Math.min(prev.wheel[aid] || 0, 5); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now, was }); }
+      for (const aid of Object.keys(p.wheel)) { const now = wheelRating(p.wheel, aid), was = wheelRating(prev.wheel, aid); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now, was }); }
       deltas.sort((a, b) => b.d - a.d);
       const up = deltas[0] && deltas[0].d > 0 ? deltas[0] : null;
       const down = deltas[deltas.length - 1] && deltas[deltas.length - 1].d < 0 ? deltas[deltas.length - 1] : null;
@@ -24276,7 +24282,7 @@ function reviewWheelHtml(p) {
   // changed - a dashed "last time" outline over it, and a move on each petal.
   const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
   const prevWheel = (prev && prev.wheel) || null;
-  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }))
+  const data = areas.map((a) => ({ a, score: wheelRating(p.wheel, a.id), prev: prevWheel ? wheelRating(prevWheel, a.id) : 0 }))
     .sort((x, y) => y.score - x.score);
   const havePrev = prevWheel && data.every((d) => d.prev > 0);
   const avg = Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10;
@@ -24320,7 +24326,7 @@ function reviewWheelPreview(p) {
   const period = PERIOD_WORD[p.rtype] || 'period';
   const prev = reviewSeries(p.rtype).filter((q) => q.to && p.to && q.to < p.to).slice(-1)[0];
   const prevWheel = (prev && prev.wheel) || null;
-  const data = areas.map((a) => ({ a, score: Math.min((p.wheel || {})[a.id] || 0, 5), prev: prevWheel ? Math.min(prevWheel[a.id] || 0, 5) : 0 }));
+  const data = areas.map((a) => ({ a, score: wheelRating(p.wheel, a.id), prev: prevWheel ? wheelRating(prevWheel, a.id) : 0 }));
   const N = data.length, cx = 90, cy = 90, R = 76, seg = 2 * Math.PI / N;
   const P = (r, ang) => `${(cx + r * Math.cos(ang)).toFixed(1)},${(cy + r * Math.sin(ang)).toFixed(1)}`;
   const rings = [1, 2, 3, 4, 5].map((k) => `<circle cx="${cx}" cy="${cy}" r="${(R * k / 5).toFixed(1)}" class="wol-ring"/>`).join('');
@@ -24395,18 +24401,18 @@ function reviewKeyPoints(m, p, r) {
   if (win && win.title) pts.push(['⭐', `Highlight: <b>${esc(String(win.title).slice(0, 60))}</b>${win.tag ? ` <span class="rr-key-sub">- ${esc(win.tag)}</span>` : ''}`]);
   // Overall balance (Wheel of Life average) vs last time.
   if (p.wheel) {
-    const vals = Object.keys(p.wheel).map((a) => Math.min(p.wheel[a] || 0, 5)).filter((v) => v > 0);
+    const vals = Object.keys(p.wheel).map((a) => wheelRating(p.wheel, a)).filter((v) => v > 0);
     if (vals.length) {
       const avg = Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
       let pd = null;
-      if (prev && prev.wheel) { const pv = Object.keys(prev.wheel).map((a) => Math.min(prev.wheel[a] || 0, 5)).filter((v) => v > 0); if (pv.length) pd = Math.round((avg - pv.reduce((s, v) => s + v, 0) / pv.length) * 10) / 10; }
+      if (prev && prev.wheel) { const pv = Object.keys(prev.wheel).map((a) => wheelRating(prev.wheel, a)).filter((v) => v > 0); if (pv.length) pd = Math.round((avg - pv.reduce((s, v) => s + v, 0) / pv.length) * 10) / 10; }
       pts.push(['📊', `Life balance sitting at <b>${avg}/5</b>${pd ? ` <span class="rr-key-d ${pd > 0 ? 'up' : 'down'}">${pd > 0 ? '▲' : '▼'}${Math.abs(pd)} vs last ${period}</span>` : ''}`]);
     }
   }
   // Wheel mover vs last time.
   if (p.wheel && prev && prev.wheel) {
     const deltas = [];
-    for (const aid of Object.keys(p.wheel)) { const now = Math.min(p.wheel[aid] || 0, 5), was = Math.min(prev.wheel[aid] || 0, 5); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now }); }
+    for (const aid of Object.keys(p.wheel)) { const now = wheelRating(p.wheel, aid), was = wheelRating(prev.wheel, aid); if (now && was && now !== was && nm(aid)) deltas.push({ aid, d: now - was, now }); }
     deltas.sort((a, b) => b.d - a.d);
     if (deltas[0] && deltas[0].d > 0) pts.push(['📈', `${nmLink(deltas[0].aid)} is up to <b>${deltas[0].now}/5</b>`]);
     const dn = deltas[deltas.length - 1];
@@ -24453,7 +24459,7 @@ function renderReviewReport() {
   const navHtml = sib.list.length > 1 ? `<span class="rv-cardnav"><button class="rv-navbtn" ${sib.prev ? `data-open-review="${sib.prev.id}"` : 'disabled'}>‹</button><span class="rv-navpos">${sib.i + 1} of ${sib.list.length}</span><button class="rv-navbtn" ${sib.next ? `data-open-review="${sib.next.id}"` : 'disabled'}>›</button></span>` : '';
   // By page: scores + the line you wrote, read-only.
   const wheelAreas = state.areas.filter((a) => ((p.wheel || {})[a.id]) || ((p.areaNotes || {})[a.id] || '').trim());
-  const wheelRows = wheelAreas.map((a) => { const sc = Math.min((p.wheel || {})[a.id] || 0, 5); const note = (p.areaNotes || {})[a.id] || ''; const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < sc ? 'on' : ''}" style="--h:${hueOf(a)}"></span>`).join(''); return `<div class="rr-area" style="--h:${hueOf(a)}"><div class="rr-area-h"><button class="rr-area-n" data-open-area="${a.id}">${esc(a.title)}</button><span class="rr-dots">${dots}</span><span class="rr-sc">${sc ? sc + '/5' : '–'}</span></div>${note.trim() ? `<div class="rr-area-note">${esc(note)}</div>` : ''}</div>`; }).join('');
+  const wheelRows = wheelAreas.map((a) => { const sc = wheelRating(p.wheel, a.id); const note = (p.areaNotes || {})[a.id] || ''; const dots = Array.from({ length: 5 }, (_, i) => `<span class="rr-dot ${i < sc ? 'on' : ''}" style="--h:${hueOf(a)}"></span>`).join(''); return `<div class="rr-area" style="--h:${hueOf(a)}"><div class="rr-area-h"><button class="rr-area-n" data-open-area="${a.id}">${esc(a.title)}</button><span class="rr-dots">${dots}</span><span class="rr-sc">${sc ? sc + '/5' : '–'}</span></div>${note.trim() ? `<div class="rr-area-note">${esc(note)}</div>` : ''}</div>`; }).join('');
   // Goals: scores + notes, read-only.
   const gr = p.goalReview || {}; const snap = p.snapshot || [];
   const goalRows = snap.filter((g) => gr[g.id] && ((gr[g.id].score) || (gr[g.id].note || '').trim())).map((g) => { const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5); const a = g.area ? areaById(g.area) : null; return `<div class="rr-area" style="--h:${a ? hueOf(a) : 220}"><div class="rr-area-h"><button class="rr-area-n" data-open-goal="${g.id}">${esc(g.title)}</button>${sc ? `<span class="rr-sc">${sc}/5</span>` : ''}</div>${(rv.note || '').trim() ? `<div class="rr-area-note">${esc(rv.note)}</div>` : ''}</div>`; }).join('');
@@ -24466,7 +24472,7 @@ function renderReviewReport() {
     : `<div class="rv-summary-body rr-read rr-read--drop">${reviewInsight(m, p).map((l) => `<p>${l}</p>`).join('')}</div>`;
   // The steer: the one part of life to lean into next - the quietest petal on the
   // wheel. A gentle forward nudge at the foot of the read, gold-edged. (§72.)
-  const steerEntries = Object.keys(p.wheel || {}).map((id) => ({ a: areaById(id), s: Math.min((p.wheel || {})[id] || 0, 5) })).filter((x) => x.a && x.s > 0).sort((x, y) => x.s - y.s);
+  const steerEntries = Object.keys(p.wheel || {}).map((id) => ({ a: areaById(id), s: wheelRating(p.wheel, id) })).filter((x) => x.a && x.s > 0).sort((x, y) => x.s - y.s);
   const steerNext = { weekly: 'next week', monthly: 'next month', quarterly: 'next quarter', yearly: 'next year' }[p.rtype] || 'next time';
   const steerLow = steerEntries[0];
   const steerHtml = steerLow ? `<div class="rr-steer"><div class="rr-steer-lbl">The steer for ${steerNext}</div><div class="rr-steer-head">${esc(steerLow.a.title)}.</div><div class="rr-steer-body">It is sitting at ${steerLow.s} of 5 - the quietest part of the wheel this ${PERIOD_WORD[p.rtype] || 'period'}. A little attention here would move the shape the most. Everything else can keep ticking.</div><div class="rr-steer-acts"><button class="rr-steer-go" data-open-area="${steerLow.a.id}">Open ${esc(steerLow.a.title)} →</button></div></div>` : '';
@@ -24667,7 +24673,7 @@ function renderReviewCard() {
   const wheelAreas = state.areas.filter((a) => !wheelHiddenSet.has(a.id) && !(a.props && a.props.reviewOff));
   // By page: a score /5 (draws the Wheel of Life) AND a line on how it went.
   const areaBlock = wheelAreas.map((a) => {
-    const sc = Math.min((p.wheel || {})[a.id] || 0, 5);
+    const sc = wheelRating(p.wheel, a.id);
     const pips = Array.from({ length: 5 }, (_, i) => `<button class="wp ${i < sc ? 'on' : ''}" data-wheel="${a.id}:${i + 1}" style="--h:${hueOf(a)}"></button>`).join('');
     const note = (p.areaNotes || {})[a.id] || '';
     return `<div class="rva-row" style="--h:${hueOf(a)}">
@@ -24752,7 +24758,7 @@ async function delReview(id) {
   state.reviews = state.reviews.filter((x) => x.id !== id); toast('Review deleted'); openGoals('reviews');
 }
 function setWheel(areaId, score) {
-  const r = state.review_open.review; const p = r.props || {}; const w = { ...(p.wheel || {}) };
+  const r = state.review_open.review; const p = r.props || {}; const w = wheelOnFive(p.wheel);   // editing an old 1-10 review moves it onto 1-5, so a new tap can't be misread
   const ns = w[areaId] === score ? 0 : score;   // tap the same pip to clear
   w[areaId] = ns;
   patchReview(r.id, { wheel: w }, true).then(renderReviewCard);
@@ -24775,7 +24781,7 @@ function bumpAreaSentiment(areaId, score, when) {
 function wheelHide(areaId) {
   const r = state.review_open.review; const p = r.props || {};
   const hidden = new Set(p.wheelHidden || []); hidden.add(areaId);
-  const w = { ...(p.wheel || {}) }; delete w[areaId];
+  const w = wheelOnFive(p.wheel); delete w[areaId];
   patchReview(r.id, { wheelHidden: [...hidden], wheel: w }, true).then(renderReviewCard);
 }
 // Tapping the × on an area asks whether to drop it from just this review or from
@@ -24954,7 +24960,7 @@ function reviewMovedHtml(m, p) {
   const up = [], down = [];
   if (pw && p.wheel) {
     for (const id of Object.keys(p.wheel)) {
-      const now = Math.min(p.wheel[id] || 0, 5), was = Math.min(pw[id] || 0, 5);
+      const now = wheelRating(p.wheel, id), was = wheelRating(pw, id);
       if (!now || !was || now === was || !nm(id)) continue;
       (now > was ? up : down).push({ id, d: now - was });
     }
