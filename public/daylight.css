@@ -269,6 +269,26 @@
   .prc-row .trk-del { order:2; }
 }
 
+:root[data-light] .mail-ar.open :is(.mail-ar-from, .mail-ar-acct, .mail-ar-time) { color:var(--k-ink); opacity:1; visibility:visible; }
+.mail-rowsel { display:none; }
+/* Phones, an open email: no box; sender, then the title across the width, then the
+   receiving address and time on one line; Move to, Action and Tools are dropdowns. */
+@media (max-width:767px) {
+  :root[data-light] .mail-ar.open .mail-ar-card { background:transparent; border:0; padding:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .mail-ar.open .mail-ar-head.mailv2ar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 14px; padding:14px 0; }
+  .mail-ar.open .mail-ar-head.mailv2ar > :is(.mail-ar-main, .mail-ar-right), .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-from { display:contents; }
+  .mail-ar.open .mail-ar-head.mailv2ar :is(.mail-ar-dot, .mail-ar-tri, .mail-ar-prev) { display:none; }
+  .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-n { grid-row:1; grid-column:2; justify-self:end; }
+  .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-subj { grid-row:2; grid-column:1 / -1; margin:0; white-space:normal; }
+  .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-acct { grid-row:3; grid-column:1; margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+  .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-time { grid-row:3; grid-column:2; justify-self:end; white-space:nowrap; font-size:14px; }
+  .mail-ar-bar { position:static; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; padding:12px 0; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) { display:grid; grid-template-columns:76px minmax(0,1fr); align-items:center; gap:10px; width:100%; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-replytop, .mail-maketop) { display:block; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) > :is(button, details) { display:none; }
+  :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
