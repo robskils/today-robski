@@ -400,6 +400,11 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 .home-cal-row[data-home-cal] { cursor:pointer; }
 .home-cal-row[data-home-cal]:hover .home-cal-t { color:var(--k-goldt); }
 
+/* The old glass token was a forest gradient at night; it follows the new glass now. */
+:root[data-light] { --glass-bg:var(--glass-card); }
+:root[data-light] .cc-adr-view { background:transparent; border:1px solid var(--glass-edge); }
+:root[data-light] .cc-adr-link { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
