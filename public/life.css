@@ -13209,3 +13209,43 @@ select.lk-act { max-width:none; width:auto; }
 .lk-fold:focus-visible, .lk-act:focus-visible, .lk-filter:focus-visible, .lk-open:focus-visible, .lk-x:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
 .lk-empty { margin:0; color:var(--k-mute); font-size:16px; }
 @media (hover:none) { .lk-x { opacity:1; } }
+
+/* Welcome on Today: the arrival for a new account (Robin chose this 2026-11-04). */
+.hw { display:flex; flex-direction:column; gap:28px; margin:24px 0 36px; max-width:860px; font-family:var(--k-sans); color:var(--k-ink); }
+.hw-panel { display:flex; flex-direction:column; gap:14px; padding:32px clamp(20px,4vw,36px); background:var(--k-deep); color:var(--k-ondeep); }
+.hw-h { margin:0; font-family:var(--k-serif); font-weight:500; font-size:34px; line-height:1.15; color:var(--k-ondeep); }
+.hw-p { margin:0; font-size:18px; line-height:1.5; color:var(--k-ondeep); }
+.hw-form { display:flex; flex-wrap:wrap; gap:8px; }
+.hw-input { flex:1 1 260px; min-width:0; box-sizing:border-box; min-height:52px; padding:0 14px; border:1px solid transparent; background:var(--k-ondeep); color:oklch(0.17 0.015 60); font-family:var(--k-sans); font-size:18px; }
+.hw-input::placeholder { color:oklch(0.38 0.02 70); }
+.hw-input:focus { outline:2px solid var(--k-gold); outline-offset:1px; }
+.hw-submit { appearance:none; min-height:52px; padding:0 24px; border:0; background:var(--k-gold); color:var(--k-ongold); font-family:var(--k-sans); font-size:17px; font-weight:500; white-space:nowrap; cursor:pointer; }
+.hw-submit:hover { background:color-mix(in oklch,var(--k-gold) 86%,white); }
+.hw-egs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:16px; color:var(--k-ondeep); }
+.hw-eg { appearance:none; min-height:44px; padding:0 14px; border:1px solid color-mix(in oklch,var(--k-ondeep) 34%,transparent); background:none; color:var(--k-ondeep); font-family:var(--k-sans); font-size:16px; cursor:pointer; }
+.hw-eg:hover { border-color:var(--k-gold); color:var(--k-gold); }
+.hw-lh { margin:0; font:inherit; }
+.hw-fold { appearance:none; display:flex; align-items:baseline; gap:14px; width:100%; min-height:44px; padding:0 0 8px; border:0; background:none; cursor:pointer; text-align:left; color:var(--k-ink); }
+.hw-fold-t { font-family:var(--k-serif); font-weight:500; font-size:30px; line-height:1.2; }
+.hw-fold:hover .hw-fold-t { color:var(--k-goldt); }
+.hw-fold-n { font-size:17px; color:var(--k-mute); }
+.hw-sign { margin-left:auto; font-size:22px; color:var(--k-mute); }
+.hw-steps { border-top:1px solid var(--k-line); }
+.hw-step { display:grid; grid-template-columns:24px minmax(0,1fr) auto; gap:14px; align-items:center; min-height:68px; padding:12px 18px; background:var(--k-panel); border-bottom:1px solid var(--k-line); }
+.hw-tick { display:flex; align-items:center; justify-content:center; width:24px; height:24px; box-sizing:border-box; border:1px solid var(--k-mute); font-size:15px; }
+.is-done .hw-tick { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); }
+.hw-step-b { display:block; min-width:0; }
+.hw-step-t { display:block; font-size:18px; font-weight:500; line-height:1.3; }
+.hw-step-s { display:block; font-size:16px; line-height:1.35; color:var(--k-mute); }
+.hw-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.hw-go, .hw-hide { appearance:none; min-height:44px; padding:0 4px; border:0; background:none; cursor:pointer; color:var(--k-goldt); font-family:var(--k-sans); font-size:16px; font-weight:500; white-space:nowrap; }
+.hw-foot { padding-top:6px; }
+.hw-hide { color:var(--k-mute); font-weight:400; }
+.hw-hide:hover { color:var(--k-goldt); }
+.hw-fold:focus-visible, .hw-go:focus-visible, .hw-hide:focus-visible, .hw-eg:focus-visible, .hw-submit:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
+.hw-panel .hw-eg:focus-visible, .hw-panel .hw-submit:focus-visible { outline-color:var(--k-gold); }
+@media (max-width:520px) {
+  .hw-step { grid-template-columns:24px minmax(0,1fr); padding:12px 14px; }
+  .hw-go { grid-column:2; justify-self:start; }
+  .hw-h { font-size:30px; }
+}

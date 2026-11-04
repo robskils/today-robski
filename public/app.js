@@ -7207,18 +7207,81 @@ const ORIGAMI_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3
 </svg>`;
 // New accounts land on Home and set up from here. The banner is the doorway into
 // the Settings "Getting started" checklist, shown until finished or hidden.
-function homeSetupCardHtml() {
-  if (state.onbSeen === undefined) { api('/api/kv/onboarded').then((r) => { state.onbSeen = !!(r && r.value); if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.onbSeen = true; }); return ''; }
-  if (state.onbSeen) return '';
-  return `<section class="home-setup">
-    <button class="gs-banner" data-open-getstarted>
-      <span class="gs-art">${ORIGAMI_SVG}</span>
-      <span class="gs-body"><span class="gs-t">Welcome to Koyéba</span><span class="gs-s">Let's set Koyéba up to fit you. Tap here to begin.</span></span>
-      <span class="gs-go" aria-hidden="true">→</span>
-    </button>
-    <button class="home-setup-x" data-onb-finish title="Hide this" aria-label="Hide getting started">✕</button>
-  </section>`;
+// New accounts arrive on Today, not in a setup form (Robin chose this 2026-11-04).
+// A forest panel asks what's on their mind and files it through the real capture
+// code, with a short list beneath that ticks itself off. Shown until hidden, or for
+// the first 60 days, so it never appears on a long-standing member's Today.
+function homeWelcomeOn() {
+  if (state.onbSeen !== false) return false;
+  const made = state.me && Date.parse(state.me.created_at || '');
+  return !!made && Date.now() - made < 60 * 86400000;
 }
+function homeWelcomeSteps() { try { return JSON.parse(state.hwSteps || '{}') || {}; } catch { return {}; } }
+function homeWelcomeMark(key) {
+  const s = homeWelcomeSteps(); if (s[key]) return;
+  s[key] = 1; state.hwSteps = JSON.stringify(s);
+  api('/api/kv/onb_steps', { method: 'PUT', body: JSON.stringify({ value: state.hwSteps }) }).catch(() => {});
+}
+function homeWelcomeHtml() {
+  const rr = () => { if (state.view && state.view.type === 'home') renderHome(); };
+  if (state.onbSeen === undefined) { api('/api/kv/onboarded').then((r) => { state.onbSeen = !!(r && r.value); rr(); }).catch(() => { state.onbSeen = true; }); return ''; }
+  if (!homeWelcomeOn()) return '';
+  if (!state._hwLoaded) {
+    state._hwLoaded = true;
+    api('/api/kv/onb_steps').then((r) => { state.hwSteps = (r && r.value) || '{}'; rr(); }).catch(() => {});
+    if (state.gcalAccounts === undefined) { state.gcalAccounts = []; api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; rr(); }).catch(() => {}); }
+    state.mail = state.mail || {};
+    if (!Array.isArray(state.mail.accounts)) { try { mailApi('/accounts').then((r) => { state.mail.accounts = Array.isArray(r) ? r : ((r && r.accounts) || []); rr(); }).catch(() => {}); } catch {} }
+  }
+  const done = homeWelcomeSteps();
+  const steps = [
+    ['Set something down', 'The quickest way to feel the difference.', !!done.first, 'Show me', 'data-hw-focus'],
+    ['Bring in your calendar', 'See your days alongside everything else.', (state.gcalAccounts || []).length > 0, 'Connect', 'data-onb-open-hub="calendar"'],
+    ['Bring in your email', 'Sort your inbox, and turn messages into tasks.', !!(state.mail && (state.mail.accounts || []).length), 'Connect', 'data-onb-open-hub="email"'],
+    ['Shape your Spaces', 'The parts of your life, and who shares them.', !!done.spaces, 'Open', 'data-hw-spaces'],
+  ];
+  const n = steps.filter((x) => x[2]).length;
+  const open = kOpen('kwelcome');
+  const rows = steps.map(([title, sub, ok, go, attr]) => `<div class="hw-step${ok ? ' is-done' : ''}">
+      <span class="hw-tick" aria-hidden="true">${ok ? '✓' : ''}</span>
+      <span class="hw-step-b"><span class="hw-step-t">${title}${ok ? '<span class="hw-sr"> - done</span>' : ''}</span><span class="hw-step-s">${sub}</span></span>
+      <button type="button" class="hw-go" ${attr}>${go} →</button>
+    </div>`).join('');
+  return `<div class="hw">
+    <section class="hw-panel" aria-label="Set something down">
+      <h2 class="hw-h">${state.hwJustFirst ? "That's your first one. What else is on your mind?" : "What's on your mind?"}</h2>
+      <p class="hw-p">Write it as you'd say it. It comes back when you need it.</p>
+      <form class="hw-form" data-hw-form>
+        <input class="hw-input" id="hw-input" aria-label="Set something down" placeholder="Set something down…" autocomplete="off" value="${esc(state.hwText || '')}">
+        <button type="submit" class="hw-submit">Set it down</button>
+      </form>
+      <div class="hw-egs"><span>Or try:</span><button type="button" class="hw-eg" data-hw-eg="Dentist Tuesday at 9am">Dentist Tuesday at 9am</button><button type="button" class="hw-eg" data-hw-eg="Ring Mum tomorrow">Ring Mum tomorrow</button></div>
+    </section>
+    <section class="hw-list">
+      <h2 class="hw-lh"><button type="button" class="hw-fold" data-hfold="kwelcome" aria-expanded="${open}"><span class="hw-fold-t">Make it yours</span><span class="hw-fold-n">${n} of ${steps.length}</span><span class="hw-sign" aria-hidden="true">${open ? '−' : '+'}</span></button></h2>
+      ${open ? `<div class="hw-steps">${rows}</div><div class="hw-foot"><button type="button" class="hw-hide" data-onb-finish>${n === steps.length ? 'All done - hide this' : 'Hide this for now'}</button></div>` : ''}
+    </section>
+  </div>`;
+}
+async function homeWelcomeSubmit(input) {
+  const text = (input.value || '').trim();
+  if (!text) { input.focus(); return; }
+  const c = capState(); const before = c.open; c.text = text; c.kind = null; c.ans = {};
+  const box = input.closest('form'); if (box) box.querySelectorAll('input,button').forEach((x) => { x.disabled = true; });
+  await submitCap();
+  c.open = before && c.open;
+  if (capState().text) { if (box) box.querySelectorAll('input,button').forEach((x) => { x.disabled = false; }); return; }   // filing failed: submitCap showed why
+  state.hwText = '';
+  state.hwJustFirst = !homeWelcomeSteps().first;
+  homeWelcomeMark('first');
+  if (state.view && state.view.type === 'home') renderHome();
+}
+document.addEventListener('submit', (e) => {
+  if (!e.target.matches || !e.target.matches('[data-hw-form]')) return;
+  e.preventDefault();
+  const i = e.target.querySelector('#hw-input'); if (i) homeWelcomeSubmit(i);
+});
+document.addEventListener('input', (e) => { if (e.target && e.target.id === 'hw-input') state.hwText = e.target.value; });
 function homeQuoteHtml() {
   // The server already gates the quote (off / dismissed today), so if it sent one,
   // show it. Closing it dismisses the day's quote everywhere (see the × handler).
@@ -9373,6 +9436,7 @@ function homeQuoteLineHtml() {
   return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div>`;
 }
 function renderHome() {
+  if (document.activeElement && document.activeElement.id === 'hw-input') queueMicrotask(() => { const i = document.getElementById('hw-input'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch {} } });
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   // §41: "Keep in touch" folds shut by default; Reflections and the day stay
   // open. Seed the collapse store once so kOpen/kToggle treats kkit as closed.
@@ -9406,7 +9470,7 @@ function renderHome() {
   const kitDue = ((state.home.alerts && state.home.alerts.keepInTouch) || []).length;
   const kitH = `<div class="home-fold-h" data-hfold="kkit" role="button" tabindex="0"><span class="hf-name">Keep in touch</span><span class="hf-hint">${kitDue ? `${kitDue} due` : 'Who to catch up with'}</span><span class="hf-sign" aria-hidden="true">${kOpen('kkit') ? '−' : '+'}</span></div>`;
   const kit = modOn('contacts') ? `<section class="home-sec2 home-kit">${kitH}${kOpen('kkit') ? homeKeepInTouchHtml() : ''}</section>` : '';
-  const alerts = `${homeSetupCardHtml()}${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
+  const alerts = `${homeInvitesHtml()}${homeMsgAlertHtml()}${homeReqAlertHtml()}`;
   // §41 Today v2: one column - greeting, What next, the day (+ birthdays),
   // Reflections, Keep in touch, the Notepad line, then the quote and the mark.
   $('#pane').innerHTML = `
@@ -9419,11 +9483,12 @@ function renderHome() {
         <div class="home-greetrow">
           <div class="home-greetmain">
             <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
-            <h1 class="home-greet">${greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>
+            <h1 class="home-greet">${homeWelcomeOn() ? 'Welcome' : greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>
             ${homeTimeWeatherHtml()}
             ${homeQuoteLineHtml()}
           </div>
         </div>
+        ${homeWelcomeHtml()}
         <div class="home-cols home-cols-v3">
           <div class="home-main">
             ${homeLeftTabsHtml(off)}
@@ -27887,6 +27952,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
   { const lf = t.closest('[data-lk-filter]'); if (lf) { lkPickFilter(lf); return; } const lb = t.closest('[data-lk-fold]'); if (lb) { lkToggleFold(lb); return; } }
+  { const hf = t.closest('[data-hw-focus]'); if (hf) { const i = document.getElementById('hw-input'); if (i) { i.focus(); i.scrollIntoView({ block: 'center' }); } return; } }
+  { const he = t.closest('[data-hw-eg]'); if (he) { const i = document.getElementById('hw-input'); if (i) { i.value = he.dataset.hwEg; state.hwText = i.value; i.focus(); } return; } }
+  if (t.closest('[data-hw-spaces]')) { homeWelcomeMark('spaces'); showOnboarding('folios'); return; }
   { const rb = t.closest('[data-rvl-bar]'); if (rb) { const [rk, rid] = rb.dataset.rvlBar.split('|'); rvlPickBar(rk, rid); return; } }
   { const rs = t.closest('[data-rvsec]'); if (rs) { rvSecToggle(rs.dataset.rvsec); return; } }
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
