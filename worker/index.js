@@ -5189,6 +5189,32 @@ export default {
         const invited = user ? false : await hasPendingInvite(env, authedEmail);
         return json({ email: authedEmail, user: user || null, needsSignup: !user, invited, inviteRequired: !(await isPublicSignup(env)) }, request);
       }
+      // Location search for the event form: proxy OpenStreetMap (Photon) so you can
+      // add ANY place, not just a contact's address. Free, no key; authed so it's
+      // not an open proxy, and edge-cached since place results barely change.
+      // (Robin, 2026-11-04.)
+      if (path === '/api/geocode' && request.method === 'GET') {
+        if (!authedEmail) return err('unauthorized', request, 401);
+        const q = (url.searchParams.get('q') || '').trim();
+        if (q.length < 3) return json({ results: [] }, request);
+        try {
+          const r = await fetch('https://photon.komoot.io/api/?' + new URLSearchParams({ q, limit: '6', lang: 'en' }).toString(), { headers: { 'User-Agent': 'Koyeba/1.0 (+https://koyeba.co)' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+          if (!r.ok) return json({ results: [] }, request);
+          const g = await r.json();
+          const results = (g.features || []).map((f) => {
+            const p = f.properties || {};
+            const street = [p.housenumber, p.street].filter(Boolean).join(' ');
+            const locality = p.city || p.town || p.village || p.hamlet || p.county || '';
+            const parts = [p.name, street, locality, p.state, p.country].filter(Boolean);
+            const uniq = parts.filter((x, i) => parts.indexOf(x) === i);
+            const full = uniq.join(', ');
+            const nm = p.name || street || locality || full;
+            const sub = uniq.filter((x) => x !== nm).join(', ');
+            return { full, nm, sub };
+          }).filter((x) => x.full);
+          return json({ results }, request);
+        } catch { return json({ results: [] }, request); }
+      }
       if (path === '/api/signup' && request.method === 'POST') {
         if (!authedEmail) return err('unauthorized', request, 401);
         return handleSignup(request, env, authedEmail, json, err);

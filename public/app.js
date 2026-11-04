@@ -303,6 +303,9 @@ document.addEventListener('keydown', (ev) => {
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.notepad && state.notepad.open) { ev.preventDefault(); toggleNotepad(false); } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.home && state.home.newMenu) { ev.preventDefault(); state.home.newMenu = false; try { renderNewPop(); renderNav(); } catch {} } });
+// Focusing the event Location field offers the smart suggestion straight away, before
+// you type. (Robin, 2026-11-04.)
+document.addEventListener('focusin', (ev) => { if (ev.target && ev.target.id === 'ce-loc') { try { renderCeLocSugg(ev.target.value); } catch {} } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.cv && state.cv.merge) { ev.preventDefault(); cvMergeClose(); } });
 document.addEventListener('click', (ev) => {
   const t = ev.target; if (!t.closest) return;
@@ -15216,26 +15219,56 @@ function syncEventEnd(prefix) {
 // The Location field doubles as a search: type a contact's name (or part of an
 // address, or a place you've used before) and pick the full address in one tap -
 // "James" finds your brother's house. Contacts come first, then past locations.
+const ceLocRow = (nm, sub, pick, icon) => `<button type="button" class="ce-loc-opt" data-ce-loc-pick="${esc(pick)}"><span class="ce-loc-nm">${icon} ${esc(nm)}</span>${sub ? `<span class="ce-loc-ad">${esc(sub)}</span>` : ''}</button>`;
+// Smart (Robin, 2026-11-04): if a past event with a similar title had a location,
+// suggest it - shown as soon as you focus the field, before you even type.
+function similarEventLocation() {
+  const title = ((document.getElementById('ce-title') || {}).value || '').trim().toLowerCase();
+  if (title.length < 3) return null;
+  const toks = title.split(/\s+/).filter((w) => w.length >= 4);
+  for (const ev of (state.cal && state.cal.events) || []) {
+    const l = (ev.location || '').trim(); if (!l) continue;
+    const t2 = (ev.title || '').toLowerCase(); if (!t2) continue;
+    if (t2 === title || (toks.length && toks.some((w) => t2.includes(w)))) return { location: l, title: ev.title || '' };
+  }
+  return null;
+}
 function renderCeLocSugg(q) {
   const el = document.getElementById('ce-loc-sugg'); if (!el) return;
   const query = (q || '').trim().toLowerCase();
-  if (query.length < 1) { el.hidden = true; el.innerHTML = ''; return; }
   const rows = [];
   const seen = new Set();
-  (state.contacts || []).forEach((c) => {
-    contactAddresses(c.props || {}).forEach((a) => {
-      const addr = formatAddress(a); if (!addr) return;
-      if (`${c.title || ''} ${a.label || ''} ${addr}`.toLowerCase().includes(query) && !seen.has(addr)) {
-        seen.add(addr);
-        rows.push(`<button type="button" class="ce-loc-opt" data-ce-loc-pick="${esc(addr)}"><span class="ce-loc-nm">👤 ${esc(c.title || 'Unnamed')}${a.label ? ` · ${esc(a.label)}` : ''}</span><span class="ce-loc-ad">${esc(addr)}</span></button>`);
-      }
+  // 1) The smart suggestion from a similar past event (even with the field empty).
+  const sim = similarEventLocation();
+  if (sim && !seen.has(sim.location)) { seen.add(sim.location); rows.push(ceLocRow(sim.location, `From your last “${sim.title}”`, sim.location, '📍')); }
+  if (query.length >= 1) {
+    // 2) Contacts' addresses, then 3) places you've used before.
+    (state.contacts || []).forEach((c) => {
+      contactAddresses(c.props || {}).forEach((a) => {
+        const addr = formatAddress(a); if (!addr) return;
+        if (`${c.title || ''} ${a.label || ''} ${addr}`.toLowerCase().includes(query) && !seen.has(addr)) { seen.add(addr); rows.push(ceLocRow(`${c.title || 'Unnamed'}${a.label ? ` · ${a.label}` : ''}`, addr, addr, '👤')); }
+      });
     });
-  });
-  const contactN = rows.length;
-  (state.cal && state.cal.events || []).forEach((ev) => { const l = (ev.location || '').trim(); if (l && l.toLowerCase().includes(query) && !seen.has(l)) { seen.add(l); rows.push(`<button type="button" class="ce-loc-opt" data-ce-loc-pick="${esc(l)}"><span class="ce-loc-nm">📍 ${esc(l)}</span></button>`); } });
-  const shown = [...rows.slice(0, contactN).slice(0, 6), ...rows.slice(contactN).slice(0, 4)];
-  if (!shown.length) { el.hidden = true; el.innerHTML = ''; return; }
-  el.innerHTML = shown.join(''); el.hidden = false;
+    (state.cal && state.cal.events || []).forEach((ev) => { const l = (ev.location || '').trim(); if (l && l.toLowerCase().includes(query) && !seen.has(l)) { seen.add(l); rows.push(ceLocRow(l, '', l, '📍')); } });
+  }
+  if (!rows.length && query.length < 3) { el.hidden = true; el.innerHTML = ''; return; }
+  // 4) Any place in the world (OpenStreetMap) arrives async and appends below.
+  el.innerHTML = rows.slice(0, 8).join('') + (query.length >= 3 ? '<div id="ce-loc-osm"></div>' : '');
+  el.hidden = false;
+  if (query.length >= 3) ceLocFetchOsm(query);
+}
+let __ceLocT = 0, __ceLocSeq = 0;
+function ceLocFetchOsm(query) {
+  clearTimeout(__ceLocT);
+  const seq = ++__ceLocSeq;
+  __ceLocT = setTimeout(async () => {
+    let results = [];
+    try { const r = await api('/api/geocode?q=' + encodeURIComponent(query)); results = (r && r.results) || []; } catch {}
+    if (seq !== __ceLocSeq) return;   // a newer keystroke superseded this fetch
+    const box = document.getElementById('ce-loc-osm'); if (!box) return;
+    const seen = new Set();
+    box.innerHTML = results.filter((x) => x && x.full && !seen.has(x.full) && seen.add(x.full)).slice(0, 6).map((x) => ceLocRow(x.nm || x.full, x.sub || '', x.full, '📍')).join('');
+  }, 320);
 }
 function onEventEndEdit(prefix) {
   const startMs = evAbsMs(`${prefix}-date`, `${prefix}-time`), endMs = evAbsMs(`${prefix}-enddate`, `${prefix}-endtime`);
