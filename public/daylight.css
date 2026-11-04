@@ -198,7 +198,7 @@
 :root[data-light] :is(.kg-prog-pct,.kg-group-l,.kg-side-l,.kg-side-c,.tx-group-l,.tx-side-hl,.tx-side-n,.jx-page-kind,.jx-month-lbl,.jx-month-count,.jx-side-title,.jx-eyebrow-lbl,.jx-starts-lbl,.rw-si-kind,.rw-cov-top,.rw-cov-fin,.rw-cov-by,.rw-eyebrow,.tr-past-kind,.tr-past-date,.tr-spreads-l,.tr-cap-pos,.trk-dh,.trk-cad,.icx-hmonth-l,.icx-hrow-when,.icx-side-h,.dz-src,.src-chip-n,.mp-who,.mp-day-l,.mp-grp-l,.mp-send,.nt-sub-t,.am-fcount,.j-ins-list-h,.rr-keys-h,.wol-trend-h,.mail-blocked-h,.sx-idx-h,.lab,.fh-r) { font-size:13px; }
 
 /* ── No full-width buttons: this one is slim and sits where it belongs ─────── */
-.prc-addtoggle, .gcal-addbtn { width:fit-content; align-self:flex-start; }
+.prc-addtoggle, .gcal-addbtn { width:fit-content; align-self:flex-start; justify-self:start; }
 
 /* Text that was below 4.5:1 on real data. */
 :root[data-light] .t2-avoidtag { background:transparent; color:var(--k-goldt); }

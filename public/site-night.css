@@ -1,0 +1,16 @@
+/* The public website wears the same night sky as the app. Loaded after each page's own
+   styles; only colours and surfaces change here, never wording or structure. */
+:root:root {
+  --k-bg:#0D1220; --k-panel:#171D30; --k-soft:#212842;
+  --k-ink:#EEF0F5; --k-mute:#C6CAD8; --k-faint:#C6CAD8; --k-line:#333B59;
+  --k-gold:#D9B45F; --k-goldt:#E6C67C;
+  --k-deep:rgba(34,40,70,.42); --k-ondeep:#EEF0F5; --k-ongold:#12100b;
+  --k-deepline:rgba(238,240,245,.2);
+  color-scheme:dark;
+}
+html { background:#0D1220 url('/wash/night.webp?v=3') top / cover no-repeat fixed; }
+html body { background:transparent; }
+.ko-ink { display:none !important; }
+.ko-ivory { display:block !important; }
+/* Former forest panels become frosted glass over the sky. */
+.forest { background:var(--k-deep); -webkit-backdrop-filter:blur(14px) saturate(1.7); backdrop-filter:blur(14px) saturate(1.7); border-top:1px solid rgba(220,228,255,.22); border-bottom:1px solid rgba(220,228,255,.22); }
