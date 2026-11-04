@@ -9551,21 +9551,36 @@ function nxBucket(n) {
 }
 function renderNotesList() {
   // Robin (2026-11-04): Notes is a plain grid of little cards - the same cards the
-  // Tables page uses - in three sections: Starred, Recent, All. No search bar,
-  // filters, folding groups or side panels (that was the "over-designed mess");
-  // find a note through ⌘K or the Space it lives in. Tables is its twin page.
-  const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note');
+  // Tables page uses - in three sections: Starred, Recent, All. One control only:
+  // a Space filter (Robin asked for it back, 2026-11-04) - a slim pill row under
+  // the title, "All Spaces" + one pill per Space, the active one gold. Picking a
+  // Space shows just that Space's notes as one grid; All Spaces keeps the three
+  // sections. No search bar / sort / sidebars (that was the "over-designed mess").
+  const space = notesAreaMode();
+  const allNotes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note');
+  const spaces = (state.areas || []).filter((a) => a && a.title).slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   const card = (n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic ico-note">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`;
   const grid = (list) => list.map(card).join('');
-  const favs = notes.filter((n) => n.props && n.props.fav);
-  const recent = recentItems().filter((x) => x && x.kind === 'note').map((x) => notes.find((n) => n.id === x.id)).filter(Boolean).slice(0, 8);
-  const all = nxSortRecent(notes);
+  const chip = (id, label, on) => `<button class="nsp${on ? ' on' : ''}" data-notes-space="${id}">${esc(label)}</button>`;
+  const spaceRow = spaces.length
+    ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
+    : '';
+  let sections;
+  if (space) {
+    const sp = areaById(space);
+    const inSpace = nxSortRecent(allNotes.filter((n) => blockAreas(n).includes(space)));
+    sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No notes in this Space yet.</div>'}</div></section>`;
+  } else {
+    const favs = allNotes.filter((n) => n.props && n.props.fav);
+    const recent = recentItems().filter((x) => x && x.kind === 'note').map((x) => allNotes.find((n) => n.id === x.id)).filter(Boolean).slice(0, 8);
+    const all = nxSortRecent(allNotes);
+    sections = `${favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : ''}${recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : ''}<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${allNotes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
+  }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('nav.notes'))}
     <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
-    ${favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : ''}
-    ${recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : ''}
-    <section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${notes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section></div>`;
+    ${spaceRow}
+    ${sections}</div>`;
 }
 // Right-click a note (or table) in the list to file it into pages - the same
 // checkbox menu as contacts. Left-click still opens; this is the quick filer.
@@ -22294,11 +22309,10 @@ function renderReviews() {
   const rtype = state.view && state.view.rtype;
   if (rtype) {
     const label = (REVIEWS[rtype] || {}).label || 'Review';
-    const doneN = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === rtype && (r.props || {}).status === 'done').length;
-    const line = doneN ? `${doneN} ${label.toLowerCase()} review${doneN === 1 ? '' : 's'} filed so far.` : 'A quiet moment to look back and take stock.';
+    const line = rvlLead(rtype);
     $('#pane').innerHTML = `
       ${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews'), attr: 'data-open-reviews-tool' }, { label: `${label} reviews` }])}
-      <div class="rv-mast"><div class="rv-mast-eyebrow">Plans · Looking back</div><h1 class="rv-mast-t">${esc(label)} reviews</h1><div class="rv-mast-line">${esc(line)}</div></div>
+      <div class="rv-mast"><h1 class="rv-mast-t">${esc(label)} reviews</h1><div class="rv-mast-line rvl-lead">${esc(line)}</div></div>
       ${reviewsTypeBody(rtype)}`;
     return;
   }
@@ -22385,51 +22399,172 @@ function reviewsLandHtml() {
 // A focused page for one cadence (Weekly / Monthly / …): whether this period's
 // review is done, when the next is due (or how overdue it is), and cards for
 // every past review of that cadence.
-function reviewArchiveCardHtml(r) {
-  const p = r.props || {}; const wv = Math.min(wheelAvg(p.wheel), 5);
-  const lbl = (REVIEWS[p.rtype] || {}).label || 'Review';
-  const prog = p.status === 'inprogress';
-  const pt = periodTitle(p.rtype, p.from, p.to);
-  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
-  const periodMain = (p.rtype === 'weekly' || !p.rtype) ? (p.from && p.to ? `${sd(p.from)} – ${sd(p.to)}` : pt.main) : pt.main;
-  const sentiment = wv ? (AREA_SENTIMENT[Math.max(1, Math.round(wv))] || '') : '';
-  return `<button class="rv-card rv-card-tall ${prog ? 'rv-card-prog' : ''}" data-open-review="${r.id}">
-    <div class="rv-card-h"><span class="rv-card-l rv-l-${p.rtype || 'weekly'}">${esc(lbl)}</span><span class="rv-card-badge ${prog ? 'is-prog' : 'is-done'}">${prog ? '● In progress' : `✓ Submitted${p.doneAt ? ` · ${esc(sd(p.doneAt))}` : ''}`}</span></div>
-    <div class="rv-card-period">${esc(periodMain)}</div>
-    ${sentiment ? `<div class="rv-card-sentiment">${esc(sentiment)}<span class="rv-card-score">${wv}/5</span></div>` : '<div class="rv-card-sentiment rv-card-sentiment-none">Not scored</div>'}
-    <div class="rv-card-stats">${p.tasksDone != null ? `<span class="rvc-stat"><b>${p.tasksDone}</b> done</span>` : ''}${p.openP1 ? `<span class="rvc-stat"><b>${p.openP1}</b> First</span>` : ''}</div>
-    <div class="rv-card-open">${prog ? 'Continue →' : 'Open report →'}</div>
+// The ledger (Robin, 2026-11-04): a cadence's own page. This period in a forest
+// panel, then how the periods have felt (one gold bar each, opacity carries the
+// score, same rule as the report's rose), then every review as keyline rows
+// grouped by month or year. Tapping a bar only swaps #rvl-arc in place.
+const RVL_WORDS = { weekly: ['week', 'weeks'], monthly: ['month', 'months'], quarterly: ['quarter', 'quarters'], yearly: ['year', 'years'] };
+const rvlSel = {};
+const rvlDate = (iso, opts) => iso ? new Date(String(iso).slice(0, 10) + 'T00:00').toLocaleDateString(dloc(), opts) : '';
+const rvlDayMon = (iso) => rvlDate(iso, { day: 'numeric', month: 'short' });
+function rvlRange(k, from, to) {
+  if (k !== 'weekly' || !from || !to) return periodTitle(k, from, to).main;
+  const sameMonth = from.slice(0, 7) === to.slice(0, 7);
+  return `${sameMonth ? rvlDate(from, { day: 'numeric' }) : rvlDayMon(from)} - ${rvlDayMon(to)}`;
+}
+function rvlData(k) {
+  const all = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === k);
+  const cur = activeReviewWindow(k, localISO(new Date()));
+  const curRev = all.find((r) => (r.props || {}).to === cur.to);
+  const rows = all.filter((r) => r !== curRev).map((r) => {
+    const p = r.props || {};
+    const score = Math.min(wheelAvg(p.wheel), 5);
+    return {
+      id: r.id, from: p.from || '', to: p.to || '', sort: p.from || String(r.created_at || ''), prog: p.status === 'inprogress', score,
+      band: score ? (AREA_SENTIMENT[Math.max(1, Math.round(score))] || '') : 'Not scored',
+      done: p.tasksDone, first: p.openP1, doneAt: p.doneAt, range: rvlRange(k, p.from, p.to)
+    };
+  }).sort((a, b) => a.sort.localeCompare(b.sort));
+  return { cur, curRev, rows };
+}
+function rvlLead(k) {
+  const { rows } = rvlData(k);
+  const filed = rows.filter((w) => !w.prog);
+  if (!filed.length) return 'A quiet moment to look back and take stock.';
+  const WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+  const word = RVL_WORDS[k] || RVL_WORDS.weekly;
+  const first = `${WORDS[filed.length] || filed.length} ${filed.length === 1 ? word[0] : word[1]} looked back on.`;
+  const scored = filed.filter((w) => w.score);
+  const last = scored[scored.length - 1];
+  if (scored.length < 3 || last !== filed[filed.length - 1]) return first;
+  let j = scored.length - 2;
+  while (j >= 0 && scored[j].score < last.score) j -= 1;
+  if (j < 0) return `${first} The latest was your strongest yet.`;
+  if (scored.length - 1 - j < 2) return first;
+  const since = k === 'weekly' && scored[j].from ? `the week of ${rvlDayMon(scored[j].from)}` : scored[j].range;
+  return `${first} The latest was your strongest since ${since}.`;
+}
+function rvlFoldH(key, tag, title, meta) {
+  const open = rvSecOpen(key);
+  return `<${tag} class="rvl-h"><button type="button" class="rvl-fold" data-rvsec="${esc(key)}" aria-expanded="${open}"><span class="rvl-fold-t rvl-fold-${tag}">${esc(title)}</span>${meta ? `<span class="rvl-fold-meta">${meta}</span>` : ''}<span class="rvl-sign" aria-hidden="true">${open ? '−' : '+'}</span></button></${tag}>`;
+}
+function rvlHeroHtml(k) {
+  const { cur, curRev } = rvlData(k);
+  const low = ((REVIEWS[k] || {}).label || 'Review').toLowerCase();
+  const word = (RVL_WORDS[k] || RVL_WORDS.weekly)[0];
+  const todayI = localISO(new Date());
+  const done = curRev && (curRev.props || {}).status === 'done';
+  const prog = curRev && (curRev.props || {}).status === 'inprogress';
+  const diff = Math.round((new Date(cur.to + 'T00:00') - new Date(todayI + 'T00:00')) / 86400000);
+  const dueDay = k === 'weekly' ? rvlDate(cur.to, { weekday: 'long' }) : rvlDate(cur.to, { weekday: 'long', day: 'numeric', month: 'short' });
+  let say;
+  if (done) { const next = reviewCadNext(k, localISO(new Date(Date.parse(cur.to + 'T00:00') + 86400000))); say = `Filed.${next ? ` The next ${low} review lands ${rvlDate(next, { weekday: 'long', day: 'numeric', month: 'short' })}.` : ''}`; }
+  else {
+    const when = diff > 0 ? `Due ${dueDay}, in ${diff} day${diff === 1 ? '' : 's'}.` : diff === 0 ? 'Due today.' : `${-diff} day${diff === -1 ? '' : 's'} past.`;
+    say = `${when} ${prog ? 'Pick up where you left off.' : 'A few minutes to see where you stand.'}`;
+  }
+  const attr = curRev ? `data-open-review="${curRev.id}"` : `data-start-review="${k}"`;
+  const cta = done ? 'Look back over it' : prog ? 'Pick it up' : 'Begin this review';
+  let strip = '';
+  if (k === 'weekly') {
+    const cells = [];
+    for (let d = new Date(cur.from + 'T00:00'); localISO(d) <= cur.to && cells.length < 7; d.setDate(d.getDate() + 1)) {
+      const iso = localISO(d);
+      const isDue = iso === cur.to; const isToday = iso === todayI;
+      const flag = isDue ? (done ? 'Filed' : 'Due') : isToday ? 'Today' : '';
+      cells.push(`<div class="rvl-day${isDue ? ' is-due' : ''}${isToday ? ' is-today' : ''}"><span>${esc(rvlDate(iso, { weekday: 'short' }))}</span><span class="rvl-day-n">${esc(rvlDate(iso, { day: 'numeric' }))}</span><span class="rvl-day-f">${flag}</span></div>`);
+    }
+    strip = `<div class="rvl-week" role="img" aria-label="${esc(`${rvlRange(k, cur.from, cur.to)}. ${say}`)}">${cells.join('')}</div>`;
+  }
+  return `<section class="rvl-hero${strip ? '' : ' rvl-hero-solo'}" aria-label="This ${word}">
+    <div class="rvl-hero-main">
+      <div class="rvl-hero-l">This ${word}</div>
+      <div class="rvl-hero-d">${esc(rvlRange(k, cur.from, cur.to))}</div>
+      <p class="rvl-hero-s">${esc(say)}</p>
+      <button type="button" class="rvl-cta" ${attr}>${cta} →</button>
+    </div>${strip}
+  </section>`;
+}
+function rvlBarLabels(k, shown) {
+  let lastGroup = '';
+  return shown.map((w) => {
+    if (k === 'weekly') { const g = w.from.slice(0, 7); const out = [rvlDate(w.from, { day: 'numeric' }), g !== lastGroup ? rvlDate(w.from, { month: 'short' }) : '']; lastGroup = g; return out; }
+    if (k === 'monthly') { const g = w.from.slice(0, 4); const out = [rvlDate(w.from, { month: 'short' }), g !== lastGroup ? g : '']; lastGroup = g; return out; }
+    return [w.range, ''];
+  });
+}
+function rvlArcHtml(k) {
+  const { rows } = rvlData(k);
+  const shown = rows.slice(-12);
+  if (shown.filter((w) => w.score).length < 2) return '';
+  const word = RVL_WORDS[k] || RVL_WORDS.weekly;
+  const key = `rvl-arc-${k}`;
+  const head = rvlFoldH(key, 'h2', `How the ${word[1]} have felt`);
+  if (!rvSecOpen(key)) return `<section class="rvl-sec" id="rvl-arc">${head}</section>`;
+  const sel = shown.find((w) => String(w.id) === String(rvlSel[k])) || shown.slice().reverse().find((w) => w.score);
+  const labels = rvlBarLabels(k, shown);
+  const bars = shown.map((w, i) => {
+    const on = w === sel;
+    const o = on ? 1 : (0.3 + (Math.max(w.score, 1) - 1) / 4 * 0.4).toFixed(2);
+    return `<button type="button" class="rvl-bar${on ? ' is-on' : ''}" data-rvl-bar="${esc(k)}|${w.id}" aria-pressed="${on}" aria-label="${esc(`${w.range}: ${w.score ? `${w.score} out of 5, ${w.band}` : 'not scored'}`)}"><span class="rvl-bar-plot"><span class="rvl-bar-col" style="height:${w.score / 5 * 100}%"><span class="rvl-bar-fill" style="opacity:${o}"></span>${on && w.score ? `<span class="rvl-bar-v">${w.score}</span>` : ''}</span></span><span class="rvl-bar-l">${esc(labels[i][0])}<br>${esc(labels[i][1])}</span></button>`;
+  }).join('');
+  const prev = rows[rows.indexOf(sel) - 1];
+  const scoreNote = !sel.score ? 'Not scored' : !prev || !prev.score ? 'out of 5' : sel.score > prev.score ? `out of 5, up from ${prev.score}` : sel.score < prev.score ? `out of 5, down from ${prev.score}` : 'out of 5, level with the one before';
+  const stat = (n, lbl, before) => n == null ? '' : `<div><div class="rvl-big rvl-big-m">${n}</div><div>${lbl}</div>${before != null ? `<div class="rvl-mute">${before} the ${word[0]} before</div>` : ''}</div>`;
+  const aside = `<aside class="rvl-read" aria-live="polite">
+    <div><div class="rvl-read-d">${esc(sel.range)}</div><div class="rvl-mute">${esc(sel.band)}</div></div>
+    ${sel.score ? `<div class="rvl-read-s"><span class="rvl-big">${sel.score}</span><span class="rvl-mute">${esc(scoreNote)}</span></div>` : ''}
+    <div class="rvl-read-n">${stat(sel.done, 'done', prev && prev.done)}${stat(sel.first, 'First', prev && prev.first)}</div>
+    <button type="button" class="rvl-link" data-open-review="${sel.id}">${sel.prog ? 'Continue' : 'Open report'} →</button>
+  </aside>`;
+  return `<section class="rvl-sec" id="rvl-arc" data-rvl-sel="${sel.id}">${head}<div class="rvl-arc"><div class="rvl-chart"><div class="rvl-plot">
+    <div class="rvl-grid" aria-hidden="true"><i style="top:0"><b>5</b></i><i style="top:40%"><b>3</b></i><i style="top:80%"><b>1</b></i><i class="rvl-base" style="top:100%"></i></div>
+    <div class="rvl-bars" style="grid-template-columns:repeat(${shown.length},minmax(46px,96px))">${bars}</div>
+  </div></div>${aside}</div></section>`;
+}
+function rvlRowHtml(k, w, selId) {
+  const num = (n, lbl) => `<span class="rvl-n">${n == null ? '' : `<b>${n}</b> ${lbl}`}</span>`;
+  const filed = w.prog ? 'In progress' : `Filed${w.doneAt ? ` ${esc(rvlDayMon(w.doneAt))}` : ''}`;
+  return `<button type="button" class="rvl-row${String(w.id) === String(selId) ? ' is-sel' : ''}" data-open-review="${w.id}" data-rvl-row="${w.id}">
+    <span class="rvl-row-d">${esc(w.range)}</span>
+    <span class="rvl-row-s"><span class="rvl-big rvl-big-m">${w.score || ''}</span><span class="rvl-row-b"><span>${esc(w.band)}</span><span class="rvl-meter" aria-hidden="true"><span style="width:${w.score / 5 * 100}%"></span></span></span></span>
+    ${num(w.done, 'done')}${num(w.first, 'First')}
+    <span class="rvl-mute rvl-row-f">${filed}</span><span class="rvl-go" aria-hidden="true">→</span>
   </button>`;
 }
+function rvlListHtml(k) {
+  const { rows } = rvlData(k);
+  const low = ((REVIEWS[k] || {}).label || 'Review').toLowerCase();
+  if (!rows.length) return `<div class="home-empty" style="padding:18px 0">No previous ${esc(low)} reviews yet.</div>`;
+  const word = RVL_WORDS[k] || RVL_WORDS.weekly;
+  const thisYear = String(new Date().getFullYear());
+  const groups = [];
+  rows.slice().reverse().forEach((w) => {
+    const g = k === 'weekly' ? w.from.slice(0, 7) : w.from.slice(0, 4);
+    let last = groups[groups.length - 1];
+    if (!last || last.g !== g) { last = { g, weeks: [] }; groups.push(last); }
+    last.weeks.push(w);
+  });
+  const shown = rows.slice(-12);
+  const selId = (shown.find((w) => String(w.id) === String(rvlSel[k])) || shown.slice().reverse().find((w) => w.score) || {}).id;
+  const html = groups.map((g) => {
+    const name = k !== 'weekly' ? (g.g || 'Earlier') : g.g ? rvlDate(`${g.g}-01`, g.g.slice(0, 4) === thisYear ? { month: 'long' } : { month: 'long', year: 'numeric' }) : 'Earlier';
+    const scored = g.weeks.filter((w) => w.score);
+    const avg = scored.length ? (scored.reduce((a, w) => a + w.score, 0) / scored.length).toFixed(1) : '';
+    const meta = `${g.weeks.length} ${g.weeks.length === 1 ? word[0] : word[1]}${avg ? ` · averaging <span class="rvl-avg">${avg}</span>` : ''}`;
+    const key = `rvl-${k}-${g.g}`;
+    return `<div class="rvl-group">${rvlFoldH(key, 'h3', name, meta)}${rvSecOpen(key) ? `<div class="rvl-rows">${g.weeks.map((w) => rvlRowHtml(k, w, selId)).join('')}</div>` : ''}</div>`;
+  }).join('');
+  return `<section class="rvl-sec"><h2 class="rvl-h rvl-fold-t rvl-fold-h2">Every review</h2>${html}</section>`;
+}
+function rvlPickBar(k, id) {
+  rvlSel[k] = id;
+  const el = $('#rvl-arc'); if (el) el.outerHTML = rvlArcHtml(k);
+  document.querySelectorAll('.rvl-row').forEach((r) => r.classList.toggle('is-sel', r.dataset.rvlRow === String(id)));
+  const bar = document.querySelector(`[data-rvl-bar="${k}|${id}"]`); if (bar) bar.focus({ preventScroll: true });
+}
 function reviewsTypeBody(k) {
-  const todayI = localISO(new Date());
-  const label = (REVIEWS[k] || {}).label || 'Review';
-  const low = label.toLowerCase();
-  const sd = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' }) : '';
-  const fullD = (iso) => iso ? new Date(iso + 'T00:00').toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'short' }) : '';
-  const all = (state.reviews || []).filter((r) => ((r.props || {}).rtype || 'weekly') === k).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  const cur = activeReviewWindow(k, todayI);
-  const curRev = all.find((r) => (r.props || {}).to === cur.to);
-  const curDone = curRev && (curRev.props || {}).status === 'done';
-  const curProg = curRev && (curRev.props || {}).status === 'inprogress';
-  const dueDate = new Date(cur.to + 'T00:00');
-  const diff = Math.round((dueDate - new Date(todayI + 'T00:00')) / 86400000);
-  let dueLine, dueClass = '';
-  if (curDone) {
-    const nextDue = reviewCadNext(k, localISO(new Date(Date.parse(cur.to + 'T00:00') + 86400000)));
-    dueLine = nextDue ? `Next ${low} review lands <b>${esc(fullD(nextDue))}</b>` : 'Up to date';
-    dueClass = 'is-done';
-  } else if (diff > 0) dueLine = `Due <b>${esc(fullD(cur.to))}</b> · in ${diff} day${diff === 1 ? '' : 's'}`;
-  else if (diff === 0) { dueLine = '<b>Due today</b>'; dueClass = 'is-due'; }
-  else { dueLine = `<b>Overdue</b> · ${-diff} day${diff === -1 ? '' : 's'}`; dueClass = 'is-over'; }
-  const pt = periodTitle(k, cur.from, cur.to);
-  const curPeriodLbl = (k === 'weekly') ? `${sd(cur.from)} – ${sd(cur.to)}` : pt.main;
-  const ctaAttr = curRev ? `data-open-review="${curRev.id}"` : `data-start-review="${k}"`;
-  const cta = `<button class="rv-start-weekly ${curDone ? 'rv-hero-done' : ''}" ${ctaAttr}>${curDone ? '<span class="rvw-ic">✓</span>' : ''}<span class="rvw-body"><b>${esc(label)} · ${esc(curPeriodLbl)}</b><small>${curDone ? 'Filed - tap to look back over it.' : curProg ? 'Started - pick up where you left off.' : 'A few minutes to see where you stand.'}</small></span><span class="rvw-go">→</span></button>`;
-  const past = all.filter((r) => r !== curRev);
-  return `<div class="rv-type-due ${dueClass}">${dueLine}</div>
-    ${cta}
-    ${past.length ? `<div class="rv-sec-h2">Previous ${low} reviews · ${past.length}</div><div class="rv-cards rv-cards-tall">${past.map(reviewArchiveCardHtml).join('')}</div>` : '<div class="home-empty" style="padding:18px 0">No previous ' + esc(low) + ' reviews yet.</div>'}`;
+  return `${rvlHeroHtml(k)}${rvlArcHtml(k)}${rvlListHtml(k)}`;
 }
 // Focus-list order (per device) and helpers, so you can drag the cards around.
 function focusOrderIds() { try { const o = JSON.parse(localStorage.getItem('life.home.focusOrder')); return Array.isArray(o) ? o : []; } catch { return []; } }
@@ -27525,6 +27660,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-rv-summary]')) { const R = state.review_open; if (R) { R.summaryOpen = !R.summaryOpen; renderReviewCard(); } return; }
   if (t.closest('[data-rv-analyse]')) { reviewDoneSummary(false); return; }
   if (t.closest('[data-rv-summary-regen]')) { reviewDoneSummary(true); return; }
+  { const rb = t.closest('[data-rvl-bar]'); if (rb) { const [rk, rid] = rb.dataset.rvlBar.split('|'); rvlPickBar(rk, rid); return; } }
   { const rs = t.closest('[data-rvsec]'); if (rs) { rvSecToggle(rs.dataset.rvsec); return; } }
   { const it = t.closest('[data-rv-inputtab]'); if (it) { flushProse(); flushReviewAnswers(); if (state.review_open) { state.review_open.inputTab = it.dataset.rvInputtab; renderReviewCard(); } return; } }
   if (t.closest('[data-rv-editdates]')) { if (state.review_open) { state.review_open.editDates = !state.review_open.editDates; renderReviewCard(); } return; }
