@@ -12929,7 +12929,7 @@ function renderAreaV4() {
   const strip = stripB.length ? `<div class="av3-strip">${stripB.join('')}</div>` : '';
 
   const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
-  const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
+  const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu">${area.sharedBy ? '' : '<button class="av3-mm" data-area-invite>Share this Space</button>'}<button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
 
   $('#pane').innerHTML = `
     <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
@@ -13044,7 +13044,7 @@ function renderAreaV3() {
       <div class="av3-crumb" data-open-areas role="button" tabindex="0"><span class="av3-crumb-a">←</span> Spaces <span class="av3-crumb-dot">·</span> <span class="av3-crumb-nm">${esc(area.title || 'Space')}</span></div>
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(areaNumeral(area.id))}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
-        <div class="av3-head-act">${addMenu}<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu"><button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span></div>
+        <div class="av3-head-act">${addMenu}<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu">${area.sharedBy ? '' : '<button class="av3-mm" data-area-invite>Share this Space</button>'}<button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span></div>
       </div>
       ${strip}
       ${tasksSec}
@@ -20181,7 +20181,7 @@ function contactAddressViewBlocks(addrs) {
     const maps = `https://www.google.com/maps/search/?api=1&query=${q}`;
     const transit = `https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=transit`;
     return `<div class="cc-adr-view">${a.label ? `<div class="cc-adr-view-label">${esc(a.label)}</div>` : ''}<div class="cc-adr-view-lines">${addrViewLines(a).map((l) => `<span>${esc(l)}</span>`).join('')}</div>
-      <div class="cc-adr-actions"><a class="cc-adr-link" href="${maps}" target="_blank" rel="noopener noreferrer"><span>🗺</span> Google Maps</a><a class="cc-adr-link" href="${transit}" target="_blank" rel="noopener noreferrer" title="Directions by public transport from where you are"><span>🚆</span> Get there</a></div></div>`;
+      <div class="cc-adr-actions"><a class="cc-adr-link" href="${maps}" target="_blank" rel="noopener noreferrer">Google Maps</a><a class="cc-adr-link" href="${transit}" target="_blank" rel="noopener noreferrer" title="Directions by public transport from where you are">Get there</a></div></div>`;
   }).join('')}</div>`;
 }
 function contactAddressFields(p) {
@@ -20633,8 +20633,8 @@ function renderContactPage() {
     return `<section class="cv-sec"><div class="cv-sec-h" data-cv-fold="${key}" role="button" tabindex="0"><span class="cv-sec-t">${esc(title)}</span>${!open && hint ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${bodyHtml()}</div>` : ''}</section>`;
   };
   $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts'), attr: 'data-open-contacts' }, { label: c.title || 'Contact' }])}
     <div class="kwrap cvx-cpage">
-      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts'), attr: 'data-open-contacts' }, { label: c.title || 'Contact' }])}
       <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Contact</span><button class="cv-star${p.starred ? ' on' : ''}" data-contact-star="${c.id}" title="${p.starred ? 'Starred' : 'Star'}"><span class="cv-star-sq"></span>${p.starred ? 'Starred' : 'Star'}</button></div>
       <h1 class="cv-name"><textarea class="cv-name-in" id="contactcard-name" rows="1" placeholder="Name">${esc(c.title || '')}</textarea></h1>
       ${inLine ? `<div class="cvx-inline">${esc(inLine)}</div>` : ''}
