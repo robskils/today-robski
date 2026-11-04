@@ -5218,7 +5218,7 @@ function knavGroups() {
     { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
       ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
     { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Discover', 'data-open-discover', ''], ['Flow', 'data-open-today', ''],
+      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Discover', 'data-open-discover', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
       ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
     { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
@@ -8093,7 +8093,7 @@ function besidePickerItems(q) {
 }
 function besidePickResultsHtml() {
   const s = state.split; const q = ((s && s.q) || '').trim().toLowerCase();
-  const pages = splitToolList().filter((x) => !q || x.label.toLowerCase().includes(q)).map((x) => `<button class="beside-pick" data-beside-pick-tool="${esc(x.label)}"><span class="beside-pick-t">${esc(x.label)}</span><span class="beside-pick-k">${esc(x.group)}</span></button>`).join('');
+  const pages = splitToolList().filter((x) => !q || x.label.toLowerCase().includes(q)).map((x) => `<button class="beside-pick" data-beside-pick-tool="${esc(x.key)}"><span class="beside-pick-t">${esc(x.label)}</span><span class="beside-pick-k">${esc(x.group)}</span></button>`).join('');
   const items = besidePickerItems(q).map((it) => `<button class="beside-pick" data-beside-pick-item="${it.kind}:${esc(it.id)}"><span class="beside-pick-t">${esc(it.title)}</span><span class="beside-pick-k">${esc(it.sub)}</span></button>`).join('');
   if (!pages && !items) return `<div class="beside-pick-empty">${q ? `Nothing matches &ldquo;${esc(s.q)}&rdquo;.` : 'Start typing to find a note, task or Space.'}</div>`;
   return `${pages ? `<div class="beside-pick-grp">Tools</div>${pages}` : ''}${items ? `<div class="beside-pick-grp">${q ? 'Matches' : 'Recent'}</div>${items}` : ''}`;
@@ -8101,13 +8101,14 @@ function besidePickResultsHtml() {
 // Every tool in the menu, for Split. Spaces come up in the search below instead.
 function splitToolList() {
   const out = [];
-  knavGroups().filter((g) => g.id !== 'spaces').forEach((g) => (g.tools || []).forEach(([label, attrs]) => out.push({ label, attrs, group: g.label })));
+  knavGroups().filter((g) => g.id !== 'spaces').forEach((g) => (g.tools || []).forEach(([label, attrs]) => out.push({ label, attrs, group: g.label, key: `${g.label}/${label}` })));
   return out;
 }
 // A tool's main page in the second pane: the app itself in a same-origin frame, without
 // its nav, opened to that tool. Beside Mail, Notes and Tasks stay the list you can
 // drag emails onto. (Robin, 2026-11-04.)
-function openSplitTool(label) {
+function openSplitTool(toolKey) {
+  const label = toolKey.slice(toolKey.indexOf('/') + 1);
   const key = { Notes: 'notes', Tasks: 'tasks' }[label];
   if (key && state.view && state.view.type === 'mail') { openBesideTool(key); return; }
   const ratio = (state.split && state.split.ratio) || 0.5;
@@ -8115,7 +8116,7 @@ function openSplitTool(label) {
   document.body.classList.add('split');
   const { main, p2 } = splitEls(); if (!p2) return;
   if (main) main.style.setProperty('--split-ratio', (ratio * 100) + '%');
-  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">${esc(label)}</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div><iframe class="pane2-frame" title="${esc(label)}" src="/app?splittool=${encodeURIComponent(label)}"></iframe>`;
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">${esc(label)}</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div><iframe class="pane2-frame" title="${esc(label)}" src="/app?splittool=${encodeURIComponent(toolKey)}"></iframe>`;
 }
 function besideRenderPickResults() { const el = document.getElementById('beside-pickres'); if (el) el.innerHTML = besidePickResultsHtml(); }
 function renderBesidePicker() {
@@ -32512,7 +32513,7 @@ function showRequired2fa() {
     if (++n > 150) { clearInterval(t); return; }
     if (!document.querySelector('.knav-inner') || !state.view) return;
     clearInterval(t);
-    const tool = splitToolList().find((x) => x.label === SPLIT_FRAME_TOOL); if (!tool) return;
+    const tool = splitToolList().find((x) => x.key === SPLIT_FRAME_TOOL); if (!tool) return;
     const w = document.createElement('div'); w.hidden = true; w.innerHTML = `<button ${tool.attrs}></button>`;
     document.body.appendChild(w); w.firstChild.click(); w.remove();
   }, 100);
