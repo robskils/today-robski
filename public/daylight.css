@@ -246,6 +246,8 @@
 /* Phones: Set it down is frosted glass over the page, not a solid panel. */
 @media (max-width:767px) {
   :root[data-light] .cap-drawer { background:var(--glass-card); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
+  /* It fades in where it stands: a phone jumps the page if it focuses a box still sliding up. */
+  .cap-drawer { animation:capfade .2s ease-out; }
 }
 
 /* Practices: names in the serif, in white; the count sits beside the name. */
@@ -406,6 +408,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 :root[data-light] .cc-adr-link { background:transparent; border-color:var(--glass-edge); color:var(--k-ink); }
 
 .cv-name-in { font-size:clamp(40px,4.4vw,56px); line-height:1.05; }
+
+@keyframes capfade { from { opacity:0; } to { opacity:1; } }
 
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
