@@ -5467,7 +5467,7 @@ function renderNav() {
   // open the keyboard with Find focused the moment it rises.
   const overlayOpen = !!(state.knav && (state.knav.contents || state.knav.find));
   document.body.classList.toggle('knav-overlay-open', overlayOpen);
-  if (state.knav && state.knav.find && !state.__knavFindOpen && window.matchMedia('(max-width:820px)').matches) { setTimeout(() => { const i = document.querySelector('.knav-find-q'); if (i) i.focus(); }, 60); }
+  if (state.knav && state.knav.find && !state.__knavFindOpen) { const i0 = document.querySelector('.knav-find-q'); if (i0) i0.focus(); setTimeout(() => { const i = document.querySelector('.knav-find-q'); if (i) i.focus(); }, 60); }
   state.__knavFindOpen = !!(state.knav && state.knav.find);
   renderTabbar(v);
   syncActiveTab(); renderTabs(); recordHistory(); installBackTrap();
@@ -6588,7 +6588,7 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
+      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">▶</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
@@ -9168,10 +9168,14 @@ function homeReadCardHtml(r) {
   }
   return `<div class="home-rd-card rc-plain" ${open}><span class="rc-in"></span><span class="rc-init">${esc((r.kind || '?').charAt(0))}</span></div>`;
 }
+function todaysCardsHtml(readings) {
+  return `<div class="rf-today"><div class="rf-card-k">Today’s cards</div><div class="rf-today-row">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`;
+}
 function homeReadingsSectionHtml(inTab) {
   if (!reflectOn()) return '';
   const open = inTab ? true : kOpen('kreading');
   const items = homeReadingItems();
+  if (inTab && items.length) return `<div class="home-rd">${todaysCardsHtml(items)}<div class="home-rd-all" data-open-wellbeing role="button" tabindex="0">All reflections →</div></div>`;
   const rows = items.length ? items.map((r) => {
     const exp = state.home && state.home.readOpen === r.key;
     return `<div class="home-rd-row" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">${homeReadCardHtml(r)}<div class="home-rd-b"><div class="home-rd-kind">${esc(r.kind)}</div><div class="home-rd-t">${esc(r.title)}</div>${r.line ? `<div class="home-rd-line">${esc(r.line)}</div>` : ''}<div class="home-rd-act" data-home-read-open="${esc(r.key)}" role="button" tabindex="0">Open →</div></div></div>`;
@@ -10874,9 +10878,7 @@ function renderWellbeing() {
   // make no card) - sit at the very top, however many there are. Then the eight
   // tools, then Lately. Insights (a read-back, not one of the eight) is a quiet row.
   const readings = (typeof homeReadingItems === 'function') ? homeReadingItems() : [];
-  const todayCards = readings.length
-    ? `<div class="rf-today"><div class="rf-card-k">Today’s cards</div><div class="rf-today-row">${readings.map((r) => `<div class="rf-rdcard" data-home-read-open="${esc(r.key)}" role="button" tabindex="0" title="Open this reading">${homeReadCardHtml(r)}<span class="rf-rdcard-tx"><span class="rf-rdcard-kind">${esc(r.kind)}</span><span class="rf-rdcard-t">${esc(r.title)}</span>${r.line ? `<span class="rf-rdcard-l">${esc(r.line)}</span>` : ''}</span></div>`).join('')}</div></div>`
-    : '';
+  const todayCards = readings.length ? todaysCardsHtml(readings) : '';
   const toolsGrid = reflectToolsGridHtml({ lastTs, rel });
   const insightsRow = modOn('insights') ? `<button class="rf-insights-row" data-open-insights><span class="rf-insights-l">Insights</span><span class="rf-insights-h">Patterns across your entries</span><span class="rf-insights-x">→</span></button>` : '';
   $('#pane').innerHTML = `
@@ -15708,7 +15710,7 @@ function renderToday() {
   }
   const dueBanner = isToday ? reviewDueBannerHtml() : '';
   $('#pane').innerHTML = `
-    ${pageCrumb('Today')}
+    ${pageCrumb(t('nav.planner'))}
     <div class="pane-head t2-head"><h1>${h1}</h1>${nav}</div>
     ${dueBanner}
     <div id="qt-wrap"></div>
@@ -15932,7 +15934,7 @@ function t2PracticesHtml() {
     const len = (a.timed && a.duration) ? `<span class="t2-psched">${a.duration} min</span>` : '';
     return `<div class="t2-prow ${a.timed ? 't2-draggable' : ''} ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" ${a.timed ? `data-t2-drag="prac" data-t2-drag-id="${a.id}" data-t2-drag-label="${esc(a.title)}" title="Drag onto your day, or click to open"` : 'title="Click to open"'} style="--h:${g.hue}">
       <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">🎥</span>' : ''}</span>${len}</span>
+      <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">▶</span>' : ''}</span>${len}</span>
       ${a.priority ? `<span class="p-tag p-${a.priority}">${a.priority}</span>` : ''}
       ${streak ? `<span class="t2-streak">${streak}${a.avoid ? ' clean' : ' days'}</span>` : ''}
     </div>`;
