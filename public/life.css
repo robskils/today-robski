@@ -9834,6 +9834,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .mail-foldlink { background:none; border:0; font-family:var(--msans); font-size:14px; color:var(--ink-2); cursor:pointer; white-space:nowrap; }
 .mail-foldlink:hover { color:var(--k-goldt); }
 .mail-foldlink.on { color:var(--k-goldt); font-weight:500; }
+/* On a phone the pile row wraps; without this the folder links (Drafts/Sent/Spam/
+   Bin) keep margin-left:auto and float to the right edge, Bin half-clipped. Let
+   them sit left with the piles instead. (Robin, 2026-11-04.) */
+@media (max-width:820px){ .mail-folds { margin-left:0; gap:18px; padding-bottom:12px; } }
 
 .mail-cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,330px); gap:clamp(36px,5vw,76px); padding:0 0 40px; align-items:start; }
 @media (max-width:900px){ .mail-cols { grid-template-columns:minmax(0,1fr); } .mail-side { display:none; } }
@@ -9871,7 +9875,12 @@ body.night .mail-ar-card, :root[data-theme='dark'] .mail-ar-card { background:ok
    column + 14px gap = 28px in), not indented left of it. (Robin.) */
 .mail-ar-triage { position:sticky; top:var(--tabstrip-h,68px); z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:10px 0 12px 48px; background:#fff; border-top:1px solid oklch(0.9 0.012 80); border-bottom:1px solid oklch(0.9 0.012 80); }
 body.night .mail-ar-triage, :root[data-theme='dark'] .mail-ar-triage { background:oklch(0.96 0.006 85); }
-.mail-ar-triage-l, .mail-ar-row-l { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:oklch(0.46 0.02 70); margin-right:4px; align-self:center; white-space:nowrap; }
+/* On a phone the Action/Tools rows drop their 48px indent; Move to must too, or
+   its buttons sit further right than the other rows'. (Robin, 2026-11-04.) */
+@media (max-width:620px){ .mail-ar-triage { padding-left:0; } }
+/* A fixed-width label column (Move to / Action / Tools) so the FIRST button in
+   each of the three rows lines up vertically, whatever the label. (Robin, 2026-11-04.) */
+.mail-ar-triage-l, .mail-ar-row-l { flex:0 0 72px; width:72px; box-sizing:border-box; font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:oklch(0.46 0.02 70); margin-right:4px; align-self:center; white-space:nowrap; }
 .mail-trg { background:transparent; border:1px solid oklch(0.85 0.014 80); padding:6px 13px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; }
 .mail-trg:hover { border-color:var(--k-gold); color:var(--k-goldt); }
 /* "Make a task / note / event" now sits on the white card directly under the
@@ -9928,8 +9937,10 @@ body.night .mail-ar-card .mail-text.mail-text-plain, :root[data-theme='dark'] .m
 .mail-ar-replytop { padding:11px 0 12px 48px; background:#fff; border-bottom:1px solid oklch(0.9 0.012 80); }
 body.night .mail-ar-replytop, :root[data-theme='dark'] .mail-ar-replytop { background:oklch(0.96 0.006 85); }
 .mail-ar-replytop .mail-replyacts { margin-left:0; gap:8px 10px; flex-wrap:wrap; align-items:center; }
-.mail-reply.mail-reply-primary { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); font-weight:600; }
-.mail-reply.mail-reply-primary:hover { background:var(--k-goldt); border-color:var(--k-goldt); color:var(--k-ongold); }
+/* Reply is not singled out in gold any more - the Action row is one colour.
+   (Robin, 2026-11-04.) */
+.mail-reply.mail-reply-primary { background:transparent; border-color:oklch(0.85 0.014 80); color:oklch(0.22 0.012 60); font-weight:500; }
+.mail-reply.mail-reply-primary:hover { background:transparent; border-color:var(--k-gold); color:var(--k-goldt); }
 @media (max-width:620px){ .mail-ar-replytop { padding-left:0; } }
 .mail-reply { background:transparent; border:1px solid oklch(0.85 0.014 80); border-radius:0; padding:6px 14px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; white-space:nowrap; }
 .mail-reply-fwd { color:var(--ink-2); }
@@ -10358,7 +10369,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-c-head { display:flex; align-items:center; gap:12px; }
 .knav-c-hint { margin-left:auto; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
 /* Menu gets a Close in the top-right, like Search. (Robin, 2026-11-04.) */
-.knav-c-x { margin-left:auto; flex:none; background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:300; font-size:21px; line-height:1; color:var(--ink-2); padding:2px 4px; }
+.knav-c-x { margin-left:auto; flex:none; background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; line-height:1; color:var(--ink-2); white-space:nowrap; padding:2px 4px; }
 .knav-c-x:hover { color:var(--k-goldt); }
 .knav-c-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 64px; margin-top:20px; }
 .knav-c-group { padding:12px 0; border-top:1px solid var(--ink); }

@@ -5662,7 +5662,7 @@ function navGroupsHtml(v) {
       <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
     </div>`).join('');
     contents = `<div class="knav-contents">
-      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · type to search</span><button class="knav-c-x" data-knav-contents aria-label="Close" title="Close">✕</button></div>
+      <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · type to search</span><button class="knav-c-x" data-knav-contents aria-label="Close" title="Close">Close</button></div>
       <button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
