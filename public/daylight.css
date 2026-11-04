@@ -141,6 +141,10 @@
 .knav-help-btn:hover, .knav-help-m:hover { color:var(--k-goldt); }
 .knav-help-m { display:none; font-size:16px; }
 
+/* ── Less empty space under every page: just enough to clear the capture bar ── */
+.main { padding-bottom:72px; }
+#pane > .kwrap { padding-bottom:0; }
+
 /* ── iPad: the full top menu, not the phone bar. Only phones get the bottom bar. ── */
 @media (min-width:768px) and (max-width:1100px) {
   .knav-bar { height:68px; }
@@ -153,7 +157,7 @@
   .knav-sheet { display:block; }
   .knav-find, .knav-contents { bottom:0; }
   .cap-bar { display:flex !important; bottom:22px; width:auto; }
-  .main { padding-bottom:64px; }
+  .main { padding-bottom:72px; }
 }
 @media (min-width:768px) and (max-width:900px) {
   .knav-np-btn { display:none; }   /* still in Menu */
