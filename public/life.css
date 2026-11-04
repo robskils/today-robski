@@ -12361,7 +12361,9 @@ body[data-view="settings"].sx-six .pane { max-width:none; padding:0; margin-top:
 .knav-mail-btn:hover { color:var(--k-ink); }
 .knav-mail-btn.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
 .knav-mail-n { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; color:var(--k-goldt); margin-left:5px; }
-#mail-arrival-wrap { position:fixed; top:var(--tabstrip-h,68px); left:0; right:0; z-index:40; display:flex; justify-content:center; pointer-events:none; }
+/* In normal flow at the top of .main (Robin, 2026-11-04): the arrival bar pushes the
+   page down instead of floating over it, and scrolls away under the sticky nav. */
+#mail-arrival-wrap { display:flex; justify-content:center; pointer-events:auto; }
 .mail-arrival { pointer-events:auto; display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; max-width:1600px; width:100%; box-sizing:border-box; padding:12px clamp(24px,3.5vw,64px); background:var(--k-bg); border-bottom:1px solid var(--k-line); animation:kfade .6s cubic-bezier(.2,.7,.2,1); }
 .mail-arrival-dot { width:6px; height:6px; border-radius:50%; background:var(--k-gold); align-self:center; }
 .mail-arrival-t { flex:1; min-width:0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:21px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

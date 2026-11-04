@@ -17077,7 +17077,12 @@ function renderMailArrival() {
   const onHome = state.view && state.view.type === 'home';
   const html = (modOn('mail') && !state.mailSheet && !onHome) ? mailArrivalLine() : '';
   if (!html) { if (el) el.remove(); return; }
-  if (!el) { el = document.createElement('div'); el.id = 'mail-arrival-wrap'; document.body.appendChild(el); }
+  // Mount it at the TOP of the content column, in normal flow, so it PUSHES the page
+  // down rather than floating over the breadcrumb - and it scrolls away under the
+  // sticky nav. Dismissing it lets the whole page pop back up. (Robin, 2026-11-04.)
+  const main = document.querySelector('.main') || document.body;
+  if (!el) { el = document.createElement('div'); el.id = 'mail-arrival-wrap'; }
+  if (el.parentNode !== main || main.firstChild !== el) main.insertBefore(el, main.firstChild);
   el.innerHTML = html;
 }
 function renderMailSheet() {
@@ -30394,6 +30399,27 @@ async function shrinkImage(file) {
     return file;
   } finally { if (url) URL.revokeObjectURL(url); }
 }
+// Last-ditch read for a photo whose raw bytes arrayBuffer()/FileReader can't reach
+// - an iOS iCloud "lazy" handle. The browser can still DECODE it for display, which
+// is what pulls the original down; draw that to a canvas and read it back as a JPEG.
+// (Robin, 2026-11-04: let a Photos image just go in, rather than telling him to
+// export a copy first.) Returns a readable File, or null if even decoding fails.
+async function decodeToJpeg(file) {
+  let url, src = file;
+  try {
+    if (isHeic(file)) { const h = await loadHeicDecoder(); const out = await h({ blob: file, toType: 'image/jpeg', quality: 0.82 }); src = new File([Array.isArray(out) ? out[0] : out], 'photo.jpg', { type: 'image/jpeg' }); }
+    let bmp = await createImageBitmap(src, { imageOrientation: 'from-image' }).catch(() => null);
+    if (!bmp) { url = URL.createObjectURL(src); bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('decode')); im.src = url; }); }
+    const w = bmp.width, h = bmp.height; if (!w || !h) return null;
+    const scale = Math.min(1, IMG_MAX_EDGE / Math.max(w, h));
+    const dw = Math.max(1, Math.round(w * scale)), dh = Math.max(1, Math.round(h * scale));
+    const cv = document.createElement('canvas'); cv.width = dw; cv.height = dh;
+    cv.getContext('2d').drawImage(bmp, 0, 0, dw, dh); if (bmp.close) bmp.close();
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.82));
+    if (!blob || !blob.size) return null;
+    return new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch { return null; } finally { if (url) URL.revokeObjectURL(url); }
+}
 // Read the file's bytes into memory FIRST, then upload the buffer - never stream
 // the File straight to fetch. A photo picked from Photos is often a lazy handle
 // to a file macOS is still materialising; fetching it directly fails with the
@@ -30401,9 +30427,15 @@ async function shrinkImage(file) {
 // and lets us check the size before the round-trip.
 const MAX_UPLOAD = 25 * 1024 * 1024;
 async function postAttachment(url, file) {
-  let buf;
-  try { buf = await file.arrayBuffer(); }
-  catch { throw new Error('could not read that file. If it came from Photos, use Export / Save a copy first, then add it.'); }
+  let buf = null;
+  try { buf = await file.arrayBuffer(); } catch { buf = null; }
+  if ((!buf || !buf.byteLength) && (isImgType(file.type) || isHeic(file))) {
+    // Couldn't read the bytes directly (iCloud lazy photo). Decode through a canvas,
+    // which materialises it, and upload the re-encoded JPEG instead.
+    const mat = await decodeToJpeg(file);
+    if (mat) { file = mat; try { buf = await file.arrayBuffer(); } catch { buf = null; } }
+  }
+  if (!buf) throw new Error('could not read that file. If it came from Photos, use Export / Save a copy first, then add it.');
   if (!buf.byteLength) throw new Error('that file came through empty. Try exporting it from Photos first.');
   if (buf.byteLength > MAX_UPLOAD) throw new Error(`that image is ${Math.round(buf.byteLength / 1048576)} MB - too big for a note. Export a smaller copy and try again.`);
   const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': file.type || 'application/octet-stream' }, body: buf });
