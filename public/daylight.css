@@ -380,6 +380,9 @@
 /* Flow doesn't work on a phone, so it isn't offered there. */
 @media (max-width:767px) { [data-open-today] { display:none !important; } }
 
+/* A Space's tab bar: frosted glass, with room around the tabs. */
+:root[data-light] .av4-tabs { background:var(--glass-card); border:1px solid var(--glass-edge); padding:0 20px; -webkit-backdrop-filter:blur(22px) saturate(1.7); backdrop-filter:blur(22px) saturate(1.7); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
