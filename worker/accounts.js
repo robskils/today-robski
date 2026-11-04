@@ -10,6 +10,7 @@ import { normPlan } from './plans.js';
  */
 
 import { sendCodeMail } from './auth.js';
+import { sendBackupMail } from './backup-mail.js';
 import { isPublicSignup } from './admin.js';
 import { smtpSend, buildMessage } from './mail.js';
 import { inviteEmail } from './invite-email.js';
@@ -408,14 +409,12 @@ async function sendInviteMail(env, { to, code, message }) {
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
-    await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text, replyTo }) });
-    return;
+    try {
+      await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text, replyTo }) });
+      return;
+    } catch (e) { console.error('smtp invite send failed, falling back to Cloudflare:', String((e && e.message) || e)); }
   }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
-  });
+  const res = await sendBackupMail(env, { to, subject, html, text, replyTo });
   if (!res.ok) throw new Error(`Could not send the invitation (${res.status}).`);
 }
 
@@ -593,10 +592,13 @@ async function sendPrimaryChangedMail(env, { to, newEmail }) {
   const text = `The sign-in email on your Koyéba account was changed to ${newEmail}.\n\nThis address still works as a sign-in too, so you won't be locked out.\n\nIf you didn't make this change, reply to this email right away.`;
   if (env.BRIEF_SMTP_PASS) {
     const acct = { email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Koyéba', username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi', smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS };
-    await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text }) });
-    return;
+    try {
+      await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text }) });
+      return;
+    } catch (e) { console.error('smtp send failed, falling back to Cloudflare:', String((e && e.message) || e)); }
   }
-  if (env.RESEND_API_KEY) await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: env.FROM_EMAIL, to: [to], subject, html, text }) });
+  const res = await sendBackupMail(env, { to, subject, html, text });
+  if (!res.ok) console.error('backup mail:', res.status, await res.text());
 }
 // Permanently delete this account and everything it owns. Irreversible; the
 // owner (user 1) is protected. Best-effort per table so a missing table/column

@@ -23,6 +23,7 @@ import { getUserByEmail } from './accounts.js';
 // smtpSend/buildMessage are used only inside sendCodeMail (call time), so the
 // auth.js <-> mail.js cycle (mail.js imports signJWT) resolves fine.
 import { smtpSend, buildMessage } from './mail.js';
+import { sendBackupMail } from './backup-mail.js';
 import { totpVerify, hashRecovery } from './totp.js';
 import { decryptSecret } from './ai.js';
 
@@ -194,7 +195,7 @@ export async function requestCode(request, env, json, err) {
       // No phone on file (or no account yet): tell the client so it can nudge the
       // user to add one, and email the code as the safe default.
       const res = await sendCodeMail(env, email, code, 'signin');
-      if (!res.ok) { console.error('resend:', res.status, await res.text()); return err('Could not send the code. Try again shortly.', 502); }
+      if (!res.ok) { console.error('backup mail:', res.status, await res.text()); return err('Could not send the code. Try again shortly.', 502); }
       return json({ ok: true, channel: 'email', smsUnavailable: true });
     }
   }
@@ -204,7 +205,7 @@ export async function requestCode(request, env, json, err) {
   if (!res.ok) {
     // The code is already in D1 at this point, so this is recoverable:
     //   npx wrangler d1 execute today-robski --remote --command "SELECT code FROM otp_codes"
-    console.error('resend:', res.status, await res.text());
+    console.error('backup mail:', res.status, await res.text());
     return err('Could not send the code. Try again shortly.', 502);
   }
 
@@ -317,7 +318,7 @@ export async function sendCodeMail(env, email, code, kind) {
   // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
   // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
   // carries the Koyéba address. Same transport and secret as the invite and the
-  // morning brief. Falls back to Resend only if no SMTP secret is set.
+  // morning brief. Falls back to Cloudflare Email Service if SMTP fails or isn't set.
   if (env.BRIEF_SMTP_PASS) {
     const acct = {
       email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Koyéba',
@@ -329,16 +330,12 @@ export async function sendCodeMail(env, email, code, kind) {
       return { ok: true };
     } catch (e) {
       // Don't strand the sign-in on an SMTP hiccup: log and fall through to
-      // Resend so the code still goes out (from the fallback address).
-      console.error('smtp code send failed, falling back to Resend:', String((e && e.message) || e));
+      // Cloudflare Email Service so the code still goes out (from the fallback address).
+      console.error('smtp code send failed, falling back to Cloudflare:', String((e && e.message) || e));
     }
   }
 
-  return fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env.FROM_EMAIL, to: [email], subject, html, text }),
-  });
+  return sendBackupMail(env, { to: email, subject, html, text });
 }
 
 function timingSafeEqual(a, b) {
