@@ -32618,3 +32618,20 @@ function showRequired2fa() {
     document.body.appendChild(w); w.firstChild.click(); w.remove();
   }, 100);
 })();
+
+// An open email stops at the bottom of the menubar instead of sliding under its glass,
+// where white paper washed the menu out. (Robin, 2026-11-05.) It clips the top edge
+// only, so the More menu and anything else that overhangs the card still shows.
+(function mailCardClip() {
+  let raf = 0;
+  const place = () => {
+    raf = 0;
+    const card = document.querySelector('.mail-ar.open .mail-ar-card'); if (!card) return;
+    const inner = document.querySelector('.knav-inner'); if (!inner) return;
+    const y = Math.round(inner.getBoundingClientRect().bottom - card.getBoundingClientRect().top);
+    card.style.clipPath = y > 0 ? `inset(${y}px -100vw -100vh -100vw)` : '';
+  };
+  const later = () => { if (!raf) raf = requestAnimationFrame(place); };
+  window.addEventListener('scroll', later, { passive: true, capture: true });
+  window.addEventListener('resize', later);
+})();
