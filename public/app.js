@@ -873,7 +873,7 @@ let headDrag = null;
 // A section = a heading plus every block under it, up to the next same-or-higher
 // heading (within the same container - the prose itself or one column).
 function sectionNodes(head) { return [head, ...proseSiblingsUnder(head)]; }
-function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-col-drop').forEach((h) => h.classList.remove('head-drop', 'head-col-drop')); }
+function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-drop-end, .head-col-drop').forEach((h) => h.classList.remove('head-drop', 'head-drop-end', 'head-col-drop')); }
 function cleanupHeadDrag() {
   if (headDrag && headDrag.head) headDrag.head.classList.remove('head-dragging');
   clearHeadDrops();
@@ -915,8 +915,8 @@ document.addEventListener('dragstart', (e) => {
 });
 document.addEventListener('dragover', (e) => {
   if (!headDrag) return;
-  const prose = e.target.closest && e.target.closest('.prose[data-block-id]');
-  if (prose !== headDrag.prose) return;
+  const prose = headDrag.prose;
+  if (!headDragOver(e.target, prose)) return;
   e.preventDefault(); e.dataTransfer.dropEffect = 'move';
   clearHeadDrops(prose);
   const heads = [...prose.querySelectorAll('h1, h2, h3')];
@@ -926,7 +926,7 @@ document.addEventListener('dragover', (e) => {
   // another), so an existing column isn't turned into three.
   const pr = prose.getBoundingClientRect();
   let colTarget = null;
-  if (e.clientX > pr.left + pr.width * 0.5 && headDrag.head.parentNode === prose) {
+  if (e.clientX > pr.left + pr.width * 0.75 && headDrag.head.parentNode === prose) {
     const tops = heads.filter((h) => h.parentNode === prose);
     for (let i = 0; i < tops.length; i++) {
       const top = tops[i].getBoundingClientRect().top;
@@ -941,22 +941,35 @@ document.addEventListener('dragover', (e) => {
     return;
   }
   prose.dataset.headCol = '-1';
+  // A section can land between any two blocks of text, or right at the top. (Robin.)
+  const blocks = [];
+  for (const c of prose.children) {
+    if (c.classList.contains('ncols')) c.querySelectorAll(':scope > .ncol').forEach((col) => { const r = col.getBoundingClientRect(); if (e.clientX >= r.left && e.clientX <= r.right) blocks.push(...col.children); });
+    else blocks.push(c);
+  }
+  const cands = blocks.filter((b) => !section.includes(b) && b.offsetParent !== null);
   let target = null;
-  for (const h of heads) { const r = h.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { target = h; break; } }
-  prose.dataset.headDrop = target ? String(heads.indexOf(target)) : '-1';
-  if (target && target !== headDrag.head) target.classList.add('head-drop');
+  for (const b of cands) { const r = b.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { target = b; break; } }
+  headDrag.before = target;
+  if (target) target.classList.add('head-drop');
+  else if (cands.length) cands[cands.length - 1].classList.add('head-drop-end');
 });
+// Over the note's own text, or anywhere on its sheet, such as the padding above the first line.
+function headDragOver(el, prose) {
+  if (!el || !el.closest) return false;
+  if (el.closest('.prose[data-block-id]') === prose) return true;
+  const sheet = prose.closest('.note-body');
+  return !!(sheet && sheet.contains(el));
+}
 document.addEventListener('drop', (e) => {
   if (!headDrag) return;
   const prose = headDrag.prose;
-  const over = e.target.closest && e.target.closest('.prose[data-block-id]');
-  if (over !== prose) { cleanupHeadDrag(); return; }
+  if (!headDragOver(e.target, prose)) { cleanupHeadDrag(); return; }
   e.preventDefault();
   const heads = [...prose.querySelectorAll('h1, h2, h3')];
   const colIdx = parseInt(prose.dataset.headCol || '-1', 10);
-  const dropIdx = parseInt(prose.dataset.headDrop || '-1', 10);
   const colTarget = (colIdx >= 0 && colIdx < heads.length) ? heads[colIdx] : null;
-  const vTarget = (dropIdx >= 0 && dropIdx < heads.length) ? heads[dropIdx] : null;
+  const vTarget = headDrag.before || null;
   const dragHead = headDrag.head;   // grab before cleanup nulls headDrag
   const section = sectionNodes(dragHead);
   cleanupHeadDrag(); delete prose.dataset.headDrop; delete prose.dataset.headCol;
@@ -3583,6 +3596,7 @@ async function openShare(id, title, kind) {
   // the right state at once rather than flicking from off to on after the fetch.
   if (kind === 'note' && state.note && state.note.current && state.note.current.id === id) {
     state.share.webToken = (state.note.current.props && state.note.current.props.shareToken) || '';
+    state.share.webPass = !!(state.note.current.props && state.note.current.props.sharePassOn);
   }
   renderShare();
   try {
@@ -3590,7 +3604,7 @@ async function openShare(id, title, kind) {
     if (kind === 'note') calls.push(api(`/api/blocks/${id}`).catch(() => null));
     const [fr, sh, blk] = await Promise.all(calls);
     state.friends = fr; state.share.friends = fr.friends || []; state.share.shares = sh.shares || [];
-    if (blk && blk.props) state.share.webToken = blk.props.shareToken || '';
+    if (blk && blk.props) { state.share.webToken = blk.props.shareToken || ''; state.share.webPass = !!blk.props.sharePassOn; }
   } catch (e) { toast(e.message); }
   state.share.loading = false; renderShare();
 }
@@ -3616,13 +3630,16 @@ function renderShare() {
   // Off by default; a quiet, revocable read-only page at koyeba.co/n/<token>.
   const webUrl = shareWebUrl();
   const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
-    <div class="share-web-h"><span class="sw-ic">🔗</span><span class="sw-tt"><b>Share a public link</b><small>For anyone - no Koyéba account needed. Read-only.</small></span></div>
+    <div class="share-web-h"><span class="sw-tt"><b>Publish</b><small>A public link for anyone, with no account needed. Read-only.</small></span></div>
     ${webUrl ? `<div class="sw-live">
         <input class="sw-url" type="text" readonly value="${esc(webUrl)}" data-share-web-url aria-label="Public link">
-        <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop sharing</button></div>
-        <p class="sw-note">Anyone with the link can read this note. Stop sharing and the link dies at once.</p>
+        <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop publishing</button></div>
+        <div class="sw-pass">${s.webPass
+          ? `<span class="sw-pass-on">Password set</span><button class="ghost" data-share-web-pass-off>Remove password</button>`
+          : `<input class="sw-pass-in" id="share-web-pass" type="password" autocomplete="new-password" placeholder="Add a password (optional)" aria-label="Password for this link" maxlength="200"><button class="ghost" data-share-web-pass-set>Set password</button>`}</div>
+        <p class="sw-note">${s.webPass ? 'Only people with the link and the password can read this note.' : 'Anyone with the link can read this note.'} Stop publishing and the link dies at once.</p>
       </div>`
-      : `<div class="sw-off-row"><button class="add-btn wide" data-share-web-on${s.webBusy ? ' disabled' : ''}>${s.webBusy ? 'Creating…' : 'Create a public link'}</button></div>`}
+      : `<div class="sw-off-row"><button class="add-btn wide" data-share-web-on${s.webBusy ? ' disabled' : ''}>${s.webBusy ? 'Publishing…' : 'Publish this note'}</button></div>`}
   </div>` : '';
   el.innerHTML = `<div class="chat-bg" data-share-close></div><div class="chat-panel share-panel">
     <div class="chat-head"><span class="chat-title">Share this ${kindLabel}</span><button class="chat-x" data-share-close title="Close">×</button></div>
@@ -3638,7 +3655,8 @@ async function shareWebOn() {
     state.share.webToken = r.token || '';
     // Keep the open note's own props in step, so reopening the panel reads right.
     if (state.note && state.note.current && state.note.current.id === state.share.id) { state.note.current.props = state.note.current.props || {}; state.note.current.props.shareToken = r.token; }
-    toast('🔗 Public link created');
+    state.share.webPass = false;
+    toast('Published');
   } catch (e) { toast(e.message); }
   state.share.webBusy = false; renderShare();
 }
@@ -3646,9 +3664,21 @@ async function shareWebOff() {
   if (!state.share) return;
   try {
     await api(`/api/blocks/${state.share.id}/publish`, { method: 'DELETE' });
-    state.share.webToken = '';
-    if (state.note && state.note.current && state.note.current.id === state.share.id && state.note.current.props) delete state.note.current.props.shareToken;
-    toast('Link stopped - it no longer opens');
+    state.share.webToken = ''; state.share.webPass = false;
+    if (state.note && state.note.current && state.note.current.id === state.share.id && state.note.current.props) { delete state.note.current.props.shareToken; delete state.note.current.props.sharePassOn; }
+    toast('Stopped - the link no longer opens');
+  } catch (e) { toast(e.message); }
+  renderShare();
+}
+// The password itself only ever goes to the worker, which keeps a salted hash of it.
+async function shareWebPass(password) {
+  if (!state.share) return;
+  if (password && password.length < 4) { toast('Make the password at least 4 characters'); return; }
+  try {
+    await api(`/api/blocks/${state.share.id}/publish`, { method: 'PUT', body: JSON.stringify({ password: password || '' }) });
+    state.share.webPass = !!password;
+    if (state.note && state.note.current && state.note.current.id === state.share.id) { state.note.current.props = state.note.current.props || {}; if (password) state.note.current.props.sharePassOn = true; else delete state.note.current.props.sharePassOn; }
+    toast(password ? 'Password set' : 'Password removed');
   } catch (e) { toast(e.message); }
   renderShare();
 }
@@ -26110,7 +26140,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -28458,6 +28488,8 @@ document.addEventListener('click', (e) => {
   { const son = t.closest('[data-share-on]'); if (son) { shareSet(Number(son.dataset.shareOn), true); return; } }
   { const sof = t.closest('[data-share-off]'); if (sof) { shareOff(Number(sof.dataset.shareOff)); return; } }
   if (t.closest('[data-share-web-on]')) { shareWebOn(); return; }
+  if (t.closest('[data-share-web-pass-set]')) { const i = document.getElementById('share-web-pass'); shareWebPass(i ? i.value : ''); return; }
+  if (t.closest('[data-share-web-pass-off]')) { shareWebPass(''); return; }
   if (t.closest('[data-share-web-off]')) { shareWebOff(); return; }
   if (t.closest('[data-share-web-copy]')) { const u = shareWebUrl(); if (u) { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch { toast(u); } } return; }
   if (t.closest('[data-share-web-open]')) { const u = shareWebUrl(); if (u) window.open(u, '_blank', 'noopener'); return; }
