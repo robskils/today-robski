@@ -26111,7 +26111,7 @@ function renderNote() {
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
   const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu"><button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
-  const nFloat = canEditNote ? `<div class="note-float-ins" hidden aria-hidden="true"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
+  const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
       <div class="nc-top"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
@@ -26155,7 +26155,7 @@ function noteFloatInsertInit() {
     ed.__nfiWired = true;
     ed.addEventListener('input', schedule);
     ed.addEventListener('focus', schedule);
-    ed.addEventListener('blur', () => setTimeout(() => { const e2 = document.querySelector('.note-body .prose'); if (document.activeElement !== e2) { const b = document.querySelector('.note-float-ins'); if (b) b.hidden = true; } }, 200));
+    ed.addEventListener('blur', schedule);
   }
   const box = document.querySelector('.note-float-ins');
   if (box && !box.__nfiWired) { box.__nfiWired = true; box.addEventListener('mousedown', (e) => e.preventDefault()); }
@@ -26166,10 +26166,12 @@ function noteFloatPlace() {
   const body = box && box.closest('.note-body');
   const ed = body && body.querySelector('.prose');
   if (!box || !ed) return;
+  // Always there: at the top of the sheet until the cursor is in the note, then beside it.
+  const rest = () => { box.style.top = '2px'; box.style.right = '6px'; box.style.left = 'auto'; box.hidden = false; };
   const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || document.activeElement !== ed) { box.hidden = true; return; }
+  if (!sel || !sel.rangeCount || document.activeElement !== ed) { rest(); return; }
   const range = sel.getRangeAt(0);
-  if (!ed.contains(range.startContainer)) { box.hidden = true; return; }
+  if (!ed.contains(range.startContainer)) { rest(); return; }
   const host = body.getBoundingClientRect();
   const rect = range.getClientRects()[0] || range.getBoundingClientRect();
   const anchorTop = (rect && (rect.height || rect.top)) ? rect.top : host.top + 6;   // empty line -> top of editor

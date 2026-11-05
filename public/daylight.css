@@ -465,6 +465,9 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   .feed-worth-acts { grid-column:2; flex-wrap:wrap; }
 }
 
+:root[data-light] .note-float-ins { background:var(--glass-face); border-color:var(--glass-edge); }
+.nfi-btn { color:var(--k-ink); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
