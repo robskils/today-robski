@@ -14873,7 +14873,7 @@ function renderCalendar() {
       <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
       <div class="cx-controls">
-        <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today>Today</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
+        <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today title="Back to today">${c.mode === 'week' ? `Week ${isoWeekInfo(c.selected || todayISO()).week}` : 'Today'}</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
         <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
         <button class="cx-new" data-cal-add>New event</button>
