@@ -19120,8 +19120,6 @@ function renderMail(loading) {
   const threads = mailVisibleThreads();
   const isSort = mailSelectedPile() === 'sort';
   const toSort = mailToSortCount();
-  const sortedPct = (() => { const tot = (m.messages || []).length; return tot ? Math.round(((tot - toSort) / tot) * 100) : 0; })();
-  const progress = isSort ? `<div class="mail-progress"><div class="mail-progress-bar"><i style="width:${sortedPct}%"></i></div><span class="mail-progress-l">${(m.messages || []).length - toSort} of ${(m.messages || []).length} sorted</span></div>` : '';
   const undo = (m.undo && m.undo.label) ? `<div class="mail-undo"><span>${esc(m.undo.label)}</span><button class="mail-undo-btn" data-mail-undo>Undo</button></div>` : '';
   const emptyHtml = !threads.length ? (loading ? '<div class="mail-empty2">Loading…</div>'
     : isSort ? '<div class="mail-empty2"><div class="mail-empty2-t">Nothing left to sort.</div><div class="mail-empty2-s">Start with Urgent – it’s waiting for you.</div></div>'
@@ -19149,7 +19147,6 @@ function renderMail(loading) {
       <div class="mail-main mail-main-full">
         <div class="mail-main-top">
           ${mailWaitingLineHtml()}
-          ${progress}
         </div>
         ${undo}
         <div class="mail-groups">${mailDayGroupsHtml(loading)}</div>
