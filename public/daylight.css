@@ -480,6 +480,16 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 /* An email's action bar sticks over the white email: glass, but dark enough to read on white. */
 :root[data-light] .mail-ar.open .mail-ar-bar { background:color-mix(in srgb, var(--k-bg) 72%, transparent); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
 
+/* Mail list: the quick sort buttons always show, boxed, with the date on their left. */
+.mail-ar:not(.open) .mailv2ar .mail-ar-right { display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:0; align-self:center; }
+.mail-ar:not(.open) .mail-ar-head.mailv2ar .mail-ar-time, .mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:visible; font-size:14px; }
+.mail-ar:not(.open) .mailv2ar .mail-ar-tri, .mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-tri { display:flex; position:static; gap:8px; }
+.mail-ar:not(.open) .mailv2ar .mrt { display:inline-flex; align-items:center; padding:8px 12px; border:1px solid #fff; font-size:14px; line-height:1; color:var(--k-ink); }
+.mail-ar:not(.open) .mailv2ar .mrt:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+@media (max-width:767px) {
+  .mail-ar:not(.open) .mailv2ar .mail-ar-right { grid-column:2 / -1; grid-row:2; flex-wrap:wrap; justify-content:flex-start; margin-top:8px; }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
