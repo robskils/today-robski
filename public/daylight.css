@@ -210,7 +210,7 @@
 :root[data-light] .mail-ar-card *:not(iframe) { color:var(--k-ink); border-color:var(--glass-edge); }
 :root[data-light] .mail-ar-card :is(a, .mail-make:hover, .mail-noticed-l, .mail-noticed-act) { color:var(--k-goldt); }
 :root[data-light] .mail-ar-card .mail-make { border-color:var(--glass-edge); background:transparent; font-size:14px; }
-:root[data-light] .mail-ar-card :is(.mail-ar-triage-l, .mail-ar-row-l) { color:var(--k-mute); font-size:13px; }
+:root[data-light] .mail-ar-card :is(.mail-ar-triage-l, .mail-ar-row-l) { color:var(--k-goldt); font-size:13px; }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain { background:#fff; padding:20px 24px; max-width:none; }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain, :root[data-light] .mail-ar-card .mail-text.mail-text-plain * { color:#1b1820; }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain a { color:#6E4C0C; }
@@ -444,6 +444,14 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 .home-todaytabs .home-ltab-practices .gln-panel-foot { margin-top:28px; }
 /* Phones: the Notepad sits between the two bars, so its Close and its actions show. */
 @media (max-width:767px) { #notepad-panel { top:var(--navh,50px); bottom:calc(62px + env(safe-area-inset-bottom)); height:auto; } }
+
+/* An open email: sender and title line up with the rule below; room inside the bar and under it. */
+@media (min-width:768px) {
+  .mail-ar.open .mail-ar-head.mailv2ar { grid-template-columns:minmax(0,1fr) auto; padding-left:0; padding-right:0; }
+  .mail-ar.open .mail-ar-head.mailv2ar .mail-ar-dot { display:none; }
+  .mail-ar.open .mail-ar-bar { padding-left:14px; padding-right:14px; }
+}
+.mail-ar.open .mail-ar-panel { padding-top:22px; }
 
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
