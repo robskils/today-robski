@@ -5358,7 +5358,8 @@ function navGroupsHtml(v) {
   // Mobile top line (§17): wordmark + a breadcrumb or the date. On Today the
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
-  const crumb = (() => { const vt = (v && v.type) || ''; if (vt === 'home') { const n = new Date(); return `${WEEKDAYS_LONG[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()]}`; } const g = groups.find((x) => x.id === curGroup); return g ? g.label : (labelForView(v) || 'Today'); })();
+  // The phone menubar just says today's date, on every page. (Robin, 2026-11-05.)
+  const crumb = (() => { const n = new Date(); return `${WEEKDAYS_LONG[n.getDay()]} ${n.getDate()} ${MONTHS_LONG[n.getMonth()]}`; })();
   // §70: no ← back button in the bar. The breadcrumb is the way up; the browser
   // back and Esc still work. The header's inner content sits in the same container
   // as the page (max-width + gutter), so the logo, the breadcrumb and the page
