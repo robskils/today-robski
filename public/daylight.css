@@ -477,8 +477,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 .sw-pass-in::placeholder { color:var(--k-mute); opacity:1; }
 .sw-pass-on { font-family:'Jost',system-ui,sans-serif; font-size:15px; color:var(--k-goldt); }
 
-/* An email's action bar sticks over the white email, so it needs a nearly solid ground. */
-:root[data-light] .mail-ar.open .mail-ar-bar { background:color-mix(in srgb, var(--k-bg) 92%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+/* An email's action bar sticks over the white email: glass, but dark enough to read on white. */
+:root[data-light] .mail-ar.open .mail-ar-bar { background:color-mix(in srgb, var(--k-bg) 72%, transparent); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
 
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
