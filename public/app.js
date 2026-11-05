@@ -7991,7 +7991,7 @@ function notepadSetText(v) { const np = notepadState(); np.lines = String(v || '
 function toggleNotepad(open) {
   const np = notepadState();
   np.open = open == null ? !np.open : !!open;
-  if (np.open) notepadLoad();
+  if (np.open) { notepadLoad(); if (state.knav) { state.knav.contents = false; state.knav.find = false; } }   // it opens behind the Menu otherwise
   renderNav(); renderNotepadPanel();
   if (np.open) setTimeout(() => { const ta = document.getElementById('notepad-ta'); if (ta) { ta.focus(); const n = ta.value.length; try { ta.setSelectionRange(n, n); } catch {} } }, 40);
 }
@@ -8369,7 +8369,7 @@ function homeWnPracticesBodyHtml() {
   // The full practices interface - the very panel the Tracker uses: an edit link, every
   // practice with its tick, the last 7 days and the streak, and the add form. Not a
   // stripped list. (Robin, 2026-11-03.)
-  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open the Tracker →</button></div>`;
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open Practices →</button></div>`;
   return `<div class="home-wn-prc">${trackerPanel()}</div>${foot}`;
 }
 function homeWhatNextTabsHtml() {
