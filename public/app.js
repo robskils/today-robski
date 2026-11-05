@@ -6769,10 +6769,11 @@ function practicesGroups(withWeek) {
   return ordered.map((g) => {
     const rows = g.items.map((a) => {
       const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
-      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? '<span class="prc-badge" title="Has a video">▶</span>' : ''}${!a.timed ? '<span class="prc-badge dim" title="A habit — not on the day">habit</span>' : ''}`;
+      const cleanS = withWeek && a.avoid ? practiceStreak(a.id) : 0;
+      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${cleanS > 1 ? `<span class="trk-streak trk-clean">${cleanS} days clean</span>` : ''}${a.video ? '<span class="prc-badge" title="Has a video">▶</span>' : ''}`;
       return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="prc-name prc-name-link">${esc(a.title)}${(() => { const s = withWeek ? practiceStreak(a.id) : 0; return s > 1 ? `<span class="trk-streak">${s}${a.avoid ? ' clean' : ' days'}</span>` : ''; })()}${badges}${withWeek ? '' : len}</span>
+        <span class="prc-name prc-name-link">${esc(a.title)}${(() => { const s = withWeek && !a.avoid ? practiceStreak(a.id) : 0; return s > 1 ? `<span class="trk-streak">${s} days</span>` : ''; })()}${badges}${withWeek ? '' : len}</span>
         ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
         <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
       </div>`;
@@ -15904,7 +15905,7 @@ function t2TrackerHtml(manage) {
       return `<div class="trk-prow prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
-        <span class="trk-pname">${nameInner}${streak > 1 ? `<span class="trk-streak">${streak}${a.avoid ? ' clean' : ' days'}</span>` : ''}${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
+        <span class="trk-pname">${nameInner}${streak > 1 && !a.avoid ? `<span class="trk-streak">${streak} days</span>` : ''}${a.avoid ? `<span class="t2-avoidtag">avoiding</span>${streak > 1 ? `<span class="trk-streak trk-clean">${streak} days clean</span>` : ''}` : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
         ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
         <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
@@ -16046,7 +16047,7 @@ function t2PracticesHtml() {
       <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
       <span class="t2-pbody"><span class="t2-pname">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">▶</span>' : ''}</span>${len}</span>
       ${a.priority ? `<span class="p-tag p-${a.priority}">${a.priority}</span>` : ''}
-      ${streak ? `<span class="t2-streak">${streak}${a.avoid ? ' clean' : ' days'}</span>` : ''}
+      ${streak ? `<span class="t2-streak${a.avoid ? ' t2-clean' : ''}">${streak}${a.avoid ? ' days clean' : ' days'}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
   const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
