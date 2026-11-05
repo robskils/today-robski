@@ -455,6 +455,16 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 }
 .mail-ar.open .mail-ar-panel { padding-top:22px; }
 
+/* The feed's Worth knowing: age, then boxed Open and Seen, all on one line. */
+.feed-worth-acts { display:flex; align-items:center; gap:10px; white-space:nowrap; padding-top:2px; }
+.feed-worth-when { font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--k-mute); margin-right:4px; }
+.feed-btn { display:inline-flex; align-items:center; padding:8px 14px; border:1px solid #fff; background:transparent; font-family:'Jost',system-ui,sans-serif; font-size:14px; font-weight:400; line-height:1; color:var(--k-ink); cursor:pointer; }
+.feed-btn:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+@media (max-width:767px) {
+  .feed-worth-row { grid-template-columns:32px minmax(0,1fr) !important; }
+  .feed-worth-acts { grid-column:2; flex-wrap:wrap; }
+}
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }

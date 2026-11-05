@@ -8672,6 +8672,34 @@ function homeSinceHtml() {
 function feedGoneKey() { return 'life.feed.gone.' + todayISO(); }
 function feedGoneLoad() { try { return JSON.parse(localStorage.getItem(feedGoneKey()) || '{}') || {}; } catch { return {}; } }
 function feedGoneSave(m) { try { localStorage.setItem(feedGoneKey(), JSON.stringify(m || {})); } catch {} }
+function feedSeenMark(ids) {
+  const o = lbDismissedMap(); ids.forEach((id) => { o['feedseen:' + id] = Date.now(); });
+  try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {}
+  syncFeedDismiss();
+}
+function feedSeenUnmark(id) {
+  const o = lbDismissedMap(); delete o['feedseen:' + id];
+  try { localStorage.setItem('life.home.feedDismiss', JSON.stringify(o)); } catch {}
+  syncFeedDismiss();
+}
+// Dismissals age out after 90 days; one still in the feed is kept fresh so it never returns.
+function feedSeenKeep(ids, map) {
+  const old = ids.filter((id) => { const t = map['feedseen:' + id]; return t && Date.now() - t > 30 * 86400000; });
+  if (old.length) feedSeenMark(old);
+}
+// Seen used to be kept per day on this device: carry those over once.
+function feedSeenMigrate() {
+  if (window.__feedSeenMigrated) return; window.__feedSeenMigrated = true;
+  try {
+    const ids = []; const prefix = feedGoneKey().replace(/\d{4}-\d{2}-\d{2}.*$/, '');
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i); if (!k || !k.startsWith(prefix)) continue;
+      const m = JSON.parse(localStorage.getItem(k) || '{}') || {};
+      for (const id in m) { if (m[id] === 'Seen' && /^(act|shw):/.test(id)) ids.push(id); }
+    }
+    if (ids.length) feedSeenMark(ids);
+  } catch {}
+}
 function homeRadarBodyHtml() {
   // ── V38 The feed: Needs you · Worth knowing · Keep in touch · On the horizon.
   // Matches Koyeba Today v3.dc.html. Cormorant for anything that speaks, Jost for
@@ -8734,16 +8762,22 @@ function homeRadarBodyHtml() {
   const verb = (t, m) => t === 'task_add' ? 'added a task to' : t === 'task_done' ? 'finished a task in' : t === 'goal_moved' ? `moved a goal${m && m.pct != null ? ' to ' + m.pct + '%' : ''} in` : 'updated';
   const actW = (state.activity || []).map((a) => ({ id: 'act:' + a.id, who: a.who || 'Someone', did: verb(a.type, a.meta), where: a.areaTitle || 'a Space', areaId: a.areaId, title: a.title || '', when: a.at ? timeAgo(Date.parse(a.at)) : '', act: 'See it', actAttr: a.areaId ? `data-open-area="${esc(a.areaId)}"` : '' }));
   const shareW = (state.sharedItems || []).filter((s) => s.shared_at).map((s) => ({ id: 'shw:' + s.id, who: s.owner || 'Someone', did: s.kind === 'area' ? 'invited you to' : 'shared', where: s.title || 'something', areaId: '', title: '', when: s.shared_at ? timeAgo(Date.parse(s.shared_at)) : '', act: 'Open', actAttr: 'data-knav-find' }));
-  const worthAll = [...actW, ...shareW];
-  const worthLive = worthAll.filter((w) => !g(w.id));
+  // Seen is for good, on every device: it lives in the account's dismissal map, not the
+  // day's list. A row just marked Seen stays until you leave, so you can Undo it. (Robin.)
+  fs.justSeen = fs.justSeen || {};
+  feedSeenMigrate();
+  const seenMap = lbDismissedMap();
+  const worthAll = [...actW, ...shareW].filter((w) => !seenMap['feedseen:' + w.id] || fs.justSeen[w.id]);
+  const worthLive = worthAll.filter((w) => !fs.justSeen[w.id]);
+  feedSeenKeep([...actW, ...shareW].map((w) => w.id), seenMap);
   if (worthAll.length) {
     const show = fs.worthAll ? worthAll : worthAll.slice(0, 3);
     const rows = show.map((w) => {
-      if (g(w.id)) return goneLine(w.id);
-      return `<div style="display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:14px;align-items:start;padding:13px 0;border-bottom:1px solid var(--k-line);animation:kfade .35s ease">
+      if (fs.justSeen[w.id]) return `<div style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>Seen</span><span data-feed-unsee="${esc(w.id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
+      return `<div class="feed-worth-row" style="display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:14px;align-items:start;padding:13px 0;border-bottom:1px solid var(--k-line);animation:kfade .35s ease">
         <div style="width:32px;height:32px;box-sizing:border-box;border:1px solid var(--k-line);display:flex;align-items:center;justify-content:center;font:500 17px 'Cormorant Garamond',serif;color:var(--k-goldt)">${esc((w.who || '?').charAt(0).toUpperCase())}</div>
         <div style="min-width:0;padding-top:4px"><span style="font:400 16px/1.45 Jost;text-wrap:pretty"><span style="font-weight:600">${esc(w.who)}</span> ${esc(w.did)} <span ${w.actAttr} role="button" tabindex="0" style="font-weight:500;color:var(--k-goldt);cursor:pointer">${esc(w.where)}</span></span>${w.title ? `<div style="font:italic 400 19px/1.3 'Cormorant Garamond',serif;margin-top:3px;text-wrap:pretty">${esc(w.title)}</div>` : ''}</div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:5px">${w.when ? `<span style="font:400 13px Jost;color:var(--k-mute);white-space:nowrap">${esc(w.when)}</span>` : ''}<div style="display:flex;gap:14px;font:500 14px Jost;white-space:nowrap">${A(w.act, w.actAttr, true)}${A('Seen', `data-feed-gone="${esc(w.id)}|Seen"`)}</div></div>
+        <div class="feed-worth-acts">${w.when ? `<span class="feed-worth-when">${esc(w.when)}</span>` : ''}<span class="feed-btn" ${w.actAttr} role="button" tabindex="0">${esc(w.act)}</span><span class="feed-btn" data-feed-seen="${esc(w.id)}" role="button" tabindex="0">Seen</span></div>
       </div>`;
     }).join('');
     const more = worthAll.length > 3 ? `<div data-feed-worthmore role="button" tabindex="0" style="padding-top:12px;font:500 14px Jost;color:var(--k-goldt);cursor:pointer">${fs.worthAll ? 'Show fewer' : 'Show ' + (worthAll.length - 3) + ' more'}</div>` : '';
@@ -27696,8 +27730,10 @@ document.addEventListener('click', (e) => {
     const fz = t.closest('[data-feed-snz]'); if (fz) { e.preventDefault(); const [id, msg] = fz.dataset.feedSnz.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Snoozed'; fs.snz = null; renderHome(); return; }
     const fg = t.closest('[data-feed-gone]'); if (fg) { e.preventDefault(); const [id, msg] = fg.dataset.feedGone.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Done'; fs.snz = null; renderHome(); return; }
     const fj = t.closest('[data-feed-join]'); if (fj) { e.preventDefault(); const fs = feedS(); fs.gone[fj.dataset.feedGid] = 'Joined'; renderHome(); return; }
+    const fse = t.closest('[data-feed-seen]'); if (fse) { e.preventDefault(); const id = fse.dataset.feedSeen; const fs = feedS(); fs.justSeen = fs.justSeen || {}; fs.justSeen[id] = 1; feedSeenMark([id]); renderHome(); return; }
+    const fun = t.closest('[data-feed-unsee]'); if (fun) { e.preventDefault(); const id = fun.dataset.feedUnsee; const fs = feedS(); if (fs.justSeen) delete fs.justSeen[id]; feedSeenUnmark(id); renderHome(); return; }
     const fm = t.closest('[data-feed-worthmore]'); if (fm) { e.preventDefault(); const fs = feedS(); fs.worthAll = !fs.worthAll; renderHome(); return; }
-    const fsa = t.closest('[data-feed-seenall]'); if (fsa) { e.preventDefault(); const now = new Date().toISOString(); state.activitySeen = now; state.sharesSeen = now; const fs = feedS(); (state.activity || []).forEach((a) => { fs.gone['act:' + a.id] = 'Seen'; }); (state.sharedItems || []).forEach((s) => { fs.gone['shw:' + s.id] = 'Seen'; }); renderHome(); api('/api/activity/seen', { method: 'POST', body: '{}' }).catch(() => {}); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; }
+    const fsa = t.closest('[data-feed-seenall]'); if (fsa) { e.preventDefault(); const now = new Date().toISOString(); state.activitySeen = now; state.sharesSeen = now; feedS(); feedSeenMark([...(state.activity || []).map((a) => 'act:' + a.id), ...(state.sharedItems || []).map((s) => 'shw:' + s.id)]); renderHome(); api('/api/activity/seen', { method: 'POST', body: '{}' }).catch(() => {}); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; }
     const frc = t.closest('[data-feed-contact]'); if (frc) { e.preventDefault(); const v = frc.dataset.feedContact; const i = v.indexOf(':'); feedReach(v.slice(0, i), v.slice(i + 1)); return; } }
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderNewPop(); renderNav(); return; }
