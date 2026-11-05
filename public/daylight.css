@@ -442,8 +442,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 }
 
 .home-todaytabs .home-ltab-practices .gln-panel-foot { margin-top:28px; }
-/* Phones: the Notepad stops above the bottom bar, so its last line and actions show. */
-@media (max-width:767px) { #notepad-panel { bottom:calc(62px + env(safe-area-inset-bottom)); height:auto; } }
+/* Phones: the Notepad sits between the two bars, so its Close and its actions show. */
+@media (max-width:767px) { #notepad-panel { top:var(--navh,50px); bottom:calc(62px + env(safe-area-inset-bottom)); height:auto; } }
 
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
