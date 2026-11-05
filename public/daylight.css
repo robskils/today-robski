@@ -490,6 +490,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   .mail-ar:not(.open) .mailv2ar .mail-ar-right { grid-column:2 / -1; grid-row:2; flex-wrap:wrap; justify-content:flex-start; margin-top:8px; }
 }
 
+.prc-row .prc-name .trk-clean, .trk-pname .trk-clean, .t2-streak.t2-clean { color:var(--k-ink); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }
