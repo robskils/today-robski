@@ -468,6 +468,18 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 :root[data-light] .note-float-ins { background:var(--glass-face); border-color:var(--glass-edge); }
 .nfi-btn { color:var(--k-ink); }
 
+/* Dragging a note's heading: a gold line wherever it will land. */
+.prose .head-drop { box-shadow:0 -2px 0 var(--k-gold); }
+.prose .head-drop-end { box-shadow:0 2px 0 var(--k-gold); }
+/* Publishing a note: the optional password. */
+.sw-pass { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:12px; }
+.sw-pass-in { flex:1 1 200px; min-width:0; padding:9px 12px; background:var(--glass-face); border:1px solid var(--glass-edge); color:var(--k-ink); font-family:'Jost',system-ui,sans-serif; font-size:16px; }
+.sw-pass-in::placeholder { color:var(--k-mute); opacity:1; }
+.sw-pass-on { font-family:'Jost',system-ui,sans-serif; font-size:15px; color:var(--k-goldt); }
+
+/* An email's action bar sticks over the white email, so it needs a nearly solid ground. */
+:root[data-light] .mail-ar.open .mail-ar-bar { background:color-mix(in srgb, var(--k-bg) 92%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+
 /* Messages sits straight under the email bar. */
 #mail-arrival-wrap { flex-direction:column; align-items:center; }
 .home-arr + .home-arr-msg { margin-top:-8px; }

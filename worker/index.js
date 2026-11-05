@@ -2632,10 +2632,45 @@ async function unpublishNote(env, id) {
   const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note'").bind(id, env.uid).first();
   if (!row) throw new Error('note not found');
   let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
-  delete props.shareToken;
+  delete props.shareToken; delete props.sharePassOn;
   await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
     .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
+  await env.DB.prepare('DELETE FROM settings WHERE user_id = ? AND key IN (?, ?)').bind(env.uid, `notepass:${id}`, `notepass-fail:${id}`).run();
   return { ok: true };
+}
+// ── The optional password on a published note ───────────────────────────────
+// Only a salted PBKDF2 hash is kept, in the owner's settings rather than the note's
+// props, so it never travels with the note to anyone it's shared with.
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+async function notePassHash(password, saltB64) {
+  const salt = saltB64 ? Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0)) : crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 100000 }, key, 256);
+  return { s: b64(salt), h: b64(bits) };
+}
+function sameText(a, b) {
+  if (a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+async function notePassCookie(env, token, hash) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.AUTH_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${token}:${hash}`));
+  return b64(sig).replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' }[c]));
+}
+async function setNotePassword(env, id, password) {
+  const row = await env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note'").bind(id, env.uid).first();
+  if (!row) throw new Error('note not found');
+  let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
+  if (!props.shareToken) throw new Error('Publish the note first');
+  const pw = String(password || '');
+  if (pw && (pw.length < 4 || pw.length > 200)) throw new Error('Make the password at least 4 characters');
+  if (pw) { await setSetting(env, `notepass:${id}`, JSON.stringify(await notePassHash(pw))); props.sharePassOn = true; }
+  else { await env.DB.prepare('DELETE FROM settings WHERE user_id = ? AND key = ?').bind(env.uid, `notepass:${id}`).run(); delete props.sharePassOn; }
+  await env.DB.prepare('DELETE FROM settings WHERE user_id = ? AND key = ?').bind(env.uid, `notepass-fail:${id}`).run();
+  await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+    .bind(JSON.stringify(props), new Date().toISOString(), id, env.uid).run();
+  return { ok: true, hasPassword: !!pw };
 }
 
 // One box to find anything. Searches every block by title and body, so tasks,
@@ -4271,12 +4306,34 @@ export function basicMd(src) {
   if (inList) out += '</ul>';
   return out;
 }
-async function servePublicNote(env, token, url) {
+async function servePublicNote(env, token, url, request) {
   const home = `${url.protocol}//koyeba.co`;
   const row = await env.DB.prepare(
-    "SELECT title, body, user_id FROM blocks WHERE kind='note' AND archived=0 AND json_extract(props,'$.shareToken')=? LIMIT 1",
+    "SELECT id, title, body, user_id FROM blocks WHERE kind='note' AND archived=0 AND json_extract(props,'$.shareToken')=? LIMIT 1",
   ).bind(token).first().catch(() => null);
   if (!row) return new Response(publicNotePage({ notFound: true, home }), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } });
+  const html = { 'content-type': 'text/html; charset=utf-8' };
+  // A password, if the owner set one. Nothing of the note, not even its title, shows until it's given.
+  let pass = null; try { pass = JSON.parse((await getSetting(env, `notepass:${row.id}`, row.user_id)) || 'null'); } catch {}
+  if (pass && pass.h) {
+    const good = await notePassCookie(env, token, pass.h);
+    const m = (request.headers.get('Cookie') || '').match(/(?:^|;\s*)pn=([\w-]+)/);
+    if (!(m && sameText(m[1], good))) {
+      if (request.method !== 'POST') return new Response(publicNotePage({ locked: true, home }), { status: 200, headers: html });
+      const failKey = `notepass-fail:${row.id}`;
+      let fail = { n: 0, at: 0 }; try { fail = JSON.parse((await getSetting(env, failKey, row.user_id)) || '') || fail; } catch {}
+      if (Date.now() - fail.at > 900000) fail = { n: 0, at: Date.now() };
+      if (fail.n >= 10) return new Response(publicNotePage({ locked: true, home, message: 'Too many tries. Please try again in a little while.' }), { status: 429, headers: html });
+      const form = await request.formData().catch(() => null);
+      const tried = await notePassHash(String((form && form.get('password')) || '').slice(0, 200), pass.s);
+      if (!sameText(tried.h, pass.h)) {
+        await setSetting(env, failKey, JSON.stringify({ n: fail.n + 1, at: fail.at || Date.now() }), row.user_id);
+        return new Response(publicNotePage({ locked: true, home, message: "That isn't the password." }), { status: 401, headers: html });
+      }
+      await env.DB.prepare('DELETE FROM settings WHERE user_id = ? AND key = ?').bind(row.user_id, failKey).run();
+      return new Response(null, { status: 303, headers: { Location: `/n/${token}`, 'Set-Cookie': `pn=${good}; Path=/n/${token}; Max-Age=604800; HttpOnly; Secure; SameSite=Lax` } });
+    }
+  }
   let author = '';
   try { const u = await env.DB.prepare('SELECT name FROM users WHERE id=?').bind(row.user_id).first(); author = (u && u.name) || ''; } catch {}
   const body = row.body || '';
@@ -4284,49 +4341,56 @@ async function servePublicNote(env, token, url) {
   const bodyHtml = isHtml ? await sanitizeNoteHtml(body) : basicMd(body);
   return new Response(publicNotePage({ title: row.title || 'A note', bodyHtml, author, home }), { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
 }
-export function publicNotePage({ title, bodyHtml, author, home, notFound }) {
-  const INK = '#1c1812', PAPER = '#f4efe3', CARD = '#faf6ec', ACCENT = '#a8844a', MIST = '#7a7266', LINE = '#e5ddcd';
+export function publicNotePage({ title, bodyHtml, author, home, notFound, locked, message }) {
+  const generic = notFound || locked;
   const head = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escH(notFound ? 'Not found' : title)} · Koyéba</title>
+  <title>${escH(generic ? 'Koyéba' : title)} · Koyéba</title>
   <meta name="robots" content="noindex">
-  <meta property="og:title" content="${escH(notFound ? 'Koyéba' : title)}"><meta property="og:site_name" content="Koyéba"><meta property="og:type" content="article">
-  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+  <meta property="og:title" content="${escH(generic ? 'Koyéba' : title)}"><meta property="og:site_name" content="Koyéba"><meta property="og:type" content="article">
+  <link rel="stylesheet" href="/koyeba.css">
   <style>
-    :root{color-scheme:light}
-    *{box-sizing:border-box}
-    body{margin:0;background:${PAPER};color:${INK};font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
-    .pn-brand{display:flex;align-items:center;justify-content:center;gap:9px;padding:22px 16px 0}
-    .pn-brand a{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:${INK};font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:600}
-    .pn-brand svg{width:26px;height:26px;color:${ACCENT}}
-    .pn-wrap{max-width:680px;margin:0 auto;padding:26px 24px 60px}
-    .pn-card{background:${CARD};border:1px solid ${LINE};border-radius:20px;box-shadow:0 20px 50px -34px rgba(60,46,20,.5);padding:40px clamp(22px,5vw,52px) 44px}
-    h1.pn-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(30px,6vw,44px);line-height:1.1;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
-    .pn-by{color:${MIST};font-size:15px;font-style:italic;margin:0 0 26px;border-bottom:1px solid ${LINE};padding-bottom:22px}
-    .pn-body{font-size:18px}
-    .pn-body h1,.pn-body h2,.pn-body h3{font-family:'Cormorant Garamond',serif;font-weight:600;line-height:1.15;margin:1.4em 0 .4em}
+    :root{color-scheme:dark;--ink:#EEF0F5;--mute:#C6CAD8;--gold:#D9B45F;--goldt:#E6C67C;--glass:rgba(34,40,70,.42);--edge:rgba(220,228,255,.22)}
+    *{box-sizing:border-box;border-radius:0}
+    html{background:#0D1220}
+    body{margin:0;min-height:100vh;background:#0D1220 url(/wash/night.webp) top center/cover fixed no-repeat;color:var(--ink);font-family:'Jost',sans-serif;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+    .pn-brand{display:flex;justify-content:center;padding:28px 16px 0}
+    .pn-brand a{color:var(--ink);text-decoration:none;font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px}
+    .pn-brand i{font-style:normal;color:var(--gold)}
+    .pn-wrap{max-width:760px;margin:0 auto;padding:26px 20px 40px}
+    .pn-box{background:var(--glass);border:1px solid var(--edge);padding:clamp(22px,4vw,40px);-webkit-backdrop-filter:blur(14px) saturate(1.7);backdrop-filter:blur(14px) saturate(1.7)}
+    h1.pn-title{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(40px,4.4vw,56px);line-height:1.05;margin:0 0 6px;text-wrap:balance}
+    .pn-by{color:var(--mute);font-size:16px;margin:0 0 24px}
+    .pn-body{background:#fff;color:#1b1820;padding:clamp(20px,4vw,36px);font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.65}
+    .pn-body h1,.pn-body h2,.pn-body h3{font-family:'Cormorant Garamond',serif;font-weight:500;line-height:1.15;margin:1.4em 0 .4em}
     .pn-body h1{font-size:1.7em}.pn-body h2{font-size:1.4em}.pn-body h3{font-size:1.2em}
+    .pn-body>:first-child{margin-top:0}
     .pn-body p{margin:0 0 1em}
-    .pn-body a{color:${ACCENT};text-decoration:underline;text-underline-offset:2px}
+    .pn-body a{color:#6E4C0C;text-decoration:underline;text-underline-offset:2px}
     .pn-body ul,.pn-body ol{padding-left:1.4em;margin:0 0 1em}
     .pn-body li{margin:.25em 0}
-    .pn-body blockquote{margin:1em 0;padding:4px 0 4px 18px;border-left:3px solid ${ACCENT};color:${MIST};font-style:italic}
-    .pn-body img{max-width:100%;height:auto;border-radius:12px;margin:.5em 0}
-    .pn-body hr{border:0;border-top:1px solid ${LINE};margin:1.6em 0}
-    .pn-body code,.pn-body pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:${PAPER};border:1px solid ${LINE};border-radius:6px}
-    .pn-body code{padding:1px 5px}.pn-body pre{padding:14px 16px;overflow-x:auto;border-radius:12px}
-    .pn-cta{margin:34px auto 0;max-width:680px;text-align:center}
-    .pn-cta-card{display:inline-flex;flex-direction:column;align-items:center;gap:4px;padding:22px 30px;background:${CARD};border:1px solid ${LINE};border-radius:18px}
-    .pn-cta-t{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600}
-    .pn-cta-s{color:${MIST};font-size:14.5px;margin-bottom:12px}
-    .pn-cta-btn{display:inline-block;background:${ACCENT};color:${CARD};text-decoration:none;font-weight:600;font-size:15px;letter-spacing:.02em;padding:11px 26px;border-radius:999px}
-    .pn-empty{text-align:center;color:${MIST};padding:60px 20px;font-size:19px}
+    .pn-body blockquote{margin:1em 0;padding:4px 0 4px 18px;border-left:1px solid #1b1820;font-style:italic}
+    .pn-body img{max-width:100%;height:auto;margin:.5em 0}
+    .pn-body hr{border:0;border-top:1px solid #d8d4cc;margin:1.6em 0}
+    .pn-body code,.pn-body pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:#f3f1ec}
+    .pn-body code{padding:1px 5px}.pn-body pre{padding:14px 16px;overflow-x:auto}
+    .pn-cta{text-align:center;padding:10px 20px 56px}
+    .pn-cta-s{color:var(--mute);margin-bottom:16px}
+    .pn-btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.78);color:#fff;font-family:'Jost',sans-serif;font-size:16px;font-weight:500;text-decoration:none;cursor:pointer}
+    .pn-btn:hover{background:rgba(255,255,255,.2)}
+    .pn-empty{text-align:center;color:var(--mute);padding:40px 20px;font-size:19px}
+    .pn-lock{max-width:440px;margin:0 auto}
+    .pn-lock h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;line-height:1.1;margin:0 0 8px}
+    .pn-lock p{margin:0 0 18px;color:var(--mute)}
+    .pn-lock .pn-msg{color:var(--goldt)}
+    .pn-lock label{display:block;margin-bottom:6px;font-size:15px;color:var(--mute)}
+    .pn-lock input{display:block;width:100%;padding:12px 14px;margin-bottom:16px;background:rgba(8,11,22,.55);border:1px solid var(--edge);color:var(--ink);font-family:'Jost',sans-serif;font-size:17px}
+    .pn-lock input:focus{outline:0;border-color:#fff}
   </style></head><body>
-  <div class="pn-brand"><a href="${escH(home)}">${CRANE_SVG}<span>Koyéba</span></a></div>`;
-  if (notFound) return `${head}<div class="pn-wrap"><div class="pn-empty">This note isn't shared any more, or the link is wrong.</div></div>
-    <div class="pn-cta"><div class="pn-cta-card"><div class="pn-cta-t">A calm home for your whole life</div><div class="pn-cta-s">Notes, tasks, calendar and more - gathered in one place.</div><a class="pn-cta-btn" href="${escH(home)}">Start yours, free →</a></div></div></body></html>`;
-  return `${head}<div class="pn-wrap"><article class="pn-card"><h1 class="pn-title">${escH(title)}</h1>${author ? `<p class="pn-by">Shared by ${escH(author)}</p>` : ''}<div class="pn-body">${bodyHtml || '<p style="color:' + MIST + '">This note is empty.</p>'}</div></article></div>
-    <div class="pn-cta"><div class="pn-cta-card"><div class="pn-cta-t">Made with Koyéba</div><div class="pn-cta-s">A calm home for your whole life - notes, tasks, calendar and more.</div><a class="pn-cta-btn" href="${escH(home)}">Start yours, free →</a></div></div></body></html>`;
+  <div class="pn-brand"><a href="${escH(home)}">Koyéba<i>.</i></a></div>`;
+  const cta = `<div class="pn-cta"><div class="pn-cta-s">A calm, private home for your whole life.</div><a class="pn-btn" href="${escH(home)}">Join Koyéba</a></div></body></html>`;
+  if (notFound) return `${head}<div class="pn-wrap"><div class="pn-empty">This note isn't published any more, or the link is wrong.</div></div>${cta}`;
+  if (locked) return `${head}<div class="pn-wrap"><form class="pn-box pn-lock" method="post"><h1>This note has a password</h1>${message ? `<p class="pn-msg" role="alert">${escH(message)}</p>` : '<p>Enter it to read the note.</p>'}<label for="pn-pw">Password</label><input id="pn-pw" name="password" type="password" autocomplete="current-password" required autofocus><button class="pn-btn" type="submit">Open the note</button></form></div>${cta}`;
+  return `${head}<div class="pn-wrap"><article class="pn-box"><h1 class="pn-title">${escH(title)}</h1>${author ? `<p class="pn-by">Shared by ${escH(author)}</p>` : '<p class="pn-by"></p>'}<div class="pn-body">${bodyHtml || '<p>This note is empty.</p>'}</div></article></div>${cta}`;
 }
 // The Koyéba mark - monoline octagram with an inner square - inline for the
 // public page (no app CSS available). Matches the app icon and favicon.
@@ -4902,7 +4966,7 @@ export default {
     // and only that one note is ever exposed (see servePublicNote). Read-only.
     const pubNote = path.match(/^\/n\/([a-f0-9]{16,64})$/);
     if (pubNote) {
-      try { return noStore(await servePublicNote(env, pubNote[1], url)); }
+      try { return noStore(await servePublicNote(env, pubNote[1], url, request)); }
       catch { return new Response('Not available', { status: 500, headers: { 'content-type': 'text/plain' } }); }
     }
 
@@ -5704,6 +5768,7 @@ export default {
         try {
           if (request.method === 'POST') return json(await publishNote(env, bid), request, 201);
           if (request.method === 'DELETE') return json(await unpublishNote(env, bid), request);
+          if (request.method === 'PUT') { const b = await request.json().catch(() => ({})); return json(await setNotePassword(env, bid, b.password), request); }
         } catch (e) { return err(e.message, request, 400); }
       }
       const blockMatch = path.match(/^\/api\/blocks\/([\w-]+)$/);
