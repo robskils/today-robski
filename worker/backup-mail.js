@@ -10,7 +10,7 @@ export async function sendBackupMail(env, { to, subject, html, text, replyTo }) 
     const plain = text || String(html || '').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     await env.EMAIL.send({
       to, subject, html, text: plain,
-      from: { email, name: 'Koyéba' },
+      from: { email, name: 'Kaya' },
       ...(replyTo ? { replyTo } : {}),
     });
     return { ok: true, status: 200, text: async () => '' };

@@ -18,11 +18,13 @@ const GUIDE_ANSWERS = {
     'Press <kbd>⌘K</kbd>, or choose <b>Search</b>. On a phone it\'s at the bottom right.',
     'Type a few words, then choose a result to go straight there.',
   ], next: ['set-down', 'linked'] },
-  'side-by-side': { title: 'Work with two things side by side', lead: 'Keep one thing open while you work on another: an email beside a note, say.', go: ['Open Split', 'data-split-open'], steps: [
-    'On a computer, choose <b>Split</b> in the top bar.',
-    'Search for what you want beside this page, and choose it.',
-    'Choose <b>Split</b> again to go back to one page.',
-  ], next: ['linked', 'mail-action'] },
+  'side-by-side': { title: 'Work with two things side by side', lead: 'Keep one thing open while you work on another - an email beside a note, your calendar beside your tasks. A second pane opens alongside the page you\'re on, and you set how much room each side gets.', go: ['Open Split', 'data-split-open'], steps: [
+    'On a computer, choose <b>Split</b> in the top bar. A second pane opens beside the page you\'re on.',
+    'Search for what to show there - a tool, a note, a task, a Space or an email - and choose it.',
+    'Drag the divider in the middle to give either side more room.',
+    'A quicker way in: <b>shift-click</b> almost anything to open it in the pane beside you.',
+    'Choose <b>Split</b> again to close the second pane and go back to one page.',
+  ], note: 'Side by side is a desktop view - there\'s the room for two things at once there.', next: ['linked', 'mail-action'] },
   linked: { title: 'Link things together', lead: 'A note, task or person can be joined to whatever belongs with it, so it\'s all a click away.', go: ['Open Notes', 'data-open-notes'], steps: [
     'Open a note or a task, and find <b>Linked &amp; attached</b>.',
     'Type in the search box to link a page, person, task or event.',
@@ -30,7 +32,7 @@ const GUIDE_ANSWERS = {
     'Hover over a row and press <b>✕</b> to remove it. Removing a link leaves the thing itself. Removing an attached file deletes the file.',
   ], next: ['note-start', 'task-add'] },
 
-  calendar: { title: 'Bring in your calendar', lead: 'Your calendar works on its own, and can show what\'s in Google, iCloud or Yahoo too.', go: ['Connect a calendar', 'data-onb-open-hub="calendar"'], steps: [
+  calendar: { title: 'Bring in your calendar', lead: 'Your Koyéba account has its own beautiful calendar. You don\'t need to sync it with a third-party calendar tool - but if you\'d like to bring in Google, iCloud or Yahoo, you can.', go: ['Connect a calendar', 'data-onb-open-hub="calendar"'], steps: [
     'Choose <b>Connect a calendar</b> above, then pick your provider.',
     'Follow the steps to sign in, or to add an app password for iCloud and Yahoo.',
     'Your events appear on your Calendar and on Today.',
@@ -337,9 +339,9 @@ function renderHelp(key0) {
     <article class="g-page g-answer">
       <h1 class="g-title g-title-a">${esc(a.title)}</h1>
       <p class="g-lead">${esc(a.lead)}</p>
-      ${a.go ? `<div><button type="button" class="g-cta" ${a.go[1]}>${esc(a.go[0])} →</button></div>` : ''}
       ${body}
       ${a.note ? `<p class="g-note">${esc(a.note)}</p>` : ''}
+      ${a.go ? `<div class="g-cta-after"><button type="button" class="g-cta" ${a.go[1]}>${esc(a.go[0])} →</button></div>` : ''}
       ${installed}
       ${next.length ? `<section><h2 class="g-next-h">Next, you might like</h2><div class="g-rows">${next.map((id) => guideRow(id)).join('')}</div></section>` : ''}
       <p class="g-foot">Something missing or wrong here? <button type="button" class="g-inline" data-guide-feedback="${esc(a.title)}">Tell us</button>.</p>
@@ -368,7 +370,13 @@ document.addEventListener('click', (e) => {
   const t = e.target; if (!t || !t.closest) return;
   const f = t.closest('[data-guide-fold]');
   if (f) { const k = f.dataset.guideFold; try { const s = JSON.parse(localStorage.getItem('life.guide.fold') || '{}'); s[k] = !guideOpen(k); localStorage.setItem('life.guide.fold', JSON.stringify(s)); } catch {} renderGuideIndex(); return; }
-  if (t.closest('[data-guide-help]')) { if (document.getElementById('g-panel')) guideClosePanel(); else guideOpenPanel(); return; }
+  if (t.closest('[data-guide-help]')) {
+    if (document.getElementById('g-panel')) { guideClosePanel(); return; }
+    // Press Help again, on the Help page, to go back where you were - same as Back.
+    // (Robin, 2026-11-05: "pressing Help again does the same thing as the back button".)
+    if (state.view && state.view.type === 'help') { if (typeof navBack === 'function') navBack(); else history.back(); return; }
+    guideOpenPanel(); return;
+  }
   if (t.closest('[data-guide-help-close]')) { guideClosePanel(); return; }
   if (t.closest('#g-panel [data-help-open], #g-panel [data-open-guide]')) { guideClosePanel(); return; }
   const gi = t.closest('[data-guide-installed]');

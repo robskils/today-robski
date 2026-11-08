@@ -12,10 +12,10 @@ const escHtml = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace
 // same rust keyline. No code to copy - the button carries it.
 export function inviteEmail({ from, message, link, tagline, accent }) {
   const who = escHtml(from);
-  const pre = `${who} has invited you to join Koyéba.`;
+  const pre = `${who} has invited you to join Kaya.`;
   const dbc = /^#[0-9a-f]{3,6}$/i.test(String(accent || '')) ? accent : '#a8844a';
   const initial = escHtml((String(from || '?').trim()[0] || '?').toUpperCase());
-  // A little of the inviter's Koyéba card: a coloured monogram and their
+  // A little of the inviter's Kaya card: a coloured monogram and their
   // tagline. Email-safe (a background-colour circle, no data-URI image).
   const cardBlock = tagline ? `<tr><td style="padding:20px 38px 0" align="center">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
@@ -34,8 +34,8 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://koyeba.co/email-mark.png?v=5" width="46" height="46" alt="Koyéba" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Koyéba<span style="color:#a8844a">.</span></p>
+          <img src="https://kaya.so/email-mark.png?v=5" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya<span style="color:#a8844a">.</span></p>
         </td></tr>
 
         <tr><td style="padding:22px 38px 0">
@@ -45,7 +45,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
         </td></tr>
 
         <tr><td style="padding:28px 38px 0" align="center">
-          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.35;color:#211c17">${who} has invited you to join <em>Koyéba</em></p>
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.35;color:#211c17">${who} has invited you to join <em>Kaya</em></p>
         </td></tr>
 
         ${cardBlock}
@@ -59,7 +59,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
         </td></tr>` : ''}
 
         <tr><td style="padding:22px 38px 0">
-          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Koyéba is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.</p>
+          <p style="margin:0;font-size:15px;color:#574e44;line-height:1.6;text-align:center">Kaya is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.</p>
         </td></tr>
 
         <tr><td style="padding:26px 38px 0" align="center">
@@ -71,7 +71,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
         </td></tr>
 
         <tr><td style="padding:20px 38px 0">
-          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The button takes you to Koyéba, where we'll send a short sign-in code to confirm your email. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#a8844a;text-decoration:none">${escHtml(link)}</a></p>
+          <p style="margin:0;font-size:13px;color:#8b7f72;line-height:1.6;text-align:center">The button takes you to Kaya, where we'll send a short sign-in code to confirm your email. If the button does not work, open<br><a href="${escHtml(link)}" style="color:#a8844a;text-decoration:none">${escHtml(link)}</a></p>
         </td></tr>
 
         <tr><td style="padding:26px 38px 8px" align="center">

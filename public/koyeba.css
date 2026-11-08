@@ -1,4 +1,4 @@
-/* Koyéba — design tokens (day + night) and self-hosted type.
+/* Kaya — design tokens (day + night) and self-hosted type.
    Day is the default on :root; night is `body.night` (per design/koyeba/README.md §3).
    Colour values are traced exactly from the prototype (design/koyeba/Koyeba App.dc.html);
    hex in the comments is the approximation only. One accent: gold. Night is forest, never navy. */

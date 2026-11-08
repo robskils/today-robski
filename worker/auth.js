@@ -145,7 +145,7 @@ export async function requestCode(request, env, json, err) {
   const email = String(body.email || '').trim().toLowerCase();
   if (!validEmail(email)) return err('That does not look like an email address', 400);
   // 'sms' texts the code to ALERT_PHONE instead of emailing it. This is the
-  // fix for the Catch-22 once Koyéba *is* the mailbox: if email breaks or
+  // fix for the Catch-22 once Kaya *is* the mailbox: if email breaks or
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
@@ -174,7 +174,7 @@ export async function requestCode(request, env, json, err) {
   if (channel === 'sms') {
     // Text the code to THIS user's own saved phone - never the owner's hardcoded
     // ALERT_PHONE. This is the escape hatch for someone whose email now lives
-    // inside Koyéba: the emailed code would be locked behind this very sign-in,
+    // inside Kaya: the emailed code would be locked behind this very sign-in,
     // but a text to their phone still gets them in. Needs an existing account
     // with a phone on file (Settings › Account); a brand-new signup has neither,
     // so it simply falls through to email.
@@ -185,7 +185,7 @@ export async function requestCode(request, env, json, err) {
       toPhone = (phRow && phRow.value) || (acct.id === 1 ? env.ALERT_PHONE : '');
     }
     if (toPhone) {
-      const sms = await sendSms(env, `${code} is your Koyéba sign-in code. It expires in 30 minutes.`, toPhone);
+      const sms = await sendSms(env, `${code} is your Kaya sign-in code. It expires in 30 minutes.`, toPhone);
       // Only report SMS if it actually left: a not-configured or rejected send
       // silently falls through to email, so the user is never stranded without a
       // code just because SMS credit ran out.
@@ -309,19 +309,19 @@ export async function verifyTotp(request, env, json, err) {
 // non-ASCII subject needs RFC 2047 encoding.
 export async function sendCodeMail(env, email, code, kind) {
   const alias = kind === 'alias';
-  const subject = alias ? `${code} - confirm your email for Koyéba` : `${code} - your Koyéba sign-in code`;
+  const subject = alias ? `${code} - confirm your email for Kaya` : `${code} - your Kaya sign-in code`;
   const html = codeEmail(code, kind);
   const text = alias
-    ? `Enter ${code} in Koyéba to add this address to your account. It expires in 30 minutes.`
-    : `Your Koyéba sign-in code is ${code}. It expires in 30 minutes.`;
+    ? `Enter ${code} in Kaya to add this address to your account. It expires in 30 minutes.`
+    : `Your Kaya sign-in code is ${code}. It expires in 30 minutes.`;
 
   // Primary path: Purelymail SMTP as contact@daybook.fyi - a real mailbox on a
   // fully-aligned domain (SPF+DKIM+DMARC), so the code lands in the inbox and
-  // carries the Koyéba address. Same transport and secret as the invite and the
+  // carries the Kaya address. Same transport and secret as the invite and the
   // morning brief. Falls back to Cloudflare Email Service if SMTP fails or isn't set.
   if (env.BRIEF_SMTP_PASS) {
     const acct = {
-      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Koyéba',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Kaya',
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
@@ -345,7 +345,7 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-// Koyéba branding: warm paper and rust, matching the app and the homepage.
+// Kaya branding: warm paper and rust, matching the app and the homepage.
 //
 // Table layout and inline styles throughout: Gmail strips <style> blocks, and
 // Outlook's renderer is Word. No flexbox, no CSS variables, no SVG.
@@ -353,9 +353,9 @@ export function codeEmail(code, kind) {
   const alias = kind === 'alias';
   const eyebrow = alias ? 'Confirm email' : 'Sign in';
   const line = alias
-    ? `Enter this code in Koyéba to add this address to your account. It expires in <strong style="color:#211c17">30 minutes</strong>.`
+    ? `Enter this code in Kaya to add this address to your account. It expires in <strong style="color:#211c17">30 minutes</strong>.`
     : `Your sign-in code. It expires in <strong style="color:#211c17">30 minutes</strong>.`;
-  const pre = alias ? `${code} confirms this email for your Koyéba account.` : `${code} is your Koyéba sign-in code. It expires in 30 minutes.`;
+  const pre = alias ? `${code} confirms this email for your Kaya account.` : `${code} is your Kaya sign-in code. It expires in 30 minutes.`;
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:#efeae0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
@@ -371,11 +371,11 @@ export function codeEmail(code, kind) {
         <!-- Wordmark: the real mark (sun over two page-lines) as a PNG - the
              favicon is an SVG and every major client strips those - over the
              name and the tagline. alt is empty on purpose: with images off the
-             serif wordmark below already says Koyéba, so a blocked image
-             should leave nothing behind rather than a second "Koyéba". -->
+             serif wordmark below already says Kaya, so a blocked image
+             should leave nothing behind rather than a second "Kaya". -->
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://koyeba.co/email-mark.png?v=5" width="46" height="46" alt="Koyéba" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Koyéba<span style="color:#a8844a">.</span></p>
+          <img src="https://kaya.so/email-mark.png?v=5" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya<span style="color:#a8844a">.</span></p>
         </td></tr>
 
         <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->
@@ -408,7 +408,7 @@ export function codeEmail(code, kind) {
         <tr><td style="padding:16px 38px;border-top:1px solid #e4ddcf">
           <p style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;color:#8b7f72;text-align:center">For a life well lived</p>
           <p style="margin:0;font-size:11px;color:#8b7f72;text-align:center">
-            <a href="https://koyeba.co" style="color:#a8844a;text-decoration:none">koyeba.co</a>
+            <a href="https://kaya.so" style="color:#a8844a;text-decoration:none">kaya.so</a>
           </p>
         </td></tr>
 

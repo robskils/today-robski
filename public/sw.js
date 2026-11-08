@@ -1,4 +1,4 @@
-// Koyéba service worker: push notifications + offline / instant-open caching.
+// Kaya service worker: push notifications + offline / instant-open caching.
 //
 // Caching rules, chosen to be safe:
 //   - /api/* and /auth/* are NEVER cached - always straight to the network, so
@@ -13,7 +13,7 @@
 //
 // Bump CACHE when this file's logic changes, to purge older caches on activate.
 
-const CACHE = 'koyeba-cache-v6';
+const CACHE = 'kaya-cache-v7';
 const SHELL = ['/app.html', '/qrcode.min.js', '/icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -43,6 +43,21 @@ self.addEventListener('fetch', (event) => {
 
   // Never touch the API or auth: always network, fresh and authenticated.
   if (sameOrigin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/'))) return;
+
+  // The web app manifest decides the installed app's NAME and icon. Serve it
+  // network-first (cache only as an offline fallback) so a rename/rebrand is
+  // never held back by a stale cached copy - a stale cached manifest is exactly
+  // what kept the old name showing on install. (Robin, 2026-11-08.)
+  if (sameOrigin && url.pathname === '/manifest.webmanifest') {
+    event.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        if (res && res.ok) { const c = await caches.open(CACHE); c.put(req, res.clone()); }
+        return res;
+      } catch { return (await caches.match(req)) || Response.error(); }
+    })());
+    return;
+  }
 
   // The app shell (navigations): network-first, offline-fallback to cache.
   if (req.mode === 'navigate') {
@@ -115,7 +130,7 @@ self.addEventListener('push', (event) => {
     // A single-email mail push carries the specific email's key so a tap opens
     // THAT email, not just the inbox. (Robin, 2026-11-04.)
     const mailKey = data.mailKey || '';
-    await self.registration.showNotification(data.title || 'Koyéba', {
+    await self.registration.showNotification(data.title || 'Kaya', {
       body: data.body || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

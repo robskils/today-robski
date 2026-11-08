@@ -77,7 +77,7 @@ custom_domain = true
 # koyeba.co: the new primary brand domain (registered on Cloudflare, 2026-10-30).
 # custom_domain so wrangler provisions the proxied record + cert on deploy. Served in
 # parallel; shizu.fyi (and the older domains) now 301 here - see APP_DOMAINS and the
-# redirect block in worker/index.js. The app sender flips to contact@koyeba.co at the
+# redirect block in worker/index.js. The app sender flips to contact@kaya.today at the
 # prod cutover (BRIEF_FROM/BRIEF_SMTP_USER + the secret), deployed in one go.
 [[routes]]
 pattern = "koyeba.co"
@@ -85,6 +85,32 @@ custom_domain = true
 
 [[routes]]
 pattern = "www.koyeba.co"
+custom_domain = true
+
+# kaya.today: a PREVIOUS primary brand domain. Its route stays attached so the
+# worker still receives kaya.today requests and 301s them to kaya.so (see the
+# redirect block in worker/index.js) - removing the route would strand it. Static
+# assets still serve here so an installed kaya.today PWA doesn't white-screen.
+[[routes]]
+pattern = "kaya.today"
+custom_domain = true
+
+[[routes]]
+pattern = "www.kaya.today"
+custom_domain = true
+
+# kaya.so: the new primary brand domain (bought on Namecheap, nameservers pointed to
+# Cloudflare 2026-11-08). custom_domain so wrangler provisions the proxied record +
+# cert on deploy. kaya.today now 301s here; koyeba.co too, except its hard-registered
+# Google Calendar OAuth callback (GET /api/gcal/callback), which keeps answering on
+# koyeba.co. App email moved to contact@kaya.so (Purelymail). See APP_DOMAINS and the
+# redirect block in worker/index.js.
+[[routes]]
+pattern = "kaya.so"
+custom_domain = true
+
+[[routes]]
+pattern = "www.kaya.so"
 custom_domain = true
 
 [vars]
@@ -109,17 +135,20 @@ ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robins
 #
 # onboarding@resend.dev would not work here: it only delivers to the Resend
 # account's own address, and codes go to robin@lumley-savile.com.
-FROM_EMAIL = "Koyeba <today@incremento.co>"
+FROM_EMAIL = "Kaya <today@incremento.co>"
 
 # Koyéba sends ALL its mail - sign-in codes, invitations and the 08:45 brief -
-# from contact@koyeba.co through Purelymail SMTP: a real mailbox on a fully
+# from contact@kaya.today through Purelymail SMTP: a real mailbox on a fully
 # SPF/DKIM/DMARC-aligned domain (koyeba.co passes all four, incl. DMARC), so
 # nothing depends on a Resend-verified domain. BRIEF_SMTP_PASS (secret) is this
 # mailbox's password; these two set the SMTP login and the From address (the
 # "Koyeba" display name is in code). FROM_EMAIL above is only the Resend fallback
 # used if SMTP auth ever fails. (Flipped shizu.fyi -> koyeba.co, 2026-10-31.)
-BRIEF_FROM = "contact@koyeba.co"
-BRIEF_SMTP_USER = "contact@koyeba.co"
+# App email moved to contact@kaya.so at the kaya.so cutover (2026-11-08). The
+# BRIEF_SMTP_PASS secret is contact@kaya.so's own mailbox password (verified over
+# Purelymail SMTP, 235 OK). The Purelymail domain + DKIM/SPF/DMARC are set up.
+BRIEF_FROM = "contact@kaya.so"
+BRIEF_SMTP_USER = "contact@kaya.so"
 
 # Per-member Google Calendar connect (worker/gcal.js). This is the PUBLIC client
 # id of the SEPARATE OAuth client in the standalone "Daybook Calendar" Google
@@ -173,11 +202,11 @@ GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 # Only Robin to start; invite-only test users get added here (or, once the users
 # table drives access, this list stops being the gate).
 ADMIN_EMAILS = "robin@lumley-savile.com,robin@incremento.co,*@robski.uk,*@robinsavile.com"
-FROM_EMAIL = "Koyeba <today@incremento.co>"
+FROM_EMAIL = "Kaya <today@incremento.co>"
 # Vars don't inherit into envs. Without these two, sign-in codes log in to SMTP
 # as the old contact@daybook.fyi default instead of the mailbox BRIEF_SMTP_PASS is for.
-BRIEF_FROM = "contact@koyeba.co"
-BRIEF_SMTP_USER = "contact@koyeba.co"
+BRIEF_FROM = "contact@kaya.today"
+BRIEF_SMTP_USER = "contact@kaya.today"
 BRIEF_EMAIL = "robin@lumley-savile.com"
 
 # Both DB and PORTFOLIO_DB point at the one staging database: on staging the
@@ -274,5 +303,5 @@ new_sqlite_classes = ["MsgHub"]
 #                         off until this is set.
 #   ALERT_PHONE           where the alerts go: Robin's mobile, full international
 #                         (+351...). Also off until set.
-#   ALERT_SENDER          optional sender id, defaults to "Robski". A number
+#   ALERT_SENDER          optional sender id, defaults to "Kaya". A number
 #                         here (eg +351920111939) if a network drops letters.

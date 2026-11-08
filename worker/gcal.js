@@ -48,7 +48,7 @@ export async function gcalConnectUrl(env) {
 
 const bounce = (loc) => new Response(null, { status: 302, headers: { Location: loc, 'Cache-Control': 'no-store' } });
 // Single domain now (no per-user subdomains): land back in the app at the apex.
-// The calendar view reads ?gcal= and surfaces the outcome once. (Koyéba, 2026-10-31.)
+// The calendar view reads ?gcal= and surfaces the outcome once. (Kaya, 2026-10-31.)
 const home = (sd, q) => `https://koyeba.co/app?gcal=${q}`;
 
 // Google redirects here (unauthenticated - the member's session lives on their

@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Instale o Koyéba como uma aplicação</title>
-<meta name="description" content="O Koyéba corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline e com notificações. Eis como, no Chrome, Brave, Edge, Safari, Windows, Mac, iPhone e Android.">
-<link rel="canonical" href="https://koyeba.co/pt/jornal/instalar-como-app">
-<link rel="alternate" hreflang="en" href="https://koyeba.co/blog/install-as-app">
-<link rel="alternate" hreflang="pt-PT" href="https://koyeba.co/pt/jornal/instalar-como-app">
-<link rel="alternate" hreflang="fr" href="https://koyeba.co/fr/journal/installer-comme-app">
-<link rel="alternate" hreflang="es" href="https://koyeba.co/es/diario/instalar-como-app">
-<link rel="alternate" hreflang="x-default" href="https://koyeba.co/blog/install-as-app">
-<meta property="og:title" content="Instale o Koyéba como uma aplicação">
-<meta property="og:description" content="O Koyéba corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline. Eis como, em qualquer dispositivo.">
+<title>Instale o Kaya como uma aplicação</title>
+<meta name="description" content="O Kaya corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline e com notificações. Eis como, no Chrome, Brave, Edge, Safari, Windows, Mac, iPhone e Android.">
+<link rel="canonical" href="https://kaya.so/pt/jornal/instalar-como-app">
+<link rel="alternate" hreflang="en" href="https://kaya.so/blog/install-as-app">
+<link rel="alternate" hreflang="pt-PT" href="https://kaya.so/pt/jornal/instalar-como-app">
+<link rel="alternate" hreflang="fr" href="https://kaya.so/fr/journal/installer-comme-app">
+<link rel="alternate" hreflang="es" href="https://kaya.so/es/diario/instalar-como-app">
+<link rel="alternate" hreflang="x-default" href="https://kaya.so/blog/install-as-app">
+<meta property="og:title" content="Instale o Kaya como uma aplicação">
+<meta property="og:description" content="O Kaya corre no seu navegador mas instala-se como uma verdadeira aplicação - com um ícone próprio, uma janela própria, pronto offline. Eis como, em qualquer dispositivo.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://koyeba.co/pt/jornal/instalar-como-app">
+<meta property="og:url" content="https://kaya.so/pt/jornal/instalar-como-app">
 <link rel="icon" href="/favicon.svg?v=8">
 <link rel="stylesheet" href="/blog.css">
 <!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
@@ -46,7 +46,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Koyéba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyéba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Kaya uses analytics cookies to understand how the site is used - nothing personal, and never any of your Kaya content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -63,9 +63,9 @@
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyéba</span></a>
+    <a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a>
     <ul class="nav-links">
-      <li><a href="/pt#idea">O seu Koyéba</a></li>
+      <li><a href="/pt#idea">O seu Kaya</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt#private">Privado por princípio</a></li>
       <li><a href="/pt/jornal" class="on">Jornal</a></li>
@@ -81,9 +81,9 @@
 <main class="wrap">
   <article class="article">
     <div class="article-head">
-      <a class="back-link" href="/pt/jornal">← O Jornal do Koyéba</a>
+      <a class="back-link" href="/pt/jornal">← O Jornal do Kaya</a>
       <div class="eyebrow">Primeiros passos</div>
-      <h1>Instale o Koyéba como uma aplicação</h1>
+      <h1>Instale o Kaya como uma aplicação</h1>
       <div class="article-meta">
         <span>Outubro de 2026</span>
         <span class="dot">·</span>
@@ -95,41 +95,41 @@
     <div class="hero-rule"></div>
 
     <div class="prose">
-      <p class="lede">O Koyéba vive no seu navegador, mas não tem de parecer um separador do navegador. Em dois cliques pode instalá-lo como uma aplicação - com um ícone próprio, uma janela limpa e própria, pronto offline e capaz de lhe enviar notificações.</p>
+      <p class="lede">O Kaya vive no seu navegador, mas não tem de parecer um separador do navegador. Em dois cliques pode instalá-lo como uma aplicação - com um ícone próprio, uma janela limpa e própria, pronto offline e capaz de lhe enviar notificações.</p>
 
-      <p>O Koyéba é uma aplicação web progressiva, o que é uma forma simples de dizer que se instala diretamente a partir da web, sem nada para descarregar de uma loja. O mesmo Koyéba, a mesma forma de entrar - apenas com roupagem de aplicação a sério. Eis como, onde quer que esteja.</p>
+      <p>O Kaya é uma aplicação web progressiva, o que é uma forma simples de dizer que se instala diretamente a partir da web, sem nada para descarregar de uma loja. O mesmo Kaya, a mesma forma de entrar - apenas com roupagem de aplicação a sério. Eis como, onde quer que esteja.</p>
 
       <h2>Num computador</h2>
       <ul>
-        <li><strong>Chrome ou Brave</strong> (Windows, Mac, Linux) - abra o <strong>koyeba.co</strong> e procure o pequeno <strong>ícone de instalação</strong> à direita da barra de endereço (um ecrã com uma seta para baixo). Clique nele e depois em <strong>Instalar</strong>. Não vê o ícone de instalação? Use o menu <strong>⋮</strong> → <strong>Transmitir, guardar e partilhar</strong> → <strong>Instalar página como app</strong> (Brave: <strong>⋮</strong> → <strong>Instalar Koyéba…</strong>).</li>
+        <li><strong>Chrome ou Brave</strong> (Windows, Mac, Linux) - abra o <strong>kaya.so</strong> e procure o pequeno <strong>ícone de instalação</strong> à direita da barra de endereço (um ecrã com uma seta para baixo). Clique nele e depois em <strong>Instalar</strong>. Não vê o ícone de instalação? Use o menu <strong>⋮</strong> → <strong>Transmitir, guardar e partilhar</strong> → <strong>Instalar página como app</strong> (Brave: <strong>⋮</strong> → <strong>Instalar Kaya…</strong>).</li>
         <li><strong>Microsoft Edge</strong> - o menu <strong>⋯</strong> → <strong>Aplicações</strong> → <strong>Instalar este site como uma aplicação</strong>.</li>
-        <li><strong>Safari no Mac</strong> (Sonoma ou mais recente) - com o Koyéba aberto, o menu <strong>Ficheiro</strong> → <strong>Adicionar à Dock</strong>.</li>
+        <li><strong>Safari no Mac</strong> (Sonoma ou mais recente) - com o Kaya aberto, o menu <strong>Ficheiro</strong> → <strong>Adicionar à Dock</strong>.</li>
       </ul>
-      <p>O Koyéba abre então na sua própria janela e fica na Dock, na barra de tarefas ou no menu Iniciar, como qualquer outra aplicação.</p>
+      <p>O Kaya abre então na sua própria janela e fica na Dock, na barra de tarefas ou no menu Iniciar, como qualquer outra aplicação.</p>
 
       <blockquote>Nada para descarregar de uma loja. Instala-se diretamente a partir da web.</blockquote>
 
       <h2>Num telemóvel ou tablet</h2>
       <ul>
-        <li><strong>iPhone e iPad</strong> - abra o koyeba.co no <strong>Safari</strong>, toque no botão <strong>Partilhar</strong> (o quadrado com uma seta para cima) e depois em <strong>Adicionar ao ecrã principal</strong>.</li>
-        <li><strong>Android</strong> - abra o koyeba.co no <strong>Chrome</strong>, toque no menu <strong>⋮</strong> e depois em <strong>Instalar aplicação</strong> (ou <strong>Adicionar ao ecrã principal</strong>).</li>
+        <li><strong>iPhone e iPad</strong> - abra o kaya.so no <strong>Safari</strong>, toque no botão <strong>Partilhar</strong> (o quadrado com uma seta para cima) e depois em <strong>Adicionar ao ecrã principal</strong>.</li>
+        <li><strong>Android</strong> - abra o kaya.so no <strong>Chrome</strong>, toque no menu <strong>⋮</strong> e depois em <strong>Instalar aplicação</strong> (ou <strong>Adicionar ao ecrã principal</strong>).</li>
       </ul>
-      <p>Ficará com um ícone do Koyéba no ecrã principal que abre em ecrã inteiro, sem a barra de endereço a atrapalhar.</p>
+      <p>Ficará com um ícone do Kaya no ecrã principal que abre em ecrã inteiro, sem a barra de endereço a atrapalhar.</p>
 
       <h2>Porquê dar-se ao trabalho</h2>
       <ul>
         <li><strong>Um toque e está dentro.</strong> Um ícone a sério vale mais do que andar à procura do separador certo.</li>
         <li><strong>Uma janela mais calma.</strong> Ecrã inteiro, sem a confusão do navegador à volta do seu dia.</li>
         <li><strong>Funciona quando o sinal não funciona.</strong> A aplicação mantém a sua estrutura pronta, por isso uma ligação irregular não o deixa a olhar para uma página em branco.</li>
-        <li><strong>Notificações.</strong> Depois de instalado, pode deixar o Koyéba lembrá-lo do que importa - nos seus termos, e desligadas por predefinição.</li>
+        <li><strong>Notificações.</strong> Depois de instalado, pode deixar o Kaya lembrá-lo do que importa - nos seus termos, e desligadas por predefinição.</li>
       </ul>
 
-      <p>É só isto. Instale-o uma vez e o Koyéba fica ali na Dock ou no ecrã principal sempre que precisar - a mesma casa tranquila e privada para o seu dia, agora à distância de um toque.</p>
+      <p>É só isto. Instale-o uma vez e o Kaya fica ali na Dock ou no ecrã principal sempre que precisar - a mesma casa tranquila e privada para o seu dia, agora à distância de um toque.</p>
     </div>
 
     <div class="article-end">
       <h3>Ainda não é membro?</h3>
-      <p>O Koyéba está em acesso antecipado, apenas por convite. Peça um convite e entraremos em contacto em breve.</p>
+      <p>O Kaya está em acesso antecipado, apenas por convite. Peça um convite e entraremos em contacto em breve.</p>
       <a class="btn btn-primary" href="/pt#invite">Pedir um convite →</a>
     </div>
   </article>
@@ -137,18 +137,18 @@
 
 <footer>
   <div class="wrap foot-in">
-    <div class="foot-brand"><a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Koyéba</span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
+    <div class="foot-brand"><a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
     <ul class="foot-links">
-      <li><a href="/pt#idea">O seu Koyéba</a></li>
+      <li><a href="/pt#idea">O seu Kaya</a></li>
       <li><a href="/pt#tools">Ferramentas</a></li>
       <li><a href="/pt/jornal">Jornal</a></li>
       <li><a href="/pt#invite">Pedir um convite</a></li>
       <li><a href="/pt/privacidade">Privacidade</a></li>
       <li><a href="/pt/termos">Termos</a></li>
-      <li><a href="mailto:contact@koyeba.co">Contacto</a></li>
+      <li><a href="mailto:contact@kaya.so">Contacto</a></li>
     </ul>
     <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
-    <div class="foot-meta">Dúvidas? <a href="mailto:contact@koyeba.co">contact@koyeba.co</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Koyéba</div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@kaya.so">contact@kaya.so</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Kaya</div>
   </div>
 </footer>
 

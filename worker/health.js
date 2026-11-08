@@ -1,6 +1,6 @@
 // Integration health monitor. Robin: "we don't like silent breakages."
 //
-// Koyéba leans on a handful of free external services. When one dies - as
+// Kaya leans on a handful of free external services. When one dies - as
 // TheSportsDB's old free key did, returning a 200 with a plain-text "key
 // disabled" error that the code swallowed as an empty list - every call just
 // quietly returns nothing, and the only way anyone finds out is by trying to use
@@ -14,7 +14,7 @@ async function ping(url, { ms = 8000, headers = {} } = {}) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'Koyeba/1.0', ...headers }, signal: ctl.signal });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Kaya/1.0', ...headers }, signal: ctl.signal });
     return { status: r.status, ok: r.ok, body: await r.text() };
   } finally { clearTimeout(timer); }
 }
@@ -25,23 +25,12 @@ function asJson(r) { try { return JSON.parse(r.body); } catch { return null; } }
 // and the alert email. `needs(env)` skips a probe whose service isn't configured
 // (no key), so it never shows as "down" for a feature the owner hasn't set up.
 export const HEALTH_PROBES = [
-  {
-    // Low-importance feed, and TheSportsDB's free tier is flaky - so it needs a much
-    // longer run of failures before it's worth an email. Only a genuinely persistent
-    // outage (hours), not an hour's wobble. (Robin, 2026-10-26.)
-    key: 'sportsdb', label: 'Football fixtures · TheSportsDB', alertAfter: 12,
-    async probe(env) {
-      try {
-        const key = (env && env.SPORTSDB_KEY) || '123';
-        const r = await ping(`https://www.thesportsdb.com/api/v1/json/${key}/searchteams.php?t=Arsenal`);
-        if (r.status !== 200) return { ok: false, detail: `HTTP ${r.status}` };
-        const j = asJson(r);
-        if (!j) return { ok: false, detail: `Not JSON: "${r.body.slice(0, 70).trim()}"` };   // the "key disabled" plain-text case
-        if (!Array.isArray(j.teams) || !j.teams.length) return { ok: false, detail: 'No match for a known club - the API key may be disabled' };
-        return { ok: true, detail: `OK (found ${j.teams[0].strTeam})` };
-      } catch (e) { return { ok: false, detail: timedOut(e) }; }
-    },
-  },
+  // Football fixtures (TheSportsDB) is deliberately NOT health-monitored. Its free
+  // tier wobbles often enough that the probe reported "down" on a feed that was in
+  // fact working (verified 2026-11-05: searchteams returns Arsenal fine), and it's a
+  // low-importance, read-only calendar overlay. A false "broken" notice is worse than
+  // no notice. (Robin, 2026-11-05: "if it isn't broken, don't show that notification.")
+  // The feed itself still runs - see searchTeams/fetchTeamFixtures in worker/feeds.js.
   {
     key: 'holidays', label: 'Public holidays · Nager.Date',
     async probe() {

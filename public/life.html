@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Robski · Life</title>
-<link rel="icon" href="/favicon.svg?v=202611050047">
-<link rel="stylesheet" href="/life.css?v=202611050047">
+<link rel="icon" href="/favicon.svg?v=202611082256">
+<link rel="stylesheet" href="/life.css?v=202611082256">
 <script>
   // Stamp the theme before first paint so there's no flash.
   try {
@@ -46,7 +46,7 @@
   function banner() {
     if (document.querySelector('.dbk-consent')) return;
     var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
-    b.innerHTML = '<p>Koyéba uses analytics cookies to understand how the site is used - nothing personal, and never any of your Koyéba content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.innerHTML = '<p>Kaya uses analytics cookies to understand how the site is used - nothing personal, and never any of your Kaya content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
     b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
     b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
     document.body.appendChild(b);
@@ -61,7 +61,7 @@
 <body>
   <header class="bar">
     <div class="bar-l">
-      <span class="mark">Koyéba</span>
+      <span class="mark">Kaya</span>
       <nav class="tabs">
         <a class="tab on" href="/life.html">Tasks</a>
         <a class="tab" href="/tables.html">Tables</a>

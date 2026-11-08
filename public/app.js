@@ -1,4 +1,4 @@
-// Koyéba — one surface. Sidebar + a single pane that renders any block,
+// Kaya — one surface. Sidebar + a single pane that renders any block,
 // and a ⌘K palette to jump anywhere. No page reloads.
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -6,10 +6,10 @@ const KEY = 'today.token';
 // Set only inside Split's second pane: the tool that pane should show.
 const SPLIT_FRAME_TOOL = (() => { try { return window.self !== window.top ? new URLSearchParams(location.search).get('splittool') : null; } catch { return null; } })();
 if (SPLIT_FRAME_TOOL) document.documentElement.classList.add('in-split-frame');
-// The wordmark: <first name> Koyéba. The name comes from the signed-in account
+// The wordmark: <first name> Kaya. The name comes from the signed-in account
 // (see firstName), never from a constant - a hard-coded owner is how every member
-// ended up looking at somebody else's name on their own Koyéba.
-const BRAND = { app: 'Koyéba' };
+// ended up looking at somebody else's name on their own Kaya.
+const BRAND = { app: 'Kaya' };
 // The tiers. Stored keys describe the arrangement, labels are the marketing name -
 // which has changed three times while the arrangement hasn't. Mirrors
 // worker/plans.js; change both together.
@@ -20,14 +20,14 @@ const PLAN_PRICE = { free: '', byok: '€9/mo', managed: '€13/mo' };
 const normPlan = (p) => { const k = String(p || '').toLowerCase(); return PLAN_KEYS.includes(k) ? k : ({ standard: 'byok', premium: 'managed' }[k] || 'free'); };
 const planLabel = (p) => PLAN_LABEL[normPlan(p)];
 const isManagedPlan = (p) => normPlan(p) === 'managed';
-// The Koyéba mark: a sun rising over two page-lines (a book of days). Uses
+// The Kaya mark: a sun rising over two page-lines (a book of days). Uses
 // currentColor so it takes on the user's accent, and sits between the owner
-// name and "Koyéba" in the wordmark.
-// The Koyéba mark: a monoline eight-fold star (an octagram of two folded
+// name and "Kaya" in the wordmark.
+// The Kaya mark: a monoline eight-fold star (an octagram of two folded
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
-const MARK = '<span class="brand-mark" aria-hidden="true"></span>';
+const MARK = '';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -39,9 +39,9 @@ function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
 const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
-// The Reflection page's own tools, each switchable on its own. reflectOn() is true
-// while any one is on, so the Reflection hub and its Home pins stay put until the
-// last is switched off. (Robin, 2026-10-29: "add the Reflection tools individually".)
+// The Insight page's own tools, each switchable on its own. reflectOn() is true
+// while any one is on, so the Insight hub and its Home pins stay put until the
+// last is switched off. (Robin, 2026-10-29: "add the Insight tools individually".)
 const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dreams', 'Dreams'], ['compass', 'Compass'], ['spirit', 'Spirit Cards'], ['iching', 'I Ching'], ['tarot', 'Tarot'], ['horoscope', 'Horoscope'], ['insights', 'Insights']];
 
 // ── Languages (i18n) ───────────────────────────────────────────────────────
@@ -51,13 +51,13 @@ const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dre
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português'], ['it', 'Italiano']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Reflection', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Reflection', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
-  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Koyéba card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Koyéba reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
+  'set.sub.account': 'Your details & sign-in addresses', 'set.sub.card': 'Your Kaya card - photo, tagline, links & colour', 'set.sub.ai': 'Your plan, and how the AI runs', 'set.sub.appearance': 'Theme & accent colour', 'set.sub.mobile': 'Arrange your Home on the phone', 'set.sub.notifications': 'How and when Kaya reaches you', 'set.sub.sections': "Turn off any tool you don't use", 'set.sub.invites': 'Email someone an invitation to join', 'set.sub.manage': 'Spaces, mail, categories & more', 'set.sub.feeds': 'Holidays and fixtures on your calendar', 'set.sub.security': 'Two-factor authentication & sign-in', 'set.sub.import': 'Bring your notes in from elsewhere',
   'set.language': 'Language', 'set.language.hint': 'More languages are rolled out surface by surface',
   'home.greeting.morning': 'Good morning', 'home.greeting.afternoon': 'Good afternoon', 'home.greeting.evening': 'Good evening',
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
@@ -65,21 +65,21 @@ const T_EN = {
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
-  'signup.welcome': "Welcome - let's set up your Koyéba.", 'signup.accepted': 'What shall we call you?', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Koyéba will live at', 'signup.create': 'Create my Koyéba', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Koyéba is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
+  'signup.welcome': "Welcome - let's set up your Kaya.", 'signup.accepted': 'What shall we call you?', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Kaya will live at', 'signup.create': 'Create my Kaya', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Kaya is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
   'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
-  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Koyéba friends', 'ct.self.show': 'Show your Koyéba card', 'ct.self.sub': 'Your window on Koyéba', 'ct.selfcard.tag': 'Koyéba card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
+  'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Kaya friends', 'ct.self.show': 'Show your Kaya card', 'ct.self.sub': 'Your window on Kaya', 'ct.selfcard.tag': 'Kaya card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Reflexão', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Reflexão', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
-  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Koyéba - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Koyéba te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
+  'set.sub.account': 'Os teus dados e endereços de início de sessão', 'set.sub.card': 'O teu cartão Kaya - foto, lema, ligações e cor', 'set.sub.ai': 'O teu plano, e como a IA funciona', 'set.sub.appearance': 'Tema e cor de destaque', 'set.sub.mobile': 'Organiza o teu Início no telemóvel', 'set.sub.notifications': 'Como e quando o Kaya te contacta', 'set.sub.sections': 'Desliga qualquer ferramenta que não uses', 'set.sub.invites': 'Envia por email um convite para aderir', 'set.sub.manage': 'Spaces, correio, categorias e mais', 'set.sub.feeds': 'Feriados e jogos no teu calendário', 'set.sub.security': 'Autenticação de dois fatores e início de sessão', 'set.sub.import': 'Traz as tuas notas de outro lado',
   'set.language': 'Idioma', 'set.language.hint': 'O português está a ser lançado secção a secção',
   'home.greeting.morning': 'Bom dia', 'home.greeting.afternoon': 'Boa tarde', 'home.greeting.evening': 'Boa noite',
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
@@ -87,21 +87,21 @@ const T_PT = {
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
-  'signup.welcome': 'Bem-vindo - vamos preparar o teu Koyéba.', 'signup.accepted': 'Como devemos chamar-te?', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Koyéba ficará em', 'signup.create': 'Criar o meu Koyéba', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Koyéba é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
+  'signup.welcome': 'Bem-vindo - vamos preparar o teu Kaya.', 'signup.accepted': 'Como devemos chamar-te?', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Kaya ficará em', 'signup.create': 'Criar o meu Kaya', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Kaya é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
   'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
-  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Koyéba', 'ct.self.show': 'Mostrar o meu cartão Koyéba', 'ct.self.sub': 'A tua janela no Koyéba', 'ct.selfcard.tag': 'Cartão Koyéba ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
+  'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Kaya', 'ct.self.show': 'Mostrar o meu cartão Kaya', 'ct.self.sub': 'A tua janela no Kaya', 'ct.selfcard.tag': 'Cartão Kaya ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 const T_IT = {
-  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Riflessione', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
-  'nav.grp.daily': 'Oggi', 'nav.planner': 'Flusso', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Riflessione', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
+  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
+  'nav.grp.daily': 'Oggi', 'nav.planner': 'Flusso', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
   'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Progressi', 'nav.practices': 'Pratiche', 'nav.connect': 'Legami',
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
   'set.title': 'Impostazioni',
   'set.tab.account': 'Account', 'set.tab.card': 'Scheda', 'set.tab.ai': 'Piano', 'set.tab.appearance': 'Aspetto', 'set.tab.mobile': 'Telefono', 'set.tab.notifications': 'Notifiche', 'set.tab.sections': 'Strumenti', 'set.tab.invites': 'Inviti', 'set.tab.manage': 'Gestisci', 'set.tab.feeds': 'Calendario', 'set.tab.security': 'Sicurezza', 'set.tab.import': 'Importa',
-  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Koyéba - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Koyéba ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
+  'set.sub.account': 'I tuoi dati e indirizzi di accesso', 'set.sub.card': 'La tua scheda Kaya - foto, motto, link e colore', 'set.sub.ai': "Il tuo piano e come funziona l'IA", 'set.sub.appearance': "Tema e colore d'accento", 'set.sub.mobile': 'Disponi la tua Home sul telefono', 'set.sub.notifications': 'Come e quando Kaya ti contatta', 'set.sub.sections': 'Disattiva gli strumenti che non usi', 'set.sub.invites': 'Invia a qualcuno un invito via email', 'set.sub.manage': 'Spaces, posta, categorie e altro', 'set.sub.feeds': 'Festività e partite sul tuo calendario', 'set.sub.security': 'Autenticazione a due fattori e accesso', 'set.sub.import': 'Porta le tue note da altrove',
   'set.language': 'Lingua', 'set.language.hint': "L'italiano viene introdotto sezione per sezione",
   'home.greeting.morning': 'Buongiorno', 'home.greeting.afternoon': 'Buon pomeriggio', 'home.greeting.evening': 'Buonasera',
   'home.newnote': '+ Nota', 'home.newtask': '+ Attività', 'home.newevent': '+ Evento',
@@ -109,12 +109,12 @@ const T_IT = {
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
-  'signup.welcome': 'Benvenuto - prepariamo il tuo Koyéba.', 'signup.accepted': 'Come dobbiamo chiamarti?', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Koyéba vivrà su', 'signup.create': 'Crea il mio Koyéba', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Koyéba è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
+  'signup.welcome': 'Benvenuto - prepariamo il tuo Kaya.', 'signup.accepted': 'Come dobbiamo chiamarti?', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Kaya vivrà su', 'signup.create': 'Crea il mio Kaya', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Kaya è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
   'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
   'task.search': 'Cerca attività…', 'task.add': '+ Aggiungi attività', 'task.whatneeds': "Cosa c'è da fare?", 'task.surfaceon': 'Riappare il', 'task.notesph': 'Dettagli, contesto o link…', 'task.addtask': 'Aggiungi attività', 'task.done': 'Fatto', 'task.showcompleted': 'Mostra completate', 'task.empty.filters': 'Nessuna attività corrisponde a questi filtri.', 'task.empty.open': 'Nessuna attività aperta qui.', 'task.empty.here': 'Ancora nessuna attività qui.', 'task.nextdue': 'La prossima scade', 'task.onschedule': 'Secondo programma', 'task.aftertick': 'Dopo averla segnata',
-  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Koyéba', 'ct.self.show': 'Mostra la mia scheda Koyéba', 'ct.self.sub': 'La tua finestra su Koyéba', 'ct.selfcard.tag': 'Scheda Koyéba ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
+  'goal.titleph': 'Cosa vuoi raggiungere?', 'goal.update': 'Aggiorna', 'goal.achieved': '✓ Raggiunto', 'goal.markachieved': 'Segna come raggiunto', 'goal.nicelydone': 'Ben fatto.', 'goal.tickwhen': 'Segnalo quando ci arrivi.', 'goal.why': 'Perché è importante', 'goal.whyph': 'Il motivo che ti sostiene nelle settimane difficili…', 'goal.how': 'Come ci arriverò', 'goal.howph': "Il piano, l'approccio, i primi passi…", 'goal.timing': '⚙ Tempi e impostazioni', 'goal.tasks': 'Attività', 'goal.connectednotes': 'Note collegate', 'goal.connectedcontacts': 'Contatti collegati', 'goal.noteswall': 'Bacheca delle note', 'goal.type': 'Tipo', 'goal.horizon': 'Orizzonte', 'goal.status': 'Stato', 'goal.bywhen': 'Entro quando', 'field.email': 'Email', 'field.phone': 'Telefono', 'ct.search': 'Cerca i tuoi contatti…', 'ct.add': '+ Aggiungi', 'ct.import': '⤓ Importa', 'ct.friends': 'Amici su Kaya', 'ct.self.show': 'Mostra la mia scheda Kaya', 'ct.self.sub': 'La tua finestra su Kaya', 'ct.selfcard.tag': 'Scheda Kaya ›', 'ct.name': 'Nome', 'ct.birthday': 'Compleanno', 'ct.street': 'Via', 'ct.city': 'Città', 'ct.postcode': 'CAP', 'ct.country': 'Paese', 'ct.addcontact': 'Aggiungi contatto', 'ct.done': 'Fatto', 'review.weekly': 'Settimanale', 'review.monthly': 'Mensile', 'review.quarterly': 'Trimestrale', 'review.yearly': 'Annuale', 'review.weekly.sub': 'Lo sguardo', 'review.monthly.sub': 'Il punto', 'review.quarterly.sub': 'Il ciclo', 'review.yearly.sub': 'La visione ampia', 'notes.search': 'Cerca note…', 'notes.newnote': '+ Nuova nota', 'filter.allareas': 'Tutti i Spaces', 'notes.type.all': 'Tutte', 'notes.type.note': 'Note', 'notes.type.table': 'Tabelle', 'notes.sort.newest': 'Più recenti', 'notes.sort.recent': 'Modificate di recente', 'notes.sort.oldest': 'Più vecchie', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Cerca note, tabelle, attività - o scrivi un comando…',
 };
 function locale() {
   // Multi-language is PAUSED until the app is fully translated - English only for
@@ -145,14 +145,14 @@ const MOD_DEFAULT_OFF = new Set(['timer', 'meditation']);
 // so we remember what to bring back. Hiding one usually means turning its module off
 // (MOD_DEFAULT_OFF above) or pulling its UI. (Robin, 2026-10-30.)
 const HIDDEN_FEATURES = [
-  { label: 'Meditation', where: 'Reflection', note: 'Timer, bells and logged sits', since: '30 Oct 2026' },
+  { label: 'Meditation', where: 'Insight', note: 'Timer, bells and logged sits', since: '30 Oct 2026' },
 ];
 // Modules hidden app-wide for now, whatever the saved setting: every entry point
 // is gated on modOn, so this takes them out of the nav, hubs and feeds in one place
 // and is trivially reversible. (Robin, 2026-11-04: hide Meditation for now.)
 const MOD_HIDDEN = new Set(['meditation']);
 const modOn = (k) => { if (MOD_HIDDEN.has(k)) return false; const v = state.modules && state.modules[k]; return v === true ? true : v === false ? false : !MOD_DEFAULT_OFF.has(k); };
-// True while any Reflection tool is on - gates the Reflection hub and its Home pins.
+// True while any Insight tool is on - gates the Insight hub and its Home pins.
 const reflectOn = () => REFLECT_MODULES.some(([k]) => modOn(k));
 async function saveModules() { try { await api('/api/kv/modules', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.modules || {}) }) }); } catch {} }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -219,7 +219,7 @@ async function api(path, opts = {}) {
     // us, not the member) - show something calm and human instead.
     if (/D1_ERROR|row write limit|SQLITE|no such (table|column)/i.test(msg)) {
       msg = /write limit/i.test(msg)
-        ? "Couldn't save just now - Koyéba is briefly at capacity. Please try again in a little while."
+        ? "Couldn't save just now - Kaya is briefly at capacity. Please try again in a little while."
         : "Couldn't save that just now. Please try again.";
     }
     throw new Error(msg);
@@ -310,6 +310,9 @@ document.addEventListener('keydown', (ev) => {
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.notepad && state.notepad.open) { ev.preventDefault(); toggleNotepad(false); } });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.home && state.home.newMenu) { ev.preventDefault(); state.home.newMenu = false; try { renderNewPop(); renderNav(); } catch {} } });
+// §24 The Today location editor: Enter sets the typed city, Escape closes it.
+document.addEventListener('keydown', (ev) => { const i = ev.target; if (i && i.matches && i.matches('[data-home-loc-input]')) { if (ev.key === 'Enter') { ev.preventDefault(); setHomePlace(i.value); } else if (ev.key === 'Escape') { ev.preventDefault(); if (state.home) state.home.locEdit = false; renderHome(); } } });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.makeNew) { ev.preventDefault(); closeMakeNew(); } });
 // Focusing the event Location field offers the smart suggestion straight away, before
 // you type. (Robin, 2026-11-04.)
 document.addEventListener('focusin', (ev) => { if (ev.target && ev.target.id === 'ce-loc') { try { renderCeLocSugg(ev.target.value); } catch {} } });
@@ -444,7 +447,7 @@ const state = {
   noteTops: [], tables: [],
   areas: [], tasks: [], taskFilter: null, taskAdding: false, showCompleted: false, showSnoozed: false, completedQuery: '', taskQuery: '', notesQuery: '', calQuery: '',
   taskFilters: null, taskFiltersOpen: false,
-  contacts: [], contactsQuery: '', contactAdding: false, contact_open: null,
+  contacts: [], contactsQuery: '', contactAdding: false, contact_open: null, makeNew: null,
   contactGroups: [], contactsArea: null, contactMenu: null,
   financial: { tab: 'portfolio', data: null, error: null, loading: false, adding: false, editId: null, channels: null, videos: null, trends: null, polling: false, txns: null, spendMonth: null, spendImport: null, tracker: null, trackerLoading: false },
   goals: [], bucket: [], reviews: [], goal_open: null, bucket_open: null, review_open: null, vision_open: null, goalsTab: 'goals', goalsFilter: null,
@@ -845,24 +848,17 @@ function stripStrayFoldGlyphs(prose) {
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
     applyProseIndent(prose);
-    // CLEAN SLATE first: strip every fold chevron and drag grip, including any that
-    // migrated into a non-heading (a list item, a paragraph) while editing - that's
-    // what put a stray toggle on a bullet. Then add exactly one fresh chevron + grip
-    // to each real heading. A re-render always restores a correct set, so the system
-    // self-heals from any editing mess. (Robin, 2026-10-30: robust folds.)
+    // Headers are just headers now (Robin, 2026-11-06: "the header toggles thing is
+    // still rather buggy… headers are just headers"). The old per-heading fold
+    // chevron and drag grip lived INSIDE contentEditable, so editing kept carrying
+    // them onto paragraphs, duplicating them and leaving stray arrows - fragile by
+    // nature. We no longer inject anything into a heading; it is plain text. Clean up
+    // any glyph or fold class left by an earlier render so the live view is tidy
+    // (saved content never held them - serialize strips them - so nothing is lost).
+    // A dedicated, robust toggle block (Notion-style) is the follow-up, kept separate
+    // from headings on purpose.
     prose.querySelectorAll('.fold-toggle, .head-grip').forEach((x) => x.remove());
-    // All section heads in document order - including any inside column wrappers -
-    // so a sidebar section is foldable and draggable too, and the fold index stays
-    // consistent whether or not a note uses columns.
-    const heads = [...prose.querySelectorAll('h1, h2, h3')];
-    if (!heads.length) return;
-    for (const h of heads) {
-      const grip = document.createElement('span'); grip.className = 'head-grip'; grip.contentEditable = 'false'; grip.setAttribute('draggable', 'true'); grip.setAttribute('title', 'Drag to reorder this section'); grip.textContent = '⠿';
-      const toggle = document.createElement('span'); toggle.className = 'fold-toggle'; toggle.contentEditable = 'false'; toggle.setAttribute('title', 'Fold / unfold');
-      h.insertBefore(toggle, h.firstChild);
-      h.insertBefore(grip, h.firstChild);   // grip first, then the chevron
-    }
-    reapplyFolds(prose);   // one pass sets every heading's glyph + hides folded content, nested correctly
+    prose.querySelectorAll('.folded, .folded-hidden').forEach((x) => x.classList.remove('folded', 'folded-hidden'));
   });
 }
 // Drag a heading's grip to reorder its section within the note. The section is
@@ -1101,7 +1097,7 @@ function sanitizeProse(html) {
       const span = (el.tagName === 'TD' || el.tagName === 'TH') ? { colspan: el.getAttribute('colspan'), rowspan: el.getAttribute('rowspan') } : null;
       [...el.attributes].forEach((a) => el.removeAttribute(a.name));
       if (span) { if (span.colspan && +span.colspan > 1) el.setAttribute('colspan', span.colspan); if (span.rowspan && +span.rowspan > 1) el.setAttribute('rowspan', span.rowspan); }
-      // Internal links to other Koyéba pages FIRST: an internal link the
+      // Internal links to other Kaya pages FIRST: an internal link the
       // browser resolved to an absolute URL (https://life.robski.uk/#rl-note-…)
       // would otherwise match the http test below, get target=_blank, and open
       // in a browser tab instead of navigating in-app. Store just the #rl-…
@@ -1167,14 +1163,14 @@ function labelForView(v) {
     case 'readwatch': return 'Read & Watch';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
-    case 'card': return 'Koyéba card';
+    case 'card': return 'Kaya card';
     case 'admin': return 'Admin';
-    case 'friends': return 'Contacts on Koyéba';
+    case 'friends': return 'Contacts on Kaya';
     case 'table': return (state.tables_open && state.tables_open.title) || 'Table'; case 'tables': return 'Tables';
     case 'area': return (state.area_open && state.area_open.area.title) || 'Space'; case 'areas': return t('nav.areas');
     case 'financial': return t('nav.financial'); case 'money': return t('nav.financial');
     case 'contacts': return t('nav.contacts'); case 'contactcard': return (state.contact_open && state.contact_open.contact.title) || 'Contact';
-    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Koyéba';
+    case 'connect': return t('nav.connect'); case 'daybookpeople': return 'Kaya';
     case 'messages': return 'Messages';
     case 'goals': return t('nav.goals'); case 'goalcard': return (state.goal_open && state.goal_open.goal.title) || 'Goal'; case 'bucketcard': return (state.bucket_open && state.bucket_open.item.title) || 'Bucket list';
     case 'reviews': return v.rtype ? `${(REVIEWS[v.rtype] || {}).label || ''} reviews` : t('nav.reviews'); case 'reviewcard': return (state.review_open && state.review_open.review.title) || 'Review';
@@ -1186,7 +1182,7 @@ function labelForView(v) {
   }
 }
 // Detail views resolve to their parent tool for the mobile top-bar title, so a
-// single note reads "Koyéba Notes", a contact "Koyéba Contacts", etc.
+// single note reads "Kaya Notes", a contact "Kaya Contacts", etc.
 const CRUMB_PARENT = { note: 'notes', table: 'tables', taskcard: 'tasks', contactcard: 'contacts', goalcard: 'goals', bucketcard: 'goals', reviewcard: 'reviews', wheel: 'reviews', journalentry: 'journal', area: 'areas', mailaccounts: 'mail', visioncard: 'areas', visionwall: 'areas', practicecard: 'practices' };
 // The back button that rides in the top line (to the right of the ☰ menu), shown
 // only when there is somewhere to go back to.
@@ -1320,12 +1316,18 @@ function areaLinkHtml(areaId) {
 }
 // A consistent breadcrumb bar: Back + Home › … › current, plus a link to the
 // connected page when there is one.
+// The New-tab control ("+Tab") rides at the RIGHT of the breadcrumb row on every
+// page, in the same flex line as the crumbs, so it is always aligned with them
+// (never floated or offset per page). Desktop only - tabs are a desktop feature,
+// so it's hidden on phones. One source, used by crumbNav and the Space crumb. See
+// CLAUDE.md §21. (Robin, 2026-11-06: "be consistent… put it in the design system".)
+function newTabBtnHtml() { return `<button class="crumb-newtab" data-tab-new title="New tab (${PK('⌥⌘T')})" aria-label="New tab"><span class="crumb-newtab-i" aria-hidden="true">+</span>Tab</button>`; }
 function crumbNav(trail, areaId, backAttr, opts = {}) {
   // THE one breadcrumb for the whole app (Robin, 2026-11-03: make them consistent -
   // same place, same style, on every page but Today). An unboxed, static Jost line
   // at the content inset just under the top nav: "Today / <section> / <page…>", with
   // " / " separators, links in mute, the current page in GOLD. The section is the
-  // current view's top-nav group (Keep, Plans, Reflection…), inserted automatically
+  // current view's top-nav group (Keep, Plans, Insight…), inserted automatically
   // unless the trail already names it. A back ← leads the line when there is history to step back to, and the section crumb (Keep, Plans…) opens its top-nav menu since it has no page of its own.+New is
   // topped up by crumbAddEverywhere where it belongs. backAttr/areaId kept for callers
   // but not drawn. Match this exactly everywhere - see CLAUDE.md.
@@ -1348,7 +1350,7 @@ function crumbNav(trail, areaId, backAttr, opts = {}) {
   // Task page's Star · Share · Assign · Delete), so there's no second header row
   // to overlap. The crumb stays a direct #pane child, so its §70 alignment holds.
   const back = (typeof navHist !== 'undefined' && navHist && navHist.length) ? `<button class="crumb-back" data-nav-back title="Back" aria-label="Back">←</button>` : '';
-  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.noHelp || typeof guideHelpBtn !== 'function' ? '' : guideHelpBtn()}${opts.actions || ''}</div>`;
+  return `<div class="crumbbar crumbbar-slim">${back}<div class="crumbs">${parts.join('<span class="crumb-dot">/</span>')}</div>${opts.noHelp || typeof guideHelpBtn !== 'function' ? '' : guideHelpBtn()}${opts.actions || ''}${newTabBtnHtml()}</div>`;
 }
 // A quick-capture menu that rides in the breadcrumb row on every page: one "+ New"
 // button opening a small submenu of the things you make. Same quickAdd verbs the
@@ -1372,11 +1374,11 @@ function addNewMenuHtml() {
   // Robin (2026-11-04): New lives once, in the menubar (left of Mail), not as a box
   // on every breadcrumb. Plain-text button to match Notepad/Search/Menu; clicking it
   // drops the same popover.
-  return `<span class="addnew knav-addnew"><button class="knav-new-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add to Koyéba">New<span class="an-ch">⌄</span></button><div class="addnew-menu" hidden>${items}</div></span>`;
+  return `<span class="addnew knav-addnew"><button class="knav-new-btn" data-addnew-toggle aria-haspopup="true" aria-expanded="false" title="Add to Kaya">New<span class="an-ch">⌄</span></button><div class="addnew-menu" hidden>${items}</div></span>`;
 }
 // Breadcrumb for a top-level page: Home › <page>.
 const pageCrumb = (label) => crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label }]);
-function saveTabs() { if (SPLIT_FRAME_TOOL) return; try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label, pinned: !!t.pinned })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); localStorage.setItem('life.lastActive', String(Date.now())); } catch {} }
+function saveTabs() { if (SPLIT_FRAME_TOOL) return; try { localStorage.setItem('life.tabs', JSON.stringify({ tabs: state.tabs.map((t) => ({ view: t.view, label: t.label })), active: state.tabs.findIndex((t) => t.id === state.activeTab) })); localStorage.setItem('life.lastActive', String(Date.now())); } catch {} }
 // After a long time away, open straight on Home at the top rather than restoring
 // whatever page you happened to leave on. A quick reopen keeps your place.
 const REOPEN_FRESH_MS = 60 * 60 * 1000;   // an hour counts as "in a while"
@@ -1425,7 +1427,7 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
         // A new build is live. Never yank the page out mid-work - show a quiet,
         // sticky "tap to refresh" nudge and let the choice be theirs. (Robin.)
         updating = true;
-        toast('A new version of Koyéba is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
+        toast('A new version of Kaya is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
       }
     } catch { /* offline - keep running what we have */ }
   }
@@ -1444,40 +1446,29 @@ function tabViewCopy(v) {
   return { ...v };
 }
 function syncActiveTab() {
-  let tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
-  // A pinned tab is locked to its destination. Navigating elsewhere while it's
-  // active doesn't overwrite it: it spills into a working (unpinned) tab,
-  // creating one if every tab is pinned.
-  if (tab.pinned && viewKey(tab.view) !== viewKey(state.view)) {
-    let work = state.tabs.find((t) => !t.pinned);
-    if (!work) { work = { id: uid(), view: { type: 'home' }, label: 'Home', pinned: false }; state.tabs.push(work); }
-    state.activeTab = work.id; tab = work; renderTabs();
-  }
+  const tab = state.tabs.find((t) => t.id === state.activeTab); if (!tab) return;
   tab.view = tabViewCopy(state.view); tab.label = labelForView(state.view); saveTabs();
-}
-function togglePin(id) {
-  const tab = state.tabs.find((t) => t.id === id); if (!tab) return;
-  tab.pinned = !tab.pinned;
-  // Keep pinned tabs at the front, each group holding its relative order (JS
-  // sort is stable), so a pin literally moves the tab to the top of the strip.
-  state.tabs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-  renderTabs(); saveTabs();
 }
 function renderTabs() {
   const el = $('#tabstrip'); if (!el) return;
-  const many = state.tabs.length > 1;
-  el.innerHTML = state.tabs.map((t) => `<button class="tab ${t.id === state.activeTab ? 'on' : ''}${t.pinned ? ' pinned' : ''}" data-tab="${t.id}">
-    <span class="tab-pin ${t.pinned ? 'on' : ''}" data-tab-pin="${t.id}" title="${t.pinned ? 'Unpin' : 'Pin to keep this tab'}">📌</span>
-    <span class="tab-ic">${TAB_IC[t.view.type] || '•'}</span><span class="tab-t">${esc(t.label || 'Tab')}</span>${!t.pinned && many ? `<span class="tab-x" data-tab-close="${t.id}" title="Close">×</span>` : ''}</button>`).join('')
-    + `<button class="tab-new" data-tab-new title="New tab  ${PK('⌥⌘T')}">+</button>`
-    // The right-hand cluster, desktop only (the strip is hidden on mobile): Messages
-    // first (it carries the new-message alert), then the guide i, then Settings.
-    // Sign out lives in Settings and the sidebar, not up here. (Robin, 2026-10-29.)
-    + (state.me ? `<button class="tab-util tab-util-msg ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page data-tip="Messages" aria-label="Messages${navUnread() ? ` - ${navUnread()} new` : ''}">${MSG_ICO}${navUnread() ? `<span class="tab-util-dot">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '')
-    + `<button class="tab-util ${state.view && state.view.type === 'settings' ? 'on' : ''}" data-open-settings data-tip="Settings" aria-label="Settings">⚙</button>`;
+  // §73 Tabs (Robin, 2026-11-05/06): full-page tabs below the menu bar, the active one
+  // wearing the same gold underline as the bar above. Open tabs show from the left
+  // once there are two (one tab is just the page you're on). The band always carries
+  // a bordered "+ Tab" box at its RIGHT: Robin took the old "New tab" out of the menu
+  // bar and asked for it in a box under the bar, right-hand side. The box is a plain
+  // white-rim box, NOT frosted glass - a glass box rebuilt on every navigation would
+  // flicker, the very thing we're removing. No emoji: a page name, a × to close.
+  const multi = !!(state.tabs && state.tabs.length >= 2);
+  const tabsHtml = multi ? state.tabs.map((t) => {
+    const on = t.id === state.activeTab;
+    return `<button class="ktab${on ? ' on' : ''}" data-tab="${t.id}" title="${esc(t.label || 'Tab')}"><span class="ktab-t">${esc(t.label || 'Tab')}</span><span class="ktab-x" data-tab-close="${t.id}" role="button" tabindex="0" title="Close" aria-label="Close tab">×</span></button>`;
+  }).join('') : '';
+  el.classList.toggle('has-tabs', multi);
+  el.innerHTML = tabsHtml;   // the New-tab control lives in the breadcrumb row (newTabBtnHtml)
+  try { setNavH(); } catch {}
 }
 function newTab() {
-  const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home', pinned: false }); state.activeTab = id; openHome();
+  const id = uid(); state.tabs.push({ id, view: { type: 'home' }, label: 'Home' }); state.activeTab = id; openHome();
   // A fresh tab opens on Home with the search palette up, ready to jump straight
   // to wherever you meant to go. Desktop only - tabs (and the palette) aren't the
   // mobile flow.
@@ -1488,7 +1479,7 @@ function newTab() {
 // tab the user is on.
 function openInNewTab(view) {
   const id = uid();
-  state.tabs.push({ id, view, label: labelForView(view), pinned: false });
+  state.tabs.push({ id, view, label: labelForView(view) });
   state.activeTab = id;
   Promise.resolve(openView(view)).catch(() => openHome());
 }
@@ -1500,7 +1491,7 @@ function openInNewTab(view) {
 function openMailMsgInNewTab(key) {
   const id = uid();
   const view = { type: 'mail', open: key };
-  state.tabs.push({ id, view, label: labelForView(view), pinned: false });
+  state.tabs.push({ id, view, label: labelForView(view) });
   state.activeTab = id;
   Promise.resolve(glanceMailOpenIn(key)).catch(() => openHome());
 }
@@ -1555,7 +1546,7 @@ function navSection(key, v) {
       return `<button class="nav-sub nav-sub-recent${hue != null ? ' has-area' : ''}${active ? ' on' : ''}"${hue != null ? ` style="--h:${hue}"` : ''} data-fav-open="${esc(n.kind)}:${esc(n.id)}"${a ? ` title="${esc(a.title)}"` : ''}><span class="i">${ic}</span><span class="t">${esc(n.title || 'Untitled')}</span><span class="nav-sub-x" data-recent-x="${esc(n.kind)}:${esc(n.id)}" role="button" title="Remove from recent" aria-label="Remove from recent">×</span></button>`;
     }).join('') || '<div class="nav-sub muted">Anything you open appears here</div>';
   } else if (key === 'people') {
-    // Your connected Koyéba people, online ones first and offline ones greyed,
+    // Your connected Kaya people, online ones first and offline ones greyed,
     // so you can see who's about at a glance and message them in a tap.
     title = 'People'; add = '<button class="nav-add" data-open-contacts title="Contacts">👤</button>';
     // Need the friends list (names) once; the 90s status poll keeps who's online.
@@ -1567,7 +1558,7 @@ function navSection(key, v) {
     rows = sorted.map((f) => {
       const on = isOnline(f); const un = unreadFrom(f.id);
       return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyéba</button>');
+    }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Kaya</button>');
   } else {
     title = 'Spaces'; add = '<button class="nav-add" data-new-area title="New space">+</button>';
     // Each area carries its own colour - show it as a left edge + tinted marker,
@@ -1644,18 +1635,26 @@ function navTopSecs(v) {
 // make. (Robin, 2026-10-24: for most people except admins it's always automatic.)
 function themeLocked() { return !!(state.me && state.me.id !== 1); }
 // Two pickable worlds - 'light' (Day, ivory) and 'dark' (Night, deep forest) -
-// plus 'auto', which follows the sun between them. (Koyéba: one gold accent; the
+// plus 'auto', which follows the sun between them. (Kaya: one gold accent; the
 // old washi/vermilion 'calm' world was retired 2026-10-31. A stored 'calm' now
 // resolves to 'auto', and the dead [data-theme='calm'] CSS is simply unreachable.)
 function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
-function themeLabel() { const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
+// §24 Plain mode: a calm, un-painted ivory page instead of the day's wash. Opt-in,
+// off by default, applied as html[data-plain]. (Robin, 2026-11-06.)
+function plainMode() { try { return localStorage.getItem('life.plain') === '1'; } catch { return false; } }
+// §24 The colour scheme the picker (footer button + Settings swatches) cycles
+// through: the three painted worlds plus Sensible, the calm plain page. Plain is
+// its own exclusive scheme now, not a separate Background toggle - picking any
+// painted world turns it off; picking Sensible turns it on. (Robin, 2026-11-07.)
+function schemeMode() { return plainMode() ? 'plain' : themeMode(); }
+function themeLabel() { if (plainMode()) return '□ Sensible'; const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 // The light: a painted wash that follows the real day (public/daylight.css).
 const LIGHTS = ['dawn', 'overcast', 'dusk', 'night'];
 const LIGHT_GROUND = { dawn: '#3B2B36', overcast: '#2A333F', dusk: '#2E2230', night: '#0D1220' };
 // Which part of the day it is where you are, from your sunrise and sunset. With no
 // location yet, a sensible clock guess (07:00 and 18:30) stands in for the sun.
-// Koyéba is dark at every hour now (Robin, 2026-11-04), so the theme is always dark.
+// Kaya is dark at every hour now (Robin, 2026-11-04), so the theme is always dark.
 function lightIsDark() { return true; }
 function lightFromSun(now = new Date()) {
   const loc = cachedLoc();
@@ -1665,7 +1664,11 @@ function lightFromSun(now = new Date()) {
   else { const d = new Date(now); d.setHours(7, 0, 0, 0); rise = d.getTime(); d.setHours(18, 30, 0, 0); set = d.getTime(); }
   const t = now.getTime(), H = 3600 * 1000;
   if (t < rise - 0.75 * H || t >= set + 0.75 * H) return 'night';
-  if (t < rise + H) return 'dawn';
+  // Dawn is the wash Robin loves, so it lingers through the early morning instead of
+  // vanishing an hour after sunrise - it holds until 10:30 at the earliest, so it is
+  // actually seen. (Robin, 2026-11-05: "extend it until at least 10am... maybe 10.30.")
+  const dawnEnd = (() => { const d = new Date(now); d.setHours(10, 30, 0, 0); return Math.max(rise + H, d.getTime()); })();
+  if (t < dawnEnd) return 'dawn';
   if (t >= set - 1.25 * H) return 'dusk';
   return 'overcast';
 }
@@ -1712,6 +1715,7 @@ function applyTheme(rerender) {
   const theme = lightIsDark(light) ? 'dark' : 'light';
   document.documentElement.dataset.light = light;
   document.documentElement.dataset.theme = theme;
+  if (plainMode()) document.documentElement.setAttribute('data-plain', ''); else document.documentElement.removeAttribute('data-plain');
   try { localStorage.setItem('today.theme', theme); localStorage.setItem('today.light', light); } catch {}
   syncLightLayer(light);
   syncLightPreview(light);
@@ -1722,31 +1726,41 @@ function applyTheme(rerender) {
   // In auto mode, re-check every couple of minutes so the light follows the day.
   if (m === 'auto') themeTimer = setTimeout(() => applyTheme(false), 2 * 60 * 1000);
 }
-// The nav button steps through the four in order; the Settings picker sets one directly.
+// The nav/footer button steps through the four schemes in order; the Settings
+// swatches set one directly. Both go through setScheme so Sensible behaves the
+// same everywhere.
+const SCHEME_ORDER = ['auto', 'light', 'dark', 'plain'];
 function cycleTheme() {
   if (themeLocked()) return;   // members follow day/night automatically; nothing to cycle
-  const order = ['auto', 'light', 'dark'];
-  const next = order[(order.indexOf(themeMode()) + 1) % order.length];
-  try { localStorage.setItem('life.theme.mode', next); } catch {}
-  applyTheme(true);
-  if (next === 'auto') ensureLoc();
+  const next = SCHEME_ORDER[(SCHEME_ORDER.indexOf(schemeMode()) + 1) % SCHEME_ORDER.length];
+  setScheme(next);
 }
-function setThemeMode(mode) {
+function setScheme(mode) {
   if (themeLocked()) return;
-  if (!['auto', 'light', 'dark'].includes(mode)) return;
-  try { localStorage.setItem('life.theme.mode', mode); } catch {}
-  applyTheme(true);
-  // Update the picker's selected state in place (applyTheme re-renders nav, not Settings).
-  document.querySelectorAll('[data-theme-set]').forEach((b) => { const on = b.dataset.themeSet === mode; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  if (mode === 'plain') { try { localStorage.setItem('life.plain', '1'); } catch {} }
+  else {
+    if (!['auto', 'light', 'dark'].includes(mode)) return;
+    try { localStorage.setItem('life.plain', '0'); localStorage.setItem('life.theme.mode', mode); } catch {}
+  }
+  applyTheme(false);           // sets data-plain / data-theme / data-light and refreshes the footer label
+  try { renderNav(); } catch {}
+  // Tokens recolour the page on their own, but JS-built inline styles need a repaint.
+  try { if (state.view && state.view.type === 'settings') renderSettings(); else rerenderCurrent(); } catch {}
+  // Keep the Settings swatches' selected state in step (renderSettings covers the
+  // settings view; this catches the swatches when they live elsewhere).
+  document.querySelectorAll('[data-theme-set]').forEach((b) => { const on = b.dataset.themeSet === schemeMode(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   if (mode === 'auto') ensureLoc();
 }
+// Back-compat alias - older call sites set a day/night world by name.
+function setThemeMode(mode) { setScheme(mode); }
 // Mini previews for the Settings theme picker: a paper swatch with an accent dot.
 function themeSwatches() {
-  const cur = themeMode();
+  const cur = schemeMode();
   const opts = [
     ['auto', 'Auto', 'linear-gradient(135deg,#f8f4ec 0 50%,#13241d 50% 100%)', '#c99a3e'],
     ['light', 'Day', '#f8f4ec', '#c99a3e'],
     ['dark', 'Night', '#13241d', '#d8b25e'],
+    ['plain', 'Sensible', '#F6F2E9', '#B98F3C'],
   ];
   return opts.map(([mode, label, bg, dot]) => `<button class="theme-swatch-btn ${cur === mode ? 'on' : ''}" data-theme-set="${mode}" type="button" aria-pressed="${cur === mode}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
@@ -1757,12 +1771,12 @@ function initTheme() { applyTheme(false); if (themeMode() === 'auto') ensureLoc(
 // color-mixed from --accent, so overriding --accent (+ --accent-ink for text
 // on accent) recolours the whole app. Cached in localStorage for instant paint
 // and mirrored to settings (kv_accent) so it follows you across devices.
-// Koyéba has ONE accent: gold (rule 1 - no red/green/blue/orange/purple, ever).
+// Kaya has ONE accent: gold (rule 1 - no red/green/blue/orange/purple, ever).
 // The single choice resets to the theme gold, which flips #c99a3e by day /
 // #d8b25e by night on its own. (The old multi-colour presets + custom picker were
 // a latent brand breach; restore the array here if a choice is ever wanted back.)
 const ACCENT_PRESETS = [
-  ['', 'Koyéba gold'],
+  ['', 'Kaya gold'],
 ];
 function hexRgb(hex) { const h = String(hex || '').replace('#', ''); const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h; return { r: parseInt(n.slice(0, 2), 16) || 0, g: parseInt(n.slice(2, 4), 16) || 0, b: parseInt(n.slice(4, 6), 16) || 0 }; }
 function accentInk(hex) { const { r, g, b } = hexRgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#12100b' : '#fff'; }
@@ -1921,8 +1935,8 @@ async function loadAccount() { try { state.account = await api('/api/account'); 
 function aiClientOn() { const a = state.account; if (!a) return true; if (a.aiOff) return false; return a.isOwner || a.aiAnySet || a.aiAnthropicSet; }
 async function saveAccount(patch) { try { state.account = await api('/api/account', { method: 'PATCH', body: JSON.stringify(patch) }); } catch (e) { toast(e.message); } }
 
-// ── Your Koyéba card ─────────────────────────────────────────────────────
-// A little profile: how people find you on Koyéba, and your window to the
+// ── Your Kaya card ─────────────────────────────────────────────────────
+// A little profile: how people find you on Kaya, and your window to the
 // world - photo, tagline, a colour, and the contact details you choose to show.
 // Kept in kv_card_profile (photo is a small square data URI); name/handle come
 // from the account. Others seeing it comes next; for now it's yours to make.
@@ -1974,13 +1988,13 @@ function cardHtml(d, full) {
   const accent = d.accent || '#c4412e';
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
-  const qr = d.subdomain ? qrSvg('https://koyeba.co/u/' + d.subdomain, 74) : '';
+  const qr = d.subdomain ? qrSvg('https://kaya.so/u/' + d.subdomain, 74) : '';
   return `<div class="dbc-card dbc-pat-${esc(d.pattern || 'none')}" style="--dbc:${esc(accent)}">
     <div class="dbc-band"></div>
     <div class="dbc-top">${photo}<span class="dbc-id"><span class="dbc-name">${esc(d.name || 'You')}</span>${d.handle ? `<span class="dbc-handle">${esc(d.handle)}</span>` : ''}</span></div>
     ${d.tagline ? `<p class="dbc-tag">${esc(d.tagline)}</p>` : (full ? '<p class="dbc-tag dbc-tag-ph">Add a line about yourself…</p>' : '')}
     ${chips ? `<div class="dbc-chips">${chips}</div>` : ''}
-    <div class="dbc-foot"><div class="dbc-mark">${MARK}<span>Koyéba</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Koyéba">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
+    <div class="dbc-foot"><div class="dbc-mark"><span>Kaya.</span></div>${qr ? `<div class="dbc-qr-mini" title="Scan to connect on Kaya">${qr}<span class="dbc-qr-mini-cap">Scan to connect</span></div>` : ''}</div>
   </div>`;
 }
 async function openCard() {
@@ -2020,7 +2034,7 @@ async function cardSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 // A contact's photo: crop-to-square 256px JPEG data URI on props.photo - small
-// and light, in keeping with Koyéba (no high-res uploads). (Robin.)
+// and light, in keeping with Kaya (no high-res uploads). (Robin.)
 async function contactSetPhoto(file) {
   const c = state.contact_open && state.contact_open.contact; if (!c) return;
   try {
@@ -2031,7 +2045,7 @@ async function contactSetPhoto(file) {
     await api(`/api/blocks/${c.id}`, { method: 'PATCH', body: JSON.stringify({ props: { photo: uri } }) });
   } catch (e) { toast(e.message || 'Could not read that image'); }
 }
-// Dismiss a "your contact is on Koyéba" suggestion. Drops it locally and persists
+// Dismiss a "your contact is on Kaya" suggestion. Drops it locally and persists
 // the hidden id (kv_sugg_hidden), so getFriends keeps it out from now on. (Robin:
 // let me hide a suggestion as well as connect.)
 async function hideSuggestion(id) {
@@ -2056,7 +2070,7 @@ function contactRemovePhoto() {
 function myCardData() {
   const a = state.account || {}; const c = cardProfile();
   return {
-    name: a.name || firstName() || 'You', handle: a.subdomain ? `koyeba.co/u/${a.subdomain}` : '', subdomain: a.subdomain || '',
+    name: a.name || firstName() || 'You', handle: a.subdomain ? `kaya.so/u/${a.subdomain}` : '', subdomain: a.subdomain || '',
     photo: c.photo || '', accent: c.accent || savedAccent() || '#c4412e', pattern: c.pattern || 'none',
     tagline: c.tagline || '', location: c.location || '', website: c.website || '', links: c.links || [],
     emails: cardChosenEmails(c), phone: c.showPhone ? (a.phone || '') : '',
@@ -2076,20 +2090,20 @@ function cardChosenEmails(c) {
 }
 function cardPreviewHtml(full) { return cardHtml(myCardData(), full); }
 function renderCard() {
-  $('#pane').innerHTML = `${pageCrumb('Koyéba card')}
-    <div class="pane-head home-head"><h1>Your Koyéba card</h1></div>
+  $('#pane').innerHTML = `${pageCrumb('Kaya card')}
+    <div class="pane-head home-head"><h1>Your Kaya card</h1></div>
     ${cardEditorHtml()}`;
 }
 // Repaint the card editor on whichever surface it's on: the Settings > Card tab,
-// or the standalone Koyéba card view.
+// or the standalone Kaya card view.
 function rerenderCard() { if (state.view && state.view.type === 'settings') renderSettings(); else renderCard(); }
-// The card editor body (preview + fields), reused by the standalone Koyéba card
+// The card editor body (preview + fields), reused by the standalone Kaya card
 // view and the Settings > Card tab.
 function cardEditorHtml() {
   const a = state.account || {}; const c = cardProfile();
   const accent = c.accent || savedAccent() || '#c4412e';
   const swatches = CARD_COLOURS.map((h) => `<button class="dbc-swatch ${accent.toLowerCase() === h ? 'on' : ''}" style="background:${h}" data-card-accent="${h}" title="${h}"></button>`).join('');
-  return `<p class="dbc-lede">How people find you on Koyéba, and your small window to the world. Make it yours.</p>
+  return `<p class="dbc-lede">How people find you on Kaya, and your small window to the world. Make it yours.</p>
     <div class="dbc-wrap">
       <div class="dbc-preview">${cardPreviewHtml(true)}</div>
       <div class="dbc-edit">
@@ -2117,8 +2131,8 @@ function cardEditorHtml() {
         <div class="dbc-field"><span class="dbc-l">Show my phone</span>
           <label class="dbc-tog"><input type="checkbox" data-card-showphone ${c.showPhone ? 'checked' : ''} ${a.phone ? '' : 'disabled'}><span>Phone${a.phone ? ` (${esc(a.phone)})` : ' - add one in Settings › Account'}</span></label>
         </div>
-        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Koyéba</small></span>
-          <div class="dbc-qrwrap">${qrSvg('https://koyeba.co/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">koyeba.co/u/${esc(a.subdomain)}</span></div>
+        ${a.subdomain ? `<div class="dbc-field"><span class="dbc-l">Scan to connect<small class="tf-hint">someone scans this to open your card and connect with you on Kaya</small></span>
+          <div class="dbc-qrwrap">${qrSvg('https://kaya.so/u/' + a.subdomain, 156)}<span class="dbc-qr-cap">kaya.so/u/${esc(a.subdomain)}</span></div>
         </div>` : ''}
         <p class="dbc-note">${a.subdomain ? 'Anyone you share this card link with can open your public card.' : 'Your shareable card link appears once your account is set up.'}</p>
       </div>
@@ -2144,7 +2158,7 @@ function personAvatar(id, name, extra) {
   if (c && c.photo) return `<span class="fr-av fr-av-photo ${extra || ''}" style="background-image:url('${c.photo}')"></span>`;
   return `<span class="fr-av ${extra || ''}">${esc(initial((c && c.name) || name || '?'))}</span>`;
 }
-// Read-only view of someone else's Koyéba card, in a light overlay.
+// Read-only view of someone else's Kaya card, in a light overlay.
 async function openPublicCard(id, seed) {
   id = Number(id); if (!id) return;
   state.viewCard = { id, data: seed || (state.cardCache && state.cardCache[id]) || null, loading: true };
@@ -2156,7 +2170,7 @@ async function openPublicCard(id, seed) {
 function renderPublicCard() {
   let el = document.getElementById('viewcard'); if (!el) { el = document.createElement('div'); el.id = 'viewcard'; document.body.appendChild(el); }
   const v = state.viewCard || {}; const d = v.data;
-  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `koyeba.co/u/${d.subdomain}` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
+  const card = d ? cardHtml({ ...d, handle: d.subdomain ? `kaya.so/u/${d.subdomain}` : '' }, false) : `<div class="dbc-viewmsg">${esc(v.error || 'No card yet.')}</div>`;
   const isMe = d && state.me && d.id === state.me.id;
   const friends = (state.friends && state.friends.friends) || [];
   const connected = d && d.id && friends.some((f) => f.id === d.id);
@@ -2165,7 +2179,7 @@ function renderPublicCard() {
   if (d && d.id && !isMe) {
     if (connected) act = `<button class="ic-btn ic-btn-primary dbc-view-msg" data-friend-chat="${d.id}" data-friend-name="${esc(d.name || '')}">Message</button>`;
     else if (outgoing) act = '<span class="dbc-view-pending">Request sent ✓</span>';
-    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Koyéba</button>`;
+    else act = `<button class="ic-btn ic-btn-primary" data-card-connect="${d.id}">✦ Connect on Kaya</button>`;
   }
   el.innerHTML = `<div class="ic-bg" data-viewcard-bgclose><button class="ic-x" data-viewcard-close title="Close">×</button><div class="dbc-viewwrap">${card}${act ? `<div class="dbc-view-acts">${act}</div>` : ''}</div></div>`;
 }
@@ -2175,7 +2189,7 @@ async function openConnectBySub(sub) {
   if (!state.friends) { try { state.friends = await api('/api/friends'); } catch {} }
   try {
     const d = await api('/api/card/by/' + encodeURIComponent(sub));
-    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Koyéba card was not found'); }
+    if (d && d.id) openPublicCard(d.id, d); else { openHome(); toast('That Kaya card was not found'); }
   } catch (e) { openHome(); toast(e.message || 'Could not open that card'); }
 }
 function closePublicCard() { const el = document.getElementById('viewcard'); if (el) el.remove(); state.viewCard = null; }
@@ -2247,14 +2261,14 @@ async function saveAiKey(provider) {
 }
 async function closeMyAccount() {
   if (state.me && state.me.id === 1) { toast('The owner account cannot be closed here.'); return; }
-  if (!(await uiConfirm('Close your account? This permanently deletes your Koyéba and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
+  if (!(await uiConfirm('Close your account? This permanently deletes your Kaya and everything in it. It cannot be undone.', { danger: true, okLabel: 'Delete everything' }))) return;
   const typed = await uiPrompt('Type DELETE to confirm you want to permanently erase your account.', { title: 'Are you sure?', okLabel: 'Close my account', placeholder: 'DELETE' });
   if ((typed || '').trim().toUpperCase() !== 'DELETE') { toast('Account not closed.'); return; }
   try {
     await api('/api/account/close', { method: 'POST' });
     try { localStorage.clear(); } catch {}
     toast('Your account has been closed.');
-    setTimeout(() => { location.href = 'https://koyeba.co'; }, 900);
+    setTimeout(() => { location.href = 'https://kaya.so'; }, 900);
   } catch (e) { toast(e.message); }
 }
 async function clearAiKey(provider) {
@@ -2266,11 +2280,11 @@ const aiProvLabel = (p) => ({ anthropic: 'Claude', openai: 'ChatGPT', gemini: 'G
 // which provider it is. No picking, no per-provider boxes.
 function aiConnectHtml(a) {
   if (a.aiAnySet && a.aiProvider) {
-    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Koyéba.</div>
+    return `<div class="plan-active">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. It powers everything in Kaya.</div>
       <button class="ghost ai-disconnect" data-ai-disconnect="${esc(a.aiProvider)}">Disconnect ${esc(aiProvLabel(a.aiProvider))}</button>
       ${a.aiProvider === 'gemini' ? '' : '<p class="plan-note"><b>Voice notes</b> and the <b>Money</b> tools (reading a statement, summarising the finance videos you follow) are the one exception - they need <b>Gemini</b>, the only AI that reads audio and video. A <b>free</b> Gemini key covers both; paste one below and they switch on too.</p>'}`;
   }
-  return `<p class="plan-desc">Koyéba runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
+  return `<p class="plan-desc">Kaya runs on whatever AI you already use - paste <b>one</b> key and it powers everything. <b>Gemini</b> has a genuinely free tier; <b>Claude</b> and <b>ChatGPT</b> are pay-as-you-go, usually pennies.</p>
     <div class="ai-key-in"><input class="sel" type="password" data-ai-key-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-ai-connect>Connect</button></div>
     <div class="ai-get-row">Get a key: <a class="ai-get" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a> · <a class="ai-get" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a class="ai-get" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a></div>
     <p class="plan-note">Your one key powers everything. The <b>one exception</b> is <b>voice notes</b> and the <b>Money</b> tools, which need <b>Gemini</b> (it alone reads audio and video) - a <b>free</b> Gemini key covers them.</p>`;
@@ -2351,13 +2365,13 @@ async function downloadExport() {
 // sweep rather than quietly surviving it.
 // A crumb shared across *.daybook.fyi (the token can't be - it's per-origin in
 // localStorage): which subdomain this browser is signed in on. The apex marketing
-// page reads it so "Sign in" jumps you straight to your Koyéba instead of asking
+// page reads it so "Sign in" jumps you straight to your Kaya instead of asking
 // for your email again. Cleared on sign-out.
 function rememberSubdomain(sub) { if (!sub || !/^[a-z0-9-]{1,63}$/i.test(sub)) return; try { document.cookie = `db_sub=${encodeURIComponent(sub)}; domain=.daybook.fyi; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax; secure`; } catch {} }
 function forgetSubdomain() { try { document.cookie = 'db_sub=; domain=.daybook.fyi; path=/; max-age=0; samesite=lax; secure'; } catch {} }
 const SIGNOUT_KEEP = new Set(['life.theme.mode', 'life.accent', 'today.theme']);
 async function signOut() {
-  if (!(await uiConfirm('Sign out of Koyéba on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
+  if (!(await uiConfirm('Sign out of Kaya on this device? Anything not saved to your account is cleared from this browser.', { title: 'Sign out', okLabel: 'Sign out' }))) return;
   // Push goes first, while the token that authorises it still exists: a device
   // left subscribed would carry on buzzing with this account's mail afterwards.
   try {
@@ -2561,7 +2575,7 @@ function renderAdmin() {
     </div>
     <div class="set-card" style="margin-top:14px">
       <div class="set-row-t">Hidden for now</div>
-      <p class="home-empty" style="margin:6px 0 14px">Parts of Koyéba switched off for the moment - a running note so we remember what to bring back.</p>
+      <p class="home-empty" style="margin:6px 0 14px">Parts of Kaya switched off for the moment - a running note so we remember what to bring back.</p>
       <div class="adm-hidden">${HIDDEN_FEATURES.length ? HIDDEN_FEATURES.map((h) => `<div class="admin-row"><span><b>${esc(h.label)}</b> <span class="scope">${esc(h.where || '')}${h.note ? ' · ' + esc(h.note) : ''}</span></span><span class="aq-author">${h.since ? 'hidden ' + esc(h.since) : ''}</span></div>`).join('') : '<span class="sp-cat-empty">Nothing hidden right now.</span>'}</div>
     </div>`;
 
@@ -2570,11 +2584,11 @@ function renderAdmin() {
       <div class="admin-quotes">${(a.quotes || []).map((q) => `<div class="admin-row aq-row"><span class="aq-text">${esc(q.text)}</span><span class="aq-author">${esc(q.author || '')}</span><button class="ghost aq-del" data-quote-del="${q.id}" title="Remove">×</button></div>`).join('')}</div>
     </div>`;
 
-  const BR_SW = [['#a8844a', 'Koyéba Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
+  const BR_SW = [['#a8844a', 'Kaya Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup">${MARK}<span class="adm-brand-word">Koyéba</span></span>
+        <span class="adm-brand-lockup"><span class="adm-brand-word">Kaya.</span></span>
         <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
       </div>
       <div class="home-sec-h" style="margin-top:6px">Logo files</div>
@@ -2600,7 +2614,7 @@ function renderAdmin() {
   const costRow = (m, i) => `<div class="adm-cost-row"><span class="adm-cost-m">${monthLabel(m.ym, i)}</span><span class="adm-cost-b">AI ${admUSD(m.ai)} · infra ${admUSD(m.fixed)}${m.calls ? ` · ${admN(m.calls)} calls` : ''}</span><span class="adm-cost-t">${admUSD(m.total)}</span></div>`;
   const costsPane = `<div class="set-card">
       <div class="home-sec-h">Running costs</div>
-      <p class="inv-hint">What Koyéba costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
+      <p class="inv-hint">What Kaya costs to run each month - measured AI spend plus fixed infrastructure. AI is an estimate from token usage.</p>
       <div class="adm-cost-list">${costMonths.map(costRow).join('') || '<div class="home-empty" style="padding:4px 0 0">No cost data yet.</div>'}</div>
     </div>
     <div class="set-card" style="margin-top:14px">
@@ -2609,7 +2623,7 @@ function renderAdmin() {
       <p class="inv-hint" style="margin-top:12px">Add domain, email and SMS here as they come in - edited in the code for now.</p>
     </div>`;
 
-  // ── Health: the outside services Koyéba leans on, up or down ───────────
+  // ── Health: the outside services Kaya leans on, up or down ───────────
   // Robin: "we don't like silent breakages." Probed every half hour by the
   // worker; this is the glanceable status, a Check-now, and the alert toggle.
   const hs = a.health || null;
@@ -2617,7 +2631,7 @@ function renderAdmin() {
   const svcDown = svcList.filter(([, v]) => !v.ok).length;
   const healthPane = `<div class="set-card">
       <div class="home-sec-h">Integrations ${svcList.length ? (svcDown ? `<span class="adm-health-badge down">${svcDown} down</span>` : '<span class="adm-health-badge ok">all up</span>') : ''}</div>
-      <p class="inv-hint">The outside services Koyéba depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
+      <p class="inv-hint">The outside services Kaya depends on. The worker checks them automatically every half hour and emails you if one changes state, so nothing breaks quietly. ${hs && hs.checkedAt ? `Last checked ${timeAgo(hs.checkedAt)}.` : 'Not checked yet - run one below.'}</p>
       ${svcList.length ? `<div class="adm-health-list">${svcList.map(([k, v]) => `
         <div class="adm-health-row${v.ok ? '' : ' down'}" title="${esc(v.ok ? 'Up' : 'Down')} since ${esc(timeAgo(v.since || v.at))}">
           <span class="ahr-dot ${v.ok ? 'ok' : 'down'}"></span>
@@ -2644,13 +2658,13 @@ function renderAdmin() {
 
   const panes = { members: membersPane, feedback: feedbackPane, costs: costsPane, health: healthPane, setup: setupPane, quotes: quotesPane, brand: brandPane };
   const subs = {
-    members: `${users.length} on Koyéba · tap anyone for the full picture`,
+    members: `${users.length} on Kaya · tap anyone for the full picture`,
     feedback: feedback.length ? `${feedback.length} note${feedback.length === 1 ? '' : 's'} from the Guide` : 'What people send from the Guide',
-    costs: 'What it costs to run Koyéba, by month',
-    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Koyéba depends on',
+    costs: 'What it costs to run Kaya, by month',
+    health: svcList.length ? (svcDown ? `${svcDown} integration${svcDown === 1 ? '' : 's'} need attention` : 'All integrations healthy') : 'Outside services Kaya depends on',
     setup: 'Registration & what new accounts start with',
     quotes: `${(a.quotes || []).length} in the pool`,
-    brand: 'The Koyéba logo, icons and colours',
+    brand: 'The Kaya logo, icons and colours',
   };
 
   // §40: one folding page. A top band (eyebrow + Admin + a one-line state +
@@ -2663,11 +2677,11 @@ function renderAdmin() {
     ['Services', svcList.length ? `${svcList.length - svcDown}/${svcList.length}` : '—'],
   ];
   const waiting = requests.length;
-  const stateSentence = `${svcList.length ? (svcDown === 0 ? 'Everything is running.' : `${svcDown} service${svcDown === 1 ? '' : 's'} need${svcDown === 1 ? 's' : ''} looking at.`) : 'Koyéba is running.'}${waiting ? ` ${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting to join.` : ''}`;
+  const stateSentence = `${svcList.length ? (svcDown === 0 ? 'Everything is running.' : `${svcDown} service${svcDown === 1 ? '' : 's'} need${svcDown === 1 ? 's' : ''} looking at.`) : 'Kaya is running.'}${waiting ? ` ${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting to join.` : ''}`;
   const sectionHtml = ([key, label], i) => {
     const open = admOpen(key, key === 'members');
     return `<section class="adm2-sec" id="adm-sec-${key}">
-      <div class="adm2-h" data-adm-fold="${key}" role="button" tabindex="0"><span class="adm2-num">${KNAV_R[i] || ''}</span><span class="adm2-t">${esc(label)}</span>${!open ? `<span class="adm2-sub">${esc(subs[key] || '')}</span>` : ''}<span class="adm2-sign">${open ? '−' : '+'}</span></div>
+      <div class="adm2-h" data-adm-fold="${key}" role="button" tabindex="0"><span class="adm2-num">${roman(i + 1)}</span><span class="adm2-t">${esc(label)}</span>${!open ? `<span class="adm2-sub">${esc(subs[key] || '')}</span>` : ''}<span class="adm2-sign">${open ? '−' : '+'}</span></div>
       ${open ? `<div class="adm2-body">${panes[key] || ''}</div>` : ''}
     </section>`;
   };
@@ -2740,13 +2754,13 @@ async function setUserFree(id, months) {
   try { state.admin.users = (await api(`/api/admin/user/${id}`, { method: 'PATCH', body: JSON.stringify({ freeMonths: months }) })).users; renderAdmin(); toast(months === 'forever' ? 'Free forever' : months > 0 ? `Free for ${months} month${months === 1 ? '' : 's'} from today` : 'Free period removed'); }
   catch (e) { toast(e.message); renderAdmin(); }
 }
-// ── Friends on Koyéba ────────────────────────────────────────────────
+// ── Friends on Kaya ────────────────────────────────────────────────
 // Friends merged into Contacts: keep the entry point but land on the unified page.
 async function openFriends() { return openContacts(); }
-// Order Koyéba contacts by who was online most recently: anyone online right
+// Order Kaya contacts by who was online most recently: anyone online right
 // now (live presence poll, or the last-known flag) sits at the top, then the
 // rest by how recently they were last seen, newest first, down to never-seen.
-// Used by the sidebar lists and the Contacts / Koyéba Contacts pages so they
+// Used by the sidebar lists and the Contacts / Kaya Contacts pages so they
 // all agree. (Robin, 2026-10-27.)
 function friendsByRecency(list) {
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
@@ -2762,10 +2776,10 @@ function friendsByRecency(list) {
 function friendRow(f, action) {
   const n = unreadFrom(f.id);
   loadCards([f.id]);
-  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Koyéba card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
+  return `<div class="friend-row"><button class="fr-av-btn" data-open-personcard="${f.id}" title="See ${esc(f.name || 'their')} Kaya card">${personAvatar(f.id, f.name, f.online ? 'online' : '')}</button><button class="fr-body fr-body-btn" data-open-personcard="${f.id}"><span class="fr-name"><span class="fr-nm">${esc(f.name)}</span>${n ? `<span class="fr-unread" title="${n} unread message${n === 1 ? '' : 's'}">${n > 99 ? '99+' : n}</span>` : ''}${f.online ? '<span class="fr-on">online</span>' : ''}</span></button>${action}</div>`;
 }
 // Friends now live inside Contacts; anything that used to re-render the Friends
-// page re-renders whichever view the action was taken on - Contacts, the Koyéba
+// page re-renders whichever view the action was taken on - Contacts, the Kaya
 // people hub, or Home (where invitations surface too). (Robin, 2026-10-13.)
 function renderFriends() {
   const v = state.view && state.view.type;
@@ -2793,12 +2807,12 @@ async function peopleSearch() {
   // query still matches what's typed.
   if (($('#friend-email') || {}).value?.trim() !== q) return;
   box.innerHTML = people.length
-    ? `<div class="fr-scan-note">People on Koyéba matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
-    : `<div class="home-empty" style="padding:8px 2px">No one on Koyéba matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
+    ? `<div class="fr-scan-note">People on Kaya matching &ldquo;${esc(q)}&rdquo;:</div>${people.map((f) => friendRow(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">+ Add</button>`)).join('')}`
+    : `<div class="home-empty" style="padding:8px 2px">No one on Kaya matches &ldquo;${esc(q)}&rdquo;. Try their email, or invite them from Settings.</div>`;
 }
 async function friendAccept(id) { try { state.friends = await api('/api/friends/accept', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); toast('Connected'); } catch (e) { toast(e.message); } }
 async function friendRemove(id) { try { state.friends = await api('/api/friends/remove', { method: 'POST', body: JSON.stringify({ id }) }); renderFriends(); } catch (e) { toast(e.message); } }
-// Invite someone to Koyéba: their email, a note in your own words, Send. The
+// Invite someone to Kaya: their email, a note in your own words, Send. The
 // worker emails the invitation with a one-click link - the invitee never copies a
 // code anywhere. Leave the email blank and it just mints a code to share by hand.
 // One dialog behind every entry point (Contacts, Settings, Admin) so there is a
@@ -2816,7 +2830,7 @@ function inviteToKoyeba(prefill) {
     : `<p class="inv-d-hint">You've given out all 10 of your free ${gMonths}-month gifts - a plain invite still lands them on Free.</p>`;
   const el = uiDialogHost();
   el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box inv-dialog">
-    <div class="recur-h">Invite someone to Koyéba</div>
+    <div class="recur-h">Invite someone to Kaya</div>
     <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
       <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
@@ -2975,11 +2989,11 @@ async function dismissRequest(id) {
   if (state.inviteReq) state.inviteReq.count = (state.admin && state.admin.requests || []).length;
   renderAdmin();
 }
-// Unread Koyéba MESSAGES (not friend requests) - the signal we make loud.
+// Unread Kaya MESSAGES (not friend requests) - the signal we make loud.
 const unreadMsgs = () => ((state.friendStatus || {}).unread || 0);
 // Unread messages from one person, for the badge on their row.
 const unreadFrom = (id) => (((state.friendStatus || {}).unreadBy) || {})[id] || 0;
-// Name of a Koyéba contact by id, from whatever's loaded (friends list, then
+// Name of a Kaya contact by id, from whatever's loaded (friends list, then
 // the online roster). Falls back to a generic label.
 function friendName(id) {
   const f = ((state.friends && state.friends.friends) || []).find((x) => String(x.id) === String(id));
@@ -2996,13 +3010,13 @@ async function refreshFriendStatus() {
     const changed = sig !== state.__friendSig; state.__friendSig = sig;
     state.friendStatus = { incoming: r.incoming || 0, online: r.online || [], unread: r.unread || 0, unreadBy: r.unreadBy || {}, friends: r.friends || 0 };
     // Ping when a contact's unread rises (a new message) - unless you're already
-    // in that chat. A toast alerts you wherever you are in Koyéba.
+    // in that chat. A toast alerts you wherever you are in Kaya.
     if (hadBaseline) {
       const openWith = state.chat && state.chat.with;
       Object.keys(r.unreadBy || {}).forEach((id) => {
         if ((r.unreadBy[id] || 0) > (prevUnread[id] || 0) && Number(id) !== Number(openWith)) {
           const nm = friendName(id);
-          toast(`${nm || 'A Koyéba contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
+          toast(`${nm || 'A Kaya contact'} messaged you - tap to open`, null, { duration: 9000, onClick: () => openChat(Number(id), nm || 'Message') });
         }
       });
     }
@@ -3608,7 +3622,7 @@ async function openShare(id, title, kind) {
   } catch (e) { toast(e.message); }
   state.share.loading = false; renderShare();
 }
-function shareWebUrl() { return state.share && state.share.webToken ? `https://koyeba.co/n/${state.share.webToken}` : ''; }
+function shareWebUrl() { return state.share && state.share.webToken ? `https://kaya.so/n/${state.share.webToken}` : ''; }
 function shareModeFor(fid) { const s = (state.share.shares || []).find((x) => x.id === fid); return s ? (s.canEdit ? 'edit' : 'view') : ''; }
 function renderShare() {
   let el = document.getElementById('share'); if (!el) { el = document.createElement('div'); el.id = 'share'; document.body.appendChild(el); }
@@ -3621,13 +3635,13 @@ function renderShare() {
         ? `<span class="share-acts"><select class="sel share-mode" data-share-mode="${f.id}"><option value="edit" ${mode === 'edit' ? 'selected' : ''}>Can edit</option><option value="view" ${mode === 'view' ? 'selected' : ''}>View only</option></select><button class="ghost share-off" data-share-off="${f.id}" title="Stop sharing">×</button></span>`
         : `<button class="add-btn wide" data-share-on="${f.id}">Share</button>`}</div>`;
     }).join('') : `<div class="share-empty">
-        <p>You're not connected with anyone on Koyéba yet.</p>
+        <p>You're not connected with anyone on Kaya yet.</p>
         <p class="onb-muted">Invite someone, then you can share this with them - and anything else you like.</p>
         <button class="add-btn wide" data-share-invite>✦ Invite a friend</button>
       </div>`);
   const kindLabel = s.kind === 'task' ? 'task' : s.kind === 'table' ? 'table' : s.kind === 'area' ? 'page' : 'note';
-  // A public link: notes only, for sharing with someone who isn't on Koyéba.
-  // Off by default; a quiet, revocable read-only page at koyeba.co/n/<token>.
+  // A public link: notes only, for sharing with someone who isn't on Kaya.
+  // Off by default; a quiet, revocable read-only page at kaya.so/n/<token>.
   const webUrl = shareWebUrl();
   const webSec = s.kind === 'note' ? `<div class="share-web ${webUrl ? 'on' : ''}">
     <div class="share-web-h"><span class="sw-tt"><b>Publish</b><small>A public link for anyone, with no account needed. Read-only.</small></span></div>
@@ -3758,7 +3772,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
   <span class="inv-who">${i.email ? `<b>${esc(i.email)}</b>` : '<b>Shareable code</b>'}<span class="inv-meta">${esc(i.code)} · ${invitePlanLabel(i)} · ${i.used_by ? 'joined' : i.email ? 'invitation sent' : 'not used yet'}</span></span>
   ${i.used_by ? '' : `<span class="inv-acts">${i.email ? `<button class="ghost inv-copy" data-invite-resend="${esc(i.code)}" title="Send the invitation again">Re-send</button>` : ''}<button class="ghost inv-copy" data-copy-invite="${esc(i.code)}" title="Copy a one-click join link">🔗 Link</button><button class="ghost inv-cancel" data-cancel-invite="${esc(i.code)}" title="Cancel this invitation">Cancel</button></span>`}
 </div>`;
-// Where AI actually gets used across Koyéba, and which model powers each - so
+// Where AI actually gets used across Kaya, and which model powers each - so
 // the AI settings and the onboarding guide can say plainly what a key is for.
 // [featureKey, name, what it does, which model]. The key gates the use server-side
 // (aiKey(env, provider, key)) and lets a user switch that one use off on its own.
@@ -3766,7 +3780,7 @@ const inviteRow = (i) => `<div class="inv-row ${i.used_by ? 'used' : ''}">
 // and video): voice notes, and Money (statement photos/PDFs + the finance videos
 // you follow). 'any' means it runs on the one AI you connected, whatever it is.
 const AI_USES = [
-  ['wellbeing', 'Reflection companion', 'gentle coaching, a "Dig deeper" question while you journal, dream reflections, and weighing a decision with Compass', 'any'],
+  ['wellbeing', 'Insight companion', 'gentle coaching, a "Dig deeper" question while you journal, dream reflections, and weighing a decision with Compass', 'any'],
   ['divination', 'I Ching & horoscope', 'reads your I Ching casting and writes your daily horoscope', 'any'],
   ['reviews', 'Review help', 'matches your open tasks to a review and sums up the period', 'any'],
   ['mail', 'Email Scribe', 'drafts replies to your emails in your own voice', 'any'],
@@ -3795,7 +3809,7 @@ const aiUsesTogglesHtml = () => { const off = !!(state.account && state.account.
 const GMAIL_APP_PW = `<b>Gmail needs a one-time App Password</b> - not your normal password:
   <ol class="gpw-steps">
     <li>Turn on <a href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a> (required before app passwords appear).</li>
-    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Koyéba</b>, and press Create.</li>
+    <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>, type <b>Kaya</b>, and press Create.</li>
     <li>Copy the 16-character code Google shows and paste it as the password below (spaces don't matter).</li>
   </ol>`;
 // ── Mobile Home layout ────────────────────────────────────────────────
@@ -3855,7 +3869,7 @@ function mobileSettingsHtml() {
 // One page, six folding sections, with a sticky index. The simple settings are
 // live here; the flows that touch sign-in, money or your calendars open the
 // existing panels untouched (renderSettingsLegacy), reached by their own links.
-const SET_LEGACY_TABS = ['account', 'ai', 'appearance', 'sections', 'mobile', 'feeds', 'notifications', 'invites', 'import', 'card', 'manage', 'security'];
+const SET_LEGACY_TABS = ['account', 'ai', 'appearance', 'sections', 'feeds', 'notifications', 'invites', 'import', 'card', 'manage', 'security'];
 const SET_SIX_IDS = ['you', 'plan', 'look', 'conn', 'people', 'data'];
 function renderSettings() {
   state.settings = state.settings || {};
@@ -3934,7 +3948,7 @@ function renderSettingsSix() {
   const youBody =
     row(esc(name), esc(email) + (phone ? ' · ' + esc(phone) : ''), links([{ label: 'Edit', open: 'account' }]), true)
     + row('Also sign in with', aliasEmails.length ? esc(aliasEmails.slice(0, 4).join(', ')) + (aliasEmails.length > 4 ? ` and ${aliasEmails.length - 4} more` : '') : 'Just your main address so far', links([{ label: 'Manage', open: 'account' }, { label: '+ Add', open: 'account' }]), true)
-    + row('Your Koyéba card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
+    + row('Your Kaya card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
     + grp('Security')
     + row('Two-step sign-in', 'A code from your authenticator app after your email code', `<span class="sx-links"><span class="sx-stat">${sq(twofaOn)}${twofaOn ? 'On' : 'Off'}</span><span class="sx-link lead" data-sx-open="account" role="button" tabindex="0">${twofaOn ? 'Manage' : 'Set up'}</span></span>`);
 
@@ -3943,20 +3957,18 @@ function renderSettingsSix() {
     row('Your plan', planSub, choices([{ label: 'Premium Plus', on: planPlus, open: 'ai' }, { label: 'Premium - your own key', on: planByok, open: 'ai' }]))
     + row('Billing', 'Annual saves you two months', choices([{ label: 'Monthly', on: cyc === 'monthly', open: 'ai' }, { label: 'Annual', on: cyc === 'annual', open: 'ai' }]))
     + row('Use AI at all', 'The master switch. Everything still works without it', toggle(!aiOff, 'ai'))
-    + grp('Where Koyéba uses AI')
+    + grp('Where Kaya uses AI')
     + AI_USES.map(([key, f, why]) => row(esc(f), esc(why), toggle(aiFeatureOn(key), 'aifeat:' + key, aiOff))).join('');
 
   const lookBody =
-    row('Day and night', 'Auto follows your local sunrise and sunset', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Auto', on: mode === 'auto', act: 'theme:auto' }, { label: 'Day', on: mode === 'light', act: 'theme:light' }, { label: 'Night', on: mode === 'dark', act: 'theme:dark' }]))
+    row('Colour scheme', 'Day, Night or Auto (following the sun) - or Sensible, a calm plain page', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Auto', on: !plainMode() && mode === 'auto', act: 'theme:auto' }, { label: 'Day', on: !plainMode() && mode === 'light', act: 'theme:light' }, { label: 'Night', on: !plainMode() && mode === 'dark', act: 'theme:dark' }, { label: 'Sensible', on: plainMode(), act: 'theme:plain' }]))
     + row('Week starts on', 'Sets your weekly review window', choices([{ label: 'Monday', on: ws === 1, act: 'week:1' }, { label: 'Sunday', on: ws === 0, act: 'week:0' }]))
     + row('Currency', '', choices([{ label: '€ Euro', on: curc === 'EUR', act: 'cur:EUR' }, { label: '£ Pound', on: curc === 'GBP', act: 'cur:GBP' }, { label: '$ Dollar', on: curc === 'USD', act: 'cur:USD' }]))
     + row('Dates read as', '', choices([{ label: '23 October', on: ds === 'uk', act: 'date:uk' }, { label: 'October 23', on: ds === 'us', act: 'date:us' }]))
     + grp('Tools you use')
     + TOOL_KEYS.map((k) => row(esc(MOD_LABEL[k] || k), '', toggle(modOn(k), 'mod:' + k))).join('')
-    + grp('Reflection tools')
+    + grp('Insight tools')
     + REFLECT_MODULES.map(([k, lbl]) => row(esc(lbl), '', toggle(modOn(k), 'mod:' + k))).join('')
-    + grp("Your phone's Today")
-    + row('Notepad · Kept close · First tasks · Keep in touch · People online', 'Today and What next always stay at the top', links([{ label: 'Rearrange', open: 'mobile' }]))
     + grp('Notifications')
     + row('New mail', 'At most one nudge every 30 minutes, never one per email', toggle(a.mailPush !== false, 'mailpush'))
     + row('A daily quote', 'One line on Today', toggle(a.dailyQuote !== false, 'quote'))
@@ -3975,21 +3987,21 @@ function renderSettingsSix() {
 
   const inv = state.invites || [];
   const invSummary = inv.length ? `${inv.length} invitation${inv.length === 1 ? '' : 's'} sent` : 'Nobody invited yet';
-  const peopleBody = row('Invite someone to Koyéba', `${invSummary}. We send the email - they click one link and they're in.`, links([{ label: 'Open invitations', open: 'invites' }]));
+  const peopleBody = row('Invite someone to Kaya', `${invSummary}. We send the email - they click one link and they're in.`, links([{ label: 'Open invitations', open: 'invites' }]));
 
   const dataBody =
-    row('Where it lives', 'Your own storage is on the way', '<span class="sx-choices"><span class="sx-choice on">Hosted by Koyéba</span><span class="sx-choice sx-dim">Your own storage</span></span>')
+    row('Where it lives', 'Your own storage is on the way', '<span class="sx-choices"><span class="sx-choice on">Hosted by Kaya</span><span class="sx-choice sx-dim">Your own storage</span></span>')
     + row('Take everything with you', 'A full export, any time', links([{ label: 'Download', act: 'export' }]))
-    + row('How we handle your data', '', links([{ label: 'Read it', href: 'https://koyeba.co/privacy' }]))
+    + row('How we handle your data', '', links([{ label: 'Read it', href: 'https://kaya.so/privacy' }]))
     + grp('Leaving')
     + row('Sign out of this device', 'Anything not saved to your account is cleared from this browser', links([{ label: 'Sign out', act: 'signout' }]))
-    + row('Close your account', "Erases your Koyéba and everything in it. It can't be undone", links([{ label: 'Close account…', act: 'close', danger: true }]));
+    + row('Close your account', "Erases your Kaya and everything in it. It can't be undone", links([{ label: 'Close account…', act: 'close', danger: true }]));
 
   const youHint = `${esc(name)}${email ? ' · ' + esc(email) : ''}${twofaOn ? ' · two-step on' : ''}`;
   const planHint = planPlus ? 'Premium Plus - the AI is run for you' : planByok ? 'Premium - your own AI key' : 'Free trial';
   const lookHint = `${tLocked || mode === 'auto' ? 'Night follows sunset' : mode === 'dark' ? 'Night' : 'Day'} · week starts ${DOW[ws]} · ${esc(curName)} · ${ds === 'us' ? 'October 23' : '23 October'}`;
   const connHint = 'Calendars, holidays, mail and imports';
-  const dataHint = 'Hosted by Koyéba · never sold, never used to train a model';
+  const dataHint = 'Hosted by Kaya · never sold, never used to train a model';
 
   const S = [['you', youHint, youBody], ['plan', planHint, planBody], ['look', lookHint, lookBody], ['conn', connHint, connBody], ['people', invSummary, peopleBody], ['data', dataHint, dataBody]];
   const sections = S.map(([id, hint, body], i) => {
@@ -4035,7 +4047,7 @@ function renderSettingsLegacy() {
   // The management tiles (Pages, Mail accounts, ...) each open a small
   // subpage; they live together under the Manage tab.
   const tiles = [
-    ['◈', 'Spaces', 'What your Koyéba orbits', 'data-open-areas=""'],
+    ['◈', 'Spaces', 'What your Kaya orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
     ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
@@ -4045,7 +4057,7 @@ function renderSettingsLegacy() {
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
   // collapsing scroll, so the settings you reach for most are one tap in. Your
-  // Koyéba card and your security (two-factor) are not separate tabs - they
+  // Kaya card and your security (two-factor) are not separate tabs - they
   // live inside Account: the card as a sub-page (Edit card), two-factor inline.
   // Tools sits right after Appearance; Manage retired - every tile it held (Life
   // Spaces, Mail accounts, Practices, Spending categories, Reviews, Flow) is
@@ -4055,14 +4067,13 @@ function renderSettingsLegacy() {
     ['ai', t('set.tab.ai')],
     ['appearance', t('set.tab.appearance')],
     ['sections', t('set.tab.sections')],
-    ['mobile', t('set.tab.mobile')],
     ['feeds', t('set.tab.feeds')],
     ['notifications', t('set.tab.notifications')],
     ['invites', t('set.tab.invites')],
     ['import', t('set.tab.import')],
   ];
   // Sub-pages reachable from a tab (not shown in the segmented control): the
-  // Koyéba card editor opens from Account and returns there.
+  // Kaya card editor opens from Account and returns there.
   const SUBTABS = ['card'];
   const SUB_TITLE = { card: t('set.tab.card') };
   // Calendar feed subscriptions (holidays, fixtures) - load once.
@@ -4139,10 +4150,7 @@ function renderSettingsLegacy() {
         </div>
       </div>
       <div class="set-acct-cols">
-        <div class="set-card set-cardpreview">
-          <div class="set-cardpreview-head"><span class="set-cardlink-t">Your Koyéba card</span><button class="add-btn wide set-cardpreview-edit" data-set-tab="card">Edit card</button></div>
-          <div class="set-cardpreview-card">${cardPreviewHtml(false)}</div>
-        </div>
+        ${/* The Kaya card is hidden in Settings for now - the account section fills the row. (Robin, 2026-11-05.) */ ''}
         <div class="set-card set-account-sec">
           <div class="set-sec-title">Security</div>
           ${twoFactorHtml()}
@@ -4150,32 +4158,32 @@ function renderSettingsLegacy() {
       </div>
       <div class="set-card set-yourdata">
         <div class="set-sec-title">Your data</div>
-        <div class="set-row-s">Your Koyéba is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
+        <div class="set-row-s">Your Kaya is private to you - never sold, never used to train a model. It's yours, and it's portable.</div>
         <div class="yd-hosts">
-          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Koyéba</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
+          <div class="yd-host on"><span class="yd-host-h"><span class="yd-host-dot">✓</span>Hosted by Kaya</span><span class="yd-host-s">Kept safe on our infrastructure and private to you. Nothing to run or maintain.</span></div>
           <div class="yd-host"><span class="yd-host-h">Host it yourself</span><span class="yd-host-s">Export everything below - your data comes out in full. Bring-your-own-storage is on the way.</span></div>
         </div>
-        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
+        <div class="yd-actions"><button class="add-btn wide" data-account-export>⬇ Download your data</button><a class="ghost yd-privacy-link" href="https://kaya.so/privacy" target="_blank" rel="noopener">How we handle your data ↗</a></div>
       </div>
       <div class="set-dangerrow">
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Koyéba on this device. Anything not saved to your account is cleared from this browser.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Sign out</div><div class="set-row-s">Leave Kaya on this device. Anything not saved to your account is cleared from this browser.</div></div>
           <button class="ghost" data-account-signout>↪ Sign out</button>
         </div>
         <div class="set-card set-closebox">
-          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Koyéba and everything in it. This cannot be undone.</div></div>
+          <div class="set-closebox-txt"><div class="set-row-t">Close account</div><div class="set-row-s">Permanently erase your Kaya and everything in it. This cannot be undone.</div></div>
           <button class="ghost acct-danger" data-account-close>Close my account…</button>
         </div>
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-block"><div class="set-row-t">Theme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Two worlds, Day and Night. Auto follows your local sunrise &amp; sunset.'}</div>
+        <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Day, Night, or Auto (following your local sunrise &amp; sunset). Sensible is a calm, plain page - easier on the eye if you find the painted wash distracting.'}</div>
           ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
-        <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Koyéba keeps a single gold accent - warm by day, brighter by night.</div>
+        <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Kaya keeps a single gold accent - warm by day, brighter by night.</div>
           <div class="acc-swatches">${swatches}</div>
         </div>
-        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Koyéba symbol - the clean octagram, or held in its ring.</div>
+        <div class="set-block"><div class="set-row-t">App mark</div><div class="set-row-s">The Kaya symbol - the clean octagram, or held in its ring.</div>
           <div class="mark-opts">
             <button class="mark-opt ${!markRingOn() ? 'on' : ''}" data-mark-ring="0" aria-pressed="${!markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Octagram</span></button>
             <button class="mark-opt ${markRingOn() ? 'on' : ''}" data-mark-ring="1" aria-pressed="${markRingOn()}"><svg class="mark-prev" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="5"/><path d="M22 22H78V78H22Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M50 12L88 50L50 88L12 50Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M31 31H69V69H31Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg><span>Starred ring</span></button>
@@ -4196,9 +4204,9 @@ function renderSettingsLegacy() {
     const onByok = curKey === 'byok';
     const onTrial = !onManaged && !onByok;
     const heroName = onManaged ? 'Premium Plus' : onByok ? 'Premium' : 'Free trial';
-    const heroSub = onManaged ? 'The whole of Koyéba, with the AI run for you.'
-      : onByok ? 'The whole of Koyéba, powered by your own AI key.'
-      : "You're exploring Koyéba. Pick a plan below whenever you're ready.";
+    const heroSub = onManaged ? 'The whole of Kaya, with the AI run for you.'
+      : onByok ? 'The whole of Kaya, powered by your own AI key.'
+      : "You're exploring Kaya. Pick a plan below whenever you're ready.";
     const badge = (on) => on ? '<span class="plan-badge">Your plan</span>' : '';
     // Monthly or annual. Annual holds at the old yearly price, so it's a bigger
     // saving now the monthly has gone up - most on Premium. The buttons still open
@@ -4216,37 +4224,37 @@ function renderSettingsLegacy() {
     const cycLabel = cycle === 'annual' ? ' (annual)' : ' (monthly)';
     const act = (isCurrent, label, subject) => isCurrent
       ? '<div class="plan-active">✓ Your current plan</div>'
-      : `<a class="add-btn wide" href="mailto:contact@koyeba.co?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
+      : `<a class="add-btn wide" href="mailto:contact@kaya.so?subject=${encodeURIComponent(subject)}">${esc(label)}</a>`;
     return `<div class="set-card plan-hero">
         <div class="plan-hero-eyebrow">Your plan</div>
         <div class="plan-hero-name">${esc(heroName)}</div>
         <div class="plan-hero-sub">${esc(heroSub)}</div>
       </div>
       <div class="set-row-t" style="margin:22px 0 4px">${onTrial ? 'Choose your plan' : 'Plans'}</div>
-      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Koyéba - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
+      <p class="set-row-s" style="margin:0 0 12px">Every plan is the whole of Kaya - your days, mail, tasks, notes, people, money, goals and more. They differ only in how the AI is powered.</p>
       ${cycleToggle}
       <div class="plan-cards">
         <div class="plan-card ${onByok ? 'on' : ''}">
           <div class="plan-h"><b>Premium</b>${badge(onByok)}</div>
           ${priceBlock('byok')}
           <p class="plan-desc">Bring your own AI key - Claude, ChatGPT or Gemini - to power the AI features, and pay the provider directly.</p>
-          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Koyéba Premium plan' + cycLabel)}
+          ${act(onByok, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium →', 'Kaya Premium plan' + cycLabel)}
         </div>
         <div class="plan-card plan-full ${onManaged ? 'on' : ''}">
           <div class="plan-h"><b>Premium Plus</b>${badge(onManaged)}</div>
           ${priceBlock('managed')}
           <p class="plan-desc">We run the AI for you - no keys, nothing to set up. The hands-off option.</p>
-          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Koyéba Premium Plus plan' + cycLabel)}
+          ${act(onManaged, onTrial ? 'Start 21-day free trial →' : 'Switch to Premium Plus →', 'Kaya Premium Plus plan' + cycLabel)}
         </div>
       </div>
       <div class="plan-trial">✦ Both plans start with a <b>21-day free trial</b> - look around first, decide later.${cycle === 'annual' ? ' Annual billing saves you two months.' : ''}</div>
       <div class="set-row-t" style="margin:26px 0 4px">Your AI</div>
-      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Koyéba.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
+      <label class="set-mod"><span>Use AI features<small>The master switch - turn every use of AI on or off across Kaya.</small></span><input type="checkbox" data-account-ai ${a.aiOff ? '' : 'checked'}></label>
       ${onManaged
         ? '<p class="set-row-s" style="margin:10px 0 0">On Premium Plus the AI is handled for you - there’s no key to add.</p>'
         : `<div class="plan-ai-connect ${a.aiOff ? 'ai-disabled' : ''}" style="margin-top:12px">${aiConnectHtml(a)}</div>`}
-      <div class="set-row-t" style="margin:22px 0 4px">Where Koyéba uses AI</div>
-      <p class="set-row-s" style="margin:0 0 10px">Every place Koyéba calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
+      <div class="set-row-t" style="margin:22px 0 4px">Where Kaya uses AI</div>
+      <p class="set-row-s" style="margin:0 0 10px">Every place Kaya calls on your AI. Switch off any you'd rather it didn't - the rest keep working.</p>
       ${aiUsesTogglesHtml()}`;
   })() : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
@@ -4255,8 +4263,8 @@ function renderSettingsLegacy() {
   const modRow = ([k, l]) => `<label class="set-mod"><span><span class="set-mod-l">${l}</span>${MOD_SETTINGS[k] ? `<button type="button" class="set-modlink" data-modlink="${k}">${MOD_SETTINGS[k]} ›</button>` : ''}</span><input type="checkbox" data-mod-toggle="${k}" ${modOn(k) ? 'checked' : ''}></label>`;
   const sectionsPane = `<div class="set-card"><div class="set-mods">${MODULES.map(modRow).join('')}</div></div>
       <div class="set-card">
-        <div class="set-sec-title">Reflection tools</div>
-        <div class="set-row-s">The tools on your Reflection page. Switch off any you don't use and it leaves the page and the menu.</div>
+        <div class="set-sec-title">Insight tools</div>
+        <div class="set-row-s">The tools on your Insight page. Switch off any you don't use and it leaves the page and the menu.</div>
         <div class="set-mods">${REFLECT_MODULES.map(modRow).join('')}</div>
       </div>`;
 
@@ -4341,7 +4349,7 @@ function importPane() {
 }
 function importContactsPaneHtml() {
   return `
-      <p class="imp-lead">Bring your address book into Koyéba - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
+      <p class="imp-lead">Bring your address book into Kaya - everyone arrives as a contact, with their emails, phones, birthdays and addresses intact.</p>
       <p class="imp-hint">Export a <b>vCard</b> (<code>.vcf</code>) from <b>Google Contacts</b>, <b>Apple Contacts</b>, <b>Outlook</b> or your phone - one file can hold everyone - then choose it below.</p>
       <div class="imp-field">
         <label class="imp-label">Choose your vCard</label>
@@ -4388,7 +4396,7 @@ function importEventsPaneHtml() {
   return `
       <div class="imp-flyer-teaser">
         <div class="imp-flyer-art">✨📸</div>
-        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Koyéba reads the dates straight out - you tick which ones land on your calendar.</p>
+        <p class="imp-lead">A flyer, a file, a photo or a webpage link (Eventbrite, Meetup…)? Snap it, upload it, paste the text or drop the link, and Kaya reads the dates straight out - you tick which ones land on your calendar.</p>
         <button class="add-btn wide" data-open-flyer>Add from a file</button>
         <p class="imp-hint">You'll also find this on your <b>Calendar</b> and in the <b>+ New</b> menu.</p>
       </div>`;
@@ -4614,7 +4622,7 @@ function renderFlyerImport() {
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
     <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Koyéba reads the dates out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Kaya reads the dates out and you choose what lands on your calendar.</p></div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -4729,7 +4737,7 @@ function discoverLocate() {
   navigator.geolocation.getCurrentPosition(
     (p) => { try { localStorage.setItem('life.loc', JSON.stringify({ lat: p.coords.latitude, lng: p.coords.longitude })); } catch {} discoverSuggest({ lat: p.coords.latitude, lng: p.coords.longitude }); },
     () => { const dd = discoverState(); dd.locLoading = false; renderDiscover(); toast('Location unavailable - type a city instead'); },
-    { timeout: 9000, enableHighAccuracy: false, maximumAge: 600000 },
+    { timeout: 12000, enableHighAccuracy: true, maximumAge: 300000 },
   );
 }
 // Subscribe to a source URL (shared by the paste box and the suggestion cards).
@@ -4882,6 +4890,58 @@ async function importAddEvents() {
 }
 
 function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc')); return l && Number.isFinite(l.lat) ? l : null; } catch { return null; } }
+// §24 A place you set yourself (e.g. Porto for the weekend). It overrides both the
+// weather coordinates and the name shown on Today - the name otherwise comes from
+// the timezone, and all of Portugal is one zone, so it always read "Lisbon".
+// (Robin, 2026-11-06: "I'm in Porto for the weekend… update my location".)
+function lifePlace() { try { const p = JSON.parse(localStorage.getItem('life.place') || 'null'); return (p && p.name && Number.isFinite(p.lat)) ? p : null; } catch { return null; } }
+async function setHomePlace(city) {
+  city = (city || '').trim();
+  state.home = state.home || {};
+  if (!city) {   // clear → back to automatic (device location, reverse-geocoded)
+    try { localStorage.removeItem('life.place'); localStorage.removeItem('life.weather'); } catch {}
+    state.weather = undefined; state.home.locEdit = false;
+    __autoPlaceTried = false; ensureAutoPlace();   // re-detect where you are right now
+    renderHome(); return;
+  }
+  try {
+    const g = await api(`/api/geocode?q=${encodeURIComponent(city)}&one=1`);
+    if (g && g.found && Number.isFinite(g.lat)) {
+      const name = String(g.label || city).split(',')[0].trim() || city;
+      const place = { name, lat: g.lat, lon: g.lon };
+      try { localStorage.setItem('life.place', JSON.stringify(place)); localStorage.setItem('life.loc', JSON.stringify({ lat: g.lat, lng: g.lon })); localStorage.removeItem('life.weather'); } catch {}
+      state.weather = undefined; state.home.locEdit = false; renderHome();
+    } else { toast("Couldn't find that place - try the city name"); }
+  } catch { toast("Couldn't look that up just now"); }
+}
+// §24 The place worked out automatically from the device's own location - so Today
+// shows the city you're actually in (Porto this weekend) without you choosing it.
+// Geolocation only gives coordinates; the worker reverse-geocodes them to a name.
+// A place you set by hand (lifePlace) still wins; this is the no-choice default.
+// (Robin, 2026-11-07: "make location automatic based on geolocation".)
+function autoPlace() { try { const p = JSON.parse(localStorage.getItem('life.autoplace') || 'null'); return (p && p.name && Number.isFinite(p.lat)) ? p : null; } catch { return null; } }
+let __autoPlaceTried = false;
+function ensureAutoPlace() {
+  if (lifePlace()) return;                 // a hand-set place wins; don't override it
+  if (__autoPlaceTried) return;            // at most one fix per page load
+  const ap = autoPlace();
+  if (ap && ap.at && Date.now() - ap.at < 60 * 60 * 1000) return;   // re-detect if the last fix is over an hour old, so a new place is picked up
+  if (!navigator.geolocation) return;
+  __autoPlaceTried = true;
+  navigator.geolocation.getCurrentPosition(async (p) => {
+    const lat = p.coords.latitude, lng = p.coords.longitude;
+    try { localStorage.setItem('life.loc', JSON.stringify({ lat, lng })); } catch {}
+    applyTheme(false);                     // coordinates also feed the day/night sun
+    try {
+      const g = await api(`/api/geocode?lat=${lat}&lon=${lng}`);
+      if (g && g.found && g.name) {
+        try { localStorage.setItem('life.autoplace', JSON.stringify({ name: g.name, lat, lon: lng, at: Date.now() })); localStorage.removeItem('life.weather'); } catch {}
+        state.weather = undefined;         // re-pull weather for the real place
+        renderHomeSoon();
+      }
+    } catch {}
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 5 * 60 * 1000, timeout: 12000 });
+}
 function ensureLoc() {
   if (cachedLoc() || !navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
@@ -4983,7 +5043,7 @@ function navItems(v) {
     finPortfolio: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'portfolio' ? 'on' : ''}" data-open-financial data-fin-tab="portfolio"><span class="nav-ic">↗</span><span class="nav-lbl">${t('nav.money.portfolio')}</span></button>` : '',
     finAdvice: modOn('financial') ? `<button class="nav-item ${v.type === 'financial' && state.financial.tab === 'advice' ? 'on' : ''}" data-open-financial data-fin-tab="advice"><span class="nav-ic">✧</span><span class="nav-lbl">${t('nav.money.advice')}</span></button>` : '',
     timer: modOn('timer') ? `<button class="nav-item ${v.type === 'toolbox' ? 'on' : ''}" data-open-toolbox><span class="nav-ic">⚙</span><span class="nav-lbl">${t('nav.timer')}</span></button>` : '',
-    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyéba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    daybook: modOn('contacts') ? `<button class="nav-item ${v.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Kaya</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     messages: modOn('contacts') ? `<button class="nav-item ${v.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
   };
 }
@@ -5011,7 +5071,7 @@ function mobileNavOrder() {
       localStorage.setItem('life.nav.contactsUnderTasks', '1');
     }
   } catch {}
-  // One-time (2026-10-28): lift Spaces to directly under Reflection
+  // One-time (2026-10-28): lift Spaces to directly under Insight
   // (wellbeing) for anyone with a saved drawer order, matching the new default.
   // Guarded so it runs once and never fights a later manual reorder. (Robin.)
   try {
@@ -5078,19 +5138,19 @@ function navGridHtml(v) {
   </div>`;
 }
 // The one People box: the Contacts + Connect tools up top, and - when online
-// contacts are switched on - the live Koyéba people below, in the same box, so
+// contacts are switched on - the live Kaya people below, in the same box, so
 // there's a single place for everyone rather than a group plus a separate list.
 function navPeopleOpen() { try { return localStorage.getItem('life.nav.peopleOpen') !== '0'; } catch { return true; } }
 function toggleNavPeople() { try { localStorage.setItem('life.nav.peopleOpen', navPeopleOpen() ? '0' : '1'); } catch {} renderNav(); }
 function peopleBox() {
-  // People box order: Contacts, Koyéba, Connect - half-width tiles in the same
+  // People box order: Contacts, Kaya, Connect - half-width tiles in the same
   // 2-column grid as every other nav group, not full-width rows. (Robin, 2026-10-16.)
   const items = [modOn('contacts') ? `<button class="nav-item ${state.view && (state.view.type === 'contacts' || state.view.type === 'contactcard') ? 'on' : ''}" data-open-contacts><span class="nav-ic">☺</span><span class="nav-lbl">${t('nav.contacts')}</span><span class="nav-quick" data-quick-add="contact" title="New contact">+</span></button>` : '',
-    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Koyéba</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
+    modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'daybookpeople' ? 'on' : ''}" data-open-daybook><span class="nav-ic">❖</span><span class="nav-lbl">Kaya</span>${navReq() ? `<span class="nav-badge">${navReq() > 99 ? '99+' : navReq()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'messages' ? 'on' : ''}" data-messages-page><span class="nav-ic">${MSG_ICO}</span><span class="nav-lbl">Messages</span>${navUnread() ? `<span class="nav-badge">${navUnread() > 99 ? '99+' : navUnread()}</span>` : ''}</button>` : '',
     modOn('contacts') ? `<button class="nav-item ${state.view && state.view.type === 'connect' ? 'on' : ''}" data-open-connect><span class="nav-ic">❥</span><span class="nav-lbl">${t('nav.connect')}</span></button>` : ''].filter(Boolean);
   if (!items.length) return '';
-  // The live Koyéba people, names and all, under a collapsible header so it can
+  // The live Kaya people, names and all, under a collapsible header so it can
   // fold away once the list gets long. The count still shows when it's closed.
   let friendsBlock = '';
   if (modOn('contacts') && peopleOn()) {
@@ -5099,21 +5159,21 @@ function peopleBox() {
     const onlineN = navOnlineCount();
     const open = navPeopleOpen();
     friendsBlock = `<div class="nav-people-wrap">
-      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyéba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+      <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Kaya Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
       ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
     </div>`;
   }
   const gcol = !!state.nav.collapsed['grp.people'];
   return `<section class="nav-sec-box"><div class="nav-grp nav-grp-h" data-sec-toggle="grp.people" title="${gcol ? 'Expand' : 'Collapse'}"><span class="nav-chev">${gcol ? '▸' : '▾'}</span><span class="nav-grp-t">${esc(t('nav.grp.people'))}</span></div>${gcol ? '' : `<div class="nav-sec-items">${items.join('')}</div>${friendsBlock}`}</section>`;
 }
-// How many Koyéba contacts are online right now - drives the green dot on the
-// "Koyéba Contacts" header so you see someone's about even with the list folded.
+// How many Kaya contacts are online right now - drives the green dot on the
+// "Kaya Contacts" header so you see someone's about even with the list folded.
 function navOnlineCount() {
   const friends = (state.friends && state.friends.friends) || [];
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   return friends.filter((f) => onSet.has(f.id) || !!f.online).length;
 }
-// The live Koyéba-friends list (online first), reused inside the People box.
+// The live Kaya-friends list (online first), reused inside the People box.
 function navPeopleRows() {
   if (state.friends === undefined) { state.friends = null; api('/api/friends').then((r) => { state.friends = r; renderNav(); }).catch(() => { state.friends = { friends: [] }; }); }
   const friends = (state.friends && state.friends.friends) || [];
@@ -5123,9 +5183,9 @@ function navPeopleRows() {
   return sorted.map((f) => {
     const on = isOnline(f); const un = unreadFrom(f.id);
     return `<button class="nav-person${on ? '' : ' off'}" data-friend-chat="${f.id}" data-friend-name="${esc(f.name || '')}" title="${on ? 'Online' : 'Offline'} · Message ${esc(f.name || '')}"><span class="np-av${on ? ' online' : ''}">${esc(initial(f.name || '?'))}</span><span class="np-name">${esc(f.name || 'Someone')}</span>${un ? `<span class="np-badge">${un > 9 ? '9+' : un}</span>` : ''}</button>`;
-  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Koyéba</button>');
+  }).join('') || (state.friends === null ? '<div class="nav-sub muted">Loading…</div>' : '<button class="nav-sub muted" data-open-contacts>Connect with people on Kaya</button>');
 }
-// The same Koyéba Contacts list, for the MOBILE drawer. On a wide screen it
+// The same Kaya Contacts list, for the MOBILE drawer. On a wide screen it
 // lives in the grid's People box, but that box is hidden on mobile, so without
 // this the live contacts never showed on a phone. Mobile-only via .nav-mpeople;
 // shares the collapsed state and rows with the desktop box. (Robin, 2026-10-20.)
@@ -5136,11 +5196,11 @@ function navPeopleMobileHtml() {
   const onlineN = navOnlineCount();
   const open = navPeopleOpen();
   return `<div class="nav-mpeople">
-    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Koyéba Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
+    <button class="nav-people-h" data-navpeople-toggle aria-expanded="${open ? 'true' : 'false'}"><span class="np-chev">${open ? '▾' : '▸'}</span><span class="np-h-t">Kaya Contacts</span>${onlineN ? `<span class="np-online-dot" title="${onlineN} online now" aria-label="${onlineN} contact${onlineN === 1 ? '' : 's'} online - tap to see who"></span>` : ''}${count ? `<span class="np-count">${count}</span>` : ''}</button>
     ${open ? `<div class="nav-people nav-box-people">${navPeopleRows()}</div>` : ''}
   </div>`;
 }
-// ── Koyéba seven-fold nav (the prototype's left column). Each item reuses an
+// ── Kaya seven-fold nav (the prototype's left column). Each item reuses an
 //    existing data-open-* / data-view-* handler, so navigation is unchanged - this
 //    only regroups the tools into seven folds, one open at a time.
 const KFOLDS = [
@@ -5156,8 +5216,8 @@ const KFOLDS = [
   { id: 'money', label: 'Money', items: [
       ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Money', 'data-open-money', 'financial'],
       ['Portfolio', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
-  { id: 'inner', label: 'Reflection', items: [
-      ['Reflection', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
+  { id: 'inner', label: 'Insight', items: [
+      ['Insight', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
       ['Dreams', 'data-open-dreams', 'dreams'], ['Compass', 'data-open-compass', 'compass'], ['I Ching', 'data-open-iching', 'iching'],
       ['Spirit Cards', 'data-spirit-open', 'spirit'], ['Horoscope', 'data-open-horo', 'horoscope'], ['Insights', 'data-open-insights', 'insights'], ['Tarot', 'data-open-tarot', 'tarot'] ] },
   { id: 'reviews', label: 'Reviews', items: [
@@ -5232,46 +5292,50 @@ function navFoldsHtml(v) {
     + `<button type="button" class="kfind" data-palette aria-label="${t('nav.search')}"><span class="kfind-l">Find…</span><kbd class="kfind-k">${PK('⌘K')}</kbd></button>`
     + `<div class="kfolds">${KFOLDS.map(foldHtml).join('')}</div></div>`;
 }
-// ── Koyéba navigation (§17, V9): seven groups along the top on desktop, each
+// ── Kaya navigation (§17, V9): seven groups along the top on desktop, each
 // folding a sheet down; a Contents overlay (⌘/, groups only); and a Find panel
 // (⌘K) that shows Shared-with-you + Recent before you type, results after. On
 // mobile: a slim wordmark + a three-item bottom bar (Contents · gold + · Find),
 // a full-screen Contents, and Set-something-down as a bottom sheet. Today is not
 // a group - the wordmark goes Home. Replaces the sidebar and the mobile icon bars.
+// KNAV_R kept for any legacy reference; numbering now uses roman(i + 1) so a Space
+// list past fifteen keeps its numerals. (Robin, 2026-11-06.)
 const KNAV_R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV'];
 // Each tool: [label, handler-attrs, view-key-for-live-hint]. Handlers are the app's
 // existing ones, so navigation is unchanged - only the chrome is new.
 function knavGroups() {
   const areaTools = (state.areas || []).map((a) => [esc(a.title || 'Untitled'), `data-open-area="${a.id}"`, '']);
+  // §71 (Robin, 2026-11-05): Mail · Calendar · Tasks · Notes left the groups and
+  // stand in the bar as one-click primaries. The groups keep the deeper things,
+  // honestly named - People → Contacts, Keep → Library. Spaces leads the row now
+  // (Robin, 2026-11-06), and Insight opens with the readings (Spirit Cards, I
+  // Ching, Tarot, Horoscope) before the writing tools.
   return [
-    { id: 'spaces', label: 'Spaces', about: 'Each part of your life', tools: areaTools },
-    { id: 'conv', label: 'People', about: 'Everyone who writes to you', tools: [
-      ['Mail', 'data-open-mail', 'mail'], ['Messages', 'data-messages-page', 'messages'], ['Contacts', 'data-open-contacts', ''] ] },
-    { id: 'plans', label: 'Plans', about: 'From today to one day', rows: [['Soon', 5], ['Further off', 2], ['Looking back', 5]], tools: [
-      ['Calendar', 'data-open-calendar', ''], ['Tasks', 'data-view-tasks', 'tasks'], ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Discover', 'data-open-discover', ''],
+    { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
+    { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit', tools: [
+      ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Tables', 'data-open-tables', ''],
       ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-      ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
-    { id: 'keep', label: 'Keep', about: 'Your reference shelf', tools: [
-      ['Notes', 'data-open-notes', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''] ] },
-    { id: 'inner', label: 'Reflection', about: 'Room for the rest of you', tools: [
-      ['Overview', 'data-open-wellbeing', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['I Ching', 'data-open-iching', ''], ['Spirit Cards', 'data-spirit-open', ''], ['Horoscope', 'data-open-horo', ''], ['Insights', 'data-open-insights', ''], ['Tarot', 'data-open-tarot', ''] ] },
-    { id: 'money', label: 'Money', about: "What things cost, and what's growing", tools: [
+      ['Read & Watch', 'data-open-readwatch', ''], ['Discover', 'data-open-discover', ''] ] },
+    { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
+      ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
+    { id: 'money', label: 'Money', about: '', attr: 'data-open-money', tools: [
       ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
+    { id: 'plans', label: 'Reviews', about: 'Look back, and plan the next stretch', tools: [
+      ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
   ];
 }
 // Which group the current view belongs to, so its name shows ink in the top line.
 const KNAV_VIEW = {
   area: 'spaces', areas: 'spaces',
-  mail: 'conv', mailaccounts: 'conv', messages: 'conv', contacts: 'conv', contactcard: 'conv', connect: 'conv', friends: 'conv', daybookpeople: 'conv', shared: 'conv',
-  calendar: 'plans', tasks: 'plans', taskcard: 'plans', discover: 'plans', today: 'plans', practices: 'plans', practicecard: 'plans',
-  notes: 'keep', note: 'keep', table: 'keep', tables: 'keep', readwatch: 'keep',
-  goals: 'plans', goalcard: 'plans', bucketcard: 'plans', reviews: 'plans', reviewcard: 'plans',
+  discover: 'keep', today: 'keep', practices: 'keep', practicecard: 'keep',
+  table: 'keep', tables: 'keep', readwatch: 'keep',
+  goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'plans', reviewcard: 'plans',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'plans',
   money: 'money', financial: 'money',
 };
 // The top-nav group labels, keyed by group id - the "section" segment of every
 // breadcrumb (Today / <section> / <page>). crumbNav() inserts this. (Robin 2026-11-03.)
-const KNAV_GROUP_LABEL = { spaces: 'Spaces', conv: 'People', plans: 'Plans', keep: 'Keep', inner: 'Reflection', money: 'Money' };
+const KNAV_GROUP_LABEL = { spaces: 'Spaces', plans: 'Reviews', keep: 'Tools', inner: 'Insight', money: 'Money' };
 function crumbGroupLabel() { const v = (state.view && state.view.type) || ''; const g = KNAV_VIEW[v]; return g ? (KNAV_GROUP_LABEL[g] || '') : ''; }
 // The top-nav group id for the current view, so the section crumb (Keep, Plans…)
 // can open that group's fold-down menu - there's no standalone group page to go
@@ -5339,7 +5403,7 @@ function knavRunSearch(qraw) {
     const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} }
   }, 160);
 }
-const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket list' };
+const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Insight', event: 'Event', bucket: 'Bucket list' };
 function knavKindLabel(h) { const base = KNAV_KIND_LABEL[h.kind] || 'Item'; const ar = h.parentTitle || (h.area ? ((areaById(h.area) || {}).title || '') : ''); return ar ? `${base} · ${ar}` : base; }
 function navGroupsHtml(v) {
   state.knav = state.knav || { group: null, contents: false, find: false, findSeen: false, mGroup: null, q: '', fShut: {} };
@@ -5354,7 +5418,15 @@ function navGroupsHtml(v) {
     const badge = knavGroupBadge(g);
     return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
   }).join('');
-  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today">${MARK}<em class="brand-word">Koyéba<i class="brand-dot">.</i></em></button>`;
+  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><em class="brand-word">Kaya<i class="brand-dot">.</i></em></button>`;
+  // §71: the four daily tools, one click each in the bar (desktop). Each lights up
+  // on its own page; Mail carries its to-sort count. (Robin, 2026-11-05.)
+  const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
+  const primTabs = PRIMS.filter(([l, a, views, mod]) => modOn(mod)).map(([label, attr, views]) => {
+    const here = views.includes((v && v.type) || '');
+    const n = label === 'Mail' ? mailHeaderCount() : (label === 'Messages' && typeof navUnread === 'function') ? navUnread() : 0;
+    return `<button class="knav-p${here ? ' here' : ''}" ${attr}><span class="knav-p-l">${esc(label)}</span>${n ? `<i class="knav-mail-n">${n}</i>` : ''}</button>`;
+  }).join('');
   // Mobile top line (§17): wordmark + a breadcrumb or the date. On Today the
   // group breadcrumb would just say "Today" (redundant with the wordmark), so show
   // the date there instead; every other view shows its group.
@@ -5368,13 +5440,14 @@ function navGroupsHtml(v) {
       ${mobileBackHtml()}
       ${wordmark}
       <div class="knav-crumb" data-view-home role="button" tabindex="0" title="Back to the top of Today">${esc(crumb)}</div>
+      <div class="knav-prims">${primTabs}</div>
+      <span class="knav-sep" aria-hidden="true"></span>
       <div class="knav-groups">${groupTabs}</div>
+      <span class="knav-sep" aria-hidden="true"></span>
       <div class="knav-right">
-        <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Add to Koyéba">New</button>
-        ${modOn('mail') ? (() => { const c = mailHeaderCount(); return `<button class="knav-mail-btn${state.mailSheet ? ' on' : ''}" data-mail-sheet title="New mail (${PK('⌘E')})">Mail${c ? `<i class="knav-mail-n">${c}</i>` : ''}</button>`; })() : ''}
+        <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Add to Kaya">New</button>
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
-        <button class="knav-split-btn${state.split ? ' on' : ''}" data-split-open title="Show something side by side">Split</button>
         <button class="knav-help-btn" data-guide-help aria-haspopup="dialog">Help</button>
         <button class="knav-contents-btn${kn.contents ? ' on' : ''}" data-knav-contents>${kn.contents ? 'Close' : 'Menu'}</button>
       </div>
@@ -5384,7 +5457,7 @@ function navGroupsHtml(v) {
   if (kn.group && !kn.contents && !kn.find) {
     const g = groups.find((x) => x.id === kn.group);
     if (g) {
-      const toolBtn = (tItem, i) => { const [label, attrs, vk] = tItem; const hint = vk ? knavHint(vk) : ''; return `<button class="knav-tool" ${attrs} data-knav-pick><span class="knav-tool-top"><span class="knav-tool-n">${KNAV_R[i] || ''}</span><span class="knav-tool-l">${label}</span></span>${hint ? `<span class="knav-tool-h">${esc(hint)}</span>` : ''}</button>`; };
+      const toolBtn = (tItem, i) => { const [label, attrs, vk] = tItem; const hint = vk ? knavHint(vk) : ''; return `<button class="knav-tool" ${attrs} data-knav-pick><span class="knav-tool-top"><span class="knav-tool-n">${roman(i + 1)}</span><span class="knav-tool-l">${label}</span></span>${hint ? `<span class="knav-tool-h">${esc(hint)}</span>` : ''}</button>`; };
       let body;
       if (g.rows && g.rows.length) {
         // §17/V12: Plans folds Soon (Calendar/Tasks/Discover) and Further off
@@ -5395,7 +5468,7 @@ function navGroupsHtml(v) {
         body = `<div class="knav-sheet-grid">${g.tools.map((tItem, i) => toolBtn(tItem, i)).join('')}</div>`;
       }
       sheet = `<div class="knav-scrim" data-knav-close aria-hidden="true"></div><div class="knav-sheet">
-      <div class="knav-sheet-h"><span class="knav-sheet-t">${g.label}</span><span class="knav-sheet-a">${esc(g.about)}</span><button class="knav-sheet-x" data-knav-close aria-label="Close" title="Close">✕</button></div>
+      <div class="knav-sheet-h">${g.attr ? `<button class="knav-sheet-t knav-sheet-t-link" ${g.attr} data-knav-pick title="Open ${esc(g.label)}">${g.label} <span class="knav-sheet-t-arw" aria-hidden="true">→</span></button>` : `<span class="knav-sheet-t">${g.label}</span>`}${g.about ? `<span class="knav-sheet-a">${esc(g.about)}</span>` : ''}<button class="knav-sheet-x" data-knav-close aria-label="Close" title="Close">✕</button></div>
       ${body}
     </div>`;
     }
@@ -5406,7 +5479,7 @@ function navGroupsHtml(v) {
     let sections;
     if (q) {
       const navMatches = groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: g.label, attrs, isTool: true }))).filter((x) => (x.a + ' ' + x.b).toLowerCase().includes(q));
-      const res = (kn.resultsFor === q) ? (kn.results || []) : [];
+      const res = ((kn.resultsFor || '').trim().toLowerCase() === q) ? (kn.results || []) : [];
       const contentItems = res.map((h, i) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
       sections = [];
       if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
@@ -5432,12 +5505,24 @@ function navGroupsHtml(v) {
   // ── Contents overlay (groups only; a quiet utility footer) ──
   let contents = '';
   if (kn.contents) {
-    const cols = groups.map((g, i) => `<div class="knav-c-group">
-      <div class="knav-c-gh"><span class="knav-c-gn">${KNAV_R[i] || ''}</span><span class="knav-c-gl">${g.label}</span></div>
+    // The mobile Menu lists the area groups in Robin's order (2026-11-07):
+    // Library, Plans, Insight, Spaces, Money - distinct from the desktop bar,
+    // where Spaces leads. The Roman numerals follow this order.
+    const MOB_GROUP_ORDER = ['keep', 'plans', 'inner', 'spaces', 'money'];
+    const mobGroups = [...groups].sort((a, b) => {
+      const ia = MOB_GROUP_ORDER.indexOf(a.id), ib = MOB_GROUP_ORDER.indexOf(b.id);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    const cols = mobGroups.map((g, i) => `<div class="knav-c-group">
+      <div class="knav-c-gh"><span class="knav-c-gn">${roman(i + 1)}</span><span class="knav-c-gl">${g.label}</span></div>
       <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
     </div>`).join('');
+    // The daily tools as big one-tap buttons at the top of the Menu - so a phone,
+    // whose bottom bar only holds five, reaches all six. (Robin, 2026-11-05.)
+    const cPrims = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']].filter(([l, a, views, m]) => modOn(m)).map(([label, attrs, views]) => `<button class="knav-c-prim${views.includes((v && v.type) || '') ? ' here' : ''}" ${attrs} data-knav-pick>${esc(label)}</button>`).join('');
     contents = `<div class="knav-contents">
       <div class="knav-c-head"><span class="eyebrow">Menu</span><span class="knav-c-hint">${PK('⌘/')} · type to search</span><button class="knav-c-x" data-knav-contents aria-label="Close" title="Close">Close</button></div>
+      <div class="knav-c-prims">${cPrims}</div>
       <div class="knav-c-toprow"><button class="knav-c-notepad" data-notepad-open><span class="kcn-t">Notepad</span>${notepadLiveCount() ? `<span class="kcn-c">${notepadLiveCount()}</span>` : ''}</button><button class="knav-c-help" data-guide-help data-knav-pick aria-haspopup="dialog">Help</button></div>
       <div class="knav-c-grid">${cols}</div>
       <div class="knav-c-foot">
@@ -5446,7 +5531,6 @@ function navGroupsHtml(v) {
         ${state.me && state.me.id === 1 ? `<button class="nff ${v.type === 'admin' ? 'on' : ''}" data-open-admin>${t('nav.admin')}</button>` : ''}
         <button class="nff" data-open-guide>${t('nav.guide')}</button>
         <button class="nff" data-open-getstarted>Welcome</button>
-        <span class="knav-c-name">${esc((state.me && (state.me.name || state.me.email)) || '')}</span>
       </div>
     </div>`;
   }
@@ -5459,6 +5543,28 @@ function navGroupsHtml(v) {
   return `${header}${sheet}${find}${contents}${bottom}`;
 }
 
+// Patch `live` to match `fresh` IN PLACE, reusing the existing DOM nodes and
+// only writing the attributes/text that actually changed. The nav bar is frosted
+// glass (backdrop-filter); replacing its innerHTML wholesale on every navigation
+// re-rasterised the blur, which read as flashing on the desktop (Robin,
+// 2026-11-06: "lots of flashing"). Morphing in place keeps the glass layer
+// stable - only the moved `.here`/`.on` highlight and the mail/message counts
+// are touched. Any structural change (a tool toggled on/off) falls back to a
+// straight innerHTML swap for that one subtree.
+function morphDom(live, fresh) {
+  const lc = live.childNodes, fc = fresh.childNodes;
+  if (lc.length !== fc.length) { live.innerHTML = fresh.innerHTML; return; }
+  for (let i = 0; i < fc.length; i++) {
+    const l = lc[i], f = fc[i];
+    if (l.nodeType !== f.nodeType || (l.nodeType === 1 && l.nodeName !== f.nodeName)) { live.innerHTML = fresh.innerHTML; return; }
+    if (l.nodeType === 3 || l.nodeType === 8) { if (l.nodeValue !== f.nodeValue) l.nodeValue = f.nodeValue; continue; }
+    if (l.nodeType !== 1) continue;
+    const la = l.attributes, fa = f.attributes;
+    for (let j = la.length - 1; j >= 0; j--) { if (!f.hasAttribute(la[j].name)) l.removeAttribute(la[j].name); }
+    for (let j = 0; j < fa.length; j++) { if (l.getAttribute(fa[j].name) !== fa[j].value) l.setAttribute(fa[j].name, fa[j].value); }
+    morphDom(l, f);
+  }
+}
 function renderNav() {
   const v = state.view;
   if (state.knav && state.__knavView !== ((v && v.type) || '')) { state.knav.group = null; state.knav.contents = false; state.knav.find = false; state.__knavView = ((v && v.type) || ''); }
@@ -5482,7 +5588,22 @@ function renderNav() {
     // tap goes Home" bug: a data-driven render lands mid-tap). Defer to just after.
     if (navHeld) { navDeferred = true; }
     else {
-      nav.innerHTML = navHtml; state.__navHtml = navHtml;
+      state.__navHtml = navHtml;
+      // Keep the frosted glass bar (.knav-bar) as ONE persistent element and swap
+      // only its inner content, so its backdrop-filter never re-samples. Rebuilding
+      // the whole bar each navigation re-sampled the blur - that was the flicker on
+      // every page load. (Robin, 2026-11-05: "lots of flickering… looks amateurish".)
+      const liveBar = nav.querySelector('.knav-bar');
+      const tmp = document.createElement('div'); tmp.innerHTML = navHtml;
+      const freshBar = tmp.querySelector('.knav-bar');
+      if (liveBar && freshBar) {
+        const li = liveBar.querySelector('.knav-inner'); const fi = freshBar.querySelector('.knav-inner');
+        if (li && fi) morphDom(li, fi); else liveBar.innerHTML = freshBar.innerHTML;
+        for (const c of [...nav.children]) { if (c !== liveBar) c.remove(); }
+        for (const c of [...tmp.children]) { if (c !== freshBar) nav.appendChild(c); }
+      } else {
+        nav.innerHTML = navHtml;
+      }
       // §17/§24: the mobile bottom bar and the full-screen Menu/Find layers are
       // fixed to the VIEWPORT, but #nav is a containing block for its fixed
       // children here (so they'd otherwise clip to #nav's box - the "thin strip
@@ -5508,6 +5629,28 @@ function renderNav() {
   queueNavH();
   try { renderCapBar(); } catch (e) {}   // keep the floating "Set it down" bar mounted across views
   try { renderNotepad(); } catch (e) {}  // and the §20 Notepad trigger/popover
+  try { renderAppFoot(); } catch (e) {}  // the quiet footer row (Settings · Guide · …)
+}
+// The quiet app footer (Robin, 2026-11-06): hiding the Menu on wide desktop took
+// the useful bits of its footer with it, so they live here now - one tasteful row
+// at the foot of the page: theme, Settings, Admin (owner), Guide, Welcome, and your
+// name. Desktop only; on the phone the Menu bottom bar still carries them. Updated
+// in place so a background re-render never churns it.
+function renderAppFoot() {
+  const el = document.getElementById('app-foot'); if (!el) return;
+  const v = state.view || {};
+  const name = (state.me && (state.me.name || state.me.email)) || '';
+  const html = `<div class="app-foot-row">`
+    + `<span class="aff-mark">Kaya<span class="aff-dot">.</span></span>`
+    + `<span class="aff-sp"></span>`
+    + (themeLocked() ? '' : `<button class="aff" data-theme-toggle title="Theme">${themeLabel()}</button>`)
+    + `<button class="aff${v.type === 'settings' ? ' on' : ''}" data-open-settings>${t('nav.settings')}</button>`
+    + (state.me && state.me.id === 1 ? `<button class="aff${v.type === 'admin' ? ' on' : ''}" data-open-admin>${t('nav.admin')}</button>` : '')
+    + `<button class="aff" data-open-guide>${t('nav.guide')}</button>`
+    + `<button class="aff" data-open-getstarted>Welcome</button>`
+    + (name ? `<span class="aff-name">${esc(name)}</span>` : '')
+    + `</div>`;
+  if (el.__h !== html) { el.__h = html; el.innerHTML = html; }
 }
 // The mobile tools bar (Information, Colour Scheme, Settings) is hidden until you
 // tap the ⋯ toggle on the fixed brand header. Re-measure so the breadcrumb below
@@ -5529,8 +5672,12 @@ function setNavH() {
   // on desktop, --navh on mobile) pins just below it, on every screen width.
   const bar = nav && nav.querySelector('.knav-bar');
   const h = bar ? Math.round(bar.getBoundingClientRect().height) : (nav ? Math.round(nav.getBoundingClientRect().height) : 0);
+  // §73: when the tab strip is showing (desktop, ≥2 tabs), sticky breadcrumbs and
+  // toolbars anchor below BOTH it and the bar. --navh stays just the bar (mobile).
+  const strip = document.getElementById('tabstrip');
+  const stripH = (strip && strip.offsetParent !== null && strip.children.length) ? Math.round(strip.getBoundingClientRect().height) : 0;
   document.documentElement.style.setProperty('--navh', (h || 56) + 'px');
-  document.documentElement.style.setProperty('--tabstrip-h', (h || 56) + 'px');
+  document.documentElement.style.setProperty('--tabstrip-h', ((h || 56) + stripH) + 'px');
   document.documentElement.style.setProperty('--nav-headh', (h || 56) + 'px');
 }
 let _navHBound = false;
@@ -5880,7 +6027,7 @@ const firstName = () => {
   const m = state.me || {};
   return String(m.name || '').trim().split(/\s+/)[0] || String(m.subdomain || '').trim();
 };
-// Koyéba hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
+// Kaya hero: a vermilion eyebrow (weekday + a calm phrase, the weather word if
 // we have it), then the big greeting followed by a muted second breath. Quiet,
 // editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
 function homePartOfDay() { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
@@ -5922,8 +6069,9 @@ async function loadWeather() {
   if (state.weather !== undefined) return;   // undefined = not started; null = loading; object/'off' = done
   state.weather = null;
   try { const c = JSON.parse(localStorage.getItem('life.weather')); if (c && c.at && Date.now() - c.at < 30 * 60000 && Number.isFinite(c.temp)) { state.weather = c; return; } } catch {}
-  const loc = cachedLoc();
-  if (!loc) { ensureLoc(); setTimeout(() => { if (cachedLoc() && state.weather === null) { state.weather = undefined; renderHomeSoon(); } }, 4000); return; }
+  const lp = lifePlace() || autoPlace();
+  const loc = lp ? { lat: lp.lat, lng: lp.lon } : cachedLoc();
+  if (!loc) { ensureAutoPlace(); ensureLoc(); setTimeout(() => { if ((autoPlace() || cachedLoc()) && state.weather === null) { state.weather = undefined; renderHomeSoon(); } }, 4000); return; }
   try {
     const w = await api(`/api/weather?lat=${loc.lat}&lon=${loc.lng}`);
     state.weather = (w && w.temp != null) ? w : 'off';
@@ -6856,7 +7004,7 @@ function practiceEditorHtml() {
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
-// the rest of Koyéba has, held in the editor's state and saved with it.
+// the rest of Kaya has, held in the editor's state and saved with it.
 function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
@@ -6974,7 +7122,7 @@ function homeReqAlertHtml() {
   const r = state.inviteReq; const n = (r && r.count) || 0;
   if (!n) return '';
   const first = (r.requests && r.requests[0] && r.requests[0].name) || '';
-  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Koyéba` : 'New invite request');
+  const title = n > 1 ? `${n} new invite requests` : (first ? `${esc(first)} wants to join Kaya` : 'New invite request');
   const sub = n > 1 ? 'People asking to join · tap to see' : 'Someone wants an invite · tap to see';
   return `<button class="home-msgalert home-reqalert" data-open-requests>
     <span class="hma-ic">✦</span>
@@ -6985,7 +7133,7 @@ function homeReqAlertHtml() {
 // The "Getting started" card on Home: the single, low-friction doorway into the
 // setup hub, shown until you finish or hide it. New accounts land on Home (no
 // forced wizard) and set up from here, at their own pace. (Robin, 2026-10-15.)
-// The Koyéba mark - monoline octagram with an inner square - for the Getting
+// The Kaya mark - monoline octagram with an inner square - for the Getting
 // Started banner. Matches the app icon, favicon and emails (no more crane).
 const ORIGAMI_SVG = `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <path d="M27 27H73V73H27Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
@@ -7026,8 +7174,8 @@ function homeWelcomeHtml() {
     ['Bring in your calendar', 'See your days alongside everything else.', (state.gcalAccounts || []).length > 0, 'Connect', 'data-onb-open-hub="calendar"'],
     ['Bring in your email', 'Sort your inbox, and turn messages into tasks.', !!(state.mail && (state.mail.accounts || []).length), 'Connect', 'data-onb-open-hub="email"'],
     ['Shape your Spaces', 'The parts of your life, and who shares them.', !!done.spaces, 'Open', 'data-hw-spaces'],
-    ['Put Koyéba on your phone', 'It opens full screen, like any other app.', guideInstalled('phone'), 'Show me', 'data-help-open="phone"'],
-    ['Put Koyéba on your computer', 'Its own window, from your Dock or taskbar.', guideInstalled('computer'), 'Show me', 'data-help-open="desktop"'],
+    ['Put Kaya on your phone', 'It opens full screen, like any other app.', guideInstalled('phone'), 'Show me', 'data-help-open="phone"'],
+    ['Put Kaya on your computer', 'Its own window, from your Dock or taskbar.', guideInstalled('computer'), 'Show me', 'data-help-open="desktop"'],
   ];
   const n = steps.filter((x) => x[2]).length;
   const open = kOpen('kwelcome');
@@ -7216,13 +7364,13 @@ function homeInvitesHtml() {
   const rows = inv.map((f) => friendRow(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('');
   return `<section class="home-sec home-sec-card home-invites">
     <div class="home-sec-h">✦ Invitations<span class="muted">${inv.length}</span></div>
-    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Koyéba.' : `${inv.length} people want to connect with you on Koyéba.`}</p>
+    <p class="fr-intro">${inv.length === 1 ? 'Someone wants to connect with you on Kaya.' : `${inv.length} people want to connect with you on Kaya.`}</p>
     ${rows}
   </section>`;
 }
 // Front and centre on Home: someone shared a Space or page with you. Persists
 // until you open them or clear them with ×, so an invitation is never missed.
-// (Robin: all such invites belong top and centre - the Koyéba wall.)
+// (Robin: all such invites belong top and centre - the Kaya wall.)
 function homeSharedAlertHtml() {
   const items = (state.sharedItems || []);
   const seen = state.sharesSeen || '';
@@ -7330,7 +7478,7 @@ function lifebookFeedInner() {
       items.push({ ts: Date.now() + 10000, html:
         `<div class="lb-item lb-click" data-lb-2fa role="button" tabindex="0" title="Set up two-factor authentication">
           <span class="lb-ic">🔐</span>
-          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Koyéba - ${when}. It takes about a minute.</span></span></div>` });
+          <span class="lb-b"><span class="lb-t">Turn on two-factor authentication</span><span class="lb-m">A second lock for your Kaya - ${when}. It takes about a minute.</span></span></div>` });
     }
   }
   // Tasks back from snooze - tick to complete, × to clear.
@@ -7394,7 +7542,7 @@ function lifebookFeedInner() {
   if (!items.length && !pinned) return '<div class="home-empty">You\'re all caught up. Birthdays, nudges and what people do in your shared Spaces will show up here.</div>';
   return `${pinned}${items.length ? `<div class="lb-feed">${items.map((i) => i.html).join('')}</div>` : ''}`;
 }
-// ── Koyéba Home (the reimagined Today) ──────────────────────────────────────
+// ── Kaya Home (the reimagined Today) ──────────────────────────────────────
 // The day at a glance, in the prototype's grammar: a two-line greeting, a ledger
 // of Cormorant numbers, then Today + Your spaces beside Coming into view, a line
 // for the evening and the Notepad. Built from the app's real data; see
@@ -7414,12 +7562,12 @@ function areaNumeral(id) {
   const i = list.findIndex((a) => a.id === id);
   return i < 0 ? '' : roman(i + 1);
 }
-// Fold state for the Koyéba Home sections: default OPEN at every width (the
+// Fold state for the Kaya Home sections: default OPEN at every width (the
 // prototype opens with everything in view); an explicit choice is remembered in
 // the same store the rest of Home uses, toggled by the data-kfold handler.
 function kOpen(key) { const c = homeCollapsed(); return key in c ? c[key] !== true : true; }
 function kToggle(key) { const c = homeCollapsed(); c[key] = kOpen(key); try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} renderHome(); }
-// A Koyéba fold header: a Cormorant title with a muted hint, or an eyebrow label,
+// A Kaya fold header: a Cormorant title with a muted hint, or an eyebrow label,
 // and the +/− glyph on the right (rule 6, never a chevron).
 function kFoldH(key, title, hint, eyebrow) {
   const body = eyebrow
@@ -7688,16 +7836,17 @@ function parseCap(raw0) {
 }
 const capAreaTitle = (id) => { const a = areaById(id); return a ? (a.title || '') : ''; };
 // ── Set something down v2 (§27) ──────────────────────────────────────────────
-// You pick the kind; Koyéba fills the rest from your words, shows where each
+// You pick the kind; Kaya fills the rest from your words, shows where each
 // detail came from, asks when it doesn't know, and saves nothing until Enter.
 // The rule-based parse below is the reliable base (it runs with AI off); an LLM
 // pass refines it when AI is on.
-const CAP_KINDS = [['task', 'Task'], ['event', 'Event'], ['note', 'Note'], ['email', 'Email'], ['inbox', 'Just set it down']];
+const CAP_KINDS = [['task', 'Task'], ['event', 'Event'], ['note', 'Note'], ['email', 'Email'], ['bookmark', 'Read & Watch'], ['inbox', 'Just set it down']];
 const CAP_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const capCap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 // Best-guess kind from the words. Returns [kind|null, confident].
 function capGuess(raw) {
   const s = (raw || '').toLowerCase().trim(); if (!s) return [null, false];
+  if (/\bhttps?:\/\/\S+|\bwww\.\S+/i.test(s)) return ['bookmark', true];
   if (/\b(\d{1,2}\s?(am|pm)|until|repeat|every week|remind)\b/.test(s) && !/\b(email|draft)\b/.test(s)) return ['event', true];
   if (/\b(email|draft|write to|reply to)\b/.test(s)) return ['email', true];
   if (/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|\d{1,2}(:\d\d)?\s?(am|pm)|at \d)\b/.test(s)) return ['event', true];
@@ -7752,6 +7901,7 @@ function capFieldsFor(raw, kind, ans) {
   const known = (label, value, src) => ({ label, value, src, known: true });
   const ask = (label, q, picks, key) => { const a = ans[key]; return a ? { label, value: a, src: 'You chose this', known: true } : { label, ask: q, picks, key, known: false }; };
   F.push(known('Title', p.title || 'Untitled', "What's left once the details are lifted out"));
+  if (kind === 'bookmark') { const m = raw.match(/https?:\/\/\S+/i) || raw.match(/\bwww\.\S+/i); if (m) F.push(known('Link', m[0].replace(/^https?:\/\//i, '').replace(/\/$/, ''), "We'll fetch its title and cover")); }
   if (kind === 'task') F.push(ask('Priority', 'How soon?', ['First', 'Soon', 'Whenever'], 'priority'));
   if (p.hasWhen) F.push(known('When', p.when, 'From your words'));
   else if (kind === 'event') F.push(ask('When', 'When?', ['Today', 'Tomorrow', 'Pick a day…'], 'when'));
@@ -7794,8 +7944,8 @@ function capReadoutHtml() {
   } else if (isInbox) {
     body = `<div class="cap-inbox">Saved word for word to your inbox. Sort it when you're ready - nothing is filed for you.</div>`;
   }
-  const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', inbox: 'Set it down' }[kind] || 'Set it down';
-  const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? 'Gold lines say where each detail came from. Tap any to change it.' : 'Not sure what this is - choose a kind above, or just set it down.';
+  const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', bookmark: 'Add to Read & Watch', inbox: 'Set it down' }[kind] || 'Set it down';
+  const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? '' : 'Not sure what this is - choose a kind above, or just set it down.';
   return `${kindRow}${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
 }
 // §31 Notepad mode: a plain scratch page inside the drawer. Never parsed or
@@ -7939,6 +8089,18 @@ async function submitCap() {
       c.open = false; c.text = ''; c.kind = null; c.ans = {}; c.rec = false; renderCapBar(true);
       try { startCompose(); } catch { toast('Open Mail to write that.'); }
       return;
+    } else if (kind === 'bookmark') {
+      const m = raw.match(/https?:\/\/\S+/i) || raw.match(/\bwww\.\S+/i);
+      const link = m ? (/^https?:\/\//i.test(m[0]) ? m[0] : 'https://' + m[0]) : '';
+      if (link) {
+        const title = raw.replace(/https?:\/\/\S+/ig, '').replace(/\bwww\.\S+/ig, '').replace(/\s{2,}/g, ' ').trim();
+        await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: link, title }) });
+      } else {
+        const props = { title: p.title || raw, status: 'todo', added: new Date().toISOString() };
+        if (area) { props.area = area; props.areas = [area]; }
+        await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: p.title || raw, props }) });
+      }
+      toast('Saved to Read & Watch.');
     } else if (kind === 'inbox') {
       await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: raw, props: { inbox: true } }) });
       toast('Set down in your inbox to sort.');
@@ -8022,7 +8184,11 @@ function notepadText() { const np = notepadState(); return (np.lines || []).map(
 function notepadSetText(v) { const np = notepadState(); np.lines = String(v || '').split('\n').map((t, i) => ({ id: 'p' + i, text: t, done: null })); notepadSave(); }
 function toggleNotepad(open) {
   const np = notepadState();
-  np.open = open == null ? !np.open : !!open;
+  const wantOpen = open == null ? !np.open : !!open;
+  // Notepad is a desktop surface - cramped and fiddly on a phone, so it never opens
+  // there (closing still works). (Robin, 2026-11-05: "hide it on mobile".)
+  if (wantOpen && window.matchMedia && window.matchMedia('(max-width:820px)').matches) return;
+  np.open = wantOpen;
   if (np.open) { notepadLoad(); if (state.knav) { state.knav.contents = false; state.knav.find = false; } }   // it opens behind the Menu otherwise
   renderNav(); renderNotepadPanel();
   if (np.open) setTimeout(() => { const ta = document.getElementById('notepad-ta'); if (ta) { ta.focus(); const n = ta.value.length; try { ta.setSelectionRange(n, n); } catch {} } }, 40);
@@ -8057,7 +8223,7 @@ function renderNotepad() { renderNotepadPanel(); const r = document.getElementBy
 // first, with a draggable 1px divider (30-70%, double-click resets to half).
 // Fold away or Esc closes it. (Drag-to-join, kept pairs and the mobile flip are
 // a later pass; this ships the core two-pane view behind an opt-in.)
-const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'People', area: 'Spaces', bookmark: 'Keep', journal: 'Reflection' };
+const BESIDE_GROUP = { note: 'Keep', table: 'Keep', task: 'Plans', goal: 'Plans', contact: 'People', area: 'Spaces', bookmark: 'Keep', journal: 'Insight' };
 function splitMain() { return document.querySelector('.main'); }
 function splitEls() {
   const main = splitMain(); if (!main) return {};
@@ -8099,7 +8265,11 @@ async function renderBeside() {
 // with a search - type to find a note, task, Space… or pick the Notes/Tasks page.)
 function openSplitPicker() {
   if (window.matchMedia && window.matchMedia('(max-width:820px)').matches) { toast('Side by side is a desktop view.'); return; }
-  state.split = { picker: true, q: '', ratio: (state.split && state.split.ratio) || 0.5 };
+  // The picker always opens on a comfortably wide pane - never a sliver inherited
+  // from a previous lopsided split (which cramped it to "What …"). (Robin,
+  // 2026-11-05: "I should be able to split the screen if I'm looking at settings
+  // without this happening.")
+  state.split = { picker: true, q: '', ratio: Math.min(0.6, (state.split && state.split.ratio) || 0.5) };
   document.body.classList.add('split');
   const { main } = splitEls();
   if (main) main.style.setProperty('--split-ratio', (state.split.ratio * 100) + '%');
@@ -8138,9 +8308,13 @@ function besidePickResultsHtml() {
   if (!pages && !items) return `<div class="beside-pick-empty">${q ? `Nothing matches &ldquo;${esc(s.q)}&rdquo;.` : 'Start typing to find a note, task or Space.'}</div>`;
   return `${pages ? `<div class="beside-pick-grp">Tools</div>${pages}` : ''}${items ? `<div class="beside-pick-grp">${q ? 'Matches' : 'Recent'}</div>${items}` : ''}`;
 }
-// Every tool in the menu, for Split. Spaces come up in the search below instead.
+// Every tool in the menu, for Split - including the four daily primaries, which
+// left the groups but must still be openable beside anything. (Robin, 2026-11-05:
+// "all pages should be able to be in the split screen".) Spaces come up in the
+// search below instead.
 function splitToolList() {
   const out = [];
+  [['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'], ['Notes', 'data-open-notes', 'notes'], ['Contacts', 'data-open-contacts', 'contacts'], ['Messages', 'data-messages-page', 'contacts']].forEach(([label, attrs, mod]) => { if (modOn(mod)) out.push({ label, attrs, group: 'Daily', key: `Daily/${label}` }); });
   knavGroups().filter((g) => g.id !== 'spaces').forEach((g) => (g.tools || []).forEach(([label, attrs]) => out.push({ label, attrs, group: g.label, key: `${g.label}/${label}` })));
   return out;
 }
@@ -8161,7 +8335,7 @@ function openSplitTool(toolKey) {
 function besideRenderPickResults() { const el = document.getElementById('beside-pickres'); if (el) el.innerHTML = besidePickResultsHtml(); }
 function renderBesidePicker() {
   const s = state.split; if (!s || !s.picker) return; const { p2 } = splitEls(); if (!p2) return;
-  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title">What to show here</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>
+  p2.innerHTML = `<div class="pane2-head"><div class="pane2-hl"><div class="pane2-eyebrow">Side by side</div><div class="pane2-title pane2-title-ask">What to show here</div></div><div class="pane2-acts"><button class="pane2-fold" data-beside-close aria-label="Close" title="Close">✕</button></div></div>
     <div class="beside-pickwrap"><input class="beside-pickq" data-beside-pickq placeholder="Search for a tool, note, task, Space…" value="${esc(s.q || '')}" autocomplete="off" spellcheck="false"><div class="beside-pickres" id="beside-pickres">${besidePickResultsHtml()}</div></div>`;
   setTimeout(() => { const i = p2.querySelector('[data-beside-pickq]'); if (i && document.activeElement !== i) i.focus(); }, 30);
 }
@@ -8171,7 +8345,7 @@ function renderBesidePicker() {
 // task from an email - by the "Make … beside" actions or by dragging the email
 // across. The new item fades in at the top with a gold "From …'s email" line,
 // the mail row shows "note linked", and a forest toast offers Undo for 5s.
-// "Keep pair" remembers the combination so Koyéba offers it again.
+// "Keep pair" remembers the combination so Kaya offers it again.
 const BESIDE_TOOLS = { notes: { group: 'Keep', title: 'Notes', kind: 'note' }, tasks: { group: 'Plans', title: 'Tasks', kind: 'task' } };
 function besidePairsLoad() { try { return JSON.parse(localStorage.getItem('koyeba.beside.pairs') || '{}') || {}; } catch { return {}; } }
 function besidePairsSave(p) { try { localStorage.setItem('koyeba.beside.pairs', JSON.stringify(p)); } catch {} }
@@ -8334,7 +8508,7 @@ function mailBesideLinkedChip(x) {
   return `<span class="mail-row-linked">${parts.join(' · ')} linked</span>`;
 }
 
-// ── Today, by area (Koyéba §19) ─────────────────────────────────────────────
+// ── Today, by area (Kaya §19) ─────────────────────────────────────────────
 // A quiet counts line - emails to sort, things to do, events tomorrow. No money
 // (§17/§19: money is optional and never pushed to Today).
 function homeCountsStrip() {
@@ -8390,11 +8564,14 @@ function homeWnTab() {
 function homeWnTasksBodyHtml() {
   if (!state.tasks && !state.__wnTasksLoad) { state.__wnTasksLoad = true; api('/api/blocks?kind=task').then((r) => { state.tasks = r || []; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => {}); }
   let ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit);
-  ts = sortP1(ts.slice());   // priority first, like the Tasks page
-  if (!ts.length) ts = priorityTasks();
+  if (!ts.length) ts = priorityTasks() || [];
+  // Highest priority first (First, then Soon, then Whenever); within a tier keep the
+  // First drag-order / recency that sortP1 gives. (Robin, 2026-11-08.)
+  const prTier = (t) => { const p = (t.props && t.props.priority) || ''; return p === 'P1' ? 0 : p === 'P2' ? 1 : 2; };
+  ts = sortP1(ts.slice()).sort((a, b) => prTier(a) - prTier(b));
   const foot = `<div class="gln-panel-foot"><button class="gln-open" data-view-tasks>Open Tasks →</button></div>`;
   if (!ts.length) return `<div class="gln-panel-rows"><div class="gln-empty">Nothing to do - a clear run.</div></div>${foot}`;
-  const rows = ts.slice(0, 6).map((t) => { const a = (t.props && t.props.area) ? areaById(t.props.area) : null; const pr = (t.props && t.props.priority) || ''; const meta = [prioLabel(pr), a ? a.title : ''].filter(Boolean).join(' · '); return `<button class="gln-item" data-open-task="${esc(t.id)}"><span class="gln-item-b"><span class="gln-item-t">${esc(t.title || 'A task')}</span>${meta ? `<span class="gln-item-s">${esc(meta)}</span>` : ''}</span></button>`; }).join('');
+  const rows = ts.slice(0, 6).map((t) => { const a = (t.props && t.props.area) ? areaById(t.props.area) : null; const pr = (t.props && t.props.priority) || ''; const bits = [prioLabel(pr) || 'Whenever', a ? a.title : ''].filter(Boolean).map((x) => `<span class="gln-gold">${esc(x)}</span>`); const meta = bits.join('<span class="gln-dot"> · </span>'); return `<button class="gln-item" data-open-task="${esc(t.id)}"><span class="gln-item-b"><span class="gln-item-t">${esc(t.title || 'A task')}</span>${meta ? `<span class="gln-item-s">${meta}</span>` : ''}</span></button>`; }).join('');
   return `<div class="gln-panel-rows">${rows}</div>${foot}`;
 }
 function homeWnPracticesBodyHtml() {
@@ -8554,7 +8731,7 @@ function homeSpacesAsideHtml() {
   }).filter((x) => x.hasAnything);
   const need = scored2.filter((x) => x.needs).length;
   scored2.sort((x, y) => ((y.pinned ? 1 : 0) - (x.pinned ? 1 : 0)) || ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
-  const CAP = (window.matchMedia && window.matchMedia('(max-width:999px)').matches) ? 5 : 8;
+  const CAP = 4;   // Your Spaces shows four now - it sits beside Your Notes. (Robin, 2026-11-05.)
   const shown = scored2.slice(0, CAP);
   const rows = shown.map(({ a, needs, act, item }) => {
     const when = act ? timeAgo(act) : '';
@@ -8571,10 +8748,47 @@ function homeSpacesAsideHtml() {
   }).join('');
   const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
   const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>`;
-  const open = kOpen('spaces');
-  return `<div class="home-sa-head" data-hfold="spaces" role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><span class="home-sa-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>${open ? `<div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button></div>` : ''}`;
+  // The header is a link to the Spaces page now, not a fold; the body always shows
+  // its four. (Robin, 2026-11-06: "when I click Your Spaces, take me to my spaces page".)
+  return `<div class="home-sa-head home-sa-head-nav" data-open-areas role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button></div>`;
 }
-// §35 Reflections on Today: anything drawn or cast today - a Spirit card, an I
+// Your Notes on Today: the four most recent, mirroring Your Spaces and sitting beside
+// it. Shown only once there are notes. (Robin, 2026-11-05.)
+function homeNotesAsideHtml() {
+  const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note')
+    .slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+  const rows = notes.slice(0, 4).map((n) => {
+    const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
+    const ex = String(n.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    // The note's Space, in gold under the time - so you see where it lives. (Robin, 2026-11-05.)
+    const sp = (() => { const a = (blockAreas(n) || []).map((id) => areaById(id)).filter(Boolean)[0]; return a ? (a.title || '') : ''; })();
+    return `<div class="home-sa-row">
+      <button class="home-sa-nm2" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>
+      <span class="home-sa-rt home-sa-rt-col"><span class="home-sa-when">${esc(when)}</span>${sp ? `<span class="home-sa-space">${esc(sp)}</span>` : ''}</span>
+      ${ex ? `<button class="home-sa-item" data-open-note="${n.id}">${esc(ex)}</button>` : ''}
+    </div>`;
+  }).join('');
+  const allLine = notes.length > 4 ? `<button class="home-sa-allrow" data-open-notes><span class="home-sa-alltxt">See all ${notes.length} notes →</span></button>` : '';
+  // The header is a link to the Notes page now, not a fold; the body always shows
+  // its four. (Robin, 2026-11-06: "when I click Your Notes, take me to the notes page".)
+  return `<div class="home-sa-head home-sa-head-nav" data-open-notes role="button" tabindex="0"><span class="home-sa-title">Your Notes</span><span class="home-sa-count">${notes.length}</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-note>+ New Note</button></div>`;
+}
+// Today's two-up band: Your Spaces (left) and Your Notes (right), half a row each, up
+// to four of each. Each column appears only when it has content, so before you've
+// added any spaces or notes the band is hidden. Notes are fetched once for Home.
+// (Robin, 2026-11-05.)
+function homeSpacesNotesBandHtml() {
+  if (!state._homeNotesFetched) { state._homeNotesFetched = true; api('/api/blocks?kind=note').then((r) => { if (Array.isArray(r)) state.noteTops = r; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => {}); }
+  const hasSpaces = (state.areas || []).length > 0;
+  const hasNotes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note').length > 0;
+  const cols = [];
+  // Your Notes on the left, Your Spaces on the right. (Robin, 2026-11-05.)
+  if (hasNotes) cols.push(`<section class="home-sn-col">${homeNotesAsideHtml()}</section>`);
+  if (hasSpaces) cols.push(`<section class="home-sn-col">${homeSpacesAsideHtml()}</section>`);
+  if (!cols.length) return '';
+  return `<div class="home-sn-band${cols.length === 1 ? ' one' : ''}">${cols.join('')}</div>`;
+}
+// §35 Insights on Today: anything drawn or cast today - a Spirit card, an I
 // Ching reading, the horoscope, a Compass check-in - each staying until the next
 // morning or until put away, then living on in its tool's history. Open reopens
 // it; Put away dismisses it for the day only.
@@ -8598,7 +8812,7 @@ function homeReadingHtml() {
   return items.map((r) => `<div class="home-refl-row"><span class="home-refl-kind">${esc(r.kind)}</span><div class="home-refl-b"><div class="home-refl-t">${esc(r.title)}</div>${r.line ? `<div class="home-refl-line">${esc(r.line)}</div>` : ''}</div><span class="home-refl-acts"><span class="home-refl-open" ${r.open} role="button" tabindex="0">Open</span><span class="home-refl-away" data-refl-away="${r.key}" role="button" tabindex="0">Put away</span></span></div>`).join('');
 }
 // ── §39 Quote of the day ───────────────────────────────────────────────────
-// A quiet closing line (end of Today, top of Reflection Overview). One a day
+// A quiet closing line (end of Today, top of Insight Overview). One a day
 // from the Admin pool (quoteForDay, deterministic per day), same on every
 // device. "Keep it" files it in a "Quotes I've kept" note. Off via Settings.
 function dailyQuoteOn() { return !(state.account && state.account.dailyQuote === false); }
@@ -8858,7 +9072,7 @@ function homeRadarBodyHtml() {
   return `<div style="display:flex;flex-direction:column;gap:34px">${parts.join('')}</div>${foot}`;
 }
 // V38 feed: reach a keep-in-touch / birthday person the way their card allows -
-// WhatsApp (wa.me + a short draft), Email (a Koyéba Mail compose, addressed) or a
+// WhatsApp (wa.me + a short draft), Email (a Kaya Mail compose, addressed) or a
 // phone Call. Falls back to opening their card when there's no number/email on
 // file, or while contacts are still loading. (Robin, 2026-11-03.)
 function feedReach(mode, id) {
@@ -8893,21 +9107,28 @@ function homeTimeWeatherHtml() {
   loadWeather();
   const w = state.weather;
   const wxWord = (code) => { try { const m = WMO_WX(code); return m && m[1] ? m[1].toLowerCase() : ''; } catch { return ''; } };
-  // Place: the account's own, else the city from the timezone (free, no lookup).
-  let place = (state.account && (state.account.place || state.account.city)) || '';
+  // Place: one you set yourself (lifePlace), else the account's own, else the city
+  // from the timezone. It's a button - tap it to set where you are. (Robin, 2026-11-06.)
+  ensureAutoPlace();   // detect where you are (device location → city name), once
+  const manual = lifePlace();
+  const lp = manual || autoPlace();
+  let place = (lp && lp.name) || (state.account && (state.account.place || state.account.city)) || '';
   if (!place) { try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; const city = tz.split('/').pop(); if (city) place = city.replace(/_/g, ' '); } catch {} }
+  const placeBtn = `<button class="home-loc" data-home-loc title="${place ? 'Change where you are' : 'Set where you are'}">${place ? esc(place) : 'Set location'}</button>`;
   // §62: one quiet line - time · now° condition, place · tomorrow N° condition · sunset.
   const segs = [];
   if (w && typeof w === 'object' && w.temp != null) {
     const word = wxWord(w.code);
-    segs.push(`${w.temp}°${word ? ' ' + word : ''}${place ? ', ' + place : ''}`);
-    // Today's high/low alongside the current temp - the worker already returns them
-    // (a nice touch Robin had before). (Robin, 2026-11-03.)
-    if (w.high != null && w.low != null) segs.push(`high ${w.high}°, low ${w.low}°`);
-    if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push(`sunset ${sm[1]}`); }
-    if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push(`tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}`); }
-  } else if (place) { segs.push(place); }
-  return `<div class="home-tw"><span class="home-time">${esc(homeTimeStr())}</span>${segs.map((s) => ` · ${esc(s)}`).join('')}</div>`;
+    segs.push({ h: `${esc(w.temp + '°' + (word ? ' ' + word : ''))}, ${placeBtn}` });
+    // Today's high/low alongside the current temp - the worker already returns them.
+    if (w.high != null && w.low != null) segs.push({ t: `high ${w.high}°, low ${w.low}°` });
+    if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push({ t: `sunset ${sm[1]}` }); }
+    if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push({ t: `tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}` }); }
+  } else { segs.push({ h: placeBtn }); }
+  const segHtml = segs.map((s) => ` · ${s.h || esc(s.t)}`).join('');
+  const autoHint = manual ? '' : `<span class="home-loc-hint">${(lp && lp.name) ? 'Following your location' : 'Allow location, or set a city below'}</span>`;
+  const editRow = (state.home && state.home.locEdit) ? `<div class="home-loc-edit"><input class="sel home-loc-in" data-home-loc-input type="text" placeholder="Set a city…" value="${esc((manual && manual.name) || '')}" autocomplete="off" spellcheck="false"><button class="home-loc-save" data-home-loc-save type="button">Set</button>${manual ? '<button class="home-loc-auto" data-home-loc-auto type="button">Use my location</button>' : ''}${autoHint}</div>` : '';
+  return `<div class="home-tw"><span class="home-time">${esc(homeTimeStr())}</span>${segHtml}</div>${editRow}`;
 }
 // §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
 // a count word unfolds a panel of that tool's top few items in place.
@@ -8919,25 +9140,56 @@ function homeNewMake(kind) {
   // "Note" was opening the Journal page instead of making a note.)
   try {
     if (kind === 'journal' || kind === 'note') quickAdd('note');   // "Note" -> a new note
-    else if (kind === 'task') quickAdd('task');                    // -> Tasks, adding a task
-    else if (kind === 'event') quickAdd('event');                  // -> Calendar, new event
+    else if (kind === 'task') openMakeNew('task');                 // New -> Task: a floating box with the FULL add-task form (Space, priority, duration, repeat, reminders…), over whatever page you're on. (Robin, 2026-11-05: "the full add new task window", must not get wiped by Home's background repaints.)
+    else if (kind === 'event') quickAdd('event');                  // -> Calendar, new event (scrolls the form to the top)
     else if (kind === 'email') quickAdd('mail');                   // -> Mail, a new draft
     else if (kind === 'message') Promise.resolve(openMessages()).catch(() => {});
     else if (kind === 'table') newTable().catch((x) => toast(x.message));
     else if (kind === 'goal') quickAdd('goal');                    // -> Goals, new goal
-    else if (kind === 'contact') quickAdd('contact');              // -> Contacts, adding a contact
+    else if (kind === 'contact') openMakeNew('contact');           // New -> Contact: the same floating box, with the add-contact form. (Robin, 2026-11-05: "the New Contact dialog box in the same position as the Task box".)
     else if (kind === 'space') newArea().catch((x) => toast(x.message));
     else if (kind === 'review') Promise.resolve(openReviews()).catch(() => {});
     else quickAdd('note');
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
-// The one New popover (Robin, 2026-11-04): a centred "Add to Koyéba" dialog,
+// ── The floating "New" box (Robin, 2026-11-05) ───────────────────────────────
+// New -> Task / Contact open a small dialog that floats OVER the current page,
+// carrying the full create form. It lives on <body> (its own root), so the
+// background feed repaints on Home/Flow can never wipe it - the bug that made
+// New -> Task "not open". Same frame as the "Add to Kaya" popover, so the two
+// feel like one family. Event stays on the Calendar page (it needs the day), and
+// the heavier things (Table, Space, Goal, Review) still open in their own tools.
+function makeNewTitle(kind) { return kind === 'task' ? 'New task' : kind === 'contact' ? 'New contact' : 'New'; }
+function openMakeNew(kind) {
+  if (state.home) state.home.newMenu = false;   // close the "Add to Kaya" chooser
+  try { renderNewPop(); renderNav(); } catch {}
+  state.makeNew = kind;
+  renderMakeNew();
+}
+function closeMakeNew() {
+  state.makeNew = null;
+  const el = document.getElementById('makenew-root'); if (el) el.remove();
+}
+function renderMakeNew() {
+  let el = document.getElementById('makenew-root');
+  if (!state.makeNew) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'makenew-root'; document.body.appendChild(el); }
+  const kind = state.makeNew;
+  const body = kind === 'task' ? quickTaskFormHtml() : kind === 'contact' ? contactAddForm() : '';
+  el.innerHTML = `<div class="newpop-wrap mkn-wrap"><div class="newpop-scrim" data-makenew-close></div>
+    <div class="newpop mkn" role="dialog" aria-modal="true" aria-label="${esc(makeNewTitle(kind))}">
+      <div class="newpop-h"><span class="newpop-eyebrow">${esc(makeNewTitle(kind))}</span><button class="newpop-x" data-makenew-close>Esc</button></div>
+      <div class="mkn-body">${body}</div>
+    </div></div>`;
+  setTimeout(() => { const f = el.querySelector('#qt-title, #ct-name'); if (f) try { f.focus(); } catch {} }, 30);
+}
+// The one New popover (Robin, 2026-11-04): a centred "Add to Kaya" dialog,
 // opened from the menubar's New on any page - NOT a dropdown, and the only New box
 // in the app. Rendered on <body> so it floats over whatever view you're on.
 function newPopHtml() {
   const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Koyéba">
-    <div class="newpop-h"><span class="newpop-eyebrow">Add to Koyéba</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+  return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Kaya">
+    <div class="newpop-h"><span class="newpop-eyebrow">Add to Kaya</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
   </div></div>`;
 }
@@ -9098,8 +9350,8 @@ function homeNewBtnHtml() {
   // The first four (Note/Task/Event/Email, the ones with shortcuts) are the "big
   // four" and the only ones shown on a phone. (Robin, 2026-11-03.)
   const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
-  const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Koyéba">
-    <div class="newpop-h"><span class="newpop-eyebrow">Add to Koyéba</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
+  const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Kaya">
+    <div class="newpop-h"><span class="newpop-eyebrow">Add to Kaya</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
   </div></div>` : '';
   return `<span class="gln-newwrap"><button class="gln-newbtn" data-newmenu-toggle>+ <span class="gln-newbtn-t">New</span> <span class="gln-newbtn-c">▾</span></button>${pop}</span>`;
@@ -9177,7 +9429,7 @@ function homeLeftTab() {
   if (!state.home) return 'cal';
   // Robin (2026-11-04): a fresh open always lands on Calendar, never The feed. The
   // tab you pick is kept in memory for THIS session (state.home.ltab) but not
-  // restored from a previous open, so reopening Koyéba starts on Calendar.
+  // restored from a previous open, so reopening Kaya starts on Calendar.
   if (!state.home.ltab) state.home.ltab = 'cal';
   let cur = state.home.ltab;
   // Mail now lives in its own band beside Messages; this band is Calendar · The feed.
@@ -9277,7 +9529,7 @@ function homeReadingsSectionHtml(inTab) {
   }).join('') : `<div class="home-rd-empty"><span class="home-rd-emptyt">Nothing drawn yet today.</span><span class="home-rd-link" data-spirit-open role="button" tabindex="0">Draw a card</span><span class="home-rd-link" data-open-iching role="button" tabindex="0">Cast the coins</span></div>`;
   // §64: the quote moved to under the greeting (homeQuoteLineHtml); it's no longer
   // at the foot of the readings.
-  const h = inTab ? '' : `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Reflections</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
+  const h = inTab ? '' : `<div class="home-rd-h" data-hfold="kreading" role="button" tabindex="0"><span class="home-rd-hl">Insights</span><span class="home-rd-sign" aria-hidden="true">${open ? '−' : '+'}</span></div>`;
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}<div class="home-rd-all" data-open-wellbeing role="button" tabindex="0">All reflections →</div></div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
@@ -9288,7 +9540,7 @@ function homeQuoteLineHtml() {
   if (!dailyQuoteOn()) return '';
   const q = dayQuote(); if (!q || !q.text) return '';
   if (quoteHidden()) return '';
-  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span>${q.author ? `<span class="home-qline-a">${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div>`;
+  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span><div class="home-qline-by">${q.author ? `<span class="home-qline-a">— ${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div></div>`;
 }
 // Today's one row of tabs (Robin, 2026-11-04): everything sits behind one line, with
 // counts on the tabs so what needs you still shows. Remembers the last tab opened.
@@ -9298,10 +9550,10 @@ function homeTodayTabDefs() {
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
   defs.push(['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
-  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
+  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
-  if (reflectOn()) defs.push(['reflections', 'Reflections', 0, false]);
+  if (reflectOn()) defs.push(['reflections', 'Insights', 0, false]);
   defs.push(['next', 'What next', 0, false]);
   return defs;
 }
@@ -9348,7 +9600,7 @@ function renderHome() {
   if (document.activeElement && document.activeElement.id === 'hw-input') queueMicrotask(() => { const i = document.getElementById('hw-input'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch {} } });
   if (state.view && state.view.type !== 'home') return;   // never paint Home over another page (a late load must not clobber where you navigated)
   const tabRowWas = (() => { const r = document.querySelector('.home-tabs-row'); const o = r && r.querySelector('.home-ltab.on'); return r ? { x: r.scrollLeft, tab: o && o.dataset.homeTab } : null; })();
-  // §41: "Keep in touch" folds shut by default; Reflections and the day stay
+  // §41: "Keep in touch" folds shut by default; Insights and the day stay
   // open. Seed the collapse store once so kOpen/kToggle treats kkit as closed.
   try { const _c = homeCollapsed(); if (!('kkit' in _c)) { _c.kkit = true; localStorage.setItem('life.home.collapsed', JSON.stringify(_c)); } } catch {}
   // A rebuild (e.g. collapsing a section) would otherwise jump the page and the
@@ -9370,11 +9622,11 @@ function renderHome() {
   const todayH = `<div class="home-fold-h home-fold-today" data-hfold="today" role="button" tabindex="0"><span class="hf-name">${isTom ? 'Tomorrow' : 'The day'}</span>${dayTog}<span class="hf-hint">${esc(homeDaySummary(off))}</span><span class="hf-sign" aria-hidden="true">${kOpen('today') ? '−' : '+'}</span></div>`;
   // §49: birthdays moved to On your radar, so the day no longer lists them.
   const today = `<section class="home-sec2 home-today">${todayH}${kOpen('today') ? `${homeDayGroupedHtml(off)}${homeTomorrowTeaseHtml(off)}` : ''}</section>`;
-  // §35 Reflections: anything drawn or cast today, newest first. Folded shows a
+  // §35 Insights: anything drawn or cast today, newest first. Folded shows a
   // one-line summary of what's in it.
   const reflCount = homeReadingCount();
   const reflHint = kOpen('kreading') ? (reflCount ? `${reflCount} today` : 'For today') : (homeReadingSummary() || 'Nothing drawn yet');
-  const reflH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">Reflections</span><span class="hf-hint">${esc(reflHint)}</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
+  const reflH = `<div class="home-fold-h" data-hfold="kreading" role="button" tabindex="0"><span class="hf-name">Insights</span><span class="hf-hint">${esc(reflHint)}</span><span class="hf-sign" aria-hidden="true">${kOpen('kreading') ? '−' : '+'}</span></div>`;
   const reflections = reflectOn() ? `<section class="home-sec2 home-reading">${reflH}${kOpen('kreading') ? homeReadingHtml() : ''}</section>` : '';
   // §41 Keep in touch (folded by default).
   const kitDue = ((state.home.alerts && state.home.alerts.keepInTouch) || []).length;
@@ -9382,7 +9634,7 @@ function renderHome() {
   const kit = modOn('contacts') ? `<section class="home-sec2 home-kit">${kitH}${kOpen('kkit') ? homeKeepInTouchHtml() : ''}</section>` : '';
   const alerts = `${homeInvitesHtml()}${homeReqAlertHtml()}`;
   // §41 Today v2: one column - greeting, What next, the day (+ birthdays),
-  // Reflections, Keep in touch, the Notepad line, then the quote and the mark.
+  // Insights, Keep in touch, the Notepad line, then the quote and the mark.
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-home">
     <div class="home home-v3">
@@ -9393,19 +9645,20 @@ function renderHome() {
       <div class="home-flow">
         <div class="home-greetrow">
           <div class="home-greetmain">
-            <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
+            <div class="kg-eyebrow kg-eyebrow-norule"><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
             <h1 class="home-greet">${homeWelcomeOn() ? 'Welcome' : greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>
             ${homeTimeWeatherHtml()}
             ${homeQuoteLineHtml()}
           </div>
+          ${newTabBtnHtml()}
         </div>
         ${homeWelcomeHtml()}
         <div class="home-today">
           ${homeTodayTabsHtml(off)}
-          <section class="home-spaces-wide">${homeSpacesAsideHtml()}</section>
+          ${homeSpacesNotesBandHtml()}
         </div>
       </div>
-      <button class="khome-mark" data-guide-home aria-label="Back to the top" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba" /><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba" /><span class="kmark-cap">Koyéba</span></button>
+      <button class="khome-mark khome-mark-word" data-guide-home aria-label="Back to the top" title="Back to the top"><span class="kmark-cap">Kaya.</span></button>
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
@@ -9419,15 +9672,16 @@ function renderHome() {
   startHomeClock();         // keep the time beside the date ticking
   // Restore the scroll (see the capture at the top): a header tap that
   // collapses/expands a section should leave you exactly where you were.
-  if (_anchorTop != null) {
+  // At the very top, a repaint stays at the top. A fresh landing on Today must not be
+  // nudged down as the trailing feeds, the quote or the web fonts load in above the
+  // fold: only anchor the tab band when you've actually scrolled into the page.
+  // (Robin, 2026-11-07: "landing on Today keeps pushing the view down a touch.")
+  if (_prevWinScroll < 1) { try { window.scrollTo(0, 0); } catch {} }
+  else if (_anchorTop != null) {
     const a = document.querySelector('.home-ltabwrap');
     if (a) { const delta = a.getBoundingClientRect().top - _anchorTop; if (Math.abs(delta) > 0.5) window.scrollBy(0, delta); }
-    else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
-  } else if (_prevWinScroll) window.scrollTo(0, _prevWinScroll);
-  // A FRESH open of Today always starts at the top - not partway down where a prior
-  // scroll or the tab band left it. (Robin, 2026-11-04.) The in-place re-render keeps
-  // its anchor above.
-  else if (!_homeShown) { try { window.scrollTo(0, 0); } catch {} }
+    else window.scrollTo(0, _prevWinScroll);
+  } else window.scrollTo(0, _prevWinScroll);
   if (_prevSideScroll) { const el = document.querySelector('.home-aside'); if (el) el.scrollTop = _prevSideScroll; }
 }
 function openTablesList() {
@@ -9452,8 +9706,12 @@ function renderTablesList() {
   const spaceRow = spaces.length
     ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
     : '';
+  const q = (state.tablesQuery || '').trim().toLowerCase();
   let sections;
-  if (space) {
+  if (q) {
+    const matches = all.filter((tb) => (tb.title || '').toLowerCase().includes(q));
+    sections = `<section class="home-sec"><div class="home-sec-h">${matches.length} ${matches.length === 1 ? 'match' : 'matches'}</div><div class="tbl-cards">${grid(matches) || `<div class="empty">Nothing matches “${esc(state.tablesQuery)}”.</div>`}</div></section>`;
+  } else if (space) {
     const sp = areaById(space);
     const inSpace = all.filter((tb) => blockAreas(tb).includes(space));
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No tables in this Space yet.</div>'}</div></section>`;
@@ -9465,7 +9723,8 @@ function renderTablesList() {
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('title.tables'))}
     <div class="pane-head home-head"><h1>${t('title.tables')}</h1></div>
-    ${spaceRow}
+    <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-tables-q type="search" placeholder="Search tables…" value="${esc(state.tablesQuery || '')}" autocomplete="off" spellcheck="false"></div>
+    ${q ? '' : spaceRow}
     ${sections}</div>`;
 }
 
@@ -9581,7 +9840,7 @@ async function setNoteType(id, type) {
     toast(type === 'table' ? 'Now a table' : 'Now a plain note');
   } catch (e) { toast(e.message); }
 }
-// ── Notes index (Koyéba §21) ────────────────────────────────────────────────
+// ── Notes index (Kaya §21) ────────────────────────────────────────────────
 // Notes only (Tables are their own Keep tool, openTablesList). A grouped list of
 // rows on the §19 grid, with a side column of Kept close + By Space. Replaces the
 // old six-across card grid, the type chips, the area dropdown and the sort menu.
@@ -9621,8 +9880,12 @@ function renderNotesList() {
   const spaceRow = spaces.length
     ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
     : '';
+  const q = (state.notesQuery || '').trim().toLowerCase();
   let sections;
-  if (space) {
+  if (q) {
+    const matches = nxSortRecent(allNotes.filter((n) => (n.title || '').toLowerCase().includes(q)));
+    sections = `<section class="home-sec"><div class="home-sec-h">${matches.length} ${matches.length === 1 ? 'match' : 'matches'}</div><div class="tbl-cards">${grid(matches) || `<div class="empty">Nothing matches “${esc(state.notesQuery)}”.</div>`}</div></section>`;
+  } else if (space) {
     const sp = areaById(space);
     const inSpace = nxSortRecent(allNotes.filter((n) => blockAreas(n).includes(space)));
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No notes in this Space yet.</div>'}</div></section>`;
@@ -9644,7 +9907,8 @@ function renderNotesList() {
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('nav.notes'))}
     <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
-    ${spaceRow}
+    <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-notes-q type="search" placeholder="${esc(t('notes.search'))}" value="${esc(state.notesQuery || '')}" autocomplete="off" spellcheck="false"></div>
+    ${q ? '' : spaceRow}
     ${sections}</div>`;
 }
 // Right-click a note (or table) in the list to file it into pages - the same
@@ -9755,10 +10019,10 @@ async function fetchJournalEntries() {
 // ── Spirit Cards ──────────────────────────────────────────────────────
 // A gentle oracle deck inside Reflect: draw a card for a moment's reflection.
 // Built-in deck for now; publisher decks + payouts come later.
-// ── §38 Tarot (Reflection X) ───────────────────────────────────────────────
+// ── §38 Tarot (Insight X) ───────────────────────────────────────────────
 // Not a forecast - a mirror. 22 Major Arcana, a spread of one / three / five,
 // each card turned by you, then read together (the companion when AI is on, a
-// kind template when it's off). Saved to history; surfaces in Reflections today.
+// kind template when it's off). Saved to history; surfaces in Insights today.
 const TAROT_DECK = [
   ['The Fool', 'beginnings', 'A step into the open, before you know how it ends. Lightness is allowed.', 'Pause before the leap – is it courage, or not wanting to look?'],
   ['The Magician', 'will', 'You have what you need on the table. Use it on purpose.', 'Skill scattered in too many directions. Choose one.'],
@@ -9796,7 +10060,7 @@ function openTarot() {
   renderNav(); renderTarot();
   if (state.tarotHistory === undefined) { state.tarotHistory = null; api('/api/kv/tarot_history').then((r) => { try { state.tarotHistory = (r && r.value) ? JSON.parse(r.value) : []; } catch { state.tarotHistory = []; } if (state.view && state.view.type === 'tarot') renderTarot(); }).catch(() => { state.tarotHistory = []; }); }
 }
-// Robin: clicking the tarot card in Reflections opens THAT reading - the cards
+// Robin: clicking the tarot card in Insights opens THAT reading - the cards
 // face up with their meanings - not a fresh generic draw. Rebuild state.tarot
 // from the pinned reading (indices + orientations + spread + question), turned
 // up, with the deterministic "read together" line. Nothing saved -> generic page.
@@ -9869,14 +10133,14 @@ async function tarotEnhance(t) {
 }
 function tarotSave(t) {
   const names = t.cards.map((c) => TAROT_DECK[c.di][0] + (c.reversed ? ' (r)' : '')).join(' · ');
-  // Keep the deck indices + orientations so Reflections can show the real card
+  // Keep the deck indices + orientations so Insights can show the real card
   // art (the first card's picture) and the spread label. (Robin: show tarot.)
   const dis = t.cards.map((c) => c.di); const revs = t.cards.map((c) => !!c.reversed); const spread = TAROT_SPREADS[t.spread].label;
   state.tarotHistory = state.tarotHistory || [];
   state.tarotHistory.unshift({ kind: spread, cards: names, q: t.q || '', synth: t.synth || '', sit: t.sit || '', at: t.at });
   state.tarotHistory = state.tarotHistory.slice(0, 200);
   api('/api/kv/tarot_history', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(state.tarotHistory) }) }).catch(() => {});
-  // Pin for Reflections on Today (keep the synthesis + sit so a reopen shows them).
+  // Pin for Insights on Today (keep the synthesis + sit so a reopen shows them).
   const pin = { cards: names, dis, revs, spread, q: t.q || '', synth: t.synth || '', sit: t.sit || '', at: t.at };
   state.tarotCard = pin;
   try { localStorage.setItem('life.tarotCard', JSON.stringify(pin)); } catch {}
@@ -9909,7 +10173,7 @@ function renderTarot() {
     const stateLabel = !tr.drawn ? '' : turned ? (c.reversed ? 'Reversed' : 'Upright') : 'Tap to turn';
     return `<div class="tr-col" style="max-width:${cardW}">
       <div class="tr-flipwrap${tr.drawn && !turned ? ' turnable' : ''}"${tr.drawn && !turned ? ` data-tarot-turn="${i}" role="button" tabindex="0"` : ''}>
-        <div class="tr-flip${turned ? ' turned' : ''}"><div class="tr-back"><img src="/brand/mandombe-koyeba-ivory.svg" alt=""></div>${c ? tarotCardFront(c, i) : '<div class="tr-front tr-front-empty"></div>'}</div>
+        <div class="tr-flip${turned ? ' turned' : ''}"><div class="tr-back"><span class="tr-back-mark">Kaya<i>.</i></span></div>${c ? tarotCardFront(c, i) : '<div class="tr-front tr-front-empty"></div>'}</div>
       </div>
       <div class="tr-cap"><div class="tr-cap-pos">${esc(posLabel)}</div><div class="tr-cap-state">${esc(stateLabel)}</div></div>
     </div>`;
@@ -9924,7 +10188,7 @@ function renderTarot() {
     <div class="kwrap tr-page">
       <div class="tr-grid">
         <div class="tr-main">
-          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Reflection</span></div>
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Insight</span></div>
           <h1 class="tr-h1">Tarot</h1>
           <p class="tr-lede">Not a forecast - a mirror. Pictures to think with, offered gently.</p>
           <input class="tr-q" id="tarot-q" placeholder="What’s on your mind?" value="${esc(tr.q || '')}" maxlength="200" autocomplete="off">
@@ -10030,7 +10294,7 @@ function renderSpirit() {
     <div class="spirit-page">
       <div class="spirit-card-wrap">
         <div class="spirit-card ${c ? 'drawn' : ''}">
-          <div class="sc-face sc-back sc-back-v2"><img class="sc-back-mark" src="/brand/mandombe-koyeba-ivory.svg" alt=""><span class="sc-back-label">${c ? 'Tap for another' : 'Tap to pull a card'}</span></div>
+          <div class="sc-face sc-back sc-back-v2"><span class="sc-back-mark sc-back-mark-word">Kaya<i>.</i></span><span class="sc-back-label">${c ? 'Tap for another' : 'Tap to pull a card'}</span></div>
           <div class="sc-face sc-front">${c ? scFront(c) : ''}</div>
         </div>
         <button class="spirit-card-hit" type="button" data-spirit-draw aria-label="${c ? 'Draw another spirit card' : 'Tap to draw a spirit card'}"></button>
@@ -10048,7 +10312,7 @@ function spiritActionsHtml() {
   return base + reflLedgerSelect('spirit');
 }
 // "Save to a Space": a reading (I Ching cast, spirit card) can be kept as a
-// reflection filed in a space, where it joins that space's Reflections and can
+// reflection filed in a space, where it joins that space's Insights and can
 // be revisited in context. A quiet space picker; choosing one files it. (Robin.)
 function reflLedgerSelect(kind) {
   const areas = (state.areas || []).filter((a) => !a.sharedBy);
@@ -10309,7 +10573,7 @@ function renderIChing() {
     <div class="kwrap icx-page">
       <div class="icx-grid">
         <div class="icx-main">
-          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Reflection</span></div>
+          <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Insight</span></div>
           <h1 class="icx-h1">I Ching</h1>
           <p class="icx-lede">An old way of turning a question over. Cast the coins, then read what the moment reflects back.</p>
           <input class="icx-q" id="ic-q" placeholder="What would you like to understand?" value="${esc(s.q || '')}" maxlength="200" autocomplete="off">
@@ -10373,7 +10637,7 @@ async function openIChing(reading) {
 }
 // §37: cast the coins one line at a time, from the ground up. Each throw adds a
 // line; the sixth completes the reading, which saves itself (history + the
-// pinned card, so it surfaces in Reflections on Today).
+// pinned card, so it surfaces in Insights on Today).
 const IC_THROW_DESC = { 6: 'Tails, tails, tails – an old yin line, changing', 7: 'Heads, tails, tails – a young yang line', 8: 'Heads, heads, tails – a young yin line', 9: 'Heads, heads, heads – an old yang line, changing' };
 function icReadQ() { const qEl = document.getElementById('ic-q'); return qEl ? qEl.value : ((state.iching && state.iching.q) || ''); }
 function castIChing() { state.iching = { q: icReadQ().trim(), lines: [], done: false }; renderIChing(); }
@@ -10595,7 +10859,7 @@ async function geocodeBirthIfNeeded() {
   const b = state.birth;
   if (!b || !b.place || (b.lat != null && b.lon != null)) return;
   try {
-    const g = await api(`/api/geocode?q=${encodeURIComponent(b.place)}`);
+    const g = await api(`/api/geocode?q=${encodeURIComponent(b.place)}&one=1`);
     if (g && g.found) {
       state.birth = { ...b, lat: g.lat, lon: g.lon, tz: g.tz, placeLabel: g.label };
       try { localStorage.setItem('life.birth', JSON.stringify(state.birth)); } catch {}
@@ -10617,7 +10881,7 @@ async function saveBirth() {
   // out the rising sign and the exact-UTC birth moment. Only when it changed.
   if (place && (place !== prev.place || prev.lat == null)) {
     toast('Looking up your birthplace…');
-    try { const g = await api(`/api/geocode?q=${encodeURIComponent(place)}`); if (g && g.found) { state.birth.lat = g.lat; state.birth.lon = g.lon; state.birth.tz = g.tz; state.birth.placeLabel = g.label; } else { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; toast('Could not place that - the reading will use your date (and time, if given).'); } }
+    try { const g = await api(`/api/geocode?q=${encodeURIComponent(place)}&one=1`); if (g && g.found) { state.birth.lat = g.lat; state.birth.lon = g.lon; state.birth.tz = g.tz; state.birth.placeLabel = g.label; } else { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; toast('Could not place that - the reading will use your date (and time, if given).'); } }
     catch { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; }
   } else if (!place) { state.birth.lat = null; state.birth.lon = null; state.birth.tz = null; }
   try { localStorage.setItem('life.birth', JSON.stringify(state.birth)); } catch {}
@@ -10695,7 +10959,7 @@ function renderMeditation() {
     ${medPanel()}`;
 }
 
-// A Reflection tool page lands at the top of its CONTENT - just below the
+// A Insight tool page lands at the top of its CONTENT - just below the
 // tool-tiles switcher - so you see the journal / meditation / reading straight
 // away: once you've picked a tool you don't need the tiles in view. Works on
 // desktop and mobile, clearing whichever sticky bars sit on top (the desktop tab
@@ -10808,7 +11072,7 @@ const WB_TOOL = {
 function wbToolTilesHtml(opts) {
   opts = opts || {};
   const sel = opts.sel || null;
-  // The tool tiles belong on the Reflection hub only. A sub-page (any `sel`) gets
+  // The tool tiles belong on the Insight hub only. A sub-page (any `sel`) gets
   // no tile strip - the breadcrumb takes you back. (Robin, 2026-10-28.)
   if (sel) return '';
   const liveIch = !!currentIching(), liveHoro = !!currentHoro(), liveSpirit = !!currentSpirit();
@@ -10844,7 +11108,7 @@ function compassWorksheetHtml() {
     ['The pre-mortem', "It is a year on and the choice went badly. What most likely went wrong - and does that fear belong to A or B?"],
     ['True north', 'Which path best honours what you most value and the life you are trying to build?'],
   ];
-  return `<div class="cmp-ws"><div class="cmp-ws-h">No AI needed - sit with these, one at a time</div>${qs.map(([h, q]) => `<div class="cmp-ws-item"><span class="cmp-ws-q">${h}</span><span class="cmp-ws-a">${q}</span></div>`).join('')}<p class="cmp-ws-foot">Turn on the Reflection companion in Settings and Compass will weigh it with you.</p></div>`;
+  return `<div class="cmp-ws"><div class="cmp-ws-h">No AI needed - sit with these, one at a time</div>${qs.map(([h, q]) => `<div class="cmp-ws-item"><span class="cmp-ws-q">${h}</span><span class="cmp-ws-a">${q}</span></div>`).join('')}<p class="cmp-ws-foot">Turn on the Insight companion in Settings and Compass will weigh it with you.</p></div>`;
 }
 const COMPASS_TTL = 24 * 60 * 60 * 1000;   // like every other reflection, a Compass lasts a day (Robin, 2026-11-03)
 function currentCompass() {
@@ -10948,7 +11212,7 @@ async function runCompass() {
     toast(e.message || 'Could not reach Claude.');
   }
 }
-// ── Reflection hub (Koyéba §23) ─────────────────────────────────────────────
+// ── Insight hub (Kaya §23) ─────────────────────────────────────────────
 // A title and an italic line, a "Lately" feed of entries as rows (kind in gold ·
 // the text · when, with filters), and a side column of today's card and the
 // practices as a numbered list. No stat boxes and no icon-tile grid.
@@ -10993,7 +11257,7 @@ function renderWellbeing() {
       </div>
     </div>`;
 }
-// The eight Reflection tools as forest-and-gold cards: a refined gold emblem (or
+// The eight Insight tools as forest-and-gold cards: a refined gold emblem (or
 // the hexagram), a Cormorant label and a one-line hint; a gold square marks a
 // live reading. Meditation is hidden for now (modOn gate). (Robin, 2026-11-04.)
 function rfToolEmblem(key) {
@@ -11016,15 +11280,17 @@ function reflectToolsGridHtml(opts) {
   const liveSpirit = (typeof currentSpirit === 'function') && !!currentSpirit();
   const liveTarot = (typeof currentTarot === 'function') && !!currentTarot();
   const wrote = opts.lastTs ? `Last wrote ${opts.rel(opts.lastTs).toLowerCase()}` : 'Write freely, or from a prompt';
+  // The readings lead - Spirit Cards, I Ching, Tarot, Horoscope on top - then the
+  // writing tools below. Mirrors the Insight dropdown. (Robin, 2026-11-06.)
   const TOOLS = [
-    ['journal', t('wb.journal'), 'data-open-journal', wrote, false],
-    ['dreams', t('wb.dreams'), 'data-open-dreams', 'Write a dream, gently read', false],
-    ['coaching', t('wb.coaching'), 'data-open-coaching', 'A running conversation', false],
-    ['compass', t('wb.compass'), 'data-open-compass', 'Weigh a decision, find your bearing', false],
     ['spirit', t('wb.spirit'), 'data-spirit-open', liveSpirit ? 'Reopen your card' : 'Draw a card for a moment', liveSpirit],
     ['iching', t('wb.iching'), liveIch ? 'data-iching-reopen' : 'data-open-iching', liveIch ? 'Reopen your reading' : 'Cast the coins on a question', liveIch],
     ['tarot', 'Tarot', 'data-open-tarot', liveTarot ? 'Reopen your spread' : 'Pictures to think with', liveTarot],
     ['horoscope', t('wb.horoscope'), 'data-open-horo', liveHoro ? 'Reopen today’s reading' : 'Your reading for today', liveHoro],
+    ['journal', t('wb.journal'), 'data-open-journal', wrote, false],
+    ['dreams', t('wb.dreams'), 'data-open-dreams', 'Write a dream, gently read', false],
+    ['coaching', t('wb.coaching'), 'data-open-coaching', 'A running conversation', false],
+    ['compass', t('wb.compass'), 'data-open-compass', 'Weigh a decision, find your bearing', false],
   ].filter((x) => modOn(x[0]));
   if (!TOOLS.length) return '';
   const tiles = TOOLS.map(([key, label, attr, hint, live]) =>
@@ -11158,7 +11424,7 @@ async function delInsight(id) {
 }
 // ── §36 Journal (V21) ───────────────────────────────────────────────────────
 // One question at a time, an unboxed page that keeps itself as you write, and
-// your past pages grouped by month. Reference: Koyéba Journal.dc.html.
+// your past pages grouped by month. Reference: Kaya Journal.dc.html.
 // The six kinds reuse JOURNAL_MODES' keys (so a page's props.mode stays in step
 // with the rest of the app) but show the handover's short labels.
 const JK36_LABEL = { free: 'Free write', reflect: 'Reflect on the day', gratitude: 'Gratitude', 'work-through': 'Work through something', intention: 'Set an intention', dreams: 'A dream' };
@@ -11519,7 +11785,7 @@ async function openJournalEntry(id) {
   state.journal = state.journal || { entries: [] };
   state.journal.current = entry;
   state.view = { type: 'journalentry', id };
-  recordRecent('journal', id, entry.title || 'Reflection entry', blockAreas(entry)[0]);
+  recordRecent('journal', id, entry.title || 'Insight entry', blockAreas(entry)[0]);
   renderNav(); renderJournalEntry();
 }
 const journalDeeperLabel = (mode) => (mode === 'dreams' ? '✦ Interpret & explore' : '✦ Dig deeper');
@@ -11835,7 +12101,7 @@ async function openReadwatch() {
 // A real cover/thumbnail when we have one (props.image), else a generated cover
 // with a palette derived deterministically from the title - a spine stripe, the
 // kind or site at the top, the title in Cormorant and the author at the foot. The
-// palette stays within Koyéba's warm/forest/gold world; these are book spines, not
+// palette stays within Kaya's warm/forest/gold world; these are book spines, not
 // UI, so a little tonal variety is welcome, never a clash. (Robin, 2026-11-03.)
 const RW_PAL = [
   ['#223027', '#f4efe4', '#d8b25e'], ['#efe8d8', '#2a2620', '#c99a3e'], ['#33463f', '#f1ece0', '#cfa450'],
@@ -11964,10 +12230,10 @@ function rwSetupHtml() {
   return `<div class="rw-setup-panel">
     <div class="rw-setup-h">One-tap saving</div>
     <div class="rw-setup-sec"><b>On your Mac</b> — drag this to your bookmarks bar, then click it on any page to save it:
-      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Koyéba</a></div></div>
-    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Koyéba”:
+      <div class="rw-bm-row"><a class="rw-bookmarklet" href="${esc(bm)}" data-rw-bm draggable="true">🔖 Save to Kaya</a></div></div>
+    <div class="rw-setup-sec"><b>On your iPhone</b> — make a Shortcut called “Save to Kaya”:
       <ol><li>Shortcuts app → <b>+</b> → add action <b>Get Contents of URL</b>.</li><li>Set its URL to <code class="rw-code">${esc(capUrl)}</code> and then insert the <b>Shortcut Input</b> variable right after <code>url=</code>.</li><li>In the shortcut settings (ⓘ) turn on <b>Show in Share Sheet</b> and accept <b>URLs</b>.</li></ol>
-      Then anywhere: <b>Share → Save to Koyéba</b>.</div>
+      Then anywhere: <b>Share → Save to Kaya</b>.</div>
     <div class="rw-setup-note">This save link is private to you.</div>
   </div>`;
 }
@@ -12275,7 +12541,7 @@ function renderAreasList() {
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.areas'))}
     <div class="pane-head home-head"><h1>Spaces</h1><button class="add-btn wide" data-new-area>${t('btn.newarea')}</button></div>
-    <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Koyéba - everything about what matters, in one place.</p>
+    <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Kaya - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
 }
@@ -12296,6 +12562,18 @@ async function openArea(id) {
   const [area, blocks] = await Promise.all([api(`/api/blocks/${id}`), api(`/api/blocks?area=${id}`)]);
   state.area_open = { area, blocks, shares: null };
   recordRecent('area', id, area.title);
+  // A Space's calendar also needs events tagged to it that live in Google (the
+  // owner's events): an event's Space is held in the event→area map, not a block
+  // prop, so /api/blocks?area= above can't see them. Pull them from the calendar
+  // API (which applies the map, covering Google + native) over a wide window, so
+  // adding a Space to an event actually shows it in that Space. (Robin, 2026-11-06:
+  // "it's essential that when we add anything to the space that it appears in there".)
+  { const cf = addDayISO(todayISO(), -62), ct = addDayISO(todayISO(), 400);
+    api(`/api/calendar?from=${cf}&to=${ct}`).then((r) => {
+      if (!state.area_open || String(state.area_open.area.id) !== String(id)) return;
+      state.area_open.calEvents = (r.events || []).filter((e) => e && e.date && String(e.area) === String(id));
+      if (state.view.type === 'area') renderArea();
+    }).catch(() => { if (state.area_open && String(state.area_open.area.id) === String(id) && state.area_open.calEvents == null) { state.area_open.calEvents = []; } }); }
   renderNav(); renderArea();
   // Private (per-user) Notepad: load this person's own pad for the space. (Robin.)
   if (!wallShared(area)) api('/api/folio-note?area=' + encodeURIComponent(id)).then((r) => { if (state.area_open && state.area_open.area.id === id) { state.area_open.myWall = (r && r.value) || ''; if (state.view.type === 'area') renderArea(); } }).catch(() => {});
@@ -12530,7 +12808,7 @@ function areaGoto(key) {
   }
   // Every other section is now a tile in the tools grid: open the matching tile
   // and scroll to it. (Robin: keep the stats buttons - they jump to the cards.)
-  const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Notes: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Reflections: 'refl', Emails: 'emails' };
+  const GOTO_TILE = { 'Pages and tables': 'pages', Pages: 'pages', Notes: 'pages', Tables: 'tables', Tasks: 'tasks', Contacts: 'contacts', 'Saved links': 'links', Insights: 'refl', Emails: 'emails' };
   const id = GOTO_TILE[key];
   // Land on the open section's CONTENT panel, not the tile button up in the grid:
   // the panel renders below the whole grid, so scrolling to the tile left you
@@ -12577,7 +12855,7 @@ function timeAgo(t) {
   return Math.floor(d / 365) + 'y ago';
 }
 // Plain "N days ago" for the admin members list: Robin wants the day count, not a
-// date, so how long since someone used Koyéba reads at a glance (and big numbers
+// date, so how long since someone used Kaya reads at a glance (and big numbers
 // flag churn). (Robin, 2026-10-18.)
 function daysAgoLabel(ts) {
   if (!ts) return 'never';
@@ -12654,7 +12932,7 @@ function areaSentimentHtml(area) {
 }
 // A compact "who has access" row for the masthead, sitting under Add/Share: round
 // faces (you + anyone you share with) and a ＋ to give someone access. The faces
-// open each person's Koyéba card; the ＋ opens the same Share surface the ▾
+// open each person's Kaya card; the ＋ opens the same Share surface the ▾
 // overview uses - this is just the quick view. (Robin, 2026-10-28: faces replace
 // the Space Access box.)
 function areaFacesRow(area) {
@@ -12669,7 +12947,7 @@ function areaFacesRow(area) {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyéba card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Kaya card">${av}</button>`);
   }
   const LIM = 6;
   const list = shares || [];
@@ -12765,7 +13043,7 @@ function spAddGroup(name) {
 function spSnip(b, n) { return (b && b.body || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#39;|&rsquo;|&apos;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/\s+/g, ' ').trim().slice(0, n || 90); }
 // §53/§56 Space v3: a Space is everything about that part of life. Tasks and
 // notes as cards, then the Mail & events stream, with vision and goals folded.
-// Reference: Koyéba Space v3.dc.html. (Events keyed by event_areas aren't loaded
+// Reference: Kaya Space v3.dc.html. (Events keyed by event_areas aren't loaded
 // on the Space page, so the stream shows filed emails + any event blocks present;
 // mail lives in IMAP. Type system 1a throughout.)
 const AV3_PRIO = { P1: 'First', P2: 'Soon', P3: 'Whenever', P4: 'Whenever' };
@@ -12841,13 +13119,14 @@ document.addEventListener('input', (e) => {
   if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; renderArea(); }
 });
 document.addEventListener('change', (e) => {
+  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { state.taskGroup = tgb.value === 'space' ? 'space' : 'date'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
   const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
   const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
   const gt = e.target.closest && e.target.closest('[data-av4-goal-title]'); if (gt) { const id = gt.dataset.av4GoalTitle; const v = gt.value.trim(); const b = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (b) b.title = v; const gg = (state.goals || []).find((x) => x.id === id); if (gg) gg.title = v; api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }).catch(() => {}); renderArea(); return; }
 });
 // ── §65 Space v4: the tabbed Space ───────────────────────────────────────────
-const AV4_TABS = [['overview', 'Overview'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['mail', 'Mail'], ['vision', 'Vision & goals']];
+const AV4_TABS = [['overview', 'Overview'], ['vision', 'Vision & goals'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail']];
 function av4MonthEnd() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10); }
 function av4QuarterEnd() { const d = new Date(); const q = Math.floor(d.getMonth() / 3); return new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10); }
 function av4YearEnd() { return new Date(new Date().getFullYear(), 11, 31).toISOString().slice(0, 10); }
@@ -12874,9 +13153,15 @@ function renderAreaV4() {
   const notesAll = blocks.filter((b) => b.kind === 'note');
   const emails = notesAll.filter((n) => n.props && n.props.fromEmail);
   const notes = notesAll.filter((n) => !(n.props && n.props.fromEmail));
-  const events = blocks.filter((b) => b.kind === 'event');
+  // Events for this Space come from the calendar API (Google + native, via the
+  // event→area map) once it lands; until then, the native event blocks give a
+  // first paint. Normalised to a flat {title,date,allDay,start_min,location}.
+  const events = (state.area_open.calEvents != null)
+    ? state.area_open.calEvents.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || ((a.start_min ?? 0) - (b.start_min ?? 0)))
+    : blocks.filter((b) => b.kind === 'event').map((b) => { const p = b.props || {}; return { id: b.id, title: b.title, date: p.date, allDay: p.allDay, start_min: p.start_min, location: p.location }; });
   const goals = blocks.filter((b) => b.kind === 'goal' && (gp(b).status || 'active') !== 'done');
   const contacts = blocks.filter((b) => b.kind === 'contact');
+  const tables = blocks.filter((b) => b.kind === 'table');
   const num = areaNumeral(area.id);
 
   // Shared builders
@@ -12908,8 +13193,8 @@ function renderAreaV4() {
     return `<div class="av3-st"><div class="av3-st-row" data-av4-peek="${it.id}" role="button" tabindex="0"><span class="av3-st-kind mail">${esc(it.kind)}</span><div class="av3-st-b">${it.from ? `<div class="av3-st-from">${esc(it.from)}</div>` : ''}<div class="av3-st-title">${esc(it.title)}</div>${it.sub ? `<div class="av3-st-sub">${esc(it.sub)}</div>` : ''}</div><span class="av3-st-when">${it.when ? timeAgo(it.when) : ''}</span></div>${body}</div>`;
   };
   const eventRow = (e) => {
-    const p = e.props || {}; const d = av3Due(p.date); const time = (p.allDay || p.start_min == null) ? 'all day' : hhmm(p.start_min);
-    return `<div class="av4-evrow" data-open-calendar role="button" tabindex="0"><span class="av4-ev-day${d.gold ? ' gold' : ''}">${esc(d.t || '—')}</span><span class="av4-ev-dot"></span><div class="av4-ev-b"><div class="av4-ev-t">${esc(e.title || 'Event')}</div>${p.location ? `<div class="av4-ev-sub">${esc(p.location)}</div>` : ''}</div><span class="av4-ev-time">${esc(time)}</span></div>`;
+    const d = av3Due(e.date); const time = (e.allDay || e.start_min == null) ? 'all day' : hhmm(e.start_min);
+    return `<div class="av4-evrow" data-open-calendar role="button" tabindex="0"><span class="av4-ev-day${d.gold ? ' gold' : ''}">${esc(d.t || '—')}</span><span class="av4-ev-dot"></span><div class="av4-ev-b"><div class="av4-ev-t">${esc(e.title || 'Event')}</div>${e.location ? `<div class="av4-ev-sub">${esc(e.location)}</div>` : ''}</div><span class="av4-ev-time">${esc(time)}</span></div>`;
   };
 
   // Notes sort
@@ -12946,7 +13231,7 @@ function renderAreaV4() {
     return `<div class="av4-goalcard${editing ? ' editing' : ''}">
       <div class="av4-goal-head" data-av4-goal="${g.id}"><div class="av4-goal-hrow"><span class="av4-goal-when">${esc(whenLabel)}</span><span class="av4-goal-edit-l">${editing ? '' : 'Edit'}</span></div>
       ${editing ? '' : `<div class="av4-goal-main"><span class="av4-goal-t">${esc(g.title || 'A goal')}</span><span class="av4-goal-pct">${pct}%</span></div>
-      <div class="av4-goal-bar"><span style="width:${pct}%"></span></div>${p.why ? `<div class="av4-goal-why-view">${esc(p.why)}</div>` : ''}`}</div>${editBlock}</div>`;
+      <div class="av4-goal-bar"><span style="width:${pct}%"></span><input type="range" class="gc-slider av4-barslide" min="0" max="100" step="5" value="${pct}" data-av4-goal-slide="${g.id}" aria-label="Progress: ${pct}%" title="Drag to update - all the way to 100% to achieve"></div>${p.why ? `<div class="av4-goal-why-view">${esc(p.why)}</div>` : ''}`}</div>${editBlock}</div>`;
   };
 
   // ── Tab content ──
@@ -12962,14 +13247,36 @@ function renderAreaV4() {
     const total = rg.reduce((s, g2) => s + g2.items.length, 0);
     content = `<div class="av4-results"><div class="av4-res-count">${total} ${total === 1 ? 'thing' : 'things'} matching “${esc(st.q.trim())}”</div>${rg.map((g2) => `<div class="av4-res-g"><div class="av4-res-gl">${esc(g2.label)}</div>${g2.items.map((it) => `<div class="av4-res-row" ${it.attr} role="button" tabindex="0"><span class="av4-res-t">${esc(it.t)}</span>${it.w ? `<span class="av4-res-w">${esc(it.w)}</span>` : ''}${it.s ? `<span class="av4-res-s">${esc(it.s)}</span>` : ''}</div>`).join('')}</div>`).join('') || '<div class="av3-empty">Nothing matches that.</div>'}</div>`;
   } else if (st.tab === 'overview') {
-    const card = (kind, count, title, sub, act, tab, white) => `<div class="av4-glance${white ? ' white' : ''}" data-av4-tab="${tab}"><div class="av4-gl-top"><span class="av4-gl-kind">${esc(kind)}</span><span class="av4-gl-count">${esc(count)}</span></div><div class="av4-gl-title">${esc(title)}</div><div class="av4-gl-sub">${esc(sub)}</div><div class="av4-gl-act">${esc(act)} →</div></div>`;
+    // The same tidy uniform boxes as before - just more of them, one tidbit each.
+    // Vision comes first (trimmed with … if long), then a box per goal, then the
+    // Tasks / Calendar / Notes / Mail glances. (Robin, 2026-11-05: "keep the boxes
+    // as they were, with tidbits in each"; "if I've added a Vision that's the
+    // first box… cut it off with …".)
+    const card = (kind, count, title, sub, act, attr) => `<div class="av4-glance" ${attr}><div class="av4-gl-top"><span class="av4-gl-kind">${esc(kind)}</span>${count !== '' ? `<span class="av4-gl-count">${esc(String(count))}</span>` : ''}</div><div class="av4-gl-title">${esc(title)}</div>${sub ? `<div class="av4-gl-sub">${esc(sub)}</div>` : ''}<div class="av4-gl-act">${esc(act)} →</div></div>`;
+    const clip = (s, n) => { s = (s || '').trim(); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
+    const cards = [];
+    const vision = (area.props && (area.props.vision || '').trim()) || '';
+    if (vision) cards.push(card('Vision', '', clip(vision, 88), '', 'Open', 'data-av4-tab="vision"'));
+    goals.forEach((g) => {
+      const p = gp(g); const pct = Math.max(0, Math.min(100, Number(p.pct || p.progress || 0)));
+      const due = goalDueISO(g);
+      const when = due ? (due === av4MonthEnd() ? 'This month' : due === av4QuarterEnd() ? 'This quarter' : due === av4YearEnd() ? 'This year' : `By ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`) : '';
+      cards.push(card('Goal', `${pct}%`, clip(g.title || 'A goal', 56), `${pct}% there${when ? ` · ${when}` : ''}`, 'Open', 'data-av4-tab="vision"'));
+    });
     const topTask = openTs[0]; const topNote = nsort[0]; const topMail = streamItems()[0]; const topEvent = events[0];
-    content = `<div class="av4-glances">
-      ${card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? topTask.title : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'tasks', false)}
-      ${card('Calendar', `${events.length}`, topEvent ? topEvent.title : 'Nothing in the diary', topEvent ? (av3Due(topEvent.props && topEvent.props.date).t || '') : 'No events here', 'See the calendar', 'calendar', false)}
-      ${card('Notes', `${notes.length}`, topNote ? topNote.title : 'Nothing written', topNote ? av3Text(topNote.body).slice(0, 70) : 'Start a note', 'See all notes', 'notes', false)}
-      ${card('Mail', `${emails.length}`, topMail ? topMail.title : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'mail', true)}
-    </div>`;
+    cards.push(card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? clip(topTask.title, 56) : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'data-av4-tab="tasks"'));
+    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
+    cards.push(card('Notes', `${notes.length}`, topNote ? clip(topNote.title, 56) : 'Nothing written', topNote ? clip(av3Text(topNote.body), 68) : 'Start a note', 'See all notes', 'data-av4-tab="notes"'));
+    cards.push(card('Mail', `${emails.length}`, topMail ? clip(topMail.title, 56) : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'data-av4-tab="mail"'));
+    if (contacts.length) { const names = contacts.slice(0, 2).map((c) => c.title || 'Someone').join(', '); cards.push(card('People', `${contacts.length}`, clip(names, 46), contacts.length > 2 ? `and ${contacts.length - 2} more` : '', 'See everyone', 'data-open-contacts')); }
+    if (tables.length) { const t0 = tables[0]; cards.push(card('Tables', `${tables.length}`, clip(t0.title || 'Untitled table', 56), tables.length > 1 ? `${tables.length} in this Space` : 'A table of your own', 'See all tables', 'data-av4-tab="tables"')); }
+    // Fill the grid to a tidy 12 (three rows of four) when the summary boxes don't
+    // reach it: individual notes first, then tasks, so a Space with enough in it
+    // always shows a full grid. (Robin, 2026-11-06: "4 cards on each of the 3 rows
+    // if we have enough content… put notes in them, if not tasks or whatever".)
+    for (const n of nsort) { if (cards.length >= 12) break; const ex = clip(av3Text(n.body), 62); cards.push(card('Note', '', clip(n.title || 'Untitled', 56), ex || 'Open this note', 'Open', `data-open-note="${n.id}"`)); }
+    for (const tk of openTs) { if (cards.length >= 12) break; const pr = AV3_PRIO[tk.props.priority || ''] || 'Whenever'; const dd = av3Due(tk.props.due).t; cards.push(card('Task', '', clip(tk.title || 'Untitled', 56), pr + (dd ? ` · ${dd}` : ''), 'Open', `data-open-task="${tk.id}"`)); }
+    content = `<div class="av4-glances">${cards.join('')}</div>`;
   } else if (st.tab === 'calendar') {
     content = `<div class="av4-pane">${events.length ? events.map(eventRow).join('') : '<div class="av3-empty">Nothing in the diary for this Space.</div>'}<button class="av3-all" data-open-calendar>Open in Calendar →</button></div>`;
   } else if (st.tab === 'tasks') {
@@ -12978,6 +13285,8 @@ function renderAreaV4() {
   } else if (st.tab === 'notes') {
     const sortChip = (key, label) => { const on = st.sort.key === key; const arrow = on ? (st.sort.dir === 1 ? '↓' : '↑') : ''; return `<span class="av4-nsort${on ? ' on' : ''}" data-av4-sort="${key}">${label} <span class="av4-nsort-a">${arrow}</span></span>`; };
     content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Newest first')}${sortChip('az', 'A to Z')}${sortChip('tag', 'By tag')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
+  } else if (st.tab === 'tables') {
+    content = `<div class="av4-pane">${tables.length ? `<div class="tbl-cards">${tables.map((tb) => `<button class="tbl-card" data-open-table="${tb.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(tb.title || 'Untitled')}</span></button>`).join('')}${canEdit ? `<button class="tbl-card tbl-card-add" data-area-add-table><span class="tc-ic">＋</span><span class="tc-t">New table</span></button>` : ''}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'mail') {
     const s = streamItems();
     content = `<div class="av4-pane">${s.length ? s.map(streamRow).join('') : '<div class="av3-empty">No mail filed to this Space.</div>'}</div>`;
@@ -12990,7 +13299,7 @@ function renderAreaV4() {
   }
 
   // Tabs row
-  const tabCount = { calendar: events.length, tasks: openTs.length, notes: notes.length, mail: emails.length };
+  const tabCount = { calendar: events.length, tasks: openTs.length, notes: notes.length, tables: tables.length, mail: emails.length };
   const tabsHtml = AV4_TABS.map(([k, label], i) => {
     const on = st.tab === k && !q; const n = tabCount[k];
     return `<div class="av4-tab${on ? ' on' : ''}" data-av4-tab="${k}"><span class="av4-tab-num">${kToRoman(i + 1)}</span><span class="av4-tab-l">${esc(label)}</span>${n ? `<span class="av4-tab-n">${n}</span>` : ''}</div>`;
@@ -13000,21 +13309,21 @@ function renderAreaV4() {
   const upcoming = [...goals.map((g) => ({ t: g.title || 'A goal', iso: goalDueISO(g) })), ...openTs.filter((t) => t.props && t.props.due).map((t) => ({ t: t.title || 'A task', iso: t.props.due }))].filter((x) => x.iso).sort((a, b) => String(a.iso).localeCompare(String(b.iso))).slice(0, 2);
   const stripB = [];
   if (upcoming.length) stripB.push(`<div class="av3-strip-b"><span class="av3-strip-l">Coming up</span>${upcoming.map((u) => { const d = av3Due(u.iso); return `<span class="av3-strip-it"><span class="av3-strip-t">${esc(u.t)}</span> <span class="av3-strip-s${d.gold ? ' gold' : ''}">${esc(d.t)}</span></span>`; }).join('')}</div>`);
-  if (contacts.length) stripB.push(`<div class="av3-strip-b"><span class="av3-strip-l">People</span>${contacts.slice(0, 3).map((c) => `<span class="av3-strip-it"><span class="av3-strip-t" ${c.id ? `data-open-contact="${c.id}"` : ''} role="button">${esc(c.title || 'Someone')}</span></span>`).join('')}</div>`);
+  if (contacts.length) stripB.push(`<div class="av3-strip-b av3-strip-people"><span class="av3-strip-l">People</span>${contacts.slice(0, 3).map((c) => `<span class="av3-strip-it"><span class="av3-strip-t" ${c.id ? `data-open-contact="${c.id}"` : ''} role="button">${esc(c.title || 'Someone')}</span></span>`).join('')}</div>`);
   const strip = stripB.length ? `<div class="av3-strip">${stripB.join('')}</div>` : '';
 
-  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
+  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-table>Table</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
   const moreMenu = `<span class="av3-morewrap"><button class="av3-more" data-av3-more title="Rename, archive">···</button>${st.menu ? `<div class="av3-moremenu">${area.sharedBy ? '' : '<button class="av3-mm" data-area-invite>Share this Space</button>'}<button class="av3-mm" data-av3-rename>Rename</button><button class="av3-mm" data-av3-archive>Archive</button></div>` : ''}</span>`;
 
   $('#pane').innerHTML = `
-    <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div></div>
+    <div class="crumbbar crumbbar-slim"><div class="crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-dot">/</span><button class="crumb" data-open-areas>Spaces</button><span class="crumb-dot">/</span><span class="crumb cur">${esc(area.title || 'Space')}</span></div>${newTabBtnHtml()}</div>
     <div class="kwrap kpage kpage-area av3 av4">
       <div class="av3-head">
         <div class="av3-head-main"><div class="av3-eyebrow">Space ${esc(num)}</div><h1 class="av3-title">${esc(area.title || 'Untitled')}</h1></div>
         <div class="av3-head-act"><span class="av4-vlink" data-av4-tab="vision">Vision</span><span class="av4-vlink" data-av4-tab="vision">Goals ${goals.length}</span>${addMenu}${moreMenu}</div>
       </div>
       ${strip}
-      <div class="av4-search${q ? ' active' : ''}"><span class="av4-search-ic">⌕</span><input class="av4-search-in" data-av4-search placeholder="Search everything in ${esc(area.title || 'this Space')} – mail, notes, tasks, events" value="${esc(st.q || '')}">${q ? '<span class="av4-search-clear" data-av4-search-clear>Clear</span>' : ''}<span class="av4-search-k">${esc(PK('⌘F'))}</span></div>
+      <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-av4-search type="search" placeholder="Search everything in ${esc(area.title || 'this Space')} – mail, notes, tasks, events" value="${esc(st.q || '')}"></div>
       ${q ? '' : `<div class="av4-tabs">${tabsHtml}</div>`}
       <div class="av4-content">${content}</div>
     </div>`;
@@ -13112,7 +13421,7 @@ function renderAreaV3() {
   const visionBody = `${vision ? `<p class="av3-vision">${esc(vision)}</p>` : '<p class="av3-vision av3-vision-empty">No vision set yet.</p>'}${goals.length ? `<div class="av3-goals">${goals.map(goalRow).join('')}</div>` : ''}${canEdit ? `<div class="av3-vacts"><span class="av3-vact gold" data-area-add-goal>+ Add a goal</span><span class="av3-vact" data-open-vision="${area.id}">Edit the vision</span></div>` : ''}`;
   const visionSec = `<section class="av3-sec">${secH('vision', 'Vision & goals', `optional${goals.length ? ` · ${goals.length} goal${goals.length === 1 ? '' : 's'}` : ''}`, null, vOpen)}${vOpen ? `<div class="av3-sec-b">${visionBody}</div>` : ''}</section>`;
 
-  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
+  const addMenu = canEdit ? `<span class="addnew av3-addnew"><button class="av3-add" data-addnew-toggle aria-haspopup="true" aria-expanded="false">+ Add to this Space</button><div class="addnew-menu" hidden><button class="addnew-item" data-area-add-task>Task</button><button class="addnew-item" data-area-add-note>Note</button><button class="addnew-item" data-area-add-table>Table</button><button class="addnew-item" data-area-add-event>Event</button><button class="addnew-item" data-area-add-goal>Goal</button><button class="addnew-item" data-area-add-contact>Contact</button></div></span>` : '';
 
   $('#pane').innerHTML = `
     <div class="kwrap kpage kpage-area av3">
@@ -13198,7 +13507,7 @@ function renderAreaOld() {
   const emailCards = capArr('Emails', emails).map((n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-mail" title="Filed from an email">✉</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
   const contactCards = capArr('Contacts', contacts).map((c) => contactCardHtml(c)).join('');
   const bookmarkCards = capArr('Saved links', bookmarks).map((bm) => { const u = (bm.props && bm.props.url) || ''; return u ? `<a class="tbl-card${privCls(bm)}" href="${esc(u)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || u)}</span>${privChip(bm)}</a>` : `<button class="tbl-card${privCls(bm)}"><span class="tc-ic">🔖</span><span class="tc-t">${esc(bm.title || 'Saved')}</span>${privChip(bm)}</button>`; }).join('');
-  const journalCards = capArr('Reflections', journals).map((j) => `<button class="tbl-card${privCls(j)}" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span>${privChip(j)}</button>`).join('');
+  const journalCards = capArr('Insights', journals).map((j) => `<button class="tbl-card${privCls(j)}" data-open-jentry="${j.id}"><span class="tc-ic">✎</span><span class="tc-t">${esc(j.title || 'Journal entry')}</span>${privChip(j)}</button>`).join('');
   // Owner section control: the owner can hide any part of the page (Vision,
   // Goals, etc.) from area.props.hiddenSecs. Hidden sections vanish for everyone;
   // the owner turns them back on from the overview panel's "Sections" manager.
@@ -13210,8 +13519,8 @@ function renderAreaOld() {
   const pagesCount = starredNotes.length + otherNotes.length;
   const memberCount = (state.area_open.shares && state.area_open.shares.length) || 0;
   const wheelNow = Math.min((area.props && area.props.wheelScore) || 0, 5) || null;
-  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Pages and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Reflections': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
-  const counts = { 'Overview': null, 'Vision': null, 'Wheel of Life': wheelNow, 'Goals': activeGoals.length, 'Pages and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Reflections': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
+  const TILE_META = { 'Overview': '▦', 'Vision': '🧭', 'Wheel of Life': '◍', 'Goals': '🎯', 'Pages and tables': '▤', 'Tasks': '✓', 'Contacts': '👤', 'Saved links': '🔖', 'Insights': '✎', 'Emails': '✉', 'Bucket list': '✦', 'Shared with': '👥', 'Wall': '💬' };
+  const counts = { 'Overview': null, 'Vision': null, 'Wheel of Life': wheelNow, 'Goals': activeGoals.length, 'Pages and tables': notesTotal, 'Tasks': openTs.length, 'Contacts': contacts.length, 'Saved links': bookmarks.length, 'Insights': journals.length, 'Emails': emails.length, 'Bucket list': bucket.length, 'Shared with': memberCount || null, 'Wall': null };
   // The landing dashboard: a card per populated part of this area, each showing a
   // count and a few items, and clicking its header drills into that section's tile.
   // So an area opens showing lots at a glance, not one lone panel. (Robin, 2026-09.)
@@ -13374,7 +13683,7 @@ function renderAreaOld() {
     [activeGoals.length, 'Goals', 'Goals'],
     [contacts.length, 'Contacts', 'Contacts'],
     [bookmarks.length, 'Books & Films', 'Saved links'],
-    [journals.length, 'Reflections', 'Reflections'],
+    [journals.length, 'Insights', 'Insights'],
     [emails.length, 'Emails', 'Emails'],
     [bucket.length, 'Bucket list', 'Bucket list'],
   ];
@@ -13452,9 +13761,9 @@ function renderAreaOld() {
     .replace(/\s+/g, ' ').trim().slice(0, 170);
   const emailsBody = () => (emails.length ? `<div class="email-list">${emails.map((n) => { const s = emailSnippet(n); return `<button class="email-card" data-open-note="${n.id}"><div class="ec-top"><span class="ec-ic">✉</span><span class="ec-subj">${esc(n.title || '(no subject)')}</span></div>${s ? `<div class="ec-snip">${esc(s)}</div>` : ''}</button>`; }).join('')}</div>` : '<div class="home-empty">No emails filed here.</div>');
   // Order: Notes leads, Tasks second (Robin, 2026-10-27); the glanceable feeds sit
-  // in the middle, and Books & Films + Reflections close out the list. (Robin.)
+  // in the middle, and Books & Films + Insights close out the list. (Robin.)
   // Section order (Robin, 2026-10-28): Notes, Tasks, Calendar, Emails, Files,
-  // Contacts, Web links, Reflections, Books & Films. Tables rides with Notes (same
+  // Contacts, Web links, Insights, Books & Films. Tables rides with Notes (same
   // "Pages and tables" family); Recently viewed / Be ready are the non-content
   // extras and sit at the end.
   const SECTIONS = [
@@ -13466,7 +13775,7 @@ function renderAreaOld() {
     { id: 'files', ic: '📎', label: 'Files', show: !secHidden('Files'), count: attList.length || null, body: () => areaAttachHtml(area) },
     { id: 'contacts', ic: '👤', label: 'Contacts', show: toolShow('Contacts', !!contacts.length), count: contacts.length || null, acts: act('<button class="ovt-act" data-area-connect="contact">🔗 Connect existing</button><button class="ovt-act" data-area-add-contact>＋ New contact</button>'), body: () => (contacts.length ? `<div class="contact-grid">${contactCards}</div>` : '<div class="home-empty">No contacts here yet.</div>') },
     { id: 'weblinks', ic: '🔗', label: 'Web links', show: toolShow('Web links', !!linkN), count: linkN || null, body: () => externalLinksHtml('area', area) },
-    { id: 'refl', ic: '✎', label: 'Reflections', show: toolShow('Reflections', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>` : '<div class="home-empty">No reflections here yet.</div>') },
+    { id: 'refl', ic: '✎', label: 'Insights', show: toolShow('Insights', !!journals.length), count: journals.length || null, acts: act('<button class="ovt-act" data-area-add-journal>＋ Journal</button><button class="ovt-act" data-area-add-dream>＋ Dream</button>'), body: () => (journals.length ? `<div class="tbl-cards">${journalCards}</div>` : '<div class="home-empty">No insights here yet.</div>') },
     { id: 'links', ic: '🔖', label: 'Books & Films', show: toolShow('Saved links', !!bookmarks.length), count: bookmarks.length || null, acts: act('<button class="ovt-act" data-area-add-book>＋ Book</button><button class="ovt-act" data-area-add-film>＋ Film</button>'), body: () => (bookmarks.length ? `<div class="tbl-cards">${bookmarkCards}</div>` : '<div class="home-empty">No books or films here yet.</div>') },
     { id: 'recent', ic: '🕘', label: 'Recently viewed', show: !!rvAreaHtml, body: () => `<div class="area-rv">${rvAreaHtml}</div>` },
     { id: 'beready', ic: '⚑', label: 'Be ready', show: !!beReadyBody, body: () => beReadyBody },
@@ -13516,7 +13825,7 @@ function renderAreaOld() {
   // Owner-facing for now (a member's privacy-filtered view comes later).
   const latestUpdates = (canEditArea && updData) ? `<section class="area-updates" style="--h:${h}">${areaSecH('Latest updates', 'Latest updates', updList.length || null, '📣')}${areaSecOpen('Latest updates') ? (updList.length ? `<div class="upd-wall">${updShown.map(updRow).join('')}</div>${updMore}` : '<div class="home-empty">Nothing yet - as you and the people you share with add things here, they\'ll show up.</div>') : ''}</section>` : '';
   // ── §29 Space page v2 ───────────────────────────────────────────────────
-  // V20 "Koyéba Space v2.dc.html". No Space colour anywhere. Reads
+  // V20 "Kaya Space v2.dc.html". No Space colour anywhere. Reads
   // What matters now → Notes (groups in columns, no dates) → Recent, then
   // folded Open tasks and Goals, with a sticky Coming up / People / Kept here
   // column. Adds are per-section; space settings sit behind a quiet ··· . (Robin, V20.)
@@ -13601,7 +13910,7 @@ function renderAreaOld() {
   // ── Recent: one combined feed, gold dot for new since last visit ──
   const lastSeen = state.area_open.seenAt || '';
   const recentKindOf = (b) => (b.kind === 'note' && b.props && b.props.fromEmail) ? 'mail' : b.kind;
-  const RECENT_KIND = { note: 'Note', task: 'Task', mail: 'Mail', table: 'Table', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection' };
+  const RECENT_KIND = { note: 'Note', task: 'Task', mail: 'Mail', table: 'Table', goal: 'Goal', bookmark: 'Saved', journal: 'Insight' };
   const recentBlocks = blocks.filter((b) => ['note', 'task', 'table', 'goal', 'bookmark', 'journal'].includes(b.kind)).map((b) => ({ b, rk: recentKindOf(b), ts: new Date(b.updated_at || b.created_at || 0).getTime(), iso: b.updated_at || b.created_at || '' })).filter((x) => x.ts > 0);
   const recFilter = (state.area_open && state.area_open.recentFilter) || 'all';
   const recCount = (k) => k === 'all' ? recentBlocks.length : recentBlocks.filter((x) => x.rk === k).length;
@@ -13669,7 +13978,7 @@ function renderAreaOld() {
         <div class="k-a">${nowSec}${notesSec}${recentSec}${tasksSec}${goalsSec}</div>
         <div class="k-c sp-side">${sideHtml}</div>
       </div>
-      <a class="ksp-foot" data-guide-home role="button" tabindex="0" title="Back to the top"><img class="kmark-img kmark-day" src="/brand/mandombe-koyeba-ink.svg" alt="Koyéba"><img class="kmark-img kmark-night" src="/brand/mandombe-koyeba-ivory.svg" alt="Koyéba"></a>
+      <a class="ksp-foot ksp-foot-word" data-guide-home role="button" tabindex="0" title="Back to the top"><span class="kmark-cap">Kaya<i>.</i></span></a>
     </div>`;
   autoGrowSoon(document.querySelector('.sp-vision-edit'));   // the vision line grows to fit
   if (newGroupOpen) { const gi = document.querySelector('[data-sp-newgroup-in]'); if (gi) { gi.focus(); gi.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); spAddGroup(gi.value); } else if (ev.key === 'Escape') { spSet('newGroupOpen', false); } }); } }
@@ -13682,20 +13991,20 @@ function areaOverviewHtml(area, c, blocks) {
   const metrics = [metric(c.notes, 'notes'), metric(c.goals, 'goals'), metric(c.tasks, 'open tasks'), metric(c.tables, 'tables'), metric(c.saved, 'saved'), metric(c.reflections, 'reflections')].join('');
   const shares = state.area_open && state.area_open.shares;
   const friends = (state.friends && state.friends.friends) || [];
-  // Your own Koyéba card always shows here (unless this area was shared TO you
+  // Your own Kaya card always shows here (unless this area was shared TO you
   // by someone else): you are the first person who has access.
   const meCard = (() => {
     if (area.sharedBy) return '';
     const a = state.account || {};
     const name = a.name || (state.me && state.me.name) || 'You';
     const subd = a.subdomain || (state.me && state.me.subdomain) || '';
-    const sub = subd ? `koyeba.co/u/${esc(subd)}` : 'owner';
+    const sub = subd ? `kaya.so/u/${esc(subd)}` : 'owner';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(name))}</span>`;
-    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Koyéba card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
+    return `<button class="ov-person ov-person-me" data-open-card title="Edit your Kaya card">${av}<span class="ov-person-body"><span class="ov-person-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="ov-person-sub">${sub}</span></span></button>`;
   })();
   if (shares && shares.length) loadCards(shares.map((s) => s.id));
-  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Koyéba card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
+  const shareRows = (shares || []).map((s) => { const f = friends.find((x) => x.id === s.id) || {}; const name = f.name || s.name || 'Someone'; return `<button class="ov-person" data-open-personcard="${s.id}" title="See ${esc(name)}'s Kaya card">${personAvatar(s.id, name, f.online ? 'online' : '')}<span class="ov-person-body"><span class="ov-person-name">${esc(name)}</span><span class="ov-person-sub">${s.canEdit === false ? 'view only' : 'can edit'}</span></span></button>`; }).join('');
   const people = shares == null ? `${meCard || '<div class="ov-muted">Loading…</div>'}`
     : `${meCard}${shareRows}${(!meCard && !shareRows) ? '<div class="ov-muted">Just you so far.</div>' : ''}`;
   const kIcon = { note: '▤', task: '✓', goal: '🎯', table: '▦', contact: '👤', bucket: '🎯', bookmark: '🔖', journal: '✎', event: '◑' };
@@ -13711,7 +14020,7 @@ function areaOverviewHtml(area, c, blocks) {
   // the page. Tap a tile to open its panel. (Robin: merge connections into settings.)
   const SEC_LABELS = { 'Shared with': 'Space Access', Sentiment: 'Wheel of Life', Week: 'Calendar', 'Pages and tables': 'Notes & tables', 'Saved links': 'Books & Films', Wall: 'Notepad' };
   const hidden = (area.props && area.props.hiddenSecs) || [];
-  const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Reflections', 'Bucket list', 'Wall'];
+  const SHARE_KEYS = ['Pages and tables', 'Tasks', 'Contacts', 'Goals', 'Saved links', 'Insights', 'Bucket list', 'Wall'];
   const hasMembers = !!(shares && shares.length);
   const optin = (area.props || {}).shareMode === 'optin';
   const scfg = (area.props || {}).shareSections || {};
@@ -13736,7 +14045,7 @@ function areaOverviewHtml(area, c, blocks) {
     { k: 'Emails', ic: '✉', acts: [['data-open-mail', 'Open Mail ↗']] },
     { k: 'Files', ic: '📎', file: true },
     { k: 'Web links', ic: '🔗', acts: [[`data-xlink-add data-xlink-kind="area" data-xlink-id="${aid}"`, '＋ Add a link']] },
-    { k: 'Reflections', ic: '✎', acts: [['data-area-add-journal', '＋ Journal'], ['data-area-add-dream', '＋ Dream']] },
+    { k: 'Insights', ic: '✎', acts: [['data-area-add-journal', '＋ Journal'], ['data-area-add-dream', '＋ Dream']] },
     { k: 'Saved links', ic: '🔖', acts: [['data-area-add-book', '＋ Book'], ['data-area-add-film', '＋ Film']] },
     { k: 'Bucket list', ic: '✦', acts: [['data-area-add-bucket', '＋ Bucket-list item']] },
     { k: 'Wall', ic: '📝' },
@@ -13745,7 +14054,7 @@ function areaOverviewHtml(area, c, blocks) {
   const kc = {}; (blocks || []).forEach((b) => { kc[b.kind] = (kc[b.kind] || 0) + 1; });
   const pieceCount = {
     'Pages and tables': (c.notes || 0) + (c.tables || 0), Tasks: c.tasks || 0, Goals: c.goals || 0,
-    Contacts: kc.contact || 0, Reflections: c.reflections || 0, 'Saved links': c.saved || 0,
+    Contacts: kc.contact || 0, Insights: c.reflections || 0, 'Saved links': c.saved || 0,
     'Bucket list': kc.bucket || 0, 'Web links': blockLinks(area).length,
     Files: ((area.props && area.props.attachments) || []).length, 'Shared with': hasMembers ? shares.length : 0,
   };
@@ -13865,7 +14174,7 @@ function areaMembersBody(area) {
     const a = state.account || {}; const nm = a.name || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av online fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av online">${esc(initial(nm))}</span>`;
-    return `<button class="mem-card mem-card-me" data-open-card title="Your Koyéba card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
+    return `<button class="mem-card mem-card-me" data-open-card title="Your Kaya card">${av}<span class="mem-name">${esc(nm)}</span><span class="mem-you">you</span></button>`;
   };
   // A space shared WITH me: name its owner + me (I can't list the owner's full
   // roster - that's owner-scoped - so show who I can see), plus any co-members the
@@ -13887,7 +14196,7 @@ function areaMembersBody(area) {
 // locked by default and you unlock it to share, with all members or a chosen few.
 // An 'open' (legacy) space shows a switch to start choosing. (Robin: everything
 // locked by default; unlock to share; our views differ by what each unlocks.)
-const SHARE_SECS = [['Pages and tables', (b) => b.kind === 'note' || b.kind === 'table', '▤'], ['Tasks', (b) => b.kind === 'task', '✓'], ['Contacts', (b) => b.kind === 'contact', '👤'], ['Goals', (b) => b.kind === 'goal', '🎯'], ['Saved links', (b) => b.kind === 'bookmark', '🔖'], ['Reflections', (b) => b.kind === 'journal', '✎'], ['Bucket list', (b) => b.kind === 'bucket', '✦']];
+const SHARE_SECS = [['Pages and tables', (b) => b.kind === 'note' || b.kind === 'table', '▤'], ['Tasks', (b) => b.kind === 'task', '✓'], ['Contacts', (b) => b.kind === 'contact', '👤'], ['Goals', (b) => b.kind === 'goal', '🎯'], ['Saved links', (b) => b.kind === 'bookmark', '🔖'], ['Insights', (b) => b.kind === 'journal', '✎'], ['Bucket list', (b) => b.kind === 'bucket', '✦']];
 function areaShareControls(area) {
   if (area.sharedBy) return '';   // only the owner decides what's shared
   const shares = (state.area_open && state.area_open.shares) || [];
@@ -14004,7 +14313,7 @@ function areaAttachHtml(area) {
     ? `<div class="att att-img" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><img data-att-thumb="${a.id}" alt="${esc(a.name)}"><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`
     : `<div class="att att-file" data-att-open="${a.id}" data-att-type="${esc(a.type)}" data-att-name="${esc(a.name)}" title="${esc(a.name)}"><span class="att-ic">${attIcon(a.type)}</span><span class="att-info"><span class="att-name">${esc(a.name)}</span><span class="att-size">${fmtBytes(a.size)}</span></span><button class="att-x" data-att-del="${a.id}" title="Remove">×</button></div>`)).join('');
   return `<section class="attachments area-files" data-att-zone="${area.id}">
-    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Koyéba keeps things light, not a photo vault</span></div>
+    <div class="att-h">Files &amp; photos${list.length ? ` · ${list.length}` : ''}<span class="att-hint">Photos are saved screen-size - Kaya keeps things light, not a photo vault</span></div>
     <div class="att-grid">${tiles}
       <label class="att-add"><input type="file" multiple hidden data-att-input="${area.id}"><span class="att-add-ic">+</span><span>Add file or photo</span></label>
     </div></section>`;
@@ -14100,7 +14409,7 @@ async function areaAddTask() {
   } catch (e) { toast(e.message); }
 }
 // Add a reflection (journal or dream) filed to this space, then open it to
-// write. It then shows in the space's Reflections section. (Robin: everything
+// write. It then shows in the space's Insights section. (Robin: everything
 // connects to a Space.)
 async function areaAddJournal(isDream) {
   const area = state.area_open && state.area_open.area; if (!area) return;
@@ -14132,6 +14441,17 @@ async function areaAddNote() {
     const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: '', parent_id: null, props: { area: area.id } }) });
     state.noteTops.unshift(n);
     await openNote(n.id); setTimeout(() => $('#note-title') && $('#note-title').focus(), 30);
+  } catch (e) { toast(e.message); }
+}
+// New table filed to this Space (its own Tables tab, next to Notes). Mirrors
+// areaAddNote: create tied to the area, then open it to fill in. (Robin, 2026-11-05.)
+async function areaAddTable() {
+  const area = state.area_open && state.area_open.area; if (!area) return;
+  try {
+    const tb = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: 'Untitled table', props: { area: area.id, areas: [area.id], columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
+    if (state.area_open && Array.isArray(state.area_open.blocks)) state.area_open.blocks.unshift(tb);
+    state.tables = state.tables || []; state.tables.push(tb);
+    await openTable(tb.id);
   } catch (e) { toast(e.message); }
 }
 // Customise a page's colour. A hue is all an area stores (saturation and
@@ -14636,7 +14956,7 @@ function weekDays(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return Array.from({ length: 7 }, (_, i) => { const x = new Date(y, m - 1, d + i); const di = ymd(x.getFullYear(), x.getMonth(), x.getDate()); return { iso: di, day: x.getDate(), mon: x.getMonth(), dow: DOW3[x.getDay()], today: di === todayISO() }; });
 }
-// The Monday-first week containing `iso` (Koyéba §25 Week view): seven columns,
+// The Monday-first week containing `iso` (Kaya §25 Week view): seven columns,
 // Mon-Sun, whichever week the selected day falls in.
 function weekMon(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -14649,9 +14969,9 @@ async function openCalendar(dateStr) {
   // weekAnchor = the first day of the rolling week window (today by default),
   // kept separate from `selected` so clicking a day doesn't shift the window.
   // Modes are now Day (a scrollable list) and Month. Old saved 'week' maps to Day.
-  const savedMode = localStorage.getItem('life.calMode');
-  // §25: the three views are List · Week · Month. Old saved 'agenda'/'day' -> List.
-  const startMode = savedMode === 'month' ? 'month' : savedMode === 'week' ? 'week' : 'list';
+  // §25: the three views are List · Week · Month. The calendar opens in List by
+  // default, whatever was last used. (Robin, 2026-11-05.)
+  const startMode = 'list';
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, agendaBack: 0, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
@@ -14666,6 +14986,9 @@ async function openCalendar(dateStr) {
   api('/api/gcal/status').then((s) => { state.gcal = s; if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
   api('/api/gcal/accounts').then((r) => { state.gcalAccounts = (r && r.accounts) || []; if (state.view.type === 'calendar') renderCalendar(); }).catch(() => {});
   await loadCalendar();
+  // Land on today, not up in the backscroll - a fresh open (and the Split pane) used
+  // to show yesterday or the day before. (Robin, 2026-11-05.)
+  if (state.cal && state.cal.mode === 'list') requestAnimationFrame(() => { const el = document.querySelector('.roll-day.roll-today') || document.querySelector('.cal-roll .roll-day'); if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'start' }); } catch {} } });
 }
 async function loadCalendar() {
   let from, to;
@@ -14689,7 +15012,12 @@ function gcalBarHtml(ctx) {
   const inSettings = ctx === 'settings';
   const s = state.gcal;
   if (!s || !s.available) return '';
-  if (!inSettings && calsHidden()) return '';
+  // On the Calendar page itself, keep all the connection plumbing (Google
+  // connected, Disconnect, + iCloud/Yahoo…) OUT of the way - it lives in
+  // Settings › Calendar, reached by this one quiet link. (Robin, 2026-11-05:
+  // "I don't want to see all this stuff about yahoo calendars… put it in
+  // calendar settings, and have a link to Settings instead.")
+  if (!inSettings) return `<div class="cx-calslink"><button class="cx-calslink-b" data-sx-open="feeds">Calendars &amp; settings →</button></div>`;
   const acct = state.account;
   // The member's PRIMARY connection (their own calendar) stays member-only and
   // fails CLOSED: the owner reads the shared Workspace calendar and must never
@@ -14699,14 +15027,14 @@ function gcalBarHtml(ctx) {
   if (knownMember) {
     primary = s.connected
       ? `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${s.email ? ` · ${esc(s.email)}` : ''}</span><button class="ghost gcal-x" data-gcal-disconnect>Disconnect</button></div>`
-      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Koyéba ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
+      : `<div class="gcal-bar"><span class="gcal-t">See your own Google Calendar events here alongside your Kaya ones.</span><button class="add-btn wide" data-gcal-connect>Connect Google Calendar</button></div>`;
   } else if (acct && acct.isOwner) {
     // The owner's main calendar runs on the shared connection (env token), not a
     // member link. Name the address it reads, and offer to pause it (the token
     // stays, so reconnecting is instant). (Robin, 2026-10-29.)
     const em = s.ownerEmail ? ` · ${esc(s.ownerEmail)}` : '';
     primary = s.ownerOff
-      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Koyéba isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
+      ? `<div class="gcal-bar"><span class="gcal-t">Your Google calendar is paused${em} - Kaya isn't reading it.</span><button class="add-btn wide" data-gcal-owner-resume>Reconnect</button></div>`
       : `<div class="gcal-bar connected"><span class="gcal-dot"></span><span class="gcal-t">Google Calendar connected${em}</span><button class="ghost gcal-x" data-gcal-owner-pause>Disconnect</button></div>`;
   }
   // Additional connected calendars - for EVERYONE (owner included). Each is stored
@@ -14791,7 +15119,7 @@ async function caldavConnect() {
 }
 async function gcalAccountDisconnect(id) {
   const a = (state.gcalAccounts || []).find((x) => x.id === id);
-  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Koyéba.`, { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm(`Disconnect ${a ? esc(a.label || 'this account') : 'this account'}? Its events will stop showing in Kaya.`, { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api(`/api/gcal/accounts/${id}`, { method: 'DELETE' });
     state.gcalAccounts = (state.gcalAccounts || []).filter((x) => x.id !== id);
@@ -14800,14 +15128,14 @@ async function gcalAccountDisconnect(id) {
   } catch (e) { toast(e.message); }
 }
 async function gcalDisconnect() {
-  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Koyéba.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (!(await uiConfirm('Disconnect your Google Calendar? Your Google events will stop showing in Kaya.', { okLabel: 'Disconnect', danger: true }))) return;
   try { await api('/api/gcal/disconnect', { method: 'POST' }); state.gcal = { ...(state.gcal || {}), connected: false, email: null }; toast('Google Calendar disconnected'); if (state.view.type === 'calendar') { renderCalendar(); loadCalendar(); } }
   catch (e) { toast(e.message); }
 }
 // Owner pause/resume of the shared Workspace calendar (the env token stays, so a
 // resume is instant). Disconnecting asks first; resuming is a quiet one-tap.
 async function ownerGcalPause(off) {
-  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Koyéba until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
+  if (off && !(await uiConfirm('Disconnect your Google Calendar? Your Google events stop showing in Kaya until you reconnect - nothing is deleted, and reconnecting is instant.', { okLabel: 'Disconnect', danger: true }))) return;
   try {
     await api('/api/gcal/owner-pause', { method: 'POST', body: JSON.stringify({ off }) });
     state.gcal = { ...(state.gcal || {}), ownerOff: off };
@@ -14921,8 +15249,15 @@ function renderCalendar() {
         </aside>
       </div>
     </div>`;
-  if (c.adding) showCalForm();
-  else if (c.editing) showCalForm(c.editing);
+  if (c.adding) {
+    showCalForm();
+    // New -> Event (and the calendar's own +New) must land on the form, not at the
+    // top of the month header. Scroll the New Event box to the top of the view;
+    // #cal-form carries scroll-margin-top so it clears the sticky nav. Re-runs on
+    // the trailing gcal repaints too, so the scroll isn't reset back to the top.
+    // (Robin, 2026-11-05: "it didn't scroll me down the page… Please make sure it does.")
+    requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) try { f.scrollIntoView({ block: 'start' }); } catch {} const i = document.getElementById('ce-title'); if (i && document.activeElement !== i) try { i.focus({ preventScroll: true }); } catch {} });
+  } else if (c.editing) showCalForm(c.editing);
   else if (c.viewing) showCalView(c.viewing);
   restoreCalForm(_calFormSnap); _calFormSnap = null;
 }
@@ -15152,7 +15487,7 @@ function showCalView(ev) {
       ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a>`) : ''}
     </div>
     ${ev.notes ? `<div class="ce-view-notes">${linkifyText(ev.notes)}</div>` : ''}
-    <div class="ce-foot"><button class="add-btn wide" type="button" data-cal-edit>Edit</button><button type="button" class="ghost" data-cal-close>Close</button></div>
+    <div class="ce-foot">${ev.feed ? `<span class="ce-view-src">${ev.feed === 'gcal' ? 'Synced from Google Calendar' : ev.feed === 'caldav' ? `Synced from ${esc(ev.acctLabel || 'your calendar')}` : 'From a calendar feed'}</span>` : `<button class="add-btn wide" type="button" data-cal-edit>Edit</button>`}<button type="button" class="ghost" data-cal-close>Close</button></div>
   </div>`;
 }
 // One consistent format for every day's agenda header - weekday, date, year -
@@ -15184,7 +15519,7 @@ function showCalForm(ev) {
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
       <label class="ce-field ce-arealab"><span class="ce-flbl">Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
-      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl">Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Koyéba')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
+      ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl">Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Kaya')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
       ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl">Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
     ${ceQuickBar(ev)}
@@ -15411,7 +15746,7 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
   } catch (e) { toast(e.message); }
 }
 // ── Event reminders (in-app alarms) ─────────────────────────────────────
-// A reminder set on an event fires while Koyéba is open: a toast, a chime and,
+// A reminder set on an event fires while Kaya is open: a toast, a chime and,
 // if you allow it, a browser notification. Checked on a short loop so it works
 // across a reload and background-tab throttling. It fires client-side, so it
 // needs the app open somewhere - which for a day tool it usually is.
@@ -15443,7 +15778,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://koyeba.co/email-mark.png?v=3' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://kaya.so/email-mark.png?v=3' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
@@ -16398,7 +16733,7 @@ const MAIL_QUADS = [
 const normQuad = (q) => (q === 'others' ? 'chilled' : q);
 const mailFolder = () => MAIL_FOLDERS.find((f) => f.key === (state.mail.folder || 'inbox')) || MAIL_FOLDERS[0];
 // A filed email is stored as { q: quad, m: snapshot } so its box KEEPS it even
-// after it leaves the loaded inbox (Koyéba remembers it). Old data stored a bare
+// after it leaves the loaded inbox (Kaya remembers it). Old data stored a bare
 // quad string; both shapes are read here. Works the same for Gmail and IMAP - the
 // snapshot carries the account it came from.
 const mailQuadEntry = (key) => { const v = state.mailQuads && state.mailQuads[key]; return v == null ? null : (typeof v === 'string' ? { q: v, m: null } : v); };
@@ -17006,8 +17341,8 @@ const isStandalone = () => { try { return window.matchMedia('(display-mode: stan
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent || '');
 function installRowHtml() {
   if (isStandalone()) return '';   // already installed as an app
-  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyéba</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
-  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Koyéba</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Koyéba opens full-screen and works offline.</div></div></div>`;
+  if (deferredInstall) return `<div class="set-row"><div><div class="set-row-t">📲 Install Kaya</div><div class="set-row-s">Add it to your device for a full-screen app that opens instantly and works offline.</div></div><button class="add-btn wide" data-install-app>Install</button></div>`;
+  if (isIOS()) return `<div class="set-row"><div><div class="set-row-t">📲 Install Kaya</div><div class="set-row-s">In Safari, tap Share and then <b>Add to Home Screen</b> - Kaya opens full-screen and works offline.</div></div></div>`;
   return '';
 }
 async function promptInstall() {
@@ -17015,7 +17350,7 @@ async function promptInstall() {
   try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch {}
   deferredInstall = null; if (state.view && state.view.type === 'settings') renderSettings();
 }
-// PWA share target: another app shared a link/text to Koyéba (via /share). A URL
+// PWA share target: another app shared a link/text to Kaya (via /share). A URL
 // becomes a Read & Watch bookmark; plain text becomes a note. Then land on it.
 async function handleShareTarget() {
   const q = new URLSearchParams(location.search);
@@ -17063,7 +17398,7 @@ async function subscribePush(reg) {
 }
 // User tapped "Enable notifications": prompt, subscribe, register with server.
 async function enablePush() {
-  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Koyéba to your Home Screen from Safari first.'); return; }
+  if (!pushSupported()) { toast('Notifications are not supported in this browser. On iPhone, add Kaya to your Home Screen from Safari first.'); return; }
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { toast(perm === 'denied' ? 'Notifications are blocked - allow them in browser settings.' : 'Notifications not enabled.'); return; }
@@ -17081,12 +17416,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Koyéba to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a badge on the app icon when mail arrives, add Kaya to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Koyéba app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Show a number on the Kaya app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
@@ -17170,6 +17505,16 @@ function toggleMailSheet() {
   state.mailSheet = false; state.mailArrivalHidden = true;
   mailMarkLooked();
   const el = document.getElementById('mail-sheet'); if (el) el.remove();
+  // Already in Mail? Pressing Mail in the header again drops to the inbox - closing
+  // any open message, search or folder filter - instead of reopening what you last
+  // read. A first open from elsewhere still lands you back where you were. (Robin, 2026-11-05.)
+  const m = state.mail;
+  if (state.view && state.view.type === 'mail' && m) {
+    m.open = null; m.composing = false; m.query = ''; m.quadFilter = new Set();
+    setMailFolder('inbox');
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; } catch {}
+    return;
+  }
   openMail().catch((e) => toast(e && e.message));
 }
 // Load each account's INBOX so the sheet shows what needs sorting - the SAME set
@@ -17415,7 +17760,7 @@ function mailMarkReadLocal(key) {
   try { localStorage.setItem('life.mail.read', JSON.stringify([...state.mail.readIds])); } catch {}
 }
 function applyMailReads(list) {
-  // Once you've read an email in Koyéba it stays read - full stop. We DON'T prune
+  // Once you've read an email in Kaya it stays read - full stop. We DON'T prune
   // the key when the server happens to report it seen: Gmail's seen flag flip-flops
   // (eventual consistency + the sticky-read cache), and pruning meant the next
   // fetch that said "unseen" had nothing to correct it, so a mail you'd already
@@ -17627,6 +17972,16 @@ function mailForgetKeys(keys) {
   const set = new Set(keys); const lc = state.mail.listCache || {};
   for (const k in lc) lc[k] = (lc[k] || []).filter((m) => !set.has(m._key));
 }
+// Opening an email takes the viewport to it. The accordion expands inline, so without
+// this you land at the top of the mail page - its title and a closed email or two
+// above the one you tapped - and have to scroll down to read it. (Robin, 2026-11-05:
+// mobile, and desktop too.) scroll-margin-top on .mail-ar.open clears the sticky nav.
+function mailScrollOpenIntoView() {
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.mail-ar.open');
+    if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'start' }); } catch { el.scrollIntoView(); } }
+  });
+}
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]);
   // A visible row whose key no longer resolves (list filtered, cache not loaded,
@@ -17648,14 +18003,18 @@ async function openMessage(key) {
   // (Robin, 2026-10-26.)
   if (cached) apply(cached); else state.mail.open = { ...row, _loadingBody: true };
   renderMail();
+  mailScrollOpenIntoView();   // take the viewport to the email you just opened
   mailMarkReadLocal(mailReadKey(row));   // remember it read (by Message-ID or a stable fallback), so it never shows as new again
   if (!row.seen) { row.seen = true; bumpUnread(row._acct, -1); mailApi('/flag', { method: 'POST', body: JSON.stringify({ account: row._acct, mailbox: row._mailbox, uid: row.uid, seen: true }) }).catch(() => {}); }
   if (cached) { prefetchAround(key); return; }
-  try { apply(await mailFetchMsg(row)); renderMail(); }
+  // The body load re-renders the whole list, which resets the scroll to the top - so
+  // scroll to the open email AGAIN after it, or the first scroll is undone and you
+  // land back at the top. (Robin, 2026-11-05.)
+  try { apply(await mailFetchMsg(row)); renderMail(); mailScrollOpenIntoView(); }
   catch (e) {
     // Keep the reader open (headers) and show the error in the body with a retry,
     // rather than silently stranding you on a half-open message.
-    if (state.mail.open && state.mail.open._key === key) { delete state.mail.open._loadingBody; state.mail.open._bodyError = e.message || 'Could not load this message.'; renderMail(); }
+    if (state.mail.open && state.mail.open._key === key) { delete state.mail.open._loadingBody; state.mail.open._bodyError = e.message || 'Could not load this message.'; renderMail(); mailScrollOpenIntoView(); }
   }
   prefetchAround(key);   // warm the next few so j/k keeps flowing
 }
@@ -18072,7 +18431,7 @@ function sigBuilderInner(a) {
         </div>
       </div>
       ${f('name', 'Name', 'Robin Lumley-Savile')}
-      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Koyéba')}</div>
+      <div class="sig-two">${f('title', 'Job title', 'Founder')}${f('company', 'Company', 'Kaya')}</div>
       <div class="sig-two">${f('phone', 'Phone', '+351 …', 'tel')}${f('email', 'Email', a.email, 'email')}</div>
       ${f('website', 'Website', 'yoursite.com', 'url')}
       ${f('address', 'Address / location', 'Lisbon, Portugal')}
@@ -18161,9 +18520,9 @@ function renderMailAccounts(note) {
       <label class="set-mod"><span>Open the next email<small>When you archive or file the email you're reading, jump straight to the next one in the same list (Inbox, or whichever bucket you're in). Turn off to go back to the list instead.</small></span><input type="checkbox" data-mail-aftertriage ${state.mailAfterTriage !== 'list' ? 'checked' : ''}></label>
     </section>
     <section class="push-sec"><div class="home-sec-h">Default email app</div>
-      <p class="scope" style="margin:0 0 10px">Make Koyéba open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
-      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://koyeba.co/mail" target="_blank" rel="noopener"><b>koyeba.co/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Koyéba. Safari / iOS can't do this.</p>
-      <button class="add-btn wide" data-mail-handler>Set Koyéba as my email app</button></section>
+      <p class="scope" style="margin:0 0 10px">Make Kaya open when you click a <b>mailto:</b> email link, so email always comes to you here.</p>
+      <p class="scope gpw-expiry" style="margin:0 0 12px">⚠ Set this up in a <b>normal Brave tab</b>, not the installed app (the installed app has no address bar for Brave's Allow icon). Open <a href="https://kaya.so/mail" target="_blank" rel="noopener"><b>kaya.so/mail</b></a> in Brave, go to <b>Accounts</b> to reach this screen, then tap the button below. <b>Brave won't pop a dialog</b> - look for a small <b>handlers icon at the right of the address bar</b> and tap <b>Allow</b>. If there's no icon, turn it on under <b>Settings → Site and Shields settings → Handlers</b>. Using the <b>installed app</b>? Reinstall it once and Brave will offer to open mailto links with Kaya. Safari / iOS can't do this.</p>
+      <button class="add-btn wide" data-mail-handler>Set Kaya as my email app</button></section>
     ${blockedSec}`;
   // A half-finished "add mailbox" survives a redraw/resume: reopen it as left.
   if (mailAddDraft()) { state.mail.addProvider = (mailAddDraft() || {}).provider || null; showMailAccountForm(); }
@@ -18342,7 +18701,7 @@ function wrapEmailHtml(html, blockImages) {
   // to the parent, which opens it in the OS default browser (a sandboxed iframe
   // can't do that itself, and its own scripts were already stripped).
   return `<!doctype html><html><head><meta name="color-scheme" content="light">
-    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,var(--k-sans);font-size:15px;line-height:1.5;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
+    <style>html{overflow-x:hidden}html,body{margin:0;height:auto!important;min-height:0!important}body{padding:16px;font-family:-apple-system,BlinkMacSystemFont,var(--k-sans);font-size:17px;line-height:1.55;color:#1b1820;background:#fff;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}a{color:#c4412e}table{max-width:100%}</style>
     </head><body>${sanitizeEmailHtml(html, blockImages)}<script>(function(){var busy=false;
     // Shrink-to-fit: a fixed-width email (a 600px bank/marketing table that ignores
     // max-width) would otherwise force sideways scrolling on a phone. Measure the
@@ -18532,7 +18891,7 @@ const mailRowHtml = (x, child, count) => {
     </span>
     <span class="mail-row-right">
       <span class="mail-date">${mailDate(x.date)}</span>
-      <span class="mail-row-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>
+      <span class="mail-row-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span><span class="mrt mrt-arch" data-mail-archive="${k}">Archive</span><span class="mrt mrt-del" data-mail-rowdel="${k}">Delete</span></span>
     </span></button>`;
 };
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
@@ -18806,14 +19165,14 @@ function mailListInner(loading) {
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
   const m = state.mail;
-  // The Koyéba Mail list (§12) lives in .mail-groups. Refresh it in place, but
+  // The Kaya Mail list (§12) lives in .mail-groups. Refresh it in place, but
   // never while a message is open (that would reset its body iframe) or while the
   // search box has focus (would steal it mid-type) - those wait for a full render.
   const groups = document.querySelector('.mail-groups');
   if (groups) {
     if (m && m.open) return;
     const ae = document.activeElement;
-    if (ae && ae.matches && ae.matches('.mail-search2 input')) return;
+    if (ae && ae.matches && ae.matches('[data-mail-q]')) return;
     groups.innerHTML = mailDayGroupsHtml(loading);
     return;
   }
@@ -18839,9 +19198,9 @@ function scrollToMailList() {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 }
-// ── Koyéba Mail page (§12 of the handover). A piles row of Cormorant numbers,
+// ── Kaya Mail page (§12 of the handover). A piles row of Cormorant numbers,
 // a day-grouped accordion of emails that open in place, and a sticky side of
-// what Koyéba noticed. The model is UNCHANGED: the piles map onto the existing
+// what Kaya noticed. The model is UNCHANGED: the piles map onto the existing
 // quad labels - To sort = the inbox queue (untriaged), Urgent/Important/Later =
 // urgent/important/chilled, Archive = the IMAP Archive folder - and every action
 // reuses its old handler (data-mail-quad-view/inbox/archive, data-mail-quad-file,
@@ -18942,18 +19301,18 @@ function mailAccordionRow(x, count) {
     + `${!isOpen ? `<span class="mail-ar-prev">${noticed ? `<i class="mail-ar-notice">${noticed}</i>` : esc(mailCleanPreview(x.preview))}</span>` : ''}</span>`
     + `<span class="mail-ar-right">`
     + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
-    + `<span class="mail-ar-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
+    + `<span class="mail-ar-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span></span>`
     + `</span>`
     + `</button>`;
   // §58: closed, the row is just its header. Open, the header + body sit on a
-  // white-paper card (#fff, 1px keyline), and the "Koyéba noticed" line and the
-  // action row sit BELOW it, outside the card, in Koyéba's own Jost.
+  // white-paper card (#fff, 1px keyline), and the "Kaya noticed" line and the
+  // action row sit BELOW it, outside the card, in Kaya's own Jost.
   if (!isOpen) return `<div class="mail-ar">${head}</div>`;
   const parts = mailOpenPanelHtml(m.open);
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
   // as a bar that sticks to the top of the card while you read it.
   const triage = mailOpenTriageBar(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-bar">${triage}${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${parts.make}</div><div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-bar">${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${triage}${parts.make}</div><div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // §58 + Robin: the sticky triage bar at the top of an open email - the same four
 // moves as the action row, reachable without scrolling to the end.
@@ -18965,15 +19324,14 @@ function mailOpenTriageBar(o) {
     + `<button class="mail-trg" data-mail-quad-file="urgent">Urgent</button>`
     + `<button class="mail-trg" data-mail-quad-file="important">Important</button>`
     + `<button class="mail-trg" data-mail-quad-file="chilled">Later</button>`
-    + `<button class="mail-trg" data-mail-archive="${k}">Archive</button>`
-    + mailRowSelectHtml('Move to', ['Urgent', 'Important', 'Later', 'Archive'])
+    + mailRowSelectHtml('Move to', ['Urgent', 'Important', 'Later'])
     + `</div>`;
 }
 // On a phone each of the email's rows (Move to, Action, Tools) is one dropdown. Its
 // options stand for the row's buttons, in order; choosing one clicks that button, so
 // every action keeps its one code path. (Robin, 2026-11-04.)
 function mailRowSelectHtml(label, opts) {
-  return `<select class="sel mail-rowsel" data-mail-rowsel aria-label="${esc(label)}"><option value="">Choose</option>${opts.map((t, i) => `<option value="${i}">${t}</option>`).join('')}</select>`;
+  return `<select class="sel mail-rowsel" data-mail-rowsel aria-label="${esc(label)}"><option value="">${esc(label)}</option>${opts.map((t, i) => `<option value="${i}">${t}</option>`).join('')}</select>`;
 }
 function mailRowLabels(html) { return [...String(html).matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)].map((x) => x[1]); }
 document.addEventListener('change', (ev) => {
@@ -18981,7 +19339,7 @@ document.addEventListener('change', (ev) => {
   const btn = sel.parentElement.querySelectorAll('button')[Number(sel.value)]; sel.selectedIndex = 0;
   if (btn) btn.click();
 });
-// Does Koyéba notice anything in this email? (an invite, a meeting link, or that
+// Does Kaya notice anything in this email? (an invite, a meeting link, or that
 // it's already filed to a task/note). Returns a short italic line or null.
 function mailRowNotice(o) {
   if (!o) return null;
@@ -19023,10 +19381,14 @@ function mailOpenPanelHtml(o) {
   const addr = (o.from && o.from.address) ? esc(o.from.address) : '';
   const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${mailRowSelectHtml('Tools', ['Make a task', 'Make a note', 'Add event'])}</div>`;
   const spamBtn = inSpam ? `<button class="mail-reply" data-mail-notspam="${k}">Not spam</button>` : `<button class="mail-reply" data-mail-spam="${k}">Spam</button>`;
-  const replyBtns = `<button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}`;
+  const replyBtns = `<button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-archive="${k}">Archive</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}`;
   const replyActs = `<div class="mail-replyacts"><span class="mail-ar-row-l">Action</span>${replyBtns}${mailRowSelectHtml('Action', mailRowLabels(replyBtns))}</div>`;
+  // Archive · Delete again at the very foot of the email, INSIDE the glass box, below
+  // the attachments - the glass area under the white paper, where the white-rim glass
+  // buttons read fine. They reuse the same handlers as the top row. (Robin, 2026-11-05.)
+  const footActs = `<div class="mail-ar-footacts"><button class="mail-footact" data-mail-archive="${k}">Archive</button><button class="mail-footact" data-mail-del="${k}">Delete</button></div>`;
   return {
-    body: `${convStrip}${bodyInner}${atts}${join}${imgs}`,
+    body: `${convStrip}${bodyInner}${atts}${join}${imgs}${footActs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
     // bar at the top, not stranded at the bottom under the email.
     make: `<div class="mail-maketop">${makeActs}</div>`,
@@ -19049,7 +19411,7 @@ function mailMoreHtml(o) {
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
-// Side column: what Koyéba noticed, and what you're waiting on.
+// Side column: what Kaya noticed, and what you're waiting on.
 function mailNoticedList() {
   const m = state.mail;
   return buildThreads(m.messages || []).map((th) => th.latest).filter((o) => o && o.invite).map((o) => ({
@@ -19094,6 +19456,7 @@ function renderMail(loading) {
   const accScope = (m.accounts || []).length > 1 ? `<select class="sel mail-tb-acctsel" data-mail-acct-sel title="Which mailbox">
       <option value="all" ${m.account === 'all' ? 'selected' : ''}>All accounts${totalUnseen ? ` · ${totalUnseen} unread` : ''}</option>
       ${(m.accounts || []).map((a) => `<option value="${a.id}" ${a.id === m.account ? 'selected' : ''}>${esc(a.name || a.email)}${unseenOf(a.id) ? ` · ${unseenOf(a.id)}` : ''}</option>`).join('')}
+      <option value="__add">+ Add a mailbox</option>
     </select>` : '';
   // Compose keeps its existing form, as a sub-view with a plain back link.
   if (m.composing) {
@@ -19129,7 +19492,12 @@ function renderMail(loading) {
   const err = m.error ? `<div class="cal-warn">${esc(m.error)}</div>` : '';
   // The breadcrumb is just "Today · Mail"; the menubar ← closes an open email
   // (navBack) and leaves Mail.
-  const mailCrumb = pageCrumb(t('nav.mail'));
+  // Reading a message: "Mail" becomes a clickable crumb that drops back to the inbox,
+  // with the sender as the current page. On the inbox it's just the static Mail crumb.
+  // (Robin, 2026-11-05: pressing Mail in the breadcrumb goes to the inbox.)
+  const mailCrumb = m.open
+    ? crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.mail'), attr: 'data-open-mail' }, { label: mailSenderClean(m.open) || 'Message' }])
+    : pageCrumb(t('nav.mail'));
   $('#pane').innerHTML = `
     ${mailCrumb}
     <div class="mail2">
@@ -19137,13 +19505,13 @@ function renderMail(loading) {
         <div class="mail-tb-main">
           <h1 class="mail-h1">Mail</h1>
           <div class="mail-mood">${esc(mailMood())}</div>
-          <div class="mail-search2"><input data-mail-q placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"><span class="mail-search2-k">/</span></div>
         </div>
         <div class="mail-tb-act">
           ${accScope}
           <button class="mail-tb-write" data-mail-compose>Write</button>
         </div>
       </div>
+      <div class="cvx-searchrow nx-searchrow mail-searchrow"><input class="cvx-search" data-mail-q type="search" placeholder="${isSort ? 'Search mail' : 'Search'}" value="${esc(m.query || '')}" autocomplete="off"></div>
       ${mailPilesRowHtml()}
       ${err}
       <div class="mail-main mail-main-full">
@@ -19155,6 +19523,7 @@ function renderMail(loading) {
         ${emptyHtml}
         ${!loading && m.hasMore ? '<button class="mail-loadmore" data-mail-more>Load older</button>' : ''}
       </div>
+      <div class="tool-foot"><button class="tool-foot-link" data-open-mailaccounts>Mail settings →</button></div>
     </div>
     ${m.shortcuts ? shortcutsOverlayHtml() : ''}
     ${m.moveMenu ? mailMoveMenuHtml() : ''}
@@ -19163,11 +19532,13 @@ function renderMail(loading) {
   if (m.open && m.open.html && !m.plain) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
 }
 
-function showQuickTask() {
+// The full add-task form markup (area, priority, duration, surface-on, repeat,
+// notes). Factored out so BOTH the inline #qt-wrap host (Home/Flow) and the
+// floating New dialog can render the same form - the New dialog can't share
+// #qt-wrap because Home already has one earlier in the DOM. (Robin, 2026-11-05.)
+function quickTaskFormHtml() {
   const opts = `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('');
-  // The full task options, matching the Tasks board's add form: area, priority,
-  // duration, snooze (hide until), repeat and notes.
-  $('#qt-wrap').innerHTML = `<form id="qt-form" class="add-task expanded" style="margin-bottom:22px">
+  return `<form id="qt-form" class="add-task expanded" style="margin-bottom:0">
     <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
     <div class="atf-grid">
       <label class="atf"><span>Space</span><select id="qt-area" class="sel">${opts}</select></label>
@@ -19179,9 +19550,13 @@ function showQuickTask() {
     </div>
     <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
     <div class="atf-actions"><button class="add-btn wide" type="submit">Add task</button><button type="button" class="ghost" data-qt-close>Done</button></div></form>`;
-  $('#qt-title').focus();
 }
-// Turn the open email into a Koyéba task: subject becomes the title, and
+function showQuickTask() {
+  const w = $('#qt-wrap'); if (!w) return;
+  w.innerHTML = quickTaskFormHtml();
+  const i = $('#qt-title'); if (i) i.focus();
+}
+// Turn the open email into a Kaya task: subject becomes the title, and
 // the sender line + the email's text are carried into the task's note (body).
 // It lands in Tasks with no priority/area set.
 // Turning an email into a task opens a little popover first, so the title, life
@@ -19303,6 +19678,26 @@ function mailHarvestText(html) {
   d.querySelectorAll('p, div, br, li, tr, td, h1, h2, h3, h4, h5, h6, blockquote, table').forEach((el) => el.appendChild(d.createTextNode('\n')));
   return mailCleanInvis(d.body.textContent || '').replace(/[^\S\n]+/g, ' ').split(/\n+/).map((s) => s.trim()).filter((s) => s && !mailIsJunk(s) && !looksLikeCss(s));
 }
+// A genuine data table in an email (2+ rows AND 2+ columns) is kept as a real table
+// when the email becomes a note; a layout table (single cell/column, as emails use
+// for spacing) returns null so it falls through to plain text. Cells keep their text
+// and th/td; the heavy email styling is dropped. (Robin, 2026-11-05.)
+function emailTableHtml(table) {
+  const rows = [...(table.rows || [])];
+  if (rows.length < 2) return null;
+  const cols = Math.max(0, ...rows.map((r) => (r.cells ? r.cells.length : 0)));
+  if (cols < 2) return null;
+  const trs = rows.map((r) => {
+    const cells = [...(r.cells || [])];
+    if (!cells.length) return '';
+    return '<tr>' + cells.map((cell) => {
+      const tg = cell.tagName === 'TH' ? 'th' : 'td';
+      const txt = mailCleanInvis(cell.textContent).replace(/\s+/g, ' ').trim();
+      return `<${tg}>${esc(txt)}</${tg}>`;
+    }).join('') + '</tr>';
+  }).filter(Boolean).join('');
+  return trs ? `<table>${trs}</table>` : null;
+}
 function emailToProse(html) {
   let doc; try { doc = new DOMParser().parseFromString(html || '', 'text/html'); } catch { return ''; }
   doc.querySelectorAll('style, script, noscript, title, meta, link, head').forEach((n) => n.remove());
@@ -19341,6 +19736,7 @@ function emailToProse(html) {
       if (tag === 'STRONG' || tag === 'B') { const x = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (x) para.push(`<strong>${esc(x)}</strong>`); continue; }
       if (tag === 'EM' || tag === 'I') { const x = mailCleanInvis(c.textContent).replace(/\s+/g, ' ').trim(); if (x) para.push(`<em>${esc(x)}</em>`); continue; }
       if (tag === 'BR') { flush(); continue; }
+      if (tag === 'TABLE') { flush(); const th = emailTableHtml(c); if (th) { out.push(th); continue; } walk(c); flush(); continue; }   // a real data table is kept as a table; a layout table falls through to text
       if (BLOCK.test(tag)) { flush(); walk(c); flush(); continue; }
       walk(c);   // inline wrapper (span, font, u…): recurse, keep the text
     }
@@ -19810,11 +20206,14 @@ function commitTaskView() {
     if (labelChanged) renderTabs();   // keep the tab strip's title in step with the filter
   }
 }
-// ── Tasks index (Koyéba §22) ────────────────────────────────────────────────
+// ── Tasks index (Kaya §22) ────────────────────────────────────────────────
 // Piles (By priority: First/Soon/Whenever/Done, grouped by Space · By date:
 // Now/This week/Later/Someday/Done), a quick-add line, and a side By-Space list.
 // Replaces the endless filtered list. The task card stays the detail view.
 function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
+// How the task list is arranged: 'date' (one plain list) or 'space' (grouped).
+// Default is a plain list - space grouping is opt-in. (Robin, 2026-11-06.)
+function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'date'; } catch { state.taskGroup = 'date'; } } return state.taskGroup === 'space' ? 'space' : 'date'; }
 function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
 function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
 function txDue(t) {
@@ -19837,10 +20236,8 @@ function txMood(openT, order) {
 }
 async function txQuickAdd(input) {
   const title = (input.value || '').trim(); if (!title) return;
-  const order = taskOrder(), pile = state.taskPile || (order === 'priority' ? 'p0' : 'now');
-  const props = { done: false };
-  if (order === 'priority') props.priority = ({ p0: 'P1', p1: 'P2', p2: 'P3' })[pile] || 'P3';
-  else { props.priority = 'P3'; if (pile === 'now') props.due = todayISO(); else if (pile === 'week') props.due = addDayISO(todayISO(), 3); }
+  const pile = state.taskPile || 'all';
+  const props = { done: false, priority: ({ p0: 'P1', p1: 'P2', p2: 'P3' })[pile] || 'P3' };
   input.value = '';
   try {
     const nt = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props }) });
@@ -19850,61 +20247,71 @@ async function txQuickAdd(input) {
   } catch (e) { toast(e.message || 'Could not add that.'); input.value = title; }
 }
 function renderTasks() {
-  const order = taskOrder();
   const all = (state.tasks || []).filter((t) => t && t.props);
   const openT = all.filter((t) => !t.props.done);
   const doneT = all.filter((t) => t.props.done);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
-  let pileDefs, pileOf, selPile = state.taskPile;
-  if (order === 'priority') {
-    pileDefs = [['p0', 'First', 'What matters most'], ['p1', 'Soon', 'When there is room'], ['p2', 'Whenever', 'No hurry at all'], ['done', 'Done', 'This week']];
-    pileOf = (t) => 'p' + txPriBucket(t);
-    if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'p0';
-  } else {
-    pileDefs = [['now', 'Now', 'Late and today'], ['week', 'This week', 'Before Sunday'], ['later', 'Later', 'Dated, not yet'], ['someday', 'Someday', 'No date at all'], ['done', 'Done', 'This week']];
-    const map = { late: 'now', today: 'now', week: 'week', later: 'later', someday: 'someday' };
-    pileOf = (t) => map[txDateBucket(t)];
-    if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'now';
-  }
-  const pileCount = (id) => id === 'done' ? doneT.length : openT.filter((t) => pileOf(t) === id).length;
-  const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-n">${pileCount(id)}</span><span class="tx-pile-l">${label}</span></span></button>`).join('');
-  const orders = [['priority', 'By priority'], ['date', 'By date']].map(([v, l]) => `<button class="tx-order${order === v ? ' on' : ''}" data-task-order="${v}">${l}</button>`).join('');
+  // Tabs are the priority buckets (plus All and Done); the name comes first, then
+  // the count. How the list is arranged - By Date (a plain list) or By Space
+  // (grouped) - is a separate dropdown, not another set of tabs. (Robin, 2026-11-06.)
+  const pileDefs = [['all', 'All'], ['p0', 'First'], ['p1', 'Soon'], ['p2', 'Whenever'], ['done', 'Done']];
+  let selPile = state.taskPile; if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'all';
+  const inPileAll = (id) => id === 'done' ? doneT : id === 'all' ? openT : openT.filter((t) => 'p' + txPriBucket(t) === id);
+  const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
+  const groupBy = taskGroupBy();
+  const orders = `<select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="date"${groupBy === 'date' ? ' selected' : ''}>By Date</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>`;
+  // In the All tab, priorities are mixed, so every task leads with its own First /
+  // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
+  const showPrio = selPile === 'all';
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
     const due = txDue(t), late = txLate(t);
-    return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button><span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span></div>`;
+    const prioL = showPrio ? (['First', 'Soon', 'Whenever'][txPriBucket(t)] || '') : '';
+    return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${prioL ? `<span class="tx-row-prio">${prioL}</span>` : ''}${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button><span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span></div>`;
   };
+  const inPile = inPileAll(selPile).filter(matchQ);
   let groupsHtml = '';
-  if (selPile === 'done') {
-    groupsHtml = `<div class="tx-group"><div class="tx-group-h"><span class="tx-group-l">Done this week</span><span class="tx-group-n">${doneT.length}</span><span class="tx-group-rule"></span></div><div class="tx-rows">${doneT.map(taskRow).join('') || '<div class="tx-empty">Nothing ticked off yet.</div>'}</div></div>`;
-  } else if (order === 'priority') {
-    const inPile = openT.filter((t) => pileOf(t) === selPile && matchQ(t));
+  if (groupBy === 'space') {
     const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
     groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
   } else {
-    const buckets = selPile === 'now' ? [['late', 'Late'], ['today', 'Today']] : selPile === 'week' ? [['week', 'This week']] : selPile === 'later' ? [['later', 'Later']] : [['someday', 'Someday']];
-    groupsHtml = buckets.map(([bk, label]) => { const items = openT.filter((t) => txDateBucket(t) === bk && matchQ(t)); if (!items.length) return ''; const key = 'd/' + bk; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l${bk === 'late' ? ' late' : ''}">${esc(label)}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+    // By Date: one plain list, soonest (and late) first, undated last. No grouping.
+    const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
+    const sorted = inPile.slice().sort(byDate);
+    groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
   }
   const pileLabel = (pileDefs.find((p) => p[0] === selPile) || [])[1] || '';
-  const addPh = order === 'priority' ? `Add something to ${selPile === 'done' ? 'First' : pileLabel}…` : (selPile === 'someday' ? 'Add a task for someday…' : 'Add a task…');
+  const addPh = (selPile === 'all' || selPile === 'done') ? 'Add a task…' : `Add something to ${pileLabel}…`;
+  // Sidebar: every Space with its open-task count, sorted by name (A) or by number
+  // (#); each toggle flips direction on a second press. No collapse. (Robin, 2026-11-06.)
   const bySpace = {}; openT.forEach((t) => { const s = txSpaceName(t) || 'No Space'; bySpace[s] = (bySpace[s] || 0) + 1; });
-  const spaceRows = Object.entries(bySpace).sort((a, b) => a[0].localeCompare(b[0]));
-  const sideOpen = (id) => !(state.taskSide && state.taskSide[id] === false);
-  const sidePanel = (id, title, count, body) => `<div class="tx-side-panel"><button class="tx-side-h" data-task-side="${id}"><span class="tx-side-hl">${esc(title)}</span><span class="tx-side-n">${count}</span><span class="tx-side-sign">${sideOpen(id) ? '−' : '+'}</span></button>${sideOpen(id) ? body : ''}</div>`;
+  const spSort = state.taskSpaceSort || (state.taskSpaceSort = { key: 'az', dir: 1 });
+  const spaceRows = Object.entries(bySpace).sort((a, b) => spSort.key === 'count' ? ((a[1] - b[1]) * spSort.dir || a[0].localeCompare(b[0])) : a[0].localeCompare(b[0]) * spSort.dir);
+  const spArrow = (k) => spSort.key === k ? `<span class="tx-side-dir">${spSort.dir > 0 ? '↑' : '↓'}</span>` : '';
   const spaceBody = `<div class="tx-side-body">${spaceRows.map(([s, n]) => `<div class="tx-side-row"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></div>`).join('') || '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
+  const sidePanel = `<div class="tx-side-panel"><div class="tx-side-h2"><span class="tx-side-hl">By Space</span><span class="tx-side-n">${spaceRows.length}</span><span class="tx-side-sorts"><button class="tx-side-sort${spSort.key === 'az' ? ' on' : ''}" data-task-spsort="az" title="Sort A–Z">A${spArrow('az')}</button><button class="tx-side-sort${spSort.key === 'count' ? ' on' : ''}" data-task-spsort="count" title="Sort by number of tasks">#${spArrow('count')}</button></span></div>${spaceBody}</div>`;
   $('#pane').innerHTML = `<div class="kpage-tasks">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.tasks') }])}<div class="tx-grid">
     <div class="tx-main">
       <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
-      <div class="nx-lead">${esc(txMood(openT, order))}</div>
+      <div class="nx-lead">${esc(txMood(openT, 'priority'))}</div>
       <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${orders}</div></div>
       <div class="tx-add"><span class="tx-add-box"></span><input data-task-quickadd placeholder="${esc(addPh)}" autocomplete="off"><span class="tx-add-k">↵</span></div>
       <div class="tx-groups">${groupsHtml}</div>
     </div>
-    <aside class="tx-side">${sidePanel('space', 'By Space', spaceRows.length, spaceBody)}</aside>
+    <aside class="tx-side">${sidePanel}</aside>
   </div></div>`;
-  if (state.taskAdding) { state.taskAdding = false; const i = document.querySelector('[data-task-quickadd]'); if (i) i.focus(); }
+  // Arriving in "add a task" mode (New → Task, or +Task): put the cursor in the
+  // quick-add box AND keep it there across the re-renders that fire as tasks and
+  // assigned tasks load, until you start typing - a one-shot focus is lost to the
+  // very next re-render. Same short arming window the add-form uses. (Robin,
+  // 2026-11-05: "New → Task should go straight in, cursor already in the box".)
+  if (state.taskAdding || (state.taskFocusArm && Date.now() - state.taskFocusArm < 4000)) {
+    state.taskAdding = false;
+    const i = document.querySelector('[data-task-quickadd]');
+    if (i && document.activeElement !== i && !i.value) { i.focus({ preventScroll: true }); requestAnimationFrame(() => { if (document.activeElement !== i && !i.value) i.focus({ preventScroll: true }); }); }
+  }
 }
 function renderTasksLegacy() {
   loadTaskFilters();
@@ -20186,7 +20593,11 @@ const COUNTRY_DIAL = [
   ['South Africa', '+27'], ['Nigeria', '+234'], ['Kenya', '+254'], ['Egypt', '+20'], ['Morocco', '+212'],
   ['Ghana', '+233'], ['Angola', '+244'], ['Mozambique', '+258'], ['Cape Verde', '+238'], ['Tunisia', '+216'],
 ];
-const ccDatalist = () => `<datalist id="cc-dial-list">${COUNTRY_DIAL.map(([n, c]) => `<option value="${c}">${esc(n)} (${c})</option>`).join('')}</datalist>`;
+// Your own dialling code, from your country (timezone) - so a phone defaults to and
+// suggests your code first: +44 in the UK, +351 in Portugal, +33 in France, and so
+// on. Falls back to empty when the country has no entry. (Robin, 2026-11-05.)
+function localDial() { const c = localCountry(); if (!c) return ''; const hit = COUNTRY_DIAL.find(([n]) => n === c); return hit ? hit[1] : ''; }
+const ccDatalist = () => { const c = localCountry(); const hit = c ? COUNTRY_DIAL.find(([n]) => n === c) : null; const ordered = hit ? [hit, ...COUNTRY_DIAL.filter((x) => x !== hit)] : COUNTRY_DIAL; return `<datalist id="cc-dial-list">${ordered.map(([n, cc]) => `<option value="${cc}">${esc(n)} (${cc})</option>`).join('')}</datalist>`; };
 function contactPhoneFields(p) {
   const phones = contactPhones(p); if (!phones.length) phones.push({ cc: '', number: '' });
   const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
@@ -20353,16 +20764,16 @@ function contactCardHtml(c) {
     <span class="contact-av${p.photo ? ' has-photo' : ''}"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initial(c.title || '?'))}</span>
     <span class="contact-info"><span class="contact-name">${esc(c.title || 'Unnamed')}${privChip(c)}</span>${bits.length ? `<span class="contact-sub">${bits.join('')}</span>` : ''}${areaTags.length ? `<span class="contact-tags">${areaTags.map((a) => `<span class="contact-tag" style="--h:${hueOf(a)}"><span class="ct-dot"></span>${esc(a.title)}</span>`).join('')}</span>` : ''}</span></button>`;
 }
-// Your own Koyéba card, shown as a "You" card at the top of Contacts. It's
-// always there (can't be deleted, only hidden) and ties to your Koyéba card -
+// Your own Kaya card, shown as a "You" card at the top of Contacts. It's
+// always there (can't be deleted, only hidden) and ties to your Kaya card -
 // it's how you appear to others. Tapping it opens the card editor.
 function selfContactHtml() {
   try { if (localStorage.getItem('life.contacts.selfHidden') === '1') return `<div class="cts-self-hidden"><button class="linkish" data-self-show>${t('ct.self.show')}</button></div>`; } catch {}
   const a = state.account || {}; const name = a.name || firstName() || 'You';
-  const sub = a.subdomain ? `koyeba.co/u/${a.subdomain}` : t('ct.self.sub');
+  const sub = a.subdomain ? `kaya.so/u/${a.subdomain}` : t('ct.self.sub');
   const photo = state.card && state.card.photo;
   const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(name))}</span>`;
-  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Koyéba card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
+  return `<div class="cts-self"><button class="cts-self-card" data-open-card title="Edit your Kaya card">${av}<span class="cts-self-body"><span class="cts-self-name">${esc(name)} <span class="ov-you-tag">you</span></span><span class="cts-self-sub">${esc(sub)}</span></span><span class="cts-self-tag">${t('ct.selfcard.tag')}</span></button><button class="cts-self-x" data-self-hide title="Hide (you can't delete your own card)">×</button></div>`;
 }
 // The row of group chips: All, then each group (droppable + count), then + New.
 // Contacts are organised by Page, not a separate "groups" concept. The bar
@@ -20418,7 +20829,7 @@ function contactMenuHtml() {
     <div class="ctx-sep"></div>
     ${selN >= 2 ? `<button class="ctx-item ctx-merge" data-ctx-merge>⤵ Merge ${selN} selected contacts</button><div class="ctx-sep"></div>` : ''}
     ${areaSection}
-    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Koyéba</button><div class="ctx-sep"></div>` : ''}
+    ${(c.props && c.props.email) ? `<button class="ctx-item" data-ctx-invite="${esc(c.props.email)}">✦ Invite to Kaya</button><div class="ctx-sep"></div>` : ''}
     <button class="ctx-item ctx-danger" data-ctx-delete>Delete contact</button>
   </div></div>`;
 }
@@ -20445,24 +20856,24 @@ function openContactMenu(id, x, y) {
   state.contactMenu = { id, x: Math.min(x, window.innerWidth - 232), y: top, maxh };
   renderContacts();
 }
-// Automatically surfaced at the top of Contacts: Koyéba scans every contact's
+// Automatically surfaced at the top of Contacts: Kaya scans every contact's
 // email against its accounts (worker getFriends), and this tells you, up front,
-// which of your people are already on Koyéba - tap to connect.
+// which of your people are already on Kaya - tap to connect.
 function contactsKoyebaBannerHtml() {
-  // Your address-book contacts who are on Koyéba, ready to connect. Koyéba
-  // connection *requests* live on the Koyéba Contacts hub, not here. No
+  // Your address-book contacts who are on Kaya, ready to connect. Kaya
+  // connection *requests* live on the Kaya Contacts hub, not here. No
   // "checking…"/"none yet" noise. (Robin, 2026-10-14.)
   const sug = (state.friends && state.friends.suggestions) || [];
   if (!sug.length) return '';
   const n = sug.length;
-  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Koyéba"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
-  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Koyéba Contacts below</div>` : '';
-  const head = n === 1 ? 'A friend of yours is on Koyéba — connect?' : `${n} friends of yours are on Koyéba — connect?`;
+  const rows = sug.slice(0, 12).map((f) => `<span class="cts-dbb-person"><button class="cts-dbb-connect" data-friend-add="${f.id}" title="Connect with ${esc(f.contactName || f.name)} on Kaya"><span class="fr-av">${esc(initial(f.contactName || f.name || '?'))}</span><span class="cts-dbb-nm">${esc(f.contactName || f.name)}</span><span class="cts-dbb-go">＋ Connect</span></button><button class="cts-dbb-x" data-sugg-hide="${f.id}" title="Hide this suggestion" aria-label="Hide">×</button></span>`).join('');
+  const more = n > 12 ? `<div class="cts-dbb-more">+${n - 12} more in Kaya Contacts below</div>` : '';
+  const head = n === 1 ? 'A friend of yours is on Kaya — connect?' : `${n} friends of yours are on Kaya — connect?`;
   return `<div class="cts-dbbanner"><div class="cts-dbb-h"><span>✦ ${head}</span><button class="ghost fr-rescan" data-friends-rescan title="Check again">↻</button></div><div class="cts-dbb-list">${rows}</div>${more}</div>`;
 }
-// The Koyéba-friends pane: suggestions, connect-by-email + Invite, incoming
+// The Kaya-friends pane: suggestions, connect-by-email + Invite, incoming
 // requests, your friends, pending, and shared-with-you. Reused by the Contacts
-// page and the dedicated Koyéba people page.
+// page and the dedicated Kaya people page.
 function friendsPaneHtml(opts) {
   opts = opts || {};
   const d = state.friends || { friends: [], incoming: [], outgoing: [], suggestions: [] };
@@ -20476,16 +20887,16 @@ function friendsPaneHtml(opts) {
   return `<section class="home-sec ppl-sec">
       <div class="home-sec-h">${t('ct.friends')}<span class="muted">${d.friends.length + d.incoming.length + d.outgoing.length + ((d.suggestions && d.suggestions.length) || 0)}</span></div>
       ${d.incoming.length ? `<div class="ppl-sub ppl-sub-req">${d.incoming.length === 1 ? 'Wants to connect with you' : `${d.incoming.length} people want to connect with you`}</div>${d.incoming.map((f) => fr(f, `<span class="fr-acts"><button class="add-btn wide fr-act" data-friend-accept="${f.id}">Accept</button><button class="ghost fr-act" data-friend-remove="${f.id}">Ignore</button></span>`)).join('')}` : ''}
-      <p class="fr-intro">Invite your friends to Koyéba so you can share with them - a whole Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
-      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Koyéba<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Koyéba</button>`)).join('')}</div>` : ''}
-      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Koyéba - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Koyéba by email">✦ Invite to Koyéba</button></div>
+      <p class="fr-intro">Invite your friends to Kaya so you can share with them - a whole Space, a note, a table, or just a few tasks. What you share, and how you use it, is completely up to you.</p>
+      ${showSuggest ? `<div class="fr-suggest"><div class="ppl-sub">Your contacts already on Kaya<button class="ghost fr-rescan" data-friends-rescan title="Check your contacts again">↻</button></div>${d.suggestions.map((f) => fr(f, `<button class="add-btn wide fr-act" data-friend-add="${f.id}">Connect on Kaya</button>`)).join('')}</div>` : ''}
+      <div class="list-head fr-connect-row"><input class="sel fr-connect" id="friend-email" placeholder="Find someone on Kaya - name or email…" autocomplete="off" spellcheck="false"><button class="add-btn wide fr-connect-btn" data-friend-add-email>Connect</button><button class="add-btn wide fr-invite-btn" data-invite-daybook title="Invite someone to Kaya by email">✦ Invite to Kaya</button></div>
       <div id="friend-results" class="fr-results"></div>
-      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Koyéba.</div>')}
+      ${d.friends.length ? friendsSorted.map((f) => fr(f, `<span class="fr-acts"><button class="ghost fr-act" data-friend-chat="${f.id}" data-friend-name="${esc(f.name)}" title="Chat">💬</button><button class="ghost fr-act" data-friend-remove="${f.id}" title="Remove">×</button></span>`)).join('') : ((d.incoming.length || (d.suggestions && d.suggestions.length)) ? '' : '<div class="home-empty">No one yet - connect with a contact above, or invite someone to Kaya.</div>')}
       ${d.outgoing.length ? `<div class="ppl-sub">Pending</div>${d.outgoing.map((f) => fr(f, '<span class="fr-pending">requested</span>')).join('')}` : ''}
       ${(state.sharedWithMe && state.sharedWithMe.length) ? `<div class="ppl-sub">Shared with you · ${state.sharedWithMe.length}</div>${state.sharedWithMe.map((s) => { const ic = s.kind === 'task' ? (s.done ? '☑' : '☐') : s.kind === 'table' ? '▦' : s.kind === 'area' ? '◈' : '▤'; const lbl = s.kind === 'task' ? 'Task' : s.kind === 'table' ? 'Table' : s.kind === 'area' ? 'Space' : 'Note'; return `<button class="shared-row" data-open-shared="${s.id}" data-shared-kind="${s.kind}"><span class="sh-ic">${ic}</span><span class="sh-body"><span class="sh-t">${esc(s.title || 'Untitled')}</span><span class="sh-meta">${lbl} · from ${esc(s.owner)}${s.canEdit ? '' : ' · view only'}</span></span></button>`; }).join('')}` : ''}
     </section>`;
 }
-// The Koyéba people hub: your card, your friends on Koyéba, and the invite +
+// The Kaya people hub: your card, your friends on Kaya, and the invite +
 // connect tools - all on one page. Its own view, reached from the People box.
 async function openKoyebaPeople() {
   state.view = { type: 'daybookpeople' };
@@ -20495,10 +20906,10 @@ async function openKoyebaPeople() {
 }
 function renderKoyebaPeople() {
   $('#pane').innerHTML = `
-    ${pageCrumb('Koyéba Contacts')}
-    <div class="pane-head"><h1>Koyéba Contacts</h1></div>
-    <p class="t2-sub">Your people on Koyéba - share a page, a note or a few tasks with them.</p>
-    <section class="home-sec"><div class="home-sec-h">Your Koyéba card</div>${selfContactHtml()}</section>
+    ${pageCrumb('Kaya Contacts')}
+    <div class="pane-head"><h1>Kaya Contacts</h1></div>
+    <p class="t2-sub">Your people on Kaya - share a page, a note or a few tasks with them.</p>
+    <section class="home-sec"><div class="home-sec-h">Your Kaya card</div>${selfContactHtml()}</section>
     ${friendsPaneHtml()}`;
 }
 // ── §34 Contacts + Keep in touch: one two-column 100vh page ────────────────
@@ -20661,7 +21072,7 @@ function renderContacts() {
   } else {
     const starred = P.filter((x) => x.star).sort((a, b) => a.sortName.localeCompare(b.sortName)).slice(0, 8);
     const recent = P.filter((x) => x.recentTs).sort((a, b) => b.recentTs - a.recentTs).slice(0, 6);
-    const shelves = `${starred.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Starred</div><div class="cvx-cards">${starred.map(cardFor).join('')}</div></div>` : ''}${recent.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Recently in touch</div><div class="cvx-cards">${recent.map(cardFor).join('')}</div></div>` : ''}`;
+    const shelves = `${recent.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Recent</div><div class="cvx-cards">${recent.map(cardFor).join('')}</div></div>` : ''}${starred.length ? `<div class="cvx-shelf"><div class="home-sub-eyebrow">Starred</div><div class="cvx-cards">${starred.map(cardFor).join('')}</div></div>` : ''}`;
     // Keep in touch: one quiet line, only when someone is due.
     const due = P.filter((x) => x.every && x.snooze && daysBetween(todayISO(), x.snooze) <= 1).sort((a, b) => daysBetween(todayISO(), a.snooze) - daysBetween(todayISO(), b.snooze));
     const kitOpen = !!cv.kitOpen;
@@ -20672,8 +21083,8 @@ function renderContacts() {
     body = `${shelves}${kitLine}${az}`;
   }
   $('#pane').innerHTML = `
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
     <div class="kwrap cvx-page">
-      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
       <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
       <div class="cvx-titlerow"><h1 class="cvx-title">Contacts</h1><span class="cvx-count">${P.length}</span><span class="cvx-new" data-cv-new>+ New contact</span><span class="cvx-import" data-contact-import title="Import a vCard (.vcf)">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       <div class="cvx-searchrow"><input class="cvx-search" id="cv-q" type="search" placeholder="Search by name, place, email or Space" value="${esc(cv.q || '')}" autocomplete="off"></div>
@@ -20690,7 +21101,7 @@ function cvKitSection(c) {
   const open = cvKitFoldOpen(c.id);
   const first = esc((c.title || 'them').split(' ')[0]);
   const hint = every ? ((CV_FREQ.find(([v]) => v === every) || [])[1] || 'On') : 'Off';
-  const body = every ? cvKeepBand(c) : `<div class="cv-kitoff"><p class="cv-kitoff-l">Off for ${first}. Koyéba won’t nudge you.</p><button class="cv-kiton" data-cv-kit-on>Keep in touch with ${first}</button></div>`;
+  const body = every ? cvKeepBand(c) : `<div class="cv-kitoff"><p class="cv-kitoff-l">Off for ${first}. Kaya won’t nudge you.</p><button class="cv-kiton" data-cv-kit-on>Keep in touch with ${first}</button></div>`;
   return `<section class="cv-sec"><div class="cv-sec-h" data-cv-kitfold="${c.id}" role="button" tabindex="0"><span class="cv-sec-t">Keep in touch</span>${!open ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${body}</div>` : ''}</section>`;
 }
 function cvBirthdayHtml(c) {
@@ -20743,7 +21154,7 @@ function renderContactPage() {
 // buttons, so the find box grows to fill and the row reserves right-padding equal
 // to the gap, landing Invite exactly under the search box's edge. Desktop only;
 // re-runs on resize.
-// The Koyéba-friends connect row now lives in its own section, so it just
+// The Kaya-friends connect row now lives in its own section, so it just
 // flexes to fill via CSS - no cross-section width alignment needed any more.
 function alignConnectRow() { const find = document.querySelector('.fr-connect'); if (find) find.style.width = ''; }
 function contactAddForm() {
@@ -20752,7 +21163,7 @@ function contactAddForm() {
     <input id="ct-name" type="text" placeholder="${t('ct.name')}" autocomplete="off" required>
     <div class="atf-grid">
       <label class="atf"><span>${t('field.email')}</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
-      <label class="atf"><span>${t('field.phone')}</span><span class="ctf-phone"><input id="ct-phone-cc" class="sel ctf-phone-cc" type="tel" list="cc-dial-list" placeholder="" title="Country code - type or pick" autocomplete="off"><input id="ct-phone-num" class="sel ctf-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"></span></label>
+      <label class="atf"><span>${t('field.phone')}</span><span class="ctf-phone"><input id="ct-phone-cc" class="sel ctf-phone-cc" type="tel" list="cc-dial-list" value="${localDial()}" placeholder="" title="Country code - type or pick" autocomplete="off"><input id="ct-phone-num" class="sel ctf-phone-num" type="tel" placeholder="Phone number" autocomplete="off"></span></label>
       <label class="atf"><span>${t('ct.birthday')}</span>${dateFieldHtml('ct-bday', '')}</label>
     </div>
     <div class="atf-grid">
@@ -20784,7 +21195,10 @@ async function addContact(o) {
   const notes = (o.notes || '').trim();
   const body = notes ? `<p>${esc(notes)}</p>` : '';   // the contact's notes live in its body prose
   const b = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'contact', title: o.name, props, ...(body ? { body } : {}) }) });
-  state.contacts.push(b); renderContacts();
+  state.contacts.push(b);
+  // Only repaint the Contacts page if that's what's on screen - when the add came
+  // from the floating New box over another page, re-rendering would hijack #pane.
+  if (state.view && state.view.type === 'contacts') renderContacts();
   if (state.contactAdding) { const i = $('#ct-name'); if (i) i.focus(); }
 }
 // A small local trail of recently-opened contacts, so the right-click menu can
@@ -21100,7 +21514,7 @@ async function kitSetEvery(every) {
 // past where it belongs.
 // Auto-reset a contact's keep-in-touch clock when you actually reach them - a
 // message or an email (Robin's choice, 2026-11-02; a phone call still needs the
-// manual tap, since Koyéba can't see those). Matches by friend id or email,
+// manual tap, since Kaya can't see those). Matches by friend id or email,
 // rolls the kit task forward from today. A no-op if they have no cadence.
 async function kitAutoRoll(opts) {
   try {
@@ -21152,7 +21566,7 @@ function contactActionsHtml(c, p) {
   if (num) A.push(`<a class="cv-act" href="tel:${esc(num)}">Call</a>`);
   if (wa.length >= 8) A.push(`<a class="cv-act" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`);
   if (addr) A.push(`<a class="cv-act" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Directions</a>`);
-  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Koyéba</button>`);
+  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Kaya</button>`);
   return A.join('<span class="cv-act-sep">·</span>');
 }
 // The keep-in-touch band: one sentence, the frequency as words, and the manual
@@ -21184,7 +21598,7 @@ function contactCardInner(c) {
   const fr = firstEmail ? (((state.friends && state.friends.friends) || []).find((f) => (f.email || '').toLowerCase() === firstEmail.toLowerCase())) : null;
   const onSet = new Set((((state.friendStatus || {}).online) || []).map((o) => o.id));
   const here = fr && onSet.has(fr.id);
-  const presence = fr ? `<span class="cv-pres"><span class="cv-pres-dot${here ? ' on' : ''}"></span>On Koyéba · ${here ? 'here now' : 'away'}</span>` : '';
+  const presence = fr ? `<span class="cv-pres"><span class="cv-pres-dot${here ? ' on' : ''}"></span>On Kaya · ${here ? 'here now' : 'away'}</span>` : '';
   // Coming up: next birthday.
   let bday = '';
   if (p.birthday && /^\d{4}-\d{2}-\d{2}$/.test(p.birthday)) {
@@ -21687,7 +22101,7 @@ async function loadPortfolio(force) {
 }
 // The default currency the money tools show in. It's a display choice (symbol +
 // number grouping), not a conversion - you enter amounts in your own currency
-// and Koyéba shows them with your symbol. Chosen in Settings › Appearance,
+// and Kaya shows them with your symbol. Chosen in Settings › Appearance,
 // stored on the account (account.currency, default EUR). [code, symbol, locale, name]
 const CURRENCIES_APP = [
   ['EUR', '€', 'en-IE', 'Euro'],
@@ -22396,9 +22810,9 @@ function reviewsV39Html() {
   const btn = (label, filled, attr) => `<span ${attr} role="button" tabindex="0" style="justify-self:end;font:600 11.5px Jost;letter-spacing:.14em;text-transform:uppercase;padding:11px 18px;white-space:nowrap;cursor:pointer;background:${filled ? 'var(--k-gold)' : 'transparent'};color:${filled ? 'oklch(0.2 0.02 160)' : 'var(--k-goldt)'};border:1px solid var(--k-gold)">${esc(label)}</span>`;
   const rowHtml = (kind, period, status, statusGold, since, action, open, past) => {
     const sign = open ? '−' : '+';
-    const pastHtml = open ? `<div style="padding:0 0 22px;animation:kfade .3s ease">${past.length ? past.map((p) => `<div ${p.attr} role="button" tabindex="0" style="display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr) 60px auto;gap:6px 22px;align-items:baseline;padding:12px 0;border-top:1px solid var(--k-line);cursor:pointer"><span style="font:500 14.5px Jost;white-space:nowrap">${esc(p.when)}</span><span style="font:500 21px/1.3 'Cormorant Garamond',serif;text-wrap:pretty">${esc(p.line)}</span><span style="font:500 14px Jost;color:var(--k-goldt);text-align:right;white-space:nowrap">${p.score || ''}</span><span style="font:500 14px Jost;color:var(--k-goldt);white-space:nowrap">Read →</span></div>`).join('') : `<div style="padding:12px 0;border-top:1px solid var(--k-line);font:400 15px Jost;color:var(--k-mute)">Nothing filed yet.</div>`}</div>` : '';
+    const pastHtml = open ? `<div style="padding:0 0 22px;animation:kfade .3s ease">${past.length ? past.map((p) => `<div class="rvl-past-grid" ${p.attr} role="button" tabindex="0" style="display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr) 60px auto;gap:6px 22px;align-items:baseline;padding:12px 0;border-top:1px solid var(--k-line);cursor:pointer"><span style="font:500 14.5px Jost;white-space:nowrap">${esc(p.when)}</span><span style="font:500 21px/1.3 'Cormorant Garamond',serif;text-wrap:pretty">${esc(p.line)}</span><span style="font:500 14px Jost;color:var(--k-goldt);text-align:right;white-space:nowrap">${p.score || ''}</span><span style="font:500 14px Jost;color:var(--k-goldt);white-space:nowrap">Read →</span></div>`).join('') : `<div style="padding:12px 0;border-top:1px solid var(--k-line);font:400 15px Jost;color:var(--k-mute)">Nothing filed yet.</div>`}</div>` : '';
     return `<div style="border-bottom:1px solid var(--k-line)">
-      <div style="display:grid;grid-template-columns:minmax(170px,300px) minmax(0,1fr) 180px 24px;gap:12px 24px;align-items:center;padding:20px 0">
+      <div class="rvl-row-grid" style="display:grid;grid-template-columns:minmax(170px,300px) minmax(0,1fr) 180px 24px;gap:12px 24px;align-items:center;padding:20px 0">
         <div data-rvv39-row="${esc(kind.toLowerCase())}" style="min-width:0;cursor:pointer"><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-mute)">${esc(kind)}</div><div style="font:500 30px/1.1 'Cormorant Garamond',serif;margin-top:4px;white-space:nowrap">${esc(period)}</div></div>
         <div data-rvv39-row="${esc(kind.toLowerCase())}" style="min-width:0;cursor:pointer"><div style="font:500 15px Jost;color:${statusGold ? 'var(--k-goldt)' : 'var(--k-ink)'}">${esc(status)}</div>${since ? `<div style="font:400 13.5px Jost;color:var(--k-mute);margin-top:3px">${esc(since)}</div>` : ''}</div>
         ${action}
@@ -22458,10 +22872,10 @@ function reviewsV39Html() {
   const bandsHtml = BANDS.map(([label, scores, sub]) => { const items = wdata.filter((d) => scores.includes(d.score)); if (!items.length) return ''; return `<div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 20px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--k-line)"><div><div style="font:500 22px/1.1 'Cormorant Garamond',serif">${esc(label)}</div><div style="font:400 13px Jost;color:var(--k-mute);margin-top:2px">${esc(sub)}</div></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font:400 15.5px Jost">${items.map((d) => `<span style="white-space:nowrap;color:${scores[0] === 1 ? 'var(--k-goldt)' : 'var(--k-ink)'}">${esc(d.a.title)}</span>`).join('')}</div></div>`; }).join('');
 
   // ── assemble ──
-  const sec = (label, right, sign, open, body) => `<div style="margin-top:56px"><div ${sign ? `data-rvv39-fold="${sign}"` : ''} style="display:flex;align-items:center;gap:12px;padding-bottom:6px;${sign ? 'cursor:pointer' : ''}"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap">${esc(label)}</span>${right || ''}<span style="flex:1;height:1px;background:var(--k-line)"></span>${sign ? `<span style="font:400 20px/1 Jost;color:var(--k-mute)">${open ? '−' : '+'}</span>` : ''}</div>${open ? body : ''}</div>`;
+  const sec = (label, right, sign, open, body) => `<div style="margin-top:56px"><div class="rvl-sec-head" ${sign ? `data-rvv39-fold="${sign}"` : ''} style="display:flex;align-items:center;gap:12px;padding-bottom:6px;${sign ? 'cursor:pointer' : ''}"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap">${esc(label)}</span>${right || ''}<span style="flex:1;height:1px;background:var(--k-line)"></span>${sign ? `<span style="font:400 20px/1 Jost;color:var(--k-mute)">${open ? '−' : '+'}</span>` : ''}</div>${open ? body : ''}</div>`;
   const trendsBody = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:40px 56px;padding-top:22px;animation:kfade .3s ease"><div style="min-width:0"><div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap"><span style="font:500 26px 'Cormorant Garamond',serif">Your wheel, week by week</span><span style="font:400 14px Jost;color:var(--k-mute)">average, out of 5</span></div><div style="margin-top:16px">${lineBlock}</div></div><div style="min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:28px 36px;align-content:start"><div><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-goldt);padding-bottom:8px;border-bottom:1px solid var(--k-line)">Rising</div>${risingHtml}</div><div><div style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:var(--k-mute);padding-bottom:8px;border-bottom:1px solid var(--k-line)">Asking for you</div>${askingHtml}</div>${wordsHtml}</div></div>`;
   const wheelBody = `<div style="display:flex;flex-wrap:wrap;gap:36px 64px;align-items:center;padding-top:24px;animation:kfade .3s ease"><div style="flex:0 0 300px;display:flex;flex-direction:column;align-items:center;gap:12px">${petal}<div style="font:400 15px Jost;color:var(--k-mute)">Hover a petal to see the area</div></div><div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column">${bandsHtml || '<div style="font:400 15px Jost;color:var(--k-mute);padding:14px 0">Score your Spaces in a weekly review and the wheel takes shape.</div>'}</div></div>`;
-  return `${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: 'Plans', group: true, gid: 'plans' }, { label: t('nav.reviews') }], null, null, {})}
+  return `${crumbNav([{ label: t('nav.home'), attr: 'data-view-home' }, { label: t('nav.reviews') }], null, null, { omitGroup: true })}
     <div style="max-width:1120px">
       <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px 40px;padding:28px 0 10px">
         <div style="flex:1 1 460px;min-width:0">
@@ -22472,7 +22886,7 @@ function reviewsV39Html() {
       </div>
       <div style="margin-top:36px"><div style="display:flex;align-items:center;gap:12px;padding-bottom:6px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap">Your rhythm</span><span style="flex:1;height:1px;background:var(--k-line)"></span><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">Open one to see past reports</span></div>${rows.join('')}</div>
       ${sec('How things are going', '', 'trends', st.trends, trendsBody)}
-      ${sec('The wheel of life', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${wdata.length} areas · from your last weekly review</span>`, 'wheel', st.wheel, wheelBody)}
+      ${sec('The wheel of life', `<span class="rvl-sec-sub" style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${wdata.length} areas · from your last weekly review</span>`, 'wheel', st.wheel, wheelBody)}
       <div style="margin-top:48px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;font:400 15px Jost;color:var(--k-mute)"><span>Weekly reviews land on Sunday, monthly on the last day, quarterly and yearly at the end of each.</span><span data-open-settings role="button" tabindex="0" style="font-weight:500;color:var(--k-goldt);cursor:pointer;white-space:nowrap">Change when they land →</span></div>
     </div>`;
 }
@@ -22503,7 +22917,7 @@ function renderReviews() {
   }
   $('#pane').innerHTML = reviewsV39Html();
 }
-// One warm, specific line under the title (Koyéba's voice). Falls back gracefully.
+// One warm, specific line under the title (Kaya's voice). Falls back gracefully.
 function reviewsOneLine() {
   const done = (state.reviews || []).filter((r) => (r.props || {}).status === 'done');
   const weeks = done.filter((r) => ((r.props || {}).rtype || 'weekly') === 'weekly').length;
@@ -22805,7 +23219,7 @@ function saveGoalProgress(id, pct) {
   if (state.goal_open) apply(state.goal_open.goal);
   api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { progress: v, status } }) }).catch((e) => toast(e.message));
 }
-// ── Goals page (Koyéba §13) ──────────────────────────────────────────────
+// ── Goals page (Kaya §13) ──────────────────────────────────────────────
 // Rebuilt to the prototype: a Mail-style title + mood line, a row of views
 // (By Space / Starred / All goals / Bucket list) as Cormorant counts, an Order
 // line, then the §19 grid - the list in the main column, "Nearly there" and
@@ -23135,7 +23549,7 @@ function gcConnectedHtml(g) {
   const links = (blockLinks(g) || []).map((l, i) => { const url = linkUrlOf(l); const label = (typeof l === 'object' && l.title) ? l.title : prettyLinkLabel(url); return `<div class="gx-conn-row"><a class="gx-conn-t" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a><span class="gx-conn-b">Link</span><button class="gx-conn-x" data-xlink-del data-xlink-kind="goal" data-xlink-id="${g.id}" data-xlink-idx="${i}" title="Remove">×</button></div>`; });
   const grp = (label, rows) => rows.length ? `<div class="gx-conn-grp"><div class="gx-conn-gl">${label}</div>${rows.join('')}</div>` : '';
   const count = people.length + notes.length + links.length;
-  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person or event…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link or type a name - Koyéba finds it.</div>`;
+  return `<div class="gx-conn-head"><span class="gx-conn-ht">Connected</span>${count ? `<span class="gx-conn-c">${count}</span>` : ''}</div>${grp('People', people)}${grp('Notes', notes)}${grp('Links', links)}<div class="gx-conn-add"><span class="gx-conn-plus">+</span><input class="gx-conn-input" data-goal-connect="${g.id}" placeholder="Connect a note, person or event…" autocomplete="off"></div><div class="gx-conn-foot">Paste a link or type a name - Kaya finds it.</div>`;
 }
 function renderGoalCard() {
   const go = state.goal_open; if (!go || !go.goal) return;
@@ -24674,7 +25088,7 @@ function reviewSentimentHtml(p, r) {
 // A collapsible section in the report (reuses the review-section toggle store).
 function rrSec(key, num, title, hint, inner) {
   // §V37 section chrome: a Cormorant Roman numeral + Cormorant title, a Jost hint
-  // (shown only when folded), and a + / − sign. Matches Koyéba Weekly Review.dc.html.
+  // (shown only when folded), and a + / − sign. Matches Kaya Weekly Review.dc.html.
   const open = rvSecOpen(key);
   return `<section class="rr-sec" id="rr-${esc(key)}"><button type="button" class="rr-h rr-collap" data-rvsec="${esc(key)}"><span class="rr-h-num">${esc(num)}</span><span class="rr-h-t">${esc(title)}</span>${!open && hint ? `<span class="rr-h-hint">${esc(hint)}</span>` : ''}<span class="rr-h-sign" aria-hidden="true">${open ? '−' : '+'}</span></button>${open ? `<div class="rr-sec-body">${inner}</div>` : ''}</section>`;
 }
@@ -24691,7 +25105,7 @@ function renderReviewReport() {
   // Goals: scores + notes, read-only.
   const gr = p.goalReview || {}; const snap = p.snapshot || [];
   const goalRows = snap.filter((g) => gr[g.id] && ((gr[g.id].score) || (gr[g.id].note || '').trim())).map((g) => { const rv = gr[g.id] || {}; const sc = Math.min(rv.score || 0, 5); const a = g.area ? areaById(g.area) : null; return `<div class="rr-area" style="--h:${a ? hueOf(a) : 220}"><div class="rr-area-h"><button class="rr-area-n" data-open-goal="${g.id}">${esc(g.title)}</button>${sc ? `<span class="rr-sc">${sc}/5</span>` : ''}</div>${(rv.note || '').trim() ? `<div class="rr-area-note">${esc(rv.note)}</div>` : ''}</div>`; }).join('');
-  // Reflections: the prompt answers + freewrite, as read text.
+  // Insights: the prompt answers + freewrite, as read text.
   const ans = p.answers || {};
   const refl = cfg.prompts.map((q, i) => (ans[i] && ans[i].trim()) ? `<div class="rr-qa"><div class="rr-q">${esc(q)}</div><div class="rr-a">${esc(ans[i])}</div></div>` : '').join('');
   const free = (r.body || '').trim() ? `<div class="rr-free">${decorateProse(bodyToHtml(r.body))}</div>` : '';
@@ -24782,7 +25196,7 @@ function renderReviewReport() {
   // it belongs (the footer), and leaves you looking forward. (Robin, 2026-10-30.)
   const pw = PERIOD_WORD[p.rtype] || 'period';
   const codaLine = `A life well lived, one ${pw} at a time. Here's to the next.`;
-  // ── V37 Weekly Review report: matches Koyéba Weekly Review.dc.html. Cormorant for
+  // ── V37 Weekly Review report: matches Kaya Weekly Review.dc.html. Cormorant for
   // anything that speaks, Jost for anything that labels, no other fonts. (Robin.)
   const wk = (p.rtype === 'weekly' && p.to) ? isoWeekInfo(p.to) : null;
   const eyebrowTxt = `${cfg.label} review${wk ? ` · Week ${wk.week} of ${wk.total}` : (pt.main ? ` · ${esc(pt.main)}` : '')}`;
@@ -25679,7 +26093,7 @@ function noteUnlinkContact(cid) {
 // xlink handlers). Opens each link in a new tab.
 // ── "Linked & attached" panel (replaces the right-hand column) ──────────────
 // One list of everything this note connects to - notes, tasks, people, events,
-// web links and files - with a Link search (anything in Koyéba, or a web
+// web links and files - with a Link search (anything in Kaya, or a web
 // address) and file upload beneath. Reuses every existing link/unlink/add action
 // via their data-attributes, so nothing new touches the storage. (Robin, 2026-10-26.)
 // ── Linked & attached: one list with filters (Robin chose direction B, 2026-11-04) ──
@@ -25775,7 +26189,7 @@ function noteLinkSearchRows(q) {
   const connIds = new Set((state.note.connected || []).map((c) => String(c.id)));
   let count = 0;
   for (const c of [...(state.noteTops || []), ...(state.tables || [])]) { if (count >= 18) break; if (!c || String(c.id) === String(n.id) || connIds.has(String(c.id))) continue; if (!(c.title || '').toLowerCase().includes(ql)) continue; const isT = isTableNote(c); out.push(`<button class="nx-sugg-row" data-note-connect="${c.id}"><span class="ic">${isT ? '▦' : '▤'}</span>${esc(c.title || 'Untitled')}<span class="kind">${isT ? 'Table' : 'Note'}</span></button>`); count++; }
-  // Goals and Spaces too, so Connect finds everything in your Koyéba. (Robin.)
+  // Goals and Spaces too, so Connect finds everything in your Kaya. (Robin.)
   { const curGoal = n.props && n.props.goal; for (const g of (state.goals || [])) { if (count >= 18) break; if ((gp(g).status || 'active') === 'done') continue; if (String(g.id) === String(curGoal)) continue; if (!(g.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-goal="${g.id}"><span class="ic">🎯</span>${esc(g.title || 'Untitled goal')}<span class="kind">Goal</span></button>`); count++; } }
   { const curAreas = new Set(blockAreas(n).map(String)); for (const a of (state.areas || [])) { if (count >= 18) break; if (curAreas.has(String(a.id))) continue; if (!(a.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-link-area="${a.id}"><span class="ic">◈</span>${esc(a.title || 'Space')}<span class="kind">Space</span></button>`); count++; } }
   for (const tk of (state.allTasks || [])) { if (count >= 18) break; if (!tk.props || tk.props.note === n.id || tk.props.done) continue; if (!(tk.title || '').toLowerCase().includes(ql)) continue; out.push(`<button class="nx-sugg-row" data-note-task-link="${tk.id}"><span class="ic">✓</span>${esc(tk.title || 'Untitled')}<span class="kind">Task</span></button>`); count++; }
@@ -25935,7 +26349,7 @@ function shareBtn(block, kind, opts) {
 }
 // The note header's share control, matched to a Space masthead: a row of
 // round faces (you, then everyone you've shared with) and a ＋ to add someone,
-// in place of the bare "Share · N" pill. A face opens that person's Koyéba
+// in place of the bare "Share · N" pill. A face opens that person's Kaya
 // card; the ＋ opens the same Share surface. Owner-only - a borrowed note shows
 // the "shared with you" banner instead. (Robin, 2026-10-29: notes share like
 // Spaces, same little round face thingies.)
@@ -25963,7 +26377,7 @@ function noteFacesRow(n) {
     const nm = (state.account && state.account.name) || (state.me && state.me.name) || 'You';
     const photo = state.card && state.card.photo;
     const av = photo ? `<span class="fr-av fr-av-photo" style="background-image:url('${photo}')"></span>` : `<span class="fr-av">${esc(initial(nm))}</span>`;
-    faces.push(`<button class="aface aface-me" data-open-card title="You · your Koyéba card">${av}</button>`);
+    faces.push(`<button class="aface aface-me" data-open-card title="You · your Kaya card">${av}</button>`);
   }
   const LIM = 6;
   for (const s of list.slice(0, LIM)) {
@@ -25980,7 +26394,7 @@ function sharedBanner(block) {
   if (!block.sharedBy) return '';
   return `<div class="shared-banner">🤝 Shared with you by <b>${esc(block.sharedBy)}</b>${block.canEdit ? '' : ' · view only'}</div>`;
 }
-// People a note is shared with: their Koyéba contact cards, tap to message.
+// People a note is shared with: their Kaya contact cards, tap to message.
 // Owner only - a borrowed note shows the "shared with you" banner instead.
 function noteMembersHtml(n) {
   if (n.sharedBy) return '';
@@ -26140,10 +26554,10 @@ function renderNote() {
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
   const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
-  const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button></div>` : '';
+  const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
-      <div class="nc-top"><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
+      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
     </div>
     <div class="note-cq"><div class="note-layout note-layout-side">
       <div class="note-main">
@@ -26590,7 +27004,7 @@ async function newNote(connectToId) {
   if (primer) primer.remove();
 }
 async function newArea() {
-  const name = ((await uiPrompt('New note name:', { title: 'New note', okLabel: 'Create', placeholder: 'e.g. Writing / Poetry' })) || '').trim(); if (!name) return;
+  const name = ((await uiPrompt('Name your Space:', { title: 'New Space', okLabel: 'Create', placeholder: 'e.g. Health / Work / Creativity' })) || '').trim(); if (!name) return;
   // Spread hues by the golden angle so a new area reads distinct from its neighbours.
   const hue = Math.round((state.areas.length * 137.5) % 360);
   const a = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'area', title: name, props: { hue } }) });
@@ -26690,7 +27104,7 @@ function palNavTargets() {
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
   if (modOn('contacts')) add('Shared', () => openSharedHub(), 'shared with me by me notes tasks life spaces assigned');
-  if (reflectOn()) add('Reflection', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching');
+  if (reflectOn()) add('Insight', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching');
   if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
   if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
@@ -26825,7 +27239,7 @@ function renderPalette() {
 }
 // The little type chip. A row shows the table it belongs to ("Portugal Place"),
 // not a bare "Row", so you know which card a hit relates to. (Robin.)
-const PAL_KIND_LABEL = { nav: 'Go to', note: 'Note', table: 'Table', area: 'Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Reflection', event: 'Event', bucket: 'Bucket' };
+const PAL_KIND_LABEL = { nav: 'Go to', note: 'Note', table: 'Table', area: 'Space', task: 'Task', contact: 'Contact', goal: 'Goal', bookmark: 'Saved', journal: 'Insight', event: 'Event', bucket: 'Bucket' };
 function palKindLabel(it) {
   if (it.kind === 'action') return '↵';
   if (it.kind === 'recent') return '🕘';
@@ -26862,7 +27276,7 @@ function openSearchHit(it) {
     case 'table': return openTable(it.id);
     case 'area': return openArea(it.id);
     case 'task': return openTaskCard(it.id);
-    case 'row': return openRowResult(it.parent, it.id);
+    case 'row': return openRowResult(it.parent || it.parent_id, it.id);
     case 'contact': return openContactCard(it.id);
     case 'goal': return openGoalCard(it.id);
     case 'bucket': return openBucketCard(it.id);
@@ -27315,7 +27729,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('[data-ev-note-q]') && state.cal) { const pos = e.target.selectionStart; state.cal.noteQuery = e.target.value; renderEventNotesSection(); const i = document.querySelector('[data-ev-note-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-area-contact-q]') && state.area_open) { const pos = e.target.selectionStart; state.area_open.contactQuery = e.target.value; renderAreaContacts(); const i = document.querySelector('[data-area-contact-q]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } }
   if (e.target.matches('[data-account-name]')) { clearTimeout(window.__acctNT); const v = e.target.value; window.__acctNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.account && state.account.name) { if (state.me) state.me.name = state.account.name; renderNav(); } }), 700); }
-  // Koyéba card: live-update the preview as you type, save shortly after.
+  // Kaya card: live-update the preview as you type, save shortly after.
   if (e.target.matches('[data-card-name]')) { const v = e.target.value; if (state.account) state.account.name = v; cardLivePreview(); clearTimeout(window.__cardNT); window.__cardNT = setTimeout(() => saveAccount({ name: v }).then(() => { if (state.me && state.account) state.me.name = state.account.name; renderNav(); }), 700); return; }
   if (e.target.matches('[data-card-tagline]')) { state.card = state.card || {}; state.card.tagline = e.target.value; cardLivePreview(); clearTimeout(window.__cardTg); window.__cardTg = setTimeout(saveCard, 500); return; }
   if (e.target.matches('[data-card-location]')) { state.card = state.card || {}; state.card.location = e.target.value; cardLivePreview(); clearTimeout(window.__cardLo); window.__cardLo = setTimeout(saveCard, 500); return; }
@@ -27357,6 +27771,8 @@ document.addEventListener('input', (e) => {
   // Live search: refresh only the list (quiet), so the box you're typing in is
   // never rebuilt and keeps focus. Debounced so it fires when you pause.
   if (e.target.matches('[data-mail-q]')) { state.mail.query = e.target.value; clearTimeout(window.__mailSearchT); window.__mailSearchT = setTimeout(() => { state.mail.limit = 40; loadMessages(true); }, 500); }
+  if (e.target.matches('[data-notes-q]')) { const s = e.target.selectionStart; state.notesQuery = e.target.value; renderNotesList(); const i = document.querySelector('[data-notes-q]'); if (i) { i.focus(); try { i.setSelectionRange(s, s); } catch {} } return; }
+  if (e.target.matches('[data-tables-q]')) { const s = e.target.selectionStart; state.tablesQuery = e.target.value; renderTablesList(); const i = document.querySelector('[data-tables-q]'); if (i) { i.focus(); try { i.setSelectionRange(s, s); } catch {} } return; }
   if (e.target.matches('[data-beside-pickq]')) { if (state.split) state.split.q = e.target.value; besideRenderPickResults(); }
   // Signature bar colour: live-recolour the bar; swatch and hex box stay synced.
   if (e.target.matches('[data-sig-hex]')) applySigColor(e.target.dataset.sigHex, e.target.value, 'hex');
@@ -27428,7 +27844,7 @@ document.addEventListener('click', (e) => {
   // Any http(s) link opens in a new tab / the default browser, even from inside
   // an always-editable prose region (where a plain click would just set the caret).
   const alink = t.closest('a[href]');
-  // Internal links jump within Koyéba instead of opening a browser tab.
+  // Internal links jump within Kaya instead of opening a browser tab.
   if (alink) {
     // Match the #rl- fragment anywhere in the href, so a link stored as an
     // absolute URL still routes in-app rather than opening a browser tab.
@@ -27477,7 +27893,6 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-guide]')) { openHelp('index'); return; }
   { const gf = t.closest('[data-guide-feedback]'); if (gf) { openFeedbackForm(gf.dataset.guideFeedback || ''); return; } }
   const hlp = t.closest('[data-help-open]'); if (hlp) { hideHelpPop(); openHelp(hlp.dataset.helpOpen); return; }
-  const tpin = t.closest('[data-tab-pin]'); if (tpin) { togglePin(tpin.dataset.tabPin); return; }
   const tclose = t.closest('[data-tab-close]'); if (tclose) { closeTab(tclose.dataset.tabClose); return; }
   const tsw = t.closest('[data-tab]'); if (tsw) { switchTab(tsw.dataset.tab); return; }
   if (t.closest('[data-tab-new]')) { newTab(); return; }
@@ -27487,7 +27902,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-nav-drawer]')) { toggleNavDrawer(); return; }
   if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
-  { const ts = t.closest('[data-theme-set]'); if (ts) { setThemeMode(ts.dataset.themeSet); return; } }
+  { const ts = t.closest('[data-theme-set]'); if (ts) { setScheme(ts.dataset.themeSet); return; } }
   // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
   // drawer as it navigates - the destination's renderNav() then paints it shut.
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
@@ -27507,7 +27922,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
   { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }
-  if (t.closest('[data-view-home]')) { Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-view-home]')) { if (t.closest('.knav-brand')) { state.home = state.home || {}; state.home.ltab = 'cal'; }   /* the logo opens Today with the calendar tab (Robin, 2026-11-05) */ Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openTablesList(); return; }   // Tables has its own page (Robin: it opened Notes)
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }
   const ntchip = t.closest('[data-notes-type]'); if (ntchip) { state.notesType = ntchip.dataset.notesType; try { localStorage.setItem('life.notesType', state.notesType); } catch {} if (state.notesType === 'shared') loadNotesShared(); renderNotesList(); return; }
@@ -27518,6 +27933,7 @@ document.addEventListener('click', (e) => {
   const nxSd = t.closest('[data-notes-side]'); if (nxSd) { const k = nxSd.dataset.notesSide; state.notesSide = state.notesSide || {}; state.notesSide[k] = state.notesSide[k] === false ? true : false; renderNotesList(); return; }
   const txOrd = t.closest('[data-task-order]'); if (txOrd) { state.taskOrder = txOrd.dataset.taskOrder; try { localStorage.setItem('life.taskOrder', state.taskOrder); } catch {} state.taskPile = null; renderTasks(); return; }
   const txPl = t.closest('[data-task-pile]'); if (txPl) { state.taskPile = txPl.dataset.taskPile; renderTasks(); return; }
+  const txSp = t.closest('[data-task-spsort]'); if (txSp) { const k = txSp.dataset.taskSpsort; const s = state.taskSpaceSort || (state.taskSpaceSort = { key: 'az', dir: 1 }); if (s.key === k) s.dir = -s.dir; else { s.key = k; s.dir = 1; } renderTasks(); return; }
   const txGr = t.closest('[data-task-group]'); if (txGr) { const k = txGr.dataset.taskGroup; state.taskShut = state.taskShut || {}; state.taskShut[k] = !state.taskShut[k]; renderTasks(); return; }
   const txSd = t.closest('[data-task-side]'); if (txSd) { const k = txSd.dataset.taskSide; state.taskSide = state.taskSide || {}; state.taskSide[k] = state.taskSide[k] === false ? true : false; renderTasks(); return; }
   const txTk = t.closest('[data-task-tick]'); if (txTk) { e.preventDefault(); e.stopPropagation(); toggleTask(txTk.dataset.taskTick); return; }
@@ -27582,7 +27998,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }
   { const ar = t.closest('[data-area-remove]'); if (ar) { const p = ar.dataset.areaRemove.split(':'); removeBlockArea(p[0], p[1], p[2]); return; } }
   { const ua = t.closest('[data-mail-unfile-area]'); if (ua) { e.preventDefault(); e.stopPropagation(); mailUnfileArea(ua.dataset.mailUnfileArea); return; } }
-  const oa = t.closest('[data-open-area]'); if (oa) { openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
+  const oa = t.closest('[data-open-area]'); if (oa) { if (state.knav) { state.knav.group = null; state.knav.find = false; state.knav.contents = false; }   /* picking a Space closes the Spaces menu (Robin, 2026-11-05) */ openArea(oa.dataset.openArea).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-contacts]')) { openContacts().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-connect]')) { openConnect().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-navpeople-toggle]')) { toggleNavPeople(); return; }
@@ -27639,6 +28055,9 @@ document.addEventListener('click', (e) => {
   { const ca = t.closest('[data-feed-country-add]'); if (ca) { addCountry({ code: ca.dataset.cc, name: ca.dataset.cn }); return; } }
   { const cr = t.closest('[data-feed-country-rm]'); if (cr) { removeCountry(cr.dataset.feedCountryRm); return; } }
   if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
+  { const hl = t.closest('[data-home-loc]'); if (hl) { state.home = state.home || {}; state.home.locEdit = !state.home.locEdit; renderHome(); if (state.home.locEdit) setTimeout(() => { const i = document.querySelector('[data-home-loc-input]'); if (i) { i.focus(); i.select(); } }, 40); return; } }
+  { const hs = t.closest('[data-home-loc-save]'); if (hs) { const i = document.querySelector('[data-home-loc-input]'); setHomePlace(i ? i.value : ''); return; } }
+  { const ha = t.closest('[data-home-loc-auto]'); if (ha) { setHomePlace(''); return; } }
   { const ax = t.closest('[data-alert-x]'); if (ax) { try { localStorage.setItem('life.home.alert.' + ax.dataset.alertX, todayISO()); } catch {} renderHome(); return; } }
   { const lx = t.closest('[data-lb-x]'); if (lx) { e.preventDefault(); e.stopPropagation(); lbDismiss(lx.dataset.lbX); return; } }
   { const l2 = t.closest('[data-lb-2fa]'); if (l2) { openSettings('account'); return; } }
@@ -27713,9 +28132,9 @@ document.addEventListener('click', (e) => {
   // arrow would also collapse the section.
   { const ds = t.closest('[data-home-day-set]'); if (ds) { homeDaySet(Number(ds.dataset.homeDaySet)); return; } }
   { const dd = t.closest('[data-home-day]'); if (dd) { homeDaySet((state.home.dayOffset || 0) + Number(dd.dataset.homeDay)); return; } }
-  // Koyéba Home ledger: tapping a cell opens its rows (one open at a time).
+  // Kaya Home ledger: tapping a cell opens its rows (one open at a time).
   { const kl = t.closest('[data-kled]'); if (kl) { const k = kl.dataset.kled; state.home.ledgerOpen = state.home.ledgerOpen === k ? null : k; renderHome(); return; } }
-  // Koyéba Home fold headers (Today / Your spaces / Coming into view / the line /
+  // Kaya Home fold headers (Today / Your spaces / Coming into view / the line /
   // Notepad): +/− toggle, state kept in the shared collapse store. (data-hfold, to
   // stay clear of the nav's own data-kfold.)
   { const dw = t.closest('[data-home-when]'); if (dw) { const c = homeCollapsed(); if (c.cal === true || c.today === true) { c.cal = false; c.today = false; try { localStorage.setItem('life.home.collapsed', JSON.stringify(c)); } catch {} } homeDaySet(dw.dataset.homeWhen === 'tomorrow' ? 1 : 0); return; } }
@@ -27739,7 +28158,7 @@ document.addEventListener('click', (e) => {
   { const v4p = t.closest('[data-av4-peek]'); if (v4p) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.peek = st.peek === v4p.dataset.av4Peek ? null : v4p.dataset.av4Peek; renderArea(); return; } }
   { const v4s = t.closest('[data-av4-sort]'); if (v4s) { const st = state.areaV4 = state.areaV4 || {}; const k = v4s.dataset.av4Sort; st.sort = st.sort || { key: 'new', dir: 1 }; if (st.sort.key === k) st.sort.dir *= -1; else st.sort = { key: k, dir: 1 }; renderArea(); return; } }
   if (t.closest('[data-av4-search-clear]')) { if (state.areaV4) state.areaV4.q = ''; renderArea(); return; }
-  { const v4g = t.closest('[data-av4-goal]'); if (v4g) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.goalEdit = st.goalEdit === v4g.dataset.av4Goal ? null : v4g.dataset.av4Goal; if (st.goalEdit !== v4g.dataset.av4Goal) st.goalCustom = null; renderArea(); return; } }
+  { const v4g = t.closest('[data-av4-goal]'); if (v4g && !t.closest('.gc-slider')) { e.preventDefault(); e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.goalEdit = st.goalEdit === v4g.dataset.av4Goal ? null : v4g.dataset.av4Goal; if (st.goalEdit !== v4g.dataset.av4Goal) st.goalCustom = null; renderArea(); return; } }
   { const v4gw = t.closest('[data-av4-goal-when]'); if (v4gw) { e.preventDefault(); e.stopPropagation(); const [id, val] = v4gw.dataset.av4GoalWhen.split(':'); const st = state.areaV4 = state.areaV4 || {}; if (val === 'custom') { st.goalCustom = id; renderArea(); } else { st.goalCustom = null; av4GoalSet(id, { due: val || null }); } return; } }
   { const v4ga = t.closest('[data-av4-goal-archive]'); if (v4ga) { e.preventDefault(); e.stopPropagation(); av4GoalSet(v4ga.dataset.av4GoalArchive, { status: 'done' }); if (state.areaV4) state.areaV4.goalEdit = null; return; } }
   if (t.closest('[data-av3-more]')) { e.stopPropagation(); const st = state.areaV4 = state.areaV4 || {}; st.menu = !st.menu; renderArea(); return; }
@@ -27769,6 +28188,7 @@ document.addEventListener('click', (e) => {
   { const ra = t.closest('[data-radar-all]'); if (ra) { e.preventDefault(); e.stopPropagation(); state.home = state.home || {}; state.home.radarAll = !state.home.radarAll; renderHome(); return; } }
   if (t.closest('[data-newmenu-toggle]')) { e.stopPropagation(); state.home = state.home || {}; state.home.newMenu = !state.home.newMenu; renderNewPop(); renderNav(); return; }
   if (t.closest('[data-newmenu-close]')) { if (state.home) state.home.newMenu = false; renderNewPop(); renderNav(); return; }
+  if (t.closest('[data-makenew-close]')) { closeMakeNew(); return; }
   { const nm = t.closest('[data-new-make]'); if (nm) { homeNewMake(nm.dataset.newMake); renderNewPop(); return; } }
   if (t.closest('[data-glance-fold]')) { if (state.home) { state.home.glance = null; state.home.glanceMail = null; } renderHome(); return; }
   { const gw = t.closest('[data-glance]'); if (gw) { state.home = state.home || {}; state.home.glanceMail = null; state.home.glance = state.home.glance === gw.dataset.glance ? null : gw.dataset.glance; renderHome(); return; } }
@@ -27872,7 +28292,7 @@ document.addEventListener('click', (e) => {
   { const af = t.closest('[data-adm-filter]'); if (af) { state.admin = state.admin || {}; state.admin.memberFilter = af.dataset.admFilter; state.admin.openMember = null; renderAdmin(); return; } }
   { const aj = t.closest('[data-adm-jump]'); if (aj) { const el = document.getElementById('adm-ai-usage'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; } }
   const cpc = t.closest('[data-copy-code]'); if (cpc) { try { navigator.clipboard.writeText(cpc.dataset.copyCode); toast('Invite code copied'); } catch { toast(cpc.dataset.copyCode); } return; }
-  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://koyeba.co/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
+  { const cpi = t.closest('[data-copy-invite]'); if (cpi) { const link = `https://kaya.so/join/${cpi.dataset.copyInvite}`; try { navigator.clipboard.writeText(link); toast('Invite link copied - share it with anyone'); } catch { uiPrompt('Copy this invite link:', { title: 'Invite link', value: link, okLabel: 'Done' }); } return; } }
   { const cv = t.closest('[data-copy-val]'); if (cv) { const v = cv.dataset.copyVal || ''; try { navigator.clipboard.writeText(v); toast('Copied'); } catch { toast(v); } return; } }
   { const cxi = t.closest('[data-cancel-invite]'); if (cxi) { cancelInviteAction(cxi.dataset.cancelInvite); return; } }
   if (t.closest('[data-open-mailaccounts]')) { openMailAccounts().catch((x) => toast(x.message)); return; }
@@ -28059,7 +28479,7 @@ document.addEventListener('click', (e) => {
   { const acr = t.closest('[data-area-contact-rm]'); if (acr) { e.stopPropagation(); removeContactFromArea(acr.dataset.areaContactRm); return; } }
   const oc = t.closest('[data-open-contact]'); if (oc) { openContactCard(oc.dataset.openContact).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-contact-add]')) { state.contactAddArea = null; state.contactAdding = true; renderContacts(); $('#ct-name')?.focus(); return; }
-  if (t.closest('[data-contact-add-close]')) { state.contactAdding = false; renderContacts(); return; }
+  if (t.closest('[data-contact-add-close]')) { if (state.makeNew) { closeMakeNew(); return; } state.contactAdding = false; renderContacts(); return; }
   if (t.closest('[data-contact-import]')) { $('#contact-file')?.click(); return; }
   const delc = t.closest('[data-del-contact]'); if (delc) { delContact(delc.dataset.delContact); return; }
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
@@ -28191,7 +28611,7 @@ document.addEventListener('click', (e) => {
   const mstar = t.closest('[data-mail-star]'); if (mstar) { e.preventDefault(); e.stopPropagation(); mailStar(mstar.dataset.mailStar); return; }   // star sits inside the row button
   const march = t.closest('[data-mail-archive]'); if (march) { e.preventDefault(); e.stopPropagation(); mailMoveTo(march.dataset.mailArchive, 'Archive', 'Archived'); return; }
   const mrowdel = t.closest('[data-mail-rowdel]'); if (mrowdel) { e.preventDefault(); e.stopPropagation(); mailDelete(mrowdel.dataset.mailRowdel); return; }
-  const mspam = t.closest('[data-mail-spam]'); if (mspam) { mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
+  const mspam = t.closest('[data-mail-spam]'); if (mspam) { e.preventDefault(); e.stopPropagation(); mailMoveTo(mspam.dataset.mailSpam, 'Junk', 'Marked as spam'); return; }
   const mnspam = t.closest('[data-mail-notspam]'); if (mnspam) { mailMoveTo(mnspam.dataset.mailNotspam, 'INBOX', 'Moved to inbox'); return; }
   const mblk = t.closest('[data-mail-block]'); if (mblk) { mailBlock(mblk.dataset.mailBlock, mblk.dataset.mailFrom || ''); return; }
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
@@ -28252,7 +28672,7 @@ document.addEventListener('click', (e) => {
     // In the installed app there's no address bar, so Brave's "allow handler" icon
     // has nowhere to appear - it must be done in a normal Brave tab.
     if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
-      toast('Do this in a normal Brave tab, not the installed app - open koyeba.co/mail in Brave and tap this there.');
+      toast('Do this in a normal Brave tab, not the installed app - open kaya.so/mail in Brave and tap this there.');
       return;
     }
     const r = registerMailHandler();
@@ -28287,7 +28707,14 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; if (e.feed) { state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; toast(e.feed === 'gcal' ? `From ${esc(e.acctLabel || 'a connected account')} - read-only for now` : e.feed === 'caldav' ? `Part of a repeating series - edit it in ${esc(e.acctLabel || 'your calendar app')} for now` : 'From a calendar feed - manage it in Settings › Calendar'); } else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; } renderCalendar(); if (!e.feed) requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); } return; }
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date;
+    // Tapping ANY event opens it. Your own events open the editor; a read-only
+    // feed event (Google, iCloud/Yahoo, a holidays feed) opens a read-only detail
+    // card instead of just flashing a toast - so you can actually see it. (Robin,
+    // 2026-11-05: "on mobile… it's very difficult to open an event".)
+    if (e.feed) { state.cal.viewing = e; state.cal.editing = null; state.cal.adding = false; }
+    else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; }
+    renderCalendar(); requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); } return; }   // land at the TOP of the event card, not centred. (Robin, 2026-11-05.)
   if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
@@ -28355,7 +28782,7 @@ document.addEventListener('click', (e) => {
   // Event quick-chip: jump to that field, focus it, and open the picker if it's a
   // select - so the chip both shows the value and edits it in one tap.
   { const jmp = t.closest('[data-ce-jump]'); if (jmp) { const tgt = jmp.dataset.ceJump; if (tgt === '#ce-area') { const lab = document.querySelector('.ce-arealab'); if (lab) lab.classList.add('ce-area-reveal'); } const el = document.querySelector(tgt); if (el) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {} try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} } if (el.tagName === 'SELECT' && el.showPicker) { try { el.showPicker(); } catch {} } } return; } }
-  { const kh = t.closest('[data-knav-hit]'); if (kh) { const kn = state.knav || (state.knav = {}); const hit = (kn.results || [])[+kh.dataset.knavHit]; if (hit) { const qq = (kn.q || '').trim(); kn.find = false; renderNav(); if (qq && typeof pushRecentSearch === 'function') pushRecentSearch(qq); openSearchHit(hit).catch((x) => toast(x.message)); } return; } }
+  { const kh = t.closest('[data-knav-hit]'); if (kh) { const kn = state.knav || (state.knav = {}); const hit = (kn.results || [])[+kh.dataset.knavHit]; const qq = (kn.q || '').trim(); kn.find = false; renderNav(); if (hit) { if (qq && typeof pushRecentSearch === 'function') pushRecentSearch(qq); openSearchHit(hit).catch((x) => toast(x.message)); } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
   { const at = t.closest('[data-area-today]'); if (at) { e.preventDefault(); e.stopPropagation(); areaTogglePinToday(at.dataset.areaToday); return; } }
@@ -28365,7 +28792,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-add]')) { const p = primeMobileKeyboard(); state.taskAddArea = null; state.taskAddConns = []; state.taskAdding = true; state.taskFocusArm = Date.now(); renderTasks(); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; state.taskAddConns = []; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
-  if (t.closest('[data-qt-close]')) { const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
+  if (t.closest('[data-qt-close]')) { if (state.makeNew) { closeMakeNew(); return; } const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
   if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
   { const dt = t.closest('[data-day-tick]'); if (dt) { e.preventDefault(); e.stopPropagation(); homeDayTick(dt.dataset.dayTick); return; } }
   { const hc = t.closest('[data-home-cal]'); if (hc) { const p = hc.dataset.evId ? openEventHit({ id: hc.dataset.evId, date: hc.dataset.evDate }) : openCalendar(todayISO()); Promise.resolve(p).catch((x) => toast(x.message)); return; } }
@@ -28423,6 +28850,7 @@ document.addEventListener('click', (e) => {
   { const atool = t.closest('[data-area-tool]'); if (atool && state.area_open) { const k = atool.dataset.areaTool; state.area_open.toolTile = (state.area_open.toolTile === k) ? null : k; renderArea(); return; } }
   if (t.closest('[data-area-add-task]')) { areaAddTask(); return; }
   if (t.closest('[data-area-add-note]')) { areaAddNote(); return; }
+  if (t.closest('[data-area-add-table]')) { areaAddTable(); return; }
   if (t.closest('[data-area-add-journal]')) { areaAddJournal(false); return; }
   if (t.closest('[data-area-add-dream]')) { areaAddJournal(true); return; }
   if (t.closest('[data-area-add-book]')) { areaAddSaved('book'); return; }
@@ -28478,7 +28906,7 @@ document.addEventListener('click', (e) => {
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); setFold(prose.dataset.blockId, i, !head.classList.contains('folded')); reapplyFolds(prose); } return; } }
-  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Koyéba` : 'No contacts on Koyéba yet'); }); return; }
+  if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Kaya` : 'No contacts on Kaya yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
   { const so = t.closest('[data-share-open]'); if (so) { openShare(so.dataset.shareOpen, so.dataset.shareTitle || '', so.dataset.shareKind || 'note'); return; } }
@@ -28564,6 +28992,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-note]')) { delNote(); return; }
   if (t.closest('[data-note-insert-image]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineImage(); return; }
   if (t.closest('[data-note-insert-file]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineFile(); return; }
+  if (t.closest('[data-note-insert-table]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); insertNoteTable(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
 
   // tasks
@@ -28685,7 +29114,7 @@ document.addEventListener('contextmenu', (e) => {
   const nrc = e.target.closest('.nt-card[data-open-note], .nt-card[data-open-table]');
   if (nrc && state.view.type === 'notes') { e.preventDefault(); openNoteMenu(nrc.dataset.openNote || nrc.dataset.openTable, e.clientX, e.clientY); return; }
   // Right-click a link inside note/task prose: offer to open it in a new tab.
-  // Internal Koyéba links (#rl-…) open in a fresh in-app tab; web links open in
+  // Internal Kaya links (#rl-…) open in a fresh in-app tab; web links open in
   // a new browser tab.
   const alink = e.target.closest('a[href]');
   if (alink && alink.closest('.prose, .note-body')) {
@@ -28701,7 +29130,7 @@ function linkMenuKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeLin
 function openLinkMenu(x, y, href, view) {
   closeLinkMenu();
   const items = view
-    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Koyéba tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
+    ? ['<button class="ctx-item" data-lm="newtab">↗ Open in new Kaya tab</button>', '<button class="ctx-item" data-lm="here">Open here</button>']
     : ['<button class="ctx-item" data-lm="browser">↗ Open in new browser tab</button>', '<button class="ctx-item" data-lm="copy">Copy link</button>'];
   const mx = Math.min(x, window.innerWidth - 232), my = Math.min(y, window.innerHeight - 110);
   const el = document.createElement('div'); el.id = 'linkmenu'; el.className = 'ctx-bg';
@@ -28836,7 +29265,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
   if (e.target.matches('[data-onb-accent-custom]')) { setAccent(e.target.value); if (e.type === 'change' && state.onb) renderOnboarding(); }
-  if (e.target.matches('[data-mail-acct-sel]')) { state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
+  if (e.target.matches('[data-mail-acct-sel]')) { if (e.target.value === '__add') { e.target.value = state.mail.account || 'all'; openMailAccounts().catch((x) => toast(x && x.message)); return; } state.mail.account = e.target.value; state.mail.limit = 40; loadMessages(); }
   if (e.target.matches('[data-prio-task]')) patchTaskProps(e.target.dataset.prioTask, { priority: e.target.value || null });
   if (e.target.matches('[data-area-task]')) patchTaskProps(e.target.dataset.areaTask, { area: e.target.value || null });
   if (e.target.matches('[data-dur-task]')) {
@@ -29024,19 +29453,22 @@ document.addEventListener('submit', (e) => {
     addTask({ title: v, area: $('#task-area').value, priority: $('#task-prio').value, duration: $('#task-dur').value, due, remindDays: remindOn ? rdays : null, snooze, hideUntil: remindOn && !!($('#task-hideuntil') && $('#task-hideuntil').checked), repeat: $('#task-repeat').value, notes: $('#task-notes') ? $('#task-notes').value : '', connections: (state.taskAddConns || []).slice() });
     state.taskDraft = null;
   } }
-  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); } }
+  if (e.target.id === 'contact-form') { const v = $('#ct-name').value.trim(); if (v) { const cc = ($('#ct-phone-cc') || {}).value || ''; const num = ($('#ct-phone-num') || {}).value || ''; const phone = [cc.trim(), num.trim()].filter(Boolean).join(' '); addContact({ name: v, email: $('#ct-email').value.trim(), phone, birthday: $('#ct-bday').value, address: cleanAddress({ street: $('#ct-street').value, city: $('#ct-city').value, postcode: $('#ct-postcode').value, country: $('#ct-country').value }), area: ($('#ct-area') || {}).value || '', notes: ($('#ct-notes') || {}).value || '' }); if (state.makeNew === 'contact') { toast('Contact added'); closeMakeNew(); } } }
   if (e.target.id === 'qt-form') {
     const i = $('#qt-title'); const v = i.value.trim();
     if (v) {
       homeAddTask({ title: v, area: $('#qt-area').value, priority: $('#qt-prio').value, duration: ($('#qt-dur') || {}).value, snooze: ($('#qt-snooze') || {}).value, repeat: ($('#qt-repeat') || {}).value, repeatFrom: ($('#qt-repeatfrom') || {}).value, notes: ($('#qt-notes') || {}).value });
-      if (state.view && state.view.type === 'today') {
+      if (state.makeNew === 'task') {
+        // Added from the floating New box - a toast confirms, so just close it.
+        try { i.blur(); } catch {} closeMakeNew();
+      } else if (state.view && state.view.type === 'today') {
         // homeAddTask re-renders the Today view, which closes this form for us.
       } else {
         // Task added (a toast confirms) - close the form so it's out of the way.
         // Open +Task again for another. (Was: stayed open on desktop; Robin
         // preferred it disappear.)
         try { i.blur(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch {}
-        $('#qt-wrap').innerHTML = '';
+        const w = $('#qt-wrap'); if (w) w.innerHTML = '';
       }
     }
   }
@@ -29153,7 +29585,7 @@ document.addEventListener('pointerup', msecDragEnd);
 document.addEventListener('pointercancel', msecDragEnd);
 
 // Read by the section-fold click guard below (data-sec-collapse); the home-section
-// and lead/chip drags that used to set it went with the pre-Koyéba Home.
+// and lead/chip drags that used to set it went with the pre-Kaya Home.
 let suppressSecClick = 0;
 // Drag an inbox row up onto a quadrant card to file it fast. Touch: long-press
 // then drag (so a tap still opens and a swipe still scrolls). Mouse: drag on move.
@@ -30274,7 +30706,7 @@ function connectAddSectionHtml() {
 // The task card used to carry five separate boxes - Goals, Contacts, Web links,
 // Connected and Attachments. That's the same clutter the note panel already
 // retired, so a task now gets the one-panel treatment too: a single list of
-// everything it links to, with a Link tab (search anything in Koyéba - notes,
+// everything it links to, with a Link tab (search anything in Kaya - notes,
 // tasks, people, events, GOALS, pages - or paste a web address) and an
 // Attach-a-file tab. Every row reuses the existing add/unlink plumbing, so
 // storage is unchanged: a goal still lives in props.goals (the task counts
@@ -30797,6 +31229,19 @@ async function insertInlineImage(prose, file, range) {
 }
 // A file picker for the "Insert image" button: insert each chosen image at the
 // last place the caret sat in the note's prose.
+// A simple table inside a note: insert a 2-column, 3-row grid at the cursor, ready to
+// type into. decorateProse wraps it for scrolling on the next render and sanitizeProse
+// keeps it. (Robin, 2026-11-05: a simple table function in notes.)
+function insertNoteTable() {
+  let prose = document.activeElement;
+  if (!(prose && prose.classList && prose.classList.contains('prose') && prose.isContentEditable)) prose = document.querySelector('#pane .prose[contenteditable="true"]');
+  if (!prose) return;
+  prose.focus();
+  const c = '<td><br></td>';
+  const html = `<table><tbody><tr>${c}${c}</tr><tr>${c}${c}</tr><tr>${c}${c}</tr></tbody></table><p><br></p>`;
+  try { document.execCommand('insertHTML', false, html); } catch {}
+  try { prose.dispatchEvent(new Event('input', { bubbles: true })); } catch {}
+}
 function pickInlineImage() {
   const prose = document.querySelector('.note-body .prose[contenteditable="true"][data-block-id]'); if (!prose) return;
   const range = (lastProseRange && prose.contains(lastProseRange.startContainer)) ? lastProseRange : null;
@@ -31705,13 +32150,13 @@ document.addEventListener('keydown', (e) => {
 // ── sign-in gate (self-contained; life.robski.uk is its own origin) ──
 let gateStep = 'email', gateEmail = '', gateMfaToken = '', gateBusy = false;
 // daybook.fyi itself belongs to nobody: an invitee landing there is not signing
-// in to Robin's Koyéba, so the wordmark drops the owner's name and reads just
-// "Koyéba". On a tenant subdomain it stays whose it is.
+// in to Robin's Kaya, so the wordmark drops the owner's name and reads just
+// "Kaya". On a tenant subdomain it stays whose it is.
 const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(location.hostname);
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup">${MARK}<em class="brand-word">Koyéba<i class="brand-dot">.</i></em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup"><em class="brand-word">Kaya<i class="brand-dot">.</i></em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -31744,9 +32189,9 @@ function gwHtml(i) {
   const first = String(i.name || '').trim().split(/\s+/)[0];
   const note = i.note ? `<figure class="gw-note"><blockquote>${esc(i.note)}</blockquote><figcaption>${esc(i.from)}</figcaption></figure>` : '';
   const line = (s) => `<p class="gw-line"><span aria-hidden="true"></span>${esc(s)}</p>`;
-  if (i.kind === 'asked') return `<h1 class="gw-h">Your place is ready${first ? `, ${esc(first)}` : ''}.</h1><p class="gw-p">You asked to join us, and we'd love to have you. Koyéba grows slowly, by word of mouth, so thank you for finding it.</p>${line(gwPlanLine(i))}`;
-  if (i.kind === 'robin') return `<h1 class="gw-h">${esc(i.from)}, who made Koyéba, has invited you.</h1>${note}${line(gwPlanLine(i))}`;
-  return `<h1 class="gw-h">${esc(i.from)} has invited you to Koyéba.</h1>${note}${i.months ? line(`${i.from} has also given you ${gwMonths(i.months)} of ${i.planLabel}, free.`) : ''}`;
+  if (i.kind === 'asked') return `<h1 class="gw-h">Your place is ready${first ? `, ${esc(first)}` : ''}.</h1><p class="gw-p">You asked to join us, and we'd love to have you. Kaya grows slowly, by word of mouth, so thank you for finding it.</p>${line(gwPlanLine(i))}`;
+  if (i.kind === 'robin') return `<h1 class="gw-h">${esc(i.from)}, who made Kaya, has invited you.</h1>${note}${line(gwPlanLine(i))}`;
+  return `<h1 class="gw-h">${esc(i.from)} has invited you to Kaya.</h1>${note}${i.months ? line(`${i.from} has also given you ${gwMonths(i.months)} of ${i.planLabel}, free.`) : ''}`;
 }
 async function loadInviteWelcome() {
   const code = storedInvite(); if (!code) return;
@@ -31776,7 +32221,7 @@ function showSignup(email, inviteRequired, invited, notice) {
   const saved = inviteInfoSaved();
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Koyéba</em></div>
+      <div class="gate2-mark"><em>Kaya</em></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : needCode ? t('signup.byinvite') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -31794,7 +32239,7 @@ function showSignup(email, inviteRequired, invited, notice) {
   if (saved && saved.name) $('#su-name').value = saved.name;
   $('#su-name').focus();
 }
-// Their Koyéba lives on its own subdomain - a different origin, with its own
+// Their Kaya lives on its own subdomain - a different origin, with its own
 // empty localStorage. Carry the session over in the fragment (never sent to a
 // server, never logged) so the new origin is signed in on arrival. Reloading the
 // apex instead used to land the newcomer back on the marketing page, which is
@@ -31916,7 +32361,7 @@ async function openMailCompose(c) {
   renderMail();
   setTimeout(() => { const el = document.getElementById(c.to ? 'mc-body' : 'mc-to'); if (el) el.focus(); }, 40);
 }
-// Offer Koyéba as the browser's mailto handler (Chromium/Firefox). The
+// Offer Kaya as the browser's mailto handler (Chromium/Firefox). The
 // browser then asks the user to allow it, and to make it the default.
 function registerMailHandler() {
   if (!navigator.registerProtocolHandler) return { ok: false, reason: 'unsupported' };
@@ -31945,7 +32390,7 @@ async function finishOnboarding() {
   try { await api('/api/kv/onboarded', { method: 'PUT', body: JSON.stringify({ value: '1' }) }); } catch {}
   state.onbSeen = true;
   closeOnbHub();
-  // "Open Koyéba" lands you on Home - the place to start - not back on whatever
+  // "Open Kaya" lands you on Home - the place to start - not back on whatever
   // Settings tab the setup hub was opened from. (Robin, 2026-10-29.)
   Promise.resolve(openHome()).catch(() => {});
 }
@@ -31954,9 +32399,9 @@ async function finishOnboarding() {
 // collapsible, tick-as-you-go checklist at the top of the Account page. Reads
 // global state; tapping an item opens the hub at that step. Completion detectors
 // mirror the hub's TILES - keep them in step. (Robin, 2026-10-26.)
-// Has Koyéba been added as an app on this kind of device? We can't see another
+// Has Kaya been added as an app on this kind of device? We can't see another
 // device, so we remember a manual "I've added it" per kind, and also count the
-// CURRENT device as done when Koyéba is running as an installed (standalone) app.
+// CURRENT device as done when Kaya is running as an installed (standalone) app.
 function appInstalled(which) {
   try { if (localStorage.getItem('lf_app_' + which) === '1') return true; } catch {}
   let standalone = false;
@@ -32006,7 +32451,7 @@ function welcomeGuideHtml() {
       <button class="set-welcome-x" data-welcome-dismiss title="Hide getting started" aria-label="Hide getting started">✕</button>
     </summary>
     <div class="set-welcome-body">
-      <p class="set-welcome-lede">Set Koyéba up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
+      <p class="set-welcome-lede">Set Kaya up to fit you. Tick these off at your own pace - tap any one to do it now.</p>
       <div class="set-welcome-grid">
         ${items.map((x) => `<button class="wg-item${x.done ? ' done' : ''}" data-onb-open-hub="${x.id}" title="${x.done ? 'Done - open to review' : 'Set this up'}">
           <span class="wg-item-pip" aria-hidden="true">${x.done ? '✓' : ''}</span>
@@ -32061,7 +32506,7 @@ function onbAreas() {
        <div class="onb-sugg">${sugg.map(([n, h]) => `<button class="onb-sugg-btn" data-onb-area-suggest="${esc(n)}"><span class="onb-sugg-n">+ ${esc(n)}</span>${h ? `<span class="onb-sugg-s">${esc(h)}</span>` : ''}</button>`).join('')}</div></div>`
     : '';
   return `<h2 class="onb-h">Your Spaces</h2>
-    <p class="onb-p">Spaces are the parts of your life Koyéba is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Space, so each one gathers everything about that part of your life in one place.</p>
+    <p class="onb-p">Spaces are the parts of your life Kaya is built around - Work, Health, Family, and so on. Your tasks, notes, goals and spending all attach to a Space, so each one gathers everything about that part of your life in one place.</p>
     <p class="onb-p onb-muted">Add the areas that matter to you - whatever they are. You can rename or change them anytime.</p>
     ${chips}
     <form class="onb-area-add" data-onb-area-add><input id="onb-area-in" class="sel" placeholder="Add a space…" autocomplete="off" maxlength="60" spellcheck="false"><button class="add-btn wide" type="submit">Add</button></form>
@@ -32091,10 +32536,10 @@ function onbGo(n) { if (!state.onb) return; state.onb.step = Math.max(0, Math.mi
 function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
-  return `<h2 class="onb-h">Welcome to Koyéba${name ? `, ${name}` : ''}</h2>
+  return `<h2 class="onb-h">Welcome to Kaya${name ? `, ${name}` : ''}</h2>
     <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
-    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Koyéba helps you <b>join the dots across your life</b> without the overwhelm.</p>
+    <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Kaya helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
 }
 function onbAiProv(provider, name, why, host, url, ph, isSet) {
@@ -32108,8 +32553,8 @@ function onbAi() {
   const a = state.onb.account || {};
   const connected = a.aiAnySet && a.aiProvider;
   return `<h2 class="onb-h">Add your AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p"><b>Koyéba works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
-    <p class="onb-p">AI just adds a few optional helpers - Reflection coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
+    <p class="onb-p"><b>Kaya works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p">AI just adds a few optional helpers - Insight coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
     ${connected
       ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`
       : `<div class="onb-prov"><div class="onb-prov-in"><input class="sel" type="password" data-onb-ai-any placeholder="Paste your Claude, ChatGPT or Gemini key" autocomplete="off" spellcheck="false"><button class="add-btn wide" data-onb-ai-connect>Connect</button></div>
@@ -32124,10 +32569,10 @@ async function onbConnectAi() {
 }
 function onbEmail() {
   const n = (Array.isArray(state.onb.mailAccounts) ? state.onb.mailAccounts.length : 0) || (state.onb.mailDone ? 1 : 0);
-  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Koyéba.</div>
+  if (n > 0) return `<div class="onb-ok">✓ ${n} mailbox${n === 1 ? '' : 'es'} connected. Read and send right inside Kaya.</div>
     <p class="onb-p">Add another, or manage them, in the full mail setup.</p>
     <button class="add-btn wide" data-onb-nav="mail">Open mail setup →</button>`;
-  return `<p class="onb-p">Read and send your email right inside Koyéba - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
+  return `<p class="onb-p">Read and send your email right inside Kaya - <b>Gmail, Outlook, iCloud, Yahoo, Purelymail</b> and most IMAP mailboxes.</p>
     <p class="onb-p onb-muted">The setup walks you through your provider - some (Gmail included) need a one-time app password, and it shows you exactly how.</p>
     <button class="add-btn wide" data-onb-nav="mail">Connect a mailbox →</button>`;
 }
@@ -32135,7 +32580,7 @@ function onbPhone() {
   const a = state.onb.account || {};
   const saved = (a.phone || '').trim();
   return `<h2 class="onb-h">A backup way in <span class="onb-opt">optional</span></h2>
-    <p class="onb-p">Koyéba signs you in with a code sent to your email. But once Koyéba <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
+    <p class="onb-p">Kaya signs you in with a code sent to your email. But once Kaya <b>is</b> your email, that code lands in an inbox you can't open until you're signed in - a chicken-and-egg.</p>
     <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
     ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
     <div class="onb-mailform">
@@ -32163,7 +32608,7 @@ function onbDone() {
     <p class="onb-p onb-muted">You can reopen this guide anytime from Settings → Account.</p>`;
 }
 // "Make it yours": name, a highlight colour and a photo, all inline - the three
-// quick touches that make a new Koyéba feel like the member's own. Each writes
+// quick touches that make a new Kaya feel like the member's own. Each writes
 // straight through (account name, the app accent, the card photo) and re-renders
 // the hub in place. (Robin, 2026-10-28.)
 function onbIdentity() {
@@ -32172,7 +32617,7 @@ function onbIdentity() {
   const photo = card.photo
     ? `<span class="dbc-photo sm" style="background-image:url('${card.photo}')"></span>`
     : `<span class="dbc-photo sm dbc-photo-mono" style="--dbc:${esc(savedAccent() || '#c99a3e')}">${esc(initial(a.name || firstName() || 'You'))}</span>`;
-  return `<p class="onb-p">A few quick touches to make Koyéba feel like yours - change any of it later.</p>
+  return `<p class="onb-p">A few quick touches to make Kaya feel like yours - change any of it later.</p>
     <div class="onb-field"><span class="onb-l">Your name</span>
       <span class="onb-inline"><input id="onb-name" class="sel" value="${esc(a.name || '')}" placeholder="What should we call you?" maxlength="60" autocomplete="name"><button class="add-btn wide" data-onb-name-save>Save</button></span></div>
     <div class="onb-field"><span class="onb-l">Photo <span class="onb-opt">if you like</span></span>
@@ -32195,7 +32640,7 @@ async function onbSetPhoto(file) {
   catch (e) { toast(e.message || 'Could not read that image'); }
 }
 function onbRemovePhoto() { if (state.card) { delete state.card.photo; saveCard(); } if (state.onb) renderOnboarding(); }
-// Your Koyéba calendar works from the start (native events, no account). This
+// Your Kaya calendar works from the start (native events, no account). This
 // step brings an OUTSIDE calendar in - Google read-only, or iCloud/Yahoo two-way
 // - which the Calendar view's own connect strip handles in full.
 function onbCalendar() {
@@ -32205,7 +32650,7 @@ function onbCalendar() {
   const list = accts.length
     ? `<div class="onb-ok">✓ Connected: ${accts.map((x) => esc(x.label || (x.provider === 'caldav' ? 'iCloud / CalDAV' : 'Google'))).join(', ')}. Manage them on the Calendar.</div>`
     : (a.isOwner ? '<div class="onb-ok">✓ Your Google calendar is connected - you\'ll see it on the Calendar.</div>' : '');
-  return `<p class="onb-p">Your Koyéba calendar works from the off - add events anytime, no account needed.</p>
+  return `<p class="onb-p">Your Kaya calendar works from the off - add events anytime, no account needed.</p>
     <p class="onb-p">Connect an <b>outside</b> calendar to see it here too: <b>Google</b> (read-only), or <b>iCloud</b> / <b>Yahoo</b> (two-way, so you can add and edit from here as well).</p>
     ${list}
     <button class="add-btn wide" data-onb-nav="calendar">${connected ? 'Open the Calendar' : 'Open the Calendar to connect'} →</button>`;
@@ -32213,7 +32658,7 @@ function onbCalendar() {
 // What you can bring in today. Notes and contacts have a home to send you to;
 // events and statements live on their own tools (mentioned, not linked).
 function onbImport() {
-  return `<p class="onb-p">Bring your existing notes and contacts into Koyéba.</p>
+  return `<p class="onb-p">Bring your existing notes and contacts into Kaya.</p>
     <ul class="onb-tips">
       <li><b>Notes</b> - Markdown or text files from Obsidian, Bear, Apple Notes, Notion and the like.</li>
       <li><b>Contacts</b> - a vCard (.vcf) from Google, Outlook, iCloud or your phone.</li>
@@ -32227,7 +32672,7 @@ function onbTwofaPanel() {
     <button class="add-btn wide" data-onb-nav="twofa">Manage two-factor →</button>`;
   return `<p class="onb-p">Add a second step at sign-in from an authenticator app (Google Authenticator, Authy, 1Password…), so your email alone isn't enough to get in. Worth it for a space this personal.</p><button class="add-btn wide" data-onb-nav="twofa">Set up two-factor →</button>`;
 }
-// "Add the web app" - Koyéba is a proper app you install straight from the
+// "Add the web app" - Kaya is a proper app you install straight from the
 // browser, no app store. Pick your device, follow three plain steps. (Robin, 2026-10-29.)
 function onbAppDesktop() {
   const os = (state.onb && state.onb.appDeskOS) || (/(Mac|iPhone|iPad)/.test(navigator.platform || navigator.userAgent || '') ? 'mac' : 'win');
@@ -32235,13 +32680,13 @@ function onbAppDesktop() {
   const steps = os === 'mac' ? [
     ['In Safari', 'Click <b>Share</b> (the square with an arrow ↑) in the toolbar, then <b>Add to Dock</b>.'],
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['That’s it', 'Koyéba now lives in your Dock and opens in its own window.'],
+    ['That’s it', 'Kaya now lives in your Dock and opens in its own window.'],
   ] : [
     ['In Chrome or Edge', 'Click the <b>install icon</b> (a little screen with a ↓) at the right-hand end of the address bar, then <b>Install</b>.'],
-    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Koyéba…</b>'],
-    ['That’s it', 'Koyéba now lives on your taskbar and opens in its own window.'],
+    ['No icon?', 'Open the <b>⋮</b> menu (top right) and choose <b>Install Kaya…</b>'],
+    ['That’s it', 'Kaya now lives on your taskbar and opens in its own window.'],
   ];
-  return `<p class="onb-p">Add Koyéba to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Koyéba.</p>
+  return `<p class="onb-p">Add Kaya to your computer and it opens in its own clean window from the Dock or taskbar - no browser tabs, no address bar, just Kaya.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'mac' ? 'on' : ''}" data-onb-deskos="mac">Mac</button>
       <button type="button" class="onb-ostab ${os === 'win' ? 'on' : ''}" data-onb-deskos="win">Windows</button>
@@ -32253,15 +32698,15 @@ function onbAppPhone() {
   const os = (state.onb && state.onb.appPhoneOS) || (/(iPhone|iPad|iPod)/.test(navigator.userAgent || '') ? 'ios' : 'android');
   const done = appInstalled('phone');
   const steps = os === 'ios' ? [
-    ['Open Koyéba in Safari', 'It has to be Safari for this step - not Chrome.'],
+    ['Open Kaya in Safari', 'It has to be Safari for this step - not Chrome.'],
     ['Tap Share', 'The square with an arrow ↑, at the bottom of the screen.'],
     ['Add to Home Screen', 'Scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>.'],
   ] : [
-    ['Open Koyéba in Chrome', 'On your Android phone.'],
+    ['Open Kaya in Chrome', 'On your Android phone.'],
     ['Tap the ⋮ menu', 'Top-right of the screen.'],
     ['Install app', 'Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.'],
   ];
-  return `<p class="onb-p">Add Koyéba to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
+  return `<p class="onb-p">Add Kaya to your phone's home screen and it opens like any other app - full screen, with notifications and a tap-to-open icon.</p>
     <div class="onb-ostabs">
       <button type="button" class="onb-ostab ${os === 'ios' ? 'on' : ''}" data-onb-phoneos="ios">iPhone</button>
       <button type="button" class="onb-ostab ${os === 'android' ? 'on' : ''}" data-onb-phoneos="android">Android</button>
@@ -32313,17 +32758,17 @@ function renderOnboarding() {
   const pct = countable.length ? Math.round((doneN / countable.length) * 100) : 0;
   // Hold the overlay's scroll steady while background data re-renders it below.
   const prevScroll = (document.querySelector('#onb .onb-bg') || {}).scrollTop || 0;
-  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Koyéba">
+  document.getElementById('onb').innerHTML = `<div class="onb-bg" data-onb-bg><div class="onb-sheet" role="dialog" aria-modal="true" aria-label="Set up Kaya">
     <button class="onb-x" data-onb-close aria-label="Close setup">✕</button>
     <div class="onb-head">
       <span class="onb-mark">${MARK}</span>
-      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Koyéba${name ? `, ${esc(name)}` : ''}`}</h2>
+      <h2 class="onb-title">${allDone ? "You're all set" : `Welcome to Kaya${name ? `, ${esc(name)}` : ''}`}</h2>
       <p class="onb-lede">${allDone ? 'The essentials are in place. Everything else here is optional - add it whenever you like.' : 'Set things up at your own pace. Tap any of these, in any order - nothing here is required, AI included.'}</p>
       <div class="onb-prog" title="${doneN} of ${countable.length} done"><div class="onb-prog-bar"><span style="width:${pct}%"></span></div><span class="onb-prog-n">${doneN} of ${countable.length}</span></div>
     </div>
     <div class="onb-grid">${tilesHtml}</div>
     ${panel}
-    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Koyéba' : 'Done for now'}</button>
+    <button class="onb-done" ${allDone ? 'data-onb-finish' : 'data-onb-close'}>${allDone ? 'Open Kaya' : 'Done for now'}</button>
   </div></div>`;
   // When a step opens, bring its panel to the top so you land on the actual content,
   // not the tile grid above it. The overlay re-renders repeatedly as background data
@@ -32391,7 +32836,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Koyéba</em></div>';
+  const mark = '<div class="gate2-mark"><em>Kaya</em></div>';
   const head = (txt) => `<div style="font-family:var(--k-serif);font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };
@@ -32399,7 +32844,7 @@ function showRequired2fa() {
     card.innerHTML = `${mark}${head('Two-factor is on ✓')}
       <p class="gate2-sub">Save these recovery codes somewhere safe - each works once if you ever lose your authenticator. This is the only time they are shown.</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0;font-family:var(--k-sans);font-size:15px">${st.recovery.map((c) => `<code style="background:var(--paper-2);padding:7px 8px;border-radius:6px;text-align:center">${esc(c)}</code>`).join('')}</div>
-      <button class="gate2-btn" id="r2-done">Done - open Koyéba</button>`;
+      <button class="gate2-btn" id="r2-done">Done - open Kaya</button>`;
     document.getElementById('r2-done').onclick = () => { state.req2fa = null; location.reload(); };
     return;
   }
@@ -32422,7 +32867,7 @@ function showRequired2fa() {
     return;
   }
   card.innerHTML = `${mark}${head('Two-factor is now required')}
-    <p class="gate2-sub">To keep your Koyéba secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
+    <p class="gate2-sub">To keep your Kaya secure, every account turns on two-factor authentication within three months of opening - and yours is due. It takes about a minute and a free authenticator app.</p>
     <button class="gate2-btn" id="r2-start">Set it up now</button>
     <p class="gate2-alt"><a href="/blog/two-factor-authentication" target="_blank" rel="noopener">Why?</a> · <button type="button" class="su-signout" id="r2-signout">sign out</button></p>`;
   document.getElementById('r2-start').onclick = async () => {
@@ -32447,9 +32892,9 @@ function showRequired2fa() {
   // and home-screen installs migrate without a re-login. (Robin, 2026-10-15.)
   try {
     const _h = location.hostname;
-    if (_h !== 'koyeba.co' && _h !== 'www.koyeba.co' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
+    if (_h !== 'kaya.so' && _h !== 'www.kaya.so' && /(?:daybook|lifebook)\.fyi$/.test(_h)) {
       const tk = token();
-      location.replace('https://koyeba.co/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
+      location.replace('https://kaya.so/app' + (tk ? '#t=' + encodeURIComponent(tk) : ''));
       return;
     }
   } catch {}
@@ -32477,12 +32922,12 @@ function showRequired2fa() {
     invited = !!storedInvite();
   } catch {}
   if (!token()) {
-    showGate(invited ? "You've been invited to Koyéba. Sign in with your email to accept." : null);
+    showGate(invited ? "You've been invited to Kaya. Sign in with your email to accept." : null);
     if (invited) loadInviteWelcome();
     // They typed their email on the marketing sign-in box; prefill it and let them
     // choose email OR text. Don't auto-send: auto-emailing hid the "Text me the
     // code" link, so signing in by text from the marketing/mobile entry was
-    // impossible - the one case (mailbox lives inside Koyéba) it exists for.
+    // impossible - the one case (mailbox lives inside Kaya) it exists for.
     if (preEmail) { const el = $('#gate-email'); if (el) el.value = preEmail; if (preChannel === 'sms') gateSend('sms'); else { const b = $('#gate-btn'); if (b) b.focus(); } }
     return;
   }
@@ -32499,7 +32944,7 @@ function showRequired2fa() {
       // day/night theme, so re-resolve in case they'd previously chosen one. (Robin.)
       try { if (themeLocked()) applyTheme(false); } catch {}
       // Two-factor becomes required three months after an account opens. Past that,
-      // a member without it set up must turn it on before using Koyéba. Sign-out
+      // a member without it set up must turn it on before using Kaya. Sign-out
       // is always offered, so this asks firmly but can never lock anyone out.
       if (!me.user.totp_enabled && me.user.created_at && (Date.now() - Date.parse(me.user.created_at)) > 90 * 86400000) { showRequired2fa(); return; }
     }
@@ -32530,7 +32975,7 @@ function showRequired2fa() {
     // Deep link: a home-screen icon pinned to /calendar opens straight there.
     const savedTabs = readLS('life.tabs', null);
     // Restore the tabs you had open, focused on the one you were using - so
-    // reopening Koyéba on desktop puts you back exactly where you left off. The
+    // reopening Kaya on desktop puts you back exactly where you left off. The
     // installed PHONE app is the exception: after an hour away it still drops you
     // on Home (a fresh glance beats last night's page), though a quick reopen keeps
     // your place. A deep-link route below still wins over all of this. (Robin:
@@ -32545,7 +32990,7 @@ function showRequired2fa() {
     try { freshOpen = !sessionStorage.getItem('koyeba.ses'); sessionStorage.setItem('koyeba.ses', '1'); } catch {}
     const forceHome = !!SPLIT_FRAME_TOOL || freshOpen || (installedApp && reopenedAfterAWhile());
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
-      state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home', pinned: !!t.pinned }));
+      state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home' }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
       if (forceHome) { const act = state.tabs.find((t) => t.id === state.activeTab); if (act) { act.view = { type: 'home' }; act.label = 'Home'; } window.scrollTo(0, 0); }
     } else { state.tabs = [{ id: uid(), view: { type: 'home' }, label: 'Home' }]; state.activeTab = state.tabs[0].id; }
@@ -32591,7 +33036,7 @@ function showRequired2fa() {
     syncBgPatternFromServer();  // and the background pattern, likewise
     syncDateStyleFromServer();  // and the UK/US date style, likewise
 
-    loadAccount();           // name, handle & contact details for the Koyéba card
+    loadAccount();           // name, handle & contact details for the Kaya card
     api('/api/kv/card_profile').then((r) => { if (r && r.value) { try { state.card = JSON.parse(r.value) || {}; } catch {} const v = state.view && state.view.type; if (v === 'area' || v === 'home') rerenderCurrent(); } }).catch(() => {});
     // Pinned I Ching / horoscope readings follow the account, so they surface on
     // Well-being and Home on any device.

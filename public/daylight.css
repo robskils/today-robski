@@ -1,4 +1,4 @@
-/* Koyéba - the light. A painted wash behind every page that follows the real day
+/* Kaya - the light. A painted wash behind every page that follows the real day
    (dawn, overcast by day, dusk, night), with frosted glass on what floats and on
    what you choose or glance at. Never glass on what you read closely.
 
@@ -49,8 +49,12 @@
 :root[data-light] body, :root[data-light] #pane { background:transparent; }
 :root[data-light] body::before { display:none; }
 #light-layer { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
-#light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
-#light-layer img.on { opacity:1; }
+/* The painted wash is held back so it reads as a quiet atmosphere, not a picture:
+   it settles to about half strength over the calm ground, softened and a shade
+   desaturated, so there is less going on behind the glass. (Robin, 2026-11-07.)
+   scale(1.04) keeps the gentle blur from feathering the viewport edges. */
+#light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transform:scale(1.04); filter:saturate(.9) blur(3px); transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
+#light-layer img.on { opacity:.5; }
 @media (prefers-reduced-motion:reduce) { #light-layer img, :root[data-light] { transition:none; } }
 
 /* ── Legibility ───────────────────────────────────────────────────────────── */
@@ -87,7 +91,7 @@
 :root[data-light] .cap-bar { border:1px solid var(--glass-edge); color:var(--k-ink); }
 :root[data-light] .cap-bar.cap-dim { opacity:1; }
 :root[data-light] .cap-bar * { color:var(--k-ink); opacity:1; }
-:root[data-light] .knav-g, :root[data-light] .knav-g-l,
+:root[data-light] .knav-g, :root[data-light] .knav-g-l, :root[data-light] .knav-p, :root[data-light] .knav-p-l,
 :root[data-light] .knav-right > *, :root[data-light] .knav-crumb,
 :root[data-light] .knav-b-contents, :root[data-light] .knav-b-find { color:var(--k-ink); opacity:1; }
 :root[data-light] .knav-b-set, :root[data-light] .knav-b-set * { color:#12100b; }
@@ -189,6 +193,10 @@
   background-color:var(--glass-card); background-image:none; border-color:var(--glass-edge); box-shadow:none;
 }
 :root[data-light] .mp-msg.mine { background-color:rgba(255,255,255,.14); }
+/* The selected week day is a gold underline, nothing more. It shares the 'sel' class
+   with dropdowns, which leaked a glass box, 12px/16px padding (the indent) and a
+   180px cap onto it - strip all that back. (Robin, 2026-11-05.) */
+:root[data-light] .cx-whead.sel { max-width:none; padding:0 0 10px; background:none; border:0; border-bottom:1px solid var(--k-gold); -webkit-backdrop-filter:none; backdrop-filter:none; }
 /* Left-edge colour stripes and per-Space dots: gone. */
 :root[data-light] .trk-area { border-left:1px solid var(--glass-edge) !important; }
 .wheeltrend-dot, .nt-sub-dot, .rr-key-ic, .jrs-sym { display:none !important; }
@@ -277,11 +285,9 @@
 .mail-rowsel { display:none; }
 /* Mail search: a glass box across the width, under the line about what's to sort. */
 .mail-tb-main { flex:1; min-width:0; }
-.mail-tb-main .mail-search2 { box-sizing:border-box; width:100%; min-width:0; margin-top:20px; padding:12px 16px; background:var(--glass-card); border:1px solid var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
-.mail-tb-main .mail-search2:focus-within { border-color:#fff; }
-.mail-tb-main .mail-search2 input { color:var(--k-ink); }
-.mail-tb-main .mail-search2 input::placeholder { color:var(--k-mute); opacity:1; }
-.mail-tb-main .mail-search2-k { color:var(--k-mute); font-size:13px; letter-spacing:0; }
+/* Mail search is now the shared Cormorant-underline box (.cvx-search), a full-
+   width row below the title - matching Contacts, Notes, Tables and Spaces.
+   (Robin, 2026-11-05: "I thought we were going to change the search box?") */
 /* Phones, an open email: no box; sender, then the title across the width, then the
    receiving address and time on one line; Move to, Action and Tools are dropdowns. */
 @media (max-width:767px) {
@@ -302,11 +308,40 @@
   .mailv2ar .mail-ar-main { min-width:0; }
   .mail-ar:not(.open) .mailv2ar .mail-ar-from { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop) { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
-  .mail-ar-bar { position:static; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; padding:12px 0; }
-  :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) { display:grid; grid-template-columns:76px minmax(0,1fr); align-items:center; gap:10px; width:100%; }
+  .mail-ar-bar { position:sticky; top:var(--tabstrip-h,68px); z-index:7; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; padding:12px 0; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) { display:block; width:100%; }
+  :root[data-light] .mail-ar-bar :is(.mail-ar-triage-l, .mail-ar-row-l) { display:none; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-replytop, .mail-maketop) { display:block; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) > :is(button, details) { display:none; }
-  :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffffff' stroke-width='1.7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; }
+  :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; padding-left:16px; padding-right:38px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffffff' stroke-width='1.7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; }
+}
+
+/* Archive · Delete at the foot of a read email (Robin, 2026-11-05): the house glass
+   button - white rim, frosted, words centred. Content-width on desktop; two-up, half
+   the row each, on a phone (Robin asked for the half-row there). They sit on the dark
+   page, in .mail-ar-below, never on the white email paper. */
+.mail-ar-footacts { display:flex; flex-wrap:wrap; gap:12px; margin:18px 0 2px; }
+:root[data-light] .mail-footact {
+  display:inline-flex; align-items:center; justify-content:center; text-align:center;
+  min-height:46px; padding:0 24px;
+  background:rgba(255,255,255,.1); background-image:none;
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  border:1px solid rgba(255,255,255,.78); box-shadow:none;
+  color:#fff; font-family:var(--k-sans); font-size:16px; font-weight:500; letter-spacing:.01em; text-transform:none; cursor:pointer;
+}
+:root[data-light] .mail-footact:hover { background:rgba(255,255,255,.2); }
+@media (max-width:620px) {
+  .mail-ar-footacts { gap:10px; }
+  .mail-ar-footacts .mail-footact { flex:1 1 0; min-width:0; }
+}
+
+/* Opening an email scrolls it to the top of the viewport, clear of the sticky nav. */
+.mail-ar.open { scroll-margin-top: calc(var(--navh, 56px) + 12px); }
+
+/* Notepad is a desktop surface - its triggers and panel are hidden on a phone, where
+   it was a fiddly experience. (Robin, 2026-11-05: "hide it on mobile".) */
+@media (max-width:820px) {
+  [data-notepad-open], .knav-np-btn, #notepad-panel { display:none !important; }
 }
 
 /* The Practices page: the same open rows as Today's Practices tab. No boxes. */
@@ -530,7 +565,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   .knav-bar { height:68px; }
   .knav-inner { padding:0 24px; gap:clamp(12px,2vw,24px); }
   .knav-brand .brand-word { font-size:28px; }
-  .knav-groups { display:flex; gap:clamp(12px,1.8vw,22px); }
+  .knav-prims { display:flex; gap:clamp(12px,1.8vw,22px); }
+  .knav-groups { display:none; }
   .knav-right { display:flex; gap:clamp(12px,1.6vw,20px); margin-left:auto; }
   .knav-crumb, .knav-inner .mtop-back, .knav-bottom { display:none; }
   .knav-sheet { display:block; }
@@ -558,3 +594,40 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 #light-preview { position:fixed; right:16px; top:calc(var(--navh,68px) + 10px); z-index:90; display:flex; gap:2px; padding:4px; max-width:calc(100vw - 32px); flex-wrap:wrap; background:var(--glass); border:1px solid var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); font:500 16px 'Jost',sans-serif; }
 #light-preview button { min-height:44px; padding:0 12px; background:transparent; border:0; border-bottom:2px solid transparent; color:var(--k-ink); font:inherit; cursor:pointer; }
 #light-preview button.on { border-bottom-color:var(--k-gold); }
+
+/* ── §24 "Plain" mode: a calm, un-painted ivory page (the LisbonSintraTours look &
+   feel) for anyone who finds the painted wash distracting. Opt-in and off by
+   default - applyTheme sets html[data-plain] from life.plain. It overrides the
+   whole token set to a warm light palette and hides the wash; every component
+   reads the tokens, so the app follows it. (Robin, 2026-11-06: "a plainer option…
+   they like the look and feel of LisbonSintraTours.com".) ── */
+:root[data-plain] {
+  --k-bg:#F6F2E9; --k-panel:#FFFFFF; --k-soft:#EFEADD; --k-mine:#E7E1D1;
+  --k-ink:#2C2820; --k-mute:#6C6457; --k-goldt:#937528; --k-gold:#B98F3C; --k-line:#E3DDCE;
+  --k-deep:#2E3B30; --k-ondeep:#F6F2E9;
+  --glass:rgba(255,255,255,.6); --glass-edge:rgba(44,40,32,.15); --glass-card:rgba(255,255,255,.75); --glass-face:rgba(255,255,255,.88);
+  --glass-blur:blur(10px) saturate(1.05);
+  --line:rgba(44,40,32,.13); --line-2:rgba(44,40,32,.22);
+  --paper:var(--k-bg); --paper-2:var(--k-soft); --card:var(--k-panel);
+  --ink:var(--k-ink); --ink-2:var(--k-mute); --ink-3:#8C8475;
+  --accent:#B98F3C; --accent-ink:#2C2820;
+}
+:root[data-plain] { background:#F6F2E9 !important; }
+:root[data-plain] body, :root[data-plain] #pane { background:transparent; }
+:root[data-plain] #light-layer { display:none !important; }
+/* The brand mark (the Mandombe "ko" octagram) swaps to its ivory-stroke art under
+   data-theme='dark' - which plain mode keeps while painting the page ivory, so the
+   ivory mark vanished on the ivory ground. On the plain page use the ink art, the
+   same one the daytime light uses. (Robin, 2026-11-07: "can't see the logo at the
+   bottom.") */
+:root[data-plain] .brand-mark { background-image:url(/brand/mandombe-ko-ink.svg); }
+/* Same story for the big image marks (the one closing the Home column, the Space
+   footer): the night art is ivory, so on the plain ivory page show the ink art. */
+:root[data-plain] .kmark-night { display:none !important; }
+:root[data-plain] .kmark-day { display:block !important; }
+/* The glass "main button" hard-codes white text + a white rim for the dark themes;
+   on the plain page give it dark ink and a warm rim so it reads. */
+:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary) { background:rgba(44,40,32,.045); border-color:rgba(44,40,32,.3); color:var(--k-ink); }
+:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):hover { background:rgba(44,40,32,.09); border-color:var(--k-gold); color:var(--k-goldt); }
+:root[data-plain] .mail-footact { background:rgba(44,40,32,.045); border-color:rgba(44,40,32,.3); color:var(--k-ink); }
+:root[data-plain] .mail-footact:hover { background:rgba(44,40,32,.09); border-color:var(--k-gold); color:var(--k-goldt); }

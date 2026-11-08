@@ -1,6 +1,6 @@
 import { normPlan } from './plans.js';
 /**
- * Onboarding for Koyéba (multi-tenant). A signed-in email with no `users` row
+ * Onboarding for Kaya (multi-tenant). A signed-in email with no `users` row
  * yet is "unprovisioned" - it can reach only /api/me and /api/signup until it
  * claims an account (invite-gated, with a subdomain). Everything else needs a
  * provisioned user (see resolveUser in auth.js).
@@ -62,7 +62,7 @@ export async function hasPendingInvite(env, email) {
 }
 
 // Printed invitations, reusable up to a cap. ROBIN is on Robin's business card
-// (koyeba.co/invite/robin): Premium is bring-your-own-key, so it carries no AI bill.
+// (kaya.so/invite/robin): Premium is bring-your-own-key, so it carries no AI bill.
 const OPEN_INVITES = { ROBIN: { plan: 'byok', free_months: 2, created_by: 1, cap: 250 } };
 
 // Which invite is this signup running on? A typed code wins (someone was given
@@ -131,9 +131,9 @@ export async function handleSignup(request, env, email, json, err) {
   const publicSignup = await isPublicSignup(env);
   const inv = await resolveInvite(env, b.invite, email);
   if (inv === 'unknown') return err('That invite code is not valid.', request, 400);
-  if (inv === 'full') return err('These invitations have all been taken. You can ask for one at koyeba.co.', request, 400);
+  if (inv === 'full') return err('These invitations have all been taken. You can ask for one at kaya.so.', request, 400);
   if (inv === 'used') return err('That invitation has already been used. Ask whoever invited you to send a fresh one.', request, 400);
-  if (!inv && !publicSignup) return err('Koyéba is invite-only for now - you need an invitation from a member.', request, 403);
+  if (!inv && !publicSignup) return err('Kaya is invite-only for now - you need an invitation from a member.', request, 403);
 
   const name = String(b.name || '').trim().slice(0, 40) || email.split('@')[0];
   // Usernames are derived automatically now - people no longer pick one at signup.
@@ -171,7 +171,7 @@ export async function handleSignup(request, env, email, json, err) {
         env.DB.prepare("INSERT OR IGNORE INTO friends (user_id, friend_id, status, created_at) VALUES (?,?,'accepted',?)").bind(uid, invitedBy, now),
         env.DB.prepare("INSERT OR IGNORE INTO friends (user_id, friend_id, status, created_at) VALUES (?,?,'accepted',?)").bind(invitedBy, uid, now),
       ]);
-      await env.DB.prepare('INSERT INTO messages (from_id, to_id, body, ts) VALUES (?,?,?,?)').bind(uid, invitedBy, `${name} has joined Koyéba from your invitation.`, now).run();
+      await env.DB.prepare('INSERT INTO messages (from_id, to_id, body, ts) VALUES (?,?,?,?)').bind(uid, invitedBy, `${name} has joined Kaya from your invitation.`, now).run();
     } catch (e) { console.error('invite connect:', e.message); }
   }
   return json({ user: await getUserByEmail(env, email), free: !!free }, request, 201);
@@ -218,7 +218,7 @@ async function seedNewUser(env, uid) {
   const now = new Date().toISOString();
   const lanes = DEFAULT_LANES.map((l) => ({ key: l.key, label: l.label, hue: l.hue, ...(l.practice ? { practice: true } : {}), ...(l.optional ? { optional: true } : {}) }));
 
-  // A blank Life Areas page doesn't tell a newcomer that Koyéba orbits their
+  // A blank Life Areas page doesn't tell a newcomer that Kaya orbits their
   // life areas. Seed the common ones (a Wheel-of-Life spread) so tasks, notes,
   // goals and spending categories all have somewhere to land. Ordinary blocks:
   // rename, recolour or delete any. Hues walk the wheel from a blue base so each
@@ -279,7 +279,7 @@ export async function giftsUsed(env) {
   return c ? (c.n || 0) : 0;
 }
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-export const joinLink = (code) => `https://koyeba.co/join/${code}`;
+export const joinLink = (code) => `https://kaya.so/join/${code}`;
 
 // Create an invite and, when it names an address, *send it*. The inviter types
 // their friend's email and a note and the invitation lands in their inbox with a
@@ -292,7 +292,7 @@ export async function createInvite(env, input) {
   // free (see GIFT_LIMIT). That's it.
   const email = (String(input.email || '').trim().toLowerCase()) || null;
   if (email && !EMAIL_RE.test(email)) throw new Error('That does not look like an email address.');
-  if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on Koyéba.`);
+  if (email && await getUserByEmail(env, email)) throw new Error(`${email} is already on Kaya.`);
 
   // Inviting the same person twice re-sends their standing invitation rather than
   // leaving two live codes with one name on them. That also means a re-send never
@@ -386,26 +386,26 @@ export async function cancelInvite(env, code) {
 }
 
 // ── The invitation email ──────────────────────────────────────────────
-// From Koyéba, but *about* the person who sent it: "Robin has invited you to
-// join Koyéba". Replies go to the inviter, so a "what is this?" reaches a human.
+// From Kaya, but *about* the person who sent it: "Robin has invited you to
+// join Kaya". Replies go to the inviter, so a "what is this?" reaches a human.
 async function sendInviteMail(env, { to, code, message }) {
   // The name goes into a Subject header, so strip anything that could start a
   // header line of its own.
   const from = String((env.user && env.user.name) || 'Someone').replace(/[\r\n]+/g, ' ').trim().slice(0, 40) || 'Someone';
-  const subject = `${from} has invited you to join Koyéba`;
+  const subject = `${from} has invited you to join Kaya`;
   const link = joinLink(code);
-  // A touch of the inviter's Koyéba card in the email (tagline + colour).
+  // A touch of the inviter's Kaya card in the email (tagline + colour).
   let tagline = '', accent = '';
   try { const row = await env.DB.prepare("SELECT value FROM settings WHERE user_id = ? AND key = 'card_profile'").bind(env.uid).first(); if (row && row.value) { const c = JSON.parse(row.value) || {}; tagline = String(c.tagline || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 140); accent = c.accent || ''; } } catch {}
   const html = inviteEmail({ from, message, link, tagline, accent });
-  const text = `${from} has invited you to join Koyéba.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nKoyéba is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
+  const text = `${from} has invited you to join Kaya.\n\n${message ? `"${message}"\n\n` : ''}Accept the invitation: ${link}\n\nKaya is a calm home for your day - your calendar, mail, tasks, notes, money and more, all in one place. You own everything in it, and it's private to you.`;
   const replyTo = (env.user && env.user.email) || null;
 
   if (env.BRIEF_SMTP_PASS) {
     // Same sender as the morning brief: a real Purelymail mailbox, so SPF/DKIM
     // pass natively with no Resend domain to verify (see CLAUDE.md).
     const acct = {
-      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Koyéba',
+      email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Kaya',
       username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi',
       smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS,
     };
@@ -582,16 +582,16 @@ export async function setPrimaryEmail(env, email) {
 // A security heads-up to the OLD address when the primary email changes.
 async function sendPrimaryChangedMail(env, { to, newEmail }) {
   const esc = (s) => String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-  const subject = 'Your Koyéba sign-in email was changed';
+  const subject = 'Your Kaya sign-in email was changed';
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1b1820">
-    <div style="font:600 22px/1.2 Georgia,serif;margin-bottom:14px">Koyéba</div>
-    <p style="font-size:15px;line-height:1.6;margin:0 0 12px">The sign-in email on your Koyéba account was changed to <b>${esc(newEmail)}</b>.</p>
+    <div style="font:600 22px/1.2 Georgia,serif;margin-bottom:14px">Kaya</div>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 12px">The sign-in email on your Kaya account was changed to <b>${esc(newEmail)}</b>.</p>
     <p style="font-size:15px;line-height:1.6;margin:0 0 12px">This address still works as a sign-in too, so you won't be locked out.</p>
     <p style="font-size:14px;line-height:1.6;color:#6b6676;margin:0">If you didn't make this change, reply to this email right away and we'll help secure your account.</p>
   </div>`;
-  const text = `The sign-in email on your Koyéba account was changed to ${newEmail}.\n\nThis address still works as a sign-in too, so you won't be locked out.\n\nIf you didn't make this change, reply to this email right away.`;
+  const text = `The sign-in email on your Kaya account was changed to ${newEmail}.\n\nThis address still works as a sign-in too, so you won't be locked out.\n\nIf you didn't make this change, reply to this email right away.`;
   if (env.BRIEF_SMTP_PASS) {
-    const acct = { email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Koyéba', username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi', smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS };
+    const acct = { email: env.BRIEF_FROM || 'contact@daybook.fyi', name: 'Kaya', username: env.BRIEF_SMTP_USER || 'contact@daybook.fyi', smtp_host: 'smtp.purelymail.com', smtp_port: 465, pass: env.BRIEF_SMTP_PASS };
     try {
       await smtpSend(env, acct, { rcpts: [to], raw: buildMessage(acct, { to, subject, html, text }) });
       return;
