@@ -20316,7 +20316,7 @@ function renderTasks() {
   // Sidebar: every Space with its open-task count, sorted by name (A) or by number
   // (#); each toggle flips direction on a second press. No collapse. (Robin, 2026-11-06.)
   const bySpace = {}; openT.forEach((t) => { const s = txSpaceName(t) || 'No Space'; bySpace[s] = (bySpace[s] || 0) + 1; });
-  const spSort = state.taskSpaceSort || (state.taskSpaceSort = { key: 'az', dir: 1 });
+  const spSort = state.taskSpaceSort || (state.taskSpaceSort = { key: 'count', dir: -1 });
   const spaceRows = Object.entries(bySpace).sort((a, b) => spSort.key === 'count' ? ((a[1] - b[1]) * spSort.dir || a[0].localeCompare(b[0])) : a[0].localeCompare(b[0]) * spSort.dir);
   const spArrow = (k) => spSort.key === k ? `<span class="tx-side-dir">${spSort.dir > 0 ? '↑' : '↓'}</span>` : '';
   const spaceBody = `<div class="tx-side-body">${spaceRows.map(([s, n]) => `<div class="tx-side-row"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></div>`).join('') || '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
@@ -27963,7 +27963,7 @@ document.addEventListener('click', (e) => {
   const nxSd = t.closest('[data-notes-side]'); if (nxSd) { const k = nxSd.dataset.notesSide; state.notesSide = state.notesSide || {}; state.notesSide[k] = state.notesSide[k] === false ? true : false; renderNotesList(); return; }
   const txOrd = t.closest('[data-task-order]'); if (txOrd) { state.taskOrder = txOrd.dataset.taskOrder; try { localStorage.setItem('life.taskOrder', state.taskOrder); } catch {} state.taskPile = null; renderTasks(); return; }
   const txPl = t.closest('[data-task-pile]'); if (txPl) { state.taskPile = txPl.dataset.taskPile; renderTasks(); return; }
-  const txSp = t.closest('[data-task-spsort]'); if (txSp) { const k = txSp.dataset.taskSpsort; const s = state.taskSpaceSort || (state.taskSpaceSort = { key: 'az', dir: 1 }); if (s.key === k) s.dir = -s.dir; else { s.key = k; s.dir = 1; } renderTasks(); return; }
+  const txSp = t.closest('[data-task-spsort]'); if (txSp) { const k = txSp.dataset.taskSpsort; const s = state.taskSpaceSort || (state.taskSpaceSort = { key: 'count', dir: -1 }); if (s.key === k) s.dir = -s.dir; else { s.key = k; s.dir = 1; } renderTasks(); return; }
   const txGr = t.closest('[data-task-group]'); if (txGr) { const k = txGr.dataset.taskGroup; state.taskShut = state.taskShut || {}; state.taskShut[k] = !state.taskShut[k]; renderTasks(); return; }
   const txSd = t.closest('[data-task-side]'); if (txSd) { const k = txSd.dataset.taskSide; state.taskSide = state.taskSide || {}; state.taskSide[k] = state.taskSide[k] === false ? true : false; renderTasks(); return; }
   const txTk = t.closest('[data-task-tick]'); if (txTk) { e.preventDefault(); e.stopPropagation(); toggleTask(txTk.dataset.taskTick); return; }

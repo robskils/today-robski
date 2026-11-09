@@ -12436,8 +12436,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-lr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .cx-lr-ti { min-width:0; }
 .cx-lr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
-/* The ▶ Join link on a List row stacks under the title. (Robin, 2026-11-09.) */
-.cx-lrow > .ev-join-link{ grid-column:2; margin-top:5px; }
+/* The Open/Join link on a List row sits boxed on the right (like the Today
+   calendar), not underneath. The 4th column holds it at the far right; the
+   boxed look is in daylight.css next to .home-cal-b. (Robin, 2026-11-09.) */
+.cx-lrow:has(> .ev-join-link){ grid-template-columns:110px minmax(0,1fr) auto auto; }
 .cx-empty { padding:40px 0; font-family:var(--k-serif); font-style:italic; font-size:21px; color:var(--k-mute); }
 /* selected-day side */
 .cx-side-head { padding-bottom:14px; border-bottom:1px solid var(--k-gold); }

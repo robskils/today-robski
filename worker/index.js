@@ -5830,6 +5830,22 @@ export default {
       if (path === '/api/slots' && request.method === 'POST') return createSlot(request, env);
       if (path === '/api/events' && request.method === 'POST') return createEvent(request, env);
       if (path === '/api/calendar' && request.method === 'GET') return handleCalendar(request, env, url);
+      // Manual per-event join links (keyed by event/series id): lets an online
+      // class carry an Open link even when the event itself has none. (Robin,
+      // 2026-11-09.) Small JSON map in the owner's settings.
+      if (path === '/api/event-links' && request.method === 'GET') {
+        let m = {}; try { m = JSON.parse((await getSetting(env, 'event_links')) || '{}'); } catch {}
+        return json({ links: m }, request);
+      }
+      if (path === '/api/event-link' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const id = String(b.id || '').trim().slice(0, 300);
+        let link = String(b.url || '').trim().slice(0, 600);
+        if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+        let m = {}; try { m = JSON.parse((await getSetting(env, 'event_links')) || '{}'); } catch {}
+        if (id) { if (link) m[id] = link; else delete m[id]; await setSetting(env, 'event_links', JSON.stringify(m)); }
+        return json({ ok: !!id, links: m }, request);
+      }
       if (path === '/api/event-notes' && request.method === 'POST') { const b = await request.json().catch(() => ({})); await updateEventNoteLink(env, b.eventId, b.addNote, b.removeNoteId); return json({ ok: true }, request); }
       // Link (or unlink) an existing event to a contact via the side-map only - no
       // Google round-trip, unlike a full event PATCH.
