@@ -1777,6 +1777,10 @@ function applyTheme(rerender) {
   document.documentElement.dataset.theme = theme;
   if (plainMode()) document.documentElement.setAttribute('data-plain', ''); else document.documentElement.removeAttribute('data-plain');
   document.documentElement.setAttribute('data-plain-night', plainNight());
+  // Sensible follows day/night like the washes do - but every wash counts as "dark"
+  // (lightIsDark is always true), so the ivory-vs-green switch keys off the actual
+  // light instead: green from dusk through the night, ivory by day. (Robin, 2026-11-09.)
+  document.documentElement.toggleAttribute('data-plain-dark', plainMode() && (light === 'night' || light === 'dusk'));
   try { localStorage.setItem('today.theme', theme); localStorage.setItem('today.light', light); } catch {}
   syncLightLayer(light);
   syncLightPreview(light);

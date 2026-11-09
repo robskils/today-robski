@@ -626,7 +626,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 }
 /* Sensible NIGHT A - faithful to LST's own dark, a near-black green. The default
    'b' below overrides it; picking "Deep" in Settings falls back to this. */
-:root[data-plain][data-theme='dark'] {
+:root[data-plain][data-plain-dark] {
   --k-bg:#080F09; --k-panel:#0F1911; --k-soft:#19281C; --k-mine:#1F3423;
   --k-ink:#F5F1E9; --k-mute:#B1AA9E; --k-goldt:#E8AA4E; --k-gold:#E8AA4E; --k-line:#252C27;
   --k-deep:#060C07; --k-ondeep:#F5F1E9;
@@ -636,7 +636,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   --accent:#E8AA4E; --accent-ink:#0F1911;
 }
 /* Sensible NIGHT B (the default) - a clearly green night. */
-:root[data-plain][data-theme='dark'][data-plain-night='b'] {
+:root[data-plain][data-plain-dark][data-plain-night='b'] {
   --k-bg:#0C2416; --k-panel:#123120; --k-soft:#1B3D29; --k-mine:#224A32;
   --k-ink:#F1EEE6; --k-mute:#AEB49F; --k-goldt:#EBB353; --k-gold:#EBB353; --k-line:#2E4836;
   --k-deep:#081C11; --k-ondeep:#F1EEE6;
@@ -646,8 +646,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   --accent:#EBB353; --accent-ink:#0C2416;
 }
 :root[data-plain] { background:#FAF6EE !important; }
-:root[data-plain][data-theme='dark'] { background:#080F09 !important; }
-:root[data-plain][data-theme='dark'][data-plain-night='b'] { background:#0C2416 !important; }
+:root[data-plain][data-plain-dark] { background:#080F09 !important; }
+:root[data-plain][data-plain-dark][data-plain-night='b'] { background:#0C2416 !important; }
 :root[data-plain] body, :root[data-plain] #pane { background:transparent; }
 :root[data-plain] #light-layer { display:none !important; }
 /* The brand mark (the Mandombe "ko" octagram) swaps to its ivory-stroke art under
@@ -657,9 +657,9 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
    bottom.") */
 /* The ink brand mark + ink home/footer art are for the ivory DAY only. At night the
    page is dark green, so let the normal dark-theme art (ivory mark) stand. */
-:root[data-plain][data-theme='light'] .brand-mark { background-image:url(/brand/mandombe-ko-ink.svg); }
-:root[data-plain][data-theme='light'] .kmark-night { display:none !important; }
-:root[data-plain][data-theme='light'] .kmark-day { display:block !important; }
+:root[data-plain]:not([data-plain-dark]) .brand-mark { background-image:url(/brand/mandombe-ko-ink.svg); }
+:root[data-plain]:not([data-plain-dark]) .kmark-night { display:none !important; }
+:root[data-plain]:not([data-plain-dark]) .kmark-day { display:block !important; }
 /* Primary buttons take the theme's primary - forest green by day, gold by night -
    with its on-primary text. That green is the LisbonSintraTours character Robin
    asked for (2026-11-09); it reads the token, so it follows day/night on its own. */
