@@ -20329,6 +20329,7 @@ function renderTasks() {
   const inPileAll = (id) => id === 'done' ? doneT : id === 'all' ? openT : openT.filter((t) => 'p' + txPriBucket(t) === id);
   const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
   const groupBy = taskGroupBy();
+  const board = tasksBoardOn();
   const orders = `<select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>`;
   // In the All tab, priorities are mixed, so every task leads with its own First /
   // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
@@ -20375,9 +20376,9 @@ function renderTasks() {
       <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openT, 'priority'))}</div>
-      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${orders}</div></div>
+      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board ? '' : orders}</div></div>
       <div class="tx-add"><span class="tx-add-box"></span><input data-task-quickadd placeholder="${esc(addPh)}" autocomplete="off"><span class="tx-add-k">↵</span></div>
-      <div class="tx-groups">${groupsHtml}</div>
+      <div class="tx-groups">${board ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
     <aside class="tx-side">${sidePanel}</aside>
   </div></div>`;
