@@ -15796,8 +15796,9 @@ async function calSaveEvent(id, title, startDate, startTime, endDate, endTime, l
     invalidateAreaWeek();   // a space's week-at-a-glance must pick up the change
     toast(id ? 'Event updated' : 'Added to your calendar');
     state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
-    // Jump the view to the event's day so it's visible even if it moved months.
-    state.cal.selected = startDate; const [yy, mm] = startDate.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; }
+    // A NEW event jumps the view to its day so you see what you added. An edit
+    // stays put - jumping to a multi-day event's first day was jarring. (Robin, 2026-11-09.)
+    if (!id) { state.cal.selected = startDate; const [yy, mm] = startDate.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } }
     await loadCalendar();
     refreshAlarmEvents();   // pick up a just-set (or cleared) reminder right away
   } catch (e) { toast(e.message); }
