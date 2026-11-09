@@ -3095,6 +3095,9 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .ce-grid .ce-loc-wrap { order:1; }
 .ce-grid .ce-repeat-field { order:2; }
 .ce-grid .ce-rem-field { order:3; grid-column:1 / -1; }
+/* Keep the two columns' label rows the same height so the Location and Repeat
+   boxes stay aligned whether or not the Directions button is showing. (Robin, 2026-11-09.) */
+.ce-grid .ce-flbl { min-height:26px; }
 @media (max-width:460px){ .ce-grid { grid-template-columns:minmax(0,1fr); } }
 /* "With": a quiet, optional person link - a small search box, not a labelled
    dropdown, since linking a person to an event is the exception, not the rule. */
