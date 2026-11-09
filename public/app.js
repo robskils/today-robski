@@ -15152,7 +15152,13 @@ async function ownerGcalPause(off) {
     if (state.view && state.view.type === 'calendar') { renderCalendar(); loadCalendar(); }
   } catch (e) { toast(e.message); }
 }
-function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); loadCalendar(); }
+function setCalMode(mode) { state.cal.mode = mode; localStorage.setItem('life.calMode', mode); state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
+  // Week view always opens on the CURRENT week, never the last one you'd scrolled
+  // to: reset selected + weekAnchor to today when switching in. Prev/next (calStep)
+  // still moves the window from here. (Robin, 2026-11-09: "default to the current
+  // week, rather than the one that was last seen".)
+  if (mode === 'week') { const ti = todayISO(); state.cal.selected = ti; state.cal.weekAnchor = ti; const [wy, wm] = ti.split('-').map(Number); state.cal.y = wy; state.cal.m = wm - 1; }
+  renderCalendar(); loadCalendar(); }
 function stepCal(delta) {
   if (state.cal.mode === 'week') { state.cal.selected = addDayISO(state.cal.selected || todayISO(), delta * 7); state.cal.weekAnchor = state.cal.selected; const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
   else if (state.cal.mode === 'list') { state.cal.selected = addDayISO(state.cal.selected || todayISO(), delta * 14); const [y, m] = state.cal.selected.split('-').map(Number); state.cal.y = y; state.cal.m = m - 1; }
@@ -15209,6 +15215,11 @@ function renderCalendar() {
   const evRange = (e) => e.bday ? 'Birthday' : e.allDay ? (e.feed ? 'Holiday' : 'All day') : (e.end_min != null && e.end_min !== e.start_min ? `${minToLabel(e.start_min)}–${minToLabel(e.end_min)}` : minToLabel(e.start_min));
   const evAttr = (e) => e.bday ? `data-open-contact="${e.contact}"` : `data-cal-ev="${e.id}"`;
   const evT = (e) => (e.allDay || e.start_min == null) ? '' : minToLabel(e.start_min);
+  // ▶ Join link for a row whose event carries a meeting/web link (its Link field,
+  // or a URL pasted in its notes - eventJoinUrl). Same quiet gold link as Today's,
+  // shown on List rows and in the day side panel (so an online class is one tap
+  // away without opening the event). Birthdays never have one. (Robin, 2026-11-09.)
+  const evJoin = (e) => { if (e.bday) return ''; const u = eventJoinUrl(e); return u ? `<a class="ev-join-link" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="Join the meeting"><span class="ejl-tri" aria-hidden="true">▶</span>Join</a>` : ''; };
   // ── Month ──
   let main = '';
   if (c.mode === 'month') {
@@ -15225,14 +15236,14 @@ function renderCalendar() {
     main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
   } else {
     const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
-    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span></div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
+    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span>${evJoin(e)}</div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
   }
   // ── Selected-day side panel ──
   const [sy, sm, sd] = (c.selected || todayI).split('-').map(Number);
   const sideEyebrow = (c.selected || todayI) === todayI ? 'Today' : WEEKDAYS_LONG[new Date(sy, sm - 1, sd).getDay()];
   const sideDate = `${sd} ${MONTHS_LONG[sm - 1]}`;
   const sevs = dayEvs(c.selected || todayI);
-  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
+  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}${evJoin(e)}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
   const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
   $('#pane').innerHTML = `
     <div class="kpage-cal">

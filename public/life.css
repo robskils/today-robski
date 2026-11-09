@@ -12436,6 +12436,8 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-lr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .cx-lr-ti { min-width:0; }
 .cx-lr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
+/* The ▶ Join link on a List row stacks under the title. (Robin, 2026-11-09.) */
+.cx-lrow > .ev-join-link{ grid-column:2; margin-top:5px; }
 .cx-empty { padding:40px 0; font-family:var(--k-serif); font-style:italic; font-size:21px; color:var(--k-mute); }
 /* selected-day side */
 .cx-side-head { padding-bottom:14px; border-bottom:1px solid var(--k-gold); }
