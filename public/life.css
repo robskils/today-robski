@@ -8365,21 +8365,22 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose.prose-heads :is(h1,h2,h3):hover::before { opacity:1; }
 .prose.prose-heads :is(h1,h2,h3).folded::before { content:"\25BA"; opacity:1; }
 @media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::before { left:-22px; } }
-/* Drag grip to reorder (or columnise) a heading's whole section. Visible by
-   default now, brighter on hover. It needs its own slot in the gutter, so it
-   stays a pointer-device gesture; on touch it's hidden and the section stacks. */
-/* The drag-to-reorder dots stay hidden until you hover the heading - no clutter
-   the rest of the time. (Robin, 2026-10-30.) */
-.head-grip { position:absolute; left:-48px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:20px; height:1.5em; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); cursor:grab; user-select:none; font-size:18px; line-height:1; opacity:0; transition:opacity .12s, color .12s; }
-.prose h1:hover .head-grip, .prose h2:hover .head-grip, .prose h3:hover .head-grip { opacity:.85; }
-.head-grip:hover { opacity:1 !important; color:var(--accent); }
-.head-grip:active { cursor:grabbing; }
-@media (hover:none){ .head-grip { display:none; } }
-.prose h1.head-dragging, .prose h2.head-dragging, .prose h3.head-dragging { opacity:.4; }
-/* Drop indicator: a line above the heading the section will land in front of. */
-.prose h1.head-drop, .prose h2.head-drop, .prose h3.head-drop { box-shadow:0 -2px 0 var(--accent); }
-/* Columnise cue: a bar down the right edge of the section you'll pair beside. */
-.prose h1.head-col-drop, .prose h2.head-col-drop, .prose h3.head-col-drop { box-shadow:3px 0 0 var(--accent); }
+/* Reorder affordance: a ⠿ grip in the gutter, just left of the fold chevron, shown
+   on hover. It's a CSS ::after (pointer-events:none) - never a real node in the
+   editable text, so it can't be typed into, duplicated or saved like the old
+   injected grip. The drag itself is a pointer gesture anywhere in a heading's left
+   gutter, so it works with a finger too; on a phone this glyph is hidden for room
+   and you press-and-hold the heading's margin to pick the section up. (2026-11-09.) */
+.prose.prose-heads :is(h1,h2,h3)::after { content:"\28FF"; position:absolute; left:-46px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:16px; text-align:center; color:var(--k-goldt); opacity:0; font-size:15px; line-height:1; pointer-events:none; transition:opacity .12s; }
+.prose.prose-heads :is(h1,h2,h3):hover::after { opacity:.55; }
+@media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::after { display:none; } }
+.prose.prose-heads.head-dragging-ctx { user-select:none; -webkit-user-select:none; }
+.prose :is(h1,h2,h3).head-dragging { opacity:.4; }
+/* Drop cue: a line above the block the section will land in front of (or below the
+   last one), and a bar down the right edge of a section you'll pair beside. */
+.prose .head-drop { box-shadow:0 -2px 0 var(--accent); }
+.prose .head-drop-end { box-shadow:0 2px 0 var(--accent); }
+.prose :is(h1,h2,h3).head-col-drop { box-shadow:3px 0 0 var(--accent); }
 .prose > .folded { opacity:.85; }
 .folded-hidden { display:none !important; }
 /* Two columns: drag one section beside another to pair them. A column row is a

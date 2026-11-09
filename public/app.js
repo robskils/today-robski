@@ -861,17 +861,26 @@ function setupFolds() {
     else prose.querySelectorAll('.folded, .folded-hidden').forEach((x) => x.classList.remove('folded', 'folded-hidden'));
   });
 }
-// Drag a heading's grip to reorder its section within the note. The section is
-// the heading plus every following block up to the next same-or-higher heading,
-// so the content travels with its title. Drop lands the section above whichever
-// heading you're hovering, or at the end past the last one.
-let headDrag = null;
+// Drag a heading's whole section to a new spot in the note. Works with a mouse or
+// a finger: press in the left gutter at a heading's row and drag (a quick tap there
+// folds instead - see the click handler). On a mouse the drag begins after a few
+// pixels; on touch, after a short press-and-hold, so a normal swipe still scrolls.
+// The section is the heading plus every following block up to the next
+// same-or-higher heading, so its content travels with its title. It lands above
+// whichever block you're over, or, on the right edge of another top-level section,
+// pairs the two into columns. (Robin, 2026-11-09: restore reordering - yesterday's
+// fold rebuild dropped the old desktop-only grip - and make it work on the phone.)
+let headDrag = null, foldSuppress = 0;
 // A section = a heading plus every block under it, up to the next same-or-higher
 // heading (within the same container - the prose itself or one column).
 function sectionNodes(head) { return [head, ...proseSiblingsUnder(head)]; }
 function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-drop-end, .head-col-drop').forEach((h) => h.classList.remove('head-drop', 'head-drop-end', 'head-col-drop')); }
 function cleanupHeadDrag() {
-  if (headDrag && headDrag.head) headDrag.head.classList.remove('head-dragging');
+  if (headDrag) {
+    if (headDrag.timer) clearTimeout(headDrag.timer);
+    if (headDrag.head) headDrag.head.classList.remove('head-dragging');
+    if (headDrag.prose) { headDrag.prose.classList.remove('head-dragging-ctx'); try { headDrag.prose.releasePointerCapture(headDrag.id); } catch {} }
+  }
   clearHeadDrops();
   headDrag = null;
 }
@@ -900,91 +909,128 @@ function normalizeColumns(prose) {
     row.remove();
   });
 }
-document.addEventListener('dragstart', (e) => {
-  const grip = e.target.closest && e.target.closest('.head-grip'); if (!grip) return;
-  const head = grip.closest('h1,h2,h3'); const prose = head && head.closest('.prose[data-block-id]');
-  if (!head || !prose) return;
-  headDrag = { prose, head };
-  e.dataTransfer.effectAllowed = 'move';
-  try { e.dataTransfer.setData('text/plain', ''); } catch {}   // Firefox needs data set
-  setTimeout(() => head.classList.add('head-dragging'), 0);
-});
-document.addEventListener('dragover', (e) => {
+// Which heading row a gutter press sits on (the same gutter band the fold tap
+// uses), or null if the press isn't in a heading's left margin.
+function gutterHeadAt(prose, clientX, clientY) {
+  const r = prose.getBoundingClientRect();
+  const gut = window.innerWidth <= 760 ? 28 : 48;
+  const dxl = clientX - r.left;
+  if (dxl < 0 || dxl >= gut) return null;
+  const heads = [...prose.querySelectorAll('h1, h2, h3')];
+  return heads.find((h) => { const hr = h.getBoundingClientRect(); return clientY >= hr.top - 2 && clientY <= hr.bottom + 2; }) || null;
+}
+// Work out (and show) where the dragged section would land for a pointer at x,y.
+function headDragAt(clientX, clientY) {
   if (!headDrag) return;
   const prose = headDrag.prose;
-  if (!headDragOver(e.target, prose)) return;
-  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
   clearHeadDrops(prose);
+  headDrag.before = null; headDrag.colTarget = null;
   const heads = [...prose.querySelectorAll('h1, h2, h3')];
   const section = sectionNodes(headDrag.head);
-  // Columnise: hovering the RIGHT side of another TOP-LEVEL section pairs the two
-  // into two columns. Only top-level sections pair (you drag a section beside
-  // another), so an existing column isn't turned into three.
   const pr = prose.getBoundingClientRect();
+  // Columnise: over the right quarter of another TOP-LEVEL section, pair the two
+  // into two columns. Only top-level sections pair, so a column never becomes three.
   let colTarget = null;
-  if (e.clientX > pr.left + pr.width * 0.75 && headDrag.head.parentNode === prose) {
+  if (clientX > pr.left + pr.width * 0.75 && headDrag.head.parentNode === prose) {
     const tops = heads.filter((h) => h.parentNode === prose);
     for (let i = 0; i < tops.length; i++) {
       const top = tops[i].getBoundingClientRect().top;
       const bot = (i + 1 < tops.length) ? tops[i + 1].getBoundingClientRect().top : pr.bottom;
-      if (e.clientY >= top && e.clientY < bot) { colTarget = tops[i]; break; }
+      if (clientY >= top && clientY < bot) { colTarget = tops[i]; break; }
     }
     if (colTarget && (colTarget === headDrag.head || section.includes(colTarget))) colTarget = null;
   }
-  if (colTarget) {
-    prose.dataset.headCol = String(heads.indexOf(colTarget)); prose.dataset.headDrop = '-1';
-    colTarget.classList.add('head-col-drop');
-    return;
-  }
-  prose.dataset.headCol = '-1';
-  // A section can land between any two blocks of text, or right at the top. (Robin.)
+  if (colTarget) { headDrag.colTarget = colTarget; colTarget.classList.add('head-col-drop'); return; }
+  // Otherwise the section lands between two blocks of text, or right at the top.
   const blocks = [];
   for (const c of prose.children) {
-    if (c.classList.contains('ncols')) c.querySelectorAll(':scope > .ncol').forEach((col) => { const r = col.getBoundingClientRect(); if (e.clientX >= r.left && e.clientX <= r.right) blocks.push(...col.children); });
+    if (c.classList.contains('ncols')) c.querySelectorAll(':scope > .ncol').forEach((col) => { const rr = col.getBoundingClientRect(); if (clientX >= rr.left && clientX <= rr.right) blocks.push(...col.children); });
     else blocks.push(c);
   }
   const cands = blocks.filter((b) => !section.includes(b) && b.offsetParent !== null);
   let target = null;
-  for (const b of cands) { const r = b.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { target = b; break; } }
+  for (const b of cands) { const rr = b.getBoundingClientRect(); if (clientY < rr.top + rr.height / 2) { target = b; break; } }
   headDrag.before = target;
   if (target) target.classList.add('head-drop');
   else if (cands.length) cands[cands.length - 1].classList.add('head-drop-end');
-});
-// Over the note's own text, or anywhere on its sheet, such as the padding above the first line.
-function headDragOver(el, prose) {
-  if (!el || !el.closest) return false;
-  if (el.closest('.prose[data-block-id]') === prose) return true;
-  const sheet = prose.closest('.note-body');
-  return !!(sheet && sheet.contains(el));
 }
-document.addEventListener('drop', (e) => {
+// Commit (or abandon) the move, then re-fold and save. Content is only ever moved
+// as a whole section, never split or dropped.
+function endHeadDrag(commit) {
   if (!headDrag) return;
   const prose = headDrag.prose;
-  if (!headDragOver(e.target, prose)) { cleanupHeadDrag(); return; }
-  e.preventDefault();
-  const heads = [...prose.querySelectorAll('h1, h2, h3')];
-  const colIdx = parseInt(prose.dataset.headCol || '-1', 10);
-  const colTarget = (colIdx >= 0 && colIdx < heads.length) ? heads[colIdx] : null;
-  const vTarget = headDrag.before || null;
-  const dragHead = headDrag.head;   // grab before cleanup nulls headDrag
+  const dragHead = headDrag.head;
   const section = sectionNodes(dragHead);
-  cleanupHeadDrag(); delete prose.dataset.headDrop; delete prose.dataset.headCol;
+  const colTarget = headDrag.colTarget || null;
+  const vTarget = headDrag.before || null;
+  cleanupHeadDrag();
+  if (!commit) return;
   if (colTarget && colTarget.parentNode === prose && dragHead.parentNode === prose && !section.includes(colTarget)) {
     makeColumnRow(prose, colTarget, section);
   } else if (!colTarget) {
-    if (vTarget && section.includes(vTarget)) return;   // onto its own section: no-op
+    if (vTarget && section.includes(vTarget)) return;   // dropped onto its own section: no-op
     const frag = document.createDocumentFragment();
-    section.forEach((n) => frag.appendChild(n));         // detach as a unit
+    section.forEach((n) => frag.appendChild(n));         // detach the section as one unit
     if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else prose.appendChild(frag);
   } else { return; }
   normalizeColumns(prose);
-  // Fold state is keyed by heading position, which just changed - clear it for
-  // this note so no heading shows wrongly folded after the move.
+  // Fold state is keyed by heading position, which just changed - clear this note's
+  // folds so nothing shows wrongly folded after the move.
   try { const all = proseFolds(); delete all[prose.dataset.blockId]; localStorage.setItem('life.prose.folds', JSON.stringify(all)); } catch {}
   saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
   setupFolds();
+}
+const HEAD_DRAG_THRESH = 6;
+document.addEventListener('pointerdown', (e) => {
+  if (headDrag) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const prose = e.target.closest && e.target.closest('.prose.prose-heads[data-block-id]');
+  if (!prose) return;
+  const head = gutterHeadAt(prose, e.clientX, e.clientY);
+  if (!head) return;
+  const touch = e.pointerType === 'touch';
+  headDrag = { prose, head, id: e.pointerId, touch, ready: !touch, moved: false, startX: e.clientX, startY: e.clientY, before: null, colTarget: null, timer: 0 };
+  if (touch) {
+    // Press and hold to pick a section up, so an ordinary swipe still scrolls.
+    headDrag.timer = setTimeout(() => {
+      if (!headDrag) return;
+      headDrag.timer = 0; headDrag.ready = true; headDrag.moved = true;
+      headDrag.head.classList.add('head-dragging');
+      headDrag.prose.classList.add('head-dragging-ctx');
+      try { headDrag.prose.setPointerCapture(headDrag.id); } catch {}
+      try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
+      headDragAt(headDrag.startX, headDrag.startY);
+    }, 260);
+  }
 });
-document.addEventListener('dragend', () => { if (headDrag) cleanupHeadDrag(); });
+document.addEventListener('pointermove', (e) => {
+  if (!headDrag || e.pointerId !== headDrag.id) return;
+  const dx = Math.abs(e.clientX - headDrag.startX), dy = Math.abs(e.clientY - headDrag.startY);
+  if (!headDrag.ready) {                       // touch, before the hold fires: a real swipe scrolls
+    if (dx > 8 || dy > 8) { clearTimeout(headDrag.timer); headDrag = null; }
+    return;
+  }
+  if (!headDrag.moved) {                        // mouse/pen: begin once past a few pixels
+    if (dx < HEAD_DRAG_THRESH && dy < HEAD_DRAG_THRESH) return;
+    headDrag.moved = true;
+    headDrag.head.classList.add('head-dragging');
+    headDrag.prose.classList.add('head-dragging-ctx');
+    try { headDrag.prose.setPointerCapture(headDrag.id); } catch {}
+  }
+  e.preventDefault();
+  headDragAt(e.clientX, e.clientY);
+});
+document.addEventListener('pointerup', (e) => {
+  if (!headDrag || e.pointerId !== headDrag.id) return;
+  if (headDrag.timer) clearTimeout(headDrag.timer);
+  if (headDrag.moved) { e.preventDefault(); foldSuppress = Date.now(); endHeadDrag(true); }
+  else cleanupHeadDrag();                       // a tap: leave it for the fold click handler
+});
+document.addEventListener('pointercancel', (e) => {
+  if (!headDrag || e.pointerId !== headDrag.id) return;
+  if (headDrag.timer) clearTimeout(headDrag.timer);
+  if (headDrag.moved) endHeadDrag(false); else cleanupHeadDrag();
+});
 // Drag an inline card to a new spot in the note. Pointer events (not HTML5 drag)
 // so it works the same with a mouse or a finger; the grip has touch-action:none
 // so a touch-drag reorders instead of scrolling. A thin line shows where it will
@@ -29022,7 +29068,7 @@ document.addEventListener('click', (e) => {
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   // Fold a heading by clicking the left gutter where its chevron sits (the chevron
   // is a CSS ::before, so there's no element to click - we detect the gutter by x).
-  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { const r = ph.getBoundingClientRect(); const gut = window.innerWidth <= 760 ? 28 : 48; if (e.clientX - r.left < gut) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; const head = heads.find((h) => { const hr = h.getBoundingClientRect(); return e.clientY >= hr.top - 2 && e.clientY <= hr.bottom + 2; }); if (head) { e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(head), !head.classList.contains('folded')); reapplyFolds(ph); return; } } } }
+  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { if (foldSuppress && Date.now() - foldSuppress < 350) return; const r = ph.getBoundingClientRect(); const gut = window.innerWidth <= 760 ? 28 : 48; if (e.clientX - r.left < gut) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; const head = heads.find((h) => { const hr = h.getBoundingClientRect(); return e.clientY >= hr.top - 2 && e.clientY <= hr.bottom + 2; }); if (head) { e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(head), !head.classList.contains('folded')); reapplyFolds(ph); return; } } } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Kaya` : 'No contacts on Kaya yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
