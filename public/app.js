@@ -6035,8 +6035,16 @@ function homeEyebrow() {
   const wd = new Date().toLocaleDateString(dloc(), { weekday: 'long' });
   const p = homePartOfDay();
   let wx = ''; try { const w = state.weather; if (w && w.code != null) { const m = WMO_WX(w.code); if (m && m[1]) wx = m[1].toLowerCase(); } } catch {}
+  // WMO_WX labels are nouns ("showers", "drizzle") - right on the quiet chip
+  // ("19° showers"), but the eyebrow frames them as "a <x> morning", so the
+  // noun-y ones need their weather adjective: "a showery evening", not "a
+  // showers evening". Words already adjectival (clear, mostly clear, overcast)
+  // pass through unchanged; the unknown-code fallback ('weather') drops to the
+  // plain phrase rather than "a weather morning". (Robin, 2026-11-09.)
+  const WX_ADJ = { showers: 'showery', drizzle: 'drizzly', rain: 'rainy', snow: 'snowy', 'snow showers': 'snowy', fog: 'foggy', thunderstorm: 'thundery', weather: '' };
+  const adj = wx ? (wx in WX_ADJ ? WX_ADJ[wx] : wx) : '';
   const noun = p === 'night' ? 'night' : p;
-  const phrase = wx ? `${/^[aeiou]/i.test(wx) ? 'an' : 'a'} ${wx} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
+  const phrase = adj ? `${/^[aeiou]/i.test(adj) ? 'an' : 'a'} ${adj} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
   return `${esc(wd)} · ${esc(phrase)}`;
 }
 function homeSubClause() { return ({ night: 'The day has come to rest.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'The day is drawing in.' })[homePartOfDay()]; }
