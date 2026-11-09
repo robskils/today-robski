@@ -6219,7 +6219,7 @@ function homeTodayItems() {
   // snoozed-task surfacing are a today-only signal, so they don't ride along.
   const src = off === 0 ? state.home : (state.home.dayData || { events: [], slots: [] });
   const hues = {}; (state.home.lanes || []).forEach((l) => { hues[l.key] = l.hue; });
-  const items = (src.events || []).map((e) => ({ kind: 'event', eventId: e.id, date: e.date, allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
+  const items = (src.events || []).map((e) => ({ kind: 'event', eventId: e.id, id: e.id, recurringId: e.recurringId, date: e.date, allDay: !!e.allDay, start_min: e.allDay ? null : (e.start_min ?? 0), end_min: e.allDay ? null : (e.end_min ?? null), sort: e.allDay ? -1 : (e.start_min ?? 0), title: e.title, location: e.location, url: e.url, notes: e.notes, contact: e.contact }));
   // Birthdays now live in the Coming into view feed, not the Today calendar, so they're
   // no longer injected here (avoids listing them twice). (Robin, 2026-10-15.)
   for (const s of src.slots || []) {
@@ -8070,6 +8070,7 @@ function capGrow(i) { if (!i) return; i.style.height = 'auto'; i.style.height = 
 function capRefreshHome() {
   if (!(state.view && state.view.type === 'home')) return;
   state.home.tomorrow = undefined; state.home._mailAt = 0; if (state.financial) state.financial.txns = null;
+  loadEventLinks();
   api('/api/day').then((d) => { if (d) { state.home.events = d.events || []; state.home.slots = d.slots || []; } }).catch(() => {}).finally(() => { if (state.view && state.view.type === 'home') renderHomeSoon(); });
   api('/api/home/alerts').then((a) => { if (a) { state.home.alerts = a; if (state.view && state.view.type === 'home') renderHomeSoon(); } }).catch(() => {});
 }
@@ -15000,7 +15001,15 @@ async function openCalendar(dateStr) {
   // to show yesterday or the day before. (Robin, 2026-11-05.)
   if (state.cal && state.cal.mode === 'list') requestAnimationFrame(() => { const el = document.querySelector('.roll-day.roll-today') || document.querySelector('.cal-roll .roll-day'); if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'start' }); } catch {} } });
 }
+// Load the manual per-event join links once, then repaint so saved Open links
+// show on the cards. Self-guarding; the reader updates state.eventLinks directly
+// on save. (Robin, 2026-11-09.)
+function loadEventLinks() {
+  if (state._evLinks) return; state._evLinks = true;
+  api('/api/event-links').then((r) => { if (r && r.links) { state.eventLinks = r.links; try { if (state.view) rerenderCurrent(); } catch {} } }).catch(() => {});
+}
 async function loadCalendar() {
+  loadEventLinks();
   let from, to;
   if (state.cal.mode === 'list') { from = state.cal.selected || todayISO(); to = addDayISO(from, 15); }
   else if (state.cal.mode === 'week') { const wk = weekMon(state.cal.selected || todayISO()); from = wk[0].iso; to = addDayISO(wk[6].iso, 1); }
@@ -15335,12 +15344,20 @@ function restoreCalForm(s) {
 // The link to surface as a one-tap button on an event: its Link field if set,
 // otherwise the first URL found in its notes (a meeting link pasted in there, as
 // an invite from Gmail often is). So Today and the calendar agenda can offer it.
+// The stable key a manual join link is stored under: the recurring series where
+// there is one (so a weekly lesson needs the link once), else the event id. Works
+// across every surface - calendar (e.id), Today (e.eventId) - and strips the
+// ::date suffix of a native recurring instance. (Robin, 2026-11-09.)
+function eventLinkKey(e) { return String((e && (e.recurringId || e.id || e.eventId)) || '').split('::')[0]; }
 function eventJoinUrl(e) {
+  // A link Robin pasted onto this event (or its series) inside Kaya wins - it lets
+  // an online class carry an Open link even when the event itself has none.
+  const key = eventLinkKey(e); const ov = key && state.eventLinks && state.eventLinks[key];
+  if (ov) return ov;
   if (e && e.url) return e.url;
-  // A meeting/class link is often pasted into the Location field (an online
-  // lesson's Zoom/Meet URL), or into the notes (an invite forwarded from Gmail).
-  // Pick the first URL from either, so the class is one tap away wherever its
-  // link was put - not just a Google Meet link. (Robin, 2026-11-09.)
+  // Otherwise a meeting/class link is often pasted into the Location field (an
+  // online lesson's Zoom/Meet URL), or into the notes (an invite from Gmail).
+  // Pick the first URL from either, wherever its link was put. (Robin, 2026-11-09.)
   const hay = `${(e && e.location) || ''}\n${(e && e.notes) || ''}`;
   BARE_URL.lastIndex = 0; const m = BARE_URL.exec(hay);
   return m ? m[0] : '';
@@ -15506,7 +15523,15 @@ function showCalView(ev) {
     <div class="ce-head"><span class="ce-head-t">Event</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <h2 class="ce-view-title">${esc(ev.title || 'Untitled event')}</h2>
     ${loc ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">Map</a></div>` : ''}
-    ${ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">Join the meeting</a>` : ''}
+    ${(() => {
+      const u = eventJoinUrl(ev); const key = eventLinkKey(ev);
+      const btn = u ? `<a class="ce-join" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${eventJoinLabel(u)[1]}</a>` : '';
+      if (state.cal && state.cal.linkEdit) {
+        const ov = (state.eventLinks || {})[key] || u || '';
+        return `${btn}<div class="ce-joinedit"><input class="sel ce-joininput" data-ev-linkinput value="${esc(ov)}" placeholder="Paste the Zoom / Meet / class link…" autocomplete="off" spellcheck="false"><div class="ce-joinedit-btns"><button type="button" class="add-btn wide" data-ev-linksave="${esc(key)}">Save link</button><button type="button" class="ghost" data-ev-linkcancel>Cancel</button></div></div>`;
+      }
+      return `${btn}<button type="button" class="ce-joinadd" data-ev-linkedit>${u ? 'Change link' : '+ Add a join link'}</button>`;
+    })()}
     <div class="ce-view-rows">
       ${row('🕒', esc(calWhenLabel(ev)))}
       ${loc ? row('📍', esc(loc)) : ''}
@@ -28737,7 +28762,7 @@ document.addEventListener('click', (e) => {
   { const sh = t.closest('[data-sig-shape]'); if (sh) { const a = (state.mail.accounts || []).find((x) => x.id === sh.dataset.sigShape); if (a) sigPick(a.id, 'shape', sigWorking(a).shape === 'square' ? 'circle' : 'square'); return; } }
   // calendar interactions
   // A chip sits inside a day cell, so match the event before the day.
-  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date;
+  const cev = t.closest('[data-cal-ev]'); if (cev) { const e = state.cal.events.find((x) => x.id === cev.dataset.calEv); if (e) { state.cal.selected = e.date; state.cal.linkEdit = false;
     // Tapping ANY event opens it. Your own events open the editor; a read-only
     // feed event (Google, iCloud/Yahoo, a holidays feed) opens a read-only detail
     // card instead of just flashing a toast - so you can actually see it. (Robin,
@@ -28746,6 +28771,15 @@ document.addEventListener('click', (e) => {
     else { state.cal.editing = e; state.cal.viewing = null; state.cal.adding = false; }
     renderCalendar(); requestAnimationFrame(() => { const f = document.getElementById('cal-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); } return; }   // land at the TOP of the event card, not centred. (Robin, 2026-11-05.)
   if (t.closest('[data-cal-edit]')) { if (state.cal.viewing) { state.cal.editing = state.cal.viewing; state.cal.viewing = null; state.cal.adding = false; renderCalendar(); } return; }
+  // Paste / change / clear a manual join link on the open event (incl. a synced
+  // Google one Kaya can't edit). Stored per series/event; applies everywhere the
+  // event shows. (Robin, 2026-11-09.)
+  if (t.closest('[data-ev-linkedit]')) { state.cal.linkEdit = true; renderCalendar(); requestAnimationFrame(() => { const i = document.querySelector('[data-ev-linkinput]'); if (i) i.focus(); }); return; }
+  if (t.closest('[data-ev-linkcancel]')) { state.cal.linkEdit = false; renderCalendar(); return; }
+  { const sv = t.closest('[data-ev-linksave]'); if (sv) { const key = sv.dataset.evLinksave; const inp = document.querySelector('[data-ev-linkinput]'); const u = inp ? inp.value.trim() : '';
+    api('/api/event-link', { method: 'POST', body: JSON.stringify({ id: key, url: u }) })
+      .then((r) => { if (r && r.links) state.eventLinks = r.links; state.cal.linkEdit = false; renderCalendar(); toast(u ? 'Join link saved' : 'Join link removed'); })
+      .catch((x) => toast(x.message)); return; } }
   // The per-day + (inside the day cell) must be checked before the day-cell
   // itself, or the cell's own click would swallow it.
   { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }

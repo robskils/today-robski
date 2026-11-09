@@ -9163,6 +9163,11 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 /* Join-the-meeting link on an event's detail form. */
 .ce-join { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; padding:9px 15px; border-radius:0; background:var(--accent); color:var(--accent-ink); font-size:15px; font-weight:600; text-decoration:none; box-shadow:var(--shadow); }
 .ce-join:hover { filter:brightness(1.05); }
+/* Add / change a manual join link on an event (incl. synced Google ones). (Robin, 2026-11-09.) */
+.ce-joinadd { display:inline-block; align-self:flex-start; margin-top:2px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); padding:4px 0; }
+.ce-joinadd:hover { color:var(--k-goldt); }
+.ce-joinedit { align-self:stretch; margin-top:10px; display:flex; flex-direction:column; gap:10px; max-width:440px; }
+.ce-joinedit-btns { display:flex; gap:10px; align-items:center; }
 .cal-del { color:var(--ink-3); } .cal-del:hover { color:var(--accent); }
 .ce-notes { width:100%; margin:0; resize:vertical; min-height:44px; line-height:1.5; font-family:inherit; }
 .ce-notelinks { display:flex; flex-wrap:wrap; gap:8px; margin:-2px 0 2px; }
