@@ -613,17 +613,41 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
    reads the tokens, so the app follows it. (Robin, 2026-11-06: "a plainer option…
    they like the look and feel of LisbonSintraTours.com".) ── */
 :root[data-plain] {
-  --k-bg:#F6F2E9; --k-panel:#FFFFFF; --k-soft:#EFEADD; --k-mine:#E7E1D1;
-  --k-ink:#2C2820; --k-mute:#6C6457; --k-goldt:#937528; --k-gold:#B98F3C; --k-line:#E3DDCE;
-  --k-deep:#2E3B30; --k-ondeep:#F6F2E9;
-  --glass:rgba(255,255,255,.6); --glass-edge:rgba(44,40,32,.15); --glass-card:rgba(255,255,255,.75); --glass-face:rgba(255,255,255,.88);
+  --k-bg:#FAF6EE; --k-panel:#FDFAF4; --k-soft:#EFEAE2; --k-mine:#EEE7DB;
+  --k-ink:#211912; --k-mute:#60564B; --k-goldt:#A8701E; --k-gold:#D49838; --k-line:#DCD7CD;
+  --k-deep:#182F20; --k-ondeep:#FAF6EE;
+  --k-primary:#182F20; --k-onprimary:#FAF6EE;   /* LisbonSintraTours forest-green primary */
+  --glass:rgba(255,255,255,.6); --glass-edge:rgba(33,25,18,.14); --glass-card:rgba(255,255,255,.78); --glass-face:rgba(255,255,255,.9);
   --glass-blur:blur(10px) saturate(1.05);
-  --line:rgba(44,40,32,.13); --line-2:rgba(44,40,32,.22);
+  --line:rgba(33,25,18,.12); --line-2:rgba(33,25,18,.2);
   --paper:var(--k-bg); --paper-2:var(--k-soft); --card:var(--k-panel);
   --ink:var(--k-ink); --ink-2:var(--k-mute); --ink-3:#8C8475;
-  --accent:#B98F3C; --accent-ink:#2C2820;
+  --accent:#D49838; --accent-ink:#211912;
 }
-:root[data-plain] { background:#F6F2E9 !important; }
+/* Sensible NIGHT A - faithful to LST's own dark, a near-black green. The default
+   'b' below overrides it; picking "Deep" in Settings falls back to this. */
+:root[data-plain][data-theme='dark'] {
+  --k-bg:#080F09; --k-panel:#0F1911; --k-soft:#19281C; --k-mine:#1F3423;
+  --k-ink:#F5F1E9; --k-mute:#B1AA9E; --k-goldt:#E8AA4E; --k-gold:#E8AA4E; --k-line:#252C27;
+  --k-deep:#060C07; --k-ondeep:#F5F1E9;
+  --k-primary:#E8AA4E; --k-onprimary:#0F1911;
+  --glass:rgba(20,30,22,.42); --glass-edge:rgba(230,240,230,.14); --glass-card:rgba(20,30,22,.5); --glass-face:rgba(8,12,9,.6);
+  --line:rgba(245,241,233,.12); --line-2:rgba(245,241,233,.22);
+  --accent:#E8AA4E; --accent-ink:#0F1911;
+}
+/* Sensible NIGHT B (the default) - a clearly green night. */
+:root[data-plain][data-theme='dark'][data-plain-night='b'] {
+  --k-bg:#0C2416; --k-panel:#123120; --k-soft:#1B3D29; --k-mine:#224A32;
+  --k-ink:#F1EEE6; --k-mute:#AEB49F; --k-goldt:#EBB353; --k-gold:#EBB353; --k-line:#2E4836;
+  --k-deep:#081C11; --k-ondeep:#F1EEE6;
+  --k-primary:#EBB353; --k-onprimary:#0C2416;
+  --glass:rgba(27,61,41,.42); --glass-edge:rgba(230,240,230,.16); --glass-card:rgba(27,61,41,.5); --glass-face:rgba(12,36,22,.6);
+  --line:rgba(241,238,230,.13); --line-2:rgba(241,238,230,.24);
+  --accent:#EBB353; --accent-ink:#0C2416;
+}
+:root[data-plain] { background:#FAF6EE !important; }
+:root[data-plain][data-theme='dark'] { background:#080F09 !important; }
+:root[data-plain][data-theme='dark'][data-plain-night='b'] { background:#0C2416 !important; }
 :root[data-plain] body, :root[data-plain] #pane { background:transparent; }
 :root[data-plain] #light-layer { display:none !important; }
 /* The brand mark (the Mandombe "ko" octagram) swaps to its ivory-stroke art under
@@ -631,14 +655,21 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
    ivory mark vanished on the ivory ground. On the plain page use the ink art, the
    same one the daytime light uses. (Robin, 2026-11-07: "can't see the logo at the
    bottom.") */
-:root[data-plain] .brand-mark { background-image:url(/brand/mandombe-ko-ink.svg); }
-/* Same story for the big image marks (the one closing the Home column, the Space
-   footer): the night art is ivory, so on the plain ivory page show the ink art. */
-:root[data-plain] .kmark-night { display:none !important; }
-:root[data-plain] .kmark-day { display:block !important; }
-/* The glass "main button" hard-codes white text + a white rim for the dark themes;
-   on the plain page give it dark ink and a warm rim so it reads. */
-:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary) { background:rgba(44,40,32,.045); border-color:rgba(44,40,32,.3); color:var(--k-ink); }
-:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):hover { background:rgba(44,40,32,.09); border-color:var(--k-gold); color:var(--k-goldt); }
-:root[data-plain] .mail-footact { background:rgba(44,40,32,.045); border-color:rgba(44,40,32,.3); color:var(--k-ink); }
-:root[data-plain] .mail-footact:hover { background:rgba(44,40,32,.09); border-color:var(--k-gold); color:var(--k-goldt); }
+/* The ink brand mark + ink home/footer art are for the ivory DAY only. At night the
+   page is dark green, so let the normal dark-theme art (ivory mark) stand. */
+:root[data-plain][data-theme='light'] .brand-mark { background-image:url(/brand/mandombe-ko-ink.svg); }
+:root[data-plain][data-theme='light'] .kmark-night { display:none !important; }
+:root[data-plain][data-theme='light'] .kmark-day { display:block !important; }
+/* Primary buttons take the theme's primary - forest green by day, gold by night -
+   with its on-primary text. That green is the LisbonSintraTours character Robin
+   asked for (2026-11-09); it reads the token, so it follows day/night on its own. */
+:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary) { background:var(--k-primary); border:1px solid var(--k-primary); color:var(--k-onprimary); }
+:root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):hover { filter:brightness(1.1); }
+:root[data-plain] .mail-footact { background:color-mix(in srgb, var(--k-ink) 5%, transparent); border:1px solid var(--k-line); color:var(--k-ink); }
+:root[data-plain] .mail-footact:hover { background:color-mix(in srgb, var(--k-ink) 9%, transparent); border-color:var(--k-gold); color:var(--k-goldt); }
+/* Notes: a heading stays gold; a link reads in ink with a gold underline, so the
+   two don't blur into one gold (same split as the painted washes). */
+:root[data-plain] :is(.note-body a, .prose a) { color:var(--k-ink); text-decoration-color:color-mix(in srgb, var(--k-gold) 75%, transparent); text-underline-offset:3px; }
+:root[data-plain] :is(.note-body a, .prose a):hover { color:var(--k-goldt); }
+:root[data-plain] .prose a.rl-link { color:var(--k-ink); border-bottom-color:color-mix(in srgb, var(--k-gold) 60%, transparent); }
+:root[data-plain] .prose a.rl-link:hover { color:var(--k-goldt); }

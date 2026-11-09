@@ -1697,6 +1697,11 @@ function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.
 // §24 Plain mode: a calm, un-painted ivory page instead of the day's wash. Opt-in,
 // off by default, applied as html[data-plain]. (Robin, 2026-11-06.)
 function plainMode() { try { return localStorage.getItem('life.plain') === '1'; } catch { return false; } }
+// §24b Sensible night: two deep looks the viewer can pick - 'b' a clearly green
+// night (the default), or 'a' the near-black green faithful to LisbonSintraTours'
+// dark. Only matters while Sensible is on and it's dark out. (Robin, 2026-11-09.)
+function plainNight() { try { const v = localStorage.getItem('life.plain.night'); return (v === 'a' || v === 'b') ? v : 'b'; } catch { return 'b'; } }
+function setPlainNight(v) { if (v !== 'a' && v !== 'b') return; try { localStorage.setItem('life.plain.night', v); } catch {} applyTheme(false); try { if (state.view && state.view.type === 'settings') renderSettings(); else rerenderCurrent(); } catch {} }
 // §24 The colour scheme the picker (footer button + Settings swatches) cycles
 // through: the three painted worlds plus Sensible, the calm plain page. Plain is
 // its own exclusive scheme now, not a separate Background toggle - picking any
@@ -1771,6 +1776,7 @@ function applyTheme(rerender) {
   document.documentElement.dataset.light = light;
   document.documentElement.dataset.theme = theme;
   if (plainMode()) document.documentElement.setAttribute('data-plain', ''); else document.documentElement.removeAttribute('data-plain');
+  document.documentElement.setAttribute('data-plain-night', plainNight());
   try { localStorage.setItem('today.theme', theme); localStorage.setItem('today.light', light); } catch {}
   syncLightLayer(light);
   syncLightPreview(light);
@@ -1815,7 +1821,7 @@ function themeSwatches() {
     ['auto', 'Auto', 'linear-gradient(135deg,#f8f4ec 0 50%,#13241d 50% 100%)', '#c99a3e'],
     ['light', 'Day', '#f8f4ec', '#c99a3e'],
     ['dark', 'Night', '#13241d', '#d8b25e'],
-    ['plain', 'Sensible', '#F6F2E9', '#B98F3C'],
+    ['plain', 'Sensible', '#FAF6EE', '#2E6B45'],
   ];
   return opts.map(([mode, label, bg, dot]) => `<button class="theme-swatch-btn ${cur === mode ? 'on' : ''}" data-theme-set="${mode}" type="button" aria-pressed="${cur === mode}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
@@ -4235,7 +4241,7 @@ function renderSettingsLegacy() {
 
   const appearancePane = `<div class="set-card">
         <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Day, Night, or Auto (following your local sunrise &amp; sunset). Sensible is a calm, plain page - easier on the eye if you find the painted wash distracting.'}</div>
-          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
+          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>${plainMode() ? `<div class="plain-night"><span class="pn-l">Sensible night</span><button type="button" class="pn-opt ${plainNight() === 'b' ? 'on' : ''}" data-plain-night="b" aria-pressed="${plainNight() === 'b'}"><span class="pn-sw" style="background:#123120"></span>Green</button><button type="button" class="pn-opt ${plainNight() === 'a' ? 'on' : ''}" data-plain-night="a" aria-pressed="${plainNight() === 'a'}"><span class="pn-sw" style="background:#0F1911"></span>Deep</button></div>` : ''}`}
         </div>
         <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Kaya keeps a single gold accent - warm by day, brighter by night.</div>
           <div class="acc-swatches">${swatches}</div>
@@ -28064,6 +28070,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-nav-drawer-close]')) { closeNavDrawer(); return; }
   if (t.closest('[data-theme-toggle]')) { cycleTheme(); return; }
   { const ts = t.closest('[data-theme-set]'); if (ts) { setScheme(ts.dataset.themeSet); return; } }
+  { const pn = t.closest('[data-plain-night]'); if (pn && pn.tagName === 'BUTTON') { setPlainNight(pn.dataset.plainNight); return; } }
   // Any main nav link (wordmark, a tool, a favourite) closes the mobile tools
   // drawer as it navigates - the destination's renderNav() then paints it shut.
   if (state.navUtilOpen && !t.closest('[data-util-toggle]') && (t.closest('.nav-topline') || t.closest('.nav-item') || t.closest('.nav-sub'))) state.navUtilOpen = false;
