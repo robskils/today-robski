@@ -2243,7 +2243,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 @media (hover:none){ td.row-open .ro-ic { opacity:.7; } }
 
 /* the row, opened as a card */
-.card { max-width:660px; }
+.card { max-width:960px; }
 .card [data-back] { margin-bottom:22px; }
 .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
 .card-head .card-title { flex:1; min-width:0; }
@@ -2251,7 +2251,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .card-title { font-size:clamp(28px,4vw,38px); margin:4px 0 26px; text-wrap:balance; }
 /* The editable title (an input styled as the heading): borderless until you hover
    or focus it, so it reads as the title but is clearly tap-to-edit. */
-.card-title-ed { width:100%; box-sizing:border-box; border:0; background:none; font-family:inherit; font-weight:inherit; color:var(--ink); padding:2px 6px; margin:4px -6px 24px; border-radius:0; transition:background .12s, box-shadow .12s; }
+.card-title-ed { width:100%; box-sizing:border-box; border:0; background:none; font-family:inherit; font-weight:inherit; color:var(--ink); padding:2px 6px; margin:4px -6px 24px; border-radius:0; transition:background .12s, box-shadow .12s; resize:none; overflow:hidden; display:block; line-height:1.18; white-space:pre-wrap; word-break:break-word; }
 .card-title-ed::placeholder { color:var(--ink-3); }
 .card-title-ed:hover { background:color-mix(in srgb,var(--ink) 5%,transparent); }
 .card-title-ed:focus { outline:none; background:color-mix(in srgb,var(--accent) 7%,transparent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }

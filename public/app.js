@@ -360,6 +360,9 @@ document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; c
 // typing-pause debounce - pressing Enter felt dead before (no handler at all).
 // (Robin, 2026-11-09.)
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter' || !ev.target.closest) return; const mq = ev.target.closest('[data-mail-q]'); if (!mq || !state.mail) return; ev.preventDefault(); clearTimeout(window.__mailSearchT); state.mail.query = mq.value; state.mail.limit = 40; loadMessages(true); });
+// Enter in the open-row title commits (blurs) rather than adding a newline - it's a
+// title, and it wraps on its own. Shift+Enter still inserts a line. (Robin, 2026-11-09.)
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey && ev.target && ev.target.classList && ev.target.classList.contains('card-title-ed')) { ev.preventDefault(); ev.target.blur(); } });
 // §30 Goal page: Enter in the step / thought / connect inputs.
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Enter' || !ev.target.closest) return;
@@ -1350,6 +1353,9 @@ function navBack() {
   // Within Mail, Back first steps back through the boxes you opened (Inbox ->
   // Important -> Back = Inbox), leaving Mail only once you're back at the start.
   if (mailBoxCanBack()) { mailBoxBack(); return; }
+  // A table with a row open: Back closes the row back to the table, not out to the
+  // page you were on before the table. (Robin, 2026-11-09.)
+  if (state.view && state.view.type === 'table' && state.tables_view && state.tables_view.openRow) { state.tables_view.openRow = null; renderTable(); window.scrollTo(0, 0); return; }
   // No view-history (a directly-opened page): the always-on back arrow falls back
   // to Home rather than doing nothing.
   if (!navHist.length) { openHome(); return; }
@@ -1390,6 +1396,7 @@ function appHandleBack() {
   if (state.cal && (state.cal.adding || state.cal.editing || state.cal.viewing)) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; state.cal.viewing = null; renderCalendar(); return true; }
   if (state.view && state.view.type === 'mail' && state.mail && (state.mail.open || state.mail.composing)) { state.mail.open = null; state.mail.composing = false; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); scrollToMailList(); return true; }
   if (mailBoxCanBack()) { mailBoxBack(); return true; }
+  if (state.view && state.view.type === 'table' && state.tables_view && state.tables_view.openRow) { state.tables_view.openRow = null; renderTable(); window.scrollTo(0, 0); return true; }
   if (navHist.length) { navBack(); return true; }
   return false;
 }
@@ -27078,6 +27085,9 @@ function sortPanelHtml() {
     <div class="filt-act"><button class="ghost" data-sortl-add>+ Add sort</button>${sorts.length ? '<button class="ghost" data-sortl-clear>Clear</button>' : ''}</div></div>`;
 }
 
+// The open-row title is a textarea so a long title wraps and shows in full instead
+// of being clipped to one line. Grow it to fit its text. (Robin, 2026-11-09.)
+function growCardTitle(el) { el = el || document.querySelector('.card-title-ed'); if (!el || el.tagName !== 'TEXTAREA') return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 function renderTable() {
   const t = state.tables_open, c = tcols(), vw = state.tables_view;
   if (vw.openRow) {
@@ -27094,7 +27104,7 @@ function renderTable() {
       const titleCol = c[0];
       const titleEditable = canEditCard && titleCol && !['checkbox', 'number', 'currency', 'date', 'select', 'area', 'attach'].includes(titleCol.type);
       const titleHtml = titleEditable
-        ? `<input class="card-title card-title-ed" data-cell="${r.id}:${titleCol.id}" value="${esc(title)}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">`
+        ? `<textarea class="card-title card-title-ed" rows="1" data-cell="${r.id}:${titleCol.id}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">${esc(title)}</textarea>`
         : `<h1 class="card-title">${esc(title)}</h1>`;
       const fieldCols = titleEditable ? c.slice(1) : c;
       $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
@@ -27102,7 +27112,7 @@ function renderTable() {
         <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
         ${attachSection(r)}</div>`;
-      loadThumbs(); hydrateEmbeds(); setupFolds();
+      loadThumbs(); hydrateEmbeds(); setupFolds(); requestAnimationFrame(() => growCardTitle());
       return;
     }
   }
@@ -29471,6 +29481,7 @@ document.addEventListener('change', (e) => {
       e.target.value = fmtMoney(val);   // reformat to 00.00 on blur
     }
     setCell(rid, cid, val);
+    if (c.classList.contains('card-title-ed')) growCardTitle(c);   // keep the wrapping title fitted as you type
   }
   { const aa = e.target.closest('[data-area-add]'); if (aa) { const p = aa.dataset.areaAdd.split(':'); const v = e.target.value; e.target.value = ''; addBlockArea(p[0], p[1], v); return; } }
   { const tff = e.target.closest('[data-tf-field]'); if (tff) { loadTaskFilters(); const i = Number(tff.dataset.tfField); const c = state.taskFilters[i]; c.field = e.target.value; c.op = (TASK_FIELDS[c.field].ops || [])[0]; c.value = defaultCondValue(c.field, c.op); saveTaskFilters(); renderTasks(); return; } }
