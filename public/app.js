@@ -13195,7 +13195,7 @@ document.addEventListener('change', (e) => {
   const gt = e.target.closest && e.target.closest('[data-av4-goal-title]'); if (gt) { const id = gt.dataset.av4GoalTitle; const v = gt.value.trim(); const b = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (b) b.title = v; const gg = (state.goals || []).find((x) => x.id === id); if (gg) gg.title = v; api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }).catch(() => {}); renderArea(); return; }
 });
 // ── §65 Space v4: the tabbed Space ───────────────────────────────────────────
-const AV4_TABS = [['overview', 'Overview'], ['vision', 'Vision & goals'], ['calendar', 'Calendar'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail']];
+const AV4_TABS = [['overview', 'Overview'], ['vision', 'Vision & goals'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail'], ['calendar', 'Calendar']];
 function av4MonthEnd() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10); }
 function av4QuarterEnd() { const d = new Date(); const q = Math.floor(d.getMonth() / 3); return new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10); }
 function av4YearEnd() { return new Date(new Date().getFullYear(), 11, 31).toISOString().slice(0, 10); }
@@ -13339,8 +13339,8 @@ function renderAreaV4() {
     const topTask = openTs[0]; const topNote = nsort[0]; const topMail = streamItems()[0]; const topEvent = events[0];
     cards.push(card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? clip(topTask.title, 56) : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'data-av4-tab="tasks"'));
     cards.push(card('Notes', `${notes.length}`, topNote ? clip(topNote.title, 56) : 'Nothing written', topNote ? clip(av3Text(topNote.body), 68) : 'Start a note', 'See all notes', 'data-av4-tab="notes"'));
-    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
     cards.push(card('Mail', `${emails.length}`, topMail ? clip(topMail.title, 56) : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'data-av4-tab="mail"'));
+    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
     if (contacts.length) { const names = contacts.slice(0, 2).map((c) => c.title || 'Someone').join(', '); cards.push(card('People', `${contacts.length}`, clip(names, 46), contacts.length > 2 ? `and ${contacts.length - 2} more` : '', 'See everyone', 'data-open-contacts')); }
     if (tables.length) { const t0 = tables[0]; cards.push(card('Tables', `${tables.length}`, clip(t0.title || 'Untitled table', 56), tables.length > 1 ? `${tables.length} in this Space` : 'A table of your own', 'See all tables', 'data-av4-tab="tables"')); }
     // Fill the grid to a tidy 12 (three rows of four) when the summary boxes don't
@@ -13357,7 +13357,7 @@ function renderAreaV4() {
     content = `<div class="av4-pane">${list.length ? `<div class="av3-cards">${list.map(taskCard).join('')}</div>` : `<div class="av3-empty">No tasks here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-task>+ Task</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'notes') {
     const sortChip = (key, label) => { const on = st.sort.key === key; const arrow = on ? (st.sort.dir === 1 ? '↓' : '↑') : ''; return `<span class="av4-nsort${on ? ' on' : ''}" data-av4-sort="${key}">${label} <span class="av4-nsort-a">${arrow}</span></span>`; };
-    content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Newest first')}${sortChip('az', 'A to Z')}${sortChip('tag', 'By tag')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
+    content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Recent')}${sortChip('az', 'A to Z')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'tables') {
     content = `<div class="av4-pane">${tables.length ? `<div class="tbl-cards">${tables.map((tb) => `<button class="tbl-card" data-open-table="${tb.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(tb.title || 'Untitled')}</span></button>`).join('')}${canEdit ? `<button class="tbl-card tbl-card-add" data-area-add-table><span class="tc-ic">＋</span><span class="tc-t">New table</span></button>` : ''}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'mail') {
