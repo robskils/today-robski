@@ -2467,9 +2467,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-body h4 { font-size:19px; margin:16px 0 4px; color:var(--ink-2); padding-left:36px; }
 /* Make something a heading (H1-H3) and it takes the highlight colour, so the
    headers read as the note's structure at a glance. (Robin, 2026-10-30.) */
-.note-body h1, .note-body h2, .note-body h3 { color:var(--accent); }
+.note-body h1, .note-body h2, .note-body h3 { color:var(--k-goldt); }
 .note-body p { margin:0 0 14px; }
-.note-body a { color:var(--accent); }
+.note-body a { color:var(--k-goldt); }
 /* Nothing in a note body should force horizontal scroll on a narrow screen. */
 .note-body, .prose { overflow-wrap:break-word; }
 .note-body img, .prose img { max-width:100%; height:auto; border-radius:0; margin:8px 0; }
@@ -8390,9 +8390,9 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    the parent heading's bottom margin already separates them. */
 .prose :is(h1,h2,h3) + :is(h1,h2,h3) { margin-top:2px; }
 .prose h4, .prose h5, .prose h6 { font-size:18.5px; font-weight:600; margin:16px 0 4px; color:var(--ink-2); }
-.prose a { color:var(--accent); }
+.prose a { color:var(--k-goldt); }
 /* Internal links (to another Kaya page) read as a subtle dotted underline. */
-.prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--accent) 55%,transparent); cursor:pointer; }
+.prose a.rl-link { text-decoration:none; border-bottom:1px dashed color-mix(in srgb,var(--k-goldt) 55%,transparent); cursor:pointer; }
 .prose a.rl-link:hover { border-bottom-style:solid; }
 
 /* ── Well-being hub tiles (two rows of four) ─────────── */
