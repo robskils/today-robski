@@ -1442,27 +1442,12 @@ function saveTabs() { if (SPLIT_FRAME_TOOL) return; try { localStorage.setItem('
 // whatever page you happened to leave on. A quick reopen keeps your place.
 const REOPEN_FRESH_MS = 60 * 60 * 1000;   // an hour counts as "in a while"
 function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('life.lastActive') || 0); return !t || (Date.now() - t) > REOPEN_FRESH_MS; } catch { return false; } }
-// Cold boot handles "reopen on Home after a while" in boot(). But the installed
-// app usually just SUSPENDS in the background - reopening it resumes the same page
-// without re-running boot. So mirror it here: when the app comes back to the
-// foreground after an hour+ away, drop onto Home at the top. Only for the installed
-// app (standalone), so a desktop browser tab you return to mid-task is left be. We
-// stamp lastActive when it goes to the background, so the clock measures how long
-// it was actually away.
-(function reopenHomeOnResume() {
-  const standalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch { return false; } };
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
-    if (!standalone() || !reopenedAfterAWhile()) { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
-    const act = state.tabs && state.tabs.find((t) => t.id === state.activeTab);
-    // Don't yank someone to Home mid-task: a half-finished "add mailbox" keeps you
-    // on Accounts so the restored form is right where you left it. (Robin.)
-    if (mailAddDraft() && act && act.view && act.view.type === 'mailaccounts') { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} return; }
-    if (act) { act.view = { type: 'home' }; act.label = 'Home'; }
-    try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {}
-    if (state.view && state.view.type === 'home') { renderHome(); window.scrollTo(0, 0); }
-    else { Promise.resolve(openHome()).catch(() => {}); window.scrollTo(0, 0); }
-  });
+// Reopening the installed app keeps you on the view you left, every device - no
+// snap back to Today on resume either. (Robin, 2026-11-09: "just keep it on
+// whatever view it was on".) We still stamp lastActive on every visibility change
+// so the self-update-on-resume check below keeps its clock; we just never navigate.
+(function stampActiveOnResume() {
+  document.addEventListener('visibilitychange', () => { try { localStorage.setItem('life.lastActive', String(Date.now())); } catch {} });
 })();
 // Self-update on resume. The installed app usually SUSPENDS in the background and
 // resumes the same page - so a deploy never reaches it until a full relaunch, and
@@ -1697,7 +1682,7 @@ function themeLocked() { return !!(state.me && state.me.id !== 1); }
 // plus 'auto', which follows the sun between them. (Kaya: one gold accent; the
 // old washi/vermilion 'calm' world was retired 2026-10-31. A stored 'calm' now
 // resolves to 'auto', and the dead [data-theme='calm'] CSS is simply unreachable.)
-function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return m === 'light' || m === 'dark' ? m : 'auto'; }
+function themeMode() { if (themeLocked()) return 'auto'; const m = localStorage.getItem('life.theme.mode'); return (m === 'light' || m === 'dark' || m === 'morning') ? m : 'auto'; }
 // §24 Plain mode: a calm, un-painted ivory page instead of the day's wash. Opt-in,
 // off by default, applied as html[data-plain]. (Robin, 2026-11-06.)
 function plainMode() { try { return localStorage.getItem('life.plain') === '1'; } catch { return false; } }
@@ -1711,7 +1696,7 @@ function setPlainNight(v) { if (v !== 'a' && v !== 'b') return; try { localStora
 // its own exclusive scheme now, not a separate Background toggle - picking any
 // painted world turns it off; picking Sensible turns it on. (Robin, 2026-11-07.)
 function schemeMode() { return plainMode() ? 'plain' : themeMode(); }
-function themeLabel() { if (plainMode()) return '□ Sensible'; const m = themeMode(); return m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
+function themeLabel() { if (plainMode()) return '□ Sensible'; const m = themeMode(); return m === 'morning' ? '☼ Morning' : m === 'light' ? '☀ Day' : m === 'dark' ? '☾ Night' : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 // The light: a painted wash that follows the real day (public/daylight.css).
 const LIGHTS = ['dawn', 'overcast', 'dusk', 'night'];
@@ -1743,6 +1728,7 @@ function currentLight() {
   const p = lightPreview(); if (p) return p;
   const m = themeMode();
   if (m === 'dark') return 'night';
+  if (m === 'morning') return 'dawn';     // pinned to Morning (the dawn wash)
   const l = lightFromSun();
   if (m === 'light') return 'overcast';   // pinned to Day
   return l;
@@ -1798,7 +1784,7 @@ function applyTheme(rerender) {
 // The nav/footer button steps through the four schemes in order; the Settings
 // swatches set one directly. Both go through setScheme so Sensible behaves the
 // same everywhere.
-const SCHEME_ORDER = ['auto', 'light', 'dark', 'plain'];
+const SCHEME_ORDER = ['auto', 'morning', 'light', 'dark', 'plain'];
 function cycleTheme() {
   if (themeLocked()) return;   // members follow day/night automatically; nothing to cycle
   const next = SCHEME_ORDER[(SCHEME_ORDER.indexOf(schemeMode()) + 1) % SCHEME_ORDER.length];
@@ -1808,7 +1794,7 @@ function setScheme(mode) {
   if (themeLocked()) return;
   if (mode === 'plain') { try { localStorage.setItem('life.plain', '1'); } catch {} }
   else {
-    if (!['auto', 'light', 'dark'].includes(mode)) return;
+    if (!['auto', 'light', 'dark', 'morning'].includes(mode)) return;
     try { localStorage.setItem('life.plain', '0'); localStorage.setItem('life.theme.mode', mode); } catch {}
   }
   applyTheme(false);           // sets data-plain / data-theme / data-light and refreshes the footer label
@@ -1827,6 +1813,7 @@ function themeSwatches() {
   const cur = schemeMode();
   const opts = [
     ['auto', 'Auto', 'linear-gradient(135deg,#f8f4ec 0 50%,#13241d 50% 100%)', '#c99a3e'],
+    ['morning', 'Morning', 'linear-gradient(160deg,#F2C58A 0%,#A86A77 55%,#3B2B36 100%)', '#FAE6B8'],
     ['light', 'Day', '#f8f4ec', '#c99a3e'],
     ['dark', 'Night', '#13241d', '#d8b25e'],
     ['plain', 'Sensible', '#FAF6EE', '#2E6B45'],
@@ -33189,7 +33176,10 @@ function showRequired2fa() {
     // reset still applies as a fallback.
     let freshOpen = false;
     try { freshOpen = !sessionStorage.getItem('koyeba.ses'); sessionStorage.setItem('koyeba.ses', '1'); } catch {}
-    const forceHome = !!SPLIT_FRAME_TOOL || freshOpen || (installedApp && reopenedAfterAWhile());
+    // Reopen on the view you left, every device - no snap back to Today. (Robin,
+    // 2026-11-09: "keep it on whatever view it was on when I closed it".) Only a
+    // split frame, which must show its one pinned tool, still forces its view.
+    const forceHome = !!SPLIT_FRAME_TOOL;
     if (savedTabs && Array.isArray(savedTabs.tabs) && savedTabs.tabs.length) {
       state.tabs = savedTabs.tabs.map((t) => ({ id: uid(), view: t.view || { type: 'home' }, label: t.label || 'Home' }));
       state.activeTab = (state.tabs[savedTabs.active] || state.tabs[0]).id;
