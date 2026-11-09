@@ -13132,7 +13132,7 @@ document.addEventListener('input', (e) => {
   if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; renderArea(); }
 });
 document.addEventListener('change', (e) => {
-  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { state.taskGroup = tgb.value === 'space' ? 'space' : 'date'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
+  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { state.taskGroup = tgb.value === 'space' ? 'space' : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
   const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
   const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
@@ -20280,9 +20280,9 @@ function commitTaskView() {
 // Now/This week/Later/Someday/Done), a quick-add line, and a side By-Space list.
 // Replaces the endless filtered list. The task card stays the detail view.
 function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
-// How the task list is arranged: 'date' (one plain list) or 'space' (grouped).
-// Default is a plain list - space grouping is opt-in. (Robin, 2026-11-06.)
-function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'date'; } catch { state.taskGroup = 'date'; } } return state.taskGroup === 'space' ? 'space' : 'date'; }
+// How the task list is arranged: 'priority' (First/Soon/Whenever sections, dated
+// tasks floated to the top of each) or 'space' (grouped by Space). (Robin, 2026-11-09.)
+function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return state.taskGroup === 'space' ? 'space' : 'priority'; }
 function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
 function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
 function txDue(t) {
@@ -20322,17 +20322,19 @@ function renderTasks() {
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
   // Tabs are the priority buckets (plus All and Done); the name comes first, then
-  // the count. How the list is arranged - By Date (a plain list) or By Space
-  // (grouped) - is a separate dropdown, not another set of tabs. (Robin, 2026-11-06.)
+  // the count. How the list is arranged - By Priority (First/Soon/Whenever) or By
+  // Space - is a separate dropdown, not another set of tabs. (Robin, 2026-11-06.)
   const pileDefs = [['all', 'All'], ['p0', 'First'], ['p1', 'Soon'], ['p2', 'Whenever'], ['done', 'Done']];
   let selPile = state.taskPile; if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'all';
   const inPileAll = (id) => id === 'done' ? doneT : id === 'all' ? openT : openT.filter((t) => 'p' + txPriBucket(t) === id);
   const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
   const groupBy = taskGroupBy();
-  const orders = `<select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="date"${groupBy === 'date' ? ' selected' : ''}>By Date</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>`;
+  const orders = `<select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>`;
   // In the All tab, priorities are mixed, so every task leads with its own First /
   // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
-  const showPrio = selPile === 'all';
+  // Per-row First/Soon/Whenever only when priorities are mixed in the view - i.e.
+  // the All tab grouped By Space. By Priority shows it in the section header. (Robin.)
+  const showPrio = selPile === 'all' && groupBy === 'space';
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
     const due = txDue(t), late = txLate(t);
@@ -20345,10 +20347,18 @@ function renderTasks() {
     const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
     groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
   } else {
-    // By Date: one plain list, soonest (and late) first, undated last. No grouping.
+    // By Priority: in the All tab, First / Soon / Whenever sections; on a single
+    // priority (or Done) tab, a plain list. Within every section the tasks that
+    // carry a date float to the top (late and soonest first), the undated ones
+    // below. (Robin, 2026-11-09.)
     const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
-    const sorted = inPile.slice().sort(byDate);
-    groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
+    if (selPile === 'all') {
+      const groups = [['First', 0], ['Soon', 1], ['Whenever', 2]].map(([label, b]) => [label, inPile.filter((t) => txPriBucket(t) === b).sort(byDate)]).filter(([, a]) => a.length);
+      groupsHtml = groups.length ? groups.map(([label, items]) => { const key = selPile + '/pri/' + label; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${label}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') : `<div class="tx-empty">Nothing here. Add something below.</div>`;
+    } else {
+      const sorted = inPile.slice().sort(byDate);
+      groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
+    }
   }
   const pileLabel = (pileDefs.find((p) => p[0] === selPile) || [])[1] || '';
   const addPh = (selPile === 'all' || selPile === 'done') ? 'Add a task…' : `Add something to ${pileLabel}…`;
