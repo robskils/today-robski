@@ -19157,6 +19157,19 @@ function mailVisibleThreads() {
       threads = threads.filter((th) => mailQuadOf(th.latest) === 'inbox');
     }
   }
+  // A search reaches into every bucket, not just the tab you're on: fold in the
+  // Urgent / Important / Later emails that match. They're archived, so the server
+  // sweep usually finds them too - this guarantees it, deduped. (Robin, 2026-11-09.)
+  if (m.query && m.query.trim()) {
+    const ql = m.query.trim().toLowerCase();
+    const have = new Set((m.messages || []).map((x) => x.messageId || x._key));
+    const extra = [];
+    for (const quad of ['urgent', 'important', 'chilled']) for (const mm of mailQuadMsgs(quad)) {
+      const id = mm.messageId || mm._key; if (have.has(id)) continue;
+      if (`${mailFrom(mm) || ''} ${mm.subject || ''} ${mm.preview || ''}`.toLowerCase().includes(ql)) { have.add(id); extra.push(mm); }
+    }
+    if (extra.length) threads = buildThreads([...(m.messages || []), ...extra]);
+  }
   // Belt-and-braces: never show a thread whose latest message was just triaged
   // away. The inbox builds from state.mail.messages (already filtered on triage),
   // but a bucket builds from snapshots, so guard every view the same way here.
