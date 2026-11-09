@@ -8055,7 +8055,7 @@ function renderCapBar(force) {
   if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
   root.dataset.sig = sig;
   if (!c.open) {
-    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down</span><span class="cap-bar-kbd">⌘ .</span></button>`;
+    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down</span></button>`;
     capSizeCheck();
     return;
   }
@@ -13185,7 +13185,10 @@ function navBackLabel() { return viewLabel(navHist.length ? navHist[navHist.leng
 // edit fields save on change.
 document.addEventListener('input', (e) => {
   const s = e.target.closest && e.target.closest('[data-av4-search]');
-  if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; renderArea(); }
+  // Debounce the re-render so the page doesn't repaint (flash) on every keystroke -
+  // the input keeps your text natively meanwhile, and it refreshes when you pause.
+  // (Robin, 2026-11-09.)
+  if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; clearTimeout(window.__av4qT); window.__av4qT = setTimeout(() => { if (document.querySelector('[data-av4-search]')) renderArea(); }, 140); }
 });
 document.addEventListener('change', (e) => {
   const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { state.taskGroup = tgb.value === 'space' ? 'space' : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
@@ -27321,7 +27324,16 @@ function buildPalette() {
   // (never as a default list), so a one-letter query isn't flooded. Nav hits show
   // instantly while the content search loads under them. (Robin, 2026-10-26.)
   const navHits = palNavHits(ql);
-  state.pal.loading = true; state.pal.items = navHits.slice(); state.pal.sel = 0; renderPalItems();
+  // Keep the results already on screen while the debounced search below refreshes
+  // them - blanking the list to just the nav hits (or "Searching…") on every
+  // keystroke was the flashing. The one exception is coming straight from the empty
+  // palette (only actions/recents showing): there we do swap to the instant nav
+  // hits, since the old items don't belong to any query. Nav hits still arrive for
+  // every query, merged into the results below. (Robin, 2026-11-09: it flashes.)
+  const fromEmptyState = state.pal.items.every((it) => it.kind === 'action' || it.kind === 'recent');
+  state.pal.loading = true;
+  if (fromEmptyState) { state.pal.items = navHits.slice(); state.pal.sel = 0; }
+  renderPalItems();
   clearTimeout(palT);
   palT = setTimeout(async () => {
     try {
