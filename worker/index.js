@@ -422,7 +422,7 @@ function caldavPayloadFromBody(env, b, title) {
   const rrule = b.repeat !== undefined ? caldavRrule(b.repeat) : undefined;   // honour the repeat picker
   if (b.allDay) {
     const day = isValidDay(b.day) ? b.day : todayStr(tzOf(env));
-    const endDate = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+    const endDate = isValidDay(b.end_date) ? b.end_date : addDaysStr(day, 1);   // b.end_date is already exclusive (client converts)
     return { allDay: true, title, startDate: day, endDate, location: clean(b.location), notes: clean(b.notes), rrule };
   }
   if (b.start) {   // ISO path (e.g. a mail invite): absolute instants
@@ -585,7 +585,10 @@ async function createEvent(request, env) {
     start = { dateTime: b.start, timeZone: tz };
     end = { dateTime: b.end || b.start, timeZone: tz };
   } else if (b.allDay) {
-    const endDay = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+    // b.end_date is already the exclusive end (the client converts the inclusive
+    // last day it shows). Use it as-is; adding another day made events a day too
+    // long and defeated shortening the end. (Robin, 2026-11-09.)
+    const endDay = isValidDay(b.end_date) ? b.end_date : addDaysStr(day, 1);
     start = { date: day };
     end = { date: endDay };
   } else {
@@ -728,7 +731,10 @@ async function updateEvent(request, env, id) {
     if (b.allDay) {
       // Switch to (or stay) all-day: set dates, and null the dateTime so Google
       // drops the timed representation.
-      const endDay = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(b.day, 1);
+      // b.end_date is already exclusive (the client converts). Use it directly -
+      // the old +1 made the event a day too long, so "end it yesterday" still
+      // showed today. (Robin, 2026-11-09.)
+      const endDay = isValidDay(b.end_date) ? b.end_date : addDaysStr(b.day, 1);
       patch.start = { date: b.day, dateTime: null };
       patch.end = { date: endDay, dateTime: null };
     } else {
@@ -2116,7 +2122,7 @@ function eventPropsFromBody(b) {
   p.date = day;
   if (b.allDay) {
     p.allDay = true;
-    p.end_date = isValidDay(b.end_date) ? addDaysStr(b.end_date, 1) : addDaysStr(day, 1);
+    p.end_date = isValidDay(b.end_date) ? b.end_date : addDaysStr(day, 1);   // b.end_date is already exclusive (client converts)
   } else {
     const startMin = Number(b.start_min), duration = Number(b.duration);
     if (!Number.isFinite(startMin) || startMin < 0 || startMin > 1440) return null;
