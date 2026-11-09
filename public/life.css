@@ -3200,6 +3200,8 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .ce-recur-when { font-size:13px; color:var(--ink-2); }
 .ce-repeat-hint { font-size:13.5px; color:var(--ink-3); line-height:1.4; }
 .ce-recur-remove { align-self:flex-start; }
+.ce-recur-endset { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:2px 0; }
+.ce-recur-endlbl { font-size:13px; font-weight:600; color:var(--ink-2); }
 @media (max-width:560px){ .ce-foot .ce-submit { flex:1 1 100%; } .ce-foot .cal-del { margin-left:0; } }
 /* Friends chat panel - slides in from the right. */
 #chat .chat-bg { position:fixed; inset:0; z-index:230; background:color-mix(in srgb,var(--ink) 30%,transparent); }

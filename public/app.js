@@ -9559,12 +9559,14 @@ function homeTodayTabDefs() {
   const defs = [];
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
-  defs.push(['cal', 'Calendar', evN, false], ['radar', 'The feed', radN, r.overdue.length > 0]);
+  defs.push(['cal', 'Calendar', evN, false]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
   if (reflectOn()) defs.push(['reflections', 'Insights', 0, false]);
+  // The feed sits just to the left of What next (Robin, 2026-11-09).
+  defs.push(['radar', 'The feed', radN, r.overdue.length > 0]);
   defs.push(['next', 'What next', 0, false]);
   return defs;
 }
@@ -15618,7 +15620,7 @@ function showCalForm(ev) {
         </label>`;
       })()}
     </div>
-    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `Until ${esc(ends)}` : 'No end date'}</span></div><span class="ce-repeat-hint">To change or remove the repeat, tap <b>Remove repeat…</b> and choose just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
+    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `Until ${esc(ends)}` : 'No end date'}</span></div><div class="ce-recur-endset"><span class="ce-recur-endlbl">Ends on</span>${dateFieldHtml('ce-recur-until', (ev && ev.until) || '')}<button type="button" class="ghost ce-recur-setend" data-recur-setend>Set end date</button>${(ev && ev.until) ? '<button type="button" class="ghost ce-recur-clearend" data-recur-clearend>Clear</button>' : ''}</div><span class="ce-repeat-hint">Set an end date to shorten the series, or tap <b>Remove repeat…</b> to drop just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
@@ -15880,6 +15882,17 @@ async function calDeleteEvent(id) {
     toast(scope === 'future' ? 'This and following removed' : scope === 'all' ? 'Whole series removed' : 'Event deleted');
     invalidateAreaWeek();
     state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false; await loadCalendar();
+  } catch (e) { toast(e.message); }
+}
+// Set (or clear) a repeating series' end date from any one occurrence - the
+// natural way to shorten a repeat, instead of the delete dialog. (Robin, 2026-11-09.)
+async function calSetRecurEnd(id, end) {
+  try {
+    await api(`/api/events/${id}/recur-end`, { method: 'POST', body: JSON.stringify({ end: end || null }) });
+    toast(end ? `Repeat now ends ${prettyDate(end)}` : 'End date removed - repeats on');
+    invalidateAreaWeek();
+    state.cal.editing = null; state.cal.viewing = null; state.cal.adding = false;
+    await loadCalendar();
   } catch (e) { toast(e.message); }
 }
 // A recurring instance can be dropped on its own or trimmed "from here on".
@@ -28815,6 +28828,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
+  if (t.closest('[data-recur-setend]')) { const f = $('#cal-ev-form'); const inp = document.getElementById('ce-recur-until'); const d = inp && inp.value; if (!d) { toast('Pick an end date first.'); return; } if (f && f.dataset.ev) calSetRecurEnd(f.dataset.ev, d); return; }
+  if (t.closest('[data-recur-clearend]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calSetRecurEnd(f.dataset.ev, null); return; }
   // Reminder chips: toggle a lead, open the custom-lead row, or add a custom lead.
   { const tg = t.closest('[data-alarm-toggle]'); if (tg) { const f = tg.closest('#cal-ev-form'); const m = Number(tg.dataset.alarmToggle); const cur = remSelected(f); const i = cur.indexOf(m); if (i >= 0) cur.splice(i, 1); else cur.push(m); remSetSelected(f, cur); return; } }
   if (t.closest('[data-alarm-addcustom]')) { const f = t.closest('#cal-ev-form'); const c = f && f.querySelector('.ce-rem-custom'); const chip = t.closest('[data-alarm-addcustom]'); if (c) { c.hidden = !c.hidden; if (chip) chip.classList.toggle('on', !c.hidden); if (!c.hidden) { const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } return; }

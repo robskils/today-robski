@@ -1905,6 +1905,62 @@ async function deleteEvent(request, env, id) {
   }
 }
 
+// Set (or clear) the end date of a repeating series from any one of its
+// occurrences. Robin, 2026-11-09: shortening a repeat shouldn't need the delete
+// dialog - "ends on <date>" writes the master RRULE's UNTIL directly (inclusive,
+// so that day's occurrence is kept and the next is dropped). end='YYYY-MM-DD' to
+// end the series on that day, or null to remove the end so it repeats on.
+async function setRecurEnd(request, env, id) {
+  const b = await request.json().catch(() => ({}));
+  const end = b.end ? String(b.end) : null;
+  if (end && !isValidDay(end)) return err('bad date', request);
+
+  // Native series: the until lives in the block props (inclusive last day), the
+  // same convention the "this and following" trim uses.
+  const native = await nativeEventRow(env, id);
+  if (native) {
+    if (!native.p.repeat || native.p.repeat === 'none') return err('That event does not repeat.', request, 400);
+    if (end) { native.p.until = end; delete native.p.count; } else { delete native.p.until; }
+    await env.DB.prepare("UPDATE blocks SET props=?, updated_at=? WHERE id=? AND user_id=?")
+      .bind(JSON.stringify(native.p), new Date().toISOString(), native.id, env.uid).run();
+    return json({ ok: true }, request);
+  }
+
+  const g = await googleCtx(env);
+  if (!g) return err('Calendar not connected', request, 503);
+  try {
+    const evUrl = (eid) => `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(g.calId)}/events/${encodeURIComponent(eid)}`;
+    const authH = { Authorization: `Bearer ${g.token}` };
+    // An instance carries recurringEventId; resolve the master so we edit the rule.
+    const iRes = await fetch(evUrl(id), { headers: authH });
+    if (iRes.status === 401 || iRes.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+    if (!iRes.ok) return err('That event is not on the calendar.', request, 404);
+    const inst = await iRes.json();
+    const masterId = inst.recurringEventId || inst.id;
+    const mRes = await fetch(evUrl(masterId), { headers: authH });
+    if (!mRes.ok) return err('Could not read that series.', request, 502);
+    const master = await mRes.json();
+    // UNTIL is inclusive. All-day series take a DATE (YYYYMMDD); timed series take
+    // a UTC datetime, so end-of-day keeps that day's occurrence and drops the next.
+    let until = null;
+    if (end) {
+      if (master.start?.date) until = end.replace(/-/g, '');
+      else until = new Date(zonedDayStart(nextDayStr(end), tzOf(env)).getTime() - 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    }
+    const rec = (master.recurrence || []).map((line) => /^RRULE/i.test(line)
+      ? `${line.replace(/;(UNTIL|COUNT)=[^;]*/gi, '')}${until ? `;UNTIL=${until}` : ''}` : line);
+    if (!rec.some((l) => /^RRULE/i.test(l))) return err('That event does not repeat.', request, 400);
+    const pRes = await fetch(`${evUrl(masterId)}?sendUpdates=none`, { method: 'PATCH', headers: { ...authH, 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: rec }) });
+    if (pRes.ok) return json({ ok: true }, request);
+    if (pRes.status === 401 || pRes.status === 403) return err('Calendar is connected read-only. Re-run npm run google-auth to allow writing.', request, 403);
+    console.error('google set recur end:', pRes.status, await pRes.text());
+    return err('Google would not update that series.', request, 502);
+  } catch (e) {
+    console.error('setRecurEnd:', e.message);
+    return err('Could not reach Google Calendar.', request, 502);
+  }
+}
+
 // ── native calendar events ────────────────────────────────────────────
 // Kaya's own calendar, stored in D1 as kind='event' blocks (one per user).
 // This is what makes the calendar work with no Google (or any) account at all -
@@ -6040,6 +6096,7 @@ export default {
       // One path segment, decoded - so an id carrying ':' works whether the client
       // sent it raw (calendar) or percent-encoded (the Today timeline encodes it).
       // This also covers the acct:<id>:<eventId> ids of connected extra accounts.
+      { const m = path.match(/^\/api\/events\/(.+)\/recur-end$/); if (m && request.method === 'POST') return setRecurEnd(request, env, decodeURIComponent(m[1])); }
       const evMatch = path.match(/^\/api\/events\/([^/]+)$/);
       if (evMatch && request.method === 'PATCH') return updateEvent(request, env, decodeURIComponent(evMatch[1]));
       if (evMatch && request.method === 'DELETE') return deleteEvent(request, env, decodeURIComponent(evMatch[1]));
