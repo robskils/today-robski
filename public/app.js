@@ -2589,22 +2589,24 @@ function renderAdmin() {
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
         <span class="adm-brand-lockup"><span class="adm-brand-word">Kaya.</span></span>
-        <a class="ghost adm-brand-sheet" href="/brand/lifebook-logo.html" target="_blank" rel="noopener">Open the full logo sheet ↗</a>
+        <span class="adm-brand-sheet" style="opacity:.75;font-size:14px">Wordmark only, the full stop in gold. No logo mark.</span>
       </div>
-      <div class="home-sec-h" style="margin-top:6px">Logo files</div>
+      <div class="home-sec-h" style="margin-top:6px">App icon &amp; favicon</div>
       <div class="adm-brand-grid">
-        ${brAsset('/brand/lifebook-appicon-1024.png', 'App icon', '1024px PNG', true)}
-        ${brAsset('/brand/lifebook-appicon.svg', 'App icon', 'SVG · scalable', true)}
-        ${brAsset('/brand/lifebook-favicon.svg', 'Favicon', 'SVG · bright gold', true)}
-        ${brAsset('/brand/lifebook-mark-gold.svg', 'Mark', 'SVG · gold, for light')}
-        ${brAsset('/brand/lifebook-mark-ink.svg', 'Mark', 'SVG · ink, for paper')}
-        ${brAsset('/brand/lifebook-mark-cream.svg', 'Mark', 'SVG · cream, for dark', true)}
-        ${brAsset('/brand/icon-512.png', 'Icon 512', 'PNG', true)}
-        ${brAsset('/brand/icon-192.png', 'Icon 192', 'PNG', true)}
-        ${brAsset('/brand/apple-touch-icon.png', 'Apple touch', '180px PNG', true)}
+        ${brAsset('/brand/kaya-appicon-1024.png', 'App icon', '1024px PNG · the capital K', true)}
+        ${brAsset('/favicon.svg', 'Favicon', 'SVG · vector, capital K', true)}
+        ${brAsset('/icon-512.png', 'Icon 512', 'PNG', true)}
+        ${brAsset('/icon-192.png', 'Icon 192', 'PNG', true)}
+        ${brAsset('/apple-touch-icon.png', 'Apple touch', '180px PNG', true)}
       </div>
       <div class="home-sec-h" style="margin-top:18px">Colours</div>
       <div class="adm-brand-sw">${BR_SW.map(([hex, nm]) => `<span class="adm-sw"><span class="adm-sw-chip" style="background:${hex}"></span><span class="adm-sw-nm">${nm}</span><span class="adm-sw-hx">${hex}</span></span>`).join('')}</div>
+      <div class="home-sec-h" style="margin-top:18px">Type</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Cormorant Garamond',serif;font-weight:500;font-size:26px;line-height:1.05">Cormorant Garamond</span><span style="font-size:13.5px;opacity:.7">Display - page titles, the wordmark, big readings and glyphs</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Jost',system-ui,sans-serif;font-weight:500;font-size:22px;line-height:1.05">Jost</span><span style="font-size:13.5px;opacity:.7">Everything else - list rows, body, meta, labels</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Source Serif 4',Georgia,serif;font-size:21px;line-height:1.1">Source Serif 4</span><span style="font-size:13.5px;opacity:.7">Other people's words - email bodies, shared notes</span></div>
+      </div>
     </div>`;
 
   // Costs: measured AI spend + fixed infrastructure, by month (this month, last, …).
