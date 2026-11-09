@@ -356,6 +356,10 @@ document.addEventListener('touchend', (ev) => {
 }, { passive: true });
 // §22: Enter in the Tasks quick-add line creates the task in the open pile.
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const qa = ev.target.closest && ev.target.closest('[data-task-quickadd]'); if (qa) { ev.preventDefault(); txQuickAdd(qa); } });
+// Enter in the mail search box runs the search now, rather than waiting for the
+// typing-pause debounce - pressing Enter felt dead before (no handler at all).
+// (Robin, 2026-11-09.)
+document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter' || !ev.target.closest) return; const mq = ev.target.closest('[data-mail-q]'); if (!mq || !state.mail) return; ev.preventDefault(); clearTimeout(window.__mailSearchT); state.mail.query = mq.value; state.mail.limit = 40; loadMessages(true); });
 // §30 Goal page: Enter in the step / thought / connect inputs.
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Enter' || !ev.target.closest) return;
@@ -26728,7 +26732,7 @@ function renderNote() {
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
-      <div class="nc-top"><button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button><button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
+      <div class="nc-top">${navHist.length ? '<button class="crumb-back" data-note-back title="Back" aria-label="Back">←</button>' : ''}<button class="crumb" data-view-home>Today</button>${sep}<button class="crumb" data-open-notes>Notes</button>${crumbs ? sep + crumbs : ''}</div>
     </div>
     <div class="note-cq"><div class="note-layout note-layout-side">
       <div class="note-main">
