@@ -12469,8 +12469,13 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
   .cx-wcol { border-bottom:1px solid var(--k-line); padding-bottom:12px; margin-bottom:6px; }
   .cx-cell { min-height:72px; padding:6px 6px 6px; }
   .cx-h1 { font-size:clamp(44px,13vw,64px); }
-  .cx-lrow { grid-template-columns:92px minmax(0,1fr); }
-  .cx-lr-place { grid-column:2; }
+  /* Link-bearing rows must use the mobile layout too (the :has rule above is more
+     specific, so re-assert it here), or the title shifts right and the address/link
+     run off the edge. Title and address stay on one line, cut with … - the full
+     text shows when you open the event. (Robin, 2026-11-09.) */
+  .cx-lrow, .cx-lrow:has(> .ev-join-link) { grid-template-columns:92px minmax(0,1fr); column-gap:18px; row-gap:4px; }
+  .cx-lr-ti { grid-column:2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cx-lr-place { grid-column:2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 }
 
 /* ══ §22 Tasks index - piles + grouped rows on the §19 grid ══ */

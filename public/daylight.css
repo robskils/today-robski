@@ -256,6 +256,11 @@
    title), so it matches the Today calendar. (Robin, 2026-11-09.) */
 .cx-lrow > .ev-join-link { grid-column:4; grid-row:1; justify-self:end; align-self:center; display:inline-flex; align-items:center; gap:7px; margin:0; padding:8px 14px; border:1px solid #fff; font-family:'Jost',system-ui,sans-serif; font-size:14px; font-weight:400; letter-spacing:0; text-transform:none; line-height:1; color:var(--k-ink); white-space:nowrap; text-decoration:none; }
 .cx-lrow > .ev-join-link:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+/* Mobile: the Open link drops under the title/address (its own row in column 2)
+   instead of a 4th column that runs off the edge. (Robin, 2026-11-09.) */
+@media (max-width:760px){
+  .cx-lrow > .ev-join-link { grid-column:2; grid-row:auto; justify-self:start; align-self:center; margin-top:3px; }
+}
 
 /* Phones: Set it down is frosted glass over the page, not a solid panel. */
 @media (max-width:767px) {
