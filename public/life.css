@@ -8371,11 +8371,16 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    injected grip. The drag itself is a pointer gesture anywhere in a heading's left
    gutter, so it works with a finger too; on a phone this glyph is hidden for room
    and you press-and-hold the heading's margin to pick the section up. (2026-11-09.) */
-.prose.prose-heads :is(h1,h2,h3)::after { content:"\28FF"; position:absolute; left:-46px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:16px; text-align:center; color:var(--k-goldt); opacity:0; font-size:15px; line-height:1; pointer-events:none; transition:opacity .12s; }
-.prose.prose-heads :is(h1,h2,h3):hover::after { opacity:.55; }
+/* Always faintly present (not only on heading-hover) so it never vanishes as you
+   reach left into the gutter for it - that gutter is outside the heading's own
+   hover box, which made the hover-only grip disappear the moment you went to grab
+   it. Brighter when the note or the heading is hovered, full gold while dragging. */
+.prose.prose-heads :is(h1,h2,h3)::after { content:"\28FF"; position:absolute; left:-46px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:16px; text-align:center; color:var(--k-goldt); opacity:.26; font-size:15px; line-height:1; pointer-events:none; transition:opacity .12s; }
+.prose.prose-heads:hover :is(h1,h2,h3)::after { opacity:.42; }
+.prose.prose-heads :is(h1,h2,h3):hover::after { opacity:.75; }
+.prose.prose-heads :is(h1,h2,h3).head-dragging::after { opacity:1; }
 @media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::after { display:none; } }
-.prose.prose-heads.head-dragging-ctx { user-select:none; -webkit-user-select:none; }
-.prose :is(h1,h2,h3).head-dragging { opacity:.4; }
+.prose.prose-heads.head-dragging-ctx { user-select:none; -webkit-user-select:none; cursor:grabbing; }
 /* Drop cue: a line above the block the section will land in front of (or below the
    last one), and a bar down the right edge of a section you'll pair beside. */
 .prose .head-drop { box-shadow:0 -2px 0 var(--accent); }

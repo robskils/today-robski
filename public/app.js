@@ -1031,6 +1031,15 @@ document.addEventListener('pointercancel', (e) => {
   if (headDrag.timer) clearTimeout(headDrag.timer);
   if (headDrag.moved) endHeadDrag(false); else cleanupHeadDrag();
 });
+// Over a heading's gutter (where a press folds, or drags the section) show a grab
+// cursor instead of the text I-beam - the gutter is the note's left margin, not
+// text. Mouse only; while dragging, the grabbing cursor comes from .head-dragging-ctx.
+document.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch' || headDrag) return;
+  const prose = e.target.closest && e.target.closest('.prose.prose-heads[data-block-id]');
+  if (!prose) return;
+  prose.style.cursor = gutterHeadAt(prose, e.clientX, e.clientY) ? 'grab' : '';
+});
 // Drag an inline card to a new spot in the note. Pointer events (not HTML5 drag)
 // so it works the same with a mouse or a finger; the grip has touch-action:none
 // so a touch-drag reorders instead of scrolling. A thin line shows where it will
