@@ -882,6 +882,7 @@ function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop,
 function cleanupHeadDrag() {
   if (headDrag) {
     if (headDrag.timer) clearTimeout(headDrag.timer);
+    if (headDrag.scrollRAF) cancelAnimationFrame(headDrag.scrollRAF);
     if (headDrag.head) headDrag.head.classList.remove('head-dragging');
     if (headDrag.prose) { headDrag.prose.classList.remove('head-dragging-ctx'); try { headDrag.prose.releasePointerCapture(headDrag.id); } catch {} }
   }
@@ -984,6 +985,34 @@ function endHeadDrag(commit) {
   saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
   setupFolds();
 }
+// While dragging a section, scroll the note when the pointer nears the top or
+// bottom edge, so you can reach content that's off-screen - and in particular drop
+// a section right at the very top of a long (or scrolled) note, which you couldn't
+// before because the first heading sat off-screen or under the top bar. (Robin,
+// 2026-11-09: "it won't let me put it to the top".)
+function headDragScroller() {
+  let n = (headDrag && headDrag.prose) ? headDrag.prose.parentElement : null;
+  while (n && n !== document.body && n !== document.documentElement) {
+    const s = getComputedStyle(n);
+    if (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight + 4) return n;
+    n = n.parentElement;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+function headDragScrollTick() {
+  if (!headDrag || !headDrag.moved) { if (headDrag) headDrag.scrollRAF = 0; return; }
+  const y = headDrag.lastY, vh = window.innerHeight, EDGE = 78;
+  let dy = 0;
+  if (y < EDGE) dy = -Math.min(26, Math.ceil((EDGE - y) / 4) + 2);
+  else if (y > vh - EDGE) dy = Math.min(26, Math.ceil((y - (vh - EDGE)) / 4) + 2);
+  if (dy) {
+    const sc = headDrag.scroller || (headDrag.scroller = headDragScroller());
+    const before = sc.scrollTop; sc.scrollTop += dy;
+    if (sc.scrollTop === before) window.scrollBy(0, dy);   // that element won't scroll further: try the window
+    headDragAt(headDrag.lastX, headDrag.lastY);            // re-aim at whatever is under the pointer now
+  }
+  headDrag.scrollRAF = requestAnimationFrame(headDragScrollTick);
+}
 const HEAD_DRAG_THRESH = 6;
 document.addEventListener('pointerdown', (e) => {
   if (headDrag) return;
@@ -1003,6 +1032,8 @@ document.addEventListener('pointerdown', (e) => {
       headDrag.prose.classList.add('head-dragging-ctx');
       try { headDrag.prose.setPointerCapture(headDrag.id); } catch {}
       try { if (navigator.vibrate) navigator.vibrate(8); } catch {}
+      headDrag.lastX = headDrag.startX; headDrag.lastY = headDrag.startY;
+      headDrag.scrollRAF = requestAnimationFrame(headDragScrollTick);
       headDragAt(headDrag.startX, headDrag.startY);
     }, 260);
   }
@@ -1022,6 +1053,8 @@ document.addEventListener('pointermove', (e) => {
     try { headDrag.prose.setPointerCapture(headDrag.id); } catch {}
   }
   e.preventDefault();
+  headDrag.lastX = e.clientX; headDrag.lastY = e.clientY;
+  if (!headDrag.scrollRAF) headDrag.scrollRAF = requestAnimationFrame(headDragScrollTick);
   headDragAt(e.clientX, e.clientY);
 });
 document.addEventListener('pointerup', (e) => {
