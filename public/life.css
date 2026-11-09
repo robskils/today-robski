@@ -8357,8 +8357,14 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    the heading's first line (`top` is half the line height - --hsize per level,
    line-height 1.75, so ×0.875 is the middle - and translateY(-50%) centres it).
    (Robin, 2026-10-30: lose the square, keep the arrow in the highlight colour.) */
-.fold-toggle { position:absolute; left:-26px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; margin:0; color:var(--accent); background:none; cursor:pointer; user-select:none; font-size:13px; line-height:1; transition:transform .12s; }
-.fold-toggle:hover { transform:translateY(-50%) scale(1.18); }
+/* Fold chevron: a CSS ::before in the left gutter - never a real node in the
+   editable text, so it can't duplicate or strand on a paragraph like the old
+   injected glyph did. A click in the gutter at a heading's row folds it (handler
+   in app.js). ►=folded, ▼=open. (Robin, 2026-11-09.) */
+.prose.prose-heads :is(h1,h2,h3)::before { content:"\25BC"; position:absolute; left:-30px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:24px; text-align:center; color:var(--k-goldt); opacity:.7; font-size:12px; line-height:1; pointer-events:none; transition:opacity .12s; }
+.prose.prose-heads :is(h1,h2,h3):hover::before { opacity:1; }
+.prose.prose-heads :is(h1,h2,h3).folded::before { content:"\25BA"; opacity:1; }
+@media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::before { left:-22px; } }
 /* Drag grip to reorder (or columnise) a heading's whole section. Visible by
    default now, brighter on hover. It needs its own slot in the gutter, so it
    stays a pointer-device gesture; on touch it's hidden and the section stacks. */

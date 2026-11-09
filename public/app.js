@@ -785,8 +785,7 @@ function reapplyFolds(prose) {
         while (stack.length && stack[stack.length - 1] >= lvl) stack.pop();   // this heading ends any open section of its level or deeper
         el.classList.toggle('folded-hidden', stack.length > 0);              // the heading itself hides if inside a folded parent
         const isFolded = foldedSet.has(idxOf.get(el));
-        el.classList.toggle('folded', isFolded);
-        const tg = el.querySelector(':scope > .fold-toggle'); if (tg) tg.textContent = isFolded ? '►' : '▼';
+        el.classList.toggle('folded', isFolded);   // the ►/▼ chevron is a CSS ::before keyed off .folded
         if (isFolded) stack.push(lvl);
       } else {
         el.classList.toggle('folded-hidden', stack.length > 0);
@@ -848,17 +847,18 @@ function stripStrayFoldGlyphs(prose) {
 function setupFolds() {
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
     applyProseIndent(prose);
-    // Headers are just headers now (Robin, 2026-11-06: "the header toggles thing is
-    // still rather buggy… headers are just headers"). The old per-heading fold
-    // chevron and drag grip lived INSIDE contentEditable, so editing kept carrying
-    // them onto paragraphs, duplicating them and leaving stray arrows - fragile by
-    // nature. We no longer inject anything into a heading; it is plain text. Clean up
-    // any glyph or fold class left by an earlier render so the live view is tidy
-    // (saved content never held them - serialize strips them - so nothing is lost).
-    // A dedicated, robust toggle block (Notion-style) is the follow-up, kept separate
-    // from headings on purpose.
-    prose.querySelectorAll('.fold-toggle, .head-grip').forEach((x) => x.remove());
-    prose.querySelectorAll('.folded, .folded-hidden').forEach((x) => x.classList.remove('folded', 'folded-hidden'));
+    // Foldable headings, robust edition (Robin, 2026-11-09). Every heading folds its
+    // section. The chevron is a CSS ::before on the heading - NEVER a real node in the
+    // editable text, so it can't be duplicated or stranded on a paragraph the way the
+    // old injected glyph was (why it was switched off on 2026-11-06). A click in the
+    // left gutter where the chevron sits toggles the fold (see the click handler).
+    // Fold state is per-note in localStorage; sanitizeProse strips all attributes on
+    // save, so the .folded/.folded-hidden classes never persist and no content is lost.
+    prose.querySelectorAll('.fold-toggle, .head-grip').forEach((x) => x.remove());   // tidy any legacy injected glyph
+    const anyHead = !!prose.querySelector('h1, h2, h3');
+    prose.classList.toggle('prose-heads', anyHead);
+    if (anyHead) reapplyFolds(prose);
+    else prose.querySelectorAll('.folded, .folded-hidden').forEach((x) => x.classList.remove('folded', 'folded-hidden'));
   });
 }
 // Drag a heading's grip to reorder its section within the note. The section is
@@ -29020,7 +29020,9 @@ document.addEventListener('click', (e) => {
   { const frm = t.closest('[data-friend-remove]'); if (frm) { friendRemove(frm.dataset.friendRemove); return; } }
   { const fch = t.closest('[data-friend-chat]'); if (fch) { openChat(fch.dataset.friendChat, fch.dataset.friendName); return; } }
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
-  { const ft = t.closest('.fold-toggle'); if (ft) { e.preventDefault(); e.stopPropagation(); const head = ft.parentElement; const prose = ft.closest('.prose'); if (head && prose && HLVL[head.tagName]) { const heads = [...prose.querySelectorAll('h1, h2, h3')]; const i = heads.indexOf(head); setFold(prose.dataset.blockId, i, !head.classList.contains('folded')); reapplyFolds(prose); } return; } }
+  // Fold a heading by clicking the left gutter where its chevron sits (the chevron
+  // is a CSS ::before, so there's no element to click - we detect the gutter by x).
+  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { const r = ph.getBoundingClientRect(); const gut = window.innerWidth <= 760 ? 28 : 48; if (e.clientX - r.left < gut) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; const head = heads.find((h) => { const hr = h.getBoundingClientRect(); return e.clientY >= hr.top - 2 && e.clientY <= hr.bottom + 2; }); if (head) { e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(head), !head.classList.contains('folded')); reapplyFolds(ph); return; } } } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Kaya` : 'No contacts on Kaya yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
