@@ -20318,15 +20318,18 @@ async function txQuickAdd(input) {
 function renderTasks() {
   const all = (state.tasks || []).filter((t) => t && t.props);
   const openT = all.filter((t) => !t.props.done);
+  const snoozedT = openT.filter((t) => t.props.hideUntil && isSnoozed(t));    // hidden until their snooze date
+  const openVis = openT.filter((t) => !(t.props.hideUntil && isSnoozed(t)));  // the active list - snoozed dropped out
   const doneT = all.filter((t) => t.props.done);
   const tq = (state.taskQuery || '').trim().toLowerCase();
   const matchQ = (t) => !tq || (t.title || '').toLowerCase().includes(tq);
   // Tabs are the priority buckets (plus All and Done); the name comes first, then
   // the count. How the list is arranged - By Priority (First/Soon/Whenever) or By
   // Space - is a separate dropdown, not another set of tabs. (Robin, 2026-11-06.)
-  const pileDefs = [['all', 'All'], ['p0', 'First'], ['p1', 'Soon'], ['p2', 'Whenever'], ['done', 'Done']];
+  // Snoozed only appears once something is snoozed, so it's never a dead tab.
+  const pileDefs = [['all', 'All'], ['p0', 'First'], ['p1', 'Soon'], ['p2', 'Whenever'], ...(snoozedT.length ? [['snoozed', 'Snoozed']] : []), ['done', 'Done']];
   let selPile = state.taskPile; if (!selPile || !pileDefs.some((p) => p[0] === selPile)) selPile = state.taskPile = 'all';
-  const inPileAll = (id) => id === 'done' ? doneT : id === 'all' ? openT : openT.filter((t) => 'p' + txPriBucket(t) === id);
+  const inPileAll = (id) => id === 'done' ? doneT : id === 'snoozed' ? snoozedT : id === 'all' ? openVis : openVis.filter((t) => 'p' + txPriBucket(t) === id);
   const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
   const groupBy = taskGroupBy();
   const board = tasksBoardOn();
@@ -20338,9 +20341,13 @@ function renderTasks() {
   const showPrio = selPile === 'all' && groupBy === 'space';
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
+    const snz = !!(t.props.hideUntil && t.props.snooze);
     const due = txDue(t), late = txLate(t);
     const prioL = showPrio ? (['First', 'Soon', 'Whenever'][txPriBucket(t)] || '') : '';
-    return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${prioL ? `<span class="tx-row-prio">${prioL}</span>` : ''}${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button><span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span></div>`;
+    const tail = snz
+      ? `<span class="tx-row-snoozed"><span class="tx-row-due tx-row-snz">till ${esc(prettyDate(t.props.snooze))}</span><span class="tx-unsnz" data-task-unsnooze="${t.id}" role="button" tabindex="0" title="Bring it back now">Bring back</span></span>`
+      : `<span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span>`;
+    return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${prioL ? `<span class="tx-row-prio">${prioL}</span>` : ''}${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button>${tail}</div>`;
   };
   const inPile = inPileAll(selPile).filter(matchQ);
   let groupsHtml = '';
@@ -20365,7 +20372,7 @@ function renderTasks() {
   const addPh = (selPile === 'all' || selPile === 'done') ? 'Add a task…' : `Add something to ${pileLabel}…`;
   // Sidebar: every Space with its open-task count, sorted by name (A) or by number
   // (#); each toggle flips direction on a second press. No collapse. (Robin, 2026-11-06.)
-  const bySpace = {}; openT.forEach((t) => { const s = txSpaceName(t) || 'No Space'; bySpace[s] = (bySpace[s] || 0) + 1; });
+  const bySpace = {}; openVis.forEach((t) => { const s = txSpaceName(t) || 'No Space'; bySpace[s] = (bySpace[s] || 0) + 1; });
   const spSort = state.taskSpaceSort || (state.taskSpaceSort = { key: 'count', dir: -1 });
   const spaceRows = Object.entries(bySpace).sort((a, b) => spSort.key === 'count' ? ((a[1] - b[1]) * spSort.dir || a[0].localeCompare(b[0])) : a[0].localeCompare(b[0]) * spSort.dir);
   const spArrow = (k) => spSort.key === k ? `<span class="tx-side-dir">${spSort.dir > 0 ? '↑' : '↓'}</span>` : '';
@@ -20375,10 +20382,10 @@ function renderTasks() {
     <div class="tx-main">
       <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
-      <div class="nx-lead">${esc(txMood(openT, 'priority'))}</div>
-      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board ? '' : orders}</div></div>
+      <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
+      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board && selPile !== 'snoozed' ? '' : orders}</div></div>
       <div class="tx-add"><span class="tx-add-box"></span><input data-task-quickadd placeholder="${esc(addPh)}" autocomplete="off"><span class="tx-add-k">↵</span></div>
-      <div class="tx-groups">${board ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
+      <div class="tx-groups">${board && selPile !== 'snoozed' ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
     <aside class="tx-side">${sidePanel}</aside>
   </div></div>`;
@@ -28492,6 +28499,8 @@ document.addEventListener('click', (e) => {
   { const tsx = t.closest('[data-task-status]'); if (tsx) { const [tid, v] = tsx.dataset.taskStatus.split(':'); patchTaskProps(tid, { done: false, kstatus: v === 'todo' ? '' : v }); return; } }
   { const tr = t.closest('[data-task-repeat]'); if (tr) { const [tid, v] = tr.dataset.taskRepeat.split(':'); if (v === 'custom') { if (state.task_open) { state.task_open.repCustom = true; renderTaskCard(); } return; } if (state.task_open) state.task_open.repCustom = false; patchTaskProps(tid, { repeat: v || null }); return; } }
   { const trm = t.closest('[data-task-remind]'); if (trm) { const [tid, v] = trm.dataset.taskRemind.split(':'); const c = taskCopies(tid)[0]; const due = c && c.props && c.props.due; if (v === 'off') patchTaskProps(tid, { remindDays: null, snooze: null, hideUntil: false }); else { const n = Number(v); patchTaskProps(tid, { remindDays: n, snooze: due ? addDaysStr(due, -n) : null }); } return; } }
+  { const tsz = t.closest('[data-task-snooze]'); if (tsz) { const [tid, v] = tsz.dataset.taskSnooze.split(':'); const c = taskCopies(tid)[0]; const pr = (c && c.props) || {}; if (v === 'on') { const rd = Number(pr.remindDays) || 0; patchTaskProps(tid, { hideUntil: true, snooze: pr.due ? addDaysStr(pr.due, -rd) : (pr.snooze || null) }); } else patchTaskProps(tid, { hideUntil: false }); return; } }
+  { const tus = t.closest('[data-task-unsnooze]'); if (tus) { patchTaskProps(tus.dataset.taskUnsnooze, { hideUntil: false }); return; } }
   { const tsc = t.closest('[data-task-sched]'); if (tsc) { if (state.task_open) { state.task_open.schedOpen = !state.task_open.schedOpen; renderTaskCard(); } return; } }
   { const tgp = t.closest('[data-task-goalpick]'); if (tgp) { if (state.task_open) { state.task_open.goalPick = !state.task_open.goalPick; renderTaskCard(); } return; } }
   const ogl = t.closest('[data-open-goal]'); if (ogl) { openGoalCard(ogl.dataset.openGoal).catch((x) => toast(x.message)); return; }
@@ -30645,6 +30654,12 @@ function renderTaskCard() {
     + (showRepSel ? `<span class="tcd-date"><select class="sel" data-repeat-task="${id}">${REPEATS.map(([v, l]) => `<option value="${v}" ${rep === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span>` : '');
   const rd = p.remindDays;
   const remRow = [opt('Off', rd == null, `data-task-remind="${id}:off"`), opt('Morning of', rd === 0, `data-task-remind="${id}:0"`), opt('A day before', rd === 1, `data-task-remind="${id}:1"`), opt('A week before', rd === 7, `data-task-remind="${id}:7"`)].join('');
+  // Snooze: hide the task until its reminder date (due minus the reminder lead), then
+  // it comes back on its own - and surfaces on Home. Needs a due date + a reminder. (Robin, 2026-11-09.)
+  const snzDate = (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : (p.snooze || '');
+  const snoozeRow = snzDate
+    ? [opt('Visible', !p.hideUntil, `data-task-snooze="${id}:off"`), opt(`Hidden till ${sd(snzDate)}`, !!p.hideUntil, `data-task-snooze="${id}:on"`)].join('')
+    : '<span class="tcd-hint">Give it a due date and a reminder before it, then you can snooze it till then.</span>';
   const schedOpen = !!(state.task_open && state.task_open.schedOpen) || repCustomOn || rd != null || (!!rep && rep !== '');
   const detailRows = canEdit ? `
     <div class="tcd-card">
@@ -30653,7 +30668,8 @@ function renderTaskCard() {
       <div class="tcd-row"><span class="tcd-lbl">How long</span><div class="tcd-opts">${durRow}</div></div>
       <div class="tcd-row"><span class="tcd-lbl">Status</span><div class="tcd-opts">${statusRow}</div></div>
       ${schedOpen ? `<div class="tcd-row"><span class="tcd-lbl">Repeat</span><div class="tcd-opts">${repRow}</div></div>
-      <div class="tcd-row"><span class="tcd-lbl">Remind me</span><div class="tcd-opts">${remRow}</div></div>` : ''}
+      <div class="tcd-row"><span class="tcd-lbl">Remind me</span><div class="tcd-opts">${remRow}</div></div>
+      <div class="tcd-row"><span class="tcd-lbl">Snooze</span><div class="tcd-opts">${snoozeRow}</div></div>` : ''}
       <div class="tcd-more" data-task-sched role="button" tabindex="0">${schedOpen ? 'Fewer options' : 'Repeat and reminders'}</div>
     </div>` : (summary ? '' : '');
   // Notes fold (prose). Keep the email + source sections when present - real data, not clutter.

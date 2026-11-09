@@ -12523,6 +12523,11 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .tx-row-sp { color:var(--k-goldt); }
 .tx-row-meta { color:var(--k-mute); }
 .tx-row-due { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; align-self:baseline; }
+.tx-row-snoozed { display:flex; align-items:baseline; gap:10px; justify-self:end; }
+.tx-row-snz { color:var(--k-mute); }
+.tx-unsnz { font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); cursor:pointer; padding:4px 9px; border:1px solid var(--k-line); white-space:nowrap; }
+.tx-unsnz:hover { border-color:var(--k-gold); color:var(--k-gold); }
+.tcd-hint { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
 .tx-row-due.late { color:var(--k-goldt); font-weight:500; }
 .tx-empty { padding:30px 0; font-family:var(--k-serif); font-style:italic; font-size:21px; color:var(--k-mute); }
 .tx-side { padding-top:158px; }

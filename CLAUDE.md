@@ -46,7 +46,7 @@ Koyéba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole 
 
 ## Words
 - Calm, warm, British English, short sentences. No hype, no exclamation marks, no emoji.
-- "Spaces", never "Life Spaces". "Coming into view", never "My Shizu". "Set something down…", not "Quick add". "Not yet", not "Snooze". "12 days past", not "OVERDUE".
+- "Spaces", never "Life Spaces". "Coming into view", never "My Shizu". "Set something down…", not "Quick add". The Tasks hide-until feature is "Snooze"/"Snoozed" (Robin, 2026-11-09). "12 days past", not "OVERDUE".
 - No user-facing "Shizu", "Daybook" or "Lifebook" anywhere, in any language.
 - **The name is spelt "Koyéba", accent on the e, everywhere people read it** (Robin, 2026-11-04). Plain "koyeba"/"Koyeba" is only for what can't or shouldn't carry an accent: the domain, file names, code identifiers, `User-Agent`/`PRODID` values, the SMS sender and the Resend `FROM_EMAIL` fallback.
 
