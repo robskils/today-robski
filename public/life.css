@@ -2473,8 +2473,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 /* On the painted washes, notes take a brighter gold - more legible than the muted
    fill gold against the plum/indigo grounds. The ivory "Sensible" theme keeps its
    dark gold (the rules above), or a light gold would vanish. (Robin, 2026-11-09: brighter is better.) */
-:root[data-light]:not([data-plain]) :is(.note-body h1, .note-body h2, .note-body h3, .note-body a, .prose a) { color:#FFD98A; }
-:root[data-light]:not([data-plain]) .prose a.rl-link { border-bottom-color:color-mix(in srgb, #FFD98A 55%, transparent); }
+:root[data-light]:not([data-plain]) :is(.note-body h1, .note-body h2, .note-body h3) { color:#FFD98A; }
+/* Links take the note's ivory ink with a gold underline, so a heading (solid gold)
+   and a link (ivory + gold rule) read as two different things, not one wall of
+   gold. They warm to gold on hover. (Robin, 2026-11-09: tastefully different.) */
+:root[data-light]:not([data-plain]) :is(.note-body a, .prose a) { color:var(--k-ink); text-decoration-color:color-mix(in srgb, #FFD98A 70%, transparent); text-underline-offset:3px; }
+:root[data-light]:not([data-plain]) :is(.note-body a, .prose a):hover { color:#FFD98A; }
+:root[data-light]:not([data-plain]) .prose a.rl-link { color:var(--k-ink); border-bottom-color:color-mix(in srgb, #FFD98A 60%, transparent); }
+:root[data-light]:not([data-plain]) .prose a.rl-link:hover { color:#FFD98A; }
 /* Nothing in a note body should force horizontal scroll on a narrow screen. */
 .note-body, .prose { overflow-wrap:break-word; }
 .note-body img, .prose img { max-width:100%; height:auto; border-radius:0; margin:8px 0; }

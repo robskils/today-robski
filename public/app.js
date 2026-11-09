@@ -12481,7 +12481,7 @@ async function openAreasList() {
   catch { state.areaSummary = state.areaSummary || {}; }
 }
 const AREAS_SORTS = [['rank', 'My order'], ['active', 'Recently active'], ['tasks', 'Most open tasks'], ['name', 'Name A–Z']];
-const areasSortMode = () => state.areasSort || (state.areasSort = (() => { try { return localStorage.getItem('life.areas.sort') || 'rank'; } catch { return 'rank'; } })());
+const areasSortMode = () => state.areasSort || (state.areasSort = (() => { try { return localStorage.getItem('life.areas.sort') || 'active'; } catch { return 'active'; } })());
 // How active an area's been, from its most recent block activity.
 function areaActivity(last) {
   if (!last) return { cls: 'quiet', label: 'Quiet' };
@@ -13224,9 +13224,13 @@ function renderAreaV4() {
   // Events for this Space come from the calendar API (Google + native, via the
   // event→area map) once it lands; until then, the native event blocks give a
   // first paint. Normalised to a flat {title,date,allDay,start_min,location}.
-  const events = (state.area_open.calEvents != null)
-    ? state.area_open.calEvents.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || ((a.start_min ?? 0) - (b.start_min ?? 0)))
+  const todayI = todayISO();
+  const rawEvents = (state.area_open.calEvents != null)
+    ? state.area_open.calEvents.slice()
     : blocks.filter((b) => b.kind === 'event').map((b) => { const p = b.props || {}; return { id: b.id, title: b.title, date: p.date, allDay: p.allDay, start_min: p.start_min, location: p.location }; });
+  // A Space's calendar looks ahead, not back: only today and later. (Robin, 2026-11-09.)
+  const events = rawEvents.filter((e) => (e.date || '') >= todayI)
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || ((a.start_min ?? 0) - (b.start_min ?? 0)));
   const goals = blocks.filter((b) => b.kind === 'goal' && (gp(b).status || 'active') !== 'done');
   const contacts = blocks.filter((b) => b.kind === 'contact');
   const tables = blocks.filter((b) => b.kind === 'table');
@@ -13333,8 +13337,8 @@ function renderAreaV4() {
     });
     const topTask = openTs[0]; const topNote = nsort[0]; const topMail = streamItems()[0]; const topEvent = events[0];
     cards.push(card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? clip(topTask.title, 56) : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'data-av4-tab="tasks"'));
-    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
     cards.push(card('Notes', `${notes.length}`, topNote ? clip(topNote.title, 56) : 'Nothing written', topNote ? clip(av3Text(topNote.body), 68) : 'Start a note', 'See all notes', 'data-av4-tab="notes"'));
+    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
     cards.push(card('Mail', `${emails.length}`, topMail ? clip(topMail.title, 56) : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'data-av4-tab="mail"'));
     if (contacts.length) { const names = contacts.slice(0, 2).map((c) => c.title || 'Someone').join(', '); cards.push(card('People', `${contacts.length}`, clip(names, 46), contacts.length > 2 ? `and ${contacts.length - 2} more` : '', 'See everyone', 'data-open-contacts')); }
     if (tables.length) { const t0 = tables[0]; cards.push(card('Tables', `${tables.length}`, clip(t0.title || 'Untitled table', 56), tables.length > 1 ? `${tables.length} in this Space` : 'A table of your own', 'See all tables', 'data-av4-tab="tables"')); }
