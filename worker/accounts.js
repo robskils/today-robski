@@ -95,6 +95,15 @@ async function resolveInvite(env, typed, email) {
   return inv;
 }
 
+// Does this email + stashed code hold a valid, unused invitation? The sign-in
+// gate uses it to decide whether to actually send a code when signup is
+// invite-only, so a non-invited person is pointed at "request an invite" rather
+// than a code that would dead-end at the invite-gated signup. (Robin, 2026-11-09.)
+export async function inviteGrantsSignin(env, typed, email) {
+  const inv = await resolveInvite(env, typed, email);
+  return !!inv && typeof inv !== 'string';
+}
+
 // What an invitation link says about itself, for the welcome before sign-in. The
 // code is the credential and is private to whoever it was sent to.
 const PLAN_LABEL = { free: 'Free', byok: 'Premium', managed: 'Premium Plus' };

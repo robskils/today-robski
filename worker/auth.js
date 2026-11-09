@@ -19,7 +19,8 @@
 //     needs your Cloudflare login rather than a shared secret.
 
 import { sendSms } from './sms.js';
-import { getUserByEmail } from './accounts.js';
+import { getUserByEmail, inviteGrantsSignin } from './accounts.js';
+import { isPublicSignup } from './admin.js';
 // smtpSend/buildMessage are used only inside sendCodeMail (call time), so the
 // auth.js <-> mail.js cycle (mail.js imports signJWT) resolves fine.
 import { smtpSend, buildMessage } from './mail.js';
@@ -149,11 +150,22 @@ export async function requestCode(request, env, json, err) {
   // is locked behind this very sign-in, the phone still gets you in.
   const channel = body.channel === 'sms' ? 'sms' : 'email';
 
-  // Open registration: any valid email can request a code and sign up. The
-  // kill-switch env.SIGNUP_CLOSED='1' reverts to admin-only (allow-listed emails
-  // still get in; everyone else gets the same silent ok, so the list can't be
-  // probed). Rate limiting below still applies to every request.
-  if (env.SIGNUP_CLOSED === '1' && !isAllowed(email, env)) return json({ ok: true });
+  // Invite-only (the admin "Open registration" toggle off, isPublicSignup=false):
+  // a code goes out only to an allow-listed admin or to someone holding a valid
+  // invitation - the stashed /join code (body.invite), or one emailed to this
+  // address. Everyone else gets ok:true + needInvite, so the gate points them at
+  // "request an invite" instead of a code that would dead-end at the invite-gated
+  // signup; no code is sent, so the member list can't be probed either. When the
+  // toggle is ON (public signup) this is skipped and anyone can get a code.
+  // (Robin, 2026-11-09: apply for an invite, approved by an admin.)
+  // Existing members ALWAYS get a code - their invitation is long since used, and
+  // locking a returning member out of their own account would be the worst bug
+  // here. The gate only stops a stranger with no account and no invitation.
+  if (!(await isPublicSignup(env)) && !isAllowed(email, env)
+      && !(await getUserByEmail(env, email))
+      && !(await inviteGrantsSignin(env, body.invite, email))) {
+    return json({ ok: true, needInvite: true });
+  }
 
   const now = Math.floor(Date.now() / 1000);
   const existing = await env.DB.prepare('SELECT sent_at FROM otp_codes WHERE email = ?')
