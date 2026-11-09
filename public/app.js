@@ -17853,9 +17853,11 @@ async function loadMessages(quiet, force) {
   state.mail.searching = null;
   state.mail.open = null; state.mail.composing = false; state.mail.selected = new Set(); state.mail.moveMenu = null; state.mail.hover = null;
   const f = mailFolder(); state.mail.mailbox = f.mailbox;
-  const all = state.mail.account === 'all';
-  const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
   const q = (state.mail.query || '').trim();
+  // A search spans every account, and the worker sweeps every folder - so you find
+  // a mail wherever it lives, whatever tab you're on. (Robin, 2026-11-09.)
+  const all = state.mail.account === 'all' || !!q;
+  const accts = all ? (state.mail.accounts || []) : (state.mail.accounts || []).filter((a) => a.id === state.mail.account);
   const limit = state.mail.limit || 40;
   // Stale-while-revalidate: show the last list for this view instantly, then
   // refresh behind it, so switching folders/accounts or going back feels snappy.
