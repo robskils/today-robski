@@ -5440,14 +5440,14 @@ function knavGroups() {
   // Ching, Tarot, Horoscope) before the writing tools.
   return [
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
-    { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit', tools: [
-      ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Tables', 'data-open-tables', ''],
-      ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-      ['Read & Watch', 'data-open-readwatch', ''], ['Discover', 'data-open-discover', ''] ] },
+    { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
+      tools: [
+        ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''], ['Discover', 'data-open-discover', ''],
+        ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
+        ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''] ],
+      rows: [['Day to day', 5], ['Money', 4], ['Goals', 3]] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
-    { id: 'money', label: 'Money', about: '', attr: 'data-open-money', tools: [
-      ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''] ] },
     { id: 'plans', label: 'Reviews', about: 'Look back, and plan the next stretch', tools: [
       ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
   ];
@@ -5459,7 +5459,7 @@ const KNAV_VIEW = {
   table: 'keep', tables: 'keep', readwatch: 'keep',
   goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'plans', reviewcard: 'plans',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'plans',
-  money: 'money', financial: 'money',
+  money: 'keep', financial: 'keep',
 };
 // The top-nav group labels, keyed by group id - the "section" segment of every
 // breadcrumb (Today / <section> / <page>). crumbNav() inserts this. (Robin 2026-11-03.)
@@ -9690,13 +9690,12 @@ function homeTodayTabDefs() {
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
   defs.push(['cal', 'Calendar', evN, false]);
+  defs.push(['radar', 'Your Kaya', radN, r.overdue.length > 0]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
   if (reflectOn()) defs.push(['reflections', 'Insights', 0, false]);
-  // The feed sits just to the left of What next (Robin, 2026-11-09).
-  defs.push(['radar', 'The feed', radN, r.overdue.length > 0]);
   defs.push(['next', 'What next', 0, false]);
   return defs;
 }
@@ -28321,6 +28320,7 @@ document.addEventListener('click', (e) => {
   { const ss = t.closest('[data-shares-seen]'); if (ss) { e.preventDefault(); state.sharesSeen = new Date().toISOString(); renderHome(); api('/api/shared/seen', { method: 'POST', body: '{}' }).catch(() => {}); return; } }
   { const wnx = t.closest('[data-wn-next]'); if (wnx) { e.preventDefault(); state.home = state.home || {}; state.home.wntab = 'next'; state.home.tab = 'next'; try { localStorage.setItem('life.home.wntab', 'next'); } catch {} renderHome(); setTimeout(() => { const b = document.querySelector('.home-wntabs'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); return; } }
   if (t.closest('[data-open-goals]')) { openGoals('goals').catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-visionwall]')) { openVisionWall().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-money]')) { openMoney().catch((x) => toast(x.message)); return; }
   { const fin = t.closest('[data-open-financial]'); if (fin) { openFinancial(fin.dataset.finTab || undefined).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-settings]')) { openSettings(); return; }
