@@ -5549,7 +5549,7 @@ button.t2-newrow:hover { border-color:var(--accent); color:var(--accent); }
 @media (min-width:1600px){ .pane { padding-left:64px; padding-right:64px; } }
 @media (min-width:2200px){ .pane { padding-left:80px; padding-right:80px; } }
 /* §14: a flat ground - no translucent inset sheet behind page content. */
-body[data-view="calendar"] .pane, body[data-view="tasks"] .pane, body[data-view="notes"] .pane, body[data-view="tables"] .pane, body[data-view="goals"] .pane, body[data-view="contacts"] .pane, body[data-view="reviews"] .pane, body[data-view="discover"] .pane, body[data-view="readwatch"] .pane, body[data-view="shared"] .pane, body[data-view="areas"] .pane, body[data-view="money"] .pane, body[data-view="financial"] .pane, body[data-view="messages"] .pane, body[data-view="connect"] .pane, body[data-view="insights"] .pane, body[data-view="mailaccounts"] .pane {
+body[data-view="calendar"] .pane, body[data-view="tasks"] .pane, body[data-view="notes"] .pane, body[data-view="tables"] .pane, body[data-view="goals"] .pane, body[data-view="contacts"] .pane, body[data-view="reviews"] .pane, body[data-view="discover"] .pane, body[data-view="readwatch"] .pane, body[data-view="shared"] .pane, body[data-view="areas"] .pane, body[data-view="money"] .pane, body[data-view="financial"] .pane, body[data-view="messages"] .pane, body[data-view="connect"] .pane, body[data-view="insights"] .pane, body[data-view="mail"] .pane, body[data-view="mailaccounts"] .pane {
   background:none; -webkit-backdrop-filter:none; backdrop-filter:none; border:0; border-radius:0; box-shadow:none; margin-top:0;
 }
 /* Notes & tables keep a readable reading measure rather than running full width. */
@@ -7624,6 +7624,9 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* Desktop: pin the reader toolbar just BELOW the sticky breadcrumb (which also sits
    at top:44px), so it isn't hidden behind it. --mail-crumbh is measured per render. */
 @media (min-width:821px){ .mail-reader-head { top:calc(var(--tabstrip-h, 0px) + var(--mail-crumbh, 46px)); } }
+/* Compose: the Back/Send bar sticks right under the tab strip, in reach while you
+   scroll the message. (Robin, 2026-11-10.) */
+body[data-view="mail"] .mail-compose-head { top:var(--tabstrip-h, 0px); z-index:9; }
 /* Mobile: pin the reader toolbar BELOW the brand header (--navh) AND the sticky
    breadcrumb (--mail-crumbh), with a little padding so the icons stay put and never
    scroll up to touch the crumb bar. (Robin, 2026-10-29.) */
