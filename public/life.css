@@ -12696,6 +12696,11 @@ body[data-view="settings"].sx-six .pane { max-width:none; padding:0; margin-top:
 .sx-main { min-width:0; padding-top:48px; max-width:980px; }
 .sx-eyebrow { display:flex; align-items:center; gap:12px; }
 .sx-rule { width:28px; height:1px; background:var(--k-gold); }
+/* Robin, 2026-11-10: drop the little gold rule/dash before eyebrows and section
+   headings - it read a bit AI-ish. The eyebrow TEXT stays; only the leading dash
+   goes, everywhere it appears. */
+.home-eyebrow::before, .nx-eyebrow::before, .cx-eyebrow::before { display:none; }
+.gx-rule, .kg-rule, .jx-eyebrow-rule, .sx-rule { display:none; }
 .sx-eyebrow-t { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
 .sx-h1 { font-family:var(--k-serif); font-weight:300; font-size:clamp(56px,6vw,92px); line-height:.95; margin:14px 0 0; color:var(--k-ink); }
 .sx-lead { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; line-height:1.4; color:var(--k-mute); margin-top:12px; }

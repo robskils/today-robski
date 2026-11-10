@@ -15404,7 +15404,6 @@ function renderCalendar() {
           <button class="cx-new" data-cal-add>New event</button>
         </div>
       </div>
-      ${gcalBarHtml()}
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
       <div class="cx-grid">
         <div class="cx-col"><div id="cal-form"></div>${main}</div>
@@ -15414,6 +15413,7 @@ function renderCalendar() {
           <button class="cx-side-add" data-cal-add-day="${c.selected || todayI}">+ Add to this day</button>
         </aside>
       </div>
+      ${gcalBarHtml()}
     </div>`;
   if (c.adding) {
     showCalForm();

@@ -215,6 +215,10 @@
 :root[data-light] :is(.mail-ar-card, .mail-maketop, .mail-ar-replytop) { background:var(--glass-card); border-color:var(--glass-edge); }
 :root[data-light] .mail-ar-card { -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
 :root[data-light] .mail-ar-triage { background:var(--glass); border-color:var(--glass-edge); -webkit-backdrop-filter:blur(20px) saturate(1.7); backdrop-filter:blur(20px) saturate(1.7); }
+/* Read without interference: the sticky toolbars over the open email are opaque, so
+   the email body disappears cleanly under them instead of bleeding through the glass.
+   The email's own box (.mail-ar-card) stays glass. (Robin, 2026-11-10.) */
+:root[data-light] :is(.mail-ar-triage, .mail-maketop, .mail-ar-replytop) { background:var(--k-panel); -webkit-backdrop-filter:none; backdrop-filter:none; }
 :root[data-light] .mail-ar-card *:not(iframe) { color:var(--k-ink); border-color:var(--glass-edge); }
 :root[data-light] .mail-ar-card :is(a, .mail-make:hover, .mail-noticed-l, .mail-noticed-act) { color:var(--k-goldt); }
 :root[data-light] .mail-ar-card .mail-make { border-color:var(--glass-edge); background:transparent; font-size:14px; }
