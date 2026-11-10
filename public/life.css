@@ -2440,6 +2440,10 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    sitting in the text like an inline image does. (Robin, 2026-10-29.) */
 .prose-file { display:inline-flex; align-items:center; gap:7px; max-width:100%; padding:6px 10px; margin:2px 0; border:1px solid var(--line-2); border-radius:0; background:var(--card); color:var(--ink); text-decoration:none; cursor:pointer; vertical-align:middle; box-shadow:var(--shadow); transition:border-color .12s, background .12s; }
 .prose-file:hover { border-color:var(--accent); background:var(--paper-2); }
+.prose-file .pf-grip { flex:none; color:var(--ink-3); font-size:13px; line-height:1; cursor:grab; user-select:none; opacity:.5; touch-action:none; }
+.prose-file:hover .pf-grip { opacity:.8; }
+.prose-file .pf-grip:hover { opacity:1; color:var(--accent); }
+.prose-file .pf-grip:active { cursor:grabbing; }
 .prose-file .pf-ic { flex:none; font-size:16px; line-height:1; }
 .prose-file .pf-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; max-width:42ch; }
 .prose-file .pf-x { flex:none; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:0 1px; margin-left:3px; }

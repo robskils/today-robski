@@ -723,7 +723,7 @@ function decorateProse(html) {
     a.removeAttribute('href');
     const type = a.getAttribute('data-att-type') || '';
     const name = a.getAttribute('data-att-name') || 'file';
-    a.innerHTML = `<span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name)}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
+    a.innerHTML = `<span class="pf-grip" data-card-grip contenteditable="false" title="Drag to move" aria-hidden="true">⠿</span><span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name)}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
   });
   // Wrap pasted tables so a wide one scrolls sideways instead of stretching the
   // page. sanitizeProse strips the wrapper back off when saving.
@@ -1085,41 +1085,59 @@ document.addEventListener('pointermove', (e) => {
 // so a touch-drag reorders instead of scrolling. A thin line shows where it will
 // land; on release the card moves there and the note saves.
 let cardDrag = null;
-function cardDropPosition(y) {
+function cardDropPosition(x, y) {
   if (!cardDrag) return;
   const prose = cardDrag.prose;
-  const blocks = [...prose.children].filter((c) => c !== cardDrag.card);
+  // Candidate blocks: top-level children, but descend into the column under the
+  // pointer, so a card/attachment can be dropped straight into a two-column
+  // section (not only at the top level). (Robin, 2026-11-10.)
+  const blocks = [];
+  for (const c of prose.children) {
+    if (c.classList && c.classList.contains('ncols')) { c.querySelectorAll(':scope > .ncol').forEach((col) => { const cr = col.getBoundingClientRect(); if (x >= cr.left && x <= cr.right) [...col.children].forEach((b) => blocks.push(b)); }); }
+    else blocks.push(c);
+  }
+  const cands = blocks.filter((b) => b !== cardDrag.card && b.offsetParent !== null);
   let before = null;
-  for (const b of blocks) { const r = b.getBoundingClientRect(); if (y < r.top + r.height / 2) { before = b; break; } }
-  cardDrag.before = before;
-  const pr = prose.getBoundingClientRect();
-  const last = blocks[blocks.length - 1];
-  const topY = before ? before.getBoundingClientRect().top : (last ? last.getBoundingClientRect().bottom : pr.top);
+  for (const b of cands) { const r = b.getBoundingClientRect(); if (y < r.top + r.height / 2) { before = b; break; } }
+  const container = before ? before.parentElement : (cands.length ? cands[cands.length - 1].parentElement : prose);
+  cardDrag.before = before; cardDrag.container = container;
+  const last = cands[cands.length - 1];
+  const topY = before ? before.getBoundingClientRect().top : (last ? last.getBoundingClientRect().bottom : prose.getBoundingClientRect().top);
+  const box = container.getBoundingClientRect();
   const ind = cardDrag.ind;
-  ind.style.left = pr.left + 'px'; ind.style.width = pr.width + 'px'; ind.style.top = (topY - 1) + 'px';
+  ind.style.left = box.left + 'px'; ind.style.width = box.width + 'px'; ind.style.top = (topY - 1) + 'px';
 }
 document.addEventListener('pointerdown', (e) => {
   const grip = e.target.closest && e.target.closest('[data-card-grip]'); if (!grip) return;
-  const card = grip.closest('.lc-inline'); const prose = card && card.closest('.prose[contenteditable="true"]');
-  if (!card || !prose) return;
+  const prose = grip.closest('.prose[contenteditable="true"]'); if (!prose) return;
+  // The draggable unit: a link card is itself a block; a file chip rides in a block
+  // (its <p>), so move that whole block. (Robin, 2026-11-10: grab an attachment and
+  // reposition it.)
+  let card = grip.closest('.lc-inline');
+  if (!card) { const chip = grip.closest('.prose-file'); card = chip ? proseBlockAt(prose, chip) : null; }
+  if (!card || !prose.contains(card)) return;
   e.preventDefault();
   const ind = document.createElement('div'); ind.className = 'lc-drop-ind'; document.body.appendChild(ind);
-  cardDrag = { prose, card, id: e.pointerId, before: undefined, ind };
+  cardDrag = { prose, card, id: e.pointerId, before: undefined, container: prose, ind };
   card.classList.add('lc-dragging');
   try { grip.setPointerCapture(e.pointerId); } catch {}
-  cardDropPosition(e.clientY);
+  cardDropPosition(e.clientX, e.clientY);
 });
-document.addEventListener('pointermove', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); cardDropPosition(e.clientY); });
+document.addEventListener('pointermove', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); cardDropPosition(e.clientX, e.clientY); });
 function endCardDrag(commit, e) {
   const cd = cardDrag; cardDrag = null;
   cd.card.classList.remove('lc-dragging');
   if (cd.ind) cd.ind.remove();
-  if (commit && cd.before !== cd.card && cd.before !== cd.card.nextElementSibling) {
-    if (cd.before) cd.prose.insertBefore(cd.card, cd.before); else cd.prose.appendChild(cd.card);
+  const container = cd.container || cd.prose;
+  const sameSpot = (cd.card.parentElement === container) && ((cd.before && cd.before === cd.card.nextElementSibling) || (!cd.before && !cd.card.nextElementSibling) || (cd.before === cd.card));
+  if (commit && !sameSpot) {
+    if (cd.before && cd.before.parentElement === container) container.insertBefore(cd.card, cd.before); else container.appendChild(cd.card);
+    try { normalizeColumns(cd.prose); } catch {}
     if (cd.prose.dataset.prose) saveProse(cd.prose.dataset.prose, cd.prose.innerHTML, cd.prose.dataset.blockId);
   }
-  // Swallow the click that a release fires, so a drag never also opens the link.
-  cd.card.dataset.justDragged = '1'; setTimeout(() => { try { delete cd.card.dataset.justDragged; } catch {} }, 60);
+  // Swallow the click that a release fires, so a drag never also opens the link/file.
+  const flag = (cd.card.matches && cd.card.matches('.link-card, .prose-file')) ? cd.card : ((cd.card.querySelector && cd.card.querySelector('.prose-file')) || cd.card);
+  flag.dataset.justDragged = '1'; setTimeout(() => { try { delete flag.dataset.justDragged; } catch {} }, 60);
 }
 document.addEventListener('pointerup', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); endCardDrag(true, e); });
 document.addEventListener('pointercancel', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; endCardDrag(false, e); });
@@ -28806,7 +28824,7 @@ document.addEventListener('click', (e) => {
   const cgrip = t.closest('[data-card-grip]'); if (cgrip) { e.preventDefault(); e.stopPropagation(); return; }   // the grip is for dragging, never opens the link
   const lcard = t.closest('.link-card[data-linkcard]'); if (lcard && lcard.closest('.prose')) { if (lcard.dataset.justDragged) return; e.preventDefault(); openExternal(lcard.dataset.linkcard); return; }
   // Tap an inline file chip to open/download it (the × above already handled removal).
-  const pfile = t.closest('.prose-file[data-att-file]'); if (pfile && pfile.closest('.prose[data-block-id]')) { e.preventDefault(); const prose = pfile.closest('.prose[data-block-id]'); openAttachment(prose.dataset.blockId, pfile.getAttribute('data-att-file')); return; }
+  const pfile = t.closest('.prose-file[data-att-file]'); if (pfile && pfile.closest('.prose[data-block-id]')) { if (pfile.dataset.justDragged) { e.preventDefault(); return; } e.preventDefault(); const prose = pfile.closest('.prose[data-block-id]'); openAttachment(prose.dataset.blockId, pfile.getAttribute('data-att-file')); return; }
   const adel = t.closest('[data-att-del]'); if (adel) { e.preventDefault(); e.stopPropagation(); const z = adel.closest('[data-att-zone]'); deleteAttachment(z.dataset.attZone, adel.dataset.attDel); return; }
   const aop = t.closest('[data-att-open]'); if (aop) { const z = aop.closest('[data-att-zone]'); openAttachment(z.dataset.attZone, aop.dataset.attOpen); return; }
   const tad = t.closest('[data-tatt-del]'); if (tad) { e.preventDefault(); e.stopPropagation(); const [rid, cid, aid] = tad.dataset.tattDel.split(':'); delCellAttachment(rid, cid, aid); return; }
@@ -31539,7 +31557,7 @@ function pickInlineImage() {
 // The inner of an inline file chip - an icon for the type + the filename + an × to
 // pull it out. Rebuilt by decorateProse on every render from the stored data-att-*
 // attributes, so the body stays a light, empty <a>. (Robin, 2026-10-29.)
-const fileChipInner = (type, name) => `<span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name || 'file')}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
+const fileChipInner = (type, name) => `<span class="pf-grip" data-card-grip contenteditable="false" title="Drag to move" aria-hidden="true">⠿</span><span class="pf-ic">${attIcon(type)}</span><span class="pf-name">${esc(name || 'file')}</span><button class="pf-x" data-card-del title="Remove" aria-label="Remove" contenteditable="false" tabindex="-1">×</button>`;
 // Upload any file (a PDF for reference, a doc, whatever) and drop a chip for it
 // inline in the prose - the same R2 attachment path as an inline image, but shown
 // as a tap-to-open file chip rather than a picture. Images picked here are still
