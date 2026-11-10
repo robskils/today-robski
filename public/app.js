@@ -15384,6 +15384,10 @@ function renderCalendar() {
   const sevs = dayEvs(c.selected || todayI);
   const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}${evJoin(e)}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
   const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
+  // Search is a button that opens into a field, sitting next to New event. It
+  // counts as open while the button has been pressed (calSearchOpen) or a query
+  // is live. (Robin, 2026-11-10: "turn search into a button next to New Event".)
+  const searchOpen = !!(state.calSearchOpen || (state.calQuery && state.calQuery.trim()));
   $('#pane').innerHTML = `
     <div class="kpage-cal">
       ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.calendar') }])}
@@ -15393,8 +15397,12 @@ function renderCalendar() {
       <div class="cx-controls">
         <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today title="Back to today">${c.mode === 'week' ? `Week ${isoWeekInfo(c.selected || todayISO()).week}` : 'Today'}</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
-        <div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>
-        <button class="cx-new" data-cal-add>New event</button>
+        <div class="cx-actions">
+          ${searchOpen
+            ? `<div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>`
+            : `<button class="cx-searchbtn" data-cal-search-open title="Search the calendar" aria-label="Search the calendar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg><span>Search</span></button>`}
+          <button class="cx-new" data-cal-add>New event</button>
+        </div>
       </div>
       ${gcalBarHtml()}
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
@@ -29034,6 +29042,7 @@ document.addEventListener('click', (e) => {
   { const gx = t.closest('[data-gcal-acct-x]'); if (gx) { gcalAccountDisconnect(gx.dataset.gcalAcctX); return; } }
   { const lp = t.closest('[data-ce-loc-pick]'); if (lp) { const inp = document.getElementById('ce-loc'); if (inp) inp.value = lp.dataset.ceLocPick; const s = document.getElementById('ce-loc-sugg'); if (s) { s.hidden = true; s.innerHTML = ''; } const d = document.getElementById('ce-directions'); if (d) d.hidden = !(inp && inp.value.trim()); return; } }
   { const dr = t.closest('[data-ce-directions]'); if (dr) { const loc = (document.getElementById('ce-loc') || {}).value; if (loc && loc.trim()) openExternal('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(loc.trim())); return; } }
+  if (t.closest('[data-cal-search-open]')) { state.calSearchOpen = true; renderCalendar(); requestAnimationFrame(() => { const i = $('[data-cal-q]'); if (i) { i.focus({ preventScroll: true }); try { const n = (i.value || '').length; i.setSelectionRange(n, n); } catch {} } }); return; }
   if (t.closest('[data-cal-add]')) { const p = primeMobileKeyboard(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; }
   if (t.closest('[data-cal-close]')) { state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null; renderCalendar(); return; }
   if (t.closest('[data-cal-del]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calDeleteEvent(f.dataset.ev); return; }
@@ -30068,6 +30077,14 @@ function toggleSidebar() {
   };
   start();
 })();
+// Calendar search collapses back to its button when the field is left empty, so
+// the controls row stays tidy. A live query keeps it open. (Robin, 2026-11-10.)
+document.addEventListener('focusout', (e) => {
+  const i = e.target; if (!i || !i.matches || !i.matches('[data-cal-q]')) return;
+  if ((i.value || '').trim() || !state.calSearchOpen) return;
+  state.calSearchOpen = false;
+  setTimeout(() => { if (document.querySelector('.kpage-cal')) renderCalendar(); }, 120);
+});
 document.addEventListener('pointerdown', (e) => {
   const h = e.target.closest && e.target.closest('[data-nav-resize]'); if (!h) return;
   e.preventDefault();
