@@ -19665,6 +19665,7 @@ function renderMail(loading) {
     const catts = m.composing.attachments || [];
     const composeForm = `<form id="mail-compose-form" class="mail-compose">
       <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
+      <div class="mail-compose-scroll">
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
       <input id="mc-cc" placeholder="Cc" value="${esc(m.composing.cc || '')}" list="contacts-dl">
@@ -19680,8 +19681,9 @@ function renderMail(loading) {
       </div>
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
+      </div>
       <input type="file" id="mc-file" multiple hidden></form>`;
-    $('#pane').innerHTML = `${pageCrumb(t('nav.mail'))}<div class="mail2 mail2-compose">${composeForm}</div>`;
+    $('#pane').innerHTML = `<div class="mail2 mail2-compose">${composeForm}</div>`;
     return;
   }
   const threads = mailVisibleThreads();

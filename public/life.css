@@ -7624,9 +7624,15 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* Desktop: pin the reader toolbar just BELOW the sticky breadcrumb (which also sits
    at top:44px), so it isn't hidden behind it. --mail-crumbh is measured per render. */
 @media (min-width:821px){ .mail-reader-head { top:calc(var(--tabstrip-h, 0px) + var(--mail-crumbh, 46px)); } }
-/* Compose: the Back/Send bar sticks right under the tab strip, in reach while you
-   scroll the message. (Robin, 2026-11-10.) */
-body[data-view="mail"] .mail-compose-head { top:var(--tabstrip-h, 0px); z-index:9; }
+/* Compose fills the view below the top chrome (nav + tab strip = --tabstrip-h): the
+   Back/Send bar is fixed at the top and the fields + body scroll beneath it, so the
+   message never scrolls up behind the bar. The bar carries a comfortable inset so the
+   Back button never sits flush to the edge. (Robin, 2026-11-10.) */
+body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
+.mail2-compose { position:sticky; top:var(--tabstrip-h, 56px); height:calc(100dvh - var(--tabstrip-h, 56px)); overflow:hidden; display:flex; flex-direction:column; }
+.mail2-compose .mail-compose { flex:1 1 auto; min-height:0; padding:0; gap:0; }
+.mail2-compose .mail-compose-head { position:static; flex:none; padding:14px clamp(20px,4vw,40px); margin:0; }
+.mail-compose-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:12px; padding:16px clamp(20px,4vw,40px) 60px; }
 /* Mobile: pin the reader toolbar BELOW the brand header (--navh) AND the sticky
    breadcrumb (--mail-crumbh), with a little padding so the icons stay put and never
    scroll up to touch the crumb bar. (Robin, 2026-10-29.) */
