@@ -1568,7 +1568,7 @@ function renderTabs() {
   const tabsHtml = multi ? state.tabs.map((t) => {
     const on = t.id === state.activeTab;
     return `<button class="ktab${on ? ' on' : ''}" data-tab="${t.id}" title="${esc(t.label || 'Tab')}"><span class="ktab-t">${esc(t.label || 'Tab')}</span><span class="ktab-x" data-tab-close="${t.id}" role="button" tabindex="0" title="Close" aria-label="Close tab">×</span></button>`;
-  }).join('') : '';
+  }).join('<span class="ktab-sep" aria-hidden="true"></span>') : '';   // a small gold square between the tab names (Robin, 2026-11-10)
   el.classList.toggle('has-tabs', multi);
   el.innerHTML = tabsHtml;   // the New-tab control lives in the breadcrumb row (newTabBtnHtml)
   try { setNavH(); } catch {}

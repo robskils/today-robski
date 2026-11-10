@@ -7095,6 +7095,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .ktab:hover .ktab-t, .ktab.on .ktab-t { color:var(--k-ink); }
 .ktab.on::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--k-gold); }
 .ktab-x { flex:0 0 auto; font-size:17px; line-height:1; color:var(--k-mute); opacity:0; transition:opacity .16s,color .16s; }
+/* A small gold square between the tab names (only renders between two tabs). */
+.ktab-sep { flex:0 0 auto; align-self:center; width:6px; height:6px; background:var(--k-gold); }
 .ktab:hover .ktab-x, .ktab.on .ktab-x { opacity:1; }
 .ktab-x:hover { color:var(--k-ink); }
 /* §21 The "+Tab" New-tab control rides at the right of the breadcrumb row, in the
