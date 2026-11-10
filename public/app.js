@@ -18384,7 +18384,7 @@ function mailReplyStart(all) {
   }
   const quote = esc(o.text || '').replace(/\n/g, '<br>');
   const lead = `On ${new Date(o.date).toLocaleString()}, ${esc(o.from ? o.from.address : '')} wrote:`;
-  state.mail.composing = { _acct: o._acct, to, cc, bcc: '', subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `<br><br><div>${lead}</div><blockquote style="margin:0;padding-left:12px;border-left:2px solid #ccc;color:#555">${quote}</blockquote>`, inReplyTo: o.messageId };
+  state.mail.composing = { _acct: o._acct, to, cc, bcc: '', subject: /^re:/i.test(o.subject) ? o.subject : `Re: ${o.subject}`, body: `<br><br><div>${lead}</div><blockquote style="margin:0;padding-left:12px">${quote}</blockquote>`, inReplyTo: o.messageId };
   renderMail();
   setTimeout(() => $('#mc-body') && $('#mc-body').focus(), 0);
 }
@@ -19588,7 +19588,7 @@ function mailOpenPanelHtml(o) {
   // Archive · Delete again at the very foot of the email, INSIDE the glass box, below
   // the attachments - the glass area under the white paper, where the white-rim glass
   // buttons read fine. They reuse the same handlers as the top row. (Robin, 2026-11-05.)
-  const footActs = `<div class="mail-ar-footacts"><button class="mail-footact" data-mail-archive="${k}">Archive</button><button class="mail-footact" data-mail-del="${k}">Delete</button></div>`;
+  const footActs = `<div class="mail-ar-footacts"><button class="mail-footact" data-mail-archive="${k}">Archive</button><button class="mail-footact" data-mail-del="${k}">Delete</button><button class="mail-footact" data-mail-area>Add to Space</button></div>`;
   return {
     body: `${convStrip}${bodyInner}${atts}${join}${imgs}${footActs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
@@ -19609,7 +19609,7 @@ function mailMoreHtml(o) {
   items.push(`<button class="mail-more-item" data-mail-forward>Forward</button>`);
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
-  items.push(`<button class="mail-more-item" data-mail-area>File in a Space</button>`);
+  items.push(`<button class="mail-more-item" data-mail-area>Add to a Space</button>`);
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
