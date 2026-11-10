@@ -27038,10 +27038,11 @@ function matchesQuery(r) {
 function visibleRows() {
   const filters = state.tables_view.filters || [];
   const rows = sortRows(state.tables_rows).filter((r) => matchesQuery(r) && filters.every((f) => matchesFilter(r, f)));
-  // A just-added row is pinned to the top so it's visible to fill in (a blank
-  // row otherwise sorts to the bottom). The pin drops on re-sort or reopen.
+  // A just-added row is pinned to the bottom so it's visible to fill in (a blank
+  // row otherwise sorts elsewhere). The pin drops on re-sort or reopen. (Robin,
+  // 2026-11-10: new rows go to the bottom.)
   const nid = state.tables_view.newRow;
-  if (nid) { const i = rows.findIndex((r) => r.id === nid); if (i > 0) { const [row] = rows.splice(i, 1); rows.unshift(row); } }
+  if (nid) { const i = rows.findIndex((r) => r.id === nid); if (i >= 0 && i < rows.length - 1) { const [row] = rows.splice(i, 1); rows.push(row); } }
   return rows;
 }
 function tableBodyHtml() {
@@ -32010,19 +32011,21 @@ async function noteToTable() {
 }
 async function addRow() {
   const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'row', parent_id: state.tables_open.id, props: { values: {} } }) });
-  state.tables_rows.unshift(r);
-  state.tables_view.newRow = r.id;   // pin to the top until re-sorted or reopened
+  state.tables_rows.push(r);
+  state.tables_view.newRow = r.id;   // pin to the bottom until re-sorted or reopened
   // A brand-new blank row matches no search or filter, so it would vanish the
   // instant it's added. Clear them so the row you just asked for is visible.
   state.tables_view.query = ''; state.tables_view.filters = []; state.tables_view.filtering = false;
   renderTable();
-  // Drop the cursor straight into the first editable cell of the new row (pinned to
-  // the top), so you can start typing without reaching for the mouse.
+  // Scroll the new row (at the bottom) into view, then drop the cursor straight into
+  // its first editable cell, so you can start typing without reaching for the mouse.
   requestAnimationFrame(() => {
-    const tr = document.querySelector('#tbl-body tr');
+    const openTd = document.querySelector(`#tbl-body [data-open-row="${r.id}"]`);
+    const tr = openTd ? openTd.closest('tr') : document.querySelector('#tbl-body tr:last-child');
     if (!tr) return;
+    try { tr.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch {}
     const el = tr.querySelector('input.cell, textarea.cell, select.cell') || tr.querySelector('[data-cell]');
-    if (el) { try { el.focus(); if (el.select) el.select(); } catch {} }
+    if (el) { try { el.focus({ preventScroll: true }); if (el.select) el.select(); } catch {} }
   });
 }
 // The extra fields a column of a given type needs: a default currency symbol, or
