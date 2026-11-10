@@ -19087,7 +19087,7 @@ const mailRowHtml = (x, child, count) => {
     </span>
     <span class="mail-row-right">
       <span class="mail-date">${mailDate(x.date)}</span>
-      <span class="mail-row-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span><span class="mrt mrt-arch" data-mail-archive="${k}">Archive</span><span class="mrt mrt-del" data-mail-rowdel="${k}">Delete</span></span>
+      <span class="mail-row-tri"><span class="mrt mrt-arch" data-mail-archive="${k}">Archive</span><span class="mrt mrt-del" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>
     </span></button>`;
 };
 // Clean, consistent line icons for the reader toolbar (currentColor stroke), so
@@ -19511,7 +19511,7 @@ function mailAccordionRow(x, count) {
     + `${!isOpen ? `<span class="mail-ar-prev">${noticed ? `<i class="mail-ar-notice">${noticed}</i>` : esc(mailCleanPreview(x.preview))}</span>` : ''}</span>`
     + `<span class="mail-ar-right">`
     + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
-    + `<span class="mail-ar-tri"><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span></span>`
+    + `<span class="mail-ar-tri"><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
     + `</span>`
     + `</button>`;
   // §58: closed, the row is just its header. Open, the header + body sit on a
@@ -20529,7 +20529,7 @@ function renderTasks() {
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
       <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board && selPile !== 'snoozed' ? '' : orders}</div></div>
-      <div class="tx-add"><span class="tx-add-box"></span><input data-task-quickadd placeholder="${esc(addPh)}" autocomplete="off"><span class="tx-add-k">↵</span></div>
+      <button class="tx-addbtn" data-quick-add="task">${t('task.add')}</button>
       <div class="tx-groups">${board && selPile !== 'snoozed' ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
     <aside class="tx-side">${sidePanel}</aside>
