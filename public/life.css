@@ -2140,7 +2140,7 @@ body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 .filt-act { display:flex; gap:10px; margin-top:12px; }
 .tbl-noresult td { text-align:center; color:var(--ink-3); padding:22px; font-style:italic; }
 .tbl-head h1 { font-size:30px; }
-.tbl-head input.rename { font-family:var(--k-serif); font-size:30px; font-weight:300; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; flex:1; }
+.tbl-head input.rename { font-family:var(--k-serif); font-size:clamp(30px,5vw,44px); font-weight:300; line-height:1.08; letter-spacing:-.015em; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; flex:1; }
 
 .tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); }
 table.recs { border-collapse:collapse; width:100%; font-size:16px; }

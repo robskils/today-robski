@@ -14564,10 +14564,11 @@ async function areaAddNote() {
 async function areaAddTable() {
   const area = state.area_open && state.area_open.area; if (!area) return;
   try {
-    const tb = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: 'Untitled table', props: { area: area.id, areas: [area.id], columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
+    const tb = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: '', props: { area: area.id, areas: [area.id], columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
     if (state.area_open && Array.isArray(state.area_open.blocks)) state.area_open.blocks.unshift(tb);
     state.tables = state.tables || []; state.tables.push(tb);
     await openTable(tb.id);
+    focusTableTitle();
   } catch (e) { toast(e.message); }
 }
 // Customise a page's colour. A hue is all an area stores (saturation and
@@ -27130,7 +27131,7 @@ function renderTable() {
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
-    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
+    <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" placeholder="Untitled" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
       ${noteTypeToggle(t.id, 'table')}
       ${blockAreasControl('table', t)}
       ${shareBtn(t, 'table')}
@@ -27221,10 +27222,14 @@ async function newArea() {
   // ready to fill it, rather than bouncing back to the list. (Robin.)
   await openArea(a.id);
 }
+// A new table opens with an empty title and the cursor already in it, ready to
+// type the real name - no "Untitled table" to clear first. (Robin, 2026-11-10.)
+function focusTableTitle() { setTimeout(() => { const r = document.querySelector('.tbl-head input.rename'); if (r && !r.value) { try { r.focus({ preventScroll: true }); } catch { r.focus(); } } }, 40); }
 async function newTable() {
-  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: 'Untitled table', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
+  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: '', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
   state.tables.push(t); state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   await openTable(t.id);
+  focusTableTitle();
 }
 async function saveTableColumns(columns) { state.tables_open.props.columns = columns; await api(`/api/blocks/${state.tables_open.id}`, { method: 'PATCH', body: JSON.stringify({ props: { columns } }) }); }
 async function setCell(rowId, colId, value) {
