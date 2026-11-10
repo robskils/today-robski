@@ -12505,9 +12505,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-srow { display:grid; grid-template-columns:84px minmax(0,1fr); gap:14px; align-items:baseline; padding:15px 0; border-bottom:1px solid var(--k-line); cursor:pointer; animation:kfade .35s ease; }
 .cx-sr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .cx-sr-main { min-width:0; }
-.cx-sr-ti { min-width:0; }
-.cx-sr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); margin-top:3px; }
-.cx-sr-note { font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); margin-top:3px; }
+.cx-sr-ti { min-width:0; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
+.cx-sr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); margin-top:3px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cx-sr-note { font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); margin-top:3px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cx-sr-main > .ev-join-link { max-width:100%; overflow:hidden; }
 .cx-sempty { padding:18px 0; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:21px; color:var(--k-mute); }
 .cx-side-add { display:block; padding:14px 0; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); text-align:left; }
 @media (max-width:1100px){ .cx-cell { min-height:96px; } }
