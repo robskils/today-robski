@@ -19375,14 +19375,15 @@ function mailListInner(loading) {
 // Refresh only the message list in place, keeping the header/search box intact.
 function renderMailList(loading) {
   const m = state.mail;
-  // The Kaya Mail list (§12) lives in .mail-groups. Refresh it in place, but
-  // never while a message is open (that would reset its body iframe) or while the
-  // search box has focus (would steal it mid-type) - those wait for a full render.
+  // The Kaya Mail list (§12) lives in .mail-groups. Refresh it in place, but never
+  // while a message is open (that would reset its body iframe). The search box is a
+  // SEPARATE element above .mail-groups, so refreshing the list leaves your typing
+  // and focus untouched - which is exactly how live search results appear as you
+  // type. (Robin, 2026-11-10: mail search wasn't showing results because this used
+  // to bail out whenever the search box had focus - i.e. the whole time you search.)
   const groups = document.querySelector('.mail-groups');
   if (groups) {
     if (m && m.open) return;
-    const ae = document.activeElement;
-    if (ae && ae.matches && ae.matches('[data-mail-q]')) return;
     groups.innerHTML = mailDayGroupsHtml(loading);
     return;
   }
