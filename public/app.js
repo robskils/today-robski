@@ -27840,6 +27840,34 @@ document.addEventListener('selectionchange', () => {
   const pr = el && el.closest && el.closest('.prose[contenteditable="true"]');
   if (pr) lastProseRange = s.getRangeAt(0).cloneRange();
 });
+// Click in a note's left margin (the sheet's padding, to the left of the text) and
+// the caret lands at the start of that line, instead of nothing happening - so a
+// click that drifts a little too far left still puts you before the first word.
+// The fold/drag gutter lives INSIDE the prose (clientX >= its left), so this never
+// touches it. (Robin, 2026-11-10.)
+document.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  const nb = e.target && e.target.closest && e.target.closest('.note-body'); if (!nb) return;
+  const prose = nb.querySelector('.prose[contenteditable="true"]'); if (!prose) return;
+  const pr = prose.getBoundingClientRect();
+  if (e.clientX >= pr.left) return;                                   // on/right of the text: let the browser place it
+  if (e.clientY < pr.top + 2 || e.clientY > pr.bottom - 2) return;    // above/below the text
+  // Find the block on this line (the leftmost one, since the margin is left of
+  // everything - so a two-column row lands you in the left column) and drop the
+  // caret at its start.
+  const blocks = [];
+  for (const c of prose.children) {
+    if (c.classList && c.classList.contains('ncols')) c.querySelectorAll(':scope > .ncol > *').forEach((b) => blocks.push(b));
+    else blocks.push(c);
+  }
+  let target = null;
+  for (const b of blocks) { const r = b.getBoundingClientRect(); if (e.clientY >= r.top && e.clientY <= r.bottom) { target = b; break; } }
+  if (!target) return;
+  e.preventDefault();
+  try { prose.focus({ preventScroll: true }); } catch { try { prose.focus(); } catch {} }
+  const range = document.createRange(); range.selectNodeContents(target); range.collapse(true);   // start of that block, before the first word
+  const sel = window.getSelection(); if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+});
 document.addEventListener('paste', (e) => {
   const prose = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!prose) return;
