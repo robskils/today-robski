@@ -8398,6 +8398,9 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose.prose-heads :is(h1,h2,h3).head-dragging::after { opacity:1; }
 @media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::after { display:none; } }
 .prose.prose-heads.head-dragging-ctx { user-select:none; -webkit-user-select:none; cursor:grabbing; }
+/* While dragging an inline card or file chip by its grip, don't let the text under
+   the pointer get selected/highlighted on the way. (Robin, 2026-11-10.) */
+.prose.card-dragging-ctx { user-select:none; -webkit-user-select:none; cursor:grabbing; }
 /* Drop cue: a line above the block the section will land in front of (or below the
    last one), and a bar down the right edge of a section you'll pair beside. */
 .prose .head-drop { box-shadow:0 -2px 0 var(--accent); }

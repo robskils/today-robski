@@ -1056,6 +1056,7 @@ document.addEventListener('pointermove', (e) => {
     try { headDrag.prose.setPointerCapture(headDrag.id); } catch {}
   }
   e.preventDefault();
+  { const s = window.getSelection(); if (s && !s.isCollapsed) { try { s.removeAllRanges(); } catch {} } }   // never highlight the text you drag past
   headDrag.lastX = e.clientX; headDrag.lastY = e.clientY;
   if (!headDrag.scrollRAF) headDrag.scrollRAF = requestAnimationFrame(headDragScrollTick);
   headDragAt(e.clientX, e.clientY);
@@ -1120,13 +1121,16 @@ document.addEventListener('pointerdown', (e) => {
   const ind = document.createElement('div'); ind.className = 'lc-drop-ind'; document.body.appendChild(ind);
   cardDrag = { prose, card, id: e.pointerId, before: undefined, container: prose, ind };
   card.classList.add('lc-dragging');
+  prose.classList.add('card-dragging-ctx');                         // suppress text selection while dragging
+  { const s = window.getSelection(); if (s) { try { s.removeAllRanges(); } catch {} } }
   try { grip.setPointerCapture(e.pointerId); } catch {}
   cardDropPosition(e.clientX, e.clientY);
 });
-document.addEventListener('pointermove', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); cardDropPosition(e.clientX, e.clientY); });
+document.addEventListener('pointermove', (e) => { if (!cardDrag || e.pointerId !== cardDrag.id) return; e.preventDefault(); { const s = window.getSelection(); if (s && !s.isCollapsed) { try { s.removeAllRanges(); } catch {} } } cardDropPosition(e.clientX, e.clientY); });
 function endCardDrag(commit, e) {
   const cd = cardDrag; cardDrag = null;
   cd.card.classList.remove('lc-dragging');
+  if (cd.prose) cd.prose.classList.remove('card-dragging-ctx');
   if (cd.ind) cd.ind.remove();
   const container = cd.container || cd.prose;
   const sameSpot = (cd.card.parentElement === container) && ((cd.before && cd.before === cd.card.nextElementSibling) || (!cd.before && !cd.card.nextElementSibling) || (cd.before === cd.card));
@@ -26777,7 +26781,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -29279,6 +29283,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-note-insert-file]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineFile(); return; }
   if (t.closest('[data-note-insert-table]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); insertNoteTable(); return; }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
+  if (t.closest('[data-note-tidy]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); tidyNoteFormat(); return; }
 
   // tasks
   const sh = t.closest('[data-sort]');
@@ -31979,6 +31984,23 @@ function tidyPasteText(text) {
   return String(text || '').replace(/\r\n/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{2,}/g, '\n').replace(/^\n+|\n+$/g, '');
 }
 // Save a rich-text region back to whichever block it belongs to.
+// "Tidy up formatting" (the note ⋯ menu): re-run the note body through the clean
+// render pipeline - sanitize (drop stray attributes/styles, fix columns), normalize
+// spacing, re-inflate chips/cards/images, re-apply indents and folds - then save.
+// Sorts out a note whose formatting has drifted from pasting or editing. (Robin,
+// 2026-11-10: a refresh that sorts out all the formatting.)
+function tidyNoteFormat() {
+  const prose = document.querySelector('.note-body .prose[contenteditable="true"][data-block-id]');
+  if (!prose) { toast('Open a note to tidy it'); return; }
+  const clean = sanitizeProse(prose.innerHTML);
+  prose.innerHTML = decorateProse(bodyToHtml(clean));
+  try { applyProseIndent(prose); } catch {}
+  try { setupFolds(); } catch {}
+  try { loadInlineImages(); } catch {}
+  try { hydrateEmbeds(); } catch {}
+  saveProse(prose.dataset.prose, prose.innerHTML, prose.dataset.blockId);
+  toast('Formatting tidied');
+}
 async function saveProse(key, rawHtml, blockId) {
   const html = linkifyHtml(sanitizeProse(rawHtml));
   // The object currently open for this key (may be a different block than the
