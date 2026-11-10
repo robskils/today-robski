@@ -53,7 +53,7 @@
    it settles to about half strength over the calm ground, softened and a shade
    desaturated, so there is less going on behind the glass. (Robin, 2026-11-07.)
    scale(1.04) keeps the gentle blur from feathering the viewport edges. */
-#light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transform:scale(1.04); filter:saturate(.9) blur(3px); transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
+#light-layer img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:top; opacity:0; transform:scale(1.06); filter:saturate(.84) blur(5px); transition:opacity 1.2s cubic-bezier(.2,.7,.2,1); }
 #light-layer img.on { opacity:.5; }
 @media (prefers-reduced-motion:reduce) { #light-layer img, :root[data-light] { transition:none; } }
 
@@ -459,7 +459,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 
 /* Today's Mail tab: email titles in the serif, in white. */
 .home-todaytabs .gln-mail-b { display:flex; flex-direction:row; flex-wrap:wrap; align-items:baseline; gap:2px 26px; min-width:0; }
-.home-todaytabs :is(.gln-mail-subj, .gln-mail-from) { display:inline; margin:0; font-family:'Cormorant Garamond',serif; font-weight:500; font-size:26px; line-height:1.2; color:var(--k-ink); white-space:normal; overflow:visible; }
+.home-todaytabs :is(.gln-mail-subj, .gln-mail-from) { display:inline; margin:0; font-family:'Cormorant Garamond',serif; font-weight:500; font-size:23px; line-height:1.2; color:var(--k-ink); white-space:normal; overflow:visible; }
 .home-todaytabs .gln-mail-from { color:var(--k-goldt); white-space:nowrap; flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 
 /* Capture on a phone: words, or a photo or scan that becomes a new note. */

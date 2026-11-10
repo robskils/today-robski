@@ -15616,24 +15616,6 @@ function recurInferred(ev) {
   if (days.every((x) => { const w = new Date(x + 'T12:00').getDay(); return w >= 1 && w <= 5; }) && gaps.every((g) => g === 1 || g === 3)) return 'weekdays';
   return '';
 }
-function ceQuickBar(ev) {
-  const hasArea = !!(ev && ev.area);
-  const alist = eventAlarmList(ev); const hasAlarm = alist.length > 0;
-  const hasRepeat = !!(ev && ((ev.repeat && ev.repeat !== 'none') || ev.recurringId));
-  const hasContact = !!(ev && ev.contact);
-  const noteN = (ev && Array.isArray(ev.noteLinks)) ? ev.noteLinks.length : 0;
-  const hasUrl = !!(ev && ev.url);
-  const area = hasArea ? areaById(ev.area) : null;
-  const chip = (jump, ic, label, on, hue) => `<button type="button" class="ce-q${on ? ' on' : ''}${hue != null ? ' ce-q-hue' : ''}" data-ce-jump="${esc(jump)}"${hue != null ? ` style="--h:${hue}"` : ''} aria-label="${esc(label)}" title="${esc(label)}"><span class="ce-q-ic">${ic}</span><span class="ce-q-l">${esc(label)}</span></button>`;
-  const out = [];
-  // Every attribute has its own field now (Space, Reminder, Repeat, and
-  // website/contact in the Connect panel below), so the quick bar is just the note
-  // link and delete on an EXISTING event - and nothing at all on a new one. (Robin.)
-  if (ev && ev.id) out.push(chip('[data-ev-note-q]', '▤', noteN ? `${noteN} note${noteN > 1 ? 's' : ''}` : 'Link note', noteN > 0));
-  if (ev && ev.id) out.push('<button type="button" class="ce-q ce-q-del" data-cal-del aria-label="Delete event" title="Delete event"><span class="ce-q-ic">🗑</span><span class="ce-q-l">Delete</span></button>');
-  if (!out.length) return '';
-  return `<div class="ce-quick">${out.join('')}</div>`;
-}
 // A calm date/time line for the read-only event card.
 function calWhenLabel(ev) {
   const dateStr = prettyDate(ev.date);
@@ -15706,14 +15688,13 @@ function showCalForm(ev) {
   // Start and End each get their own row of date + time. The end defaults to the
   // same day (and an hour on); change it only when you mean to.
   $('#cal-form').innerHTML = `<form id="cal-ev-form" class="add-task add-event${allDay ? ' allday-on' : ''}" data-ev="${ev ? ev.id : ''}" data-evgap="${allDay ? 60 : dur}">
-    <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
+    <div class="ce-head"><span class="ce-head-t">${ev ? 'Edit event' : 'New event'}</span><span class="ce-head-act">${ev ? `<button type="button" class="ce-headdel" data-cal-del aria-label="Delete event" title="Delete event"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}<button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></span></div>
     <div class="ce-titlerow">
       <input id="ce-title" class="ce-title" placeholder="Event title…" autocomplete="off" required value="${esc(title)}">
       <label class="ce-field ce-arealab"><span class="ce-flbl">Space</span><select id="ce-area" class="sel"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${(ev && ev.area) === a.id ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
       ${(!ev && (state.gcalAccounts || []).length) ? `<label class="ce-field ce-calacctlab"><span class="ce-flbl">Calendar</span><select id="ce-calacct" class="sel"><option value="">${esc((state.me && state.me.id === 1) ? 'My calendar' : 'Kaya')}</option>${(state.gcalAccounts || []).map((a) => `<option value="${esc(a.id)}">${esc(a.label || 'Google account')}</option>`).join('')}</select></label>` : ''}
       ${(ev && ev.acctLabel) ? `<div class="ce-field ce-inacct"><span class="ce-flbl">Calendar</span><div class="ce-inacct-v"><span class="ce-inacct-dot" style="background:hsl(${Number(ev.acctColor) || 210} 62% 52%)"></span>${esc(ev.acctLabel)}</div></div>` : ''}
     </div>
-    ${ceQuickBar(ev)}
     ${ev && ev.url ? `<a class="ce-join" href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">Join the meeting</a>` : ''}
     <div class="ce-when">
       <span class="ce-wcell"><span class="ce-wlbl">Start</span>${dateFieldHtml('ce-date', startDate)}${timeFieldHtml('ce-time', startTime)}</span>
@@ -15769,7 +15750,6 @@ function showCalForm(ev) {
     <div class="ce-foot">
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
       <button type="button" class="ghost ce-cancel" data-cal-close>Close</button>
-      ${ev ? '<button type="button" class="ghost cal-del" data-cal-del>Delete</button>' : ''}
     </div></form>`;
   $('#ce-title').focus();
 }

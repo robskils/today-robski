@@ -3062,6 +3062,10 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .ce-head-t { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; }
 .ce-close { flex:none; width:30px; height:30px; border-radius:0; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; }
 .ce-close:hover { border-color:var(--accent); color:var(--accent); }
+.ce-head-act { flex:none; display:flex; align-items:center; gap:8px; }
+.ce-headdel { flex:none; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:0; border:1px solid var(--line); background:var(--paper); color:var(--ink-3); cursor:pointer; transition:border-color .12s, color .12s; }
+.ce-headdel:hover { border-color:var(--accent); color:var(--accent); }
+.ce-headdel svg { width:15px; height:15px; display:block; }
 /* Read-only event card: directions first, then a clean set of detail rows. */
 .ce-view { display:flex; flex-direction:column; gap:14px; }
 .ce-view-src { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); align-self:center; margin-right:auto; }
