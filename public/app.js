@@ -31444,6 +31444,19 @@ async function loadInlineImages() {
     catch { img.classList.add('img-broken'); }
   }
 }
+// The block the caret sits in, within its own container - the prose itself OR a
+// column (.ncol). So an image or file inserted into a two-column section lands in
+// the column the cursor is in, not above the whole row. (Robin, 2026-11-10: add
+// things to the section where the cursor is.)
+function proseBlockAt(prose, node) {
+  let n = (node && node.nodeType === 1) ? node : (node && node.parentElement);
+  while (n && n !== prose) {
+    const p = n.parentElement;
+    if (p === prose || (p && p.classList && p.classList.contains('ncol'))) return n;
+    n = p;
+  }
+  return null;
+}
 // Upload a chosen/pasted/dropped image, then drop it into the prose at `range`
 // (or the caret, or the end). Reuses the same shrink + HEIC + upload path as a
 // normal attachment.
@@ -31464,9 +31477,8 @@ async function insertInlineImage(prose, file, range) {
     // have no position in this prose, append at the end.
     let r = (range && prose.contains(range.startContainer)) ? range : null;
     if (!r) { const sel = window.getSelection(); if (sel && sel.rangeCount && prose.contains(sel.anchorNode)) r = sel.getRangeAt(0); }
-    let block = r ? (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement) : null;
-    block = block && block.closest && block.closest('.prose[data-block-id] > *');
-    if (block && block.parentElement === prose) block.after(para); else prose.appendChild(para);
+    const block = r ? proseBlockAt(prose, r.startContainer) : null;
+    if (block) block.after(para); else prose.appendChild(para);
     if (!para.nextElementSibling) { const after = document.createElement('p'); after.innerHTML = '<br>'; para.after(after); }
     // caret onto the line after the image, ready to keep typing
     const nx = para.nextElementSibling;
@@ -31524,9 +31536,8 @@ async function insertInlineFile(prose, file, range) {
     // Place it on its own line after the caret's block (same as an inline image).
     let r = (range && prose.contains(range.startContainer)) ? range : null;
     if (!r) { const sel = window.getSelection(); if (sel && sel.rangeCount && prose.contains(sel.anchorNode)) r = sel.getRangeAt(0); }
-    let block = r ? (r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement) : null;
-    block = block && block.closest && block.closest('.prose[data-block-id] > *');
-    if (block && block.parentElement === prose) block.after(para); else prose.appendChild(para);
+    const block = r ? proseBlockAt(prose, r.startContainer) : null;
+    if (block) block.after(para); else prose.appendChild(para);
     if (!para.nextElementSibling) { const after = document.createElement('p'); after.innerHTML = '<br>'; para.after(after); }
     const nx = para.nextElementSibling;
     if (nx) { const sel = window.getSelection(); const nr = document.createRange(); nr.setStart(nx, 0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); }
