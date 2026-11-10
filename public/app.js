@@ -21273,6 +21273,22 @@ async function cvNewContact(name) {
 }
 const CV_FREQ = [['weekly', 'Every week'], ['fortnightly', 'Fortnight'], ['monthly', 'Month'], ['quarterly', 'Quarter'], ['', 'Off']];
 function cvDueText(snooze) { if (!snooze) return ''; const n = daysBetween(todayISO(), snooze); return n < 0 ? `overdue by ${-n} day${-n === 1 ? '' : 's'}` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`; }
+// Keep-in-touch ✓ / × on the Contacts page: reset or snooze the clock and repaint the
+// page from state.cvKit (its own data), not Home's. (Robin, 2026-11-10.)
+async function cvKitDone(spec) {
+  const [tid, cid, ev] = String(spec).split('|'); if (!tid) return;
+  const snooze = nextRepeat(ev || 'monthly', todayISO());
+  state.cvKit = state.cvKit || {}; state.cvKit[cid] = { ...(state.cvKit[cid] || {}), last: todayISO(), snooze, every: ev || (state.cvKit[cid] || {}).every || 'monthly' };
+  renderContacts();
+  try { await api(`/api/blocks/${tid}`, { method: 'PATCH', body: JSON.stringify({ props: { last: todayISO(), snooze } }) }); toast('Noted - clock reset'); } catch (e) { toast(e.message); }
+}
+async function cvKitSnooze(spec) {
+  const [tid, cid] = String(spec).split('|'); if (!tid) return;
+  const next = addDayISO(todayISO(), 7);
+  state.cvKit = state.cvKit || {}; state.cvKit[cid] = { ...(state.cvKit[cid] || {}), snooze: next };
+  renderContacts();
+  try { await api(`/api/blocks/${tid}`, { method: 'PATCH', body: JSON.stringify({ props: { snooze: next } }) }); toast('Snoozed a week'); } catch (e) { toast(e.message); }
+}
 // §48: plain contacts first. A big search, then Starred and Recently-in-touch
 // card shelves, a quiet Keep-in-touch line, and everyone A-Z. A contact opens
 // on its own page (renderContactPage). No five-view bar, no two-column card.
@@ -21308,11 +21324,11 @@ function renderContacts() {
     // Keep in touch: one quiet line, only when someone is due.
     const due = P.filter((x) => x.every && x.snooze && daysBetween(todayISO(), x.snooze) <= 1).sort((a, b) => daysBetween(todayISO(), a.snooze) - daysBetween(todayISO(), b.snooze));
     const kitOpen = !!cv.kitOpen;
-    const kitLine = due.length ? `<div class="cvx-kit"><div class="cvx-kit-line" data-cv-kitline role="button" tabindex="0"><span class="cvx-kit-sq"></span><span class="cvx-kit-t">${due.length} ${due.length === 1 ? 'person' : 'people'} you wanted to keep up with ${due.length === 1 ? 'is' : 'are'} due.</span><span class="cvx-kit-see">${kitOpen ? 'Hide' : 'See who'}</span></div>${kitOpen ? `<div class="cvx-kit-list">${due.map((x) => `<button class="cvx-kit-row" data-cv-open="${x.id}"><span class="cvx-kit-av"${x.photo ? ` style="background-image:url('${esc(x.photo)}')"` : ''}>${x.photo ? '' : esc(initial(x.name || '?'))}</span><span class="cvx-kit-main"><span class="cvx-kit-nm">${esc(x.name)}</span><span class="cvx-kit-ago">Last in touch ${esc(x.last ? kitWhen(x.last) : 'not yet')}</span></span><span class="cvx-kit-due">${esc(cvDueText(x.snooze))}</span></button>`).join('')}</div>` : ''}</div>` : '';
+    const kitLine = due.length ? `<section class="cvx-kit"><div class="cvx-kit-head"><h2 class="cvx-kit-h">Keep in touch</h2><span class="cvx-kit-n">${due.length} ${due.length === 1 ? 'person is' : 'people are'} due</span></div><div class="cvx-kit-list">${due.map((x) => `<div class="cvx-kit-row"><button class="cvx-kit-open" data-cv-open="${x.id}"><span class="cvx-kit-av"${x.photo ? ` style="background-image:url('${esc(x.photo)}')"` : ''}>${x.photo ? '' : esc(initial(x.name || '?'))}</span><span class="cvx-kit-main"><span class="cvx-kit-nm">${esc(x.name)}</span><span class="cvx-kit-ago">Last in touch ${esc(x.last ? kitWhen(x.last) : 'not yet')}</span></span></button><span class="cvx-kit-due">${esc(cvDueText(x.snooze))}</span>${x.p && x.p.kitTask ? `<button class="cvx-kit-done" data-cvkit-done="${esc(x.p.kitTask)}|${esc(x.id)}|${esc(x.every || '')}" title="I've been in touch" aria-label="Been in touch with ${esc(x.name)}">✓</button><button class="cvx-kit-snooze" data-cvkit-snooze="${esc(x.p.kitTask)}|${esc(x.id)}" title="Not now - remind me in a week" aria-label="Snooze ${esc(x.name)} a week">×</button>` : ''}</div>`).join('')}</div></section>` : '';
     // Everyone A-Z.
     const by = {}; P.slice().sort((a, b) => a.sortName.localeCompare(b.sortName)).forEach((x) => { const L = (x.sortName[0] || '#').toUpperCase(); (by[L] = by[L] || []).push(x); });
     const az = Object.keys(by).length ? `<div class="cvx-az-wrap"><div class="home-sub-eyebrow">Everyone</div><div class="cvx-az">${Object.keys(by).map((L) => `<div class="cvx-az-grp"><div class="cvx-az-letter">${esc(L)}</div>${by[L].map((x) => `<button class="cvx-azrow" data-cv-open="${x.id}"><span class="cvx-az-nm">${esc(x.name)}</span>${x.spaces[0] ? `<span class="cvx-az-sp">${esc(x.spaces[0])}</span>` : ''}</button>`).join('')}</div>`).join('')}</div></div>` : `<div class="cv-empty">No contacts yet. Add your first above.</div>`;
-    body = `${shelves}${kitLine}${az}`;
+    body = `${kitLine}${shelves}${az}`;
   }
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
@@ -28749,6 +28765,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cv-merge-do]')) { cvMergeDo(); return; }
   if (t.closest('[data-cv-merge-back]')) { const cv = cvState(); if (cv.merge) { cv.merge.drop = null; renderMergePicker(); } return; }
   if (t.closest('[data-cv-merge-cancel]')) { cvMergeClose(); return; }
+  { const ckd = t.closest('[data-cvkit-done]'); if (ckd) { e.preventDefault(); e.stopPropagation(); cvKitDone(ckd.dataset.cvkitDone); return; } }
+  { const cks = t.closest('[data-cvkit-snooze]'); if (cks) { e.preventDefault(); e.stopPropagation(); cvKitSnooze(cks.dataset.cvkitSnooze); return; } }
   { const cvo = t.closest('[data-cv-open]'); if (cvo) { cvSelect(cvo.dataset.cvOpen); return; } }
   { const cvf = t.closest('[data-cv-fold]'); if (cvf) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
   if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }
