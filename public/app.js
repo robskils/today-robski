@@ -5514,8 +5514,12 @@ function knavRunSearch(qraw) {
     // A Space is a whole corner of a life, so a matching one rides to the top even
     // if the worker's row cap dropped it (same trick the palette uses).
     const areaHits = (state.areas || []).filter((a) => (a.title || '').toLowerCase().includes(ql)).map((a) => ({ kind: 'area', id: a.id, title: a.title || 'Untitled' }));
+    // Tools and pages (Dream analyser, Tarot, Calendar, Settings…) that match the
+    // query, so universal search jumps you to them like the palette does. (Robin,
+    // 2026-11-10: "find the insight tools - eg dream analyser".)
+    const navHits = (typeof palNavHits === 'function') ? palNavHits(ql) : [];
     const seen = new Set(areaHits.map((a) => String(a.id)));
-    const merged = [...areaHits, ...(Array.isArray(hits) ? hits : []).filter((h) => !seen.has(String(h.id)))];
+    const merged = [...navHits, ...areaHits, ...(Array.isArray(hits) ? hits : []).filter((h) => !seen.has(String(h.id)))];
     const titleRank = (b) => { const t0 = (b.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(b) : (b.title || '')) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
     merged.sort((a, b) => titleRank(a) - titleRank(b) || ((SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5)));
     state.knav.results = merged; state.knav.resultsFor = q; state.knav.searching = false;
@@ -5523,7 +5527,7 @@ function knavRunSearch(qraw) {
     const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} }
   }, 160);
 }
-const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Insight', event: 'Event', bucket: 'Bucket list' };
+const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Insight', event: 'Event', bucket: 'Bucket list', nav: 'Open' };
 function knavKindLabel(h) { const base = KNAV_KIND_LABEL[h.kind] || 'Item'; const ar = h.parentTitle || (h.area ? ((areaById(h.area) || {}).title || '') : ''); return ar ? `${base} · ${ar}` : base; }
 function navGroupsHtml(v) {
   state.knav = state.knav || { group: null, contents: false, find: false, findSeen: false, mGroup: null, q: '', fShut: {} };
@@ -15391,7 +15395,6 @@ function renderCalendar() {
   $('#pane').innerHTML = `
     <div class="kpage-cal">
       ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.calendar') }])}
-      <div class="cx-eyebrow">Plans · Calendar</div>
       <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
       <div class="cx-controls">
@@ -27329,7 +27332,15 @@ function palNavTargets() {
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
   if (modOn('contacts')) add('Shared', () => openSharedHub(), 'shared with me by me notes tasks life spaces assigned');
-  if (reflectOn()) add('Insight', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching');
+  if (reflectOn()) add('Insight', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching tarot spirit compass insights tools');
+  if (modOn('dreams')) add('Dream analyser', () => openJournal('dreams'), 'dream dreams analyser analyzer interpret interpretation sleep reflection insight tool');
+  if (modOn('tarot')) add('Tarot', () => Promise.resolve(openTarot()), 'cards reading draw divination reflection insight tool');
+  if (modOn('iching')) add('I Ching', () => Promise.resolve(openIChing()), 'hexagram oracle book of changes reflection insight tool');
+  if (modOn('spirit')) add('Spirit Cards', () => Promise.resolve(openSpiritCards()), 'oracle cards draw reflection insight tool');
+  if (modOn('compass')) add('Compass', () => openCompass(), 'decision weigh a choice reflection insight tool');
+  if (modOn('coaching')) add('Coaching', () => openJournal('coaching'), 'coach gentle questions reflection insight tool');
+  if (modOn('horoscope')) add('Horoscope', () => Promise.resolve(openHoroscope()), 'stars astrology zodiac reflection insight tool');
+  if (modOn('insights')) add('Insights', () => openInsights(), 'patterns themes reflection insight tool');
   if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
   if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
@@ -27517,6 +27528,7 @@ function openSearchHit(it) {
     case 'journal': return openJournalEntry(it.id);
     case 'bookmark': return Promise.resolve(openBookmarkCard(it.id));
     case 'event': return openEventHit(it);
+    case 'nav': return Promise.resolve(it.run ? it.run() : undefined);
     default: return Promise.resolve();
   }
 }
