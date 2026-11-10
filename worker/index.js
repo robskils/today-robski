@@ -3380,8 +3380,15 @@ async function quoteForDay(env, day, uid = env.uid, { ignoreDismiss = false } = 
   if (!ignoreDismiss && await getSetting(env, 'kv_quote_dismissed', uid) === day) return null;
   const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM quotes').first();
   if (!row?.n) return null;
+  // Rotate through the whole pool one a day, so every quote shows once before any
+  // repeats. hash(day) % n is a hash, not a permutation, so it clustered - a repeat
+  // roughly every ~10 days even with ~90 quotes (birthday paradox), and some never
+  // showed. dayNumber keeps it per-day deterministic (same quote all day, every
+  // surface), just without the clustering. (Robin, 2026-11-10: "we keep repeating".)
+  const dayNum = Math.floor(Date.parse(day + 'T00:00:00Z') / 86400000);
+  const off = Number.isFinite(dayNum) ? (((dayNum % row.n) + row.n) % row.n) : (dayHash(day) % row.n);
   return env.DB.prepare('SELECT text, author FROM quotes ORDER BY id LIMIT 1 OFFSET ?')
-    .bind(dayHash(day) % row.n).first();
+    .bind(off).first();
 }
 
 async function getSettings(env, uid = env.uid) {
