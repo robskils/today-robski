@@ -4289,12 +4289,19 @@ const CSP = [
   "object-src 'none'",
   "form-action 'self'",
 ].join('; ');
-function withHsts(res) {
+// Public marketing pages carry a visitor-analytics tag (VisitorTracking), so they
+// allow that vendor's script + beacon. The APP keeps the strict CSP above, untouched:
+// its session token lives in localStorage and must never be reachable by a
+// third-party script. Only pass MARKETING_CSP to the public pages. (Robin, 2026-11-10.)
+const MARKETING_CSP = CSP
+  .replace("script-src 'self' 'unsafe-inline'", "script-src 'self' 'unsafe-inline' https://app.visitortracking.com https://*.visitortracking.com")
+  .replace("connect-src 'self'", "connect-src 'self' https://app.visitortracking.com https://*.visitortracking.com");
+function withHsts(res, csp) {
   const h = new Headers(res.headers);
   h.set('Strict-Transport-Security', HSTS);
   const ct = (h.get('Content-Type') || '').toLowerCase();
   if (ct.includes('text/html')) {
-    h.set('Content-Security-Policy', CSP);
+    h.set('Content-Security-Policy', csp || CSP);
     h.set('X-Content-Type-Options', 'nosniff');
     h.set('X-Frame-Options', 'SAMEORIGIN');
     h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -5218,7 +5225,7 @@ export default {
         if (lang && lang !== 'en') {
           return withHsts(new Response(null, { status: 302, headers: { location: '/' + lang, vary: 'Cookie, Accept-Language', 'cache-control': 'no-store' } }));
         }
-        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request))));
+        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/home.html', url.origin), request))), MARKETING_CSP);
       }
       // Public legal pages (privacy required by Google's OAuth consent screen).
       if (isApex && (path === '/privacy' || path === '/privacy/')) {
@@ -5233,12 +5240,12 @@ export default {
       }
       // How it works.
       if (isApex && (path === '/how' || path === '/how/')) {
-        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/how.html', url.origin), request))));
+        return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL('/how.html', url.origin), request))), MARKETING_CSP);
       }
       // The Kaya Journal (public blog). /blog is the index; /blog/<slug> is an
       // article, served from public/blog/<slug>.html so clean URLs stay clean.
       if (isApex && (path === '/blog' || path === '/blog/')) {
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog.html', url.origin), request)));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog.html', url.origin), request)), MARKETING_CSP);
       }
       {
         const m = isApex && path.match(/^\/blog\/([a-z0-9][a-z0-9-]{0,59})\/?$/);
