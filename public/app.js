@@ -4695,7 +4695,7 @@ async function importReadImage(f) {
 function flyerState() { if (!state.flyer) state.flyer = { phase: 'input', text: '', image: null, mime: null, imgName: '', area: '', finding: false, events: [], adding: false, done: 0, err: '' }; return state.flyer; }
 function openFlyerImport() {
   document.querySelectorAll('.addnew-menu:not([hidden])').forEach((m) => m.setAttribute('hidden', ''));   // close the + New menu if we came from it
-  state.flyer = { phase: 'input', text: '', image: null, mime: null, imgName: '', area: (state.import && state.import.area) || '', finding: false, events: [], adding: false, done: 0, err: '' };
+  state.flyer = { phase: 'input', text: '', image: null, mime: null, imgName: '', area: (state.import && state.import.area) || '', finding: false, events: [], adding: false, done: 0, err: '', source: '' };
   let el = document.getElementById('flyer');
   if (!el) { el = document.createElement('div'); el.id = 'flyer'; document.body.appendChild(el); }
   renderFlyerImport();
@@ -4720,9 +4720,6 @@ function renderFlyerImport() {
       <div class="fly-done-acts"><button class="fly-find" data-flyer-view>View calendar</button><button class="linkish" data-flyer-again>Add another</button></div>
     </div>`;
   } else {
-    const dropInner = f.image
-      ? `<img class="fly-prev" src="data:${f.mime};base64,${f.image}" alt="file preview">${f.finding ? '<span class="fly-scan" aria-hidden="true"></span>' : ''}<button class="fly-img-x" data-flyer-img-clear title="Remove photo" aria-label="Remove photo">×</button>`
-      : `<span class="fly-drop-ic">📸</span><span class="fly-drop-t">Drop a file or photo here</span><span class="fly-drop-s">tap to choose · or press ${/Mac/i.test(navigator.platform) ? '⌘V' : 'Ctrl+V'} to paste one</span>`;
     const results = f.events.length ? (() => {
       const picks = f.events.filter((e) => e.pick).length;
       return `<div class="fly-results">
@@ -4731,18 +4728,29 @@ function renderFlyerImport() {
         <button class="fly-find fly-add" data-flyer-add ${(f.adding || !picks) ? 'disabled' : ''}>${f.adding ? `Adding… ${f.done}/${picks}` : `Add ${picks} to my calendar`}</button>
       </div>`;
     })() : '';
-    inner = `
-      <label class="fly-drop ${f.image ? 'has-img' : ''} ${f.finding ? 'scanning' : ''}" data-flyer-drop>${dropInner}<input type="file" id="fly-file" accept="image/*" hidden></label>
-      <div class="fly-or">or paste text or a link</div>
-      <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste some text, or a webpage link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
-      <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
-      ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
-      ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading…' : 'Find the events'}</button>`}`;
+    if (f.source === 'email') {
+      // From an email the text is already in hand, so skip the file box entirely -
+      // just read the dates out of the email and offer them. (Robin, 2026-11-10.)
+      inner = `
+        <label class="fly-field"><span>Add events to</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
+        ${f.events.length ? results : `<div class="fly-reading">${f.finding ? 'Reading this email for dates…' : esc(f.err || 'No dates found in this email.')}</div>`}`;
+    } else {
+      const dropInner = f.image
+        ? `<img class="fly-prev" src="data:${f.mime};base64,${f.image}" alt="file preview">${f.finding ? '<span class="fly-scan" aria-hidden="true"></span>' : ''}<button class="fly-img-x" data-flyer-img-clear title="Remove photo" aria-label="Remove photo">×</button>`
+        : `<span class="fly-drop-ic">📸</span><span class="fly-drop-t">Drop a file or photo here</span><span class="fly-drop-s">tap to choose · or press ${/Mac/i.test(navigator.platform) ? '⌘V' : 'Ctrl+V'} to paste one</span>`;
+      inner = `
+        <label class="fly-drop ${f.image ? 'has-img' : ''} ${f.finding ? 'scanning' : ''}" data-flyer-drop>${dropInner}<input type="file" id="fly-file" accept="image/*" hidden></label>
+        <div class="fly-or">or paste text or a link</div>
+        <textarea class="fly-text sel" id="fly-text" rows="2" placeholder="Paste some text, or a webpage link (Eventbrite, Meetup…)" data-flyer-text>${esc(f.text || '')}</textarea>
+        <label class="fly-field"><span>File events into</span><select class="sel" data-flyer-area>${flyerAreaOpts(f)}</select></label>
+        ${f.err ? `<p class="fly-err">${esc(f.err)}</p>` : ''}
+        ${f.events.length ? results : `<button class="fly-find" data-flyer-find ${f.finding ? 'disabled' : ''}>${f.finding ? 'Reading…' : 'Find the events'}</button>`}`;
+    }
   }
   el.innerHTML = `<div class="fly-bg" data-flyer-close></div>
-    <div class="fly-card" role="dialog" aria-modal="true" aria-label="Add from a file">
+    <div class="fly-card" role="dialog" aria-modal="true" aria-label="${f.source === 'email' ? 'Events in this email' : 'Add from a file'}">
       <button class="fly-x" data-flyer-close aria-label="Close">×</button>
-      <div class="fly-head"><span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Kaya reads the dates out and you choose what lands on your calendar.</p></div>
+      <div class="fly-head">${f.source === 'email' ? `<span class="fly-spark">✨</span><h2>Events in this email</h2><p class="fly-sub">Kaya read the dates out of this email - tick the ones to add to your calendar.</p>` : `<span class="fly-spark">✨</span><h2>Add from a file</h2><p class="fly-sub">A flyer, a photo, a file or a webpage link - Kaya reads the dates out and you choose what lands on your calendar.</p>`}</div>
       ${inner}
     </div>`;
   // Drag-and-drop onto the dropzone.
@@ -19827,7 +19835,9 @@ async function mailToEvent() {
   openFlyerImport();
   const f = flyerState();
   f.text = text;
-  renderFlyerImport();   // so the textarea holds the email text before we read it
+  f.source = 'email';    // skip the file box; just read the dates out of the email
+  f.finding = true;      // show the reading state straight away
+  renderFlyerImport();
   flyerFind();           // extract events and show the tick-to-confirm results
 }
 // Turn a marketing/HTML email into clean note prose - just the words and the

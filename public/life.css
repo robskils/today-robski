@@ -9364,6 +9364,7 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .fly-field { display:flex; align-items:center; gap:10px; margin-top:14px; font-size:14px; color:var(--ink-2); }
 .fly-field span { flex:none; } .fly-field .sel { flex:1; max-width:none; margin:0; }
 .fly-err { font-size:13.5px; color:var(--bad,#c0392b); margin:12px 0 0; text-align:center; }
+.fly-reading { padding:26px 10px; text-align:center; color:var(--ink-2); font-size:15.5px; }
 .fly-find { display:block; width:100%; margin-top:18px; padding:15px; border:0; border-radius:0; background:var(--accent); color:var(--accent-ink,#fff); font-size:16px; font-weight:600; cursor:pointer; transition:filter .12s, transform .12s; }
 .fly-find:hover:not(:disabled) { filter:brightness(1.06); }
 .fly-find:active:not(:disabled) { transform:scale(.99); }
