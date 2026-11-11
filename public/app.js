@@ -5455,13 +5455,13 @@ const KNAV_VIEW = {
   area: 'spaces', areas: 'spaces',
   discover: 'keep', today: 'keep', practices: 'keep', practicecard: 'keep',
   readwatch: 'keep',
-  goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'plans', reviewcard: 'plans',
-  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'plans',
+  goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'keep', reviewcard: 'keep',
+  wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'keep',
   money: 'keep', financial: 'keep',
 };
 // The top-nav group labels, keyed by group id - the "section" segment of every
 // breadcrumb (Today / <section> / <page>). crumbNav() inserts this. (Robin 2026-11-03.)
-const KNAV_GROUP_LABEL = { spaces: 'Spaces', plans: 'Reviews', keep: 'Tools', inner: 'Insight', money: 'Money' };
+const KNAV_GROUP_LABEL = { spaces: 'Spaces', keep: 'Tools', inner: 'Insight' };
 function crumbGroupLabel() { const v = (state.view && state.view.type) || ''; const g = KNAV_VIEW[v]; return g ? (KNAV_GROUP_LABEL[g] || '') : ''; }
 // The top-nav group id for the current view, so the section crumb (Keep, Plans…)
 // can open that group's fold-down menu - there's no standalone group page to go
@@ -11881,7 +11881,6 @@ function renderJournalList() {
   const head = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.reflect'), attr: 'data-open-wellbeing' }, { label: title }])}
     <div class="jx-head">
-      <div class="jx-eyebrow"><span class="jx-eyebrow-rule"></span><span class="jx-eyebrow-lbl">${esc(t('nav.reflect'))} · ${esc(title)}</span></div>
       <h1 class="jx-title">${esc(title)}</h1>
       ${sub ? `<div class="jx-sub">${esc(sub)}</div>` : ''}
     </div>`;
@@ -12325,7 +12324,6 @@ function renderReadwatch() {
   $('#pane').innerHTML = `
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Read & Watch' }])}
     <div class="rw-head2">
-      <div class="rw-eyebrow">Keep</div>
       <h1 class="rw-title2">Read &amp; Watch</h1>
       <div class="rw-mood">${items.length ? esc(mood) : 'Nothing saved yet'}<button class="rw-quicksave" data-rw-setup>· one-tap saving</button></div>
     </div>
@@ -20591,7 +20589,6 @@ function renderTasks() {
   const spaceSelect = `<select class="sel tx-spacefilter" data-task-spacefilter-sel aria-label="Filter by Space"><option value="">All Spaces</option>${[...spaceRows].sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0])).map(([s, n]) => `<option value="${esc(s)}"${spaceFilter === s ? ' selected' : ''}>${esc(s)} · ${n}</option>`).join('')}</select>`;
   $('#pane').innerHTML = `<div class="kpage-tasks">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.tasks') }])}<div class="tx-grid">
     <div class="tx-main">
-      <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
       <div class="tx-piles-row">${piles}</div>
@@ -21393,16 +21390,15 @@ function renderContacts() {
     // Keep in touch: one quiet line, only when someone is due.
     const due = P.filter((x) => x.every && x.snooze && daysBetween(todayISO(), x.snooze) <= 1).sort((a, b) => daysBetween(todayISO(), a.snooze) - daysBetween(todayISO(), b.snooze));
     const kitOpen = !!cv.kitOpen;
-    const kitLine = due.length ? `<section class="cvx-kit"><div class="cvx-kit-head"><h2 class="cvx-kit-h">Keep in touch</h2><span class="cvx-kit-n">${due.length} ${due.length === 1 ? 'person is' : 'people are'} due</span></div><div class="cvx-kit-list">${due.map((x) => `<div class="cvx-kit-row"><button class="cvx-kit-open" data-cv-open="${x.id}"><span class="cvx-kit-av"${x.photo ? ` style="background-image:url('${esc(x.photo)}')"` : ''}>${x.photo ? '' : esc(initial(x.name || '?'))}</span><span class="cvx-kit-main"><span class="cvx-kit-nm">${esc(x.name)}</span><span class="cvx-kit-ago">Last in touch ${esc(x.last ? kitWhen(x.last) : 'not yet')}</span></span></button><span class="cvx-kit-due">${esc(cvDueText(x.snooze))}</span>${x.p && x.p.kitTask ? `<button class="cvx-kit-done" data-cvkit-done="${esc(x.p.kitTask)}|${esc(x.id)}|${esc(x.every || '')}" title="I've been in touch" aria-label="Been in touch with ${esc(x.name)}">✓</button><button class="cvx-kit-snooze" data-cvkit-snooze="${esc(x.p.kitTask)}|${esc(x.id)}" title="Not now - remind me in a week" aria-label="Snooze ${esc(x.name)} a week">×</button>` : ''}</div>`).join('')}</div></section>` : '';
+    const kitLine = due.length ? `<div class="cvx-shelf cvx-kit"><div class="home-sub-eyebrow">Keep in touch</div><div class="cvx-kit-list">${due.map((x) => `<div class="cvx-kit-row"><button class="cvx-kit-open" data-cv-open="${x.id}"><span class="cvx-kit-av"${x.photo ? ` style="background-image:url('${esc(x.photo)}')"` : ''}>${x.photo ? '' : esc(initial(x.name || '?'))}</span><span class="cvx-kit-main"><span class="cvx-kit-nm">${esc(x.name)}</span><span class="cvx-kit-ago">Last in touch ${esc(x.last ? kitWhen(x.last) : 'not yet')}</span></span></button><span class="cvx-kit-acts"><span class="cvx-kit-act gold" data-feed-contact="wa:${esc(x.id)}" role="button" tabindex="0">WhatsApp</span><span class="cvx-kit-act" data-feed-contact="email:${esc(x.id)}" role="button" tabindex="0">Email</span><span class="cvx-kit-act" data-feed-contact="call:${esc(x.id)}" role="button" tabindex="0">Call</span>${x.p && x.p.kitTask ? `<span class="cvx-kit-act" data-cvkit-done="${esc(x.p.kitTask)}|${esc(x.id)}|${esc(x.every || '')}" role="button" tabindex="0" title="I've been in touch">Been in touch</span><span class="cvx-kit-act" data-cvkit-snooze="${esc(x.p.kitTask)}|${esc(x.id)}" role="button" tabindex="0" title="Remind me in a week">Snooze</span>` : ''}</span></div>`).join('')}</div></div>` : '';
     // Everyone A-Z.
     const by = {}; P.slice().sort((a, b) => a.sortName.localeCompare(b.sortName)).forEach((x) => { const L = (x.sortName[0] || '#').toUpperCase(); (by[L] = by[L] || []).push(x); });
     const az = Object.keys(by).length ? `<div class="cvx-az-wrap"><div class="home-sub-eyebrow">Everyone</div><div class="cvx-az">${Object.keys(by).map((L) => `<div class="cvx-az-grp"><div class="cvx-az-letter">${esc(L)}</div>${by[L].map((x) => `<button class="cvx-azrow" data-cv-open="${x.id}"><span class="cvx-az-nm">${esc(x.name)}</span>${x.spaces[0] ? `<span class="cvx-az-sp">${esc(x.spaces[0])}</span>` : ''}</button>`).join('')}</div>`).join('')}</div></div>` : `<div class="cv-empty">No contacts yet. Add your first above.</div>`;
     body = `${kitLine}${shelves}${az}`;
   }
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
     <div class="kwrap cvx-page">
-      <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">People</span></div>
+      ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.contacts') }])}
       <div class="cvx-titlerow"><h1 class="cvx-title">Contacts</h1><span class="cvx-count">${P.length}</span><span class="cvx-new" data-cv-new>+ New contact</span><span class="cvx-import" data-contact-import title="Import a vCard (.vcf)">Import</span><input type="file" id="contact-file" accept=".vcf,text/vcard,text/x-vcard" hidden></div>
       <div class="cvx-searchrow"><input class="cvx-search" id="cv-q" type="search" placeholder="Search by name, place, email or Space" value="${esc(cv.q || '')}" autocomplete="off"></div>
       ${body}
@@ -23629,7 +23625,6 @@ function renderGoals() {
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: titleOf(view) }])}
     <div class="kg-title">
       <div class="kg-title-l">
-        <div class="kg-eyebrow"><span class="kg-rule"></span><span class="kg-eyebrow-t">Plans · ${esc(titleOf(view))}</span></div>
         <h1 class="kg-h1">${esc(titleOf(view))}</h1>
         <div class="kg-mood">${esc(mood)}</div>
       </div>

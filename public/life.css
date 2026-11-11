@@ -12878,7 +12878,7 @@ body.mailsheet-open { overflow:hidden; }
 @media (max-width:720px){ #notepad-panel { top:0; width:100vw; } }
 
 /* ══ §48 Contacts v2: search-first single column + contact page ══════════════ */
-.cvx-page { max-width:1280px; margin:0 auto; padding-top:6px; padding-bottom:60px; }
+.cvx-page { max-width:1600px; margin:0 auto; padding-top:6px; padding-bottom:60px; }
 .cvx-titlerow { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px; margin-top:10px; }
 .cvx-title { font-family:var(--k-serif); font-weight:300; font-size:clamp(60px,7vw,92px); line-height:.98; color:var(--k-ink); margin:0; }
 .cvx-count { font-family:var(--k-sans); font-size:14px; color:var(--k-mute); }
@@ -12899,9 +12899,6 @@ body.mailsheet-open { overflow:hidden; }
 .cvx-card-nm { font-family:var(--k-serif); font-weight:300; font-size:25px; line-height:1.1; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .cvx-card-sub { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .cvx-kit { margin:0 0 38px; }
-.cvx-kit-head { display:flex; align-items:baseline; gap:14px; margin-bottom:8px; }
-.cvx-kit-h { font-family:var(--k-serif); font-weight:300; font-size:30px; color:var(--k-ink); margin:0; }
-.cvx-kit-n { font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); }
 .cvx-kit-list { display:flex; flex-direction:column; }
 .cvx-kit-row { display:flex; align-items:center; gap:6px; border-top:1px solid var(--k-line); }
 .cvx-kit-row:first-child { border-top:0; }
@@ -12912,11 +12909,13 @@ body.mailsheet-open { overflow:hidden; }
 .cvx-kit-nm { font-family:var(--k-serif); font-weight:300; font-size:22px; color:var(--k-ink); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cvx-kit-row:hover .cvx-kit-nm { color:var(--k-goldt); }
 .cvx-kit-ago { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
-.cvx-kit-due { flex:none; align-self:center; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); white-space:nowrap; margin-right:4px; }
-.cvx-kit-done { flex:none; width:40px; height:40px; border-radius:0; border:1px solid var(--k-line); background:none; color:var(--k-mute); font-size:17px; line-height:1; cursor:pointer; transition:border-color .14s,color .14s,background .14s; }
-.cvx-kit-done:hover { border-color:var(--k-gold); background:var(--k-gold); color:#15130d; }
-.cvx-kit-snooze { flex:none; width:34px; height:40px; border-radius:0; border:1px solid transparent; background:none; color:var(--k-mute); font-size:18px; line-height:1; cursor:pointer; transition:color .14s,border-color .14s; }
-.cvx-kit-snooze:hover { color:var(--k-ink); border-color:var(--k-line); }
+/* Keep in touch row actions: plain text like the feed - WhatsApp gold, the rest
+   muted. (Robin, 2026-11-11: "the full range of buttons like this".) */
+.cvx-kit-acts { flex:none; display:flex; align-items:center; gap:18px; }
+.cvx-kit-act { font-family:var(--k-sans); font-weight:400; font-size:14.5px; color:var(--k-mute); cursor:pointer; white-space:nowrap; transition:color .12s; }
+.cvx-kit-act:hover { color:var(--k-goldt); }
+.cvx-kit-act.gold { font-weight:500; color:var(--k-goldt); }
+@media (max-width:620px){ .cvx-kit-row { flex-wrap:wrap; align-items:baseline; } .cvx-kit-acts { width:100%; gap:16px; padding:0 2px 12px; flex-wrap:wrap; } }
 .cvx-az-wrap { margin-top:34px; }
 .cvx-az { columns:3 280px; column-gap:40px; margin-top:12px; }
 .cvx-az-grp { break-inside:avoid; margin-bottom:14px; }
