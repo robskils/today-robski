@@ -9798,7 +9798,6 @@ function renderHome() {
           ${homeSpacesNotesBandHtml()}
         </div>
       </div>
-      <button class="khome-mark khome-mark-word" data-guide-home aria-label="Back to the top" title="Back to the top"><span class="kmark-cap">Kaya.</span></button>
     </div>
     </div>`;
   applyMobileHomeOrder();   // the user's saved mobile section order & hidden set
