@@ -87,18 +87,17 @@ export async function importTxns(env, rows) {
 // Parse a bank-statement PDF into transaction rows with Gemini (reads the PDF
 // natively - text + table layout - and returns structured rows). Rows then go
 // through the normal importTxns path (dedupe + categorise).
-export async function parseStatementPdf(env, dataB64, name) {
-  const key = await aiKey(env, 'gemini', 'money');
-  if (!key) throw new Error(aiNeedsKey('gemini'));
-  if (!dataB64) throw new Error('No PDF data');
-  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
-  const prompt = `This is a bank or account statement PDF, often several pages long. Extract EVERY individual transaction from EVERY page - a monthly statement usually has dozens, sometimes hundreds. Do not stop early, do not summarise, and do not skip small, zero or repeated lines. Include card purchases, transfers, direct debits, standing orders, ATM withdrawals, deposits, salary, interest, fees and currency conversions - every dated line that has an amount.
+const STMT_BASE = `This is a bank or account statement PDF, often several pages long. Extract EVERY individual transaction from EVERY page - a monthly statement usually has dozens, sometimes hundreds. Do not stop early, do not summarise, and do not skip small, zero or repeated lines. Include card purchases, transfers, direct debits, standing orders, ATM withdrawals, deposits, salary, interest, fees and currency conversions - every dated line that has an amount.
 For each transaction return:
 - date: the transaction date as YYYY-MM-DD (infer the year from the statement).
 - amount: a NUMBER with its exact decimals (e.g. -3.47, 12.50) - NEVER round to a whole number. Signed so money OUT (debits, payments, purchases, withdrawals, fees) is NEGATIVE and money IN (credits, deposits, salary) is POSITIVE.
 - description: the payee / merchant / reference text.
 - currency: the 3-letter currency code if shown, else "".
 Only skip the opening/closing balance, the running-balance column, page headers/footers and adverts. If unsure whether a line is a transaction, include it. Do not invent transactions. Return JSON: {"rows":[{"date","amount","currency","description"}]}.`;
+
+// One Gemini pass over the PDF, retrying a couple of times when the model is busy
+// (503/429) rather than failing the whole import on a transient overload.
+async function statementPass(env, key, model, dataB64, prompt) {
   const body = {
     contents: [{ parts: [{ inline_data: { mime_type: 'application/pdf', data: dataB64 } }, { text: prompt }] }],
     generationConfig: {
@@ -108,19 +107,51 @@ Only skip the opening/closing balance, the running-balance column, page headers/
       responseSchema: { type: 'object', properties: { rows: { type: 'array', items: { type: 'object', properties: { date: { type: 'string' }, amount: { type: 'number' }, currency: { type: 'string' }, description: { type: 'string' } }, required: ['date', 'amount'] } } }, required: ['rows'] },
     },
   };
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) {
+      const data = await res.json();
+      await logAiUsage(env, 'gemini', 'statement-pdf', model, data.usageMetadata && data.usageMetadata.promptTokenCount, data.usageMetadata && data.usageMetadata.candidatesTokenCount);
+      const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
+      let out; try { out = JSON.parse(text); } catch { out = { rows: [] }; }
+      return Array.isArray(out.rows) ? out.rows.filter((r) => r && r.date && r.amount != null) : [];
+    }
+    if ((res.status === 503 || res.status === 429) && attempt < 2) { await new Promise((r) => setTimeout(r, 1500 * (attempt + 1))); continue; }
     const t = await res.text().catch(() => '');
-    // The parse happens before anything is written, so a failure here imports nothing.
-    if (res.status === 503 || res.status === 429) throw new Error('The statement reader is busy right now (high demand). Nothing was imported - please try again in a minute.');
-    throw new Error(`Couldn't read the statement (reader error ${res.status}). Nothing was imported - please try again. ${t.slice(0, 140)}`);
+    if (res.status === 503 || res.status === 429) throw new Error('The statement reader is very busy right now. Nothing was imported - please try again in a minute.');
+    if (res.status === 400 || res.status === 415) throw new Error("Couldn't read that PDF - it may be an unusual format. Try exporting a fresh copy.");
+    if (res.status === 401 || res.status === 403) throw new Error('Your Gemini key was refused - check it in Settings → Plan.');
+    throw new Error(`Couldn't read the statement (reader error ${res.status}). ${t.slice(0, 120)}`);
   }
-  const data = await res.json();
-  await logAiUsage(env, 'gemini', 'statement-pdf', model, data.usageMetadata && data.usageMetadata.promptTokenCount, data.usageMetadata && data.usageMetadata.candidatesTokenCount);
-  const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text).filter(Boolean).join('');
-  let out; try { out = JSON.parse(text); } catch { out = { rows: [] }; }
-  const rows = Array.isArray(out.rows) ? out.rows.filter((r) => r && r.date && r.amount != null) : [];
-  return { rows, count: rows.length };
+  return [];
+}
+
+// Parse a statement into rows. A single pass often misses most of a long or
+// densely-laid-out statement (Robin only got 5 of dozens), so we go round a few
+// times: each pass is told exactly what we already have and asked only for what
+// it MISSED, and we stop as soon as a pass turns up nothing new. Everything is
+// de-duplicated, so overlap between passes is harmless. (Robin, 2026-11-11.)
+export async function parseStatementPdf(env, dataB64, name) {
+  const key = await aiKey(env, 'gemini', 'money');
+  if (!key) throw new Error(aiNeedsKey('gemini'));
+  if (!dataB64) throw new Error('No PDF data');
+  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const seen = new Set();
+  const all = [];
+  const keyOf = (r) => `${r.date}|${r.amount}|${(r.description || '').toLowerCase().replace(/\s+/g, ' ').trim()}`;
+  const absorb = (rows) => { let n = 0; for (const r of rows) { const k = keyOf(r); if (seen.has(k)) continue; seen.add(k); all.push(r); n++; } return n; };
+  for (let pass = 0; pass < 6; pass++) {
+    const already = all.length
+      ? `\n\nYou have ALREADY captured these ${all.length} transactions - do NOT list any of them again. List ONLY the transactions in the statement that are MISSING from this list:\n${all.map((r) => `${r.date} ${r.amount} ${(r.description || '').slice(0, 28)}`).join('\n').slice(0, 7000)}\nIf every transaction in the statement is now in that list, return {"rows":[]}.`
+      : '';
+    let rows;
+    try { rows = await statementPass(env, key, model, dataB64, STMT_BASE + already); }
+    catch (e) { if (pass === 0) throw e; break; }   // a later pass hiccup: keep what we already have
+    const added = absorb(rows);
+    if (pass === 0 && !rows.length) break;           // nothing at all
+    if (pass > 0 && added === 0) break;              // caught everything
+  }
+  return { rows: all, count: all.length };
 }
 
 // Wipe every imported transaction (the page's "clear all" - it asks first).

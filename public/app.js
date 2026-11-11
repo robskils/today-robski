@@ -4897,7 +4897,7 @@ function discoverCardHtml(e) {
   const meta = [when, e.category].filter(Boolean).join(' · ');
   const src = (e.sourceLabel || '').trim();
   return `<div class="dz-card">
-    ${e.image ? `<div class="dz-img" style="background-image:url('${esc(e.image)}')"></div>` : '<div class="dz-img dz-img-none">🎫</div>'}
+    ${e.image ? `<div class="dz-img" style="background-image:url('${esc(e.image)}')"></div>` : '<div class="dz-img dz-img-none"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1"><rect x="22" y="22" width="56" height="56"/><rect x="22" y="22" width="56" height="56" transform="rotate(45 50 50)"/><circle cx="50" cy="50" r="38"/><circle cx="50" cy="50" r="6"/></g></svg></div>'}
     <div class="dz-cbody">
       ${meta ? `<div class="dz-when">${esc(meta)}</div>` : ''}
       <div class="dz-title">${esc(e.title)}</div>
@@ -22804,7 +22804,7 @@ function spendTrend(months) {
 }
 function spendImportView() {
   const im = state.financial.spendImport;
-  if (im.loading) return `<div class="sp-import"><div class="sp-sec-h">Reading · ${esc(im.name || 'statement.pdf')}</div><div class="fin-load">Reading the statement with Gemini… this can take a moment for a long PDF.</div></div>`;
+  if (im.loading) return `<div class="sp-import"><div class="sp-sec-h">Reading · ${esc(im.name || 'statement.pdf')}</div><div class="fin-load">Reading your statement and pulling out every transaction - a long one can take a minute or two. You can carry on using Kaya; I'll import them and let you know the moment they're in.</div></div>`;
   // PDF rows come back already normalised (date/amount/description) - no column
   // mapping needed, just a preview and confirm.
   if (im.pdf) {
@@ -22916,11 +22916,17 @@ function spendOpenPdf(file) {
       for (let i = 0; i < buf.length; i += CH) bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
       const data = btoa(bin);
       const r = await api('/api/spend/parse-pdf', { method: 'POST', body: JSON.stringify({ data, name: file.name }) });
-      if (!state.financial.spendImport || !state.financial.spendImport.pdf) return;   // cancelled
-      if (!r.rows || !r.rows.length) { toast('No transactions found in that PDF'); state.financial.spendImport = null; renderFinancial(); return; }
-      state.financial.spendImport = { name: file.name, pdf: true, rows: r.rows };
-      renderFinancial();
-    } catch (e) { toast(e.message); state.financial.spendImport = null; renderFinancial(); }
+      const rows = (r && r.rows) || [];
+      if (!rows.length) { toast('No transactions found in that statement.'); if (state.financial.spendImport && state.financial.spendImport.loading) { state.financial.spendImport = null; renderFinancial(); } return; }
+      // Found them - import straight away (the server de-duplicates), so there's no
+      // preview to babysit. The parse runs through even if you've wandered off to
+      // another page; you just get the toast when it lands. (Robin, 2026-11-11.)
+      const res = await api('/api/spend/import', { method: 'POST', body: JSON.stringify({ rows }) });
+      if (state.financial.spendImport && state.financial.spendImport.loading) state.financial.spendImport = null;
+      state.financial.txns = null;
+      toast(`Imported ${res.added} transaction${res.added === 1 ? '' : 's'} from your statement${res.skipped ? ` · ${res.skipped} already there` : ''} ✓`);
+      if (state.view && state.view.type === 'financial') loadSpending();
+    } catch (e) { toast('Statement: ' + ((e && e.message) || 'could not import')); if (state.financial.spendImport && state.financial.spendImport.loading) { state.financial.spendImport = null; renderFinancial(); } }
   };
   rd.onerror = () => { toast('Could not read that PDF'); state.financial.spendImport = null; renderFinancial(); };
   rd.readAsArrayBuffer(file);

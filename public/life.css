@@ -9435,7 +9435,10 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .dz-card { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:0; overflow:hidden; background:var(--card); box-shadow:var(--shadow); transition:transform .14s, box-shadow .14s; }
 .dz-card:hover { transform:translateY(-2px); box-shadow:none; }
 .dz-img { height:132px; background-size:cover; background-position:center; background-color:color-mix(in srgb,var(--accent) 12%,var(--card)); }
-.dz-img-none { display:flex; align-items:center; justify-content:center; font-size:34px; opacity:.5; }
+/* No event image: a gold-line octagram (the Kaya mark) filling the box, on a soft
+   gold-tinted wash - beautiful rather than a lone ticket glyph. (Robin, 2026-11-11.) */
+.dz-img-none { display:flex; align-items:center; justify-content:center; color:var(--k-goldt); background:linear-gradient(155deg, color-mix(in srgb,var(--k-gold) 16%,var(--card)), color-mix(in srgb,var(--k-gold) 5%,var(--card))); }
+.dz-img-none svg { width:84%; height:84%; opacity:.55; }
 .dz-cbody { display:flex; flex-direction:column; gap:5px; padding:13px 15px 15px; flex:1; }
 .dz-when { font-size:12.5px; font-weight:600; letter-spacing:.02em; color:var(--accent); text-transform:uppercase; font-variant-numeric:tabular-nums; }
 .dz-title { font-size:16px; font-weight:600; line-height:1.3; color:var(--ink); }
