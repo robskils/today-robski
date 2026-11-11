@@ -10469,7 +10469,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-back:hover { color:var(--k-gold); }
 /* The header back ‹ shows only on mobile (desktop has the breadcrumb ←). (Robin, 2026-11-04.) */
 .knav-inner .mtop-back { display:none; font-size:30px; padding:0 10px 0 0; margin:0; }
-.knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--ink); }
+.knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--k-goldt); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
 .knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
 .knav-groups { display:flex; gap:clamp(14px,1.8vw,24px); height:100%; align-items:stretch; min-width:0; }
@@ -11971,7 +11971,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-arr-x:hover { color:var(--k-goldt); }
 
 /* ── §53/§56 Space v3 ──────────────────────────────────────────────────────── */
-.av3 { max-width:1180px; margin:0 auto; }
+.av3 { max-width:1600px; margin:0 auto; }   /* Full width like the other pages, not a narrow centred column. (Robin, 2026-11-11.) */
 .av3-crumb { font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-ink); cursor:pointer; padding:4px 0 0; }
 .av3-crumb-a { color:var(--k-gold); } .av3-crumb-dot, .av3-crumb-nm { color:var(--k-mute); }
 .av3-head { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 40px; padding:0; }
@@ -12101,7 +12101,7 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
 /* Overview glance cards */
 /* Four to a row, so a full Space reads as three tidy rows of four (Robin,
    2026-11-06: "4 cards on each of the 3 rows… fill all 12 if you can"). */
-.av4-glances { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; padding:30px 0; }
+.av4-glances { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; padding:30px 0; }
 @media (max-width:1100px){ .av4-glances { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media (max-width:760px){ .av4-glances { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } }
 /* On a phone the Overview cards go full width, one per row. (Robin, 2026-11-11.) */
