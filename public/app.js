@@ -1521,6 +1521,17 @@ function reopenedAfterAWhile() { try { const t = Number(localStorage.getItem('li
 const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/app.js"]'); const m = s && s.src.match(/[?&]v=([0-9]+)/); return (m && m[1]) || ''; } catch { return ''; } })();
 (function selfUpdateOnResume() {
   let updating = false; let lastCheck = 0;
+  // Safe to refresh right now? Not while you're typing, writing an email, or have
+  // a drawer/editor open - otherwise yes. (Robin, 2026-11-11.)
+  function updateSafeNow() {
+    try {
+      const ae = document.activeElement;
+      if (ae && (ae.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || ''))) return false;
+      if (typeof state !== 'undefined' && state && state.mail && state.mail.composing) return false;
+      if (document.querySelector('.cap-drawer, #task-editor-host .pe-panel, .mail2-compose')) return false;
+      return true;
+    } catch { return true; }
+  }
   async function checkForUpdate() {
     if (updating || !BOOT_VER || Date.now() - lastCheck < 60000) return;
     lastCheck = Date.now();
@@ -1530,9 +1541,11 @@ const BOOT_VER = (() => { try { const s = document.querySelector('script[src*="/
       const html = await res.text();
       const m = html.match(/app\.js\?v=([0-9]+)/);
       if (m && m[1] && m[1] !== BOOT_VER) {
-        // A new build is live. Never yank the page out mid-work - show a quiet,
-        // sticky "tap to refresh" nudge and let the choice be theirs. (Robin.)
         updating = true;
+        // A new build is live. This runs the moment you come back to the app, so
+        // if you're not mid-edit, just refresh - no more fighting the cache. If you
+        // are mid-edit, keep the quiet tap-to-refresh nudge. (Robin, 2026-11-11.)
+        if (updateSafeNow()) { location.reload(); return; }
         toast('A new version of Kaya is ready', () => location.reload(), { sticky: true, actionLabel: 'Refresh' });
       }
     } catch { /* offline - keep running what we have */ }
