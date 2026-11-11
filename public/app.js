@@ -758,10 +758,16 @@ function proseEditor(body, key, id, readOnly) {
 const HLVL = { H1: 1, H2: 2, H3: 3 };
 function proseFolds() { try { return JSON.parse(localStorage.getItem('life.prose.folds')) || {}; } catch { return {}; } }
 function getFolds(blockId) { const f = proseFolds()[blockId]; return Array.isArray(f) ? f : []; }
-function setFold(blockId, idx, folded) {
+// A heading's fold is keyed by its TEXT, not its position - so adding, removing or
+// reordering headings can never leave a saved fold pointing at the wrong heading and
+// hiding the wrong content. (Robin, 2026-11-11: editing by a folded heading scrambled
+// a whole note because the fold index had shifted under it.)
+function foldKey(h) { return ((h && h.textContent) || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function setFold(blockId, key, folded) {
+  if (!key) return;
   const all = proseFolds(); const cur = new Set(getFolds(blockId));
-  if (folded) cur.add(idx); else cur.delete(idx);
-  all[blockId] = [...cur].sort((a, b) => a - b);
+  if (folded) cur.add(key); else cur.delete(key);
+  if (cur.size) all[blockId] = [...cur]; else delete all[blockId];
   try { localStorage.setItem('life.prose.folds', JSON.stringify(all)); } catch {}
 }
 function proseSiblingsUnder(head) {
@@ -779,8 +785,6 @@ function proseSiblingsUnder(head) {
 function reapplyFolds(prose) {
   if (!prose) return;
   const foldedSet = new Set(getFolds(prose.dataset.blockId));
-  const allHeads = [...prose.querySelectorAll('h1, h2, h3')];
-  const idxOf = new Map(allHeads.map((h, i) => [h, i]));
   const run = (flow) => {
     const stack = [];   // levels of the folded sections we're currently inside
     for (const el of flow.children) {
@@ -791,7 +795,8 @@ function reapplyFolds(prose) {
       if (lvl) {
         while (stack.length && stack[stack.length - 1] >= lvl) stack.pop();   // this heading ends any open section of its level or deeper
         el.classList.toggle('folded-hidden', stack.length > 0);              // the heading itself hides if inside a folded parent
-        const isFolded = foldedSet.has(idxOf.get(el));
+        const k = foldKey(el);
+        const isFolded = !!k && foldedSet.has(k);
         el.classList.toggle('folded', isFolded);   // the ►/▼ chevron is a CSS ::before keyed off .folded
         if (isFolded) stack.push(lvl);
       } else {
@@ -802,6 +807,24 @@ function reapplyFolds(prose) {
   run(prose);
   prose.querySelectorAll(':scope > .ncols > .ncol').forEach(run);
 }
+// Never let a folded (collapsed) heading swallow content while you edit it. If you
+// start typing or press Enter with the caret in a folded heading, unfold it FIRST so
+// its hidden content is on screen before the edit lands. Without this, pressing Enter
+// at the end of a collapsed heading drops the new line between the heading and its
+// hidden content, and turning that line into a heading silently captured the content
+// under the new heading - out of sight. (Robin, 2026-11-11: a note got scrambled.)
+document.addEventListener('beforeinput', (e) => {
+  const ed = e.target && e.target.closest && e.target.closest('.prose[data-block-id][contenteditable="true"]');
+  if (!ed) return;
+  const sel = window.getSelection();
+  if (!sel || !sel.anchorNode || !ed.contains(sel.anchorNode)) return;
+  let n = sel.anchorNode; n = (n.nodeType === 1) ? n : n.parentElement;
+  const head = n && n.closest ? n.closest('h1, h2, h3') : null;
+  if (head && ed.contains(head) && head.classList.contains('folded')) {
+    setFold(ed.dataset.blockId, foldKey(head), false);
+    reapplyFolds(ed);
+  }
+});
 // A heading and the blocks beneath it step in one gentle notch per level, so a
 // note's outline reads its own hierarchy: content under an H2 lines up with the
 // H2, content under an H3 with the H3. The indent is LIVE inline margin only -
@@ -29388,7 +29411,7 @@ document.addEventListener('click', (e) => {
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   // Fold a heading by clicking the left gutter where its chevron sits (the chevron
   // is a CSS ::before, so there's no element to click - we detect the gutter by x).
-  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { if (foldSuppress && Date.now() - foldSuppress < 350) return; const hit = gutterHitAt(ph, e.clientX, e.clientY); if (hit) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(hit.head), !hit.head.classList.contains('folded')); reapplyFolds(ph); return; } } }
+  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { if (foldSuppress && Date.now() - foldSuppress < 350) return; const hit = gutterHitAt(ph, e.clientX, e.clientY); if (hit) { e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, foldKey(hit.head), !hit.head.classList.contains('folded')); reapplyFolds(ph); return; } } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Kaya` : 'No contacts on Kaya yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }
