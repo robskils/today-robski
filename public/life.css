@@ -3836,7 +3836,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .dbc-preview { flex:none; width:340px; max-width:100%; position:sticky; top:12px; }
 .dbc-edit { flex:1; min-width:260px; display:flex; flex-direction:column; gap:16px; }
 /* The card */
-.dbc-card { --dbc:#c4412e; position:relative; background:var(--card); border:1px solid var(--line); border-radius:0; overflow:hidden; box-shadow:none; }
+.dbc-card { --dbc:var(--k-gold); position:relative; background:var(--glass-card); border:1px solid color-mix(in srgb, var(--k-gold) 45%, var(--glass-edge)); border-radius:0; overflow:hidden; box-shadow:none; -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); }
 .dbc-band { height:74px; background:linear-gradient(135deg, var(--dbc), color-mix(in srgb,var(--dbc) 62%,#000 30%)); }
 .dbc-top { position:relative; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:0 22px; margin-top:-38px; }
 .dbc-photo { width:76px; height:76px; border-radius:0; flex:none; background-size:cover; background-position:center; border:4px solid var(--card); box-shadow:none; display:grid; place-items:center; }

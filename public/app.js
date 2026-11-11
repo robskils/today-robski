@@ -2103,7 +2103,7 @@ function cardChipsHtml(d) {
 // The card itself from a normalised object {name,handle,photo,accent,pattern,
 // tagline,location,website,links,email,phone}. `full` shows the tagline hint.
 function cardHtml(d, full) {
-  const accent = d.accent || '#c4412e';
+  const accent = 'var(--k-gold)';   // One accent: gold. The card follows the new look, not a per-user colour. (Robin, 2026-11-11.)
   const photo = d.photo ? `<span class="dbc-photo" style="background-image:url('${d.photo}')"></span>` : `<span class="dbc-photo dbc-photo-mono">${esc(initial(d.name || 'You'))}</span>`;
   const chips = cardChipsHtml(d);
   const qr = d.subdomain ? qrSvg('https://kaya.so/u/' + d.subdomain, 74) : '';
