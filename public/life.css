@@ -12582,7 +12582,7 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
   .cx-lhead { gap:9px; }
   .cx-lh-sub { display:none; }
   .cx-lh-date { font-size:21px; white-space:nowrap; }
-  .cx-lhead.is-today .cx-lh-date::before { content:''; display:inline-block; width:10px; height:10px; background:var(--k-gold); margin-right:9px; vertical-align:middle; }
+  .cx-lhead.is-today .cx-lh-date::after { content:''; display:inline-block; width:10px; height:10px; background:var(--k-gold); margin-left:9px; vertical-align:middle; }
 }
 .cx-lrow { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:18px; align-items:baseline; padding:13px 0; border-bottom:1px solid var(--k-line); cursor:pointer; }
 .cx-lr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
