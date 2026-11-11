@@ -21008,7 +21008,7 @@ function contactDetailsView(c, p) {
   contactEmails(p).forEach((em) => rows.push(row('Email', `<a href="mailto:${encodeURIComponent(em).replace(/%40/g, '@')}">${esc(em)}</a>`, copy(em))));
   contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(row('Phone', `<a href="tel:${esc(tel)}">${esc(disp)}</a>`, copy(disp))); });
   const addrs = contactAddresses(p);
-  if (addrs.length) { const a = formatAddress(addrs[0]); rows.push(row('Address', contactAddressViewBlocks(addrs), `<a class="cvx-detail-act" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}" target="_blank" rel="noopener noreferrer">Map</a>${copy(a)}`)); }
+  if (addrs.length) { const a = formatAddress(addrs[0]); rows.push(row('Address', contactAddressViewBlocks(addrs), copy(a))); }
   return rows.join('') || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone or an address.</p>';
 }
 // Gather every address row on the open card into the array + the mirrored primary.
@@ -21873,14 +21873,18 @@ function contactActionsHtml(c, p) {
   const wa = num.replace(/[^\d]/g, '');
   const addr = formatAddress(contactAddresses(p)[0]);
   const fr = firstEmail ? (((state.friends && state.friends.friends) || []).find((f) => (f.email || '').toLowerCase() === firstEmail.toLowerCase())) : null;
+  // Already on Kaya (a connected friend, or a known Kaya account in suggestions)?
+  // Then no "Invite to Kaya" - they're already here. (Robin, 2026-11-11.)
+  const onKaya = !!fr || !!(firstEmail && ((state.friends && state.friends.suggestions) || []).some((s) => (s.email || '').toLowerCase() === firstEmail.toLowerCase()));
   const A = [];
   if (fr) A.push(`<button class="cv-act gold" data-friend-chat="${fr.id}" data-friend-name="${esc(c.title || '')}">Message</button>`);
   if (firstEmail) A.push(`<button class="cv-act" data-contact-mail="${esc(firstEmail)}">Email</button>`);
   if (num) A.push(`<a class="cv-act" href="tel:${esc(num)}">Call</a>`);
   if (wa.length >= 8) A.push(`<a class="cv-act" href="https://wa.me/${wa}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`);
   if (addr) A.push(`<a class="cv-act" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Directions</a>`);
-  if (!fr) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Kaya</button>`);
-  return A.join('<span class="cv-act-sep">·</span>');
+  if (addr) A.push(`<a class="cv-act" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer">Map</a>`);
+  if (!onKaya) A.push(`<button class="cv-act" data-cc-invite="${esc(firstEmail || '')}">Invite to Kaya</button>`);
+  return A.join('');
 }
 // The keep-in-touch band: one sentence, the frequency as words, and the manual
 // "I've just been in touch". The clock resets only on that (Robin, §34).
