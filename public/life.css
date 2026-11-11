@@ -2457,6 +2457,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    straight on it. Translucent + a soft backdrop blur (near-white in light, near-
    black in dark - heading that way, never fully opaque). (Robin, 2026-10-27.) */
 .note-body {
+  position:relative;   /* offset parent for the sticky insert-icons box (.note-float-ins) */
   min-height:140px; font-size:18.5px; line-height:1.75; color:var(--ink); cursor:text;
   background:var(--note-surface);
   -webkit-backdrop-filter:blur(10px) saturate(1.04); backdrop-filter:blur(10px) saturate(1.04);
@@ -2650,7 +2651,7 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-areas-row-split .note-areas-actions .note-areas-aliases { margin-left:0; }
 .note-areas-row-split .note-areas-actions .note-del { margin-left:0; }
 .note-body { position:relative; }
-.note-float-ins { position:absolute; right:6px; z-index:6; display:flex; gap:2px; padding:3px; background:var(--card); border:1px solid var(--line-2); }
+.note-float-ins { position:absolute; right:6px; z-index:9; display:flex; gap:2px; padding:3px; background:var(--card); border:1px solid var(--line-2); }
 .note-float-ins[hidden] { display:none; }
 .nfi-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:0; background:none; color:var(--ink-2); cursor:pointer; }
 .nfi-btn:hover { color:var(--accent); }

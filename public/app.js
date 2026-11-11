@@ -26976,23 +26976,30 @@ function noteFloatInsertInit() {
 function noteFloatPlace() {
   const box = document.querySelector('.note-float-ins');
   const body = box && box.closest('.note-body');
-  const ed = body && body.querySelector('.prose');
-  if (!box || !ed) return;
-  // Always there: at the top of the sheet until the cursor is in the note, then beside it.
-  const rest = () => { box.style.top = '2px'; box.style.right = '6px'; box.style.left = 'auto'; box.hidden = false; };
-  const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || document.activeElement !== ed) { rest(); return; }
-  const range = sel.getRangeAt(0);
-  if (!ed.contains(range.startContainer)) { rest(); return; }
-  const host = body.getBoundingClientRect();
-  const rect = range.getClientRects()[0] || range.getBoundingClientRect();
-  const anchorTop = (rect && (rect.height || rect.top)) ? rect.top : host.top + 6;   // empty line -> top of editor
-  const bh = box.offsetHeight || 40;
-  let top = anchorTop - host.top - 44;   // a couple of lines up
-  top = Math.max(2, Math.min(top, Math.max(2, host.height - bh - 2)));
-  box.style.top = top + 'px';
-  box.style.right = '6px'; box.style.left = 'auto';   // pinned to the right margin
+  if (!box || !body) return;
   box.hidden = false;
+  box.style.right = '6px'; box.style.left = 'auto';   // pinned to the right margin
+  // Sticky, not caret-following: keep the insert icons at a fixed spot near the top
+  // of the screen as you scroll a long note - but never outside the note body - so
+  // they're always to hand wherever you are in the note. (Robin, 2026-11-11: make the
+  // insert icons stay in view while scrolling.) note-body is position:relative, so the
+  // absolutely-placed box is measured against it.
+  const host = body.getBoundingClientRect();
+  const bh = box.offsetHeight || 40;
+  // Sit just below whatever top chrome is pinned - the sticky nav bar AND a sticky
+  // tabstrip stacked under it (top:68) when tabs are open - so the icons never hide
+  // behind the header as they ride down the note.
+  let chrome = 0;
+  document.querySelectorAll('.nav, .knav-bar, .tabstrip, .crumbbar, .crumbbar-slim').forEach((el) => {
+    if (el.contains(box)) return;
+    const s = getComputedStyle(el); if (s.position !== 'sticky' && s.position !== 'fixed') return;
+    const r = el.getBoundingClientRect();
+    if (r.top <= 80 && r.bottom > chrome && r.bottom < 260 && r.width > window.innerWidth * 0.3) chrome = r.bottom;
+  });
+  const STICK = (chrome || 60) + 8;
+  const lo = host.top + 2, hi = host.bottom - bh - 2;
+  const v = (hi < lo) ? lo : Math.min(Math.max(STICK, lo), hi);
+  box.style.top = (v - host.top) + 'px';
 }
 
 // ── file a note in a page ───────────────────────
@@ -27719,6 +27726,34 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
   if (e.key === 'Enter' && e.target.id === 'src-loc') { e.preventDefault(); const d = discoverState(); const q = (d.cityInput || e.target.value || '').trim(); if (q) { d.cityInput = q; discoverSuggest({ q }); } return; }
   if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
+  // Enter at the very START of a heading opens an empty line ABOVE it, nudging the
+  // heading down a row - a quick way to make space above a heading without retyping
+  // it. The caret stays with the heading (which has moved down), so pressing Enter
+  // again just adds another row above. (Robin, 2026-11-11.)
+  if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const ed = e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+    if (ed) {
+      const sel = window.getSelection();
+      if (sel && sel.isCollapsed && sel.anchorNode && ed.contains(sel.anchorNode)) {
+        const node = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+        const head = node && node.closest ? node.closest('h1, h2, h3') : null;
+        if (head && ed.contains(head)) {
+          const r = document.createRange(); r.selectNodeContents(head); r.setEnd(sel.anchorNode, sel.anchorOffset);
+          if (r.toString().length === 0) {   // caret is at the very start of the heading
+            e.preventDefault();
+            e.stopImmediatePropagation();   // don't let the "new line clears heading" handler demote this heading
+            const p = document.createElement('p'); p.appendChild(document.createElement('br'));
+            head.parentNode.insertBefore(p, head);
+            const nr = document.createRange(); nr.setStart(head, 0); nr.collapse(true);   // caret stays with the heading
+            sel.removeAllRanges(); sel.addRange(nr);
+            try { applyProseIndent(ed); } catch {}
+            ed.dispatchEvent(new Event('input', { bubbles: true }));   // autosave
+            return;
+          }
+        }
+      }
+    }
+  }
   // Tab in the rich prose editor indents rather than leaving the field. In a
   // bullet/numbered list it nests the item (up to ~7 levels); Shift+Tab pulls it
   // back out; in plain free-writing it inserts an indent at the caret.
