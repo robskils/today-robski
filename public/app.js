@@ -316,6 +316,12 @@ document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.
 // Focusing the event Location field offers the smart suggestion straight away, before
 // you type. (Robin, 2026-11-04.)
 document.addEventListener('focusin', (ev) => { if (ev.target && ev.target.id === 'ce-loc') { try { renderCeLocSugg(ev.target.value); } catch {} } });
+// Clicking (or tabbing) anywhere outside the Location field dismisses its suggestions,
+// keeping whatever you typed - you're never forced to pick one of the offered places.
+// (Robin, 2026-11-11.)
+const ceLocDismiss = (el) => { const sg = document.getElementById('ce-loc-sugg'); if (sg && !sg.hidden && !(el && el.closest && el.closest('.ce-loc-wrap'))) { sg.hidden = true; sg.innerHTML = ''; return true; } return false; };
+document.addEventListener('pointerdown', (ev) => { ceLocDismiss(ev.target); });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { const sg = document.getElementById('ce-loc-sugg'); if (sg && !sg.hidden) { ev.preventDefault(); ev.stopPropagation(); sg.hidden = true; sg.innerHTML = ''; } } }, true);
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && state.cv && state.cv.merge) { ev.preventDefault(); cvMergeClose(); } });
 document.addEventListener('click', (ev) => {
   const t = ev.target; if (!t.closest) return;
