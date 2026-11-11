@@ -5660,7 +5660,6 @@ function navGroupsHtml(v) {
         <button class="nff ${v.type === 'settings' ? 'on' : ''}" data-open-settings>${t('nav.settings')}</button>
         ${state.me && state.me.id === 1 ? `<button class="nff ${v.type === 'admin' ? 'on' : ''}" data-open-admin>${t('nav.admin')}</button>` : ''}
         <button class="nff" data-open-guide>${t('nav.guide')}</button>
-        <button class="nff" data-open-getstarted>Welcome</button>
       </div>
     </div>`;
   }
@@ -5776,7 +5775,6 @@ function renderAppFoot() {
     + `<button class="aff${v.type === 'settings' ? ' on' : ''}" data-open-settings>${t('nav.settings')}</button>`
     + (state.me && state.me.id === 1 ? `<button class="aff${v.type === 'admin' ? ' on' : ''}" data-open-admin>${t('nav.admin')}</button>` : '')
     + `<button class="aff" data-open-guide>${t('nav.guide')}</button>`
-    + `<button class="aff" data-open-getstarted>Welcome</button>`
     + `</div>`;
   if (el.__h !== html) { el.__h = html; el.innerHTML = html; }
 }
