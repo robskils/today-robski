@@ -7672,6 +7672,9 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
 .mail-dd-item { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:0; color:var(--ink); font-size:15px; background:none; border:0; cursor:pointer; }
 .mail-dd-item:hover { background:var(--paper-2); color:var(--accent); }
 .mail-dd-item svg { width:18px; height:18px; flex:none; }
+/* The note ⋯ menu text stands out a little more - heavier and a touch larger.
+   (Robin, 2026-11-11.) */
+.note-more-menu .mail-dd-item { font-weight:500; font-size:16px; color:var(--k-ink); }
 /* Claudius sits in the same round icon row - a tinted accent circle, not a pill. */
 .mail-claudius.mail-act-ic { width:38px; min-width:38px; padding:8px; gap:0; font-size:0; border-radius:0;
   color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 12%,transparent); }
