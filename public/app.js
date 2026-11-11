@@ -9872,7 +9872,7 @@ function renderTablesList() {
   }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('title.tables'))}
-    <div class="pane-head home-head"><h1>${t('title.tables')}</h1></div>
+    <div class="pane-head home-head"><h1>${t('title.tables')}</h1><button class="add-btn wide" data-new-table>${t('btn.newtable')}</button></div>
     <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-tables-q type="search" placeholder="Search tables…" value="${esc(state.tablesQuery || '')}" autocomplete="off" spellcheck="false"></div>
     ${q ? '' : spaceRow}
     ${sections}</div>`;
@@ -10056,7 +10056,7 @@ function renderNotesList() {
   }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('nav.notes'))}
-    <div class="pane-head home-head"><h1>${t('nav.notes')}</h1></div>
+    <div class="pane-head home-head"><h1>${t('nav.notes')}</h1><button class="add-btn wide" data-new-note>${t('notes.newnote')}</button></div>
     <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-notes-q type="search" placeholder="${esc(t('notes.search'))}" value="${esc(state.notesQuery || '')}" autocomplete="off" spellcheck="false"></div>
     ${q ? '' : spaceRow}
     ${sections}</div>`;
@@ -13270,7 +13270,7 @@ document.addEventListener('input', (e) => {
   if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; clearTimeout(window.__av4qT); window.__av4qT = setTimeout(() => { if (document.querySelector('[data-av4-search]')) renderArea(); }, 140); }
 });
 document.addEventListener('change', (e) => {
-  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = (v === 'space' || v === 'recent') ? v : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
+  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = v === 'space' ? 'space' : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
   const tsf = e.target.closest && e.target.closest('[data-task-spacefilter-sel]'); if (tsf) { state.taskFilterSpace = tsf.value || ''; renderTasks(); return; }
   if (e.target.matches && e.target.matches('[data-task-durcustom]')) { const id = e.target.dataset.taskDurcustom; const v = Math.max(5, Math.min(720, Number(e.target.value) || 0)); if (v) patchTaskProps(id, { duration: v }); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
@@ -20480,7 +20480,7 @@ function commitTaskView() {
 function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
 // How the task list is arranged: 'priority' (First/Soon/Whenever sections, dated
 // tasks floated to the top of each) or 'space' (grouped by Space). (Robin, 2026-11-09.)
-function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return (state.taskGroup === 'space' || state.taskGroup === 'recent') ? state.taskGroup : 'priority'; }
+function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return state.taskGroup === 'space' ? 'space' : 'priority'; }
 function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
 function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
 function txDue(t) {
@@ -20533,14 +20533,18 @@ function renderTasks() {
   const mobile = !!(window.matchMedia && window.matchMedia('(max-width:820px)').matches);
   const board = tasksBoardOn() && !mobile;   // Board reads poorly on a phone - the list is forced there (Robin, 2026-11-11)
   if (state.taskRecentDir == null) { try { state.taskRecentDir = localStorage.getItem('life.taskRecentDir') || 'new'; } catch { state.taskRecentDir = 'new'; } }
-  const recentDir = (state.taskRecentDir === 'old') ? 'old' : 'new';
-  const recentToggle = groupBy === 'recent' ? `<button class="tx-recentdir" data-task-recentdir title="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}" aria-label="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}">${recentDir === 'new' ? '↓' : '↑'}</button>` : '';
-  const orders = `<span class="tx-ordersel"><select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option><option value="recent"${groupBy === 'recent' ? ' selected' : ''}>Recent</option></select>${recentToggle}</span>`;
+  // The arrow is an urgent<->recent toggle: down (default) shows the most urgent
+  // at the top; push it up to show the most recently added/active first. It rides
+  // next to the order dropdown and applies to By Priority and By Space alike.
+  // (Robin, 2026-11-11.)
+  const recentMode = state.taskRecentDir === 'old';
+  const dirToggle = `<button class="tx-recentdir" data-task-recentdir title="${recentMode ? 'Most recent first' : 'Most urgent first'}" aria-label="${recentMode ? 'Most recent first' : 'Most urgent first'}">${recentMode ? '↑' : '↓'}</button>`;
+  const orders = `<span class="tx-ordersel"><select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>${dirToggle}</span>`;
   // In the All tab, priorities are mixed, so every task leads with its own First /
   // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
   // Per-row First/Soon/Whenever only when priorities are mixed in the view - i.e.
   // the All tab grouped By Space. By Priority shows it in the section header. (Robin.)
-  const showPrio = selPile === 'all' && (groupBy === 'space' || groupBy === 'recent');
+  const showPrio = selPile === 'all' && (groupBy === 'space' || recentMode);
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
     const snz = !!(t.props.hideUntil && t.props.snooze);
@@ -20557,17 +20561,17 @@ function renderTasks() {
   // tiebreak. Shared by By Priority and (as the inner sort) By Space. (Robin.)
   const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
   const byPrio = (a, b) => (txPriBucket(a) - txPriBucket(b)) || byDate(a, b);
+  const tsOf = (x) => String(x.updated_at || x.created_at || '');
+  const byRecent = (a, b) => tsOf(b).localeCompare(tsOf(a));   // most recently added or active first
   let groupsHtml = '';
   if (groupBy === 'space') {
     const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
     // Highest priority first within each Space, then by date. (Robin, 2026-11-11.)
-    groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s).sort(byPrio); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
-  } else if (groupBy === 'recent') {
-    // Most recently added or touched first (updated_at bumps on any edit or tick);
-    // the arrow flips it to oldest-first. A flat list, no grouping. (Robin, 2026-11-11.)
-    const dir = (state.taskRecentDir === 'old') ? 1 : -1;
-    const ts = (x) => String(x.updated_at || x.created_at || '');
-    const sorted = inPile.slice().sort((a, b) => dir * ts(b).localeCompare(ts(a)));
+    groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s).sort(recentMode ? byRecent : byPrio); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+  } else if (recentMode) {
+    // By Priority with the arrow pushed up: a flat list, most recently added or
+    // active first (updated_at bumps on any edit or tick). (Robin, 2026-11-11.)
+    const sorted = inPile.slice().sort(byRecent);
     groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
   } else {
     // By Priority: in the All tab, First / Soon / Whenever sections; on a single
@@ -20605,7 +20609,8 @@ function renderTasks() {
       <div class="tx-piles-row">${piles}</div>
       <div class="tx-toolbar">
         <button class="tx-addbtn" data-task-new>${t('task.add')}</button>
-        <div class="tx-toolbar-c">${mobile ? spaceSelect : ''}${board && selPile !== 'snoozed' ? '' : orders}${mobile ? '' : tasksViewToggle('tasks')}</div>
+        ${mobile ? spaceSelect : ''}
+        <div class="tx-toolbar-c">${board && selPile !== 'snoozed' ? '' : orders}${mobile ? '' : tasksViewToggle('tasks')}</div>
       </div>
       <div class="tx-groups">${board && selPile !== 'snoozed' ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
