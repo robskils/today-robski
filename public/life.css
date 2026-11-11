@@ -2482,6 +2482,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
    and a link (ivory + gold rule) read as two different things, not one wall of
    gold. They warm to gold on hover. (Robin, 2026-11-09: tastefully different.) */
 :root[data-light]:not([data-plain]) :is(.note-body a, .prose a) { color:var(--k-ink); text-decoration-color:color-mix(in srgb, #FFD98A 70%, transparent); text-underline-offset:3px; }
+/* A long pasted link wraps instead of running off the side of the page. (Robin,
+   2026-11-11: "don't have long links going off the side - anywhere".) */
+.prose, .note-body, .prose a, .note-body a { overflow-wrap:break-word; }
 :root[data-light]:not([data-plain]) :is(.note-body a, .prose a):hover { color:#FFD98A; }
 :root[data-light]:not([data-plain]) .prose a.rl-link { color:var(--k-ink); border-bottom-color:color-mix(in srgb, #FFD98A 60%, transparent); }
 :root[data-light]:not([data-plain]) .prose a.rl-link:hover { color:#FFD98A; }
@@ -3845,7 +3848,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .dbc-tag { margin:14px 22px 0; font-size:16px; line-height:1.5; color:var(--ink); }
 .dbc-tag-ph { color:var(--ink-3); font-style:italic; }
 .dbc-chips { display:flex; flex-wrap:wrap; gap:8px; margin:14px 22px 0; }
-.dbc-chip { display:inline-flex; align-items:center; gap:6px; font-size:13.5px; padding:5px 12px; border-radius:0; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); text-decoration:none; }
+.dbc-chip { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; font-size:13.5px; padding:5px 12px; border-radius:0; border:1px solid var(--line); background:var(--paper-2); color:var(--ink-2); text-decoration:none; }
 a.dbc-chip:hover { border-color:var(--dbc); color:var(--dbc); }
 .dbc-foot { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin:18px 22px 18px; padding-top:14px; border-top:1px solid var(--line); }
 .dbc-mark { display:flex; align-items:center; gap:6px; color:var(--ink-3); font-size:12.5px; font-weight:600; letter-spacing:.02em; }
@@ -8975,12 +8978,12 @@ a.cc-fact:hover .cc-fact-v { text-decoration:underline; text-underline-offset:2p
 .note-side .xlinks { margin-top:16px; }
 .xlinks-h { font-family:var(--k-serif); font-size:20px; font-weight:300; color:var(--ink); margin:0 0 10px; }
 .xl-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-.xl-chip { display:inline-flex; align-items:center; max-width:100%; border:1px solid var(--line-2); border-radius:0; background:var(--paper-2); overflow:hidden; transition:border-color .12s; }
+.xl-chip { display:inline-flex; align-items:center; max-width:min(100%, 320px); border:1px solid var(--line-2); border-radius:0; background:var(--paper-2); overflow:hidden; transition:border-color .12s; }
 .xl-chip:hover { border-color:var(--accent); }
 .xl-link { display:inline-flex; align-items:center; gap:6px; min-width:0; padding:7px 4px 7px 12px; text-decoration:none; color:var(--ink-2); font-size:14px; }
 .xl-link:hover { color:var(--accent); }
 .xl-ic { flex:none; font-size:12px; }
-.xl-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:240px; }
+.xl-t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; max-width:100%; }
 .xl-x { flex:none; background:none; border:0; padding:6px 10px 6px 6px; color:var(--ink-3); font-size:15px; line-height:1; cursor:pointer; }
 .xl-x:hover { color:var(--danger,#c0392b); }
 .xl-add { background:none; border:1px dashed var(--line-2); border-radius:0; padding:8px 14px; color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
