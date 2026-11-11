@@ -1711,6 +1711,48 @@ async function lookupMedia(request, env, url, json, err) {
   const asked = url.searchParams.get('type');
   const type = asked === 'film' ? 'film' : asked === 'auto' ? 'auto' : 'book';
   if (!q) return err('q required', request, 400);
+  // multi=1: return SEVERAL candidates (a few books + a few films) so the picker can
+  // let you choose the exact one - overriding the guess, and disambiguating when a
+  // title has more than one film. (Robin, 2026-11-11.)
+  if (url.searchParams.get('multi')) {
+    const WIKI = { 'User-Agent': 'RobskiKaya/1.0 (personal reading list)' };
+    const filmCands = async () => {
+      const s = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q + ' film')}&srlimit=6&format=json`, { headers: WIKI, cf: { cacheTtl: 86400, cacheEverything: true } });
+      const sd = await s.json().catch(() => ({}));
+      const hits = (((sd.query || {}).search) || []).slice(0, 6);
+      const out = await Promise.all(hits.map(async (h) => {
+        try {
+          const sum = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(h.title)}`, { headers: WIKI, cf: { cacheTtl: 86400, cacheEverything: true } });
+          const m = await sum.json().catch(() => ({}));
+          const desc = m.description || '';
+          if (!/\b(film|movie|miniseries|television film|tv film)\b/i.test(desc + ' ' + (m.extract || ''))) return null;   // keep only screen works
+          const ym = `${desc} ${m.extract || ''}`.match(/\b(19|20)\d{2}\b/);
+          const clean = (m.title || h.title).replace(/\s*\((?:\d{4}\s+)?[^)]*\bfilm\b[^)]*\)\s*$/i, '').trim();
+          return { title: clean || m.title || q, year: ym ? ym[0] : '', image: (m.thumbnail || {}).source || '', url: (((m.content_urls || {}).desktop) || {}).page || `https://en.wikipedia.org/wiki/${encodeURIComponent(h.title)}`, site: desc || 'Film', media: 'film' };
+        } catch { return null; }
+      }));
+      return out.filter(Boolean);
+    };
+    const bookCands = async () => {
+      const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,cover_i,key`, { cf: { cacheTtl: 86400, cacheEverything: true } });
+      const d = await r.json().catch(() => ({}));
+      return (d.docs || []).slice(0, 6).map((b) => {
+        const author = (b.author_name || [])[0] || '';
+        const year = b.first_publish_year ? String(b.first_publish_year) : '';
+        return { title: b.title || q, year, image: b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : '', url: b.key ? `https://openlibrary.org${b.key}` : '', site: [author, year].filter(Boolean).join(' · ') || 'Book', media: 'book' };
+      });
+    };
+    const [films, books] = await Promise.all([filmCands().catch(() => []), bookCands().catch(() => [])]);
+    // Drop Wikipedia side-pages that aren't the work itself.
+    const noise = (c) => /^(list of|outline of)\b|\b(accolades|soundtrack|discography|video game|franchise|cast and crew)\b/i.test(`${c.title} ${c.site || ''}`);
+    const keep = (c) => !noise(c) && titleCloseness(q, c.title) >= 1;
+    const uniq = (arr) => { const seen = new Set(); const o = []; for (const c of arr) { const k = (c.media + '|' + c.title + '|' + c.year).toLowerCase(); if (seen.has(k)) continue; seen.add(k); o.push(c); } return o; };
+    // Best first: exact title, then title that starts with it, then a cover.
+    const rank = (a, b) => titleCloseness(q, b.title) - titleCloseness(q, a.title) || (b.image ? 1 : 0) - (a.image ? 1 : 0);
+    let films2 = uniq(films.filter(keep)).sort(rank); if (!films2.length) films2 = uniq(films).sort(rank).slice(0, 1);
+    let books2 = uniq(books.filter(keep)).sort(rank); if (!books2.length) books2 = uniq(books).sort(rank).slice(0, 1);
+    return json({ candidates: [...films2.slice(0, 3), ...books2.slice(0, 3)] }, request);
+  }
   const base = { title: q, image: '', url: '', site: '', year: '', media: type === 'auto' ? 'book' : type };
   // 'auto' = no button pressed. Ask both catalogues at once and let the answers
   // argue it out: Wikipedia saying "1994 film" in its description is decisive,

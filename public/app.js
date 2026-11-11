@@ -12447,28 +12447,68 @@ async function rwToggleSetup() {
   if (state.rw.showSetup && !state.rw.setup) { try { state.rw.setup = await api('/api/bookmark/setup'); } catch (e) { toast(e.message); } }
   renderReadwatch();
 }
+// A chooser for a typed title: show the matches (the book, the film, and close
+// alternates) so you pick the exact one - overriding the guess, and sorting out a
+// title that is several different films. Resolves to the chosen candidate, {typed:1}
+// for "just the title", or null if cancelled. (Robin, 2026-11-11.)
+function rwPickMedia(input, cands) {
+  const el = uiDialogHost();
+  return new Promise((resolve) => {
+    const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
+    const sub = (c) => c.media === 'film'
+      ? `🎬 Film${c.year ? ` · ${esc(c.year)}` : ''}`
+      : `📖 Book${c.site ? ` · ${esc(c.site)}` : (c.year ? ` · ${esc(c.year)}` : '')}`;   // site already carries author · year
+    const row = (c, i) => `<button class="rwpick-opt" data-rwpick="${i}">
+      <span class="rwpick-cov${c.image ? '' : ' rwpick-cov-gen'}">${c.media === 'film' ? '🎬' : '📖'}${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>
+      <span class="rwpick-main"><span class="rwpick-t">${esc(c.title)}</span><span class="rwpick-sub">${sub(c)}</span></span></button>`;
+    el.innerHTML = `<div class="pal-bg"><div class="rwpick-box ui-dialog-box">
+      <div class="rwpick-h">Which “${esc(input)}”?</div>
+      <div class="rwpick-sub2">Pick the exact one, or just save the title.</div>
+      <div class="rwpick-list">${cands.map(row).join('')}</div>
+      <div class="rwpick-foot"><button class="ui-btn rwpick-typed" data-rwpick="typed">Save just “${esc(input.slice(0, 40))}”</button><button class="ui-btn cancel" data-rwpick="cancel">Cancel</button></div>
+    </div></div>`;
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
+    el.querySelectorAll('[data-rwpick]').forEach((b) => b.addEventListener('click', () => {
+      const v = b.dataset.rwpick;
+      if (v === 'cancel') close(null); else if (v === 'typed') close({ typed: 1 }); else close(cands[Number(v)] || null);
+    }));
+    document.addEventListener('keydown', onKey, true);
+  });
+}
 async function rwSave(input) {
   input = (input || '').trim(); if (!input || !state.rw) return;
   // A link (http… or a bare domain with no spaces) is fetched for its metadata;
-  // anything else is treated as a book / title recommendation - stored as-is.
+  // anything else is treated as a book / film title to look up.
   const isLink = /^https?:\/\//i.test(input) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(input);
-  const type = ['film', 'book'].includes(state.rw.addType) ? state.rw.addType : 'auto';
+  if (isLink) {
+    state.rw.saving = true; renderReadwatch();
+    try { const bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: input }) }); state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch(); toast('Saved'); }
+    catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
+    return;
+  }
+  // A typed title: fetch the candidates. If a forced type is set use just that;
+  // otherwise, when there's more than one match (e.g. a book AND a film of the same
+  // name), let you choose the exact one. A single match saves straight away.
+  const forced = ['film', 'book'].includes(state.rw.addType) ? state.rw.addType : '';
+  state.rw.saving = true; renderReadwatch();
+  let cands = [];
+  try { const d = await api('/api/lookup?multi=1&q=' + encodeURIComponent(input)); cands = (d.candidates || []); } catch {}
+  if (forced) cands = cands.filter((c) => c.media === forced);
+  state.rw.saving = false;
+  let chosen = null;
+  if (cands.length >= 2) {
+    const pick = await rwPickMedia(input, cands);
+    if (pick === null) { renderReadwatch(); return; }     // cancelled: save nothing
+    chosen = pick.typed ? null : pick;
+  } else if (cands.length === 1) { chosen = cands[0]; }
+  const media = chosen ? chosen.media : (forced || 'book');
+  const props = { title: ((chosen && chosen.title) || input).slice(0, 300), url: (chosen && chosen.url) || '', image: (chosen && chosen.image) || '', site: (chosen && chosen.site) || '', year: (chosen && chosen.year) || '', media, status: 'todo', added: new Date().toISOString() };
   state.rw.saving = true; renderReadwatch();
   try {
-    let bm;
-    if (isLink) { bm = await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: input }) }); }
-    else {
-      // Look the title up (poster/cover + year + a link), then store it. The
-      // lookup never fails hard: a blank result just gives the bare title.
-      let d = { title: input.slice(0, 300), url: '', image: '', site: '', year: '', media: type === 'auto' ? 'book' : type };
-      try { d = await api(`/api/lookup?type=${type}&q=${encodeURIComponent(input)}`); } catch {}
-      // On 'auto' the server decides which it is, so the answer's media wins.
-      const media = d.media || (type === 'auto' ? 'book' : type);
-      const props = { title: (d.title || input).slice(0, 300), url: d.url || '', image: d.image || '', site: d.site || '', year: d.year || '', media, status: 'todo', added: new Date().toISOString() };
-      bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
-    }
+    const bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
     state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch();
-    toast(isLink ? 'Saved' : (bm.props || {}).media === 'film' ? '🎬 Film added' : '📖 Book added');
+    toast(media === 'film' ? '🎬 Film added' : '📖 Book added');
   } catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
 }
 async function rwSetDone(id, done) {
