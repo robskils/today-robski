@@ -10979,7 +10979,10 @@ body[data-view="home"] .pane { max-width:none; padding:0; margin-top:0; backgrou
 .crumbbar-slim .crumbs { display:flex; align-items:center; flex-wrap:nowrap; gap:10px; min-width:0; }
 .crumbbar-slim .crumb { font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.02em; line-height:1.2; color:var(--k-mute); background:none; border:0; padding:0; max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .crumbbar-slim button.crumb:hover { color:var(--k-goldt); }
-.crumbbar-slim .crumb.cur { color:var(--k-goldt); font-weight:500; max-width:48ch; cursor:default; }
+.crumbbar-slim .crumb.cur { color:var(--k-goldt); font-weight:500; max-width:34ch; cursor:default; }
+/* A long task/note title is capped and cut with … rather than sprawling across
+   the breadcrumb - tighter still on a phone. (Robin, 2026-11-11.) */
+@media (max-width:620px){ .crumbbar-slim .crumb.cur { max-width:min(54vw, 22ch); } }
 /* The section segment (Today / <section> / page) is context, not a link - muted,
    same as the other crumbs but not interactive. */
 .crumbbar-slim .crumb-section, .note-crumbs .crumb-section { color:var(--k-mute); cursor:default; }
@@ -13252,6 +13255,14 @@ body.mailsheet-open { overflow:hidden; }
 .tcx-act:hover { color:var(--k-goldt); }
 .tcx-act.tcx-mute { color:var(--k-mute); font-weight:400; }
 .tcx-act.tcx-mute:hover { color:var(--k-goldt); }
+/* On a phone, Star / Share / Assign / Delete drop to their own full-width row as
+   four equal white-boxed buttons. (Robin, 2026-11-11.) */
+@media (max-width:620px){
+  .crumbbar-slim .tcx-acts { flex:1 1 100%; width:100%; margin-left:0; margin-top:12px; gap:8px; font-size:13px; }
+  .crumbbar-slim .tcx-act { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; text-align:center; padding:10px 4px; border:1px solid var(--glass-edge); border-radius:0; color:var(--k-ink); transition:border-color .12s, color .12s; }
+  .crumbbar-slim .tcx-act.tcx-mute { color:var(--k-mute); }
+  .crumbbar-slim .tcx-act:hover { border-color:var(--k-gold); }
+}
 .tcard-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,320px); gap:clamp(36px,4.5vw,80px); align-items:start; margin-top:22px; }
 .tcard-main { min-width:0; }
 .tcard-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }

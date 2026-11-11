@@ -9857,8 +9857,18 @@ function renderTablesList() {
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No tables in this Space yet.</div>'}</div></section>`;
   } else {
     const favTables = all.filter((tb) => tb.props && tb.props.fav);
-    const recentTables = recentItems().filter((x) => x && x.kind === 'table').map((x) => all.find((tb) => tb.id === x.id)).filter(Boolean).slice(0, 8);
-    sections = `${favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favTables)}</div></section>` : ''}${recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recentTables)}</div></section>` : ''}<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${all.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+    // Recent leads the page, just like Notes (Robin, 2026-11-11): the tables you
+    // opened most recently first, topped up with the newest by edit time so it
+    // always fills - not only the handful you happened to open.
+    const byEdit = (arr) => arr.slice().sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+    const seenT = new Set();
+    const openedT = recentItems().filter((x) => x && x.kind === 'table').map((x) => all.find((tb) => tb.id === x.id)).filter(Boolean);
+    openedT.forEach((tb) => seenT.add(tb.id));
+    const recentTables = [...openedT, ...byEdit(all).filter((tb) => !seenT.has(tb.id))].slice(0, 18);
+    const recentSec = recentTables.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recentTables)}</div></section>` : '';
+    const starredSec = favTables.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favTables)}</div></section>` : '';
+    const allSec = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All tables · ${all.length}</span><button class="sec-new" data-new-table>${t('btn.newtable')}</button></div><div class="tbl-cards">${grid(byEdit(all)) || '<div class="empty">No tables yet.</div>'}</div></section>`;
+    sections = `${recentSec}${starredSec}${allSec}`;
   }
   $('#pane').innerHTML = `<div class="kwrap kpage-cards">
     ${pageCrumb(t('title.tables'))}
@@ -13262,6 +13272,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = (v === 'space' || v === 'recent') ? v : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
   const tsf = e.target.closest && e.target.closest('[data-task-spacefilter-sel]'); if (tsf) { state.taskFilterSpace = tsf.value || ''; renderTasks(); return; }
+  if (e.target.matches && e.target.matches('[data-task-durcustom]')) { const id = e.target.dataset.taskDurcustom; const v = Math.max(5, Math.min(720, Number(e.target.value) || 0)); if (v) patchTaskProps(id, { duration: v }); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
   const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
   const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
@@ -28784,7 +28795,7 @@ document.addEventListener('click', (e) => {
   // patchTaskProps re-renders synchronously.
   { const tp = t.closest('[data-task-prio]'); if (tp) { const [tid, v] = tp.dataset.taskPrio.split(':'); const c = taskCopies(tid)[0]; patchTaskProps(tid, { priority: (c && c.props && c.props.priority) === v ? null : v }); return; } }
   { const tw = t.closest('[data-task-when]'); if (tw) { const [tid, k] = tw.dataset.taskWhen.split(':'); const c = taskCopies(tid)[0]; const rd = c && c.props && c.props.remindDays; const today = todayISO(); if (k === 'pick') { if (state.task_open) { state.task_open.datePick = true; renderTaskCard(); setTimeout(() => { const el = document.getElementById('taskcard-due'); if (el) { try { el.showPicker ? el.showPicker() : el.focus(); } catch { el.focus(); } } }, 30); } return; } if (state.task_open) state.task_open.datePick = false; let due = null; if (k === 'today') due = today; else if (k === 'tom') due = addDaysStr(today, 1); else if (k === 'week') { const wd = new Date(today + 'T00:00').getDay(); due = addDaysStr(today, (7 - wd) % 7 || 7); } patchTaskProps(tid, { due, snooze: (due && rd != null) ? addDaysStr(due, -Math.max(0, Number(rd) || 0)) : null }); return; } }
-  { const td = t.closest('[data-task-dur]'); if (td) { const [tid, v] = td.dataset.taskDur.split(':'); const c = taskCopies(tid)[0]; patchTaskProps(tid, { duration: (c && c.props && Number(c.props.duration)) === Number(v) ? null : Number(v) }); return; } }
+  { const td = t.closest('[data-task-dur]'); if (td) { const [tid, v] = td.dataset.taskDur.split(':'); if (v === 'custom') { const st = state.task_open || (state.task_open = {}); st.durCustom = !st.durCustom; renderTaskCard(); return; } const c = taskCopies(tid)[0]; patchTaskProps(tid, { duration: (c && c.props && Number(c.props.duration)) === Number(v) ? null : Number(v) }); return; } }
   { const tsx = t.closest('[data-task-status]'); if (tsx) { const [tid, v] = tsx.dataset.taskStatus.split(':'); patchTaskProps(tid, { done: false, kstatus: v === 'todo' ? '' : v }); return; } }
   { const tr = t.closest('[data-task-repeat]'); if (tr) { const [tid, v] = tr.dataset.taskRepeat.split(':'); if (v === 'custom') { if (state.task_open) { state.task_open.repCustom = true; renderTaskCard(); } return; } if (state.task_open) state.task_open.repCustom = false; patchTaskProps(tid, { repeat: v || null }); return; } }
   { const trm = t.closest('[data-task-remind]'); if (trm) { const [tid, v] = trm.dataset.taskRemind.split(':'); const c = taskCopies(tid)[0]; const due = c && c.props && c.props.due; if (v === 'off') patchTaskProps(tid, { remindDays: null, snooze: null, hideUntil: false }); else { const n = Number(v); patchTaskProps(tid, { remindDays: n, snooze: due ? addDaysStr(due, -n) : null }); } return; } }
@@ -30947,7 +30958,11 @@ function renderTaskCard() {
   const prioRow = [['First', 'P1'], ['Soon', 'P2'], ['Whenever', 'P3']].map(([l, v]) => opt(l, p.priority === v || (v === 'P3' && p.priority === 'P4'), `data-task-prio="${id}:${v}"`)).join('');
   const pickOn = !!due && due !== today && due !== tom && due !== weekEnd;
   const whenRow = [opt('Today', due === today, `data-task-when="${id}:today"`), opt('Tomorrow', due === tom, `data-task-when="${id}:tom"`), opt('This week', due === weekEnd, `data-task-when="${id}:week"`), opt('Pick a date', pickOn, `data-task-when="${id}:pick"`), opt('No date', !due, `data-task-when="${id}:none"`)].join('') + (pickOn || (state.task_open && state.task_open.datePick) ? `<span class="tcd-date">${dateFieldHtml('taskcard-due', due)}</span>` : '');
-  const durRow = [['15 min', 15], ['30 min', 30], ['1 hour', 60], ['2 hours', 120], ['Half a day', 240]].map(([l, v]) => opt(l, Number(p.duration) === v, `data-task-dur="${id}:${v}"`)).join('');
+  const durPresets = [15, 30, 60, 120, 240];
+  const durCustomOn = !!p.duration && !durPresets.includes(Number(p.duration));
+  const durRow = [['15 min', 15], ['30 min', 30], ['1 hour', 60], ['2 hours', 120], ['Half a day', 240]].map(([l, v]) => opt(l, Number(p.duration) === v, `data-task-dur="${id}:${v}"`)).join('')
+    + opt('Custom…', durCustomOn, `data-task-dur="${id}:custom"`)
+    + ((durCustomOn || (state.task_open && state.task_open.durCustom)) ? `<span class="tcd-date"><input class="sel tcd-custom-in" type="number" min="5" max="720" step="5" value="${p.duration || ''}" data-task-durcustom="${id}" placeholder="minutes" aria-label="Custom length in minutes"> min</span>` : '');
   const kst = p.kstatus || '';
   const statusRow = [opt('Not started', !kst, `data-task-status="${id}:todo"`), opt('Under way', kst === 'doing', `data-task-status="${id}:doing"`), opt('Waiting on someone', kst === 'waiting', `data-task-status="${id}:waiting"`)].join('');
   // Repeat & reminders fold.
