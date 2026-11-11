@@ -31553,7 +31553,7 @@ async function decodeToJpeg(file) {
 // to a file macOS is still materialising; fetching it directly fails with the
 // opaque "Failed to fetch". Reading it up front turns that into a clear message
 // and lets us check the size before the round-trip.
-const MAX_UPLOAD = 25 * 1024 * 1024;
+const MAX_UPLOAD = 100 * 1024 * 1024;   // 100 MB - enough for most phone video clips; bigger needs a direct-to-R2 upload (a later pass). (Robin, 2026-11-11.)
 async function postAttachment(url, file) {
   let buf = null;
   try { buf = await file.arrayBuffer(); } catch { buf = null; }
@@ -31565,7 +31565,7 @@ async function postAttachment(url, file) {
   }
   if (!buf) throw new Error('could not read that file. If it came from Photos, use Export / Save a copy first, then add it.');
   if (!buf.byteLength) throw new Error('that file came through empty. Try exporting it from Photos first.');
-  if (buf.byteLength > MAX_UPLOAD) throw new Error(`that image is ${Math.round(buf.byteLength / 1048576)} MB - too big for a note. Export a smaller copy and try again.`);
+  if (buf.byteLength > MAX_UPLOAD) throw new Error(`that file is ${Math.round(buf.byteLength / 1048576)} MB - too big to attach (the limit is 100 MB).`);
   const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': file.type || 'application/octet-stream' }, body: buf });
   if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `HTTP ${res.status}`); }
   return res.json();

@@ -5,7 +5,7 @@
 // gate as the rest of /api, so the browser fetches bytes with its Bearer token
 // and turns them into blob: URLs - the token never goes in a URL.
 
-const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
+const MAX_BYTES = 100 * 1024 * 1024; // 100 MB per file (so short video clips fit). Cloudflare's zone upload limit caps a single POST around 100 MB; bigger files would need a direct-to-R2 (presigned/multipart) upload. (Robin, 2026-11-11.)
 
 const keyFor = (blockId, attId) => `att/${blockId}/${attId}`;
 
@@ -35,15 +35,21 @@ export async function handleAttachments(request, env, url, json, err) {
     if (props === null) return err('block not found', request, 404);
     const name = (url.searchParams.get('name') || 'file').slice(0, 200);
     const type = url.searchParams.get('type') || request.headers.get('content-type') || 'application/octet-stream';
-    const buf = await request.arrayBuffer();
-    if (!buf.byteLength) return err('empty file', request);
-    if (buf.byteLength > MAX_BYTES) return err('file too large (max 25 MB)', request, 413);
+    // Stream the body straight to R2 rather than buffering it in the Worker - a
+    // 100 MB video would otherwise sit in the Worker's 128 MB of memory. The size
+    // comes from Content-Length (the client posts the exact byte length) and is
+    // confirmed against what R2 actually stored. (Robin, 2026-11-11.)
+    const clen = Number(request.headers.get('content-length') || 0);
+    if (request.headers.get('content-length') === '0') return err('empty file', request);
+    if (clen && clen > MAX_BYTES) return err('file too large (the limit is 100 MB)', request, 413);
     const attId = crypto.randomUUID();
-    await env.ATTACHMENTS.put(keyFor(blockId, attId), buf, {
+    const stored = await env.ATTACHMENTS.put(keyFor(blockId, attId), request.body, {
       httpMetadata: { contentType: type },
       customMetadata: { name },
     });
-    const att = { id: attId, name, type, size: buf.byteLength, uploaded_at: new Date().toISOString() };
+    const size = (stored && stored.size) || clen || 0;
+    if (!size || size > MAX_BYTES) { await env.ATTACHMENTS.delete(keyFor(blockId, attId)).catch(() => {}); return err(size ? 'file too large (the limit is 100 MB)' : 'empty file', request, size ? 413 : 400); }
+    const att = { id: attId, name, type, size, uploaded_at: new Date().toISOString() };
     // With ?col=, the attachment belongs to a table cell (props.values[col] list);
     // otherwise it's a block-level attachment (props.attachments).
     const col = url.searchParams.get('col');
@@ -68,7 +74,7 @@ export async function handleAttachments(request, env, url, json, err) {
     h.set('Cache-Control', 'private, max-age=3600');
     const ct = obj.httpMetadata?.contentType || 'application/octet-stream';
     const name = (obj.customMetadata?.name || 'file').replace(/["\\\r\n]/g, '');
-    const disp = (/^image\//.test(ct) || ct === 'application/pdf') ? 'inline' : 'attachment';
+    const disp = (/^(image|video|audio)\//.test(ct) || ct === 'application/pdf') ? 'inline' : 'attachment';
     h.set('Content-Disposition', `${disp}; filename="${name}"`);
     return new Response(obj.body, { headers: h });
   }
