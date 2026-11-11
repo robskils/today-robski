@@ -807,24 +807,6 @@ function reapplyFolds(prose) {
   run(prose);
   prose.querySelectorAll(':scope > .ncols > .ncol').forEach(run);
 }
-// Never let a folded (collapsed) heading swallow content while you edit it. If you
-// start typing or press Enter with the caret in a folded heading, unfold it FIRST so
-// its hidden content is on screen before the edit lands. Without this, pressing Enter
-// at the end of a collapsed heading drops the new line between the heading and its
-// hidden content, and turning that line into a heading silently captured the content
-// under the new heading - out of sight. (Robin, 2026-11-11: a note got scrambled.)
-document.addEventListener('beforeinput', (e) => {
-  const ed = e.target && e.target.closest && e.target.closest('.prose[data-block-id][contenteditable="true"]');
-  if (!ed) return;
-  const sel = window.getSelection();
-  if (!sel || !sel.anchorNode || !ed.contains(sel.anchorNode)) return;
-  let n = sel.anchorNode; n = (n.nodeType === 1) ? n : n.parentElement;
-  const head = n && n.closest ? n.closest('h1, h2, h3') : null;
-  if (head && ed.contains(head) && head.classList.contains('folded')) {
-    setFold(ed.dataset.blockId, foldKey(head), false);
-    reapplyFolds(ed);
-  }
-});
 // A heading and the blocks beneath it step in one gentle notch per level, so a
 // note's outline reads its own hierarchy: content under an H2 lines up with the
 // H2, content under an H3 with the H3. The indent is LIVE inline margin only -
@@ -27749,10 +27731,13 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.id === 'adm-area-new') { e.preventDefault(); adminAreaAdd(); return; }
   if (e.key === 'Enter' && e.target.id === 'src-loc') { e.preventDefault(); const d = discoverState(); const q = (d.cityInput || e.target.value || '').trim(); if (q) { d.cityInput = q; discoverSuggest({ q }); } return; }
   if (e.key === 'Enter' && (e.target.id === 'timer-min' || e.target.id === 'timer-sec')) { e.preventDefault(); timerSetCustom(); return; }
-  // Enter at the very START of a heading opens an empty line ABOVE it, nudging the
-  // heading down a row - a quick way to make space above a heading without retyping
-  // it. The caret stays with the heading (which has moved down), so pressing Enter
-  // again just adds another row above. (Robin, 2026-11-11.)
+  // Enter in a heading, two tidy shortcuts:
+  //  - at the very START: open an empty line ABOVE it (make space above a heading),
+  //    caret stays with the heading, so pressing Enter again adds another row above.
+  //  - at the very END of a COLLAPSED heading: a folded heading is a closed box, so the
+  //    new line goes BELOW the whole folded section (past its hidden content), keeping
+  //    it folded - so you can add a sibling heading/line below a folded section without
+  //    opening it or getting stuck inside it. (Robin, 2026-11-11.)
   if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
     const ed = e.target.closest && e.target.closest('.prose[contenteditable="true"]');
     if (ed) {
@@ -27761,16 +27746,33 @@ document.addEventListener('keydown', (e) => {
         const node = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
         const head = node && node.closest ? node.closest('h1, h2, h3') : null;
         if (head && ed.contains(head)) {
-          const r = document.createRange(); r.selectNodeContents(head); r.setEnd(sel.anchorNode, sel.anchorOffset);
-          if (r.toString().length === 0) {   // caret is at the very start of the heading
-            e.preventDefault();
-            e.stopImmediatePropagation();   // don't let the "new line clears heading" handler demote this heading
-            const p = document.createElement('p'); p.appendChild(document.createElement('br'));
-            head.parentNode.insertBefore(p, head);
-            const nr = document.createRange(); nr.setStart(head, 0); nr.collapse(true);   // caret stays with the heading
-            sel.removeAllRanges(); sel.addRange(nr);
-            try { applyProseIndent(ed); } catch {}
-            ed.dispatchEvent(new Event('input', { bubbles: true }));   // autosave
+          const rngStart = document.createRange(); rngStart.selectNodeContents(head); rngStart.setEnd(sel.anchorNode, sel.anchorOffset);
+          const atStart = rngStart.toString().length === 0;
+          const rngEnd = document.createRange(); rngEnd.selectNodeContents(head); rngEnd.setStart(sel.anchorNode, sel.anchorOffset);
+          const atEnd = rngEnd.toString().length === 0;
+          const newP = () => { const p = document.createElement('p'); p.appendChild(document.createElement('br')); return p; };
+          const land = (p) => { const nr = document.createRange(); nr.setStart(p, 0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr); try { applyProseIndent(ed); } catch {} ed.dispatchEvent(new Event('input', { bubbles: true })); };
+          if (atStart) {   // empty line ABOVE the heading; caret stays with the heading
+            e.preventDefault(); e.stopImmediatePropagation();
+            const p = newP(); head.parentNode.insertBefore(p, head);
+            const nr = document.createRange(); nr.setStart(head, 0); nr.collapse(true); sel.removeAllRanges(); sel.addRange(nr);
+            try { applyProseIndent(ed); } catch {} ed.dispatchEvent(new Event('input', { bubbles: true }));
+            return;
+          }
+          if (atEnd && head.classList.contains('folded')) {   // new HEADING below the whole folded section
+            e.preventDefault(); e.stopImmediatePropagation();
+            const section = [head, ...proseSiblingsUnder(head)];
+            const last = section[section.length - 1];
+            // A new HEADING (not a paragraph): it ENDS the fold, so the new line is always
+            // visible and nothing you type can vanish into the folded section. Its level
+            // breaks out to the section that CONTAINS this folded one (its nearest higher
+            // heading), so Enter below a folded sub-section starts a new peer of its
+            // parent - e.g. a new date H2 below a folded H3. (Robin, 2026-11-11.)
+            let tag = head.tagName;
+            for (let pv = head.previousElementSibling; pv; pv = pv.previousElementSibling) { const l = HLVL[pv.tagName]; if (l && l < HLVL[head.tagName]) { tag = pv.tagName; break; } }
+            const h = document.createElement(tag); h.appendChild(document.createElement('br'));
+            last.parentNode.insertBefore(h, last.nextSibling);
+            land(h);
             return;
           }
         }
