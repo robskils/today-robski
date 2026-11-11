@@ -5769,7 +5769,6 @@ function renderNav() {
 function renderAppFoot() {
   const el = document.getElementById('app-foot'); if (!el) return;
   const v = state.view || {};
-  const name = (state.me && (state.me.name || state.me.email)) || '';
   const html = `<div class="app-foot-row">`
     + `<span class="aff-mark">Kaya<span class="aff-dot">.</span></span>`
     + `<span class="aff-sp"></span>`
@@ -5778,7 +5777,6 @@ function renderAppFoot() {
     + (state.me && state.me.id === 1 ? `<button class="aff${v.type === 'admin' ? ' on' : ''}" data-open-admin>${t('nav.admin')}</button>` : '')
     + `<button class="aff" data-open-guide>${t('nav.guide')}</button>`
     + `<button class="aff" data-open-getstarted>Welcome</button>`
-    + (name ? `<span class="aff-name">${esc(name)}</span>` : '')
     + `</div>`;
   if (el.__h !== html) { el.__h = html; el.innerHTML = html; }
 }
