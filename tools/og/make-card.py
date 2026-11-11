@@ -21,7 +21,7 @@ except Exception:
 
 REPO  = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 FONTS = os.path.join(REPO, "public", "fonts")
-OUT   = os.path.join(REPO, "public", "brand", "og-image.v4.png")
+OUT   = os.path.join(REPO, "public", "brand", "og-image.v5.png")
 TMP   = tempfile.mkdtemp(prefix="kaya-og-")
 
 # ---- copy: the live homepage hero line (home.html h1) ----
@@ -31,8 +31,8 @@ HEADLINE_2 = "Kaya makes them one."             # gold,  Cormorant 300 italic
 DOMAIN     = "KAYA.SO"
 
 # ---- brand tokens (home.html :root) as oklch(L C H) ----
-GROUND_OK   = (0.28, 0.04, 155)   # --k-deep (the site's forest band)
-GROUND_L_OK = (0.34, 0.045, 150)  # a touch lighter, for the top-left whisper
+GROUND_OK   = (0.24, 0.05, 270)   # deep night-indigo (the cool wash), not forest
+GROUND_L_OK = (0.30, 0.055, 268)  # a touch lighter, for the top-left whisper
 IVORY_OK    = (0.975, 0.012, 85)  # --k-ondeep
 GOLD_OK     = (0.74, 0.12, 76)    # --k-gold (dark-ground variant)
 
