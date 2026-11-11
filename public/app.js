@@ -9603,7 +9603,7 @@ function homeCalBodyHtml(off) {
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const note = it.kind === 'event' ? (it.location || '') : '';
-    return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.eventId || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><span class="home-cal-sq"></span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
+    return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.eventId || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
   const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
@@ -13444,6 +13444,14 @@ function renderAreaV4() {
     // nothing happened. (Robin: it should just open.)
     return `<div class="av3-ncard" data-open-note="${n.id}" role="button" tabindex="0"><div class="av3-nc-top"><span class="av3-nc-tag">${esc(tag)}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(n.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(av3Text(n.body).slice(0, 180))}</div></div>`;
   };
+  // Tables share the note card's shape (Robin, 2026-11-11), set apart only by the
+  // gold ▦ in the tag and the column names as the preview. Opens as a table.
+  const tableCard = (tb) => {
+    const p = tb.props || {};
+    const when = timeAgo(Date.parse(tb.updated_at || tb.created_at || '') || Date.now());
+    const cols = (p.columns || []).map((c) => (c && c.name || '').trim()).filter(Boolean);
+    return `<div class="av3-ncard" data-open-table="${tb.id}" role="button" tabindex="0"><div class="av3-nc-top"><span class="av3-nc-tag"><span class="ico-tbl">▦</span> Table</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(tb.title || 'Untitled')}</div><div class="av3-nc-ex">${esc(cols.join(' · '))}</div></div>`;
+  };
   const noteReaderHtml = () => {
     if (!st.note) return ''; const n = notes.find((x) => x.id === st.note); if (!n) return '';
     const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
@@ -13552,7 +13560,10 @@ function renderAreaV4() {
     const sortChip = (key, label) => { const on = st.sort.key === key; const arrow = on ? (st.sort.dir === 1 ? '↓' : '↑') : ''; return `<span class="av4-nsort${on ? ' on' : ''}" data-av4-sort="${key}">${label} <span class="av4-nsort-a">${arrow}</span></span>`; };
     content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Recent')}${sortChip('az', 'A to Z')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'tables') {
-    content = `<div class="av4-pane">${tables.length ? `<div class="tbl-cards">${tables.map((tb) => `<button class="tbl-card" data-open-table="${tb.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(tb.title || 'Untitled')}</span></button>`).join('')}${canEdit ? `<button class="tbl-card tbl-card-add" data-area-add-table><span class="tc-ic">＋</span><span class="tc-t">New table</span></button>` : ''}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
+    // Tables use the same rich cards as Notes (noteCard spots kind==='table' and
+    // marks it with the gold ▦). Add is via "+ Add to this Space" and the empty
+    // state, exactly like Notes. (Robin, 2026-11-11: match the other cards.)
+    content = `<div class="av4-pane">${tables.length ? `<div class="av3-cards">${tables.map(tableCard).join('')}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'mail') {
     const s = streamItems();
     content = `<div class="av4-pane">${s.length ? s.map(streamRow).join('') : '<div class="av3-empty">No mail filed to this Space.</div>'}</div>`;
