@@ -27766,20 +27766,20 @@ document.addEventListener('keydown', (e) => {
             try { applyProseIndent(ed); } catch {} ed.dispatchEvent(new Event('input', { bubbles: true }));
             return;
           }
-          if (atEnd && head.classList.contains('folded')) {   // new HEADING below the whole folded section
+          if (atEnd && head.classList.contains('folded')) {   // Enter at the end of a COLLAPSED heading
             e.preventDefault(); e.stopImmediatePropagation();
+            // Open the section and start a plain NORMAL line at the end of it - so Enter
+            // adds ordinary text below a folded heading, not another heading, and not a
+            // line trapped between the heading and its hidden content. (A plain line can
+            // only stay visible once the section is open; otherwise the fold would hide
+            // it.) (Robin, 2026-11-11: "a new line with normal text, not the header text".)
             const section = [head, ...proseSiblingsUnder(head)];
             const last = section[section.length - 1];
-            // A new HEADING (not a paragraph): it ENDS the fold, so the new line is always
-            // visible and nothing you type can vanish into the folded section. Its level
-            // breaks out to the section that CONTAINS this folded one (its nearest higher
-            // heading), so Enter below a folded sub-section starts a new peer of its
-            // parent - e.g. a new date H2 below a folded H3. (Robin, 2026-11-11.)
-            let tag = head.tagName;
-            for (let pv = head.previousElementSibling; pv; pv = pv.previousElementSibling) { const l = HLVL[pv.tagName]; if (l && l < HLVL[head.tagName]) { tag = pv.tagName; break; } }
-            const h = document.createElement(tag); h.appendChild(document.createElement('br'));
-            last.parentNode.insertBefore(h, last.nextSibling);
-            land(h);
+            setFold(ed.dataset.blockId, foldKey(head), false);   // unfold, so the content + new line are visible
+            const p = newP();
+            last.parentNode.insertBefore(p, last.nextSibling);
+            reapplyFolds(ed);
+            land(p);
             return;
           }
         }

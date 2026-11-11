@@ -91,6 +91,11 @@
   border-color:var(--glass-edge); box-shadow:none;
 }
 :root[data-light] .knav-bar { border-bottom:1px solid var(--glass-edge); }
+/* The top menubar is OPAQUE, not glass: scrolled note content used to show through it
+   (a video/image bleeding up behind the bar). Now the page stops cleanly at the bottom
+   of the menubar, matching the opaque tab strip just below it. The floating footer and
+   capture pills keep their glass. (Robin, 2026-11-11: "stop at the bottom of the menubar".) */
+:root[data-light] .knav-bar { background:var(--k-bg); background-image:none; -webkit-backdrop-filter:none; backdrop-filter:none; }
 :root[data-light] .knav-bottom { border-top:1px solid var(--glass-edge); }
 :root[data-light] .cap-bar { border:1px solid var(--glass-edge); color:var(--k-ink); }
 :root[data-light] .cap-bar.cap-dim { opacity:1; }
