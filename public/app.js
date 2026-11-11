@@ -6957,7 +6957,6 @@ function renderPracticeCard() {
     streak ? `<span class="pc-chip">${streak} day${streak === 1 ? '' : 's'}${a.avoid ? ' clean' : ''}</span>` : '',
   ].filter(Boolean).join('');
   $('#pane').innerHTML = `${crumb}
-    <div class="page-kicker" style="--h:${hue}">Practice</div>
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1>
       <div class="pc-head-act"><button class="ghost" data-prc-edit="${a.id}" title="Edit this practice">✎ Edit</button></div></div>
     ${chips ? `<div class="pc-meta">${chips}</div>` : ''}
