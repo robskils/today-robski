@@ -87,7 +87,15 @@
   border-color:var(--glass-edge); box-shadow:none;
 }
 :root[data-light] .knav-bar { border-bottom:1px solid var(--glass-edge); }
-:root[data-light] .knav-bottom { border-top:1px solid var(--glass-edge); }
+/* Menu · Capture · Search sit inside a floating white-rimmed glass box, lifted
+   clear of the home indicator. (Robin, 2026-11-11: "a white box around Menu,
+   Capture and Search".) */
+:root[data-light] .knav-bottom {
+  left:12px; right:12px; bottom:max(10px, env(safe-area-inset-bottom));
+  height:62px; padding:0 18px; align-items:center;
+  border:1px solid rgba(255,255,255,.78);
+}
+:root[data-light] .knav-bottom .knav-b-set { margin-top:0; }
 :root[data-light] .cap-bar { border:1px solid var(--glass-edge); color:var(--k-ink); }
 :root[data-light] .cap-bar.cap-dim { opacity:1; }
 :root[data-light] .cap-bar * { color:var(--k-ink); opacity:1; }

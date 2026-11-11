@@ -15119,10 +15119,11 @@ async function openCalendar(dateStr) {
   const [y, m] = base.split('-').map(Number);
   // weekAnchor = the first day of the rolling week window (today by default),
   // kept separate from `selected` so clicking a day doesn't shift the window.
-  // Modes are now Day (a scrollable list) and Month. Old saved 'week' maps to Day.
-  // §25: the three views are List · Week · Month. The calendar opens in List by
-  // default, whatever was last used. (Robin, 2026-11-05.)
-  const startMode = 'list';
+  // §25: the three views are List · Week · Month. It reopens in whichever you
+  // last used - setCalMode persists it to life.calMode. (Robin, 2026-11-11: "come
+  // back to whatever view I last had it on", reversing the always-List default.)
+  let startMode = 'list';
+  try { const saved = localStorage.getItem('life.calMode'); if (saved === 'list' || saved === 'week' || saved === 'month') startMode = saved; } catch {}
   state.cal = { y, m: m - 1, selected: base, weekAnchor: todayISO(), mode: startMode, agendaDays: 30, agendaBack: 0, events: [], error: null, editing: null, adding: false };
   state.view = { type: 'calendar' };
   renderNav(); renderCalendar();
@@ -15761,6 +15762,7 @@ function showCalForm(ev) {
     <div class="ce-foot">
       <button class="add-btn wide ce-submit" type="submit">${ev ? 'Save' : 'Add to calendar'}</button>
       <button type="button" class="ghost ce-cancel" data-cal-close>Close</button>
+      ${ev ? '<button type="button" class="ce-del-btn" data-cal-del>Delete</button>' : ''}
     </div></form>`;
   $('#ce-title').focus();
 }
