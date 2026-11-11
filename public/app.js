@@ -764,11 +764,25 @@ function proseEditor(body, key, id, readOnly) {
 const HLVL = { H1: 1, H2: 2, H3: 3 };
 function proseFolds() { try { return JSON.parse(localStorage.getItem('life.prose.folds')) || {}; } catch { return {}; } }
 function getFolds(blockId) { const f = proseFolds()[blockId]; return Array.isArray(f) ? f : []; }
-// A heading's fold is keyed by its TEXT, not its position - so adding, removing or
-// reordering headings can never leave a saved fold pointing at the wrong heading and
-// hiding the wrong content. (Robin, 2026-11-11: editing by a folded heading scrambled
-// a whole note because the fold index had shifted under it.)
-function foldKey(h) { return ((h && h.textContent) || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+// A heading's fold is keyed by its TEXT (qualified by its parent heading), not its
+// position - so adding, removing or reordering headings can never leave a saved fold
+// pointing at the wrong heading. The parent qualifier means two sub-sections with the
+// SAME name under different parents - e.g. "Pictures" under "22 Jan" vs under "5 Feb" -
+// fold independently and never toggle each other. It stays stable across edits: a
+// parent date's text doesn't shift when other headings are added. (Robin, 2026-11-11:
+// first editing scrambled a note via a shifted index; then same-named folds moved
+// together and the page jumped to a twin heading elsewhere.)
+function foldKey(h) {
+  if (!h) return '';
+  const norm = (el) => ((el && el.textContent) || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const self = norm(h); if (!self) return '';
+  const lvl = HLVL[h.tagName] || 1;
+  for (let n = h.previousElementSibling; n; n = n.previousElementSibling) {
+    const l = HLVL[n.tagName];
+    if (l && l < lvl) { const p = norm(n); return p ? p + '\u0001' + self : self; }
+  }
+  return self;
+}
 function setFold(blockId, key, folded) {
   if (!key) return;
   const all = proseFolds(); const cur = new Set(getFolds(blockId));
