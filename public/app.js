@@ -5338,12 +5338,10 @@ const KFOLDS = [
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
       ['Notes', 'data-open-notes', 'notes'], ['Goals', 'data-open-goals', 'goals'], ['Saved', 'data-open-readwatch', 'saved'],
-      ['Discover', 'data-open-discover', 'discover'] ] },
+      ['Discover', 'data-open-discover', 'discover'],
+      ['Money', 'data-open-money', 'financial'], ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Investments', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
   { id: 'people', label: 'People', items: [
       ['Contacts', 'data-open-contacts', 'contacts'], ['Messages', 'data-messages-page', 'contacts'], ['Connect', 'data-open-connect', 'contacts'] ] },
-  { id: 'money', label: 'Money', items: [
-      ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Money', 'data-open-money', 'financial'],
-      ['Portfolio', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
   { id: 'inner', label: 'Insight', items: [
       ['Insight', 'data-open-wellbeing', 'reflect'], ['Journal', 'data-open-journal', 'journal'], ['Coaching', 'data-open-coaching', 'coaching'],
       ['Dreams', 'data-open-dreams', 'dreams'], ['Compass', 'data-open-compass', 'compass'], ['I Ching', 'data-open-iching', 'iching'],
@@ -5358,7 +5356,7 @@ const KFOLD_VIEW = {
   area: 'spaces', areas: 'spaces',
   mail: 'tools', mailaccounts: 'tools', calendar: 'tools', tasks: 'tools', taskcard: 'tools', notes: 'tools', note: 'tools', table: 'tools', tables: 'tools', readwatch: 'tools', discover: 'tools', goals: 'tools', goalcard: 'tools', bucketcard: 'tools',
   contacts: 'people', contactcard: 'people', messages: 'people', connect: 'people', friends: 'people', daybookpeople: 'people',
-  money: 'money', financial: 'money',
+  money: 'tools', financial: 'tools',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner',
   reviews: 'reviews', reviewcard: 'reviews',
 };
