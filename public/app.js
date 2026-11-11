@@ -917,16 +917,29 @@ function normalizeColumns(prose) {
     row.remove();
   });
 }
-// Which heading row a gutter press sits on (the same gutter band the fold tap
-// uses), or null if the press isn't in a heading's left margin.
-function gutterHeadAt(prose, clientX, clientY) {
-  const r = prose.getBoundingClientRect();
-  const gut = window.innerWidth <= 760 ? 28 : 48;
-  const dxl = clientX - r.left;
-  if (dxl < 0 || dxl >= gut) return null;
-  const heads = [...prose.querySelectorAll('h1, h2, h3')];
-  return heads.find((h) => { const hr = h.getBoundingClientRect(); return clientY >= hr.top - 2 && clientY <= hr.bottom + 2; }) || null;
+// Which heading's left gutter a point sits in, and WHICH affordance it's over: the
+// drag GRIP (⠿, the outer part of the gutter - drag to reorder, cursor grab) or the
+// fold ARROW (▼, nearer the heading - click to fold, cursor pointer). On a phone the
+// grip is hidden, so the whole gutter is the fold zone. Returns {head, zone} or null.
+// (Robin, 2026-11-11: distinct cursors over the grip vs the arrow, and a reliable
+// arrow click that a tiny mouse wiggle can't turn into a drag.)
+function gutterHitAt(prose, clientX, clientY) {
+  const mobile = window.innerWidth <= 760;
+  const gut = mobile ? 28 : 48;
+  // Measure the gutter against each HEADING's own left edge, not the note's - so it
+  // follows an indented sub-heading AND a heading in the right-hand column of a
+  // two-column note, whose gutter sits mid-note, not at the far left. (Robin,
+  // 2026-11-11: draggy headers worked in the left column but not the right.)
+  for (const head of prose.querySelectorAll('h1, h2, h3')) {
+    const hr = head.getBoundingClientRect();
+    if (clientY < hr.top - 2 || clientY > hr.bottom + 2) continue;   // not on this heading's row
+    const dx = clientX - hr.left;                                    // <0 = in this heading's left gutter
+    if (dx < -gut || dx > 0) continue;                               // not in its gutter (0+ is the heading text)
+    return { head, zone: (!mobile && dx < -30) ? 'grip' : 'arrow' }; // the ⠿ grip sits further left than the ▼ arrow
+  }
+  return null;
 }
+function gutterHeadAt(prose, clientX, clientY) { const h = gutterHitAt(prose, clientX, clientY); return h ? h.head : null; }
 // Work out (and show) where the dragged section would land for a pointer at x,y.
 function headDragAt(clientX, clientY) {
   if (!headDrag) return;
@@ -1022,9 +1035,14 @@ document.addEventListener('pointerdown', (e) => {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   const prose = e.target.closest && e.target.closest('.prose.prose-heads[data-block-id]');
   if (!prose) return;
-  const head = gutterHeadAt(prose, e.clientX, e.clientY);
-  if (!head) return;
+  const hit = gutterHitAt(prose, e.clientX, e.clientY);
+  if (!hit) return;
   const touch = e.pointerType === 'touch';
+  // On desktop only the GRIP starts a reorder; a press on the ARROW is a fold click
+  // and must never be hijacked into a drag (a tiny wiggle would otherwise eat it). On
+  // a phone there's no separate grip, so a press-and-hold anywhere in the gutter drags.
+  if (!touch && hit.zone !== 'grip') return;
+  const head = hit.head;
   headDrag = { prose, head, id: e.pointerId, touch, ready: !touch, moved: false, startX: e.clientX, startY: e.clientY, before: null, colTarget: null, timer: 0 };
   if (touch) {
     // Press and hold to pick a section up, so an ordinary swipe still scrolls.
@@ -1072,14 +1090,16 @@ document.addEventListener('pointercancel', (e) => {
   if (headDrag.timer) clearTimeout(headDrag.timer);
   if (headDrag.moved) endHeadDrag(false); else cleanupHeadDrag();
 });
-// Over a heading's gutter (where a press folds, or drags the section) show a grab
-// cursor instead of the text I-beam - the gutter is the note's left margin, not
-// text. Mouse only; while dragging, the grabbing cursor comes from .head-dragging-ctx.
+// Over a heading's gutter, swap the text I-beam for an affordance cursor: a grab
+// hand over the ⠿ grip (drag to reorder) and a pointer over the ▼ arrow (click to
+// fold), so each reads as what it does. Mouse only; while dragging, the grabbing
+// cursor comes from .head-dragging-ctx.
 document.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch' || headDrag) return;
   const prose = e.target.closest && e.target.closest('.prose.prose-heads[data-block-id]');
   if (!prose) return;
-  prose.style.cursor = gutterHeadAt(prose, e.clientX, e.clientY) ? 'grab' : '';
+  const hit = gutterHitAt(prose, e.clientX, e.clientY);
+  prose.style.cursor = hit ? (hit.zone === 'grip' ? 'grab' : 'pointer') : '';
 });
 // Drag an inline card to a new spot in the note. Pointer events (not HTML5 drag)
 // so it works the same with a mouse or a finger; the grip has touch-action:none
@@ -27452,6 +27472,7 @@ function palNavTargets() {
   if (modOn('today')) add('Flow', () => openToday(), 'flow day plan today');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
+  add('Spaces', () => openAreasList(), 'life space spaces area areas folios pillars overview all your spaces');
   if (modOn('notes')) { add('Notes', () => openNotesList(), 'note write'); add('Tables', () => openNotesList(), 'table spreadsheet'); }
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
@@ -29327,7 +29348,7 @@ document.addEventListener('click', (e) => {
   { const ar = t.closest('[data-note-area-remove]'); if (ar && state.note && state.note.current) { removeNoteArea(state.note.current.id, ar.dataset.noteAreaRemove); return; } }
   // Fold a heading by clicking the left gutter where its chevron sits (the chevron
   // is a CSS ::before, so there's no element to click - we detect the gutter by x).
-  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { if (foldSuppress && Date.now() - foldSuppress < 350) return; const r = ph.getBoundingClientRect(); const gut = window.innerWidth <= 760 ? 28 : 48; if (e.clientX - r.left < gut) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; const head = heads.find((h) => { const hr = h.getBoundingClientRect(); return e.clientY >= hr.top - 2 && e.clientY <= hr.bottom + 2; }); if (head) { e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(head), !head.classList.contains('folded')); reapplyFolds(ph); return; } } } }
+  { const ph = t.closest('.prose.prose-heads[data-block-id]'); if (ph) { if (foldSuppress && Date.now() - foldSuppress < 350) return; const hit = gutterHitAt(ph, e.clientX, e.clientY); if (hit) { const heads = [...ph.querySelectorAll('h1, h2, h3')]; e.preventDefault(); e.stopPropagation(); setFold(ph.dataset.blockId, heads.indexOf(hit.head), !hit.head.classList.contains('folded')); reapplyFolds(ph); return; } } }
   if (t.closest('[data-friends-rescan]')) { toast('Checking your contacts…'); openFriends().then(() => { const n = ((state.friends && state.friends.suggestions) || []).length; toast(n ? `${n} of your contacts ${n === 1 ? 'is' : 'are'} on Kaya` : 'No contacts on Kaya yet'); }); return; }
   if (t.closest('[data-chat-close]')) { closeChat(); return; }
   { const tf = t.closest('[data-tf-fold]'); if (tf) { toggleTfCard(tf.dataset.tfFold); return; } }

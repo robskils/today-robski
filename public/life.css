@@ -12012,7 +12012,13 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .av3-sec-add { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); white-space:nowrap; cursor:pointer; }
 .av3-sec-sign { font-family:var(--k-sans); font-weight:400; font-size:20px; color:var(--k-mute); }
 .av3-sec-b { padding:4px 0 28px; animation:kfade .35s ease; }
-.av3-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr)); gap:14px; }
+/* Notes on a Space page: four cards per row on desktop (matching the Overview
+   glances), stepping down gracefully - never more than four, even full-width.
+   (Robin, 2026-11-11.) */
+.av3-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+@media (max-width:1100px){ .av3-cards { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:760px){ .av3-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:560px){ .av3-cards { grid-template-columns:1fr; } }
 .av3-all { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-goldt); padding:14px 0 0; }
 .av3-empty { font-family:var(--k-sans); font-weight:400; font-size:15px; color:var(--k-mute); padding:6px 0; }
 .av3-empty-add { color:var(--k-goldt); cursor:pointer; margin-left:4px; }
