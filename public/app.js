@@ -9693,7 +9693,7 @@ function homeTodayTabDefs() {
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
-  if (reflectOn()) defs.push(['reflections', 'Insights', 0, false]);
+  if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
   defs.push(['next', 'What next', 0, false]);
   return defs;
 }
