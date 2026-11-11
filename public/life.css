@@ -10387,7 +10387,15 @@ body[data-view="goalcard"] .pane { max-width:none; padding:0; margin-top:0; back
      below it, so the "Set down" button never hides behind the footer. (Robin, 2026-11-08.) */
   .cap-drawer { top:48px; bottom:88px; left:0; transform:translateY(0); width:100%; max-width:none; max-height:none; padding:20px 18px 24px; animation:capup-m .4s cubic-bezier(.2,.7,.2,1); }
   .cap-hint-extra { display:none; }
-  .cap-kinds { padding-top:14px; gap:8px 16px; }
+  .cap-kinds { padding-top:14px; gap:10px; }
+  /* Bigger, boxed, gold type (Task/Event/Note) and field (First/Soon/Later) chips
+     on mobile - each reads as a tappable button: gold outline, gold fill when
+     chosen. (Robin, 2026-11-11.) */
+  .cap-kind { font-size:17px; padding:9px 15px; border:1px solid var(--k-gold); color:var(--k-goldt); }
+  .cap-kind.on { background:var(--k-gold); color:var(--k-ondeep); border-color:var(--k-gold); }
+  .cap-f-picks { gap:10px; font-size:16px; }
+  .cap-f-pick { font-size:16px; padding:8px 14px; border:1px solid var(--k-gold); color:var(--k-goldt); }
+  .cap-f-pick.on { background:var(--k-gold); color:var(--k-ondeep); border-color:var(--k-gold); }
 }
 .cap-eg { background:none; border:0; padding:0; font-family:var(--k-sans); font-size:14.5px; color:var(--accent); cursor:pointer; white-space:nowrap; }
 .cap-reads-h { margin-top:16px; font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--ink-3); }
@@ -12065,7 +12073,10 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
 .av4-search-in::placeholder { color:var(--k-mute); }
 .av4-search-clear { font-family:var(--k-sans); font-weight:500; font-size:14px; color:var(--k-mute); cursor:pointer; }
 .av4-search-k { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.14em; color:var(--k-mute); white-space:nowrap; }
-.av4-tabs { position:sticky; top:68px; z-index:10; background:var(--k-bg); margin-top:8px; border-bottom:1px solid var(--k-line); display:flex; flex-wrap:wrap; gap:0 clamp(20px,3vw,44px); align-items:flex-end; }
+/* The tab bar pins flush under the header when you scroll - no gap above it.
+   top tracks the real header height (--navh), not a fixed 68px that mismatched
+   the shorter mobile header. (Robin, 2026-11-11.) */
+.av4-tabs { position:sticky; top:var(--navh,68px); z-index:10; background:var(--k-bg); margin-top:0; border-bottom:1px solid var(--k-line); display:flex; flex-wrap:wrap; gap:0 clamp(20px,3vw,44px); align-items:flex-end; }
 .av4-tab { display:flex; align-items:baseline; gap:8px; padding:18px 0 14px; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; white-space:nowrap; color:var(--k-mute); transition:color .2s ease; }
 .av4-tab:hover { color:var(--k-ink); }
 .av4-tab.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
@@ -12080,7 +12091,10 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
 .av4-glances { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; padding:30px 0; }
 @media (max-width:1100px){ .av4-glances { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media (max-width:760px){ .av4-glances { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } }
-.av4-glance { border:1px solid var(--k-line); padding:22px 22px 18px; display:flex; flex-direction:column; gap:10px; min-height:190px; box-sizing:border-box; cursor:pointer; transition:border-color .25s ease; }
+/* On a phone the Overview cards go full width, one per row. (Robin, 2026-11-11.) */
+@media (max-width:560px){ .av4-glances { grid-template-columns:1fr; } }
+.av4-glance { border:1px solid var(--k-line); padding:22px 22px 18px; display:flex; flex-direction:column; gap:10px; min-height:190px; min-width:0; box-sizing:border-box; overflow:hidden; cursor:pointer; transition:border-color .25s ease; }
+.av4-gl-title, .av4-gl-sub, .av4-gl-kind { overflow-wrap:anywhere; min-width:0; }
 .av4-glance.white { background:#fff; }
 /* Night: a white Mail card kept the theme's light text and was unreadable. Lift it
    to a lighter forest instead, so the normal ivory text stays legible. (Robin.) */
