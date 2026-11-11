@@ -8441,6 +8441,10 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .prose .ncols { display:grid; grid-template-columns:1fr 1fr; gap:38px; align-items:start; margin:16px 0; }
 .prose .ncol { min-width:0; }
 .prose .ncol > :first-child { margin-top:0; }
+/* A section stacked below another in the same column gets clear separation, so two
+   stacked headings read as distinct sections rather than running together. (Robin,
+   2026-11-11: stacking sections in a column.) */
+.prose .ncol > :is(h1,h2,h3):not(:first-child) { margin-top:32px; }
 @media (max-width:760px){ .prose .ncols { grid-template-columns:1fr; gap:0; margin:0; } }
 .prose h1 { font-family:var(--k-serif); font-size:35px; font-weight:500; margin:22px 0 10px; --hsize:35px; }
 .prose h2 { font-family:var(--k-serif); font-size:29px; font-weight:500; margin:17px 0 8px; --hsize:29px; }

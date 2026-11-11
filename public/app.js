@@ -962,16 +962,20 @@ function headDragAt(clientX, clientY) {
     if (colTarget && (colTarget === headDrag.head || section.includes(colTarget))) colTarget = null;
   }
   if (colTarget) { headDrag.colTarget = colTarget; colTarget.classList.add('head-col-drop'); return; }
-  // Otherwise the section lands between two blocks of text, or right at the top.
-  const blocks = [];
-  for (const c of prose.children) {
-    if (c.classList.contains('ncols')) c.querySelectorAll(':scope > .ncol').forEach((col) => { const rr = col.getBoundingClientRect(); if (clientX >= rr.left && clientX <= rr.right) blocks.push(...col.children); });
-    else blocks.push(c);
-  }
-  const cands = blocks.filter((b) => !section.includes(b) && b.offsetParent !== null);
+  // Otherwise the section lands inside whichever CONTAINER the pointer is over - a
+  // column (so it stacks INSIDE that column, half width, under the section above) or
+  // the note itself (full width) - either before a block or at that container's end.
+  // Dropping at a column's end used to fall through to the note and flatten the whole
+  // row to full width. (Robin, 2026-11-11: stack sections in a column, reposition freely.)
+  let container = prose;
+  prose.querySelectorAll(':scope > .ncols > .ncol').forEach((col) => {
+    const rr = col.getBoundingClientRect();
+    if (clientX >= rr.left && clientX <= rr.right && clientY >= rr.top - 60 && clientY <= rr.bottom + 60) container = col;
+  });
+  const cands = [...container.children].filter((b) => !b.classList.contains('ncols') && !section.includes(b) && b.offsetParent !== null);
   let target = null;
   for (const b of cands) { const rr = b.getBoundingClientRect(); if (clientY < rr.top + rr.height / 2) { target = b; break; } }
-  headDrag.before = target;
+  headDrag.before = target; headDrag.container = container;
   if (target) target.classList.add('head-drop');
   else if (cands.length) cands[cands.length - 1].classList.add('head-drop-end');
 }
@@ -984,6 +988,7 @@ function endHeadDrag(commit) {
   const section = sectionNodes(dragHead);
   const colTarget = headDrag.colTarget || null;
   const vTarget = headDrag.before || null;
+  const container = headDrag.container || prose;   // the column (or the note) the drop lands in
   cleanupHeadDrag();
   if (!commit) return;
   if (colTarget && colTarget.parentNode === prose && dragHead.parentNode === prose && !section.includes(colTarget)) {
@@ -992,7 +997,7 @@ function endHeadDrag(commit) {
     if (vTarget && section.includes(vTarget)) return;   // dropped onto its own section: no-op
     const frag = document.createDocumentFragment();
     section.forEach((n) => frag.appendChild(n));         // detach the section as one unit
-    if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else prose.appendChild(frag);
+    if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else container.appendChild(frag);
   } else { return; }
   normalizeColumns(prose);
   // Fold state is keyed by heading position, which just changed - clear this note's
