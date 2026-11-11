@@ -8137,7 +8137,7 @@ function renderCapBar(force) {
   const modeTabs = '<span class="cap-eyebrow"><span class="cap-l-wide">Set it down</span><span class="cap-l-phone">Capture</span></span>';
   const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div><div class="cap-media"><label class="cap-media-btn"><input type="file" accept="image/*" capture="environment" hidden data-cap-photo>Take a photo</label><button type="button" class="cap-media-btn" data-cap-scan>Scan</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
-    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close title="Close" aria-label="Close">✕</button></div>
+    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close aria-label="Close">Close</button></div>
     ${bodyHtml}
   </div>`;
   if (c.mode === 'pad') {
