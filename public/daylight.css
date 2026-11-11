@@ -606,7 +606,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   :root[data-light] .knav-bottom .knav-b-contents,
   :root[data-light] .knav-bottom .knav-b-find,
   :root[data-light] .knav-bottom .knav-b-set {
-    height:auto; min-height:42px; padding:0 16px; align-self:center;
+    height:auto; min-height:42px; padding:0 16px; align-self:center; margin-top:5px;
     display:inline-flex; align-items:center; justify-content:center;
     border:1px solid rgba(255,255,255,.78); border-radius:0;
     background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
