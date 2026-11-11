@@ -32261,7 +32261,11 @@ async function saveProse(key, rawHtml, blockId) {
   // caret and eat what's being typed.
   if (el && !focused) {
     const display = decorateProse(html);
-    if (el.innerHTML !== display) { el.innerHTML = display; hydrateEmbeds(); }
+    // Re-fetch inline-image bytes and re-apply folds after rebuilding the HTML: the
+    // saved body holds images as <img data-att-inline> with NO src, so without
+    // loadInlineImages every inline picture would blank out to a dashed placeholder.
+    // (Robin, 2026-11-11: removing a file chip made the attached images disappear.)
+    if (el.innerHTML !== display) { el.innerHTML = display; hydrateEmbeds(); loadInlineImages(); setupFolds(); }
   }
   try { const upd = await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ body: html }) }); if (isCurrent && cur && upd && upd.updated_at) cur.updated_at = upd.updated_at; } catch (e) { toast(e.message); }
 }
