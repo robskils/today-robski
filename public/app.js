@@ -13265,7 +13265,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = (v === 'space' || v === 'recent') ? v : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
-  if (e.target.closest && e.target.closest('[data-task-recentdir]')) { state.taskRecentDir = (state.taskRecentDir === 'old') ? 'new' : 'old'; try { localStorage.setItem('life.taskRecentDir', state.taskRecentDir); } catch {} renderTasks(); return; }
+  const tsf = e.target.closest && e.target.closest('[data-task-spacefilter-sel]'); if (tsf) { state.taskFilterSpace = tsf.value || ''; renderTasks(); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
   const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
   const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
@@ -16388,6 +16388,9 @@ function sizeTodayGrid() {
   grid.style.height = Math.max(380, window.innerHeight - top - 14) + 'px';
 }
 window.addEventListener('resize', () => { if (state.view && state.view.type === 'today') sizeTodayGrid(); });
+// Crossing the phone breakpoint flips the Tasks toolbar (Space dropdown vs the
+// side list) and forces the list over the board - re-render so it keeps up.
+try { window.matchMedia('(max-width:820px)').addEventListener('change', () => { if (state.view && state.view.type === 'tasks') renderTasks(); }); } catch {}
 // The Tracker tab: every tracked practice, grouped by page, with today's
 // tick, a 7-day dot row and its streak. The habit history lives here, off the day.
 // Each page can carry a check-in practice; the area then says, plainly and
@@ -20518,7 +20521,8 @@ function renderTasks() {
   const inPileAll = (id) => id === 'done' ? doneT : id === 'snoozed' ? snoozedT : id === 'all' ? openVis : openVis.filter((t) => 'p' + txPriBucket(t) === id);
   const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
   const groupBy = taskGroupBy();
-  const board = tasksBoardOn();
+  const mobile = !!(window.matchMedia && window.matchMedia('(max-width:820px)').matches);
+  const board = tasksBoardOn() && !mobile;   // Board reads poorly on a phone - the list is forced there (Robin, 2026-11-11)
   if (state.taskRecentDir == null) { try { state.taskRecentDir = localStorage.getItem('life.taskRecentDir') || 'new'; } catch { state.taskRecentDir = 'new'; } }
   const recentDir = (state.taskRecentDir === 'old') ? 'old' : 'new';
   const recentToggle = groupBy === 'recent' ? `<button class="tx-recentdir" data-task-recentdir title="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}" aria-label="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}">${recentDir === 'new' ? '↓' : '↑'}</button>` : '';
@@ -20538,7 +20542,8 @@ function renderTasks() {
       : `<span class="tx-row-due${late ? ' late' : ''}">${esc(due)}</span>`;
     return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${prioL ? `<span class="tx-row-prio">${prioL}</span>` : ''}${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button>${tail}</div>`;
   };
-  const inPile = inPileAll(selPile).filter(matchQ);
+  const spaceFilter = state.taskFilterSpace || '';   // '' = all; else only that Space's tasks (desktop: click the By Space list; mobile: the dropdown). Robin, 2026-11-11.
+  const inPile = inPileAll(selPile).filter(matchQ).filter((t) => !spaceFilter || (txSpaceName(t) || 'No Space') === spaceFilter);
   // Dated tasks float up (late + soonest first), undated below, with a recency
   // tiebreak. Shared by By Priority and (as the inner sort) By Space. (Robin.)
   const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
@@ -20576,15 +20581,24 @@ function renderTasks() {
   const spSort = state.taskSpaceSort || (state.taskSpaceSort = { key: 'count', dir: -1 });
   const spaceRows = Object.entries(bySpace).sort((a, b) => spSort.key === 'count' ? ((a[1] - b[1]) * spSort.dir || a[0].localeCompare(b[0])) : a[0].localeCompare(b[0]) * spSort.dir);
   const spArrow = (k) => spSort.key === k ? `<span class="tx-side-dir">${spSort.dir > 0 ? '↑' : '↓'}</span>` : '';
-  const spaceBody = `<div class="tx-side-body">${spaceRows.map(([s, n]) => `<div class="tx-side-row"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></div>`).join('') || '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
+  // Click a Space to show only its tasks on the left; "All Spaces" clears it.
+  // The clicked one stays lit (Robin, 2026-11-11). Counts stay the full counts so
+  // you can still see and switch between every Space while one is filtered.
+  const spaceBody = `<div class="tx-side-body">${spaceRows.length ? `<button class="tx-side-row tx-side-all${!spaceFilter ? ' on' : ''}" data-task-spacefilter=""><span class="tx-side-rt">All Spaces</span><span class="tx-side-rn">${openVis.length}</span></button>${spaceRows.map(([s, n]) => `<button class="tx-side-row${spaceFilter === s ? ' on' : ''}" data-task-spacefilter="${esc(s)}"><span class="tx-side-rt">${esc(s)}</span><span class="tx-side-rn">${n}</span></button>`).join('')}` : '<div class="tx-side-empty">No open tasks.</div>'}</div>`;
   const sidePanel = `<div class="tx-side-panel"><div class="tx-side-h2"><span class="tx-side-hl">By Space</span><span class="tx-side-n">${spaceRows.length}</span><span class="tx-side-sorts"><button class="tx-side-sort${spSort.key === 'az' ? ' on' : ''}" data-task-spsort="az" title="Sort A–Z">A${spArrow('az')}</button><button class="tx-side-sort${spSort.key === 'count' ? ' on' : ''}" data-task-spsort="count" title="Sort by number of tasks">#${spArrow('count')}</button></span></div>${spaceBody}</div>`;
+  // Mobile has no side list, so a Space dropdown carries the same filter. Spaces
+  // ordered with the busiest first. (Robin, 2026-11-11.)
+  const spaceSelect = `<select class="sel tx-spacefilter" data-task-spacefilter-sel aria-label="Filter by Space"><option value="">All Spaces</option>${[...spaceRows].sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0])).map(([s, n]) => `<option value="${esc(s)}"${spaceFilter === s ? ' selected' : ''}>${esc(s)} · ${n}</option>`).join('')}</select>`;
   $('#pane').innerHTML = `<div class="kpage-tasks">${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.tasks') }])}<div class="tx-grid">
     <div class="tx-main">
       <div class="nx-eyebrow">Plans · Tasks</div>
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
-      <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board && selPile !== 'snoozed' ? '' : orders}</div></div>
-      <button class="tx-addbtn" data-task-new>${t('task.add')}</button>
+      <div class="tx-piles-row">${piles}</div>
+      <div class="tx-toolbar">
+        <button class="tx-addbtn" data-task-new>${t('task.add')}</button>
+        <div class="tx-toolbar-c">${mobile ? spaceSelect : ''}${board && selPile !== 'snoozed' ? '' : orders}${mobile ? '' : tasksViewToggle('tasks')}</div>
+      </div>
       <div class="tx-groups">${board && selPile !== 'snoozed' ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
     <aside class="tx-side">${sidePanel}</aside>
@@ -28485,6 +28499,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }
   if (t.closest('[data-task-newsave]')) { saveNewTaskPopover(); return; }
   if (t.closest('[data-task-new]')) { openNewTaskPopover(state.taskAddArea || null); return; }
+  if (t.closest('[data-task-recentdir]')) { state.taskRecentDir = (state.taskRecentDir === 'old') ? 'new' : 'old'; try { localStorage.setItem('life.taskRecentDir', state.taskRecentDir); } catch {} renderTasks(); return; }
+  { const tsf = t.closest('[data-task-spacefilter]'); if (tsf) { const v = tsf.getAttribute('data-task-spacefilter') || ''; state.taskFilterSpace = (v && v === state.taskFilterSpace) ? '' : v; renderTasks(); return; } }
   { const tdel = t.closest('[data-task-del]'); if (tdel) { deleteTaskFromPopover(tdel.dataset.taskDel); return; } }
   { const tr = t.closest('.t2-trow[data-t2-drag]'); if (tr) { if (Date.now() - t2SuppressClick < 350) return; openTaskPopover(tr.dataset.t2DragId); return; } }
   { const sb = t.closest('.t2-slot[data-slot-id]'); if (sb && !t.closest('button, a, [data-t2-resize]')) { if (Date.now() - t2SuppressClick < 350) return; t2OpenSlot(sb.dataset.slotId); return; } }

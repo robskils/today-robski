@@ -186,6 +186,9 @@
 :root[data-light] .add-btn.wide, :root[data-light] .dz-add { width:auto !important; flex:0 0 auto !important; align-self:flex-start; max-width:100%; }
 :root[data-light] .gate2-btn { width:auto; align-self:center; }
 .dz-add.done { border-color:var(--glass-edge) !important; opacity:.8; }
+/* Add a task reads as a proper button: white rim + frosted glass. (Robin, 2026-11-11.) */
+:root[data-light] .tx-addbtn { background:rgba(255,255,255,.1); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); border:1px solid rgba(255,255,255,.78); color:#fff; }
+:root[data-light] .tx-addbtn:hover { background:rgba(255,255,255,.2); border-color:#fff; color:#fff; }
 
 /* ── Every other page: panels let the sky through. No blur on these: a list can hold
    hundreds of them, and blur on that many would make scrolling crawl. ─────────── */

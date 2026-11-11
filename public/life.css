@@ -12545,7 +12545,7 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .kpage-tasks { max-width:1600px; margin:0 auto; padding:48px clamp(24px,3.5vw,64px) 0; box-sizing:border-box; }
 .tx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,340px); gap:clamp(40px,5vw,88px); animation:kfade .4s ease; }
 .tx-main { min-width:0; }
-.tx-piles { display:flex; flex-wrap:wrap; align-items:flex-end; gap:0 clamp(22px,3vw,44px); margin-top:40px; border-bottom:1px solid var(--k-line); }
+.tx-piles-row { margin-top:40px; border-bottom:1px solid var(--k-line); }
 .tx-pile { background:none; border:0; border-bottom:1px solid transparent; margin-bottom:-1px; padding:0 0 14px; cursor:pointer; text-align:left; }
 .tx-pile.on { border-bottom-color:var(--k-gold); }
 .tx-pile-top { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
@@ -12561,8 +12561,22 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .tx-order.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
 .tx-order:hover { color:var(--k-goldt); }
 .tx-add { display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--k-line); }
-.tx-addbtn { align-self:flex-start; display:inline-flex; align-items:center; gap:8px; margin:16px 0; padding:11px 20px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-ink); background:transparent; border:1px solid var(--k-line); border-radius:0; cursor:pointer; transition:border-color .12s, color .12s; }
+.tx-addbtn { align-self:center; display:inline-flex; align-items:center; justify-content:center; gap:8px; margin:0; padding:12px 22px; min-height:46px; font-family:var(--k-sans); font-weight:500; font-size:13px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; color:var(--k-ink); background:transparent; border:1px solid var(--k-line); border-radius:0; cursor:pointer; transition:border-color .12s, color .12s, background .12s; }
 .tx-addbtn:hover { border-color:var(--k-gold); color:var(--k-goldt); }
+/* The toolbar under the pile tabs: Add a task, then the Space filter (mobile) and
+   the order selector, on one row. (Robin, 2026-11-11.) */
+.tx-toolbar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 22px; }
+.tx-toolbar-c { margin-left:auto; display:flex; align-items:center; gap:14px; }
+.tx-spacefilter { max-width:230px; }
+@media (max-width:820px){
+  .tx-side { display:none; }
+  .tx-toolbar { flex-wrap:nowrap; gap:8px; }
+  .tx-toolbar-c { margin-left:0; flex:1 1 auto; gap:8px; min-width:0; }
+  .tx-toolbar-c > .sel, .tx-toolbar-c > .tx-ordersel { flex:1 1 0; min-width:0; }
+  .tx-toolbar-c .tx-ordersel .sel { flex:1 1 0; min-width:0; width:100%; }
+  .tx-spacefilter { max-width:none; }
+  .tx-addbtn { flex:none; padding:12px 16px; }
+}
 .tx-add-box { width:13px; height:13px; border:1px dashed var(--k-mute); flex:none; }
 .tx-add input { flex:1; min-width:0; font-family:var(--k-serif); font-weight:300; font-size:22px; color:var(--k-ink); background:transparent; border:0; outline:0; }
 .tx-add input::placeholder { color:var(--k-mute); }
@@ -12614,11 +12628,13 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .tx-recentdir:hover { border-color:var(--k-goldt); }
 .tx-rows-flat { margin-top:2px; }
 .tx-side-body { padding:0 0 20px; display:grid; }
-.tx-side-row { display:flex; align-items:baseline; gap:12px; padding:9px 0; }
-.tx-side-rt { flex:1; font-family:var(--k-serif); font-weight:300; font-size:21px; color:var(--k-ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.tx-side-rn { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); }
+.tx-side-row { display:flex; align-items:baseline; gap:12px; padding:9px 0; width:100%; background:none; border:0; border-radius:0; text-align:left; cursor:pointer; transition:color .12s; }
+.tx-side-rt { flex:1; font-family:var(--k-serif); font-weight:300; font-size:21px; color:var(--k-ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:color .12s; }
+.tx-side-rn { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); transition:color .12s; }
+.tx-side-row:hover .tx-side-rt { color:var(--k-goldt); }
+.tx-side-row.on .tx-side-rt, .tx-side-row.on .tx-side-rn { color:var(--k-goldt); }
 .tx-side-empty { font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); }
-@media (max-width:900px){ .tx-grid { grid-template-columns:1fr; gap:34px; } .tx-side { padding-top:0; } .tx-piles { gap:0 22px; } }
+@media (max-width:900px){ .tx-grid { grid-template-columns:1fr; gap:34px; } .tx-side { padding-top:0; } .tx-piles-row { gap:0 22px; } }
 
 /* ══ §23 Reflection hub - Lately feed + practices, on the §19 grid ══ */
 body[data-view="wellbeing"] .pane { max-width:none; padding:0; margin-top:0; background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none; border:0; box-shadow:none; }
