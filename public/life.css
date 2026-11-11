@@ -8560,7 +8560,7 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* Voice dictation: a record toggle above the editor. Pulses red while listening. */
 .j-voice { display:flex; align-items:center; gap:12px; margin:6px 0 16px; flex-wrap:wrap; }
 .j-rec-btn { display:inline-flex; align-items:center; gap:9px; white-space:nowrap; }
-.j-rec-dot { width:11px; height:11px; border-radius:0; background:var(--ink-3); flex:none; transition:background .15s; }
+.j-rec-dot { width:11px; height:11px; border-radius:50%; background:var(--ink-3); flex:none; transition:background .15s; }
 .j-rec-btn.rec-on { border-color:color-mix(in srgb,var(--danger,#c0392b) 55%,var(--line)); color:var(--danger,#c0392b); }
 .j-rec-btn.rec-on .j-rec-dot { background:var(--danger,#c0392b); animation:recpulse 1.3s ease-in-out infinite; }
 .j-rec-btn.rec-proc { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); }
@@ -10187,7 +10187,7 @@ body.night .mail-ar-replytop, :root[data-theme='dark'] .mail-ar-replytop { backg
 .cap-bar-plus { font-family:var(--k-sans); font-weight:300; font-size:20px; line-height:1; color:#d8b25e; }
 .cap-bar-t { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:19px; white-space:nowrap; opacity:.85; }
 .cap-bar-speak { margin-left:auto; display:flex; align-items:center; gap:7px; font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.22em; text-transform:uppercase; padding:6px 10px; border:1px solid rgba(246,241,230,.22); }
-.cap-bar-dot { width:6px; height:6px; background:#d8b25e; flex:none; }
+.cap-bar-dot { width:6px; height:6px; border-radius:50%; background:#d8b25e; flex:none; }
 .cap-bar-kbd { font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.2em; opacity:.55; }
 
 /* Drawer */
@@ -11415,7 +11415,7 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
 .jx-foot-status { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); flex:1; min-width:200px; }
 .jx-speak { display:inline-flex; align-items:center; gap:8px; font-family:var(--k-sans); font-weight:500; font-size:10px; letter-spacing:.24em; color:var(--k-mute); cursor:pointer; }
 .jx-speak:hover { color:var(--k-ink); }
-.jx-speak-dot { width:6px; height:6px; background:var(--k-gold); }
+.jx-speak-dot { width:6px; height:6px; border-radius:50%; background:var(--k-gold); }
 .jx-speak.on { color:var(--k-goldt); }
 .jx-speak.on .jx-speak-dot { animation:kblink 1s steps(2,start) infinite; }
 @keyframes kblink { 50% { opacity:.25; } }
@@ -12609,6 +12609,9 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .tx-side-sort.on { color:var(--k-ink); border-color:var(--k-gold); }
 .tx-side-dir { font-size:11px; color:var(--k-goldt); }
 .tx-groupsel { max-width:none; }
+.tx-ordersel { display:inline-flex; align-items:stretch; gap:8px; }
+.tx-recentdir { background:none; border:1px solid var(--k-line); border-radius:0; cursor:pointer; font-family:var(--k-sans); font-size:15px; line-height:1; color:var(--k-goldt); padding:0 12px; display:inline-flex; align-items:center; transition:border-color .14s,color .14s; }
+.tx-recentdir:hover { border-color:var(--k-goldt); }
 .tx-rows-flat { margin-top:2px; }
 .tx-side-body { padding:0 0 20px; display:grid; }
 .tx-side-row { display:flex; align-items:baseline; gap:12px; padding:9px 0; }

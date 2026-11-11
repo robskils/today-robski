@@ -5890,7 +5890,7 @@ async function quickAdd(kind) {
     // (the old on-page buttons were removed; the breadcrumb +New now covers them).
     if (state.view && state.view.type === 'today' && kind === 'task') { showQuickTask(); }
     else if (state.view && state.view.type === 'today' && kind === 'event') { showQuickEvent(); }
-    else if (kind === 'task') { state.taskAddArea = null; state.taskAdding = true; state.taskFocusArm = Date.now(); await openTasks(); renderTasks(); }
+    else if (kind === 'task') { const pa = state.taskAddArea || null; state.taskAddArea = null; await openTasks(); openNewTaskPopover(pa); }
     else if (kind === 'event') { await openCalendar(); state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }
     else if (kind === 'mail') { await openMail(); startCompose(); }
     else if (kind === 'note') { await newNote(null); }
@@ -13264,7 +13264,8 @@ document.addEventListener('input', (e) => {
   if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; clearTimeout(window.__av4qT); window.__av4qT = setTimeout(() => { if (document.querySelector('[data-av4-search]')) renderArea(); }, 140); }
 });
 document.addEventListener('change', (e) => {
-  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { state.taskGroup = tgb.value === 'space' ? 'space' : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
+  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = (v === 'space' || v === 'recent') ? v : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
+  if (e.target.closest && e.target.closest('[data-task-recentdir]')) { state.taskRecentDir = (state.taskRecentDir === 'old') ? 'new' : 'old'; try { localStorage.setItem('life.taskRecentDir', state.taskRecentDir); } catch {} renderTasks(); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
   const gw = e.target.closest && e.target.closest('[data-av4-goal-why]'); if (gw) { av4GoalSet(gw.dataset.av4GoalWhy, { why: gw.value }); return; }
   const gd = e.target.closest && e.target.closest('[data-av4-goal-date]'); if (gd) { av4GoalSet(gd.dataset.av4GoalDate, { due: gd.value || null }); return; }
@@ -16895,6 +16896,47 @@ async function deleteTaskFromPopover(id) {
   catch (e) { toast(e.message); }
 }
 
+// Add a task from the Tasks page (or the nav + / ⌥⌘N): the SAME glass popover the
+// edit path uses, but empty and creating a new block on save. Priority defaults to
+// the pile you're in (First/Soon/Whenever), the Space to the page you came from.
+// No Done, no Delete - there's nothing yet to finish or remove. (Robin, 2026-11-11:
+// "the Add Task button should open the new task popover".)
+function openNewTaskPopover(preArea) {
+  const pile = state.taskPile || 'all';
+  const defPrio = ({ p0: 'P1', p1: 'P2', p2: 'P3' })[pile] || '';
+  state.taskEdit = null;
+  let host = document.getElementById('task-editor-host');
+  if (!host) { host = document.createElement('div'); host.id = 'task-editor-host'; document.body.appendChild(host); }
+  host.innerHTML = `<div class="pe-bg" data-task-close></div>
+    <div class="pe-panel" role="dialog" aria-label="New task">
+      <div class="pe-head"><h2>New task</h2><button class="pe-x" data-task-close aria-label="Close">×</button></div>
+      <div class="pe-body">
+        <label class="pe-f"><span>Name</span><input class="sel" id="te-title" value="" placeholder="What needs doing?" autocomplete="off"></label>
+        <div class="pe-two">
+          <label class="pe-f pe-inline"><span>Priority</span><select class="sel" id="te-prio"><option value="">None</option>${PRIO_PICK.map(([v, l]) => `<option value="${v}" ${v === defPrio ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label class="pe-f pe-inline"><span>Length</span><span class="pe-durwrap"><input class="sel pe-num" id="te-dur" type="number" min="5" max="720" step="5" value="30"> min</span></label>
+        </div>
+        <label class="pe-f"><span>Space</span><select class="sel" id="te-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}" ${a.id === preArea ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select></label>
+      </div>
+      <div class="pe-foot"><button class="ghost" data-task-close>Cancel</button><button class="add-btn wide" data-task-newsave>Add task</button></div>
+    </div>`;
+  setTimeout(() => { const el = document.getElementById('te-title'); if (el) el.focus(); }, 30);
+}
+async function saveNewTaskPopover() {
+  const title = (($('#te-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
+  const props = {
+    done: false,
+    priority: ($('#te-prio') || {}).value || null,
+    area: ($('#te-area') || {}).value || null,
+    duration: Math.max(5, Math.min(720, Number(($('#te-dur') || {}).value) || 30)),
+  };
+  try {
+    const nt = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'task', title, props }) });
+    if (nt && nt.id) { state.tasks = state.tasks || []; state.tasks.unshift(nt); if (Array.isArray(state.allTasks)) state.allTasks.unshift(nt); }
+    closeTaskPopover(); toast('Task added'); renderTasks();
+  } catch (e) { toast(e.message || 'Could not add that.'); }
+}
+
 // ── view: mail ───────────────────────────────────────
 // Mail runs on the same Worker (IMAP/SMTP over Cloudflare's TCP sockets), so it's
 // just same-origin /api/mail/* with the Life token - no separate backend.
@@ -20426,7 +20468,7 @@ function commitTaskView() {
 function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
 // How the task list is arranged: 'priority' (First/Soon/Whenever sections, dated
 // tasks floated to the top of each) or 'space' (grouped by Space). (Robin, 2026-11-09.)
-function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return state.taskGroup === 'space' ? 'space' : 'priority'; }
+function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return (state.taskGroup === 'space' || state.taskGroup === 'recent') ? state.taskGroup : 'priority'; }
 function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
 function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
 function txDue(t) {
@@ -20477,12 +20519,15 @@ function renderTasks() {
   const piles = pileDefs.map(([id, label]) => `<button class="tx-pile${selPile === id ? ' on' : ''}" data-task-pile="${id}"><span class="tx-pile-top"><span class="tx-pile-l">${label}</span><span class="tx-pile-n">${inPileAll(id).length}</span></span></button>`).join('');
   const groupBy = taskGroupBy();
   const board = tasksBoardOn();
-  const orders = `<select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>`;
+  if (state.taskRecentDir == null) { try { state.taskRecentDir = localStorage.getItem('life.taskRecentDir') || 'new'; } catch { state.taskRecentDir = 'new'; } }
+  const recentDir = (state.taskRecentDir === 'old') ? 'old' : 'new';
+  const recentToggle = groupBy === 'recent' ? `<button class="tx-recentdir" data-task-recentdir title="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}" aria-label="${recentDir === 'new' ? 'Newest first' : 'Oldest first'}">${recentDir === 'new' ? '↓' : '↑'}</button>` : '';
+  const orders = `<span class="tx-ordersel"><select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option><option value="recent"${groupBy === 'recent' ? ' selected' : ''}>Recent</option></select>${recentToggle}</span>`;
   // In the All tab, priorities are mixed, so every task leads with its own First /
   // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
   // Per-row First/Soon/Whenever only when priorities are mixed in the view - i.e.
   // the All tab grouped By Space. By Priority shows it in the section header. (Robin.)
-  const showPrio = selPile === 'all' && groupBy === 'space';
+  const showPrio = selPile === 'all' && (groupBy === 'space' || groupBy === 'recent');
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
     const snz = !!(t.props.hideUntil && t.props.snooze);
@@ -20494,16 +20539,27 @@ function renderTasks() {
     return `<div class="tx-row${done ? ' done' : ''}"><span class="tx-tick${done ? ' on' : ''}" data-task-tick="${t.id}"></span><button class="tx-rowmain" data-open-task="${t.id}"><span class="tx-row-t">${esc(t.title || 'Untitled')}</span><span class="tx-row-sub">${prioL ? `<span class="tx-row-prio">${prioL}</span>` : ''}${sp ? `<span class="tx-row-sp">${esc(sp)}</span>` : ''}${meta ? `<span class="tx-row-meta">${esc(meta)}</span>` : ''}</span></button>${tail}</div>`;
   };
   const inPile = inPileAll(selPile).filter(matchQ);
+  // Dated tasks float up (late + soonest first), undated below, with a recency
+  // tiebreak. Shared by By Priority and (as the inner sort) By Space. (Robin.)
+  const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
+  const byPrio = (a, b) => (txPriBucket(a) - txPriBucket(b)) || byDate(a, b);
   let groupsHtml = '';
   if (groupBy === 'space') {
     const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
-    groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+    // Highest priority first within each Space, then by date. (Robin, 2026-11-11.)
+    groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s).sort(byPrio); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
+  } else if (groupBy === 'recent') {
+    // Most recently added or touched first (updated_at bumps on any edit or tick);
+    // the arrow flips it to oldest-first. A flat list, no grouping. (Robin, 2026-11-11.)
+    const dir = (state.taskRecentDir === 'old') ? 1 : -1;
+    const ts = (x) => String(x.updated_at || x.created_at || '');
+    const sorted = inPile.slice().sort((a, b) => dir * ts(b).localeCompare(ts(a)));
+    groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
   } else {
     // By Priority: in the All tab, First / Soon / Whenever sections; on a single
     // priority (or Done) tab, a plain list. Within every section the tasks that
     // carry a date float to the top (late and soonest first), the undated ones
     // below. (Robin, 2026-11-09.)
-    const byDate = (a, b) => { const da = (a.props.due || ''), db = (b.props.due || ''); if (da && db) return da < db ? -1 : da > db ? 1 : 0; if (da) return -1; if (db) return 1; return String(b.updated_at || '').localeCompare(String(a.updated_at || '')); };
     if (selPile === 'all') {
       const groups = [['First', 0], ['Soon', 1], ['Whenever', 2]].map(([label, b]) => [label, inPile.filter((t) => txPriBucket(t) === b).sort(byDate)]).filter(([, a]) => a.length);
       groupsHtml = groups.length ? groups.map(([label, items]) => { const key = selPile + '/pri/' + label; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${label}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') : `<div class="tx-empty">Nothing here. Add something below.</div>`;
@@ -20528,7 +20584,7 @@ function renderTasks() {
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
       <div class="tx-piles"><div class="tx-piles-row">${piles}</div><div class="tx-orders">${tasksViewToggle('tasks')}${board && selPile !== 'snoozed' ? '' : orders}</div></div>
-      <button class="tx-addbtn" data-quick-add="task">${t('task.add')}</button>
+      <button class="tx-addbtn" data-task-new>${t('task.add')}</button>
       <div class="tx-groups">${board && selPile !== 'snoozed' ? taskKanbanHtml((state.tasks || []).filter((t) => t && t.props && matchQ(t) && !(t.props.hideUntil && isSnoozed(t) && !t.props.done) && (selPile === 'all' || selPile === 'done' || 'p' + txPriBucket(t) === selPile))) : groupsHtml}</div>
     </div>
     <aside class="tx-side">${sidePanel}</aside>
@@ -28427,6 +28483,8 @@ document.addEventListener('click', (e) => {
   { const pv = t.closest('[data-prc-video]'); if (pv) { openExternal(pv.dataset.prcVideo); return; } }   // ▶ on a practice: open its video/link so you can get straight on with it
   if (t.closest('[data-task-close]')) { closeTaskPopover(); return; }
   if (t.closest('[data-task-save]')) { saveTaskPopover(); return; }
+  if (t.closest('[data-task-newsave]')) { saveNewTaskPopover(); return; }
+  if (t.closest('[data-task-new]')) { openNewTaskPopover(state.taskAddArea || null); return; }
   { const tdel = t.closest('[data-task-del]'); if (tdel) { deleteTaskFromPopover(tdel.dataset.taskDel); return; } }
   { const tr = t.closest('.t2-trow[data-t2-drag]'); if (tr) { if (Date.now() - t2SuppressClick < 350) return; openTaskPopover(tr.dataset.t2DragId); return; } }
   { const sb = t.closest('.t2-slot[data-slot-id]'); if (sb && !t.closest('button, a, [data-t2-resize]')) { if (Date.now() - t2SuppressClick < 350) return; t2OpenSlot(sb.dataset.slotId); return; } }

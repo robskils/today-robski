@@ -116,6 +116,14 @@ custom_domain = true
 [vars]
 GOOGLE_CALENDAR_ID = "robin@lumley-savile.com"
 
+# The Gemini model, in ONE place. Gemini (the only model that can read audio) does
+# voice journaling, statement parsing and the Advice video summary. Code defaults
+# to this same value, but the fallbacks drifted once - journal voice was left on
+# the retired gemini-2.0-flash and failed with "Gemini could not process the
+# recording" while statements worked. Set it here so every call site agrees; bump
+# this one line when Google retires a model. (Robin, 2026-11-11.)
+GEMINI_MODEL = "gemini-3.6-flash"
+
 # Who can be sent a sign-in code. Anything else gets the same "ok" response,
 # so the list can't be probed from outside.
 #

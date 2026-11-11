@@ -143,7 +143,7 @@ async function geminiCall(env, feature, key, { system, user, max_tokens = 500, i
   const parts = [{ text: user }, ...((images || []).map((im) => ({ inlineData: { mimeType: im.media_type, data: im.data } })))];
   const body = { contents: [{ role: 'user', parts }], generationConfig: { maxOutputTokens: max_tokens } };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  const model = env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
   });

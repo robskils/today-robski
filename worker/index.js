@@ -798,7 +798,7 @@ async function journalVoice(request, env, json, err) {
   const ask = (questions || prompt)
     ? `This spoken entry is guided by:\n${questions || prompt}\n\nTranscribe the recording, then write it up addressing these.`
     : 'Transcribe the recording, then write it up as a clean, well-ordered first-person journal entry.';
-  const model = env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const model = env.GEMINI_MODEL || 'gemini-3.6-flash';
   let res;
   try {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
