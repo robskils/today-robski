@@ -394,8 +394,14 @@
 :root[data-light] :is(.trk-dot.slip, .trk-dot.today.slip, .t2-tick-slip.on) { background:var(--k-gold); border-color:var(--k-gold); box-shadow:none; color:var(--k-deep); }
 @media (max-width:767px) {
   body[data-view="tracker"] .trk-prow { flex-wrap:wrap; row-gap:8px; }
-  body[data-view="tracker"] .trk-pname { flex:1 1 calc(100% - 110px); white-space:normal; }
-  body[data-view="tracker"] .trk-hist { width:100%; justify-content:flex-end; order:9; }
+  body[data-view="tracker"] .trk-pname { flex:1 1 auto; white-space:normal; }
+  /* The ✎ edit and the week dots share the SECOND row (right-aligned), so the name
+     line stays clean and each practice is a touch more compact. The ✎ is bigger -
+     easier to hit on a phone. A full-width zero-height pseudo forces the wrap after the
+     name. (Robin, 2026-11-11.) */
+  body[data-view="tracker"] .trk-prow::after { content:''; flex:1 0 100%; height:0; order:7; }
+  body[data-view="tracker"] .trk-hist { order:8; width:auto; margin-left:auto; justify-content:flex-end; }
+  body[data-view="tracker"] .trk-editp { order:9; align-self:center; margin:0 0 0 10px; font-size:22px; padding:2px 6px; opacity:.85; }
   body[data-view="tracker"] .trk-area-h { flex-wrap:nowrap; }
   body[data-view="tracker"] .trk-cadsel { margin-left:auto; flex:0 1 150px; max-width:150px; }
 }
