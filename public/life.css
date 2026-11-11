@@ -12554,6 +12554,15 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 /* Quick "add an event on this day" on each date line. (Robin, 2026-11-09.) */
 .cx-lh-add { margin-left:auto; align-self:center; flex:none; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0; background:transparent; border:1px solid var(--k-line); color:var(--k-mute); font-family:var(--k-sans); font-size:23px; font-weight:300; line-height:1; cursor:pointer; border-radius:0; transition:color .12s, border-color .12s; }
 .cx-lh-add:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+/* Mobile list view: drop the "Today"/"Tomorrow" tag so the whole date fits on one
+   line, shrink the date to match, and mark today with a small gold square instead.
+   (Robin, 2026-11-11.) */
+@media (max-width:760px){
+  .cx-lhead { gap:9px; }
+  .cx-lh-sub { display:none; }
+  .cx-lh-date { font-size:21px; white-space:nowrap; }
+  .cx-lhead.is-today .cx-lh-date::before { content:''; display:inline-block; width:10px; height:10px; background:var(--k-gold); margin-right:9px; vertical-align:middle; }
+}
 .cx-lrow { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:18px; align-items:baseline; padding:13px 0; border-bottom:1px solid var(--k-line); cursor:pointer; }
 .cx-lr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .cx-lr-ti { min-width:0; }
@@ -13052,6 +13061,8 @@ body.mailsheet-open { overflow:hidden; }
 .mailv2ar .mail-ar-notice { font-style:italic; color:var(--k-goldt); font-family:var(--k-serif); }
 .mailv2ar .mail-ar-right { grid-column:3; position:relative; align-self:start; padding-top:2px; white-space:nowrap; min-width:40px; text-align:right; }
 .mailv2ar .mail-ar-time { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
+/* The Space an open email is filed in, in gold just above its date. (Robin, 2026-11-11.) */
+.mailv2ar .mail-ar-space { display:block; font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); margin-bottom:3px; max-width:160px; overflow:hidden; text-overflow:ellipsis; }
 .mailv2ar.unread .mail-ar-time { color:var(--k-goldt); }
 .mailv2ar .mail-ar-tri { display:none; position:absolute; top:0; right:0; gap:14px; }
 .mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:hidden; }
