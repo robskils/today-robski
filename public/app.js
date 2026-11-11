@@ -5442,21 +5442,21 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
-        ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''], ['Tables', 'data-open-tables', ''], ['Read & Watch', 'data-open-readwatch', ''], ['Discover', 'data-open-discover', ''],
+        ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''],
+        ['Discover', 'data-open-discover', ''], ['Read & Watch', 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
-        ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''] ],
-      rows: [['Day to day', 5], ['Money', 4], ['Goals', 3]] },
+        ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
+        ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ],
+      rows: [['Day to day', 2], ['Inspire', 2], ['Money', 4], ['Goals', 3], ['Reviews', 5]] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
-    { id: 'plans', label: 'Reviews', about: 'Look back, and plan the next stretch', tools: [
-      ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ] },
   ];
 }
 // Which group the current view belongs to, so its name shows ink in the top line.
 const KNAV_VIEW = {
   area: 'spaces', areas: 'spaces',
   discover: 'keep', today: 'keep', practices: 'keep', practicecard: 'keep',
-  table: 'keep', tables: 'keep', readwatch: 'keep',
+  readwatch: 'keep',
   goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'plans', reviewcard: 'plans',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'plans',
   money: 'keep', financial: 'keep',
@@ -5553,7 +5553,7 @@ function navGroupsHtml(v) {
   const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><em class="brand-word">Kaya<i class="brand-dot">.</i></em></button>`;
   // §71: the four daily tools, one click each in the bar (desktop). Each lights up
   // on its own page; Mail carries its to-sort count. (Robin, 2026-11-05.)
-  const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
+  const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Tables', 'data-open-tables', ['tables', 'table'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
   const primTabs = PRIMS.filter(([l, a, views, mod]) => modOn(mod)).map(([label, attr, views]) => {
     const here = views.includes((v && v.type) || '');
     const n = label === 'Mail' ? mailHeaderCount() : (label === 'Messages' && typeof navUnread === 'function') ? navUnread() : 0;
@@ -5637,10 +5637,10 @@ function navGroupsHtml(v) {
   // ── Contents overlay (groups only; a quiet utility footer) ──
   let contents = '';
   if (kn.contents) {
-    // The mobile Menu lists the area groups in Robin's order (2026-11-07):
-    // Library, Plans, Insight, Spaces, Money - distinct from the desktop bar,
-    // where Spaces leads. The Roman numerals follow this order.
-    const MOB_GROUP_ORDER = ['keep', 'plans', 'inner', 'spaces', 'money'];
+    // The mobile Menu lists the area groups in Robin's order: Tools, Insight,
+    // Spaces - distinct from the desktop bar, where Spaces leads. (Money and
+    // Reviews folded into Tools, 2026-11-11.) The Roman numerals follow this order.
+    const MOB_GROUP_ORDER = ['keep', 'inner', 'spaces'];
     const mobGroups = [...groups].sort((a, b) => {
       const ia = MOB_GROUP_ORDER.indexOf(a.id), ib = MOB_GROUP_ORDER.indexOf(b.id);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
@@ -27206,7 +27206,7 @@ function renderTable() {
         ? `<textarea class="card-title card-title-ed" rows="1" data-cell="${r.id}:${titleCol.id}" placeholder="Untitled" aria-label="${esc(titleCol.name || 'Title')}">${esc(title)}</textarea>`
         : `<h1 class="card-title">${esc(title)}</h1>`;
       const fieldCols = titleEditable ? c.slice(1) : c;
-      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
+      $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'table', attr: 'data-back-table' }, { label: title }], (r.props && r.props.area) || (t.props && t.props.area), 'data-back-table', { omitCurrent: true })}
         <div class="card">
         <div class="card-head">${titleHtml}${canEditCard ? `<button class="note-del note-del-ic ghost" data-del-row-card="${r.id}" data-tip="Delete this row" aria-label="Delete this row">${MAIL_ICO.trash}</button>` : ''}</div><div class="card-fields">${fieldCols.map((col) => `<label class="crow"><span class="clabel">${esc(col.name)}<em>${esc(col.type)}</em></span><span class="cval">${cellInput(r, col, true)}</span></label>`).join('')}</div>
         ${notesSection(r.body, 'row', r.id)}
@@ -27228,7 +27228,7 @@ function renderTable() {
   const head = vc.map((col) => { const sd = sortOf(col.id); return `<th><div class="thh"><button class="th-name" data-sort-col="${col.id}" title="Sort by ${esc(col.name)}">${esc(col.name)}${col.type === 'select' ? '<span class="th-type">select</span>' : col.type === 'area' ? '<span class="th-type">page</span>' : col.type === 'currency' ? `<span class="th-type">${esc(curSym(col) || 'currency')}</span>` : ''}${sd ? `<span class="sarrow">${sd.dir === 'asc' ? '↑' : '↓'}${sd.badge ? `<b>${sd.badge}</b>` : ''}</span>` : ''}</button><button class="th-menu" data-col-menu="${col.id}" title="Column options — rename, type, options, sort, delete">▾</button></div><span class="resizer" data-resize="${col.id}"></span></th>`; }).join('');
   const nFilt = (vw.filters || []).length, nSort = sortSpec.length;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Notes', attr: 'data-open-notes' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Tables', attr: 'data-open-tables' }, { label: t.title || 'Untitled' }], t.props && t.props.area, null, { omitCurrent: true })}
     <div class="tbl-head"><input class="rename" value="${esc(t.title || '')}" placeholder="Untitled" data-rename ${t.sharedBy && !t.canEdit ? 'readonly' : ''}>
       ${noteTypeToggle(t.id, 'table')}
       ${blockAreasControl('table', t)}
