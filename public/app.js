@@ -4068,7 +4068,6 @@ function renderSettingsSix() {
   const youBody =
     row(esc(name), esc(email) + (phone ? ' · ' + esc(phone) : ''), links([{ label: 'Edit', open: 'account' }]), true)
     + row('Also sign in with', aliasEmails.length ? esc(aliasEmails.slice(0, 4).join(', ')) + (aliasEmails.length > 4 ? ` and ${aliasEmails.length - 4} more` : '') : 'Just your main address so far', links([{ label: 'Manage', open: 'account' }, { label: '+ Add', open: 'account' }]), true)
-    + row('Your Kaya card', 'The card people get when they scan your code', links([{ label: 'See it', open: 'card' }, { label: 'Edit', open: 'card' }]), true)
     + grp('Security')
     + row('Two-step sign-in', 'A code from your authenticator app after your email code', `<span class="sx-links"><span class="sx-stat">${sq(twofaOn)}${twofaOn ? 'On' : 'Off'}</span><span class="sx-link lead" data-sx-open="account" role="button" tabindex="0">${twofaOn ? 'Manage' : 'Set up'}</span></span>`);
 
