@@ -4682,10 +4682,11 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-inline > span { }
 .pe-durwrap { display:flex; align-items:center; gap:7px; color:var(--ink-3); font-size:14px; }
 .pe-num { width:84px; }
-/* "Takes time" off hides the timing block. */
-.pe-panel:not(.timed-on) .pe-timing { display:none; }
+/* "Takes time" off hides the timing block. (.prac-form covers both the New-practice
+   popover and the full-screen edit page a practice opens into.) */
+.prac-form:not(.timed-on) .pe-timing { display:none; }
 /* Cadence belongs to "Track it": show it only when tracking, as an inset sub-row. */
-.pe-panel:not(.tracked-on) .pe-aim { display:none; }
+.prac-form:not(.tracked-on) .pe-aim { display:none; }
 .pe-aim, .pe-timing { background:color-mix(in srgb, var(--accent) 4%, transparent); }
 .pe-aim .pe-mini-l, .pe-timing .pe-mini-l { padding-left:6px; }
 /* Practice editor: connected notes / contacts / links, the usual attach set. */
@@ -4714,6 +4715,11 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-foot { display:flex; align-items:center; gap:10px; padding:6px 20px 20px; }
 .pe-foot .add-btn.wide { margin-left:auto; }
 .pe-del { color:var(--ink-3); } .pe-del:hover { color:var(--accent); }
+/* A practice opens straight into its editable content on its own screen (not a
+   popover): the same fields, laid out down the page. (Robin, 2026-11-12.) */
+.pc-edit { display:flex; flex-direction:column; gap:22px; max-width:640px; margin-top:8px; }
+.pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:4px; padding-top:18px; border-top:1px solid var(--line); }
+.pc-edit-foot .add-btn.wide { margin-left:auto; }
 
 /* ── native Today (day canvas + practices + tasks + habits) ── */
 .t2-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
@@ -8621,7 +8627,10 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .j-prompt-chip:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--paper)); }
 .j-picker-cancel { margin-top:4px; }
 /* Entry view */
-.j-entry { max-width:760px; }
+/* Room below the whole entry so the caret can sit in a comfortable band instead of
+   the very bottom edge (works with the journal typewriter-scroll). The space sits
+   below the Dig-deeper bar, so that bar stays close to the writing. (Robin, 2026-11-12.) */
+.j-entry { max-width:760px; padding-bottom:30vh; }
 .j-entry-head { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:8px; }
 /* Voice dictation: a record toggle above the editor. Pulses red while listening. */
 .j-voice { display:flex; align-items:center; gap:12px; margin:6px 0 16px; flex-wrap:wrap; }

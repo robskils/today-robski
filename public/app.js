@@ -7034,37 +7034,38 @@ function renderPracticeCard() {
   // not Home). Always shown, since a practice always has Practices above it.
   const crumb = `<div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
   if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
+  // Open straight into the editable content on the practice's own screen - not a
+  // read-only guide with an Edit popover. Set up the shared editor state for this
+  // practice so the fields, attach rows and Save all work. (Robin, 2026-11-12.)
+  if (!state.practiceEdit || String(state.practiceEdit.id) !== String(a.id)) {
+    state.practiceEdit = { id: a.id, area: '', meta: parsePracticeMeta(a), _noteQ: '' };
+  }
   const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
-  const meta = parsePracticeMeta(a);
-  const yt = youtubeId(a.video);
+  const timed = a.timed == null ? true : !!a.timed;
   const today = dayKey(new Date());
   const done = practiceMarked(a.id, today);
-  const streak = practiceStreak(a.id);
-  const aim = a.cadence ? areaCadLabel(a.cadence) : '';
-  const videoHtml = yt
-    ? `<div class="pc-video"><iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="${esc(a.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`
-    : (a.video ? `<a class="add-btn wide pc-dolink" href="${esc(a.video)}" target="_blank" rel="noopener noreferrer">▶ Do it now →</a>` : '');
-  const noteHtml = (a.note && String(a.note).trim()) ? `<section class="pc-sec"><div class="home-sec-h">Instructions</div><div class="pc-note prose readonly">${decorateProse(bodyToHtml(a.note))}</div></section>` : '';
-  const noteChips = (meta.notes || []).map((n) => `<button class="tbl-card" data-open-note="${esc(n.id)}"><span class="tc-ic">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`).join('');
-  const linkChips = (meta.links || []).map((l) => `<a class="tbl-card" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="tc-ic">🔗</span><span class="tc-t">${esc(l.title || prettyLinkLabel(l.url))}</span></a>`).join('');
-  const contactChips = (meta.contacts || []).map((cid) => { const c = findContact(cid); return c ? `<button class="tbl-card" data-open-contact="${c.id}"><span class="tc-ic">👤</span><span class="tc-t">${esc(c.title || 'Unnamed')}</span></button>` : ''; }).filter(Boolean).join('');
-  const attachHtml = (noteChips || linkChips || contactChips) ? `<section class="pc-sec"><div class="home-sec-h">Linked</div><div class="tbl-cards">${noteChips}${linkChips}${contactChips}</div></section>` : '';
-  const chips = [
-    ar ? `<span class="pc-chip pc-area"><span class="cd"></span>${esc(ar.title)}</span>` : '',
-    (a.timed && a.duration) ? `<span class="pc-chip">${a.duration} min</span>` : (!a.timed ? '<span class="pc-chip">habit</span>' : ''),
-    aim ? `<span class="pc-chip">Aim: ${esc(aim)}</span>` : '',
-    streak ? `<span class="pc-chip">${streak} day${streak === 1 ? '' : 's'}${a.avoid ? ' clean' : ''}</span>` : '',
-  ].filter(Boolean).join('');
   $('#pane').innerHTML = `${crumb}
-    <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1>
-      <div class="pc-head-act"><button class="ghost" data-prc-edit="${a.id}" title="Edit this practice">✎ Edit</button></div></div>
-    ${chips ? `<div class="pc-meta">${chips}</div>` : ''}
-    ${videoHtml}
+    <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
     <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
-    ${noteHtml}
-    ${attachHtml}`;
+    <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
+      ${practiceFieldsHtml()}
+      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete practice</button><button class="add-btn wide" data-prc-save>Save</button></div>
+    </div>`;
 }
-function practiceToggle(id, day) { const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks(); rerenderPractices(); }
+function practiceToggle(id, day) {
+  const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks();
+  // On a practice's own screen (now an edit form), a full re-render would wipe any
+  // unsaved field edits - so just refresh the tick button in place. (Robin, 2026-11-12.)
+  if (state.view && state.view.type === 'practicecard' && String(state.view.id) === String(id)) { updatePracticeCardTick(id, day); return; }
+  rerenderPractices();
+}
+function updatePracticeCardTick(id, day) {
+  const a = (state.practices.activities || []).find((x) => String(x.id) === String(id)); if (!a) return;
+  const btn = document.querySelector(`.pc-tick[data-prc-tick="${id}"]`); if (!btn) return;
+  const done = !!(state.practices.marks[`${id}:${day}`]);
+  btn.classList.toggle('on', done);
+  btn.textContent = done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today');
+}
 // Inline rename from the merged Practices tool: click the name, type, Enter/blur.
 async function renamePractice(id, title) {
   const a = (state.practices && state.practices.activities || []).find((x) => String(x.id) === String(id)); if (!a) return;
@@ -7110,7 +7111,10 @@ async function practiceDelete(id) {
     keptDays.forEach((day) => { delete marks[`${id}:${day}`]; });
     savePracticeMarks();
     if (state.practiceEdit && String(state.practiceEdit.id) === String(id)) { state.practiceEdit = null; const host = document.getElementById('prac-editor-host'); if (host) host.innerHTML = ''; }
-    rerenderPractices();
+    // Deleting from the practice's own screen: don't re-render it (the practice is
+    // gone - you'd see "not found"); go back up to the Practices list. (Robin.)
+    if (state.view && state.view.type === 'practicecard' && String(state.view.id) === String(id)) openPractices();
+    else rerenderPractices();
     toast(snap ? `Deleted "${snap.title}"` : 'Practice deleted', snap ? () => undoPracticeDelete(snap, keptDays) : null);
   } catch (e) { toast(e.message); }
 }
@@ -7185,18 +7189,16 @@ function openPracticeEditor(id, presetArea) {
   setTimeout(() => { const t = document.getElementById('pe-title'); if (t) t.focus(); }, 30);
 }
 function closePracticeEditor() { state.practiceEdit = null; const h = document.getElementById('prac-editor-host'); if (h) h.remove(); }
-function practiceEditorHtml() {
+// The editor's fields, shared by the "New practice" popover and the full-screen
+// edit page a practice opens into (Robin, 2026-11-12: open a practice straight into
+// its editable content, on the proper screen, not a popover).
+function practiceFieldsHtml() {
   const pe = state.practiceEdit;
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
-  const areas = state.areas || [];
   const timed = a.timed == null ? true : !!a.timed;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
-  return `<div class="pe-bg" data-prc-close></div>
-    <div class="pe-panel ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
-      <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
-      <div class="pe-body">
-        <section class="pe-sec">
+  return `<section class="pe-sec">
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <label class="pe-f"><span>Space</span><select class="sel" id="pe-area"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
@@ -7230,8 +7232,16 @@ function practiceEditorHtml() {
           <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice card.</div>
           <label class="pe-f"><span>▶ Video or link</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube link to embed it, or any page" autocomplete="off"></label>
           <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
-        </section>
-      </div>
+        </section>`;
+}
+function practiceEditorHtml() {
+  const pe = state.practiceEdit;
+  const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
+  const timed = a.timed == null ? true : !!a.timed;
+  return `<div class="pe-bg" data-prc-close></div>
+    <div class="pe-panel prac-form ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
+      <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
+      <div class="pe-body">${practiceFieldsHtml()}</div>
       <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
     </div>`;
 }
@@ -12073,6 +12083,33 @@ function renderJournalEntry() {
     } catch {}
   }, 0);
 }
+// Typewriter scrolling for the journal: keep the caret in a comfortable band rather
+// than letting it ride the very bottom of the screen as you write. Only ever pulls
+// the line UP (never fights a deliberate scroll up), and the editor carries bottom
+// room (CSS) so even the last lines can sit clear of the edge. (Robin, 2026-11-12:
+// "don't like how I end up writing right at the bottom of the screen".)
+let __jtwRaf = 0;
+function journalKeepCaretComfortable() {
+  if (__jtwRaf) return;
+  __jtwRaf = requestAnimationFrame(() => {
+    __jtwRaf = 0;
+    const ed = document.querySelector('.prose[data-prose="journal"]');
+    if (!ed || document.activeElement !== ed) return;
+    const sel = window.getSelection(); if (!sel || !sel.rangeCount) return;
+    let rect = sel.getRangeAt(0).getBoundingClientRect();
+    if (!rect || !rect.bottom) {   // empty line / no caret rect: fall back to the current block
+      let node = sel.anchorNode; node = (node && node.nodeType === 1) ? node : (node && node.parentElement);
+      const block = node && node.closest ? node.closest('p,h1,h2,h3,li,div,blockquote') : null;
+      rect = block ? block.getBoundingClientRect() : null;
+    }
+    if (!rect || !rect.bottom) return;
+    const target = window.innerHeight * 0.66;   // keep the writing line around here
+    const delta = rect.bottom - target;
+    if (delta > 24) window.scrollBy(0, delta);   // only ever lift it up off the bottom
+  });
+}
+document.addEventListener('input', (e) => { if (e.target && e.target.closest && e.target.closest('.prose[data-prose="journal"]')) journalKeepCaretComfortable(); });
+document.addEventListener('keyup', (e) => { if ((e.key === 'Enter' || (e.key || '').startsWith('Arrow')) && e.target && e.target.closest && e.target.closest('.prose[data-prose="journal"]')) journalKeepCaretComfortable(); });
 // Voice journaling: record audio (works on iOS, unlike the old live
 // SpeechRecognition that never ran there), then Gemini transcribes it, writes it
 // up in the person's own voice and fills the entry's prompts. Tap to record, tap
@@ -28715,7 +28752,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-prc-new]')) { openPracticeEditor(null); return; }
   if (t.closest('[data-prc-addtoggle]')) { state.pracAddOpen = !state.pracAddOpen; rerenderPractices(); if (state.pracAddOpen) setTimeout(() => { const i = document.getElementById('prc-new'); if (i) i.focus(); }, 30); return; }
   { const po = t.closest('[data-prc-open]'); if (po && !t.closest('.t2-tick, [data-prc-tick], [data-prc-edit], [data-prc-del], [data-prc-grip], [data-prc-day], [data-prc-video], [data-prc-rename], .trk-cadsel')) { if (Date.now() - (typeof t2SuppressClick !== 'undefined' ? t2SuppressClick : 0) < 350) return; openPracticeCard(po.dataset.prcOpen); return; } }
-  { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeEditor(pe.dataset.prcEdit); return; } }
+  { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeCard(pe.dataset.prcEdit); return; } }   // edit opens the practice's own full screen (not a popover)
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
   { const el = t.closest('[data-pe-link-note]'); if (el) { peMeta().notes.push({ id: el.dataset.peLinkNote, title: el.dataset.peNoteTitle || 'Untitled' }); state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
@@ -28726,7 +28763,7 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-pe-del-link]'); if (el) { peMeta().links.splice(Number(el.dataset.peDelLink), 1); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
-  { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.pe-panel'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
+  { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.prac-form'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
   { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
