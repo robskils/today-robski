@@ -5492,6 +5492,10 @@ function kOpenFold(v) { try { const x = localStorage.getItem('koyeba.fold'); ret
 function setKFold(id) { const cur = kOpenFold(state.view); try { localStorage.setItem('koyeba.fold', cur === id ? '' : id); } catch {} renderNav(); }
 function toggleSpacesAll() { state.nav.spacesAll = !state.nav.spacesAll; try { localStorage.setItem('life.nav.spacesAll', JSON.stringify(state.nav.spacesAll)); } catch {} renderNav(); }
 function kItemOn(mod) { return !mod ? true : mod === 'reflect' ? reflectOn() : modOn(mod); }
+// Close the mobile Menu / Search overlay if either is open - called the instant a
+// create action (New note / table / event) is picked from it, so the panel can't
+// sit open inviting a second tap that makes a duplicate. (Robin, 2026-11-12.)
+function knavCloseOverlay() { const kn = state.knav; if (kn && (kn.find || kn.contents || kn.group)) { kn.find = false; kn.contents = false; kn.group = null; renderNav(); } }
 function kFoldHint(f) {
   if (f.id === 'today') { try { return new Date().toLocaleDateString('en-GB', { weekday: 'long' }); } catch { return ''; } }
   if (f.id === 'spaces') { const n = (state.areas || []).length; return n ? `${n} space${n === 1 ? '' : 's'}` : ''; }
@@ -27417,7 +27421,10 @@ function cellInput(r, col, forCard) {
 function tableSorts() { return (state.tables_view.sorts && state.tables_view.sorts.length) ? state.tables_view.sorts : null; }
 function sortRows(rows) {
   const cols = tcols();
-  const spec = tableSorts() || (cols[0] ? [{ colId: cols[0].id, dir: 'asc' }] : []);
+  // No sort chosen: keep the rows in their natural order (as created - new rows at
+  // the bottom), so a row you just filled in doesn't jump to an alphabetical spot.
+  // It only sorts once you pick a sort from the Sort button. (Robin, 2026-11-12.)
+  const spec = tableSorts() || [];
   if (!spec.length) return rows;
   const cmpLevel = (a, b, s) => {
     const col = cols.find((x) => x.id === s.colId); if (!col) return 0;
@@ -27700,11 +27707,16 @@ async function newArea() {
 // A new table opens with an empty title and the cursor already in it, ready to
 // type the real name - no "Untitled table" to clear first. (Robin, 2026-11-10.)
 function focusTableTitle() { setTimeout(() => { const r = document.querySelector('.tbl-head input.rename'); if (r && !r.value) { try { r.focus({ preventScroll: true }); } catch { r.focus(); } } }, 40); }
+let _newTableBusy = false;
 async function newTable() {
-  const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: '', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
-  state.tables.push(t); state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  await openTable(t.id);
-  focusTableTitle();
+  if (_newTableBusy) return;   // guard against a double-tap making two tables
+  _newTableBusy = true;
+  try {
+    const t = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'table', title: '', props: { columns: [{ id: uid(), name: 'Name', type: 'text' }] } }) });
+    state.tables.push(t); state.tables.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    await openTable(t.id);
+    focusTableTitle();
+  } finally { _newTableBusy = false; }
 }
 async function saveTableColumns(columns) { state.tables_open.props.columns = columns; await api(`/api/blocks/${state.tables_open.id}`, { method: 'PATCH', body: JSON.stringify({ props: { columns } }) }); }
 async function setCell(rowId, colId, value) {
@@ -29600,11 +29612,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; state.taskAddConns = []; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { if (state.makeNew) { closeMakeNew(); return; } const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
-  if (t.closest('[data-quick-event]')) { const kn = state.knav; if (kn && (kn.find || kn.contents || kn.group)) { kn.find = false; kn.contents = false; kn.group = null; renderNav(); } showQuickEvent(); return; }
+  if (t.closest('[data-quick-event]')) { knavCloseOverlay(); showQuickEvent(); return; }
   { const dt = t.closest('[data-day-tick]'); if (dt) { e.preventDefault(); e.stopPropagation(); homeDayTick(dt.dataset.dayTick); return; } }
   { const hc = t.closest('[data-home-cal]'); if (hc) { const p = hc.dataset.evId ? openEventHit({ id: hc.dataset.evId, date: hc.dataset.evDate }) : openCalendar(todayISO()); Promise.resolve(p).catch((x) => toast(x.message)); return; } }
-  if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }
-  if (t.closest('[data-new-table]')) { newTable().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-new-note]')) { knavCloseOverlay(); newNote(null).catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-new-table]')) { knavCloseOverlay(); newTable().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-areas-scope]')) { state.areasScope = t.closest('[data-areas-scope]').getAttribute('data-areas-scope'); try { localStorage.setItem('life.areas.scope', state.areasScope); } catch {} renderAreasList(); return; }
   if (t.closest('[data-new-area]')) { newArea().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-area-color]')) { openAreaColor(); return; }
