@@ -711,6 +711,10 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 :root[data-plain] :is(.add-btn.wide, .gate2-btn, .mail-tb-write, .home-wn-do, .home-v2 .home-wn-do, .spirit-save, .dz-add, .cx-new, .kg-newgoal, .rw-save-btn, .icx-castbtn, .ic-btn-primary):hover { filter:brightness(1.1); }
 :root[data-plain] .mail-footact { background:color-mix(in srgb, var(--k-ink) 5%, transparent); border:1px solid var(--k-line); color:var(--k-ink); }
 :root[data-plain] .mail-footact:hover { background:color-mix(in srgb, var(--k-ink) 9%, transparent); border-color:var(--k-gold); color:var(--k-goldt); }
+/* Menu buttons: on the ivory page a white rim vanishes, so the boxed tools and
+   the daily tiles take the warm keyline instead. (Robin, 2026-11-12.) */
+:root[data-plain] :is(.knav-c-tool, .knav-c-prim) { border-color:var(--k-line); }
+:root[data-plain] :is(.knav-c-tool, .knav-c-prim):hover { border-color:var(--k-gold); }
 /* Notes: a heading stays gold; a link reads in ink with a gold underline, so the
    two don't blur into one gold (same split as the painted washes). */
 :root[data-plain] :is(.note-body a, .prose a) { color:var(--k-ink); text-decoration-color:color-mix(in srgb, var(--k-gold) 75%, transparent); text-underline-offset:3px; }

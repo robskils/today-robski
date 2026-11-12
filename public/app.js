@@ -5757,17 +5757,18 @@ function navGroupsHtml(v) {
   // ── Contents overlay (groups only; a quiet utility footer) ──
   let contents = '';
   if (kn.contents) {
-    // The mobile Menu lists the area groups in Robin's order: Tools, Insight,
-    // Spaces - distinct from the desktop bar, where Spaces leads. (Money and
-    // Reviews folded into Tools, 2026-11-11.) The Roman numerals follow this order.
-    const MOB_GROUP_ORDER = ['keep', 'inner', 'spaces'];
+    // The mobile Menu lists the area groups in Robin's order: Tools, Spaces,
+    // Insight - distinct from the desktop bar, where Spaces leads. (Money and
+    // Reviews folded into Tools, 2026-11-11; Spaces lifted above Insight,
+    // 2026-11-12.) The Roman numerals follow this order.
+    const MOB_GROUP_ORDER = ['keep', 'spaces', 'inner'];
     const mobGroups = [...groups].sort((a, b) => {
       const ia = MOB_GROUP_ORDER.indexOf(a.id), ib = MOB_GROUP_ORDER.indexOf(b.id);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
     });
     const cols = mobGroups.map((g, i) => `<div class="knav-c-group">
       <div class="knav-c-gh"><span class="knav-c-gn">${roman(i + 1)}</span><span class="knav-c-gl">${g.label}</span></div>
-      <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${label}</button>`).join('')}</div>
+      <div class="knav-c-tools">${g.tools.map(([label, attrs]) => `<button class="knav-c-tool" ${attrs} data-knav-pick>${/data-open-money/.test(attrs) ? 'Money' : label}</button>`).join('')}</div>
     </div>`).join('');
     // The daily tools as big one-tap buttons at the top of the Menu - so a phone,
     // whose bottom bar only holds five, reaches all six. (Robin, 2026-11-05.)
@@ -8285,7 +8286,7 @@ function renderCapBar(force) {
   const modeTabs = '<span class="cap-eyebrow"><span class="cap-l-wide">Set it down</span><span class="cap-l-phone">Capture</span></span>';
   const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div><div class="cap-media"><label class="cap-media-btn"><input type="file" accept="image/*" capture="environment" hidden data-cap-photo>Take a photo</label><button type="button" class="cap-media-btn" data-cap-scan>Scan</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
-    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div><button class="cap-esc" data-cap-close aria-label="Close">Close</button></div>
+    <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div>${c.rec ? '' : '<button class="cap-speak-h" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button>'}<button class="cap-esc" data-cap-close aria-label="Close">Close</button></div>
     ${bodyHtml}
   </div>`;
   if (c.mode === 'pad') {
@@ -15592,7 +15593,7 @@ function renderCalendar() {
   // may be open); if a field in the open form has focus, skip this paint.
   if ((c.adding || c.editing)) { const f = document.getElementById('cal-ev-form'); if (f && document.activeElement && f.contains(document.activeElement)) return; }
   _calFormSnap = snapshotCalForm();
-  const quiet = calQuiet(), todayI = todayISO(), narrow = window.matchMedia('(max-width:1100px)').matches;
+  const quiet = calQuiet(), todayI = todayISO(), narrow = window.matchMedia('(max-width:1100px)').matches, phone = window.matchMedia('(max-width:760px)').matches;
   const cq = (state.calQuery || '').trim().toLowerCase();
   // A day's events: search-filtered, and (when quiet) repeats sorted below one-offs.
   const dayEvs = (iso) => { let evs = (byDay[iso] || []); if (cq) evs = evs.filter((e) => (e.title || '').toLowerCase().includes(cq) || (e.location || '').toLowerCase().includes(cq)); return quiet ? [...evs.filter((e) => !e.recurringId), ...evs.filter((e) => !!e.recurringId)] : evs; };
@@ -15611,8 +15612,12 @@ function renderCalendar() {
     const cell = (d) => {
       let evs = dayEvs(d.iso);
       if (d.today && evs.length > 3) { const up = evs.filter((e) => e.allDay || e.start_min == null || e.start_min >= nowMin); if (up.length) evs = up; }
-      const shown = evs.slice(0, 3).map((e) => { const tt = evT(e); return `<div class="cx-ev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}>${tt && !narrow ? `<span class="cx-ev-t">${tt}</span>` : ''}<span class="cx-ev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</span></div>`; }).join('');
-      const more = evs.length > 3 ? `<span class="cx-more">+${evs.length - 3} more</span>` : '';
+      // On a phone a 7-column month can't hold readable titles, so each event shows
+      // as a dot and the day reads full-size in the panel below. (Robin, 2026-11-12.)
+      const shown = phone
+        ? (evs.length ? `<div class="cx-cell-dots">${evs.slice(0, 6).map((e) => `<span class="cx-dot${e.bday ? ' cx-dot-bday' : e.feed ? ' cx-dot-feed' : (e.allDay ? ' cx-dot-allday' : '')}" aria-hidden="true"></span>`).join('')}</div>` : '')
+        : evs.slice(0, 3).map((e) => { const tt = evT(e); return `<div class="cx-ev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}>${tt && !narrow ? `<span class="cx-ev-t">${tt}</span>` : ''}<span class="cx-ev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</span></div>`; }).join('');
+      const more = (!phone && evs.length > 3) ? `<span class="cx-more">+${evs.length - 3} more</span>` : '';
       return `<div class="cx-cell${d.inMonth ? '' : ' out'}${d.iso === c.selected ? ' sel' : ''}" data-cal-day="${d.iso}"><div class="cx-cell-top"><span class="cx-num${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-cell-evs">${shown}${more}</div></div>`;
     };
     main = `<div class="cx-month"><div class="cx-dows">${WEEKDAYS.map((w) => `<div class="cx-dow">${w}</div>`).join('')}</div><div class="cx-cells">${monthWeeks(c.y, c.m).flat().map(cell).join('')}</div></div>`;
@@ -29454,17 +29459,15 @@ document.addEventListener('click', (e) => {
   { const cad = t.closest('[data-cal-add-day]'); if (cad) { const p = primeMobileKeyboard(); state.cal.selected = cad.dataset.calAddDay; state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; const [yy, mm] = state.cal.selected.split('-').map(Number); if (yy && mm) { state.cal.y = yy; state.cal.m = mm - 1; } renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); keepKeyboardUntilFocus(p); return; } }
   const cday = t.closest('[data-cal-day]'); if (cday) {
     state.cal.selected = cday.dataset.calDay; state.cal.adding = false; state.cal.editing = null; state.cal.viewing = null;
-    // On mobile month view the selected day's header + events sit ABOVE the grid, so
-    // tapping a day down the grid would change them out of sight. Scroll them up to
-    // just under the pinned toolbar so you see "Thursday 15 October" and its events.
-    // (Robin, 2026-10-28.)
-    const toDay = state.cal.mode === 'month' && window.matchMedia('(max-width:820px)').matches;
+    // On the phone month view the day's events read full-size in the panel BELOW the
+    // grid, so tapping a day scrolls that panel up under the pinned bar - you see
+    // "Thursday 15 October" and its events at once. (Robin, 2026-10-28 / 2026-11-12.)
+    const toDay = state.cal.mode === 'month' && window.matchMedia('(max-width:760px)').matches;
     renderCalendar();
     if (toDay) requestAnimationFrame(() => {
-      const head = document.querySelector('.cal-agenda-top'); if (!head) return;
-      const nav = document.querySelector('.cal-nav'); const crumb = document.querySelector('#pane .crumbbar');
-      const stuck = Math.max(nav ? nav.getBoundingClientRect().bottom : 0, crumb ? crumb.getBoundingClientRect().bottom : 0, 0);
-      const y = window.scrollY + head.getBoundingClientRect().top - stuck - 10;
+      const head = document.querySelector('.cx-side'); if (!head) return;
+      const navh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navh'), 10) || 56;
+      const y = window.scrollY + head.getBoundingClientRect().top - navh - 12;
       window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     });
     return;
