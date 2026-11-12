@@ -7556,9 +7556,12 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-att-dl:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--paper-2)); }
 .mail-att-sz { color:var(--ink-3); font-size:12.5px; }
 /* Rich-text compose: a small toolbar above a contenteditable body. */
-.mail-rt-toolbar { display:flex; gap:4px; padding:6px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
+.mail-rt-toolbar { display:flex; flex-wrap:wrap; gap:4px; padding:6px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
 .mail-rt-toolbar button { min-width:34px; height:32px; padding:0 9px; border:0; border-radius:0; background:transparent; color:var(--ink-2); font-size:15px; cursor:pointer; transition:background .12s, color .12s; }
 .mail-rt-toolbar button:hover { background:var(--card); color:var(--accent); }
+/* Attach a file / embed an image - named, not just an emoji, so they're findable. (Robin, 2026-11-12.) */
+.mail-rt-insert { font-weight:500; white-space:nowrap; }
+.mail-rt-sep { width:1px; align-self:stretch; background:var(--line); margin:3px 4px; flex:none; }
 .mail-compose-body { min-height:260px; padding:14px 16px; font-size:16.5px; line-height:1.6; background:var(--paper); border:1px solid var(--line-2); border-radius:0; color:var(--ink); overflow-wrap:anywhere; }
 .mail-compose-body:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
 .mail-compose-body:empty:before { content:attr(data-ph); color:var(--ink-3); }
@@ -7674,6 +7677,9 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-compose-head-act { margin-left:auto; display:flex; gap:8px; align-items:center; flex:none; }
 /* Compact the primary Send button for the header (the .wide base is tall). */
 .mail-compose-head-act .mail-send-btn { width:auto; min-height:0; padding:9px 20px; font-size:15.5px; border-radius:0; white-space:nowrap; }
+/* Save draft / Discard as named, quieter text actions beside the solid Send. */
+.mail-savedraft, .mail-discard-btn { font-family:'Jost',system-ui,sans-serif; font-size:14px; padding:9px 10px; color:var(--ink-2); white-space:nowrap; border-radius:0; transition:color .12s; }
+.mail-savedraft:hover, .mail-discard-btn:hover { color:var(--accent); }
 /* Keep Send/Attach/Discard fully visible: the back button and actions never
    shrink; the title and the "Resumed draft" note give up space and truncate,
    so a large font size can't push Send off the card's rounded edge. */
@@ -7681,6 +7687,12 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-compose-head .mail-back { flex:none; }
 .mail-compose-head .mail-reader-title { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-compose-head .mail-draft-note { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* On a very narrow phone the three named actions drop to a tidy second row rather
+   than clipping Send off the edge. (Robin, 2026-11-12.) */
+@media (max-width:380px) {
+  .mail-compose-head { flex-wrap:wrap; row-gap:8px; }
+  .mail-compose-head-act { width:100%; margin-left:0; justify-content:flex-end; }
+}
 .mail-stray { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:11px 15px; background:var(--paper-2); border:1px solid var(--line); border-radius:0; color:var(--ink-2); font-size:14.5px; }
 .mail-stray span { flex:1; min-width:0; }
 .mail-stray button { flex:none; }

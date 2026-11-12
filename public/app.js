@@ -18584,6 +18584,46 @@ async function mailRemoveAttachment(id) {
   renderMail(); saveDraft();
   mailApi(`/attach/${id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {});
 }
+// Inline image: unlike an attachment (which rides along as a separate file), an
+// embedded image is HOSTED and referenced by <img src>, so it shows up inside the
+// message body. Inbox clients strip data: URIs, so the bytes go to R2 and the body
+// carries an absolute URL the recipient can load (the sig-img store already serves
+// images publicly, with a permanent cache). shrinkImage handles HEIC and keeps the
+// file email-light. (Robin, 2026-11-12.)
+async function uploadInlineImage(file) {
+  if (!isImgType(file.type) && !isHeic(file)) throw new Error('Please choose an image');
+  let f; try { f = await shrinkImage(file); } catch { f = file; }
+  let buf; try { buf = await f.arrayBuffer(); } catch { throw new Error("Couldn't read that image. Export it from Photos, then try the copy."); }
+  if (!buf || !buf.byteLength) throw new Error('That image came through empty.');
+  if (buf.byteLength > 6 * 1024 * 1024) throw new Error(`That image is ${Math.round(buf.byteLength / 1048576)}MB - too big to embed. Try a smaller one.`);
+  const type = /^image\//.test(f.type || '') ? f.type : 'image/jpeg';
+  const res = await fetch(`/api/mail/sig-img?type=${encodeURIComponent(type)}`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: buf });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Upload failed (${res.status})`);
+  const rel = (await res.json()).url || '';
+  return /^https?:/i.test(rel) ? rel : location.origin + rel;   // absolute, so a stranger's inbox can fetch it
+}
+async function mailInsertImage(file) {
+  if (!state.mail.composing || !file) return;
+  const ed = document.getElementById('mc-body'); if (!ed) return;
+  toast('Adding image…');
+  let url;
+  try { url = await uploadInlineImage(file); }
+  catch (e) { toast(e.message || 'Could not add that image'); return; }
+  // Put the caret back where it was (the file dialog stole focus), else drop the
+  // image at the end of the message.
+  ed.focus();
+  const sel = window.getSelection();
+  const saved = state.mail._imgRange; state.mail._imgRange = null;
+  if (saved) { try { sel.removeAllRanges(); sel.addRange(saved); } catch {} }
+  if (!sel.rangeCount || !ed.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false); sel.removeAllRanges(); sel.addRange(r);
+  }
+  const html = `<img src="${esc(url)}" alt="${esc((file.name || 'image').replace(/\.[^.]+$/, ''))}" style="max-width:100%;height:auto;">`;
+  try { document.execCommand('insertHTML', false, html); } catch { ed.innerHTML += html; }
+  if (state.mail.composing) state.mail.composing.body = ed.innerHTML;
+  saveDraft();
+  toast('Image added');
+}
 // Drafts: a new (non-reply) compose auto-saves to localStorage per account so it
 // survives closing the composer, and resumes when you next hit Compose.
 // Drafts are local (localStorage), MULTIPLE, and cover every compose - new
@@ -19966,8 +20006,9 @@ function renderMail(loading) {
   // Compose keeps its existing form, as a sub-view with a plain back link.
   if (m.composing) {
     const catts = m.composing.attachments || [];
+    const composeTitle = m.composing.inReplyTo ? 'Reply' : /^fwd:/i.test(m.composing.subject || '') ? 'Forward' : 'New message';
     const composeForm = `<form id="mail-compose-form" class="mail-compose">
-      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Cancel">← Back</button><span class="mail-reader-title">New message</span>${m.composing._resumed ? '<span class="mail-draft-note">Resumed draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-act-ic" data-mail-attach title="Attach files">📎</button><button type="button" class="ghost mail-act-ic mail-discard" data-mail-discard title="Discard draft">🗑</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
+      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Keep this draft and go back">← Back</button><span class="mail-reader-title">${composeTitle}</span>${m.composing._resumed ? '<span class="mail-draft-note">Draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-savedraft" data-mail-savedraft title="Save as a draft and come back later">Save draft</button><button type="button" class="ghost mail-discard-btn" data-mail-discard title="Throw this draft away">Discard</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
       <div class="mail-compose-scroll">
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
@@ -19980,12 +20021,15 @@ function renderMail(loading) {
         <button type="button" data-rt="italic" title="Italic"><i>I</i></button>
         <button type="button" data-rt="underline" title="Underline"><u>U</u></button>
         <button type="button" data-rt="insertUnorderedList" title="Bullet list">•&nbsp;List</button>
-        <button type="button" data-rt="link" title="Add link">🔗</button>
+        <button type="button" data-rt="link" title="Add link">🔗&nbsp;Link</button>
+        <span class="mail-rt-sep" aria-hidden="true"></span>
+        <button type="button" class="mail-rt-insert" data-mail-attach title="Attach a file to this email">📎&nbsp;Attach</button>
+        <button type="button" class="mail-rt-insert" data-mail-img title="Place an image inside the message">🖼&nbsp;Image</button>
       </div>
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
       </div>
-      <input type="file" id="mc-file" multiple hidden></form>`;
+      <input type="file" id="mc-file" multiple hidden><input type="file" id="mc-img" accept="image/*" hidden></form>`;
     $('#pane').innerHTML = `<div class="mail2 mail2-compose">${composeForm}</div>`;
     return;
   }
@@ -29364,7 +29408,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
   if (t.closest('[data-mail-reconcile]')) { mailReconcileUnread(); return; }
   if (t.closest('[data-mail-cancel]')) { saveDraft(); state.mail.composing = false; renderMail(); return; }
+  if (t.closest('[data-mail-savedraft]')) { const c = state.mail.composing; if (!c) return; syncCompose(); const empty = draftEmpty(c); saveDraft(); state.mail.composing = false; if (!empty) state.mail.folder = 'drafts'; renderMail(); toast(empty ? 'Nothing to save yet' : 'Draft saved'); return; }
   if (t.closest('[data-mail-attach]')) { const f = $('#mc-file'); if (f) f.click(); return; }
+  if (t.closest('[data-mail-img]')) { const ed = $('#mc-body'); const s = window.getSelection && window.getSelection(); state.mail._imgRange = (ed && s && s.rangeCount && ed.contains(s.getRangeAt(0).commonAncestorContainer)) ? s.getRangeAt(0).cloneRange() : null; const f = $('#mc-img'); if (f) f.click(); return; }
   const madel = t.closest('[data-mail-att-del]'); if (madel) { mailRemoveAttachment(madel.dataset.mailAttDel); return; }
   if (t.closest('[data-mail-discard]')) { clearDraft(); (state.mail.composing && state.mail.composing.attachments || []).forEach((a) => mailApi(`/attach/${a.id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {})); state.mail.composing = false; renderMail(); toast('Draft discarded'); return; }
   if (t.closest('[data-mail-claudius]')) { mailClaudius(); return; }
@@ -29972,6 +30018,7 @@ document.addEventListener('change', (e) => {
     return;
   }
   if (e.target.id === 'mc-file' && e.target.files && e.target.files.length) { mailAttachFiles([...e.target.files]); e.target.value = ''; return; }
+  if (e.target.id === 'mc-img' && e.target.files && e.target.files.length) { mailInsertImage(e.target.files[0]); e.target.value = ''; return; }
   const sm = e.target.closest('[data-share-mode]'); if (sm) { shareSet(Number(sm.dataset.shareMode), e.target.value === 'edit'); return; }
   if (e.target.matches('[data-admin-signup]')) { toggleAdminSignup(e.target.checked); return; }
   if (e.target.matches('[data-health-alerts]')) { toggleHealthAlerts(e.target.checked); return; }
