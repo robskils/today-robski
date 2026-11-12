@@ -7567,7 +7567,7 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
    Send / Save draft on its right and STICKS to the top of the compose as you
    scroll, so those actions are always in reach. (Robin, 2026-11-12: "put them in
    the same row as Bold etc, and make that bar sticky".) */
-.mail-rt-toolbar { position:sticky; top:0; z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:7px 8px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
+.mail-rt-toolbar { position:sticky; top:var(--tabstrip-h, 56px); z-index:12; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:7px 8px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
 .mail-rt-toolbar button { min-width:34px; height:34px; padding:0 9px; border:0; border-radius:0; background:transparent; color:var(--ink-2); font-size:15px; cursor:pointer; transition:background .12s, color .12s; }
 .mail-rt-toolbar button:hover { background:var(--card); color:var(--accent); }
 /* Attach a file / embed an image - named, not just an emoji, so they're findable. (Robin, 2026-11-12.) */
@@ -7729,17 +7729,16 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* Desktop: pin the reader toolbar just BELOW the sticky breadcrumb (which also sits
    at top:44px), so it isn't hidden behind it. --mail-crumbh is measured per render. */
 @media (min-width:821px){ .mail-reader-head { top:calc(var(--tabstrip-h, 0px) + var(--mail-crumbh, 46px)); } }
-/* Compose fills the view below the top chrome (nav + tab strip = --tabstrip-h): the
-   Back/Send bar is fixed at the top and the fields + body scroll beneath it, so the
-   message never scrolls up behind the bar. The bar carries a comfortable inset so the
-   Back button never sits flush to the edge. (Robin, 2026-11-10.) */
+/* Compose flows with the page (an inner panel that scrolls on its own broke in the
+   tabbed/stacked layout, where the whole page scrolls instead). The toolbar that
+   carries Send / Save draft is pinned to the top of the window, just below the nav
+   and tab strip (--tabstrip-h), so it stays in reach however far you scroll.
+   (Robin, 2026-11-12: "I was hoping this bar might stay stuck at the top".) */
 body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
-.mail2-compose { position:sticky; top:var(--tabstrip-h, 56px); height:calc(100dvh - var(--tabstrip-h, 56px)); overflow:hidden; display:flex; flex-direction:column; }
-.mail2-compose .mail-compose { flex:1 1 auto; min-height:0; padding:0; gap:0; }
+.mail2-compose { display:block; }
+.mail2-compose .mail-compose { display:flex; flex-direction:column; padding:0; gap:0; }
 .mail2-compose .mail-compose-head { position:static; flex:none; padding:14px clamp(20px,4vw,40px); margin:0; }
-.mail-compose-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:12px; padding:0 clamp(20px,4vw,40px) 60px; }
-/* No top padding, so the sticky toolbar pins flush with no strip of scrolling text
-   showing above it; the first field keeps its breathing room instead. */
+.mail-compose-scroll { display:flex; flex-direction:column; gap:12px; padding:0 clamp(20px,4vw,40px) 60px; }
 .mail-compose-scroll > *:first-child { margin-top:14px; }
 /* Mobile: pin the reader toolbar BELOW the brand header (--navh) AND the sticky
    breadcrumb (--mail-crumbh), with a little padding so the icons stay put and never
