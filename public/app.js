@@ -5756,7 +5756,7 @@ function navGroupsHtml(v) {
     const searchNote = searching ? '<div class="knav-find-searching">Searching your Spaces…</div>' : '';
     find = `<div class="knav-find">
       <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Search" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
-      <div class="knav-find-acts"><button class="knav-find-act" data-quick-event>+ New event</button></div>
+      <div class="knav-find-acts"><button class="knav-find-act" data-new-note>+ New note</button><button class="knav-find-act" data-quick-event>+ New event</button><button class="knav-find-act" data-new-table>+ New table</button></div>
       ${secHtml}${searchNote}${empty}
     </div>`;
   }
@@ -27836,6 +27836,7 @@ function buildPalette() {
     const acts = [
       { kind: 'action', title: 'New note', run: () => newNote(null) },
       { kind: 'action', title: 'New event', run: () => Promise.resolve(showQuickEvent()) },
+      { kind: 'action', title: 'New table', run: () => newTable() },
     ];
     const recents = recentSearches().map((s) => ({ kind: 'recent', title: s }));
     state.pal.items = [...acts, ...recents];

@@ -13197,11 +13197,14 @@ body.mailsheet-open { overflow:hidden; }
 .mailv2 .mail-dot { position:static; width:6px; height:6px; border-radius:50%; background:transparent; border:0; align-self:center; opacity:1; pointer-events:auto; grid-column:1; }
 .mail-row.mailv2.unread .mail-dot { background:var(--k-gold); }
 .mailv2 .mail-row-main { grid-column:2; min-width:0; display:flex; flex-direction:column; gap:1px; }
-.mailv2 .mail-from { font-family:var(--k-sans); font-weight:500; font-size:15px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mailv2 .mail-from { font-family:var(--k-sans); font-weight:500; font-size:15px; line-height:1.3; color:var(--k-goldt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* A little warmth on each card: the sender's name and the time in gold, bracketing
+   the ivory serif subject. Unread keeps the gold name (bold). (Robin, 2026-11-12.) */
+.mail-row.mailv2.unread .mail-from { color:var(--k-goldt); }
 .mailv2 .mail-subject { font-family:var(--k-serif); font-weight:300; font-size:22px; line-height:1.2; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mailv2 .mail-preview { font-family:var(--k-sans); font-size:13.5px; line-height:1.4; color:var(--k-mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mailv2 .mail-row-right { grid-column:3; position:relative; align-self:start; white-space:nowrap; padding-top:2px; }
-.mailv2 .mail-date { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
+.mailv2 .mail-date { font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); }
 .mail-row.mailv2.unread .mail-date { color:var(--k-goldt); }
 .mailv2 .mail-row-tri { display:none; position:absolute; top:0; right:0; gap:14px; }
 .mail-row.mailv2:hover .mail-date { visibility:hidden; }
