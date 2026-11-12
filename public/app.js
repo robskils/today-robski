@@ -27612,6 +27612,7 @@ function renderTable() {
       ${t.sharedBy ? '' : '<button class="ghost" data-del-cur>Delete</button>'}</div>
     ${sharedBanner(t)}
     ${noteAliasesControl(t, 'table')}
+    <div class="tbl-stickytop">
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${vw.sorting ? 'on' : ''} ${nSort ? 'active' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort ? ` · ${nSort}` : ''}</button>
@@ -27620,6 +27621,7 @@ function renderTable() {
     </div>
     <div id="tbl-sort-panel">${vw.sorting ? sortPanelHtml() : ''}</div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
+    </div>
     <div class="tbl-scroll"><table class="recs fixed">${colgroup}
       <thead><tr><th class="th-open"></th>${head}${addCol}</tr></thead>
       <tbody id="tbl-body">${tableBodyHtml()}</tbody></table></div>
