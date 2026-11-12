@@ -19,7 +19,8 @@ body::before, body::after { display:none !important; }
 h1, h2, h3, h4, .brand, .brand b, .wm-word { font-family:'Cormorant Garamond',serif !important; font-weight:500; font-style:normal; letter-spacing:0; text-transform:none; }
 * { border-radius:0 !important; box-shadow:none !important; }
 .callout { border-left:1px solid var(--line) !important; -webkit-backdrop-filter:blur(14px) saturate(1.7); backdrop-filter:blur(14px) saturate(1.7); }
-/* The Kaya rebrand dropped the old Mandombe "ko" mark - the brand is the "Kaya"
-   wordmark alone, no logo. (Robin, 2026-11-12.) */
-.brand svg, .brand img, .wm-mark, .brand-mark { display:none !important; }
-.brand-mark::before, .brand-mark::after, .brand:not(:has(.brand-mark))::before { content:none !important; display:none !important; }
+/* Kaya's mark: the kanji 香 (incense) in a gold seal, set before the wordmark.
+   (Robin, 2026-11-12. Replaces the dropped Mandombe "ko" mark.) */
+.brand svg, .brand img, .wm-mark { display:none !important; }
+.brand .brand-mark { display:inline-block !important; width:1.42em; height:1.42em; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat !important; vertical-align:-0.26em; color:transparent !important; }
+.brand-mark::before, .brand-mark::after { content:none !important; display:none !important; }

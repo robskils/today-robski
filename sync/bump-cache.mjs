@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 // The legacy marketing pages (Journal, How, legal, support) were pinned at
 // ?v=1, so edits to site-legacy.css never reached them. Stamp them too. (2026-11-12.)
-const FILES = ['public/app.html', 'public/life.html', 'public/notes.html', 'public/tables.html', 'public/index.html', 'public/blog.html', 'public/how.html', 'public/support.html', 'public/privacy.html', 'public/terms.html'];
+const FILES = ['public/app.html', 'public/life.html', 'public/notes.html', 'public/tables.html', 'public/index.html', 'public/home.html', 'public/blog.html', 'public/how.html', 'public/support.html', 'public/privacy.html', 'public/terms.html'];
 const p2 = (n) => String(n).padStart(2, '0');
 const d = new Date();
 const v = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}${p2(d.getHours())}${p2(d.getMinutes())}`;
