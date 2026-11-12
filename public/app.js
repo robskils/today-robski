@@ -922,7 +922,7 @@ let headDrag = null, foldSuppress = 0;
 // A section = a heading plus every block under it, up to the next same-or-higher
 // heading (within the same container - the prose itself or one column).
 function sectionNodes(head) { return [head, ...proseSiblingsUnder(head)]; }
-function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-drop-end, .head-col-drop').forEach((h) => h.classList.remove('head-drop', 'head-drop-end', 'head-col-drop')); }
+function clearHeadDrops(root) { (root || document).querySelectorAll('.head-drop, .head-drop-end, .head-col-drop, .head-drop-empty').forEach((h) => h.classList.remove('head-drop', 'head-drop-end', 'head-col-drop', 'head-drop-empty')); }
 function cleanupHeadDrag() {
   if (headDrag) {
     if (headDrag.timer) clearTimeout(headDrag.timer);
@@ -949,14 +949,53 @@ function makeColumnRow(prose, targetHead, draggedNodes) {
 // and a row that no longer holds two real columns is unwrapped back to a plain
 // full-width run. Content is only ever moved out, never dropped.
 function normalizeColumns(prose) {
+  // Two columns are a layout MODE you turn on at the top of the note, not something a
+  // drag conjures or dissolves. So keep both .ncol slots even when one is empty (an
+  // empty column is a valid place to drop a heading) - just make sure a row always
+  // has its two slots. (Robin, 2026-11-12: "a 1 or 2 column selector… too clever".)
   prose.querySelectorAll('.ncols').forEach((row) => {
-    row.querySelectorAll(':scope > .ncol').forEach((col) => { if (!col.firstElementChild) col.remove(); });
-    const cols = [...row.querySelectorAll(':scope > .ncol')];
-    if (cols.length >= 2) return;
-    const parent = row.parentNode;
-    cols.forEach((col) => { while (col.firstChild) parent.insertBefore(col.firstChild, row); });
-    row.remove();
+    let cols = [...row.querySelectorAll(':scope > .ncol')];
+    while (cols.length < 2) { const c = document.createElement('div'); c.className = 'ncol'; row.appendChild(c); cols = [...row.querySelectorAll(':scope > .ncol')]; }
   });
+}
+// ── Columns as a toggle (Robin, 2026-11-12) ──────────────────────────────────
+// A note is one column, or two. The whole body is either a flat run of blocks, or a
+// single <div class="ncols"> wrapping exactly two <div class="ncol">. Headings live
+// in one column or the other; you drag them across to rearrange. No drag ever
+// creates or destroys the columns - the selector at the top of the note does.
+function noteIsTwoCol(n) { return !!(n && n.body && /\bncols\b/.test(n.body)); }
+function proseFlattenCols(prose) {
+  prose.querySelectorAll(':scope > .ncols').forEach((row) => {
+    const frag = document.createDocumentFragment();
+    row.querySelectorAll(':scope > .ncol').forEach((col) => { while (col.firstChild) frag.appendChild(col.firstChild); });
+    row.replaceWith(frag);
+  });
+}
+// Split the note's blocks into two balanced columns at heading boundaries, so a
+// heading and its body always travel together.
+function proseWrapTwoCols(prose) {
+  proseFlattenCols(prose);
+  const kids = [...prose.children];
+  const sections = []; let cur = [];
+  kids.forEach((k) => { if (/^H[1-3]$/.test(k.tagName) && cur.length) { sections.push(cur); cur = [k]; } else cur.push(k); });
+  if (cur.length) sections.push(cur);
+  const half = Math.ceil(sections.length / 2);
+  const row = document.createElement('div'); row.className = 'ncols';
+  const c1 = document.createElement('div'); c1.className = 'ncol';
+  const c2 = document.createElement('div'); c2.className = 'ncol';
+  sections.slice(0, half).forEach((sec) => sec.forEach((x) => c1.appendChild(x)));
+  sections.slice(half).forEach((sec) => sec.forEach((x) => c2.appendChild(x)));
+  row.appendChild(c1); row.appendChild(c2);
+  prose.appendChild(row);
+}
+function setNoteCols(mode) {
+  const n = state.note && state.note.current; if (!n || n.sharedBy) return;
+  const prose = document.querySelector('.note-body .prose[data-block-id]'); if (!prose) return;
+  if (mode === 2) { if (prose.querySelector(':scope > .ncols') && prose.children.length === 1) return; proseWrapTwoCols(prose); }
+  else { if (!prose.querySelector('.ncols')) return; proseFlattenCols(prose); }
+  n.body = sanitizeProse(prose.innerHTML);
+  saveProse('note', prose.innerHTML, n.id);
+  renderNote();
 }
 // Which heading's left gutter a point sits in, and WHICH affordance it's over: the
 // drag GRIP (⠿, the outer part of the gutter - drag to reorder, cursor grab) or the
@@ -986,60 +1025,48 @@ function headDragAt(clientX, clientY) {
   if (!headDrag) return;
   const prose = headDrag.prose;
   clearHeadDrops(prose);
-  headDrag.before = null; headDrag.colTarget = null;
-  const heads = [...prose.querySelectorAll('h1, h2, h3')];
+  headDrag.before = null;
   const section = sectionNodes(headDrag.head);
-  const pr = prose.getBoundingClientRect();
-  // Columnise: over the right quarter of another TOP-LEVEL section, pair the two
-  // into two columns. Only top-level sections pair, so a column never becomes three.
-  let colTarget = null;
-  if (clientX > pr.left + pr.width * 0.75 && headDrag.head.parentNode === prose) {
-    const tops = heads.filter((h) => h.parentNode === prose);
-    for (let i = 0; i < tops.length; i++) {
-      const top = tops[i].getBoundingClientRect().top;
-      const bot = (i + 1 < tops.length) ? tops[i + 1].getBoundingClientRect().top : pr.bottom;
-      if (clientY >= top && clientY < bot) { colTarget = tops[i]; break; }
-    }
-    if (colTarget && (colTarget === headDrag.head || section.includes(colTarget))) colTarget = null;
-  }
-  if (colTarget) { headDrag.colTarget = colTarget; colTarget.classList.add('head-col-drop'); return; }
-  // Otherwise the section lands inside whichever CONTAINER the pointer is over - a
-  // column (so it stacks INSIDE that column, half width, under the section above) or
-  // the note itself (full width) - either before a block or at that container's end.
-  // Dropping at a column's end used to fall through to the note and flatten the whole
-  // row to full width. (Robin, 2026-11-11: stack sections in a column, reposition freely.)
+  // Which container the section lands in. In a two-column note, pick the column by x
+  // with hysteresis: keep the dragged section in its CURRENT column until the pointer
+  // clearly crosses into the other one - so merely picking up a right-column heading
+  // (whose grip sits in the gutter BETWEEN the columns) never flings it left. Columns
+  // are made and removed only by the selector at the top of the note, never by a drag.
+  // (Robin, 2026-11-12: "a 1 or 2 column selector… too clever".)
   let container = prose;
-  prose.querySelectorAll(':scope > .ncols > .ncol').forEach((col) => {
-    const rr = col.getBoundingClientRect();
-    if (clientX >= rr.left && clientX <= rr.right && clientY >= rr.top - 60 && clientY <= rr.bottom + 60) container = col;
-  });
+  const cols = [...prose.querySelectorAll(':scope > .ncols > .ncol')];
+  if (cols.length === 2) {
+    const L = cols[0].getBoundingClientRect(), R = cols[1].getBoundingClientRect();
+    const curCol = headDrag.head.closest('.ncol');
+    if (clientX < L.right - 20) container = cols[0];
+    else if (clientX > R.left + 20) container = cols[1];
+    else if (curCol && prose.contains(curCol)) container = curCol;             // in the gutter: stay in the current column
+    else container = (clientX < (L.right + R.left) / 2) ? cols[0] : cols[1];
+  }
+  // Where in that container: before the block whose middle the pointer is above, else
+  // at the end - so dropping into a column lands below what's there unless you aim up.
   const cands = [...container.children].filter((b) => !b.classList.contains('ncols') && !section.includes(b) && b.offsetParent !== null);
   let target = null;
   for (const b of cands) { const rr = b.getBoundingClientRect(); if (clientY < rr.top + rr.height / 2) { target = b; break; } }
   headDrag.before = target; headDrag.container = container;
   if (target) target.classList.add('head-drop');
   else if (cands.length) cands[cands.length - 1].classList.add('head-drop-end');
+  else if (container.classList.contains('ncol')) container.classList.add('head-drop-empty');   // an empty column: light it up as the drop zone
 }
 // Commit (or abandon) the move, then re-fold and save. Content is only ever moved
 // as a whole section, never split or dropped.
 function endHeadDrag(commit) {
   if (!headDrag) return;
   const prose = headDrag.prose;
-  const dragHead = headDrag.head;
-  const section = sectionNodes(dragHead);
-  const colTarget = headDrag.colTarget || null;
+  const section = sectionNodes(headDrag.head);
   const vTarget = headDrag.before || null;
   const container = headDrag.container || prose;   // the column (or the note) the drop lands in
   cleanupHeadDrag();
   if (!commit) return;
-  if (colTarget && colTarget.parentNode === prose && dragHead.parentNode === prose && !section.includes(colTarget)) {
-    makeColumnRow(prose, colTarget, section);
-  } else if (!colTarget) {
-    if (vTarget && section.includes(vTarget)) return;   // dropped onto its own section: no-op
-    const frag = document.createDocumentFragment();
-    section.forEach((n) => frag.appendChild(n));         // detach the section as one unit
-    if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else container.appendChild(frag);
-  } else { return; }
+  if (vTarget && section.includes(vTarget)) return;   // dropped onto its own section: no-op
+  const frag = document.createDocumentFragment();
+  section.forEach((n) => frag.appendChild(n));         // detach the section as one unit
+  if (vTarget) vTarget.parentNode.insertBefore(frag, vTarget); else container.appendChild(frag);
   normalizeColumns(prose);
   // Fold state is keyed by heading position, which just changed - clear this note's
   // folds so nothing shows wrongly folded after the move.
@@ -1244,20 +1271,19 @@ function sanitizeProse(html) {
       // The render-time table scroll wrapper: unwrap it so the stored body holds
       // just the <table> (decorateProse re-wraps on render).
       if (c.tagName === 'DIV' && c.classList.contains('ptable-wrap')) { walk(c); const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }
-      // Column layout wrappers (a section dragged beside another). These DO persist
-      // in the body - the arrangement travels with the content - so keep the div
-      // and its class, but never let a stray/empty one survive: an empty .ncol is
-      // dropped, and a .ncols that no longer holds two real columns is unwrapped
-      // back to a plain run. Content is only ever moved, never deleted.
+      // Column layout wrappers. Two columns are a MODE (the selector at the top of the
+      // note), so the structure persists even when a column is empty - an empty column
+      // is a valid place to drop a heading. Keep both .ncol slots; only unwrap a .ncols
+      // that has lost a slot entirely (safety). Content is only ever moved, never lost.
+      // (Robin, 2026-11-12.)
       if (c.tagName === 'DIV' && c.classList.contains('ncol')) {
         walk(c);
-        if (!c.firstElementChild) { c.remove(); return; }          // empty column: drop the wrapper, keep nothing (there's nothing)
         [...c.attributes].forEach((a) => c.removeAttribute(a.name)); c.setAttribute('class', 'ncol'); return;
       }
       if (c.tagName === 'DIV' && c.classList.contains('ncols')) {
         walk(c);
         const cols = [...c.children].filter((x) => x.tagName === 'DIV' && x.classList.contains('ncol'));
-        if (cols.length < 2) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }   // not a real 2-col row: unwrap, keep content
+        if (cols.length < 2) { const p = c.parentNode; while (c.firstChild) p.insertBefore(c.firstChild, c); c.remove(); return; }   // lost a slot: unwrap, keep content
         [...c.attributes].forEach((a) => c.removeAttribute(a.name)); c.setAttribute('class', 'ncols'); return;
       }
       walk(c);
@@ -27071,6 +27097,15 @@ function notePublishedStrip(n) {
     <button class="note-pub-manage" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Manage</button>
   </div>`;
 }
+// The one/two column selector at the top of a note. Owner-editable notes only.
+function noteColsToggle(n) {
+  if (n.sharedBy && !n.canEdit) return '';
+  const two = noteIsTwoCol(n);
+  return `<div class="note-cols" role="group" aria-label="Column layout">
+    <button class="note-cols-btn ${!two ? 'on' : ''}" data-note-cols="1" aria-pressed="${!two}" title="One column"><span class="ncs-ico ncs-1" aria-hidden="true"></span>One column</button>
+    <button class="note-cols-btn ${two ? 'on' : ''}" data-note-cols="2" aria-pressed="${two}" title="Two columns"><span class="ncs-ico ncs-2" aria-hidden="true"></span>Two columns</button>
+  </div>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -27109,6 +27144,7 @@ function renderNote() {
         </div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
         ${notePublishedStrip(n)}
+        ${noteColsToggle(n)}
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}${nFloat}</div>
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
@@ -29678,6 +29714,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-note-insert-image]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineImage(); return; }
   if (t.closest('[data-note-insert-file]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); pickInlineFile(); return; }
   if (t.closest('[data-note-insert-table]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); insertNoteTable(); return; }
+  { const nc = t.closest('[data-note-cols]'); if (nc) { setNoteCols(Number(nc.dataset.noteCols) === 2 ? 2 : 1); return; } }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
   if (t.closest('[data-note-tidy]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); tidyNoteFormat(); return; }
 
