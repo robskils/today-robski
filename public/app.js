@@ -20021,7 +20021,7 @@ function renderMail(loading) {
     const catts = m.composing.attachments || [];
     const composeTitle = m.composing.inReplyTo ? 'Reply' : /^fwd:/i.test(m.composing.subject || '') ? 'Forward' : 'New message';
     const composeForm = `<form id="mail-compose-form" class="mail-compose">
-      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Keep this draft and go back">← Back</button><span class="mail-reader-title">${composeTitle}</span>${m.composing._resumed ? '<span class="mail-draft-note">Draft</span>' : ''}<span class="mail-compose-head-act"><button type="button" class="ghost mail-savedraft" data-mail-savedraft title="Save as a draft and come back later">Save draft</button><button type="button" class="ghost mail-discard-btn" data-mail-discard title="Throw this draft away">Discard</button><button class="add-btn wide mail-send-btn" type="submit">Send</button></span></div>
+      <div class="mail-reader-head mail-compose-head"><button type="button" class="ghost mail-back" data-mail-cancel title="Keep this draft and go back">← Back</button><span class="mail-reader-title">${composeTitle}</span>${m.composing._resumed ? '<span class="mail-draft-note">Draft</span>' : ''}</div>
       <div class="mail-compose-scroll">
       ${(m.accounts && m.accounts.length > 1) ? `<label class="mc-from"><span class="mc-from-l">From</span><select id="mc-from">${m.accounts.map((a) => { const nm = (a.name || '').trim(); const label = nm && nm.toLowerCase() !== (a.email || '').toLowerCase() ? `${nm} · ${a.email}` : a.email; return `<option value="${esc(a.id)}" ${a.id === composeAcctId() ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</select></label>` : ''}
       <input id="mc-to" placeholder="To" value="${esc(m.composing.to || '')}" list="contacts-dl" required>
@@ -20038,6 +20038,7 @@ function renderMail(loading) {
         <span class="mail-rt-sep" aria-hidden="true"></span>
         <button type="button" class="mail-rt-insert" data-mail-attach title="Attach a file to this email">${MAIL_ICO.attach}<span>Attach</span></button>
         <button type="button" class="mail-rt-insert" data-mail-img title="Place an image inside the message">${MAIL_ICO.image}<span>Image</span></button>
+        <span class="mail-rt-actions"><button type="button" class="ghost mail-savedraft" data-mail-savedraft title="Save as a draft and come back later">Save draft</button><button type="button" class="ghost mail-discard-btn" data-mail-discard title="Throw this draft away">Discard</button><button class="mail-send-btn" type="submit">Send</button></span>
       </div>
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}

@@ -7563,14 +7563,23 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-att-dl { display:inline-flex; align-items:center; gap:7px; cursor:pointer; text-decoration:none; color:var(--ink-2); transition:border-color .12s, color .12s, background .12s; }
 .mail-att-dl:hover { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--paper-2)); }
 .mail-att-sz { color:var(--ink-3); font-size:12.5px; }
-/* Rich-text compose: a small toolbar above a contenteditable body. */
-.mail-rt-toolbar { display:flex; flex-wrap:wrap; gap:4px; padding:6px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
-.mail-rt-toolbar button { min-width:34px; height:32px; padding:0 9px; border:0; border-radius:0; background:transparent; color:var(--ink-2); font-size:15px; cursor:pointer; transition:background .12s, color .12s; }
+/* Rich-text compose: a small toolbar above a contenteditable body. It carries
+   Send / Save draft on its right and STICKS to the top of the compose as you
+   scroll, so those actions are always in reach. (Robin, 2026-11-12: "put them in
+   the same row as Bold etc, and make that bar sticky".) */
+.mail-rt-toolbar { position:sticky; top:0; z-index:6; display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:7px 8px; border:1px solid var(--line-2); border-bottom:0; border-radius:0; background:var(--paper-2); }
+.mail-rt-toolbar button { min-width:34px; height:34px; padding:0 9px; border:0; border-radius:0; background:transparent; color:var(--ink-2); font-size:15px; cursor:pointer; transition:background .12s, color .12s; }
 .mail-rt-toolbar button:hover { background:var(--card); color:var(--accent); }
 /* Attach a file / embed an image - named, not just an emoji, so they're findable. (Robin, 2026-11-12.) */
 .mail-rt-insert { display:inline-flex; align-items:center; gap:6px; font-weight:500; white-space:nowrap; }
 .mail-rt-insert svg { width:16px; height:16px; flex:none; opacity:.92; }
 .mail-rt-sep { width:1px; align-self:stretch; background:var(--line); margin:3px 4px; flex:none; }
+/* The action cluster, pushed to the right of the toolbar: quiet Save draft /
+   Discard and a solid Send. */
+.mail-rt-actions { margin-left:auto; display:inline-flex; align-items:center; gap:6px; flex:none; }
+.mail-rt-toolbar .mail-savedraft, .mail-rt-toolbar .mail-discard-btn { font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:13.5px; color:var(--ink-2); white-space:nowrap; }
+.mail-rt-actions .mail-send-btn { height:34px; padding:0 20px; border:0; border-radius:0; background:var(--accent); color:var(--accent-ink); font-family:'Jost',system-ui,sans-serif; font-weight:600; font-size:14.5px; white-space:nowrap; cursor:pointer; transition:filter .12s; }
+.mail-rt-actions .mail-send-btn:hover { background:var(--accent); color:var(--accent-ink); filter:brightness(1.06); }
 .mail-compose-body { min-height:140px; padding:14px 16px; font-size:16.5px; line-height:1.6; background:var(--paper); border:1px solid var(--line-2); border-radius:0; color:var(--ink); overflow-wrap:anywhere; height:auto; }
 /* The writing area grows with what you type (a short reply is a short box); it
    never stretches to fill the screen. (Robin, 2026-11-12.) */
@@ -7728,7 +7737,10 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
 .mail2-compose { position:sticky; top:var(--tabstrip-h, 56px); height:calc(100dvh - var(--tabstrip-h, 56px)); overflow:hidden; display:flex; flex-direction:column; }
 .mail2-compose .mail-compose { flex:1 1 auto; min-height:0; padding:0; gap:0; }
 .mail2-compose .mail-compose-head { position:static; flex:none; padding:14px clamp(20px,4vw,40px); margin:0; }
-.mail-compose-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:12px; padding:16px clamp(20px,4vw,40px) 60px; }
+.mail-compose-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:12px; padding:0 clamp(20px,4vw,40px) 60px; }
+/* No top padding, so the sticky toolbar pins flush with no strip of scrolling text
+   showing above it; the first field keeps its breathing room instead. */
+.mail-compose-scroll > *:first-child { margin-top:14px; }
 /* Mobile: pin the reader toolbar BELOW the brand header (--navh) AND the sticky
    breadcrumb (--mail-crumbh), with a little padding so the icons stay put and never
    scroll up to touch the crumb bar. (Robin, 2026-10-29.) */
