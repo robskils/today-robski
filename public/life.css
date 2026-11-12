@@ -2171,9 +2171,11 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .th-type { flex:none; font-family:var(--sans,inherit); font-size:9.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); border:1px solid var(--line-2); border-radius:0; padding:1px 4px; }
 /* URL in a text cell: a small open-link button, cell stays editable. */
 .cellwrap { position:relative; display:block; width:100%; }
-.cellwrap.has-link .cell { padding-right:30px; }
-.cell-link { position:absolute; right:8px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:0; color:var(--accent); font-size:14px; text-decoration:none; opacity:.7; }
-.cell-link:hover { opacity:1; background:color-mix(in srgb,var(--accent) 14%,transparent); }
+.cellwrap.has-link .cell { padding-right:40px; }
+/* The open-link affordance in a URL cell: bigger, roomier and full-strength gold so
+   it's easy to see and hit, not a faint grey tick. (Robin, 2026-11-12.) */
+.cell-link { position:absolute; right:5px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:0; color:var(--accent); font-size:18px; text-decoration:none; opacity:1; }
+.cell-link:hover { background:color-mix(in srgb,var(--accent) 16%,transparent); }
 /* A URL column cell in the grid: the whole URL is a clickable link (edit it from
    the row's card). Truncates with an ellipsis so a long link never stretches the
    table. */
@@ -4928,9 +4930,12 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .trk-prow.mdrop-top { box-shadow:inset 0 2px 0 var(--accent); }
 .trk-prow.mdrop-bottom { box-shadow:inset 0 -2px 0 var(--accent); }
 .trk-cad { margin-left:8px; font-size:11.5px; color:var(--ink-3); font-weight:400; }
-/* ▶ on a practice with a video/link: one tap to open it and get straight on. */
-.trk-play { flex:none; width:30px; height:30px; border-radius:0; border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); background:color-mix(in srgb,var(--accent) 10%,var(--card)); color:var(--accent); font-size:10.5px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; margin:0 6px 0 4px; padding-left:1px; touch-action:manipulation; }
-.trk-play:hover { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+/* A practice with a video/link: the word "Link" in a plain bordered box (not a
+   play icon) - one tap to open it and get straight on. Border + text use --ink so
+   it reads as a white-bordered box on the dark washes and stays legible (dark on
+   ivory) on the light theme. (Robin, 2026-11-12.) */
+.trk-play { flex:none; width:auto; height:26px; border-radius:0; border:1px solid var(--ink); background:transparent; color:var(--ink); font-size:12px; font-weight:500; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; margin:0 6px 0 4px; padding:0 11px; touch-action:manipulation; }
+.trk-play:hover { background:var(--ink); color:var(--card); border-color:var(--ink); }
 .trk-status { display:inline-flex; align-items:center; gap:8px; flex:none; }
 .trk-lab { font-size:12.5px; color:var(--ink-3); white-space:nowrap; }
 .trk-dot2 { width:10px; height:10px; border-radius:0; flex:none; box-shadow:0 0 0 3px color-mix(in srgb,currentColor 16%,transparent); }
@@ -8025,6 +8030,14 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
   body[data-view="tracker"] .trk-prow::after { content:''; flex:1 0 100%; height:0; order:7; }
   body[data-view="tracker"] .trk-hist { order:8; flex:0 1 auto; width:auto; margin:8px 0 0 auto; justify-content:flex-end; }
   body[data-view="tracker"] .trk-editp { order:9; align-self:center; margin:8px 0 0 10px; font-size:22px; padding:2px 6px; opacity:.8; }
+  /* Practices on a phone: the "every other day" cadence label eats the name row -
+     hide it here; it still shows on the wider layout. (Robin, 2026-11-12.) */
+  body[data-view="tracker"] .trk-cad { display:none; }
+  /* Bigger day boxes - easier to tick off with a thumb. 7 cells × 40px = 280px,
+     which fits the right-aligned history row on a phone. (Robin, 2026-11-12.) */
+  body[data-view="tracker"] .trk-daycell { width:40px; padding:5px 0; }
+  body[data-view="tracker"] .trk-prow .trk-dot { width:30px; height:30px; }
+  body[data-view="tracker"] .trk-prow .trk-dot i { font-size:12.5px; }
   .nav-spacer, .foot-search, .nav-new { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:0; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
@@ -8441,9 +8454,12 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
    reach left into the gutter for it - that gutter is outside the heading's own
    hover box, which made the hover-only grip disappear the moment you went to grab
    it. Brighter when the note or the heading is hovered, full gold while dragging. */
-.prose.prose-heads :is(h1,h2,h3)::after { content:"\28FF"; position:absolute; left:-46px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:16px; text-align:center; color:var(--k-goldt); opacity:.26; font-size:15px; line-height:1; pointer-events:none; transition:opacity .12s; }
-.prose.prose-heads:hover :is(h1,h2,h3)::after { opacity:.42; }
-.prose.prose-heads :is(h1,h2,h3):hover::after { opacity:.75; }
+/* Visible by default (was a near-invisible .26) so the grabby bit is actually
+   findable - full gold on the heading you're over. (Robin, 2026-11-12: "grab the
+   grabby bit of a header to reposition it, and it's just not having it".) */
+.prose.prose-heads :is(h1,h2,h3)::after { content:"\28FF"; position:absolute; left:-47px; top:calc(var(--hsize, 24px) * .875); transform:translateY(-50%); width:18px; text-align:center; color:var(--k-goldt); opacity:.55; font-size:17px; line-height:1; pointer-events:none; transition:opacity .12s; }
+.prose.prose-heads:hover :is(h1,h2,h3)::after { opacity:.8; }
+.prose.prose-heads :is(h1,h2,h3):hover::after { opacity:1; }
 .prose.prose-heads :is(h1,h2,h3).head-dragging::after { opacity:1; }
 @media (max-width:760px){ .prose.prose-heads :is(h1,h2,h3)::after { display:none; } }
 .prose.prose-heads.head-dragging-ctx { user-select:none; -webkit-user-select:none; cursor:grabbing; }

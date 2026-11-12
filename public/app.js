@@ -755,8 +755,23 @@ function proseEditor(body, key, id, readOnly) {
   // never to "whatever note is open now" - without it, a save scheduled here
   // that fires after you follow a link lands in the note you navigated to,
   // silently overwriting it. That bug wiped notes; do not remove the id.
-  return `<div class="prose${readOnly ? ' readonly' : ''}" contenteditable="${readOnly ? 'false' : 'true'}" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${decorateProse(bodyToHtml(body))}</div>`;
+  // An empty, editable editor is seeded with one real paragraph so the FIRST line you
+  // type is already a <p> block - not a bare, marginless text node that jams against
+  // the next line (the "top two lines tight, then a gap" bug that only tidied itself
+  // on reopen, when bodyToHtml re-wraps every line). data-empty keeps the placeholder
+  // showing, since the seeded <p> means :empty no longer matches; a global input
+  // handler keeps it in sync as you type. (Robin, 2026-11-12.)
+  const inner = decorateProse(bodyToHtml(body));
+  const empty = !inner;
+  const content = (empty && !readOnly) ? '<p><br></p>' : inner;
+  return `<div class="prose${readOnly ? ' readonly' : ''}"${empty && !readOnly ? ' data-empty' : ''} contenteditable="${readOnly ? 'false' : 'true'}" spellcheck="true" data-prose="${key}" data-block-id="${esc(id || '')}" data-ph="Write something here…">${content}</div>`;
 }
+// Keep the placeholder in sync as you write into or empty out a prose editor: the
+// editor is seeded with a <p> (above), so :empty never matches - data-empty does.
+document.addEventListener('input', (e) => {
+  const pr = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
+  if (pr) pr.toggleAttribute('data-empty', !pr.textContent.trim());
+});
 // ── Collapsible headings (fold content under H1-H3) ──────────────────
 // Each heading gets a live-DOM chevron; clicking it hides the following siblings
 // up to the next heading of the same-or-higher level. Fold state persists per
@@ -877,6 +892,7 @@ function stripStrayFoldGlyphs(prose) {
   });
 }
 function setupFolds() {
+  ensureParaSep();   // build <p> blocks as you type, matching the saved shape (see ensureParaSep)
   document.querySelectorAll('.prose[data-block-id]').forEach((prose) => {
     applyProseIndent(prose);
     // Foldable headings, robust edition (Robin, 2026-11-09). Every heading folds its
@@ -16568,7 +16584,7 @@ function t2TrackerHtml(manage) {
         ${manage ? `<span class="trk-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span>` : ''}
         <button class="t2-tick ${marked ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (marked ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="trk-pname">${nameInner}${streak > 1 && !a.avoid ? `<span class="trk-streak">${streak} days</span>` : ''}${a.avoid ? `<span class="t2-avoidtag">avoiding</span>${streak > 1 ? `<span class="trk-streak trk-clean">${streak} days clean</span>` : ''}` : ''}${a.cadence && !a.avoid ? `<span class="trk-cad">${esc(cadenceLabel(a.cadence))}</span>` : ''}</span>
-        ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now — ${esc(a.title)}">▶</button>` : ''}
+        ${a.video ? `<button class="trk-play" data-prc-video="${esc(a.video)}" title="Open and do it now - ${esc(a.title)}">Link</button>` : ''}
         ${manage ? `<button class="trk-editp" data-prc-edit="${a.id}" title="Cadence, video, area &amp; more">✎</button>` : ''}
         <span class="trk-hist"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d === today ? 'Today' : d === yesterday ? 'Yesterday' : kitWhen(d)} · tap to ${practiceMarked(a.id, d) ? 'undo' : 'tick'}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span></span>`).join('')}</span></span>
       </div>`;
@@ -27043,6 +27059,16 @@ function renderNote() {
 // doesn't jump about as you type. (Robin, 2026-11-03.) The buttons reuse the
 // existing data-note-insert-image / -file handlers; mousedown is suppressed so a
 // click doesn't blur the editor and hide the box before it fires.
+// New lines in a prose editor are built as <p> blocks (not Chromium's default bare
+// <div>), matching the shape every note is saved and re-rendered in (mdToHtml /
+// normalizeProseHtml). Paired with the empty-editor <p> seed in proseEditor, this
+// keeps paragraph spacing even AS you write - without it the first typed line was a
+// bare, marginless text node that sat jammed against the second, then a gap before
+// the third, tidying itself only when the note was reopened. One document-wide
+// setting, set lazily the first time any editor renders (see setupFolds). (Robin,
+// 2026-11-12: "larger gap between the top two lines and the third… off while writing".)
+let __paraSepSet = false;
+function ensureParaSep() { if (__paraSepSet) return; __paraSepSet = true; try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch {} }
 let __noteFloatWired = false, __nfiRaf = 0;
 function noteFloatInsertInit() {
   const schedule = () => { if (__nfiRaf) return; __nfiRaf = requestAnimationFrame(() => { __nfiRaf = 0; try { noteFloatPlace(); } catch {} }); };
