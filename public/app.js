@@ -38,7 +38,7 @@ function markRingOn() { try { return localStorage.getItem('life.markring') === '
 function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
 // The Insight page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Insight hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Insight tools individually".)
@@ -4165,7 +4165,7 @@ function renderSettingsSix() {
   const cyc = state.planCycle === 'annual' ? 'annual' : 'monthly';
   const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MOD_LABEL = Object.fromEntries(MODULES);
-  const TOOL_KEYS = ['mail', 'calendar', 'tasks', 'notes', 'discover', 'goals', 'financial', 'saved', 'today'];
+  const TOOL_KEYS = ['mail', 'calendar', 'tasks', 'notes', 'discover', 'goals', 'reviews', 'financial', 'saved', 'today'];
   const ROM6 = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   const TITLES = { you: 'You', plan: 'Plan and AI', look: 'How it looks and works', conn: 'Connections', people: 'Invitations', data: 'Your data' };
   const curName = (CURRENCIES_APP.find((x) => x[0] === curc) || [])[3] || curc;
@@ -5553,6 +5553,11 @@ const KNAV_R = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI
 // existing ones, so navigation is unchanged - only the chrome is new.
 function knavGroups() {
   const areaTools = (state.areas || []).map((a) => [esc(a.title || 'Untitled'), `data-open-area="${a.id}"`, '']);
+  // Reviews is its own on/off switch (Settings › Tools you use). When off, the
+  // whole Reviews row leaves the Tools group. (Robin, 2026-11-12.)
+  const revTools = modOn('reviews') ? [
+    ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', '']
+  ] : [];
   // §71 (Robin, 2026-11-05): Mail · Calendar · Tasks · Notes left the groups and
   // stand in the bar as one-click primaries. The groups keep the deeper things,
   // honestly named - People → Contacts, Keep → Library. Spaces leads the row now
@@ -5566,8 +5571,8 @@ function knavGroups() {
         ['Discover', 'data-open-discover', ''], ['Read & Watch', 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-        ['Reviews', 'data-open-reviews-tool', 'reviews'], ['Daily', 'data-journal-dailyreview', ''], ['Weekly', 'data-open-reviewtype="weekly"', ''], ['Monthly', 'data-open-reviewtype="monthly"', ''], ['Quarterly', 'data-open-reviewtype="quarterly"', ''] ],
-      rows: [['Day to day', 2], ['Inspire', 2], ['Money', 4], ['Goals', 3], ['Reviews', 5]] },
+        ...revTools ],
+      rows: [['Day to day', 2], ['Inspire', 2], ['Money', 4], ['Goals', 3], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
   ];
@@ -5751,6 +5756,7 @@ function navGroupsHtml(v) {
     const searchNote = searching ? '<div class="knav-find-searching">Searching your Spaces…</div>' : '';
     find = `<div class="knav-find">
       <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Search" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
+      <div class="knav-find-acts"><button class="knav-find-act" data-quick-event>+ New event</button></div>
       ${secHtml}${searchNote}${empty}
     </div>`;
   }
@@ -9475,7 +9481,7 @@ function renderMakeNew() {
 // opened from the menubar's New on any page - NOT a dropdown, and the only New box
 // in the app. Rendered on <body> so it floats over whatever view you're on.
 function newPopHtml() {
-  const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const items = HOME_NEW.filter(([k]) => k !== 'review' || modOn('reviews')).map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
   return `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Kaya">
     <div class="newpop-h"><span class="newpop-eyebrow">Add to Kaya</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
@@ -9622,7 +9628,7 @@ async function glanceMailOpenIn(key) {
 }
 function homeGlanceHtml() {
   const newOpen = !!(state.home && state.home.newMenu);
-  const newItems = HOME_NEW.map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const newItems = HOME_NEW.filter(([k]) => k !== 'review' || modOn('reviews')).map(([k, l, sc], i) => `<button class="gln-new-item" data-new-make="${k}"><span class="gln-new-n">${i + 1}</span><span class="gln-new-l">${esc(l)}</span>${sc ? `<span class="gln-new-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
   const newMenu = newOpen ? `<div class="gln-new-menu"><div class="gln-scrim" data-newmenu-close></div><div class="gln-new-list">${newItems}</div></div>` : '';
   const words = [['mail', 'Mail', modOn('mail'), mailHeaderCount()], ['messages', 'Messages', modOn('contacts'), unreadMsgs()], ['tasks', 'Tasks', true, (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).length], ['calendar', 'Calendar', modOn('calendar'), 0], ['notes', 'Notes', modOn('notes'), 0], ['goals', 'Goals', modOn('goals'), 0]].filter((w) => w[2]);
   const glance = state.home && state.home.glance;
@@ -9637,7 +9643,7 @@ function homeNewBtnHtml() {
   // A centred popover of keyline tiles, not a list pinned to the button's corner.
   // The first four (Note/Task/Event/Email, the ones with shortcuts) are the "big
   // four" and the only ones shown on a phone. (Robin, 2026-11-03.)
-  const items = HOME_NEW.map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
+  const items = HOME_NEW.filter(([k]) => k !== 'review' || modOn('reviews')).map(([k, l, sc], i) => `<button class="newpop-item${i < 4 ? ' big' : ''}" data-new-make="${k}"><span class="newpop-item-l">${esc(l)}</span>${sc ? `<span class="newpop-item-sc">${esc(PK(sc))}</span>` : ''}</button>`).join('');
   const pop = newOpen ? `<div class="newpop-wrap"><div class="newpop-scrim" data-newmenu-close></div><div class="newpop" role="dialog" aria-label="Add to Kaya">
     <div class="newpop-h"><span class="newpop-eyebrow">Add to Kaya</span><button class="newpop-x" data-newmenu-close>Esc</button></div>
     <div class="newpop-grid">${items}</div>
@@ -15620,7 +15626,7 @@ function renderCalendar() {
     };
     main = `<div class="cx-month"><div class="cx-dows">${WEEKDAYS.map((w) => `<div class="cx-dow">${w}</div>`).join('')}</div><div class="cx-cells">${monthWeeks(c.y, c.m).flat().map(cell).join('')}</div></div>`;
   } else if (c.mode === 'week') {
-    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
+    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span><button class="cx-whead-add" data-cal-add-day="${d.iso}" title="Add an event" aria-label="Add an event on ${esc(d.dow)} ${d.day}">+</button></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
   } else {
     const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
     main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead${iso === todayI ? ' is-today' : iso === addDayISO(todayI, 1) ? ' is-tomorrow' : ''}"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span><button class="cx-lh-add" data-cal-add-day="${iso}" title="Add an event on this day" aria-label="Add an event on this day">+</button></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span>${evJoin(e)}</div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
@@ -16492,6 +16498,7 @@ function clearStaleReviewNotif() {
 }
 // One review-due banner row: the "Start" button plus an × to dismiss it for today.
 function reviewDueBannerHtml() {
+  if (!modOn('reviews')) return '';
   const due = reviewsDueToday();
   if (!due.length) return '';
   return due.map((d) => {
@@ -16507,6 +16514,7 @@ function reviewDueBannerHtml() {
 // The Home Today section reminder - loads cadence + reviews lazily, then shows the
 // shared banner (nothing once submitted or dismissed).
 function homeReviewDueBanner() {
+  if (!modOn('reviews')) return '';
   if (!state.reviewRem) { api('/api/review-reminders').then((r) => { state.reviewRem = r.reminders || {}; if (state.view.type === 'home') renderHome(); }).catch(() => {}); return ''; }
   if (state.reviews === undefined) { state.reviews = []; api('/api/blocks?kind=review').then((rv) => { state.reviews = rv; clearStaleReviewNotif(); if (state.view.type === 'home') renderHome(); }).catch(() => {}); }
   return reviewDueBannerHtml();
@@ -27742,7 +27750,8 @@ function palNavTargets() {
   if (modOn('horoscope')) add('Horoscope', () => Promise.resolve(openHoroscope()), 'stars astrology zodiac reflection insight tool');
   if (modOn('insights')) add('Insights', () => openInsights(), 'patterns themes reflection insight tool');
   if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
-  if (modOn('goals')) { add('Goals & Reviews', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
+  if (modOn('goals')) { add(modOn('reviews') ? 'Goals & Reviews' : 'Goals', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
+  if (modOn('reviews')) add('Reviews', () => openReviews(), 'weekly monthly quarterly yearly review reflect check-in wheel of life');
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
   if (modOn('saved')) add('Read & Watch', () => openReadwatch(), 'bookmarks reading list watchlist saved');
   if (modOn('discover')) add('Discover', () => openDiscover(), 'events near me what is on');
@@ -29535,7 +29544,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-task-add-close]')) { state.taskAdding = false; state.taskAddArea = null; state.taskDraft = null; state.taskAddConns = []; renderTasks(); return; }
   if (t.closest('[data-quick-task]')) { showQuickTask(); return; }
   if (t.closest('[data-qt-close]')) { if (state.makeNew) { closeMakeNew(); return; } const w = $('#qt-wrap'); if (w) w.innerHTML = ''; return; }
-  if (t.closest('[data-quick-event]')) { showQuickEvent(); return; }
+  if (t.closest('[data-quick-event]')) { const kn = state.knav; if (kn && (kn.find || kn.contents || kn.group)) { kn.find = false; kn.contents = false; kn.group = null; renderNav(); } showQuickEvent(); return; }
   { const dt = t.closest('[data-day-tick]'); if (dt) { e.preventDefault(); e.stopPropagation(); homeDayTick(dt.dataset.dayTick); return; } }
   { const hc = t.closest('[data-home-cal]'); if (hc) { const p = hc.dataset.evId ? openEventHit({ id: hc.dataset.evId, date: hc.dataset.evDate }) : openCalendar(todayISO()); Promise.resolve(p).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-new-note]')) { newNote(null).catch((x) => toast(x.message)); return; }

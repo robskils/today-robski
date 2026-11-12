@@ -10671,6 +10671,10 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-find-q::placeholder { color:var(--ink-3); }
 .knav-find-close, .knav-find-sh { background:none; border:0; cursor:pointer; }
 .knav-find-close { font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); white-space:nowrap; }
+/* Quick actions under the search box - "+ New event" straight from universal search. (Robin, 2026-11-12.) */
+.knav-find-acts { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 2px; }
+.knav-find-act { background:transparent; border:1px solid var(--k-gold); color:var(--k-goldt); font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:14px; padding:8px 14px; cursor:pointer; border-radius:0; transition:color .12s, border-color .12s, background .12s; }
+.knav-find-act:hover { background:var(--k-gold); color:var(--k-ongold); border-color:var(--k-gold); }
 .knav-find-sec { border-bottom:1px solid var(--line); }
 .knav-find-sh { display:flex; align-items:center; gap:10px; width:100%; padding:14px 0; text-align:left; }
 .knav-find-sl { font-family:'Jost',system-ui,sans-serif; font-weight:600; font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink); white-space:nowrap; }
@@ -12666,6 +12670,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
    alignment like before".) */
 .cx-wnum.today { color:var(--k-gold); }
 .cx-whead:has(.cx-wnum.today) .cx-wdow { color:var(--k-goldt); }
+/* A quiet + on each week-day header, to add an event straight to that day. Mirrors
+   the list view's .cx-lh-add, sized down for the seven narrow columns. (Robin, 2026-11-12.) */
+.cx-whead-add { margin-left:auto; align-self:center; flex:none; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; padding:0; background:transparent; border:1px solid var(--k-line); color:var(--k-mute); font-family:var(--k-sans); font-size:18px; font-weight:300; line-height:1; cursor:pointer; border-radius:0; transition:color .12s, border-color .12s; }
+.cx-whead-add:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 .cx-wev { padding:10px 0; border-bottom:1px solid var(--k-line); min-width:0; cursor:pointer; }
 .cx-wev-t { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); }
 .cx-wev-ti { margin-top:2px; text-wrap:pretty; min-width:0; }
@@ -12721,6 +12729,7 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
   .cx-week { grid-template-columns:1fr; gap:0; }
   .cx-wcol { border-bottom:1px solid var(--k-line); padding-bottom:16px; margin-bottom:12px; }
   .cx-whead { gap:10px; padding-bottom:12px; }
+  .cx-whead-add { width:34px; height:34px; font-size:23px; }
   .cx-wnum { font-size:30px; }
   .cx-wev { padding:12px 0; }
   .cx-wev-t { font-size:14px; }
