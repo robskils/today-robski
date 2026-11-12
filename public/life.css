@@ -3158,6 +3158,19 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .ce-end-times { font-size:13px; color:var(--ink-2); }
 .ce-rep-custom { display:flex; align-items:center; gap:7px; margin-top:9px; }
 .ce-rep-every { font-size:13px; color:var(--ink-2); }
+/* Repeat folds behind a tasteful button (shut by default); the summary IS the
+   button and the controls unfold below it - mirrors the Connect fold, and keeps
+   the event form calm, especially on a phone. (Robin, 2026-11-12.) */
+details.ce-repeat-fold { max-width:none; }
+details.ce-repeat-fold:not([open]) { gap:0; }
+details.ce-repeat-fold[open] { gap:12px; }
+summary.ce-repeat-sum { list-style:none; cursor:pointer; align-self:flex-start; display:inline-flex; align-items:center; gap:10px; padding:9px 14px; border:1px solid var(--line); background:var(--paper-2); -webkit-tap-highlight-color:transparent; transition:border-color .12s; }
+summary.ce-repeat-sum:hover { border-color:var(--accent); }
+summary.ce-repeat-sum::-webkit-details-marker { display:none; }
+summary.ce-repeat-sum::after { content:'▸'; font-size:10px; color:var(--ink-3); margin-left:2px; }
+details.ce-repeat-fold[open] > summary.ce-repeat-sum::after { content:'▾'; }
+.ce-repeat-sum-l { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+.ce-repeat-sum-v { font-size:13px; color:var(--ink-2); }
 .ce-rep-interval { width:62px !important; text-align:center; }
 .ce-rep-unit { min-width:96px; }
 /* Custom reminder: a number + unit that appears under the select on "Custom…". */
@@ -10696,9 +10709,12 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 /* The six big action tiles carry a clear white rim - stronger than the standard
    glass edge, so they read as the main shortcuts. (Robin, 2026-11-06: "need a
    white border", "a little less faint".) Gold still wins on hover / current. */
-.knav-c-prim { border:1px solid rgba(255,255,255,.62); background:none; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:15px; color:var(--k-ink); padding:15px 10px; text-align:center; transition:border-color .16s,color .16s; }
-.knav-c-prim:hover { border-color:var(--k-gold); color:var(--k-goldt); }
-.knav-c-prim.here { border-color:var(--k-gold); }
+/* The six daily tiles carry a GOLD rim - they're the important shortcuts, so they
+   stand apart from the quiet white-rimmed tools. The current page fills gold.
+   (Robin, 2026-11-12.) */
+.knav-c-prim { border:1px solid var(--k-gold); background:none; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:15px; color:var(--k-ink); padding:15px 10px; text-align:center; transition:border-color .16s,color .16s,background .16s; }
+.knav-c-prim:hover { border-color:var(--k-goldt); color:var(--k-goldt); }
+.knav-c-prim.here { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); }
 .knav-c-foot { display:flex; flex-wrap:wrap; align-items:center; gap:8px 26px; margin-top:28px; padding-top:16px; border-top:1px solid var(--line); }
 .knav-c-foot .nff { background:none; border:0; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink-2); }
 .knav-c-foot .nff:hover, .knav-c-foot .nff.on { color:var(--k-goldt); }

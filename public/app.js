@@ -15969,8 +15969,13 @@ function showCalForm(ev) {
         const unit = ['daily', 'weekly', 'monthly'].includes(cur0) ? cur0 : 'weekly';
         const endMode = (ev && ev.until) ? 'date' : (ev && ev.count) ? 'count' : 'never';
         const opt = (v, l, on) => `<option value="${v}" ${on === v ? 'selected' : ''}>${l}</option>`;
-        return `<label class="ce-field ce-repeat-field">
-          <span class="ce-flbl">Repeat</span>
+        // Repeat is tucked behind a tasteful button and only unfolds its controls
+        // when you open it (shut by default, open when a repeat is already set), so
+        // the form stays calm - particularly on a phone. (Robin, 2026-11-12.)
+        const unitWord = { daily: 'days', weekly: 'weeks', monthly: 'months' }[unit] || 'weeks';
+        const curLabel = repSel === 'none' ? 'Does not repeat' : repSel === 'custom' ? `Every ${iv} ${unitWord}` : repSel === 'daily' ? 'Daily' : repSel === 'weekly' ? 'Weekly' : repSel === 'monthly' ? 'Monthly' : repSel === 'yearly' ? 'Yearly' : 'Repeats';
+        return `<details class="ce-field ce-repeat-field ce-repeat-fold"${repSel === 'none' ? '' : ' open'}>
+          <summary class="ce-repeat-sum"><span class="ce-repeat-sum-l">Repeat</span><span class="ce-repeat-sum-v" id="ce-repeat-sumv">${esc(curLabel)}</span></summary>
           <div class="ce-rep-controls">
             <select id="ce-repeat" class="sel ce-rep-sel">${opt('none', 'Does not repeat', repSel)}${opt('daily', 'Daily', repSel)}${opt('weekly', 'Weekly', repSel)}${opt('monthly', 'Monthly', repSel)}${opt('yearly', 'Yearly', repSel)}${opt('custom', 'Custom…', repSel)}</select>
             <span class="ce-end" id="ce-end-wrap" ${repSel === 'none' ? 'hidden' : ''}>
@@ -15981,10 +15986,10 @@ function showCalForm(ev) {
             </span>
           </div>
           <span class="ce-rep-custom" id="ce-rep-custom" ${repSel === 'custom' ? '' : 'hidden'}><span class="ce-rep-every">Every</span><input id="ce-rep-interval" class="sel ce-rep-interval" type="number" min="1" max="99" inputmode="numeric" value="${iv}"><select id="ce-rep-unit" class="sel ce-rep-unit">${opt('daily', 'days', unit)}${opt('weekly', 'weeks', unit)}${opt('monthly', 'months', unit)}</select></span>
-        </label>`;
+        </details>`;
       })()}
     </div>
-    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<div class="ce-field ce-repeat-info"><span class="ce-flbl">Repeat</span><div class="ce-repeat-panel"><span class="ce-recur-badge">${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `Until ${esc(ends)}` : 'No end date'}</span></div><div class="ce-recur-endset"><span class="ce-recur-endlbl">Ends on</span>${dateFieldHtml('ce-recur-until', (ev && ev.until) || '')}<button type="button" class="ghost ce-recur-setend" data-recur-setend>Set end date</button>${(ev && ev.until) ? '<button type="button" class="ghost ce-recur-clearend" data-recur-clearend>Clear</button>' : ''}</div><span class="ce-repeat-hint">Set an end date to shorten the series, or tap <b>Remove repeat…</b> to drop just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></div>`; })() : ''}
+    ${(ev && ev.recurringId) ? (() => { const started = ev.recurStart ? `${prettyDate(ev.recurStart)} ${String(ev.recurStart).slice(0, 4)}` : ''; const ends = ev.until ? `${prettyDate(ev.until)} ${String(ev.until).slice(0, 4)}` : ''; return `<details class="ce-field ce-repeat-info ce-repeat-fold"><summary class="ce-repeat-sum"><span class="ce-repeat-sum-l">Repeat</span><span class="ce-repeat-sum-v">${esc(recurDescribe(ev))}</span></summary><div class="ce-repeat-panel"><span class="ce-recur-badge">${esc(recurDescribe(ev))}</span><div class="ce-recur-meta">${started ? `<span class="ce-recur-when">Started ${esc(started)}</span>` : ''}<span class="ce-recur-when">${ends ? `Until ${esc(ends)}` : 'No end date'}</span></div><div class="ce-recur-endset"><span class="ce-recur-endlbl">Ends on</span>${dateFieldHtml('ce-recur-until', (ev && ev.until) || '')}<button type="button" class="ghost ce-recur-setend" data-recur-setend>Set end date</button>${(ev && ev.until) ? '<button type="button" class="ghost ce-recur-clearend" data-recur-clearend>Clear</button>' : ''}</div><span class="ce-repeat-hint">Set an end date to shorten the series, or tap <b>Remove repeat…</b> to drop just this one, this and everything after, or the whole series.</span><button type="button" class="ghost ce-recur-remove" data-cal-del>Remove repeat…</button></div></details>`; })() : ''}
     <label class="ce-field"><span class="ce-flbl">Notes</span><textarea id="ce-notes" class="sel ce-notes" placeholder="Add note here (optional)" rows="2">${esc(notes)}</textarea></label>
     ${noteLinksHtml(notes)}
     <details class="ce-links"${(ev && (ev.url || ev.contact)) ? ' open' : ''}>
@@ -30110,7 +30115,7 @@ document.addEventListener('change', (e) => {
   if (e.target.classList && e.target.classList.contains('note-title')) autoGrow(e.target);
   if (e.target.id === 'ce-allday') { const f = $('#cal-ev-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // Recurrence: reveal the End control when it repeats, and the Every-N row for Custom.
-  if (e.target.id === 'ce-repeat') { const none = e.target.value === 'none'; const custom = e.target.value === 'custom'; const ew = $('#ce-end-wrap'), cw = $('#ce-rep-custom'); if (ew) ew.hidden = none; if (cw) cw.hidden = !custom; }
+  if (e.target.id === 'ce-repeat') { const none = e.target.value === 'none'; const custom = e.target.value === 'custom'; const ew = $('#ce-end-wrap'), cw = $('#ce-rep-custom'); if (ew) ew.hidden = none; if (cw) cw.hidden = !custom; const sv = $('#ce-repeat-sumv'); if (sv) { const o = e.target.selectedOptions && e.target.selectedOptions[0]; sv.textContent = none ? 'Does not repeat' : custom ? 'Custom' : (o ? o.textContent : e.target.value); } }
   if (e.target.id === 'ce-end') { const m = e.target.value; const dw = $('#ce-until-wrap'), cw = $('#ce-end-countwrap'); if (dw) dw.hidden = m !== 'date'; if (cw) cw.hidden = m !== 'count'; }
   if (e.target.id === 'qe-allday') { const f = $('#qe-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // An event's end follows its start. Changing the start date/time slides the end
