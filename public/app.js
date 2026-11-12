@@ -27598,9 +27598,9 @@ const SEARCH_KIND_RANK = { nav: -1, area: 0, goal: 1, contact: 2, note: 3, table
 function palNavTargets() {
   const T = [];
   const add = (title, run, kw) => T.push({ kind: 'nav', title, run, kw: `${title} ${kw || ''}`.toLowerCase() });
-  add('Home', () => openHome(), 'start');
+  add('Today', () => openHome(), 'home start homepage overview');   // the homepage - the breadcrumb calls it "Today", so both words land here (Robin, 2026-11-12)
   add('What next', () => wnToggle(true), 'what now next do suggestion');   // §44
-  if (modOn('today')) add('Flow', () => openToday(), 'flow day plan today');
+  if (modOn('today')) add('Flow', () => openToday(), 'flow day plan timeline canvas');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
   add('Spaces', () => openAreasList(), 'life space spaces area areas folios pillars overview all your spaces');

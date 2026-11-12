@@ -8468,7 +8468,11 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* Two columns: drag one section beside another to pair them. A column row is a
    standalone block in the note's flow. Stacks back to a single column on a phone,
    so a note always reads top-to-bottom there (and dragging is a desktop gesture). */
-.prose .ncols { display:grid; grid-template-columns:1fr 1fr; gap:38px; align-items:start; margin:16px 0; }
+/* A wide gutter between the two columns: wide enough that the right column's
+   heading gutter (its drag grip + fold arrow sit ~47px to its left) clears the left
+   column instead of crowding it, leaving a clear gap. (Robin, 2026-11-12: "have a
+   gutter between them, they don't need to touch".) */
+.prose .ncols { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start; margin:16px 0; }
 .prose .ncol { min-width:0; }
 .prose .ncol > :first-child { margin-top:0; }
 /* A section stacked below another in the same column gets clear separation, so two
