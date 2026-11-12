@@ -6262,7 +6262,10 @@ function homeEyebrow() {
   const adj = wx ? (wx in WX_ADJ ? WX_ADJ[wx] : wx) : '';
   const noun = p === 'night' ? 'night' : p;
   const phrase = adj ? `${/^[aeiou]/i.test(adj) ? 'an' : 'a'} ${adj} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
-  return `${esc(wd)} · ${esc(phrase)}`;
+  // Weekday and phrase as separate spans so a narrow phone can drop the phrase to a
+  // second line instead of clipping it ("...Mornin" with the g cut off). (Robin,
+  // 2026-11-12.)
+  return `<span class="kg-eb-day">${esc(wd)}</span><span class="kg-eb-sep"> · </span><span class="kg-eb-ph">${esc(phrase)}</span>`;
 }
 function homeSubClause() { return ({ night: 'The day has come to rest.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'The day is drawing in.' })[homePartOfDay()]; }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so

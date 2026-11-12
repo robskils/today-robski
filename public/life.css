@@ -8030,14 +8030,6 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
   body[data-view="tracker"] .trk-prow::after { content:''; flex:1 0 100%; height:0; order:7; }
   body[data-view="tracker"] .trk-hist { order:8; flex:0 1 auto; width:auto; margin:8px 0 0 auto; justify-content:flex-end; }
   body[data-view="tracker"] .trk-editp { order:9; align-self:center; margin:8px 0 0 10px; font-size:22px; padding:2px 6px; opacity:.8; }
-  /* Practices on a phone: the "every other day" cadence label eats the name row -
-     hide it here; it still shows on the wider layout. (Robin, 2026-11-12.) */
-  body[data-view="tracker"] .trk-cad { display:none; }
-  /* Bigger day boxes - easier to tick off with a thumb. 7 cells × 40px = 280px,
-     which fits the right-aligned history row on a phone. (Robin, 2026-11-12.) */
-  body[data-view="tracker"] .trk-daycell { width:40px; padding:5px 0; }
-  body[data-view="tracker"] .trk-prow .trk-dot { width:30px; height:30px; }
-  body[data-view="tracker"] .trk-prow .trk-dot i { font-size:12.5px; }
   .nav-spacer, .foot-search, .nav-new { display:none; }
   /* ── Mobile nav drawer: the desktop grouped sidebar, slid in from the left ── */
   .nav-menu-toggle { position:relative; display:inline-flex; align-items:center; justify-content:center; width:42px; height:42px; flex:none; border-radius:0; font-size:20px; line-height:1; color:var(--ink-2); border:1px solid var(--line); background:var(--card); }
@@ -10762,6 +10754,14 @@ body[data-view="goals"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .kg-eyebrow { display:flex; align-items:center; gap:12px; }
 .kg-rule { width:28px; height:1px; background:var(--k-gold); flex:none; }
 .kg-eyebrow-t { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
+/* On a phone the weekday + weather phrase ("Thursday · a mostly clear morning") is
+   too wide for one line, so the last word clipped. Drop the phrase to its own line
+   under the weekday instead of truncating it. (Robin, 2026-11-12.) */
+@media (max-width:560px){
+  .kg-eyebrow-t { white-space:normal; }
+  .kg-eyebrow-t .kg-eb-ph { display:block; }
+  .kg-eyebrow-t .kg-eb-sep { display:none; }
+}
 .kg-h1 { font-family:var(--k-serif); font-weight:300; font-size:clamp(56px,3.4vw,80px); line-height:.92; letter-spacing:-.015em; margin:14px 0 0; color:var(--k-ink); }
 .kg-mood { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(22px,2.2vw,28px); line-height:1.3; color:var(--k-mute); margin-top:14px; max-width:46ch; text-wrap:pretty; }
 .kg-title-r { display:flex; align-items:center; gap:22px 26px; padding-bottom:6px; flex-wrap:wrap; }

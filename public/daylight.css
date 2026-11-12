@@ -385,7 +385,11 @@
 .trk-pname :is(.t2-avoidtag, .trk-cad) { margin-left:10px; font-family:'Jost',system-ui,sans-serif; font-size:13px; font-weight:400; color:var(--k-mute); }
 .trk-prow .t2-avoidtag { font-size:11px; font-weight:600; color:var(--k-goldt); }
 .trk-prow .t2-tick { width:30px; height:30px; }
-.trk-prow .trk-play { width:auto; height:auto; padding:4px 6px; border:0; background:none; color:var(--k-goldt); font-size:12px; }
+/* A practice with a video/link: the word "Link" in a plain bordered box, not a play
+   icon. --k-ink reads as a white-bordered box on the washes and stays legible (dark
+   on ivory) on the Sensible theme. (Robin, 2026-11-12.) */
+.trk-prow .trk-play { width:auto; height:26px; padding:0 11px; border-radius:0; border:1px solid var(--k-ink); background:transparent; color:var(--k-ink); font-size:12px; font-weight:500; }
+.trk-prow .trk-play:hover { background:var(--k-ink); color:var(--k-bg); border-color:var(--k-ink); }
 .trk-prow .trk-week { gap:3px; }
 .trk-prow .trk-daycell, .trk-prow .trk-daycell.today-col, .trk-prow .trk-daycell.yest-col { width:auto; padding:0; background:none; }
 .trk-prow .trk-dot { width:23px; height:23px; }
@@ -404,6 +408,12 @@
   body[data-view="tracker"] .trk-editp { order:9; align-self:center; margin:0 0 0 10px; font-size:22px; padding:2px 6px; opacity:.85; }
   body[data-view="tracker"] .trk-area-h { flex-wrap:nowrap; }
   body[data-view="tracker"] .trk-cadsel { margin-left:auto; flex:0 1 150px; max-width:150px; }
+  /* The "every other day" cadence label eats the name row on a phone - hide it here;
+     it still shows on the wider layout. (Robin, 2026-11-12.) */
+  body[data-view="tracker"] .trk-cad { display:none; }
+  /* Bigger day-tick boxes - easier to thumb. (Robin, 2026-11-12.) */
+  body[data-view="tracker"] .trk-prow .trk-dot { width:30px; height:30px; }
+  body[data-view="tracker"] .trk-prow .trk-dot i { font-size:12.5px; }
 }
 
 /* Flow: the day on glass; practices and tasks as open rows. No colours, no boxes. */
