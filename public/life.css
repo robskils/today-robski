@@ -10681,7 +10681,10 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-c-group { padding:12px 0; border-top:1px solid var(--ink); }
 .knav-c-gh { display:flex; align-items:baseline; gap:12px; }
 .knav-c-gn { width:34px; font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; font-weight:300; font-size:18px; color:var(--accent); }
-.knav-c-gl { font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:28px; line-height:1.1; color:var(--ink); }
+/* Group titles are gold (like the calendar's day headings), leading the eye while
+   the tool boxes stay quiet - gold headers, not a grid of gold boxes. The numerals
+   beside them are already gold. (Robin, 2026-11-12.) */
+.knav-c-gl { font-family:'Cormorant Garamond',Georgia,serif; font-weight:300; font-size:28px; line-height:1.1; color:var(--k-goldt); }
 .knav-c-tools { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 0 46px; }
 /* Each tool is a boxed button (a soft white rim, square, gold on hover) so the
    menu reads as a grid of buttons, not a wrapped word-list. (Robin, 2026-11-12.) */
