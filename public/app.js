@@ -3856,7 +3856,7 @@ function renderShare() {
     <div class="share-web-h"><span class="sw-tt"><b>Publish</b><small>A public link for anyone, with no account needed. Read-only.</small></span></div>
     ${webUrl ? `<div class="sw-live">
         <input class="sw-url" type="text" readonly value="${esc(webUrl)}" data-share-web-url aria-label="Public link">
-        <div class="sw-acts"><button class="add-btn sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop publishing</button></div>
+        <div class="sw-acts"><button class="add-btn wide sw-copy" data-share-web-copy>Copy link</button><button class="ghost sw-open" data-share-web-open>Open</button><button class="ghost sw-off" data-share-web-off>Stop publishing</button></div>
         <div class="sw-pass">${s.webPass
           ? `<span class="sw-pass-on">Password set</span><button class="ghost" data-share-web-pass-off>Remove password</button>`
           : `<input class="sw-pass-in" id="share-web-pass" type="password" autocomplete="new-password" placeholder="Add a password (optional)" aria-label="Password for this link" maxlength="200"><button class="ghost" data-share-web-pass-set>Set password</button>`}</div>

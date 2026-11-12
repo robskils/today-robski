@@ -8404,7 +8404,10 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 /* No left gutter: the fold chevron and grip are absolute and hang into the
    pane's own left padding, so the note text stays flush-left - a single stray
    heading no longer indents the whole note. (Robin.) */
-.prose:empty::before, .prose[data-empty]::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
+/* Placeholder shows only while the editor is empty AND not focused, so clicking in
+   clears "Write something here…" at once and drops the caret to the top line, rather
+   than leaving the hint above a cursor on the next line. (Robin, 2026-11-12.) */
+.prose:empty:not(:focus)::before, .prose[data-empty]:not(:focus)::before { content:attr(data-ph); color:var(--ink-3); font-style:italic; pointer-events:none; }
 .prose > *:first-child { margin-top:0; }
 /* Every Enter press gets the SAME gap. contenteditable makes a new line as either
    a <p> or (Chromium's default) a <div>, so without this the spacing looked random
