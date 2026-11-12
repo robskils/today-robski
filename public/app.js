@@ -369,6 +369,10 @@ document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter' || !ev.tar
 // Enter in the open-row title commits (blurs) rather than adding a newline - it's a
 // title, and it wraps on its own. Shift+Enter still inserts a line. (Robin, 2026-11-09.)
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey && ev.target && ev.target.classList && ev.target.classList.contains('card-title-ed')) { ev.preventDefault(); ev.target.blur(); } });
+// Enter in a Select cell commits it: let any highlighted datalist suggestion apply
+// first, then blur - the 'change' handler saves and adds a brand-new value as an
+// option. (Robin, 2026-11-12.)
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target && ev.target.matches && ev.target.matches('.cell-select')) { const el = ev.target; setTimeout(() => el.blur(), 0); } });
 // §30 Goal page: Enter in the step / thought / connect inputs.
 document.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Enter' || !ev.target.closest) return;
@@ -27383,7 +27387,10 @@ function cellInput(r, col, forCard) {
   // change handler parses what's typed back to a number and reformats on blur.
   if (col.type === 'currency') { const sym = curSym(col); return `<span class="cell-cur">${sym ? `<span class="cur-sym">${esc(sym)}</span>` : ''}<input type="text" class="cell cur-in" data-cell="${k}" inputmode="decimal" value="${esc(fmtMoney(v))}"></span>`; }
   if (col.type === 'date') return `<input type="date" class="cell" data-cell="${k}" value="${esc(v ?? '')}">`;
-  if (col.type === 'select') return `<select class="cell" data-cell="${k}"><option value=""></option>${(col.options || []).map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  // Select: a type-ahead combobox. The datalist auto-completes from the existing
+  // options; type a value that isn't one yet and commit (Enter or leave the cell)
+  // and it's added to the column's options. (Robin, 2026-11-12.)
+  if (col.type === 'select') { const dlId = `dl-${String(k).replace(/[^\w-]/g, '-')}`; return `<input type="text" class="cell cell-select" list="${dlId}" data-cell="${k}" value="${esc(v ?? '')}" autocomplete="off" placeholder="Type or pick…"><datalist id="${dlId}">${(col.options || []).map((o) => `<option value="${esc(o)}"></option>`).join('')}</datalist>`; }
   // Page: a select whose options are the live Pages. Stores the area
   // id, shows its name; new areas appear automatically on the next render.
   if (col.type === 'area') return `<select class="cell cell-area" data-cell="${k}"><option value=""></option>${editableAreas().map((a) => `<option value="${esc(a.id)}" ${a.id === v ? 'selected' : ''}>${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select>`;
@@ -30052,6 +30059,9 @@ document.addEventListener('change', (e) => {
       e.target.value = fmtMoney(val);   // reformat to 00.00 on blur
     }
     setCell(rid, cid, val);
+    // A Select cell whose value isn't yet one of the options adds it as a new one,
+    // so it joins the dropdown for every row. (Robin, 2026-11-12.)
+    if (col && col.type === 'select' && typeof val === 'string' && val.trim() && !(col.options || []).includes(val.trim())) { addColOption(cid, val.trim()); }
     if (c.classList.contains('card-title-ed')) growCardTitle(c);   // keep the wrapping title fitted as you type
   }
   { const aa = e.target.closest('[data-area-add]'); if (aa) { const p = aa.dataset.areaAdd.split(':'); const v = e.target.value; e.target.value = ''; addBlockArea(p[0], p[1], v); return; } }

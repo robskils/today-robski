@@ -2226,6 +2226,8 @@ table.recs td.num .cell { font-variant-numeric:tabular-nums; text-align:right; }
 table.recs td.check { text-align:center; }
 table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); }
 table.recs select.cell { appearance:none; cursor:pointer; }
+/* Type-ahead Select cell (text input + datalist). Fills the cell like any other. */
+.cell-select { width:100%; }
 .row-del button { display:inline-flex; align-items:center; justify-content:center; width:100%; opacity:0; color:var(--ink-3); font-size:18px; padding:6px 0; } tr:hover .row-del button { opacity:1; } .row-del button:hover { color:var(--accent); }
 .row-add td { padding:0; } .row-add button { width:100%; text-align:left; padding:12px; color:var(--ink-3); font-size:15px; } .row-add button:hover { color:var(--accent); background:var(--paper-2); }
 
