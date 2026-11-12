@@ -4332,7 +4332,7 @@ const CSP = [
   // so it adds nothing an inline script couldn't already do. (Robin, 2026-10-29.)
   "worker-src 'self' blob:",
   "connect-src 'self'",
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.instagram.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "object-src 'none'",

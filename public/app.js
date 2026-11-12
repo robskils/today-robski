@@ -7043,6 +7043,23 @@ function youtubeId(url) {
   const m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:[^#]*&)*v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
+function vimeoId(url) { const m = String(url || '').match(/vimeo\.com\/(?:video\/)?(\d{6,12})/); return m ? m[1] : null; }
+function instagramPath(url) { const m = String(url || '').match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/); return m ? `${m[1]}/${m[2]}` : null; }
+// Embeddable media for a practice's "video or link" field: a YouTube or Vimeo player,
+// or an Instagram post/reel - shown right in the practice's own screen, edit and all.
+// Anything else isn't embedded (it still opens as a plain link). (Robin, 2026-11-12.)
+function practiceEmbedHtml(url) {
+  url = String(url || '').trim(); if (!url) return '';
+  const yt = youtubeId(url);
+  if (yt) return `<div class="pe-embed-frame pe-embed-video"><iframe src="https://www.youtube-nocookie.com/embed/${yt}" title="Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`;
+  const vm = vimeoId(url);
+  if (vm) return `<div class="pe-embed-frame pe-embed-video"><iframe src="https://player.vimeo.com/video/${esc(vm)}" title="Video" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+  const ig = instagramPath(url);
+  if (ig) return `<div class="pe-embed-frame pe-embed-insta"><iframe src="https://www.instagram.com/${esc(ig)}/embed/" title="Instagram" scrolling="no" allowtransparency="true" loading="lazy"></iframe></div>`;
+  return '';
+}
+// Live-preview the practice's embed as you paste a link into its video field.
+document.addEventListener('input', (e) => { if (e.target && e.target.id === 'pe-video') { const box = document.querySelector('[data-pe-embed]'); if (box) box.innerHTML = practiceEmbedHtml(e.target.value); } });
 // Tapping a practice opens its own page: a guide to doing it - an embedded video if
 // it has a YouTube link, your notes, the aim/streak, and anything you've linked.
 // (Robin, 2026-09-27.) Edit (✎) still opens the editor.
@@ -7255,8 +7272,9 @@ function practiceFieldsHtml() {
 
         <section class="pe-sec">
           <div class="pe-sec-h">Guide</div>
-          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice card.</div>
-          <label class="pe-f"><span>▶ Video or link</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube link to embed it, or any page" autocomplete="off"></label>
+          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice.</div>
+          <label class="pe-f"><span>▶ Video, reel or post</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"></label>
+          <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
           <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
         </section>`;
 }
