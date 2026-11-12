@@ -7692,15 +7692,17 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 /* Save draft / Discard as named, quieter text actions beside the solid Send. */
 .mail-savedraft, .mail-discard-btn { font-family:'Jost',system-ui,sans-serif; font-size:14px; padding:9px 10px; color:var(--ink-2); white-space:nowrap; border-radius:0; transition:color .12s; }
 .mail-savedraft:hover, .mail-discard-btn:hover { color:var(--accent); }
-/* Keep Send/Attach/Discard fully visible: the back button and actions never
-   shrink; the title and the "Resumed draft" note give up space and truncate,
-   so a large font size can't push Send off the card's rounded edge. */
-.mail-compose-head { flex-wrap:nowrap; min-width:0; }
+/* Save draft / Discard / Send must always be reachable. The back button and the
+   actions never shrink; the title gives up space and truncates; and when the row
+   still runs out of room (a phone, a narrow window) the whole action group drops
+   to a tidy second line rather than clipping off the edge. (Robin, 2026-11-12:
+   "couldn't see the send or save buttons".) */
+.mail-compose-head { flex-wrap:wrap; row-gap:8px; min-width:0; }
 .mail-compose-head .mail-back { flex:none; }
-.mail-compose-head .mail-reader-title { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mail-compose-head .mail-reader-title { flex:1 1 auto; min-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .mail-compose-head .mail-draft-note { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-/* On a very narrow phone the three named actions drop to a tidy second row rather
-   than clipping Send off the edge. (Robin, 2026-11-12.) */
+.mail-compose-head-act { flex-wrap:wrap; justify-content:flex-end; }
+/* On a very narrow phone the actions take the whole second line. */
 @media (max-width:380px) {
   .mail-compose-head { flex-wrap:wrap; row-gap:8px; }
   .mail-compose-head-act { width:100%; margin-left:0; justify-content:flex-end; }
