@@ -13494,7 +13494,7 @@ document.addEventListener('change', (e) => {
   const gt = e.target.closest && e.target.closest('[data-av4-goal-title]'); if (gt) { const id = gt.dataset.av4GoalTitle; const v = gt.value.trim(); const b = ((state.area_open && state.area_open.blocks) || []).find((x) => x.id === id); if (b) b.title = v; const gg = (state.goals || []).find((x) => x.id === id); if (gg) gg.title = v; api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ title: v }) }).catch(() => {}); renderArea(); return; }
 });
 // ── §65 Space v4: the tabbed Space ───────────────────────────────────────────
-const AV4_TABS = [['overview', 'Overview'], ['vision', 'Vision & goals'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail'], ['calendar', 'Calendar']];
+const AV4_TABS = [['overview', 'Latest'], ['vision', 'Vision & goals'], ['tasks', 'Tasks'], ['notes', 'Notes'], ['tables', 'Tables'], ['mail', 'Mail'], ['calendar', 'Calendar']];
 function av4MonthEnd() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10); }
 function av4QuarterEnd() { const d = new Date(); const q = Math.floor(d.getMonth() / 3); return new Date(d.getFullYear(), q * 3 + 3, 0).toISOString().slice(0, 10); }
 function av4YearEnd() { return new Date(new Date().getFullYear(), 11, 31).toISOString().slice(0, 10); }
@@ -13627,36 +13627,34 @@ function renderAreaV4() {
     const total = rg.reduce((s, g2) => s + g2.items.length, 0);
     content = `<div class="av4-results"><div class="av4-res-count">${total} ${total === 1 ? 'thing' : 'things'} matching “${esc(st.q.trim())}”</div>${rg.map((g2) => `<div class="av4-res-g"><div class="av4-res-gl">${esc(g2.label)}</div>${g2.items.map((it) => `<div class="av4-res-row" ${it.attr} role="button" tabindex="0"><span class="av4-res-t">${esc(it.t)}</span>${it.w ? `<span class="av4-res-w">${esc(it.w)}</span>` : ''}${it.s ? `<span class="av4-res-s">${esc(it.s)}</span>` : ''}</div>`).join('')}</div>`).join('') || '<div class="av3-empty">Nothing matches that.</div>'}</div>`;
   } else if (st.tab === 'overview') {
-    // The same tidy uniform boxes as before - just more of them, one tidbit each.
-    // Vision comes first (trimmed with … if long), then a box per goal, then the
-    // Tasks / Calendar / Notes / Mail glances. (Robin, 2026-11-05: "keep the boxes
-    // as they were, with tidbits in each"; "if I've added a Vision that's the
-    // first box… cut it off with …".)
-    const card = (kind, count, title, sub, act, attr) => `<div class="av4-glance" ${attr}><div class="av4-gl-top"><span class="av4-gl-kind">${esc(kind)}</span>${count !== '' ? `<span class="av4-gl-count">${esc(String(count))}</span>` : ''}</div><div class="av4-gl-title">${esc(title)}</div>${sub ? `<div class="av4-gl-sub">${esc(sub)}</div>` : ''}<div class="av4-gl-act">${esc(act)} →</div></div>`;
-    const clip = (s, n) => { s = (s || '').trim(); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; };
-    const cards = [];
-    const vision = (area.props && (area.props.vision || '').trim()) || '';
-    if (vision) cards.push(card('Vision', '', clip(vision, 88), '', 'Open', 'data-av4-tab="vision"'));
-    goals.forEach((g) => {
-      const p = gp(g); const pct = Math.max(0, Math.min(100, Number(p.pct || p.progress || 0)));
-      const due = goalDueISO(g);
-      const when = due ? (due === av4MonthEnd() ? 'This month' : due === av4QuarterEnd() ? 'This quarter' : due === av4YearEnd() ? 'This year' : `By ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`) : '';
-      cards.push(card('Goal', `${pct}%`, clip(g.title || 'A goal', 56), `${pct}% there${when ? ` · ${when}` : ''}`, 'Open', 'data-av4-tab="vision"'));
-    });
-    const topTask = openTs[0]; const topNote = nsort[0]; const topMail = streamItems()[0]; const topEvent = events[0];
-    cards.push(card('Tasks', openTs.length ? `${openTs.length} open` : 'clear', topTask ? clip(topTask.title, 56) : 'Nothing to do', topTask ? (AV3_PRIO[topTask.props.priority || ''] || 'Whenever') + (av3Due(topTask.props.due).t ? ' · ' + av3Due(topTask.props.due).t : '') : 'A clear run', 'See all tasks', 'data-av4-tab="tasks"'));
-    cards.push(card('Notes', `${notes.length}`, topNote ? clip(topNote.title, 56) : 'Nothing written', topNote ? clip(av3Text(topNote.body), 68) : 'Start a note', 'See all notes', 'data-av4-tab="notes"'));
-    cards.push(card('Mail', `${emails.length}`, topMail ? clip(topMail.title, 56) : 'No mail filed here', topMail ? (topMail.from || '') : 'Filed emails show here', 'See the mail', 'data-av4-tab="mail"'));
-    cards.push(card('Calendar', `${events.length}`, topEvent ? clip(topEvent.title, 56) : 'Nothing in the diary', topEvent ? (av3Due(topEvent.date).t || '') : 'No events here', 'See the calendar', 'data-av4-tab="calendar"'));
-    if (contacts.length) { const names = contacts.slice(0, 2).map((c) => c.title || 'Someone').join(', '); cards.push(card('People', `${contacts.length}`, clip(names, 46), contacts.length > 2 ? `and ${contacts.length - 2} more` : '', 'See everyone', 'data-open-contacts')); }
-    if (tables.length) { const t0 = tables[0]; cards.push(card('Tables', `${tables.length}`, clip(t0.title || 'Untitled table', 56), tables.length > 1 ? `${tables.length} in this Space` : 'A table of your own', 'See all tables', 'data-av4-tab="tables"')); }
-    // Fill the grid to a tidy 12 (three rows of four) when the summary boxes don't
-    // reach it: individual notes first, then tasks, so a Space with enough in it
-    // always shows a full grid. (Robin, 2026-11-06: "4 cards on each of the 3 rows
-    // if we have enough content… put notes in them, if not tasks or whatever".)
-    for (const n of nsort) { if (cards.length >= 12) break; const ex = clip(av3Text(n.body), 62); cards.push(card('Note', '', clip(n.title || 'Untitled', 56), ex || 'Open this note', 'Open', `data-open-note="${n.id}"`)); }
-    for (const tk of openTs) { if (cards.length >= 12) break; const pr = AV3_PRIO[tk.props.priority || ''] || 'Whenever'; const dd = av3Due(tk.props.due).t; cards.push(card('Task', '', clip(tk.title || 'Untitled', 56), pr + (dd ? ` · ${dd}` : ''), 'Open', `data-open-task="${tk.id}"`)); }
-    content = `<div class="av4-glances">${cards.join('')}</div>`;
+    // "Latest": basically everything filed in this Space, newest first - one calm
+    // feed of cards rather than the old summary glances. Events are left out (they
+    // look ahead, not back, and have the Calendar tab). (Robin, 2026-11-12.)
+    const whenOf = (b) => Date.parse(b.updated_at || b.created_at || '') || 0;
+    const feedKinds = new Set(['note', 'table', 'task', 'goal', 'contact', 'bookmark', 'journal']);
+    const feed = blocks
+      .filter((b) => feedKinds.has(b.kind) && !(b.kind === 'task' && b.props && b.props.kit))
+      .map((b) => ({ b, w: whenOf(b) }))
+      .sort((x, y) => y.w - x.w);
+    const CAP = 120;
+    const shown = feed.slice(0, CAP);
+    const feedCard = (b) => {
+      const p = b.props || {};
+      const when = timeAgo(whenOf(b) || Date.now());
+      let tagHtml = 'Item', title = b.title || 'Untitled', ex = '', attr = '';
+      if (b.kind === 'note' && p.fromEmail) { tagHtml = 'Mail'; title = b.title || '(no subject)'; ex = (p.fromName ? esc(p.fromName) + ' · ' : '') + esc(av3Text(b.body).slice(0, 120)); attr = `data-open-note="${b.id}"`; }
+      else if (b.kind === 'note') { tagHtml = esc((p.tag || '').trim() || 'Note'); ex = esc(av3Text(b.body).slice(0, 160)); attr = `data-open-note="${b.id}"`; }
+      else if (b.kind === 'table') { tagHtml = '<span class="ico-tbl">▦</span> Table'; ex = esc(((p.columns || []).map((c) => (c && c.name || '').trim()).filter(Boolean)).join(' · ')); attr = `data-open-table="${b.id}"`; }
+      else if (b.kind === 'task') { const dd = av3Due(p.due).t; tagHtml = p.done ? 'Task ✓' : 'Task'; ex = esc((p.done ? 'Done' : (AV3_PRIO[p.priority || ''] || 'Whenever')) + (dd ? ` · ${dd}` : '')); attr = `data-open-task="${b.id}"`; }
+      else if (b.kind === 'bookmark') { tagHtml = 'Saved'; title = b.title || p.url || 'Saved link'; ex = esc((p.url || '').replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 90)); attr = `data-open-bookmark="${b.id}"`; }
+      else if (b.kind === 'journal') { tagHtml = 'Journal'; title = b.title || (p.date && typeof journalDateLabel === 'function' ? journalDateLabel(p.date) : 'Journal'); ex = esc(av3Text(b.body).slice(0, 160)); attr = `data-open-jentry="${b.id}"`; }
+      else if (b.kind === 'goal') { const pct = Math.max(0, Math.min(100, Number(p.pct || p.progress || 0))); tagHtml = 'Goal'; ex = esc(`${pct}% there`); attr = `data-open-goal="${b.id}"`; }
+      else if (b.kind === 'contact') { tagHtml = 'Person'; ex = esc((p.role || p.email || p.org || '').slice(0, 80)); attr = `data-open-contact="${b.id}"`; }
+      return `<div class="av3-ncard" ${attr} role="button" tabindex="0"><div class="av3-nc-top"><span class="av3-nc-tag">${tagHtml}</span><span class="av3-nc-when">${esc(when)}</span></div><div class="av3-nc-title">${esc(title)}</div>${ex ? `<div class="av3-nc-ex">${ex}</div>` : ''}</div>`;
+    };
+    content = shown.length
+      ? `<div class="av3-cards av4-latest">${shown.map(({ b }) => feedCard(b)).join('')}</div>${feed.length > CAP ? `<div class="av4-latest-more">Showing the ${CAP} most recent. Use the tabs above for the full lists.</div>` : ''}`
+      : `<div class="av3-empty">Nothing in this Space yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Add something</span>' : ''}</div>`;
   } else if (st.tab === 'calendar') {
     content = `<div class="av4-pane">${events.length ? events.map(eventRow).join('') : '<div class="av3-empty">Nothing in the diary for this Space.</div>'}<button class="av3-all" data-open-calendar>Open in Calendar →</button></div>`;
   } else if (st.tab === 'tasks') {
