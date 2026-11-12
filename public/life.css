@@ -3137,15 +3137,14 @@ body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:
 .ce-loc-opt:hover { background:var(--paper-2); }
 .ce-loc-nm { font-size:14.5px; font-weight:600; color:var(--ink); }
 .ce-loc-ad { font-size:12.5px; color:var(--ink-3); }
-.ce-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:11px 12px; align-items:start; }
-/* Location and Repeat share the top row; Remind me spans the full width beneath. (Robin.) */
-.ce-grid .ce-loc-wrap { order:1; }
-.ce-grid .ce-repeat-field { order:2; }
+/* A single, evenly-spaced column: Repeat on its own row right under the date/time
+   (it's a timing control), then Location, then Remind. The old two-column layout
+   left Repeat as a small button floating beside the tall Location field, and the
+   label heights it needed made the gaps uneven. (Robin, 2026-11-12.) */
+.ce-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:11px 12px; align-items:start; }
+.ce-grid .ce-repeat-field { order:1; grid-column:1 / -1; }
+.ce-grid .ce-loc-wrap { order:2; grid-column:1 / -1; }
 .ce-grid .ce-rem-field { order:3; grid-column:1 / -1; }
-/* Keep the two columns' label rows the same height so the Location and Repeat
-   boxes stay aligned whether or not the Directions button is showing. (Robin, 2026-11-09.) */
-.ce-grid .ce-flbl { min-height:26px; }
-@media (max-width:460px){ .ce-grid { grid-template-columns:minmax(0,1fr); } }
 /* "With": a quiet, optional person link - a small search box, not a labelled
    dropdown, since linking a person to an event is the exception, not the rule. */
 .ce-with { display:flex; align-items:center; gap:8px; margin:-3px 0 1px; }
@@ -7569,7 +7568,8 @@ button.pal-smart-btn:hover { background:color-mix(in srgb,var(--accent) 16%,var(
 .mail-rt-toolbar button { min-width:34px; height:32px; padding:0 9px; border:0; border-radius:0; background:transparent; color:var(--ink-2); font-size:15px; cursor:pointer; transition:background .12s, color .12s; }
 .mail-rt-toolbar button:hover { background:var(--card); color:var(--accent); }
 /* Attach a file / embed an image - named, not just an emoji, so they're findable. (Robin, 2026-11-12.) */
-.mail-rt-insert { font-weight:500; white-space:nowrap; }
+.mail-rt-insert { display:inline-flex; align-items:center; gap:6px; font-weight:500; white-space:nowrap; }
+.mail-rt-insert svg { width:16px; height:16px; flex:none; opacity:.92; }
 .mail-rt-sep { width:1px; align-self:stretch; background:var(--line); margin:3px 4px; flex:none; }
 .mail-compose-body { min-height:140px; padding:14px 16px; font-size:16.5px; line-height:1.6; background:var(--paper); border:1px solid var(--line-2); border-radius:0; color:var(--ink); overflow-wrap:anywhere; height:auto; }
 /* The writing area grows with what you type (a short reply is a short box); it

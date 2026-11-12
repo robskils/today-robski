@@ -19454,6 +19454,11 @@ const MAIL_ICO = {
   note: mIco('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>'),   // a lined page
   calendar: mIco('<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 9.5h16M8.5 3.5v4M15.5 3.5v4"/>'),   // a calendar
   transform: mIco('<path d="M4 8h11l-3-3M20 16H9l3 3"/>'),   // convert / turn into…
+  // Compose toolbar: a monoline link, paperclip and picture, so the actions read
+  // as one on-brand set rather than stray emoji. (Robin, 2026-11-12.)
+  link: mIco('<path d="M9.5 14.5l5-5"/><path d="M11 6.5l1.2-1.2a3.4 3.4 0 0 1 4.8 4.8L15.8 11.3"/><path d="M13 17.5l-1.2 1.2a3.4 3.4 0 0 1-4.8-4.8L8.2 12.7"/>'),
+  attach: mIco('<path d="M20 11.5l-8 8a4.6 4.6 0 0 1-6.5-6.5l8.1-8.1a3 3 0 0 1 4.3 4.3l-8.1 8.1a1.5 1.5 0 0 1-2.1-2.1l7.4-7.4"/>'),
+  image: mIco('<rect x="3.5" y="4.8" width="17" height="14.4" rx="2"/><circle cx="8.6" cy="9.6" r="1.6"/><path d="M4.2 17l4.8-4.6 3.4 3.3 3-2.8 4.4 4.1"/>'),
   caret: mIco('<path d="M7 10l5 5 5-5"/>'),
   folder: mIco('<path d="M3.5 7.5a1.5 1.5 0 0 1 1.5-1.5h3.6l1.6 2h7.3a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/>'),   // file into a bucket
   more: mIco('<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'),   // overflow
@@ -20029,10 +20034,10 @@ function renderMail(loading) {
         <button type="button" data-rt="italic" title="Italic"><i>I</i></button>
         <button type="button" data-rt="underline" title="Underline"><u>U</u></button>
         <button type="button" data-rt="insertUnorderedList" title="Bullet list">•&nbsp;List</button>
-        <button type="button" data-rt="link" title="Add link">🔗&nbsp;Link</button>
+        <button type="button" class="mail-rt-insert" data-rt="link" title="Add link">${MAIL_ICO.link}<span>Link</span></button>
         <span class="mail-rt-sep" aria-hidden="true"></span>
-        <button type="button" class="mail-rt-insert" data-mail-attach title="Attach a file to this email">📎&nbsp;Attach</button>
-        <button type="button" class="mail-rt-insert" data-mail-img title="Place an image inside the message">🖼&nbsp;Image</button>
+        <button type="button" class="mail-rt-insert" data-mail-attach title="Attach a file to this email">${MAIL_ICO.attach}<span>Attach</span></button>
+        <button type="button" class="mail-rt-insert" data-mail-img title="Place an image inside the message">${MAIL_ICO.image}<span>Image</span></button>
       </div>
       <div id="mc-body" class="mail-compose-body prose" contenteditable="true" data-ph="Write your message…">${m.composing.body || ''}</div>
       ${catts.length ? `<div class="mail-att">${catts.map((a) => `<span class="mail-att-chip">📎 ${esc(a.name)}<button type="button" class="mail-att-x" data-mail-att-del="${esc(a.id)}" title="Remove">×</button></span>`).join('')}</div>` : ''}
