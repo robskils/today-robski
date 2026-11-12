@@ -1393,7 +1393,7 @@ function openView(v) {
     case 'practices': return openPractices();
     case 'practicecard': return openPracticeCard(v.id);
     case 'friends': return openContacts();   // merged into Contacts
-    case 'contacts': return openContacts(); case 'contactcard': return openContactCard(v.id);
+    case 'contacts': return v.card ? openContactCard(v.card) : openContacts(); case 'contactcard': return openContactCard(v.id);
     case 'connect': return openConnect(); case 'daybookpeople': return openKoyebaPeople();
     case 'messages': return openMessagesPage();
     case 'shared': return openSharedHub();
@@ -1628,6 +1628,11 @@ function tabViewCopy(v) {
   if (v && v.type === 'tasks') {
     return { type: 'tasks', filters: JSON.parse(JSON.stringify(v.filters || [])), sort: { ...(v.sort || {}) }, q: v.q || '', filtersOpen: !!v.filtersOpen };
   }
+  // Contacts: remember which card (if any) is open. The open card lives in
+  // state.cv.cur, outside state.view, so without this the tab only remembered the
+  // list and coming back from another tab dumped you on the search results instead
+  // of the contact you had open. (Robin, 2026-11-12.)
+  if (v && v.type === 'contacts') return { type: 'contacts', card: (state.cv && state.cv.cur) || null };
   return { ...v };
 }
 function syncActiveTab() {
@@ -27010,6 +27015,25 @@ async function noteDelAlias(i, ctx) {
   try { await api('/api/blocks/' + b.id, { method: 'PATCH', body: JSON.stringify({ props: { aliases: al } }) }); } catch (e) { toast(e.message); }
   render();
 }
+// A persistent strip on a published note: it says it's live, shows the public link
+// (copyable) and whether a password is set, with Manage to open the full dialog. The
+// password itself is stored only as a salted hash server-side, so it can never be
+// shown - just its status. Owner-only. (Robin, 2026-11-12.)
+function notePublishedStrip(n) {
+  const tok = n && n.props && n.props.shareToken;
+  if (!tok || n.sharedBy) return '';
+  const path = `kaya.so/n/${tok}`;
+  const full = `https://${path}`;
+  const pass = !!(n.props && n.props.sharePassOn);
+  return `<div class="note-pub">
+    <span class="note-pub-dot" aria-hidden="true"></span>
+    <span class="note-pub-lbl">Published</span>
+    <a class="note-pub-url" href="${esc(full)}" target="_blank" rel="noopener noreferrer" title="Open the public page">${esc(path)}</a>
+    <button class="note-pub-copy" data-pub-copy="${esc(full)}" title="Copy the public link">Copy</button>
+    <span class="note-pub-pass ${pass ? 'on' : ''}">${pass ? '🔒 Password set' : 'Open · no password'}</span>
+    <button class="note-pub-manage" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Manage</button>
+  </div>`;
+}
 function renderNote() {
   const n = state.note.current;
   migrateCards(n);
@@ -27047,6 +27071,7 @@ function renderNote() {
           <span class="note-areas-actions">${nLock}${nDel}${nMore}<span class="note-areas-aliases">${noteAliasesControl(n)}</span></span>
         </div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
+        ${notePublishedStrip(n)}
         <div class="note-body">${proseEditor(n.body, 'note', n.id, n.sharedBy && !n.canEdit)}${nFloat}</div>
         ${noteMembersHtml(n)}
         ${noteWallHtml(n)}
@@ -29541,6 +29566,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-share-web-pass-off]')) { shareWebPass(''); return; }
   if (t.closest('[data-share-web-off]')) { shareWebOff(); return; }
   if (t.closest('[data-share-web-copy]')) { const u = shareWebUrl(); if (u) { try { navigator.clipboard.writeText(u); toast('Link copied'); } catch { toast(u); } } return; }
+  { const pc = t.closest('[data-pub-copy]'); if (pc) { const u = pc.dataset.pubCopy; try { navigator.clipboard.writeText(u); toast('Link copied'); } catch { toast(u); } return; } }   // copy from the published strip on a note
   if (t.closest('[data-share-web-open]')) { const u = shareWebUrl(); if (u) window.open(u, '_blank', 'noopener'); return; }
   { const ao = t.closest('[data-assign-open]'); if (ao) { openAssign(ao.dataset.assignOpen, ao.dataset.assignTitle || ''); return; } }
   if (t.closest('[data-assign-close]')) { closeAssign(); return; }

@@ -2453,6 +2453,19 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 
 .note-title { display:block; width:100%; font-family:var(--k-serif); font-size:clamp(30px,5vw,44px); font-weight:300; line-height:1.08; letter-spacing:-.015em; color:var(--ink); background:transparent; border:0; padding:0; margin:0 0 18px; resize:none; overflow:hidden; white-space:pre-wrap; word-wrap:break-word; }
 .note-title:focus-visible { outline:none; }
+/* Published strip: a quiet row under the title on a note that's live, with the link,
+   a copy button and the password status. (Robin, 2026-11-12.) */
+.note-pub { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 18px; padding:9px 14px; border:1px solid var(--line); border-radius:0; background:color-mix(in srgb,var(--accent) 6%,transparent); font-size:13px; }
+.note-pub-dot { width:8px; height:8px; border-radius:0; background:var(--accent); flex:none; }
+.note-pub-lbl { font-weight:600; color:var(--ink); letter-spacing:.02em; }
+.note-pub-url { color:var(--accent); text-decoration:none; font-size:13px; max-width:46ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.note-pub-url:hover { text-decoration:underline; }
+.note-pub-copy, .note-pub-manage { border:1px solid var(--line); background:transparent; color:var(--ink-2); font-size:12px; padding:3px 11px; border-radius:0; cursor:pointer; }
+.note-pub-copy:hover, .note-pub-manage:hover { border-color:var(--accent); color:var(--accent); }
+.note-pub-pass { color:var(--ink-3); font-size:12px; }
+.note-pub-pass.on { color:var(--ink-2); }
+.note-pub-manage { margin-left:auto; }
+@media (max-width:560px){ .note-pub-url { max-width:100%; flex:1 1 100%; order:5; } .note-pub-manage { margin-left:auto; } }
 
 /* The writing surface: a classy, semi-transparent "sheet" floating on the folded
    Kaya background, so prose reads easily over the pattern instead of sitting
