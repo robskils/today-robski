@@ -15637,7 +15637,7 @@ function renderCalendar() {
   // is live. (Robin, 2026-11-10: "turn search into a button next to New Event".)
   const searchOpen = !!(state.calSearchOpen || (state.calQuery && state.calQuery.trim()));
   $('#pane').innerHTML = `
-    <div class="kpage-cal">
+    <div class="kpage-cal cal-mode-${c.mode}">
       ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.calendar') }])}
       <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>

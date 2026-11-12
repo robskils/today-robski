@@ -12630,6 +12630,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:clamp(32px,4vw,56px); margin-top:26px; align-items:start; }
 .cx-col { min-width:0; }
 @media (min-width:1200px){ .cx-grid { grid-template-columns:minmax(0,1fr) minmax(300px,360px); } .cx-side { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); } }
+/* Week view runs the seven days full-width, with no selected-day side panel - each
+   day column already lists its own events. (Robin, 2026-11-12.) */
+.cal-mode-week .cx-grid { grid-template-columns:minmax(0,1fr); }
+.cal-mode-week .cx-side { display:none; }
 /* event rows (font/colour set inline per kind via evStyle) */
 .cx-ev { display:flex; gap:6px; align-items:baseline; min-width:0; }
 .cx-ev-bday .cx-ev-ti, .cx-ev-bday .cx-wev-ti, .cx-ev-bday .cx-lr-ti, .cx-ev-bday .cx-sr-ti { color:var(--k-goldt); }
