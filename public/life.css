@@ -8533,7 +8533,9 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .note-cols { display:inline-flex; margin:0 0 18px; border:1px solid var(--line); border-radius:0; overflow:hidden; }
 .note-cols-btn { display:inline-flex; align-items:center; gap:9px; padding:8px 16px; font-size:13px; letter-spacing:.01em; color:var(--ink-2); background:transparent; border:0; border-right:1px solid var(--line); cursor:pointer; }
 .note-cols-btn:last-child { border-right:0; }
-.note-cols-btn.on { background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); font-weight:600; }
+/* The selected layout gets a gold border (an inset outline, so no layout shift and
+   no shadow) and brighter gold text. (Robin, 2026-11-12.) */
+.note-cols-btn.on { background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--k-goldt); font-weight:600; outline:1.5px solid var(--k-gold); outline-offset:-1.5px; }
 .note-cols-btn:hover:not(.on) { background:var(--paper-2); }
 .ncs-ico { display:inline-block; width:17px; height:13px; border:1.5px solid currentColor; border-radius:0; position:relative; flex:none; }
 .ncs-ico.ncs-2::after { content:''; position:absolute; top:-1.5px; bottom:-1.5px; left:50%; width:1.5px; background:currentColor; transform:translateX(-50%); }
