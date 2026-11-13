@@ -10854,6 +10854,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
   .knav-c-grid { grid-template-columns:1fr; gap:0; }
   .knav-c-group { border-top:1px solid var(--line); }
   .knav-c-gl { font-size:26px; }
+  .knav-c-gn { display:none; }
   .knav-c-tools { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:14px 0 4px; }
   .knav-c-tool { min-width:0; display:block; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:16px 6px; font-size:15px; }
   .knav-bottom { display:flex; justify-content:space-between; align-items:center; position:fixed; left:0; right:0; bottom:0; z-index:61; height:88px; padding:10px 28px 0; box-sizing:border-box; border-top:1px solid var(--line); background:var(--paper); } /* flex + space-between: the capture + sits with equal gaps to Menu and Search, so it reads centred between them whatever their widths (Robin, 2026-11-13) */
