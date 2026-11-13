@@ -12022,16 +12022,22 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-greetrow .crumb-newtab { align-self:flex-start; margin-top:10px; }
 @media (max-width:820px){ .home-greetrow .gln-newwrap { margin-left:0; flex-basis:100%; } }
 .home-v3 .home-greetmain { padding-top:12px; }
-/* A large 香 seal pressed into the header, to the right of the greeting. Masked and
-   filled with the page's own ink (--ink), so it reads as a faint ghost of the seal in
-   the same parchment tone as the text - never gold. Koyeba is dark at every hour, so a
-   darker-than-ground seal would vanish (it did); a light ghost is the one that stays
-   legible on every wash and on Sensible's brown, while still quiet. (Robin, 2026-11-13.) */
+/* The home clips its own horizontal overflow, so the big greeting seal below can bleed
+   off the right edge without ever adding a sideways scroll. Mobile already clips (§ the
+   stacking rules); this is the desktop half. overflow-x:clip touches only the x axis, so
+   vertical scroll and any floating menus are untouched. */
+.home { overflow-x:clip; }
+/* A large 香 seal set into the greeting, bled off the right edge and cropped abstractly.
+   Big and very faint reads as a quiet texture, not a contained logo (Robin: "bigger, some
+   of it might go off the edge of the screen, it can be a bit abstract - it'll work because
+   it's fainter"). Masked and filled with the page's own ink, so it's a parchment ghost in
+   the text's own tone, never gold; on a dark-at-every-hour app a light ghost is the only
+   thing that stays legible. (Robin, 2026-11-13.) */
 .home-greetrow { position:relative; }
 .home-greetrow > *:not(.home-watermark) { position:relative; z-index:1; }
-.home-watermark { position:absolute; top:50%; right:0; transform:translateY(-50%); width:clamp(160px,24vw,280px); aspect-ratio:1; z-index:0; pointer-events:none;
+.home-watermark { position:absolute; top:50%; right:clamp(-210px,-12vw,-90px); transform:translateY(-50%); width:clamp(380px,46vw,600px); aspect-ratio:1; z-index:0; pointer-events:none;
   -webkit-mask:url('/brand/kaya-seal.svg') center/contain no-repeat; mask:url('/brand/kaya-seal.svg') center/contain no-repeat;
-  background:var(--ink); opacity:.2; }
+  background:var(--ink); opacity:.1; }
 @media (max-width:820px){ .home-watermark { display:none; } }
 .home-v3 .home-greet { font-family:var(--k-serif); font-weight:500; font-size:clamp(44px,5vw,64px); line-height:1.02; letter-spacing:-.01em; margin:16px 0 0; }
 .home-v3 .home-tw { display:block; margin-top:10px; padding-top:0; border-top:0; max-width:none; font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }
