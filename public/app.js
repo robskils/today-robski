@@ -38,7 +38,7 @@ function markRingOn() { try { return localStorage.getItem('life.markring') === '
 function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Flow'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Day Planner'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
 // The Insight page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Insight hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Insight tools individually".)
@@ -52,8 +52,8 @@ const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dre
 const LANGS = [['en', 'English'], ['pt', 'Português'], ['it', 'Italiano']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
-  'nav.grp.daily': 'Today', 'nav.planner': 'Flow', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
-  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Practices', 'nav.connect': 'Connect',
+  'nav.grp.daily': 'Today', 'nav.planner': 'Day Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
+  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Tracker', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
@@ -66,7 +66,7 @@ const T_EN = {
   'today.tracker': 'Tracker',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.needinvite': 'Kaya is invite-only right now. <a href="/#invite">Request an invite →</a>', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Kaya.", 'signup.accepted': 'What shall we call you?', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Kaya will live at', 'signup.create': 'Create my Kaya', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Kaya is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
-  'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Practices', 'title.mailaccounts': 'Accounts',
+  'goals.title': 'Goals', 'saved.title': 'Read & Watch', 'title.tables': 'Tables', 'title.practices': 'Tracker', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
@@ -74,8 +74,8 @@ const T_EN = {
 };
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
-  'nav.grp.daily': 'Hoje', 'nav.planner': 'Fluxo', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
-  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Progresso', 'nav.practices': 'Práticas', 'nav.connect': 'Laços',
+  'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador do dia', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
+  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Registo', 'nav.practices': 'Registo', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
@@ -88,7 +88,7 @@ const T_PT = {
   'today.tracker': 'Registo',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.needinvite': 'O Kaya é só por convite para já. <a href="/#invite">Pedir um convite →</a>', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Kaya.', 'signup.accepted': 'Como devemos chamar-te?', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Kaya ficará em', 'signup.create': 'Criar o meu Kaya', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Kaya é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
-  'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Práticas', 'title.mailaccounts': 'Contas',
+  'goals.title': 'Objetivos', 'saved.title': 'Ler e Ver', 'title.tables': 'Tabelas', 'title.practices': 'Registo', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
@@ -96,8 +96,8 @@ const T_PT = {
 };
 const T_IT = {
   'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
-  'nav.grp.daily': 'Oggi', 'nav.planner': 'Flusso', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
-  'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Progressi', 'nav.practices': 'Pratiche', 'nav.connect': 'Legami',
+  'nav.grp.daily': 'Oggi', 'nav.planner': 'Agenda del giorno', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
+  'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Registro', 'nav.practices': 'Registro', 'nav.connect': 'Legami',
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
   'set.title': 'Impostazioni',
   'set.tab.account': 'Account', 'set.tab.card': 'Scheda', 'set.tab.ai': 'Piano', 'set.tab.appearance': 'Aspetto', 'set.tab.mobile': 'Telefono', 'set.tab.notifications': 'Notifiche', 'set.tab.sections': 'Strumenti', 'set.tab.invites': 'Inviti', 'set.tab.manage': 'Gestisci', 'set.tab.feeds': 'Calendario', 'set.tab.security': 'Sicurezza', 'set.tab.import': 'Importa',
@@ -110,7 +110,7 @@ const T_IT = {
   'today.tracker': 'Registro',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.needinvite': 'Kaya è solo su invito per ora. <a href="/#invite">Richiedi un invito →</a>', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
   'signup.welcome': 'Benvenuto - prepariamo il tuo Kaya.', 'signup.accepted': 'Come dobbiamo chiamarti?', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Kaya vivrà su', 'signup.create': 'Crea il mio Kaya', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Kaya è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
-  'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Pratiche', 'title.mailaccounts': 'Account',
+  'goals.title': 'Obiettivi', 'saved.title': 'Leggi e Guarda', 'title.tables': 'Tabelle', 'title.practices': 'Registro', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
   'task.search': 'Cerca attività…', 'task.add': '+ Aggiungi attività', 'task.whatneeds': "Cosa c'è da fare?", 'task.surfaceon': 'Riappare il', 'task.notesph': 'Dettagli, contesto o link…', 'task.addtask': 'Aggiungi attività', 'task.done': 'Fatto', 'task.showcompleted': 'Mostra completate', 'task.empty.filters': 'Nessuna attività corrisponde a questi filtri.', 'task.empty.open': 'Nessuna attività aperta qui.', 'task.empty.here': 'Ancora nessuna attività qui.', 'task.nextdue': 'La prossima scade', 'task.onschedule': 'Secondo programma', 'task.aftertick': 'Dopo averla segnata',
@@ -4297,7 +4297,7 @@ function renderSettingsLegacy() {
   const tiles = [
     ['◈', 'Spaces', 'What your Kaya orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
-    ['🧘', 'Practices', 'The things you do again and again, shared with the Today tool', 'data-open-practices=""'],
+    ['🧘', 'Tracker', 'The things you do again and again, shared with the Day Planner', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
     ['☀', 'Flow', 'Your day on a timeline - drag practices &amp; tasks onto it', 'data-open-today=""'],
@@ -5461,7 +5461,7 @@ function navPeopleMobileHtml() {
 //    only regroups the tools into seven folds, one open at a time.
 const KFOLDS = [
   { id: 'today', label: 'Today', items: [
-      ['Flow', 'data-open-today', 'today'], ['Practices', 'data-open-practices', 'today'] ] },
+      ['Day Planner', 'data-open-today', 'today'], ['Tracker', 'data-open-practices', 'today'] ] },
   { id: 'spaces', label: 'Spaces', spaces: true },
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
@@ -5577,7 +5577,7 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
-        ['Practices', 'data-open-practices', ''], ['Flow', 'data-open-today', ''],
+        ['Tracker', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
         ['Discover', 'data-open-discover', ''], ['Read & Watch', 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
@@ -6675,7 +6675,7 @@ function pomoPanel() {
 const TBX_TOOLS = [
   { k: 'focus', ic: '⏱', label: 'Focus', desc: 'Pomodoro sessions for deep work', panel: () => pomoPanel() },
   { k: 'timer', ic: '⏲', label: 'Timer', desc: 'A simple countdown for anything', panel: () => timerPanel() },
-  { k: 'tracker', ic: '✓', label: 'Practices', desc: 'Your practices, streaks and history', panel: () => trackerPanel() },
+  { k: 'tracker', ic: '✓', label: 'Tracker', desc: 'Your practices, streaks and history', panel: () => trackerPanel() },
 ];
 function tbxToolBadge(k) {
   return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
@@ -7026,7 +7026,7 @@ async function openPractices() { return openTracker(); }
 function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Practices' }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Tracker' }])}
     <div class="pane-head home-head"><h1>${t('title.practices')}</h1>
       <div class="prac-head-act"><button class="ghost prac-track-link" data-open-tracker title="Open the Tracker to tick off practices and see your streaks">✓ Go to the Tracker →</button><button class="add-btn wide prac-new-top" data-prc-new>＋ New practice</button></div></div>
     <p class="t2-sub">Activities you want to repeat</p>
@@ -8882,7 +8882,7 @@ function homeWnPracticesBodyHtml() {
   // The full practices interface - the very panel the Tracker uses: an edit link, every
   // practice with its tick, the last 7 days and the streak, and the add form. Not a
   // stripped list. (Robin, 2026-11-03.)
-  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open Practices →</button></div>`;
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open Tracker →</button></div>`;
   return `<div class="home-wn-prc">${trackerPanel()}</div>${foot}`;
 }
 function homeWhatNextTabsHtml() {
@@ -9846,6 +9846,15 @@ function homeQuoteLineHtml() {
   if (quoteHidden()) return '';
   return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span><div class="home-qline-by">${q.author ? `<span class="home-qline-a">— ${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div></div>`;
 }
+// The Tracker tab only earns its place on Home once you've actually added a
+// practice - otherwise it's noise (Robin, 2026-11-13). state.practices may not be
+// loaded on Home yet, so kick a one-off load and let the tab appear when the count
+// lands; once state.practices exists we read it directly (no re-render loop).
+function homeHasPractices() {
+  if (state.practices && Array.isArray(state.practices.activities)) return state.practices.activities.length > 0;
+  if (!state.__homePracLoad) { state.__homePracLoad = true; loadPractices().then(() => { if (state.view && state.view.type === 'home') renderHome(); }).catch(() => {}); }
+  return false;
+}
 // Today's one row of tabs (Robin, 2026-11-04): everything sits behind one line, with
 // counts on the tabs so what needs you still shows. Remembers the last tab opened.
 function homeTodayTabDefs() {
@@ -9857,9 +9866,8 @@ function homeTodayTabDefs() {
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
-  if (modOn('today')) defs.push(['practices', 'Practices', 0, false]);
+  if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Tracker', 0, false]);
   if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
-  defs.push(['next', 'What next', 0, false]);
   return defs;
 }
 function homeTodayTabBody(k, off) {
@@ -27828,7 +27836,7 @@ function palNavTargets() {
   const add = (title, run, kw) => T.push({ kind: 'nav', title, run, kw: `${title} ${kw || ''}`.toLowerCase() });
   add('Today', () => openHome(), 'home start homepage overview');   // the homepage - the breadcrumb calls it "Today", so both words land here (Robin, 2026-11-12)
   add('What next', () => wnToggle(true), 'what now next do suggestion');   // §44
-  if (modOn('today')) add('Flow', () => openToday(), 'flow day plan timeline canvas');
+  if (modOn('today')) add('Day Planner', () => openToday(), 'flow day plan timeline canvas');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
   add('Spaces', () => openAreasList(), 'life space spaces area areas folios pillars overview all your spaces');
