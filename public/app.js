@@ -19879,7 +19879,7 @@ function mailIdentHtml(o) {
   const fromV = `${name ? `<span class="mail-ident-nm">${esc(name)}</span>` : ''}`
     + `${addr ? `<span class="mail-ident-ad">${esc(addr)}</span>` : (name ? '' : '<span class="mail-ident-ad mail-ident-to">(no address)</span>')}`;
   const toRow = toAddr ? `<div class="mail-ident-r"><span class="mail-ident-l">To</span><span class="mail-ident-v"><span class="mail-ident-ad mail-ident-to">${esc(toAddr)}</span></span></div>` : '';
-  return `<div class="mail-ident">`
+  return `<div class="mail-ident" data-mail-open="${esc(o._key || '')}" title="Close this email">`
     + `<div class="mail-ident-r"><span class="mail-ident-l">From</span><span class="mail-ident-v">${fromV}</span></div>`
     + toRow
     + `</div>`;
@@ -29478,7 +29478,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) { mailToggleSelect(mo.dataset.mailOpen); return; } if (state.mail.open && state.mail.open._key === mo.dataset.mailOpen) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; } openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (mo.classList.contains('mail-ident') && window.getSelection && String(window.getSelection()).trim()) return; if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) { mailToggleSelect(mo.dataset.mailOpen); return; } if (state.mail.open && state.mail.open._key === mo.dataset.mailOpen) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; } openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }

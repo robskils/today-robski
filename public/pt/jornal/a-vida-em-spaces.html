@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A sua vida, em Spaces</title>
+<meta name="description" content="Um Space é um quarto para uma parte da sua vida - o trabalho, uma casa, uma pessoa, um projeto - e reúne discretamente o correio, os eventos, as tarefas, as notas e o dinheiro que lhe pertencem.">
+<link rel="canonical" href="https://kaya.so/pt/jornal/a-vida-em-spaces">
+<link rel="alternate" hreflang="en" href="https://kaya.so/blog/life-in-spaces">
+<link rel="alternate" hreflang="pt-PT" href="https://kaya.so/pt/jornal/a-vida-em-spaces">
+<link rel="alternate" hreflang="x-default" href="https://kaya.so/blog/life-in-spaces">
+<meta property="og:title" content="A sua vida, em Spaces">
+<meta property="og:description" content="Um quarto para uma parte da sua vida, onde o correio, as tarefas, as notas e o dinheiro que lhe pertencem se reúnem.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kaya.so/pt/jornal/a-vida-em-spaces">
+<link rel="icon" href="/favicon.svg?v=202611131041">
+<link rel="stylesheet" href="/blog.css">
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card,#fffdf8); border-top:1px solid var(--line,rgba(27,24,32,.12)); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink,#1b1820); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust,#c4412e); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2,rgba(27,24,32,.2)); }
+.dbk-consent .dbk-accept { background:var(--rust,#c4412e); color:var(--rust-ink,#fff); border-color:var(--rust,#c4412e); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2,rgba(27,24,32,.66)); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+
+.wm-word { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 500; letter-spacing: 0.14em; text-transform: lowercase; font-style: normal; }
+</style>
+<script>
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    if (document.querySelector('.dbk-consent')) return;
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
+    b.innerHTML = '<p>Kaya uses analytics cookies to understand how the site is used - nothing personal, and never any of your Kaya content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
+</script>
+<link rel="stylesheet" href="/site-legacy.css?v=202611131041">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a>
+    <ul class="nav-links">
+      <li><a href="/pt#idea">O seu Kaya</a></li>
+      <li><a href="/pt#tools">Ferramentas</a></li>
+      <li><a href="/pt#private">Privado por princípio</a></li>
+      <li><a href="/pt/jornal" class="on">Jornal</a></li>
+    </ul>
+    <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
+      <a class="btn btn-ghost" href="/signin">Entrar</a>
+      <a class="btn btn-primary" href="/pt#invite">Pedir um convite</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <article class="article">
+    <div class="article-head">
+      <a class="back-link" href="/pt/jornal">← O Jornal do Kaya</a>
+      <div class="eyebrow">A ideia</div>
+      <h1>A sua vida, em Spaces</h1>
+      <div class="article-meta">
+        <span>novembro de 2026</span>
+        <span class="dot">·</span>
+        <span class="article-lisboa">Feito em Lisboa</span>
+        <span class="dot">·</span>
+        <span>4 min de leitura</span>
+      </div>
+    </div>
+    <div class="hero-rule"></div>
+
+    <div class="prose">
+      <p class="lede">A sua vida não é um só fluxo indistinto; tem partes. O trabalho. A casa. Um projeto paralelo. Alguém de quem cuida. Na maioria das apps essas partes estão espalhadas por uma dúzia de ferramentas, e é na sua cabeça que guarda as ligações. No Kaya têm onde viver. Um Space é um quarto para uma parte da sua vida, e tudo o que lhe pertence - o correio, os eventos, as tarefas, as notas, o dinheiro - reúne-se lá dentro.</p>
+
+      <h2>Um quarto, não uma etiqueta</h2>
+      <p>Uma pasta é um sítio onde arruma coisas. Um Space é mais como um quarto onde entra: abra-o e vê essa parte da sua vida por inteiro - o que aí vem, o que espera, o que escreveu, quanto está a custar. Não está a arquivar; está a entrar num contexto, com tudo já lá.</p>
+
+      <h2>Tudo se liga</h2>
+      <p>Como um Space reúne através das ferramentas, as ligações que antes guardava na cabeça são feitas por si:</p>
+      <ul>
+        <li>Um email de um cliente fica ao lado da tarefa que criou e do evento a que deu origem.</li>
+        <li>Uma nota sobre uma viagem fica com as datas da viagem e o seu custo a somar.</li>
+        <li>O Space de uma pessoa guarda a sua história com ela - mensagens, a última vez que falaram, aquilo que queria retomar.</li>
+      </ul>
+      <p>Nada é copiado nem movido; cada coisa continua a ser ela própria e simplesmente aparece no quarto a que pertence. E um item pode pertencer a mais do que um Space quando a vida não é arrumada - um jantar que é ao mesmo tempo Família e um Aniversário.</p>
+
+      <h2>Tão privado, ou tão partilhado, quanto quiser</h2>
+      <p>Um Space é seu por omissão. Alguns vale a pena abrir a outras pessoas - uma casa, um projeto, uma viagem - para poder partilhar um mural, uma lista, as partes que são genuinamente comuns, e guardar o resto para si. A partilha é por Space e por item, por isso deixar alguém entrar num quarto nunca abre os outros.</p>
+
+      <h2>Comece com um</h2>
+      <p>Não tem de mapear a vida inteira antes de começar. Crie um Space para a parte que agora sente mais espalhada - aquela que anda sempre a perseguir de app em app - e deixe o correio, as tarefas e as notas começarem a aterrar nele. Quando ajudar, crie outro. A estrutura cresce para servir a vida, e não ao contrário.</p>
+
+      <blockquote>A maioria das ferramentas organiza pelo tipo de coisa - todo o correio aqui, todas as tarefas ali. O Kaya pode organizar pela parte da sua vida a que uma coisa pertence. É essa a diferença entre um arquivo e uma casa.</blockquote>
+
+      <p>Um Space não lhe pede nada além de um nome. Dê um à parte da sua vida que nunca está quieta, e veja-a vir à vista.</p>
+    </div>
+
+    <div class="article-end">
+      <h3>A sua vida, reunida</h3>
+      <p>O Kaya é por convite enquanto o afinamos. Os Spaces, e tudo o que discretamente se liga lá dentro - venha espreitar.</p>
+      <a class="btn btn-primary" href="/pt#invite">Pedir um convite →</a>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <div class="foot-brand"><a class="brand" href="/pt"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a><span class="foot-tag">Para uma vida bem vivida</span></div>
+    <ul class="foot-links">
+      <li><a href="/pt#idea">O seu Kaya</a></li>
+      <li><a href="/pt#tools">Ferramentas</a></li>
+      <li><a href="/pt/jornal">Jornal</a></li>
+      <li><a href="/pt#invite">Pedir um convite</a></li>
+      <li><a href="/pt/privacidade">Privacidade</a></li>
+      <li><a href="/pt/termos">Termos</a></li>
+      <li><a href="mailto:contact@kaya.so">Contacto</a></li>
+    </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Idioma</span><div class="lang-switch"></div></div>
+    <div class="foot-meta">Dúvidas? <a href="mailto:contact@kaya.so">contact@kaya.so</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Kaya</div>
+  </div>
+</footer>
+
+<script>window.__lang='pt';window.__alts={en:'/blog/life-in-spaces',pt:'/pt/jornal/a-vida-em-spaces'};</script>
+<script src="/i18n.js" defer></script>
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>

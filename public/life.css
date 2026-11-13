@@ -10211,12 +10211,12 @@ body.night .mail-ar-triage, :root[data-theme='dark'] .mail-ar-triage { backgroun
    shown so a faked display name is caught. Inherits the card's ink; hierarchy by
    weight + opacity so it stays legible on every wash and in Sensible. No border:
    the action bar below already owns the rule (CLAUDE.md §22). */
-.mail-ident { display:flex; flex-direction:column; gap:4px; margin:0; padding:10px 0 12px; }
+.mail-ident { display:flex; flex-direction:column; gap:4px; margin:0; padding:10px 0 12px; cursor:pointer; } /* click the From/To block to close the open email, like the subject (Robin, 2026-11-13) */
 .mail-ident-r { display:flex; align-items:baseline; gap:10px; min-width:0; flex-wrap:wrap; }
 .mail-ident-l { flex:0 0 auto; min-width:34px; font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.13em; text-transform:uppercase; opacity:.66; }
 .mail-ident-v { min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
 .mail-ident-nm { font-family:var(--k-sans); font-weight:600; font-size:15px; }
-.mail-ident-ad { font-family:var(--k-sans); font-weight:400; font-size:14px; opacity:.95; -webkit-user-select:text; user-select:text; word-break:break-all; }
+.mail-ident-ad { font-family:var(--k-sans); font-weight:400; font-size:14px; opacity:.95; -webkit-user-select:text; user-select:text; word-break:break-all; cursor:text; }
 .mail-ident-to { opacity:.72; }
 /* "Make a task / note / event" now sits on the white card directly under the
    Move to bar, so its buttons read dark (the forest-ink colour was invisible

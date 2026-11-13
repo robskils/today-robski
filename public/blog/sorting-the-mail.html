@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorting the mail</title>
+<meta name="description" content="How Kaya turns a full inbox into four small decisions - an Inbox to sort, then Urgent, Important, Read later and Archive - and lets you turn any email into a note, task or event.">
+<link rel="canonical" href="https://kaya.so/blog/sorting-the-mail">
+<link rel="alternate" hreflang="en" href="https://kaya.so/blog/sorting-the-mail">
+<link rel="alternate" hreflang="pt-PT" href="https://kaya.so/pt/jornal/arrumar-o-correio">
+<link rel="alternate" hreflang="x-default" href="https://kaya.so/blog/sorting-the-mail">
+<meta property="og:title" content="Sorting the mail">
+<meta property="og:description" content="A full inbox, turned into four small decisions - and mail that can become a task, an event or a note.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kaya.so/blog/sorting-the-mail">
+<link rel="icon" href="/favicon.svg?v=202611131041">
+<link rel="stylesheet" href="/blog.css">
+<!-- Analytics (VisitorTracking + Google Analytics), loaded ONLY after consent -->
+<style>
+.dbk-consent { position:fixed; left:0; right:0; bottom:0; z-index:99999; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px 22px; padding:16px 20px; background:var(--card,#fffdf8); border-top:1px solid var(--line,rgba(27,24,32,.12)); box-shadow:0 -10px 34px -20px rgba(0,0,0,.55); color:var(--ink,#1b1820); }
+.dbk-consent p { margin:0; max-width:620px; font-size:15.5px; line-height:1.5; }
+.dbk-consent a { color:var(--rust,#c4412e); font-weight:600; text-decoration:none; }
+.dbk-consent .dbk-btns { display:flex; gap:10px; flex:none; }
+.dbk-consent button { font:inherit; font-size:15px; font-weight:600; padding:10px 22px; border-radius:10px; cursor:pointer; border:1px solid var(--line-2,rgba(27,24,32,.2)); }
+.dbk-consent .dbk-accept { background:var(--rust,#c4412e); color:var(--rust-ink,#fff); border-color:var(--rust,#c4412e); }
+.dbk-consent .dbk-decline { background:transparent; color:var(--ink-2,rgba(27,24,32,.66)); }
+@media (max-width:560px){ .dbk-consent .dbk-btns { flex:1 1 100%; } .dbk-consent button { flex:1; } }
+
+.wm-word { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 500; letter-spacing: 0.14em; text-transform: lowercase; font-style: normal; }
+</style>
+<script>
+(function () {
+  var KEY = 'daybook.consent';
+  function loadTrackers() {
+    try {
+      window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
+      var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-2QJM3NGDX7');
+      var ga = document.createElement('script'); ga.async = true; ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-2QJM3NGDX7'; document.head.appendChild(ga);
+    } catch (e) {}
+  }
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function banner() {
+    if (document.querySelector('.dbk-consent')) return;
+    var b = document.createElement('div'); b.className = 'dbk-consent'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Cookie choices');
+    b.innerHTML = '<p>Kaya uses analytics cookies to understand how the site is used - nothing personal, and never any of your Kaya content. May we? <a href="/privacy">Privacy</a></p><div class="dbk-btns"><button class="dbk-decline" type="button">Decline</button><button class="dbk-accept" type="button">Accept</button></div>';
+    b.querySelector('.dbk-accept').addEventListener('click', function () { set('granted'); b.remove(); loadTrackers(); });
+    b.querySelector('.dbk-decline').addEventListener('click', function () { set('denied'); b.remove(); });
+    document.body.appendChild(b);
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('[data-cookie-settings]'); if (t) { e.preventDefault(); banner(); } });
+  var d = get();
+  if (d === 'granted') { loadTrackers(); }
+  else if (d !== 'denied') { if (document.readyState !== 'loading') banner(); else document.addEventListener('DOMContentLoaded', banner); }
+})();
+</script>
+<link rel="stylesheet" href="/site-legacy.css?v=202611131041">
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a>
+    <ul class="nav-links">
+      <li><a href="/#idea">Your Kaya</a></li>
+      <li><a href="/#tools">Tools</a></li>
+      <li><a href="/#private">Privacy First</a></li>
+      <li><a href="/blog" class="on">Journal</a></li>
+    </ul>
+    <div class="nav-cta">
+      <div class="lang-switch nav-lang"></div>
+      <a class="btn btn-ghost" href="/signin">Sign in</a>
+      <a class="btn btn-primary" href="/#invite">Request an invite</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <article class="article">
+    <div class="article-head">
+      <a class="back-link" href="/blog">← The Kaya Journal</a>
+      <div class="eyebrow">Ways of working</div>
+      <h1>Sorting the mail</h1>
+      <div class="article-meta">
+        <span>November 2026</span>
+        <span class="dot">·</span>
+        <span class="article-lisboa">Feito em Lisboa</span>
+        <span class="dot">·</span>
+        <span>4 min read</span>
+      </div>
+    </div>
+    <div class="hero-rule"></div>
+
+    <div class="prose">
+      <p class="lede">Most inboxes are a single heap: read and unread, urgent and idle, all in one endless scroll. Kaya treats mail as a short series of small decisions instead. Everything new lands in one pile - the Inbox, your "to sort" - and from there each email goes to exactly one of four places. Clear the pile and you are done; there is nothing hiding further down.</p>
+
+      <h2>One pile to sort</h2>
+      <p>New mail arrives in the Inbox, and that is the only pile that means "I have not decided about this yet". So its count is the one number worth watching - it is work still to do, not a measure of how busy you are. When the Inbox is empty, your mail is handled, however much arrived.</p>
+      <p>You are not sorting by reading every word, either. A glance at the sender and the subject is usually enough to know where a message belongs. The reading can wait for the pile it lands in.</p>
+
+      <h2>Four places, four keys</h2>
+      <p>When an email is open, the keys 1 to 4 send it where it belongs, and Kaya moves you straight on to the next one - so a morning's mail is a handful of keystrokes, not a scroll.</p>
+      <ul>
+        <li><b>Urgent (1)</b> - needs you today.</li>
+        <li><b>Important (2)</b> - matters, but not this minute.</li>
+        <li><b>Read later (3)</b> - worth your eyes in a quiet moment, never your morning.</li>
+        <li><b>Archive (4)</b> - read, done, kept. Nothing is deleted unless you ask; it is simply out of the way, and still there when you search.</li>
+      </ul>
+      <p>Sort one and the next opens, so the pile empties under your hands.</p>
+
+      <h2>Mail that becomes something</h2>
+      <p>An email is often really a task, a date, or a note you will want later. Kaya lets you turn it into one, in place:</p>
+      <ul>
+        <li><b>Turn into Task</b> - the email becomes a task, with a link back to the thread.</li>
+        <li><b>Turn into Event</b> - put it on the calendar. When the email mentions dates, a "Dates found" line offers them up, so you never retype a time.</li>
+        <li><b>Turn into Note</b> - keep the content as a note, filed in the right Space.</li>
+      </ul>
+      <p>The mail does not have to live in your inbox to be remembered. Once it has become the thing it was really asking for, you can archive it with a clear conscience.</p>
+
+      <h2>Why four, and not forty</h2>
+      <p>Folders multiply. Give yourself twenty and every email becomes a filing decision - and so you stop filing. Four is few enough to choose at a glance and enough to tell today's fire from next week's reading. The point was never a perfect taxonomy; it is an empty pile and a quiet mind.</p>
+
+      <blockquote>A full inbox is not a to-do list - it is an un-sorted one. Make the four small decisions, let the urgent surface and the rest settle, and the inbox goes quiet.</blockquote>
+
+      <p>Connect your mailbox - Gmail, Google Workspace, Yahoo or any IMAP account - and the first time you clear the pile to nothing, you will wonder why mail ever felt like a wall.</p>
+    </div>
+
+    <div class="article-end">
+      <h3>Mail that stays out of your way</h3>
+      <p>Kaya is invite-only while we get it right. A real inbox, four calm piles, and everything joined to the rest of your life - come and have a look.</p>
+      <a class="btn btn-primary" href="/#invite">Request an invite →</a>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <div class="foot-brand"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span style="white-space:nowrap">Kaya</span></a><span class="foot-tag">For a life well lived</span></div>
+    <ul class="foot-links">
+      <li><a href="/#idea">Your Kaya</a></li>
+      <li><a href="/#tools">Tools</a></li>
+      <li><a href="/blog">Journal</a></li>
+      <li><a href="/#invite">Request an invite</a></li>
+      <li><a href="/privacy">Privacy</a></li>
+      <li><a href="/terms">Terms</a></li>
+      <li><a href="mailto:contact@kaya.so">Contact</a></li>
+    </ul>
+    <div class="foot-lang"><span class="foot-lang-label">Language</span><div class="lang-switch"></div></div>
+    <div class="foot-meta">Questions? <a href="mailto:contact@kaya.so">contact@kaya.so</a> · <span class="foot-lisboa">Feito em Lisboa</span> · © <span id="yr">2026</span> Kaya</div>
+  </div>
+</footer>
+
+<script>window.__lang='en';window.__alts={en:'/blog/sorting-the-mail',pt:'/pt/jornal/arrumar-o-correio'};</script>
+<script src="/i18n.js" defer></script>
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>
