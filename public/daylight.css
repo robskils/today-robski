@@ -567,7 +567,8 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
 /* Mail list: the quick sort buttons always show, boxed, with the date on their left. */
 .mail-ar:not(.open) .mailv2ar .mail-ar-right { display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:0; align-self:center; }
 .mail-ar:not(.open) .mail-ar-head.mailv2ar .mail-ar-time, .mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:visible; font-size:14px; }
-.mail-ar:not(.open) .mailv2ar .mail-ar-tri, .mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-tri { display:grid; grid-template-columns:repeat(3, auto); gap:6px; position:static; justify-content:end; }
+.mail-ar:not(.open) .mailv2ar .mail-ar-tri, .mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-tri { display:grid; grid-template-columns:auto repeat(3, auto); gap:6px 8px; position:static; justify-content:end; align-items:center; }
+.mail-ar:not(.open) .mailv2ar .mail-ar-tri-l { display:flex; align-items:center; justify-content:flex-end; font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; padding-right:2px; }
 .mail-ar:not(.open) .mailv2ar .mrt { display:inline-flex; align-items:center; justify-content:center; padding:6px 10px; border:1px solid var(--glass-edge); font-size:12px; line-height:1; color:var(--k-mute); white-space:nowrap; }
 .mail-ar:not(.open) .mailv2ar .mrt:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 /* Below full desktop the six sort buttons won't fit beside the subject, so drop

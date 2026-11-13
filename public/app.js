@@ -9204,7 +9204,7 @@ function homeRadarItems() {
   const whenText = (n) => n < 0 ? `${-n} day${n === -1 ? '' : 's'} past` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
   const push = (g, o) => { if (!later.has(o.id)) out[g].push(o); };
   (state.tasks || []).forEach((t) => { const p = t.props || {}; if (p.done || p.kit) return; const due = p.due; if (!due || !/^\d{4}-\d{2}-\d{2}$/.test(due)) return; const n = dd(due); if (n > 7) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Task', id: 't:' + t.id, text: t.title || 'A task', when: whenText(n), overdue: n < 0, n, attr: `data-open-task="${t.id}"`, act: 'Open', space: an(p.area) }); });
-  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, act: 'Message', space: '' }); });
+  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, cId: k.id, taskId: k.taskId, long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, act: 'Message', space: '' }); });
   ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => { push('soon', { kind: 'Birthday', id: 'b:' + b.id, text: `${b.name}${b.turns ? ` turns ${b.turns}` : ''}`, when: b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`, overdue: false, n: b.inDays, attr: `data-open-contact="${b.id}"`, act: 'Message', space: '' }); });
   (state.goals || []).forEach((g) => { if ((gp(g).status || 'active') === 'done') return; const due = goalDueISO(g); if (!due) return; const n = dd(due); push(n < 0 ? 'overdue' : n <= 7 ? 'soon' : 'ahead', { kind: 'Goal', id: 'g:' + g.id, text: g.title || 'A goal', when: n < 0 ? whenText(n) : `due ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`, overdue: n < 0, n, attr: `data-open-goal="${g.id}"`, act: 'Open', space: an(gp(g).area) }); });
   out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
@@ -9286,39 +9286,39 @@ function homeRadarBodyHtml() {
 
   // ── 1. Needs you ──
   const invites = (state.sharedItems || []).filter((s) => s.kind === 'area' && !g('inv:' + s.id)).map((s) => ({ invite: true, kind: 'Invitation', id: 'inv:' + s.id, areaId: s.id, who: s.owner || 'Someone', title: (s.title || 'a Space') }));
-  const needR = all.filter((o) => o.kind !== 'Keep in touch' && (o.n <= 0 || (o.kind === 'Goal' && o.n <= 7)));
+  const needR = all.filter((o) => o.n <= 0 || (o.kind === 'Goal' && o.n <= 7) || o.kind === 'Keep in touch').sort((a, b) => (a.n ?? 999) - (b.n ?? 999));
   const needAll = [...needR, ...invites];
   const needLive = needAll.filter((o) => !g(o.id));
   if (needAll.length) {
     const cards = needAll.map((o) => {
       if (g(o.id)) return goneLine(o.id);
       if (o.invite) {
-        return `<div style="border:1px solid var(--k-line);padding:18px 20px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:18px;align-items:start;animation:kfade .35s ease"><div style="width:48px;height:48px;box-sizing:border-box;border:1px solid var(--k-gold);display:flex;align-items:center;justify-content:center"><span style="font:500 24px/1 'Cormorant Garamond',serif">${esc((o.who || '?').charAt(0).toUpperCase())}</span></div><div style="min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:var(--k-mute)">Invitation</div><span style="font:500 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">${esc(o.who)} invited you to ${esc(o.title)}</span><div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-top:6px">${A('Join', `data-feed-join="${esc(o.areaId)}" data-feed-gid="${esc(o.id)}"`, true)}${A('Not now', `data-feed-gone="${esc(o.id)}|Declined for now"`)}</div></div></div>`;
+        return `<div class="feed-card" style="animation:kfade .35s ease"><div class="feed-card-b"><div class="feed-card-meta"><span class="feed-card-kind">Invitation</span></div><div class="feed-card-t">${esc(o.who)} invited you to ${esc(o.title)}</div><div class="feed-card-acts">${A('Join', `data-feed-join="${esc(o.areaId)}" data-feed-gid="${esc(o.id)}"`, true)}${A('Not now', `data-feed-gone="${esc(o.id)}|Declined for now"`)}</div></div></div>`;
       }
-      const late = o.n < 0;
-      let mark = (o.kind || '?').charAt(0).toUpperCase(); let sub = '';
-      if (o.kind === 'Birthday') { const d = dnum(o.n); mark = d.num; sub = d.day; }
-      else if (o.kind === 'Goal') mark = 'G'; else if (o.kind === 'Review') mark = 'R'; else if (o.kind === 'Task') mark = 'T';
-      const tag = late ? (o.n === -1 ? '1 day late' : `${-o.n} days late`) : (o.kind === 'Goal' ? `Goal · ${esc(o.when)}` : o.kind);
-      const metaWhen = o.space || (late ? '' : o.when) || '';
-      const edge = late ? 'var(--k-gold)' : 'var(--k-line)';
-      const tagCol = late ? 'var(--k-goldt)' : 'var(--k-mute)';
+      const late = o.n < 0 || (o.kind === 'Keep in touch' && o.long);
+      // The type shown as a word (Goal, Task, Keep in touch…), not a G/T monogram. (Robin, 2026-11-13)
+      let whenTag = '';
+      if (o.kind === 'Birthday') { const d = dnum(o.n); whenTag = o.n === 0 ? 'today' : o.n === 1 ? 'tomorrow' : `${d.day} ${d.num}`; }
+      else if (o.kind === 'Keep in touch') whenTag = o.when || '';
+      else if (o.n < 0) whenTag = o.n === -1 ? '1 day late' : `${-o.n} days late`;
+      else whenTag = o.when || '';
+      const where = o.space || '';
       let acts = '';
       const c = cid(o.id);
       if (o.kind === 'Birthday') acts = A('WhatsApp', `data-feed-contact="wa:${esc(c)}"`, true) + A('Email', `data-feed-contact="email:${esc(c)}"`) + A('Sent my wishes', `data-feed-gone="${esc(o.id)}|Wishes sent to ${esc(o.text)}"`);
+      else if (o.kind === 'Keep in touch') acts = A('WhatsApp', `data-feed-contact="wa:${esc(o.cId)}"`, true) + A('Email', `data-feed-contact="email:${esc(o.cId)}"`) + A('Call', `data-feed-contact="call:${esc(o.cId)}"`) + (o.taskId ? A('Been in touch', `data-kit-done="${esc(o.taskId)}"`) : A('Been in touch', `data-feed-gone="${esc(o.id)}|Noted"`)) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
       else if (o.kind === 'Goal') acts = A('Check in', o.attr, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
       else if (o.kind === 'Review') acts = A('Do it now', 'data-open-reviews-tool', true) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
       else acts = A('Done', `data-feed-done="${esc(o.id)}"`, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
-      const snz = snoozeRow(o.id, 'Bring it back', [['Tomorrow', 'Snoozed: back tomorrow'], ['At the weekend', 'Snoozed: back at the weekend'], ['Next week', 'Snoozed: back next week'], ['Pick a date', 'Snoozed']]);
-      return `<div style="border:1px solid ${edge};padding:18px 20px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:18px;align-items:start;animation:kfade .35s ease">
-        <div style="width:48px;height:48px;box-sizing:border-box;border:1px solid var(--k-gold);display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:500 24px/1 'Cormorant Garamond',serif">${esc(mark)}</span>${sub ? `<span style="font:600 8.5px Jost;letter-spacing:.12em;text-transform:uppercase;color:var(--k-goldt);margin-top:2px">${esc(sub)}</span>` : ''}</div>
-        <div style="min-width:0;display:flex;flex-direction:column;gap:6px">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font:400 13px Jost;color:var(--k-mute)"><span style="font:600 11px Jost;letter-spacing:.14em;text-transform:uppercase;color:${tagCol};white-space:nowrap">${tag}</span>${metaWhen ? `<span>·</span><span style="white-space:nowrap">${esc(metaWhen)}</span>` : ''}</div>
-          <span style="font:500 25px/1.2 'Cormorant Garamond',serif;text-wrap:pretty">${esc(o.text)}</span>
-          <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-top:6px">${acts}</div>
-          ${snz}
-        </div>
-      </div>`;
+      const snz = o.kind === 'Keep in touch'
+        ? snoozeRow(o.id, 'Remind me in', [['3 days', 'Snoozed for 3 days'], ['A week', 'Snoozed for a week'], ['A month', 'Snoozed for a month'], ['Stop reminding me', 'Keep in touch paused', 1]])
+        : snoozeRow(o.id, 'Bring it back', [['Tomorrow', 'Snoozed: back tomorrow'], ['At the weekend', 'Snoozed: back at the weekend'], ['Next week', 'Snoozed: back next week'], ['Pick a date', 'Snoozed']]);
+      return `<div class="feed-card" style="animation:kfade .35s ease"><div class="feed-card-b">
+        <div class="feed-card-meta"><span class="feed-card-kind">${esc(o.kind)}</span>${whenTag ? `<span class="feed-card-dot">·</span><span class="feed-card-when${late ? ' over' : ''}">${esc(whenTag)}</span>` : ''}${where ? `<span class="feed-card-dot">·</span><span class="feed-card-space">${esc(where)}</span>` : ''}</div>
+        <div class="feed-card-t">${esc(o.text)}</div>
+        <div class="feed-card-acts">${acts}</div>
+        ${snz}
+      </div></div>`;
     }).join('');
     parts.push(`<div>${head('Needs you', 'var(--k-goldt)', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${needLive.length} to act on</span>`)}<div style="display:flex;flex-direction:column;gap:10px">${cards}</div></div>`);
   }
@@ -9352,7 +9352,7 @@ function homeRadarBodyHtml() {
   // ── 3. Keep in touch ──
   const kit = ((state.home.alerts && state.home.alerts.keepInTouch) || []).map((k) => ({ id: 'kit:' + (k.taskId || k.id), cId: k.id, taskId: k.taskId, name: k.name || 'Someone', last: k.last, since: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, note: k.note || '' }));
   const kitLive = kit.filter((k) => !g(k.id));
-  if (kit.length) {
+  if (false) {   // Keep in touch now lives inside "Needs you" above, sorted by how overdue it is - irrespective of type. (Robin, 2026-11-13)
     const rows = kit.map((k) => {
       if (g(k.id)) return goneLine(k.id);
       const fn = (k.name || '').split(' ')[0];
@@ -18187,7 +18187,7 @@ async function openMail(openKey, opts = {}) {
   // staleness reset throw the key away. (Robin: open-in-mail opened only the tool.)
   if (openKey && opts.row) { state.mail.snapMsgs = state.mail.snapMsgs || {}; state.mail.snapMsgs[openKey] = opts.row; }
   if (mailReopenStale() && !state.mail.composing && !opts.explicit) { state.mail.open = null; openKey = null; state.mail.account = 'all'; }
-  if (!openKey && state.mail.open && !state.mail.composing) openKey = state.mail.open._key;
+  if (!openKey && !state.mail.composing) state.mail.open = null;   // a conscious entry into Mail lands on the inbox with everything closed - don't reopen the last message (Robin, 2026-11-13)
   state.view = openKey ? { type: 'mail', open: openKey } : { type: 'mail' };
   // Fresh entry into Mail: no box history yet, so the first Back leaves Mail.
   if (!openKey) state.mail.boxStack = [];
@@ -19920,7 +19920,7 @@ function mailAccordionRow(x, count) {
     + `<span class="mail-ar-right">`
     + (isOpen ? (() => { const fa = (state.mailAreas && state.mailAreas[mailFileKey(x)]) || []; const names = fa.map((e) => (areaById(e.a) || {}).title).filter(Boolean); return names.length ? `<span class="mail-ar-space" title="Filed in ${esc(names.join(', '))}">${esc(names.join(' · '))}</span>` : ''; })() : '')
     + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
-    + `<span class="mail-ar-tri"><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
+    + `<span class="mail-ar-tri"><span class="mail-ar-tri-l">Action</span><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span><span class="mail-ar-tri-l">Move</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
     + `</span>`
     + `</button>`;
   // §58: closed, the row is just its header. Open, the header + body sit on a
