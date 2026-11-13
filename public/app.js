@@ -5589,7 +5589,7 @@ function knavGroups() {
 }
 // Which group the current view belongs to, so its name shows ink in the top line.
 const KNAV_VIEW = {
-  area: 'spaces', areas: 'spaces',
+  area: 'spaces', areas: 'spaces', visioncard: 'spaces', visionwall: 'spaces',
   discover: 'keep', today: 'keep', practices: 'keep', practicecard: 'keep',
   readwatch: 'keep',
   goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'keep', reviewcard: 'keep',
@@ -26472,7 +26472,7 @@ async function openVisionCard(id) { const a = await api(`/api/blocks/${id}`); st
 function renderVisionCard() {
   const a = state.vision_open.area; const p = a.props || {};
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a.title)}</span></div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Vision', attr: 'data-open-vision-tab' }, { label: a.title }])}
     <div class="task-focus" style="--h:${hueOf(a)}"><span class="vc-dot big"></span><h1 class="vision-h1">${esc(a.title)}</h1></div>
     <label class="tf-field goal-why"><span class="tf-label">Your vision for this area</span><textarea class="sel" id="visioncard-text" rows="4" placeholder="Picture this part of your life at its best — write it in the present tense…">${esc(p.vision || '')}</textarea></label>
     ${attachSection(a)}`;
@@ -26489,7 +26489,7 @@ function renderVisionWall() {
   state.areas.forEach((a) => ((a.props && a.props.attachments) || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: a.id, att: im, hue: hueOf(a), cap: a.title }); }));
   (state.bucket || []).forEach((b) => { const p = b.props || {}; if (p.status === 'done') (p.attachments || []).forEach((im) => { if (isImgType(im.type)) tiles.push({ block: b.id, att: im, hue: hueOf(areaById(p.area)), cap: b.title, lived: true }); }); });
   $('#pane').innerHTML = `
-    <div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-vision-tab>Vision</button><span class="crumb-sep">›</span><span class="crumb cur">The wall</span></div>
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Vision', attr: 'data-open-vision-tab' }, { label: 'The wall' }])}
     <div class="pane-head"><h1>The wall</h1></div>
     <p class="rv-period">The life you're reaching for — and the moments you've lived.</p>
     ${tiles.length ? `<div class="wall-grid">${tiles.map((x) => `<figure class="wall-tile ${x.lived ? 'lived' : ''}" style="--h:${x.hue}"><img data-wimg="${x.block}:${x.att.id}" alt=""><figcaption>${x.lived ? '✓ ' : ''}${esc(x.cap)}</figcaption></figure>`).join('')}</div>` : '<div class="empty" style="padding:50px">Add images to your areas’ visions and to bucket-list moments you’ve lived — they gather here on one wall.</div>'}`;
