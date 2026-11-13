@@ -342,6 +342,13 @@
   :root[data-light] .mail-ar-bar .mail-rowsel { display:block; width:100%; max-width:none; min-height:44px; padding-top:8px; padding-bottom:8px; padding-left:16px; padding-right:38px; background-color:var(--glass-face); border-color:var(--glass-edge); color:var(--k-ink); color-scheme:dark; font-family:'Jost',system-ui,sans-serif; font-size:16px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23ffffff' stroke-width='1.7'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 13px center; }
 }
 
+/* Robin (2026-11-13): an open email now leads with the labelled From / To block
+   (it carries the sender name, full address, and receiving account), so the
+   header's old sender line - name + account - just repeats it. Hide it when open,
+   leaving the subject. Placed after the mobile @media so it beats the phone grid's
+   display:contents on .mail-ar-from at every width. */
+.mail-ar.open .mail-ar-head.mailv2ar .mail-ar-from { display:none; }
+
 /* Archive · Delete at the foot of a read email (Robin, 2026-11-05): the house glass
    button - white rim, frosted, words centred. Content-width on desktop; two-up, half
    the row each, on a phone (Robin asked for the half-row there). They sit on the dark
