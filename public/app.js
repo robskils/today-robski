@@ -1979,7 +1979,7 @@ function applyTheme(rerender) {
   syncLightPreview(light);
   document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', LIGHT_GROUND[light]));
   // Sensible paints its own warm ground, so match the browser chrome bar to it.
-  if (plainMode()) { const g = document.documentElement.hasAttribute('data-plain-dark') ? '#0C0A06' : '#14120D'; document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', g)); }
+  if (plainMode()) { const g = document.documentElement.hasAttribute('data-plain-dark') ? '#0C0A06' : '#1B1812'; document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', g)); }
   if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
   else { const b = document.querySelector('[data-theme-toggle]'); if (b) b.textContent = themeLabel(); }
   clearTimeout(themeTimer);
@@ -9949,6 +9949,7 @@ function renderHome() {
       <div id="qt-wrap"></div>
       <div class="home-flow">
         <div class="home-greetrow">
+          <div class="home-watermark" aria-hidden="true"></div>
           <div class="home-greetmain">
             <div class="kg-eyebrow kg-eyebrow-norule"><span class="kg-eyebrow-t">${homeEyebrow()}</span></div>
             <h1 class="home-greet">${homeWelcomeOn() ? 'Welcome' : greeting()}${firstName() ? `, <i class="hi-name">${esc(firstName())}</i>` : ''}.</h1>

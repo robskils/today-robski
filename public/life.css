@@ -10628,7 +10628,7 @@ body.nav-collapsed .app-shell { grid-template-columns:none; }
    body.night (the prototype) - the app sets data-theme='dark', so a body.night-
    only rule never fired and the bar stayed #fff with near-white text on it. */
 body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.145 0.028 158); border-bottom-color:oklch(0.26 0.03 158); }
-.knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; }
+.knav-brand { display:inline-flex; align-items:center; gap:10px; background:none; border:0; cursor:pointer; padding:0; flex:none; margin-right:clamp(6px,1.1vw,16px); }
 /* Persistent back arrow in the top bar (Robin: a normal, always-there back button). */
 .knav-back { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:400; font-size:23px; line-height:1; color:var(--k-goldt); padding:0 6px; margin:0 2px 0 -2px; flex:none; align-self:center; }
 .knav-back:hover { color:var(--k-gold); }
@@ -10647,7 +10647,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-g-b { font-family:'Jost',system-ui,sans-serif; font-size:11.5px; color:var(--k-goldt); }
 /* §71 the four daily tools: one-click primaries in the bar, a hair stronger than
    the group names, with a gold underline on the page you're on. (Robin.) */
-.knav-prims { display:flex; gap:clamp(13px,1.7vw,22px); height:100%; align-items:stretch; min-width:0; }
+.knav-prims { display:flex; gap:clamp(12px,1.5vw,19px); height:100%; align-items:stretch; min-width:0; }
 /* Menubar dividers: a thin line centred in each gap (primaries | groups | New…). Shown
    only on the wide desktop (≥1101px) where all three sections sit in the bar. */
 .knav-sep { flex:none; align-self:center; width:1px; height:24px; background:var(--k-line); display:none; }
@@ -12022,6 +12022,17 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-greetrow .crumb-newtab { align-self:flex-start; margin-top:10px; }
 @media (max-width:820px){ .home-greetrow .gln-newwrap { margin-left:0; flex-basis:100%; } }
 .home-v3 .home-greetmain { padding-top:12px; }
+/* A large 香 seal pressed into the header, to the right of the greeting. Masked and
+   filled with the page's own ink (--ink), so it reads as a faint ghost of the seal in
+   the same parchment tone as the text - never gold. Koyeba is dark at every hour, so a
+   darker-than-ground seal would vanish (it did); a light ghost is the one that stays
+   legible on every wash and on Sensible's brown, while still quiet. (Robin, 2026-11-13.) */
+.home-greetrow { position:relative; }
+.home-greetrow > *:not(.home-watermark) { position:relative; z-index:1; }
+.home-watermark { position:absolute; top:50%; right:0; transform:translateY(-50%); width:clamp(160px,24vw,280px); aspect-ratio:1; z-index:0; pointer-events:none;
+  -webkit-mask:url('/brand/kaya-seal.svg') center/contain no-repeat; mask:url('/brand/kaya-seal.svg') center/contain no-repeat;
+  background:var(--ink); opacity:.2; }
+@media (max-width:820px){ .home-watermark { display:none; } }
 .home-v3 .home-greet { font-family:var(--k-serif); font-weight:500; font-size:clamp(44px,5vw,64px); line-height:1.02; letter-spacing:-.01em; margin:16px 0 0; }
 .home-v3 .home-tw { display:block; margin-top:10px; padding-top:0; border-top:0; max-width:none; font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }
 .home-v3 .home-tw .home-time { font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }

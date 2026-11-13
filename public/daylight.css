@@ -662,9 +662,9 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
      our sensible theme should be that. I never really digged the sensible light one.")
      It keeps data-theme='dark', so the dark-wash component styling above carries the
      whole app for free; only the tokens change. */
-  --k-bg:#14120D; --k-panel:#1B1812; --k-soft:#241F16; --k-mine:#2E2718;
-  --k-ink:#F1E9DA; --k-mute:#B0A48C; --k-goldt:#EAC56A; --k-gold:#C79A40; --k-line:#473F2B;
-  --k-deep:#0D0B07; --k-ondeep:#F1E9DA;
+  --k-bg:#1B1812; --k-panel:#241F16; --k-soft:#2E2718; --k-mine:#38301F;
+  --k-ink:#F1E9DA; --k-mute:#B0A48C; --k-goldt:#EAC56A; --k-gold:#C79A40; --k-line:#4E4530;
+  --k-deep:#14120D; --k-ondeep:#F1E9DA;
   --k-primary:#C79A40; --k-onprimary:#14120D;
   --glass:rgba(38,32,21,.42); --glass-edge:rgba(241,233,218,.15); --glass-card:rgba(38,32,21,.52); --glass-face:rgba(14,11,7,.62);
   --glass-blur:blur(12px) saturate(1.3);
@@ -686,7 +686,7 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   --line:rgba(241,233,218,.11); --line-2:rgba(241,233,218,.2);
   --accent:#C79A40; --accent-ink:#14110B;
 }
-:root[data-plain] { background:#14120D !important; }
+:root[data-plain] { background:#1B1812 !important; }
 :root[data-plain][data-plain-dark] { background:#0C0A06 !important; }
 :root[data-plain] body, :root[data-plain] #pane { background:transparent; }
 :root[data-plain] #light-layer { display:none !important; }
