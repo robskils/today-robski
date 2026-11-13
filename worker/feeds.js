@@ -454,7 +454,7 @@ export async function lookupPlace({ q, lat, lng }) {
     const row = Array.isArray(j) ? j[0] : j;
     const a = row && row.address; if (!a) return null;
     let city = a.city || a.town || a.village || a.municipality || a.city_district || (row && row.name) || a.county || a.state || '';
-    city = city.replace(/^(greater|grande|city of|cidade de)\s+/i, '').trim();
+    city = city.replace(/^(greater|grande|city of|cidade de)\s+/i, '').split('(')[0].split(',')[0].trim();
     const country = a.country || '';
     const countryCode = String(a.country_code || '').toLowerCase();
     if (!city) return null;

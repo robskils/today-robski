@@ -5151,6 +5151,11 @@ function cachedLoc() { try { const l = JSON.parse(localStorage.getItem('life.loc
 // the timezone, and all of Portugal is one zone, so it always read "Lisbon".
 // (Robin, 2026-11-06: "I'm in Porto for the weekend… update my location".)
 function lifePlace() { try { const p = JSON.parse(localStorage.getItem('life.place') || 'null'); return (p && p.name && Number.isFinite(p.lat)) ? p : null; } catch { return null; } }
+// A place name fit for the greeting: drop a long "(…parish…)" and any trailing
+// ", Region", so an official name like "Sintra (Santa Maria e São Miguel, São
+// Martinho e São Pedro de Penaferrim)" shows as just "Sintra". One place, near
+// enough, kept short so the screen stays clean. (Robin, 2026-11-13.)
+function shortPlace(name) { let s = String(name || '').trim(); s = s.split('(')[0].trim(); s = s.split(/[,/·]/)[0].trim(); return s; }
 async function setHomePlace(city) {
   city = (city || '').trim();
   state.home = state.home || {};
@@ -9426,7 +9431,7 @@ function homeTimeWeatherHtml() {
   ensureAutoPlace();   // detect where you are (device location → city name), once
   const manual = lifePlace();
   const lp = manual || autoPlace();
-  let place = (lp && lp.name) || (state.account && (state.account.place || state.account.city)) || '';
+  let place = shortPlace((lp && lp.name) || (state.account && (state.account.place || state.account.city)) || '');
   if (!place) { try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; const city = tz.split('/').pop(); if (city) place = city.replace(/_/g, ' '); } catch {} }
   const placeBtn = `<button class="home-loc" data-home-loc title="${place ? 'Change where you are' : 'Set where you are'}">${place ? esc(place) : 'Set location'}</button>`;
   // §62: one quiet line - time · now° condition, place · tomorrow N° condition · sunset.
