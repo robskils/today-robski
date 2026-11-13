@@ -54,7 +54,7 @@ Koyéba (formerly Shizu, Daybook, Lifebook) is a calm, private home for a whole 
 - **The name is spelt "Koyéba", accent on the e, everywhere people read it** (Robin, 2026-11-04). Plain "koyeba"/"Koyeba" is only for what can't or shouldn't carry an accent: the domain, file names, code identifiers, `User-Agent`/`PRODID` values, the SMS sender and the Resend `FROM_EMAIL` fallback.
 
 ## Brand
-- **Logo:** the wordmark "Koyéba" in Cormorant Garamond 500, with a gold full stop.
+- **Logo:** the wordmark "Kaya" in Cormorant Garamond 500, beside the gold 香 seal. **No full stop** (dropped 2026-11-13 now that the seal is the logomark; previously "Kaya.").
 - **Mandombe "ko"** (`assets/mandombe-ko-*.svg`) sits before the wordmark in the header and replaces 静 everywhere.
 - **App icon / favicon:** `mandombe-ko-tile-gold.svg`.
 - **The full Mandombe "koyeba"** appears only at the foot of Today (click it to go back to the top), on the welcome screen and on the website. Never behind text.

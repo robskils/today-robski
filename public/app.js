@@ -2833,7 +2833,7 @@ function renderAdmin() {
   const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup"><span class="adm-brand-word">Kaya.</span></span>
+        <span class="adm-brand-lockup"><span class="adm-brand-word">Kaya</span></span>
         <span class="adm-brand-sheet" style="opacity:.75;font-size:14px">Wordmark only, the full stop in gold. No logo mark.</span>
       </div>
       <div class="home-sec-h" style="margin-top:6px">App icon &amp; favicon</div>
@@ -5685,7 +5685,7 @@ function navGroupsHtml(v) {
     const badge = knavGroupBadge(g);
     return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
   }).join('');
-  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><span class="knav-seal" aria-hidden="true"></span><em class="brand-word">Kaya<i class="brand-dot">.</i></em></button>`;
+  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><span class="knav-seal" aria-hidden="true"></span><em class="brand-word">Kaya</em></button>`;
   // §71: the four daily tools, one click each in the bar (desktop). Each lights up
   // on its own page; Mail carries its to-sort count. (Robin, 2026-11-05.)
   const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Tables', 'data-open-tables', ['tables', 'table'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
@@ -5908,7 +5908,7 @@ function renderAppFoot() {
   const el = document.getElementById('app-foot'); if (!el) return;
   const v = state.view || {};
   const html = `<div class="app-foot-row">`
-    + `<span class="aff-mark"><span class="aff-seal" aria-hidden="true"></span>Kaya<span class="aff-dot">.</span></span>`
+    + `<span class="aff-mark"><span class="aff-seal" aria-hidden="true"></span>Kaya</span>`
     + `<span class="aff-sp"></span>`
     + (themeLocked() ? '' : `<button class="aff" data-theme-toggle title="Theme">${themeLabel()}</button>`)
     + `<button class="aff${v.type === 'settings' ? ' on' : ''}" data-open-settings>${t('nav.settings')}</button>`
@@ -16244,7 +16244,7 @@ function fireEventAlarm(e, mins) {
   try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch {}
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://kaya.so/email-mark.png?v=3' });
+      const n = new Notification(e.title || 'Event reminder', { body: mins <= 0 ? 'Starting now' : `Starts in ${mins} minute${mins === 1 ? '' : 's'}`, tag: 'daybook-ev-' + e.id, icon: 'https://kaya.so/email-mark.png?v=6' });
       n.onclick = () => { try { window.focus(); openCalendar(todayISO()); } catch {} n.close(); };
     }
   } catch {}
@@ -33095,7 +33095,7 @@ const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(loc
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup"><em class="brand-word">Kaya<i class="brand-dot">.</i></em></span></div>
+      <div class="gate2-mark"><span class="mark-lockup"><em class="brand-word">Kaya</em></span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>

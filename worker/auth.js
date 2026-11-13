@@ -380,14 +380,14 @@ export function codeEmail(code, kind) {
            instead of a fixed 440px that runs off a narrow screen. -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
 
-        <!-- Wordmark: the real mark (sun over two page-lines) as a PNG - the
+        <!-- Wordmark: the Kaya seal (香) as a PNG - the
              favicon is an SVG and every major client strips those - over the
              name and the tagline. alt is empty on purpose: with images off the
              serif wordmark below already says Kaya, so a blocked image
              should leave nothing behind rather than a second "Kaya". -->
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://kaya.so/email-mark.png?v=5" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
-          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya<span style="color:#a8844a">.</span></p>
+          <img src="https://kaya.so/email-mark.png?v=6" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya</p>
         </td></tr>
 
         <!-- A warm keyline. Solid cells: gradients are the first thing Outlook drops. -->
