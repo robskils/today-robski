@@ -1899,7 +1899,7 @@ function setThemeStream(s) {   // Settings: pick the Auto stream (colourful | se
   applyTheme(false); try { renderNav(); } catch {}
   try { if (state.view && state.view.type === 'settings') renderSettings(); else rerenderCurrent(); } catch {}
 }
-function themeLabel() { if (themeLocked()) return `${autoIsDark() ? '☾' : '☀'} Auto`; const e = effLook(); const base = LOOK_LABEL[e] || 'Theme'; return themeLookRaw() ? base : `${base} · Auto`; }
+function themeLabel() { if (themeLocked()) return `${autoIsDark() ? '☾' : '☀'} Auto`; const e = effLook(); const base = LOOK_LABEL[e] || 'Theme'; return themeLookRaw() ? base : `${autoIsDark() ? '☾' : '☀'} Auto`; }
 let themeTimer;
 // The light: a painted wash that follows the real day (public/daylight.css).
 const LIGHTS = ['dawn', 'overcast', 'dusk', 'night'];
