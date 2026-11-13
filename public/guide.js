@@ -3,7 +3,7 @@
 // its button goes to the real place, reusing that place's existing data-attribute.
 // Loaded after app.js; everything here runs at call time.
 const GUIDE_ANSWERS = {
-  'set-down': { title: 'Set something down', lead: "Get it out of your head in a few seconds. Koyéba works out what it is and where it goes.", go: ['Try it now', 'data-cap-open'], steps: [
+  'set-down': { title: 'Set something down', lead: "Get it out of your head in a few seconds. Kaya works out what it is and where it goes.", go: ['Try it now', 'data-cap-open'], steps: [
     '<b>Open it from anywhere.</b> Press <kbd>⌘.</kbd> or the Set something down bar. On a phone, tap the gold <b>+</b> at the bottom.',
     '<b>Write it as you\'d say it,</b> or tap Speak. For example, "Dentist Tuesday at 9am" or "Ring Mum tomorrow".',
     '<b>Check what it understood.</b> It shows whether it\'s an event, a task or a note, with the day and any Space. Tap anything that\'s wrong.',
@@ -32,7 +32,7 @@ const GUIDE_ANSWERS = {
     'Hover over a row and press <b>✕</b> to remove it. Removing a link leaves the thing itself. Removing an attached file deletes the file.',
   ], next: ['note-start', 'task-add'] },
 
-  calendar: { title: 'Bring in your calendar', lead: 'Your Koyéba account has its own beautiful calendar. You don\'t need to sync it with a third-party calendar tool - but if you\'d like to bring in Google, iCloud or Yahoo, you can.', go: ['Connect a calendar', 'data-onb-open-hub="calendar"'], steps: [
+  calendar: { title: 'Bring in your calendar', lead: 'Your Kaya account has its own beautiful calendar. You don\'t need to sync it with a third-party calendar tool - but if you\'d like to bring in Google, iCloud or Yahoo, you can.', go: ['Connect a calendar', 'data-onb-open-hub="calendar"'], steps: [
     'Choose <b>Connect a calendar</b> above, then pick your provider.',
     'Follow the steps to sign in, or to add an app password for iCloud and Yahoo.',
     'Your events appear on your Calendar and on Today.',
@@ -46,12 +46,12 @@ const GUIDE_ANSWERS = {
     'Search for a country or a team, and choose it.',
     'Press <b>×</b> whenever you want it gone. These are read-only.',
   ], next: ['calendar', 'event-add'] },
-  email: { title: 'Bring in your email', lead: 'Your mail stays where it lives. Koyéba is a better place to work with it.', go: ['Connect your email', 'data-onb-open-hub="email"'], steps: [
+  email: { title: 'Bring in your email', lead: 'Your mail stays where it lives. Kaya is a better place to work with it.', go: ['Connect your email', 'data-onb-open-hub="email"'], steps: [
     'Choose <b>Connect your email</b> above, and pick your provider: Gmail, Outlook, iCloud, Yahoo or another.',
     'Enter your address and password. Gmail, iCloud and Yahoo need an <a class="g-inline" data-help-open="app-password">app password</a>, not your everyday one.',
     'Add as many mailboxes as you like. They all merge into one inbox.',
   ], next: ['app-password', 'mail-sort', 'mail-action'] },
-  'app-password': { title: 'Make an app password', lead: 'A separate password just for Koyéba, which your email provider gives you.', steps: [
+  'app-password': { title: 'Make an app password', lead: 'A separate password just for Kaya, which your email provider gives you.', steps: [
     '<b>Gmail or Google Workspace:</b> turn on <a class="g-link" href="https://myaccount.google.com/signinoptions/twosv" target="_blank" rel="noopener">2-Step Verification</a>, then make one at <a class="g-link" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App passwords</a>. On Workspace, your admin must have IMAP turned on.',
     '<b>iCloud:</b> make one at <a class="g-link" href="https://appleid.apple.com" target="_blank" rel="noopener">appleid.apple.com</a>, under Sign-In and Security.',
     '<b>Yahoo:</b> make one in your Yahoo Account Security settings.',
@@ -66,15 +66,15 @@ const GUIDE_ANSWERS = {
     'Open the email.',
     'Under <b>Tools</b>, choose to make a task or a note, or <b>Add event</b>, which uses AI.',
     'Check the details and save. A task or note keeps a copy of the email.',
-    'If the email is a calendar invitation, Koyéba offers to add it to your calendar.',
+    'If the email is a calendar invitation, Kaya offers to add it to your calendar.',
   ], next: ['mail-sort', 'task-add'] },
   'keep-in-touch': { title: 'Keep in touch with someone', lead: 'A gentle nudge when it\'s been too long, measured from when you last actually spoke.', go: ['Open Contacts', 'data-open-contacts'], steps: [
     'Open a contact and turn on <b>Keep in touch</b>.',
     'Choose how often you\'d like to speak.',
     'They appear in <b>Keep in touch</b> on Today when it\'s been that long. Tick them, and the clock starts again.',
   ], next: ['connect', 'invite'] },
-  connect: { title: 'Connect with someone on Koyéba', lead: 'Connecting is what opens up sharing. Nothing of yours is shared until you choose it.', go: ['Open Contacts', 'data-open-contacts'], steps: [
-    'Open <b>Contacts</b>. Koyéba shows which of your people are already here.',
+  connect: { title: 'Connect with someone on Kaya', lead: 'Connecting is what opens up sharing. Nothing of yours is shared until you choose it.', go: ['Open Contacts', 'data-open-contacts'], steps: [
+    'Open <b>Contacts</b>. Kaya shows which of your people are already here.',
     'Choose <b>Connect</b>, or add someone by name or email. They need to accept.',
     'Once connected, you can share a Space, a note or a task, and send messages.',
   ], next: ['share-space', 'invite'] },
@@ -90,15 +90,15 @@ const GUIDE_ANSWERS = {
     'Open a task to give it a date, a Space, notes or links.',
     'Tick it anywhere, and it\'s done everywhere.',
   ], next: ['flow', 'linked', 'set-down'] },
-  flow: { title: 'Plan your day in Flow', lead: 'Drag your practices and tasks onto a timed day. It\'s a plan to work from, never a timetable to obey.', go: ['Open Flow', 'data-open-today'], steps: [
-    'Open <b>Flow</b> from Plans.',
+  flow: { title: 'Plan your day in the Day Planner', lead: 'Drag your practices and tasks onto a timed day. It\'s a plan to work from, never a timetable to obey.', go: ['Open Day Planner', 'data-open-today'], steps: [
+    'Open the <b>Day Planner</b> from Plans.',
     'Drag a task or a timed practice onto the day.',
     'Tick each one as you do it. Ticking a practice counts towards it too.',
   ], next: ['practices', 'task-add'] },
-  practices: { title: 'Keep up a practice', lead: 'The things you do again and again, with no alarms and no guilt.', go: ['Open Practices', 'data-open-practices'], steps: [
-    'Open <b>Practices</b> from Plans, and add one.',
+  practices: { title: 'Keep up a practice', lead: 'The things you do again and again, with no alarms and no guilt.', go: ['Open Tracker', 'data-open-practices'], steps: [
+    'Open the <b>Tracker</b> from Plans, and add one.',
     'Give it a Space and, if you like, an aim such as every other day.',
-    'Tick it when you\'ve done it. A timed practice can also be dragged onto your day in Flow.',
+    'Tick it when you\'ve done it. A timed practice can also be dragged onto your day in the Day Planner.',
   ], next: ['flow', 'review'] },
   goals: { title: 'Set a goal', lead: 'Connect the bigger picture to what you do each day.', go: ['Open Goals', 'data-open-goals'], steps: [
     'Open <b>Goals</b> from Plans, and add one.',
@@ -123,12 +123,12 @@ const GUIDE_ANSWERS = {
   ], next: ['note-start', 'linked'] },
   'read-watch': { title: 'Save something to read or watch', lead: 'One list for everything you mean to get to.', go: ['Open Read & Watch', 'data-open-readwatch'], steps: [
     'Open <b>Read &amp; Watch</b> from Keep.',
-    'Paste a link, or type the title of a book or film. Koyéba fills in the details.',
+    'Paste a link, or type the title of a book or film. Kaya fills in the details.',
     'Tick it when you\'re through it, and rate it if you like.',
     'To save from anywhere, set up the bookmarklet or iPhone Shortcut from the same page.',
   ], next: ['find', 'spaces'] },
-  discover: { title: 'Discover things to do', lead: 'Follow what\'s on, and add what you like to your calendar.', go: ['Open Discover', 'data-open-discover'], steps: [
-    'Open <b>Discover</b> from Plans.',
+  discover: { title: 'Find local events', lead: 'Follow what\'s on, and add what you like to your calendar.', go: ['Open Local Events', 'data-open-discover'], steps: [
+    'Open <b>Local Events</b> from Plans.',
     'Search a city to find what\'s on near you, then browse by day.',
     'Add anything you like the look of to your calendar.',
   ], next: ['event-add', 'calendar'] },
@@ -139,7 +139,7 @@ const GUIDE_ANSWERS = {
     'When you make a task, note or event, add it to a Space, and it shows up there.',
   ], next: ['share-space', 'note-start'] },
   'share-space': { title: 'Share a Space', lead: 'Run a family, a house move or a team from the same place.', go: ['Open Spaces', 'data-open-areas'], steps: [
-    'First <a class="g-inline" data-help-open="connect">connect with them</a> on Koyéba.',
+    'First <a class="g-inline" data-help-open="connect">connect with them</a> on Kaya.',
     'Open the Space, and choose who to share it with.',
     'They can see and edit what\'s in that Space, unless you choose View only, and nothing else of yours. You can stop sharing at any time.',
   ], next: ['connect', 'spaces'] },
@@ -150,11 +150,11 @@ const GUIDE_ANSWERS = {
   ], next: ['review', 'ai'] },
   spending: { title: 'See where your money goes', lead: 'Your statement in, and the shape of the month out, without a spreadsheet.', go: ['Open Money', 'data-open-money'], steps: [
     'Open <b>Spending</b> from Money.',
-    'Import a statement as a CSV or PDF. Koyéba reads the transactions and sorts them. Reading a PDF uses AI.',
+    'Import a statement as a CSV or PDF. Kaya reads the transactions and sorts them. Reading a PDF uses AI.',
     'Your Spaces double as spending categories, so your money lines up with your life.',
   ], next: ['set-down', 'spaces'] },
 
-  phone: { title: 'Put Koyéba on your phone', lead: 'It installs from your browser in a moment, with no app store, and opens full screen like any other app.', installed: 'phone', parts: [
+  phone: { title: 'Put Kaya on your phone', lead: 'It installs from your browser in a moment, with no app store, and opens full screen like any other app.', installed: 'phone', parts: [
     ['iPhone', [
       'Open <b>koyeba.co</b> in <b>Safari</b> and sign in.',
       'Tap <b>Share</b>, the square with an arrow, at the bottom of the screen.',
@@ -166,7 +166,7 @@ const GUIDE_ANSWERS = {
       'Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.',
     ]],
   ], note: 'Open it from your home screen from now on. The +, the Menu and Search sit along the bottom.', next: ['desktop', 'set-down', 'twofa'] },
-  desktop: { title: 'Put Koyéba on your computer', lead: 'It opens in its own clean window, from your Dock or taskbar, with no browser tabs or address bar.', installed: 'computer', parts: [
+  desktop: { title: 'Put Kaya on your computer', lead: 'It opens in its own clean window, from your Dock or taskbar, with no browser tabs or address bar.', installed: 'computer', parts: [
     ['Mac, in Safari', [
       'Open <b>koyeba.co</b> in Safari and sign in.',
       'Click <b>Share</b>, the square with an arrow, in the toolbar.',
@@ -176,20 +176,20 @@ const GUIDE_ANSWERS = {
       'Open <b>koyeba.co</b> and sign in.',
       'Click the <b>install icon</b>, a small screen with a down arrow, at the right-hand end of the address bar.',
       'Click <b>Install</b>.',
-      'No icon? In Chrome, open the <b>⋮</b> menu at the top right and look for <b>Install Koyéba</b>. Menu wording changes between browser versions, so it may sit under <b>Cast, save and share</b>. In Edge, it is under <b>Apps</b> in the <b>…</b> menu.',
+      'No icon? In Chrome, open the <b>⋮</b> menu at the top right and look for <b>Install Kaya</b>. Menu wording changes between browser versions, so it may sit under <b>Cast, save and share</b>. In Edge, it is under <b>Apps</b> in the <b>…</b> menu.',
     ]],
-  ], note: 'Koyéba now lives in your Dock on a Mac, or can be pinned to your taskbar on Windows.', next: ['phone', 'set-down', 'find'] },
+  ], note: 'Kaya now lives in your Dock on a Mac, or can be pinned to your taskbar on Windows.', next: ['phone', 'set-down', 'find'] },
   twofa: { title: 'Turn on two-factor sign-in', lead: 'A second step at sign-in, from an authenticator app. It becomes required 90 days after you join.', go: ['Set it up', 'data-onb-open-hub="twofa"'], steps: [
     'Choose <b>Set it up</b> above.',
     'Scan the code with your authenticator app.',
     'Enter the six digits it shows.',
   ], next: ['phone', 'data'] },
-  ai: { title: 'Add AI (optional)', lead: 'AI is an optional extra. You can enjoy all the essentials of Koyéba without it. If you do add it, a few tools can do a little more, and each has its own switch.', go: ['Open the AI settings', 'data-guide-settings="ai"'], steps: [
+  ai: { title: 'Add AI (optional)', lead: 'AI is an optional extra. You can enjoy all the essentials of Kaya without it. If you do add it, a few tools can do a little more, and each has its own switch.', go: ['Open the AI settings', 'data-guide-settings="ai"'], steps: [
     'Choose <b>Open the AI settings</b> above.',
     'On Premium, add your own key from Claude, ChatGPT or Gemini. On Premium Plus, we run it for you, so there\'s no key to add.',
     'Turn off any use you\'d rather it didn\'t make, or switch it all off.',
   ], next: ['data', 'journal'] },
-  tools: { title: 'Hide the tools you don\'t use', lead: 'Keep Koyéba to what you actually need.', go: ['Open the settings', 'data-guide-settings="sections"'], steps: [
+  tools: { title: 'Hide the tools you don\'t use', lead: 'Keep Kaya to what you actually need.', go: ['Open the settings', 'data-guide-settings="sections"'], steps: [
     'Open <b>Settings</b>, then the tools section.',
     'Untick anything you don\'t use.',
     'Nothing is deleted. Turn it back on any time, and it\'s all still there.',
@@ -199,7 +199,7 @@ const GUIDE_ANSWERS = {
     'Open <b>Settings</b>, then Import, and choose the files.',
     'Each file becomes a note. A # heading on the first line becomes its title. Otherwise, the filename does.',
   ], next: ['note-start', 'spaces'] },
-  data: { title: 'Your data', lead: 'What you put in Koyéba is yours. We don\'t sell it, read it or train AI on it.', go: ['Open the settings', 'data-open-settings'], steps: [
+  data: { title: 'Your data', lead: 'What you put in Kaya is yours. We don\'t sell it, read it or train AI on it.', go: ['Open the settings', 'data-open-settings'], steps: [
     'Your mail stays on your provider\'s servers, and your mailbox passwords are encrypted.',
     'People only ever see exactly what you share with them.',
     'You can take everything with you, or close your account, from <b>Your data</b> in Settings.',
@@ -244,7 +244,7 @@ const GUIDE_HOW = [
 const GUIDE_TOOLS = [
   { id: 'tool-spaces', title: 'Spaces', sub: 'Each part of your life', lead: 'A Space gathers one part of your life: its notes and tables, tasks, goals, events, people, links and files. Give each one the people who belong in it.', go: ['Open Spaces', 'data-open-areas'], list: ['spaces', 'share-space'] },
   { id: 'tool-people', title: 'People', sub: 'Mail, Messages, Contacts', lead: 'Everyone who writes to you. Mail brings every inbox into one, Messages is for chatting with people you\'re connected to, and Contacts keeps the people in your life close.', go: ['Open Mail', 'data-open-mail'], list: ['mail-sort', 'mail-action', 'email', 'keep-in-touch', 'connect', 'invite'] },
-  { id: 'tool-plans', title: 'Plans', sub: 'Calendar, Tasks, Practices, Discover, Flow, Goals, Reviews', lead: 'From today to one day. Calendar and Tasks hold what\'s soon, Flow plans the day, Goals and your bucket list look further off, and Reviews look back.', go: ['Open Tasks', 'data-view-tasks'], list: ['task-add', 'event-add', 'flow', 'practices', 'discover', 'goals', 'review'] },
+  { id: 'tool-plans', title: 'Plans', sub: 'Calendar, Tasks, Tracker, Local Events, Day Planner, Goals, Reviews', lead: 'From today to one day. Calendar and Tasks hold what\'s soon, the Day Planner plans the day, Goals and your bucket list look further off, and Reviews look back.', go: ['Open Tasks', 'data-view-tasks'], list: ['task-add', 'event-add', 'flow', 'practices', 'discover', 'goals', 'review'] },
   { id: 'tool-keep', title: 'Keep', sub: 'Notes, Tables, Read & Watch', lead: 'Your reference shelf. Notes are for words, Tables for rows and columns, and Read & Watch for what you mean to get to.', go: ['Open Notes', 'data-open-notes'], list: ['note-start', 'table-start', 'read-watch', 'linked', 'import'] },
   { id: 'tool-reflection', title: 'Reflection', sub: 'Journal, Dreams, Coaching, Compass, I Ching and more', lead: 'Room for the rest of you. Journal, Dreams and Coaching are places to think, and the other reflection tools offer a different lens when you want one. Those that write back to you use AI.', go: ['Open Reflection', 'data-open-wellbeing'], list: ['journal', 'ai'] },
   { id: 'tool-money', title: 'Money', sub: 'Spending, Investments, Advice', lead: 'What things cost, and what\'s growing. Spending reads your statements, Investments values what you hold, and Advice sums up the finance channels you follow. Advice uses AI, and is general reading rather than personal financial advice.', go: ['Open Money', 'data-open-money'], list: ['spending', 'ai'] },
@@ -256,7 +256,7 @@ const GUIDE_OLD_KEYS = { home: 'r-day', today: 'flow', tasks: 'task-add', notes:
 const GUIDE_HELP_FOR = {
   notes: ['Notes', ['note-start', 'linked', 'spaces']], note: ['Notes', ['note-start', 'linked', 'spaces']], tables: ['Tables', ['table-start', 'linked']], table: ['Tables', ['table-start', 'linked']],
   tasks: ['Tasks', ['task-add', 'flow', 'set-down']], taskcard: ['Tasks', ['task-add', 'linked', 'flow']],
-  calendar: ['Calendar', ['event-add', 'calendar', 'holidays']], today: ['Flow', ['flow', 'practices', 'task-add']], practices: ['Practices', ['practices', 'flow']], practicecard: ['Practices', ['practices', 'flow']], discover: ['Discover', ['discover', 'event-add']],
+  calendar: ['Calendar', ['event-add', 'calendar', 'holidays']], today: ['Day Planner', ['flow', 'practices', 'task-add']], practices: ['Tracker', ['practices', 'flow']], practicecard: ['Tracker', ['practices', 'flow']], discover: ['Local Events', ['discover', 'event-add']],
   goals: ['Goals', ['goals', 'review']], goalcard: ['Goals', ['goals', 'task-add']], reviews: ['Reviews', ['review', 'r-week', 'goals']], reviewcard: ['Reviews', ['review', 'r-week']],
   mail: ['Mail', ['mail-sort', 'mail-action', 'email']], mailaccounts: ['Mail', ['email', 'app-password']], contacts: ['Contacts', ['keep-in-touch', 'connect', 'invite']], contactcard: ['Contacts', ['keep-in-touch', 'connect']], messages: ['Messages', ['connect', 'share-space']],
   area: ['Spaces', ['spaces', 'share-space', 'note-start']], areas: ['Spaces', ['spaces', 'share-space']],
@@ -298,7 +298,7 @@ function renderGuideIndex() {
   const rhythm = `<section>${guideFold('rhythm', 'Your rhythm')}${guideOpen('rhythm') ? `<div class="g-tiles">${GUIDE_RHYTHM.map((r) => `<button type="button" class="g-tile" data-help-open="${r.id}"><span class="g-tile-t">${r.title}</span><span class="g-tile-s">${r.lead}</span></button>`).join('')}</div>` : ''}</section>`;
   const how = `<section>${guideFold('how', 'How do I…')}${guideOpen('how') ? GUIDE_HOW.map(([label, ids]) => `<div class="g-group"><h3 class="g-group-h">${label}</h3><div class="g-rows">${ids.map((id) => guideRow(id)).join('')}</div></div>`).join('') : ''}</section>`;
   const tools = `<section>${guideFold('tools', 'Every tool')}${guideOpen('tools') ? `<div class="g-tiles">${GUIDE_TOOLS.map((x) => `<button type="button" class="g-tile" data-help-open="${x.id}"><span class="g-tile-b">${esc(x.title)}</span><span class="g-tile-s">${esc(x.sub)}</span></button>`).join('')}</div>` : ''}</section>`;
-  const yours = `<section>${guideFold('yours', 'Your data and our promise')}${guideOpen('yours') ? `<div class="g-body"><p>Koyéba is paid for by its subscribers, never by advertisers or by selling what you put in. We don't read your notes, pass on your information or use it to train AI.</p><p class="g-links"><a class="g-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy Policy</a><a class="g-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service</a><a class="g-link" href="mailto:contact@koyeba.co">contact@koyeba.co</a></p></div>` : ''}</section>`;
+  const yours = `<section>${guideFold('yours', 'Your data and our promise')}${guideOpen('yours') ? `<div class="g-body"><p>Kaya is paid for by its subscribers, never by advertisers or by selling what you put in. We don't read your notes, pass on your information or use it to train AI.</p><p class="g-links"><a class="g-link" href="https://koyeba.co/privacy" target="_blank" rel="noopener">Privacy Policy</a><a class="g-link" href="https://koyeba.co/terms" target="_blank" rel="noopener">Terms of Service</a><a class="g-link" href="mailto:contact@koyeba.co">contact@koyeba.co</a></p></div>` : ''}</section>`;
   $('#pane').innerHTML = `${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Guide' }], null, null, { omitGroup: true, noHelp: true })}
     <div class="g-page">
       <h1 class="g-title">The Guide</h1>

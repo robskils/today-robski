@@ -38,7 +38,7 @@ function markRingOn() { try { return localStorage.getItem('life.markring') === '
 function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Discover'], ['tasks', 'Tasks'], ['today', 'Day Planner'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Local Events'], ['tasks', 'Tasks'], ['today', 'Day Planner'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
 // The Insight page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Insight hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Insight tools individually".)
@@ -51,7 +51,7 @@ const REFLECT_MODULES = [['journal', 'Journal'], ['coaching', 'Coaching'], ['dre
 // European Portuguese only (never Brazilian).
 const LANGS = [['en', 'English'], ['pt', 'Português'], ['it', 'Italiano']];
 const T_EN = {
-  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Discover', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
+  'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Local Events', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Saved', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Day Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
   'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Tracker', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
@@ -73,7 +73,7 @@ const T_EN = {
   'goal.titleph': 'What do you want to achieve?', 'goal.update': 'Update', 'goal.achieved': '✓ Achieved', 'goal.markachieved': 'Mark as achieved', 'goal.nicelydone': 'Nicely done.', 'goal.tickwhen': 'Tick it off when you get there.', 'goal.why': 'Why this matters', 'goal.whyph': 'The reason that carries it through the hard weeks…', 'goal.how': "How I'll get there", 'goal.howph': 'The plan, the approach, the first steps…', 'goal.timing': '⚙ Timing & settings', 'goal.tasks': 'Tasks', 'goal.connectednotes': 'Connected notes', 'goal.connectedcontacts': 'Connected contacts', 'goal.noteswall': 'Notes wall', 'goal.type': 'Type', 'goal.horizon': 'Horizon', 'goal.status': 'Status', 'goal.bywhen': 'By when', 'field.email': 'Email', 'field.phone': 'Phone', 'ct.search': 'Search your contacts…', 'ct.add': '+ Add', 'ct.import': '⤓ Import', 'ct.friends': 'Kaya friends', 'ct.self.show': 'Show your Kaya card', 'ct.self.sub': 'Your window on Kaya', 'ct.selfcard.tag': 'Kaya card ›', 'ct.name': 'Name', 'ct.birthday': 'Birthday', 'ct.street': 'Street', 'ct.city': 'City', 'ct.postcode': 'Postcode', 'ct.country': 'Country', 'ct.addcontact': 'Add contact', 'ct.done': 'Done', 'review.weekly': 'Weekly', 'review.monthly': 'Monthly', 'review.quarterly': 'Quarterly', 'review.yearly': 'Yearly', 'review.weekly.sub': 'The glance', 'review.monthly.sub': 'The check-in', 'review.quarterly.sub': 'The cycle', 'review.yearly.sub': 'The wide view', 'notes.search': 'Search notes…', 'notes.newnote': '+ New note', 'filter.allareas': 'All Spaces', 'notes.type.all': 'All', 'notes.type.note': 'Notes', 'notes.type.table': 'Tables', 'notes.sort.newest': 'Newest first', 'notes.sort.recent': 'Most recent', 'notes.sort.oldest': 'Oldest first', 'notes.sort.az': 'Name A-Z', 'notes.sort.za': 'Name Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Search notes, tables, tasks - or type a command…',
 };
 const T_PT = {
-  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Descobrir', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
+  'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Eventos locais', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Guardados', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador do dia', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
   'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Registo', 'nav.practices': 'Registo', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
@@ -95,7 +95,7 @@ const T_PT = {
   'goal.titleph': 'O que queres alcançar?', 'goal.update': 'Atualizar', 'goal.achieved': '✓ Alcançado', 'goal.markachieved': 'Marcar como alcançado', 'goal.nicelydone': 'Muito bem.', 'goal.tickwhen': 'Marca quando lá chegares.', 'goal.why': 'Porque é importante', 'goal.whyph': 'A razão que te leva através das semanas difíceis…', 'goal.how': 'Como lá vou chegar', 'goal.howph': 'O plano, a abordagem, os primeiros passos…', 'goal.timing': '⚙ Prazos e definições', 'goal.tasks': 'Tarefas', 'goal.connectednotes': 'Notas ligadas', 'goal.connectedcontacts': 'Contactos ligados', 'goal.noteswall': 'Mural de notas', 'goal.type': 'Tipo', 'goal.horizon': 'Horizonte', 'goal.status': 'Estado', 'goal.bywhen': 'Até quando', 'field.email': 'Email', 'field.phone': 'Telemóvel', 'ct.search': 'Pesquisar os teus contactos…', 'ct.add': '+ Adicionar', 'ct.import': '⤓ Importar', 'ct.friends': 'Amigos no Kaya', 'ct.self.show': 'Mostrar o meu cartão Kaya', 'ct.self.sub': 'A tua janela no Kaya', 'ct.selfcard.tag': 'Cartão Kaya ›', 'ct.name': 'Nome', 'ct.birthday': 'Aniversário', 'ct.street': 'Rua', 'ct.city': 'Cidade', 'ct.postcode': 'Código postal', 'ct.country': 'País', 'ct.addcontact': 'Adicionar contacto', 'ct.done': 'Concluído', 'review.weekly': 'Semanal', 'review.monthly': 'Mensal', 'review.quarterly': 'Trimestral', 'review.yearly': 'Anual', 'review.weekly.sub': 'O relance', 'review.monthly.sub': 'O ponto de situação', 'review.quarterly.sub': 'O ciclo', 'review.yearly.sub': 'A visão ampla', 'notes.search': 'Pesquisar notas…', 'notes.newnote': '+ Nova nota', 'filter.allareas': 'Todos os Spaces', 'notes.type.all': 'Todas', 'notes.type.note': 'Notas', 'notes.type.table': 'Tabelas', 'notes.sort.newest': 'Mais recentes', 'notes.sort.recent': 'Editadas há pouco', 'notes.sort.oldest': 'Mais antigas', 'notes.sort.az': 'Nome A-Z', 'notes.sort.za': 'Nome Z-A', 'notes.sort.area': 'Space', 'palette.search': 'Pesquisar notas, tabelas, tarefas - ou escrever um comando…',
 };
 const T_IT = {
-  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Scopri', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
+  'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Eventi locali', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Salvati', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
   'nav.grp.daily': 'Oggi', 'nav.planner': 'Agenda del giorno', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
   'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Registro', 'nav.practices': 'Registro', 'nav.connect': 'Legami',
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
@@ -5466,7 +5466,7 @@ const KFOLDS = [
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
       ['Notes', 'data-open-notes', 'notes'], ['Goals', 'data-open-goals', 'goals'], ['Saved', 'data-open-readwatch', 'saved'],
-      ['Discover', 'data-open-discover', 'discover'],
+      ['Local Events', 'data-open-discover', 'discover'],
       ['Money', 'data-open-money', 'financial'], ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Investments', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
   { id: 'people', label: 'People', items: [
       ['Contacts', 'data-open-contacts', 'contacts'], ['Messages', 'data-messages-page', 'contacts'], ['Connect', 'data-open-connect', 'contacts'] ] },
@@ -5578,7 +5578,7 @@ function knavGroups() {
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
         ['Tracker', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
-        ['Discover', 'data-open-discover', ''], ['Read & Watch', 'data-open-readwatch', ''],
+        ['Local Events', 'data-open-discover', ''], ['Read & Watch', 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ['Vision', 'data-open-visionwall', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
         ...revTools ],
@@ -7046,7 +7046,7 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="t2-vid-i">▶</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
+      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="prc-vid">Video</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
@@ -7108,7 +7108,7 @@ function renderPracticeCard() {
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
     <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
     <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
-      ${practiceFieldsHtml()}
+      <div class="pc-cols"><div class="pc-col-main">${practiceFieldsHtml('main')}</div><aside class="pc-col-guide">${practiceFieldsHtml('guide')}</aside></div>
       <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete practice</button><button class="add-btn wide" data-prc-save>Save</button></div>
     </div>`;
 }
@@ -7215,7 +7215,7 @@ function practicesGroups(withWeek) {
     const rows = g.items.map((a) => {
       const len = (a.timed && a.duration) ? `<span class="prc-sched">${a.duration} min</span>` : '';
       const cleanS = withWeek && a.avoid ? practiceStreak(a.id) : 0;
-      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${cleanS > 1 ? `<span class="trk-streak trk-clean">${cleanS} days clean</span>` : ''}${a.video ? '<span class="prc-badge" title="Has a video">▶</span>' : ''}`;
+      const badges = `${a.avoid ? '<span class="t2-avoidtag">avoiding</span>' : ''}${cleanS > 1 ? `<span class="trk-streak trk-clean">${cleanS} days clean</span>` : ''}${a.video ? '<span class="prc-vid" title="Has a video">Video</span>' : ''}`;
       return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="prc-name prc-name-link">${esc(a.title)}${(() => { const s = withWeek && !a.avoid ? practiceStreak(a.id) : 0; return s > 1 ? `<span class="trk-streak">${s} days</span>` : ''; })()}${badges}${withWeek ? '' : len}</span>
@@ -7252,13 +7252,13 @@ function closePracticeEditor() { state.practiceEdit = null; const h = document.g
 // The editor's fields, shared by the "New practice" popover and the full-screen
 // edit page a practice opens into (Robin, 2026-11-12: open a practice straight into
 // its editable content, on the proper screen, not a popover).
-function practiceFieldsHtml() {
+function practiceFieldsHtml(which) {
   const pe = state.practiceEdit;
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
   const timed = a.timed == null ? true : !!a.timed;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
-  return `<section class="pe-sec">
+  const main = `<section class="pe-sec">
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <label class="pe-f"><span>Space</span><select class="sel" id="pe-area"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
@@ -7285,15 +7285,17 @@ function practiceFieldsHtml() {
 
         <section class="pe-sec">
           <div class="pe-attach">${peAttachHtml()}</div>
-        </section>
-
-        <section class="pe-sec">
+        </section>`;
+  const guide = `<section class="pe-sec pe-sec-guide">
           <div class="pe-sec-h">Guide</div>
           <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice.</div>
           <label class="pe-f"><span>▶ Video, reel or post</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"></label>
           <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
           <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
         </section>`;
+  if (which === 'main') return main;
+  if (which === 'guide') return guide;
+  return main + guide;
 }
 function practiceEditorHtml() {
   const pe = state.practiceEdit;
@@ -27858,7 +27860,7 @@ function palNavTargets() {
   if (modOn('reviews')) add('Reviews', () => openReviews(), 'weekly monthly quarterly yearly review reflect check-in wheel of life');
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
   if (modOn('saved')) add('Read & Watch', () => openReadwatch(), 'bookmarks reading list watchlist saved');
-  if (modOn('discover')) add('Discover', () => openDiscover(), 'events near me what is on');
+  if (modOn('discover')) add('Local Events', () => openDiscover(), 'events near me what is on discover');
   if (modOn('timer')) add('Toolbox', () => openToolbox(), 'focus timer pomodoro practices');
   add('Your card', () => openCard(), 'profile tagline photo');
   add('Settings', () => openSettings(), 'preferences account options');
