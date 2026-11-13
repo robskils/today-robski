@@ -1862,17 +1862,17 @@ function themeMode() { return 'auto'; }   // deprecated: streams replaced the ol
 // ── Theme streams (Robin, 2026-11-11) ────────────────────────────────────────────
 // Two STREAMS: the colourful day-washes, and the calm Sensible page. The stream is
 // what Auto follows by the time of day (chosen in Settings); the footer button PINS
-// any single look across both streams. Sensible is ivory by day, black (default) or
-// green by night.
+// any single look across both streams. Sensible is warm gold-on-brown by day and a
+// warm near-black by night.
 const COLOURFUL_LOOKS = ['dawn', 'overcast', 'dusk', 'night'];
-const SENSIBLE_LOOKS = ['splight', 'spblack', 'spgreen'];
+const SENSIBLE_LOOKS = ['splight', 'spblack'];
 const THEME_CYCLE = ['auto', ...COLOURFUL_LOOKS, ...SENSIBLE_LOOKS];   // the footer steps through these
-const LOOK_LABEL = { auto: 'Auto', dawn: 'Dawn', overcast: 'Overcast', dusk: 'Dusk', night: 'Night', splight: 'Sensible · Light', spblack: 'Sensible · Black', spgreen: 'Sensible · Green' };
+const LOOK_LABEL = { auto: 'Auto', dawn: 'Dawn', overcast: 'Overcast', dusk: 'Dusk', night: 'Night', splight: 'Sensible · Warm', spblack: 'Sensible · Black' };
 function themeStream() { try { const s = localStorage.getItem('life.theme.stream'); if (s === 'colourful' || s === 'sensible') return s; if (localStorage.getItem('life.plain') === '1') return 'sensible'; } catch {} return 'colourful'; }
 function themeLookRaw() { try { const v = localStorage.getItem('life.theme.look'); return [...COLOURFUL_LOOKS, ...SENSIBLE_LOOKS].includes(v) ? v : ''; } catch { return ''; } }
-// Sensible night colour: 'a' black (the default now), 'b' green. (Robin, 2026-11-11:
-// black by default, green optional - was green-first before.)
-function sensibleNight() { try { const v = localStorage.getItem('life.plain.night'); return (v === 'a' || v === 'b') ? v : 'a'; } catch { return 'a'; } }
+// Sensible night is always the warm near-black now; the old green option is retired.
+// (Robin, 2026-11-12: "let's get rid of sensible green.")
+function sensibleNight() { return 'a'; }
 function setPlainNight(v) { if (v !== 'a' && v !== 'b') return; try { localStorage.setItem('life.plain.night', v); } catch {} applyTheme(false); try { if (state.view && state.view.type === 'settings') renderSettings(); else rerenderCurrent(); } catch {} }
 // The look in force: a staging preview, else a pinned look, else auto'd from the
 // stream + the time of day.
@@ -1880,13 +1880,13 @@ function effLook() {
   const p = lightPreview(); if (p) return p;
   if (themeLocked()) return lightFromSun();                 // members: colourful, by time
   const pin = themeLookRaw(); if (pin) return pin;           // a look pinned from the footer
-  if (themeStream() === 'sensible') { const l = lightFromSun(); return (l === 'night' || l === 'dusk') ? (sensibleNight() === 'b' ? 'spgreen' : 'spblack') : 'splight'; }
+  if (themeStream() === 'sensible') { const l = lightFromSun(); return (l === 'night' || l === 'dusk') ? 'spblack' : 'splight'; }
   return lightFromSun();                                     // colourful auto: the wash, by time
 }
 // Everything keys off the effective look, so data-plain / data-light / the night
 // colour can never disagree.
 function plainMode() { return SENSIBLE_LOOKS.includes(effLook()); }
-function plainNight() { return effLook() === 'spgreen' ? 'b' : 'a'; }
+function plainNight() { return 'a'; }
 function setThemeLook(look) {   // footer pin; '' / 'auto' = follow the stream
   if (themeLocked()) return;
   try { localStorage.setItem('life.theme.look', (look && look !== 'auto') ? look : ''); } catch {}
@@ -1970,13 +1970,16 @@ function applyTheme(rerender) {
   if (plainMode()) document.documentElement.setAttribute('data-plain', ''); else document.documentElement.removeAttribute('data-plain');
   document.documentElement.setAttribute('data-plain-night', plainNight());
   // Sensible follows day/night like the washes do - but every wash counts as "dark"
-  // (lightIsDark is always true), so the ivory-vs-green switch keys off the actual
-  // light instead: green from dusk through the night, ivory by day. (Robin, 2026-11-09.)
+  // (lightIsDark is always true), so the warm-vs-black switch keys off the actual
+  // light instead: warm gold-on-brown by day, a near-black from dusk through the
+  // night. (Robin, 2026-11-12.)
   document.documentElement.toggleAttribute('data-plain-dark', plainMode() && (light === 'night' || light === 'dusk'));
   try { localStorage.setItem('today.theme', theme); localStorage.setItem('today.light', light); } catch {}
   syncLightLayer(light);
   syncLightPreview(light);
   document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', LIGHT_GROUND[light]));
+  // Sensible paints its own warm ground, so match the browser chrome bar to it.
+  if (plainMode()) { const g = document.documentElement.hasAttribute('data-plain-dark') ? '#0C0A06' : '#14120D'; document.querySelectorAll('meta[name="theme-color"]').forEach((t) => t.setAttribute('content', g)); }
   if (rerender) { renderNav(); if (state.view && state.view.type === 'today') renderToday(); }
   else { const b = document.querySelector('[data-theme-toggle]'); if (b) b.textContent = themeLabel(); }
   clearTimeout(themeTimer);
@@ -2002,7 +2005,7 @@ function themeSwatches() {
   const s = themeStream();
   const opts = [
     ['colourful', 'Colourful', 'linear-gradient(160deg,#F2C58A 0%,#A86A77 45%,#2E2230 100%)', '#d8b25e'],
-    ['sensible', 'Sensible', 'linear-gradient(135deg,#FAF6EE 0 50%,#0F1911 50% 100%)', '#c99a3e'],
+    ['sensible', 'Sensible', 'linear-gradient(135deg,#1B1812 0 50%,#0C0A06 50% 100%)', '#eac56a'],
   ];
   return opts.map(([k, label, bg, dot]) => `<button class="theme-swatch-btn ${s === k ? 'on' : ''}" data-theme-stream="${k}" type="button" aria-pressed="${s === k}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
@@ -4206,8 +4209,7 @@ function renderSettingsSix() {
     + AI_USES.map(([key, f, why]) => row(esc(f), esc(why), toggle(aiFeatureOn(key), 'aifeat:' + key, aiOff))).join('');
 
   const lookBody =
-    row('Colour scheme', 'The colourful washes that follow the time of day, or a calm Sensible page (light by day, black by night)', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Colourful', on: themeStream() === 'colourful', act: 'stream:colourful' }, { label: 'Sensible', on: themeStream() === 'sensible', act: 'stream:sensible' }]))
-    + (!tLocked && themeStream() === 'sensible' ? row('Sensible night', 'After dusk, the Sensible page turns black or deep green', choices([{ label: 'Black', on: sensibleNight() === 'a', act: 'night:a' }, { label: 'Green', on: sensibleNight() === 'b', act: 'night:b' }])) : '')
+    row('Colour scheme', 'The colourful washes that follow the time of day, or a calm Sensible page (warm gold on brown by day, black by night)', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Colourful', on: themeStream() === 'colourful', act: 'stream:colourful' }, { label: 'Sensible', on: themeStream() === 'sensible', act: 'stream:sensible' }]))
     + row('Week starts on', 'Sets your weekly review window', choices([{ label: 'Monday', on: ws === 1, act: 'week:1' }, { label: 'Sunday', on: ws === 0, act: 'week:0' }]))
     + row('Currency', '', choices([{ label: '€ Euro', on: curc === 'EUR', act: 'cur:EUR' }, { label: '£ Pound', on: curc === 'GBP', act: 'cur:GBP' }, { label: '$ Dollar', on: curc === 'USD', act: 'cur:USD' }]))
     + row('Dates read as', '', choices([{ label: '23 October', on: ds === 'uk', act: 'date:uk' }, { label: 'October 23', on: ds === 'us', act: 'date:us' }]))
@@ -4423,8 +4425,8 @@ function renderSettingsLegacy() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Pick a stream: the colourful day-washes, or the calm Sensible page. Either follows the time of day (light by day, black by night for Sensible). The theme button in the footer flips through every individual look.'}</div>
-          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>${themeStream() === 'sensible' ? `<div class="plain-night"><span class="pn-l">Sensible night</span><button type="button" class="pn-opt ${sensibleNight() === 'a' ? 'on' : ''}" data-plain-night="a" aria-pressed="${sensibleNight() === 'a'}"><span class="pn-sw" style="background:#0F1911"></span>Black</button><button type="button" class="pn-opt ${sensibleNight() === 'b' ? 'on' : ''}" data-plain-night="b" aria-pressed="${sensibleNight() === 'b'}"><span class="pn-sw" style="background:#123120"></span>Green</button></div>` : ''}`}
+        <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Pick a stream: the colourful day-washes, or the calm Sensible page. Either follows the time of day (warm gold on brown by day, black by night for Sensible). The theme button in the footer flips through every individual look.'}</div>
+          ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
         <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Kaya keeps a single gold accent - warm by day, brighter by night.</div>
           <div class="acc-swatches">${swatches}</div>
@@ -27417,7 +27419,7 @@ function cellInput(r, col, forCard) {
   }
   // A text cell holding a URL gets a small open-link button (still editable).
   const url = /^\s*https?:\/\/\S+\s*$/i.test(String(v ?? '')) ? String(v).trim() : null;
-  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
+  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" autocomplete="off">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
 }
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.

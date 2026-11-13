@@ -2214,6 +2214,18 @@ table.recs td a.cell-urllink:hover { text-decoration:underline; }
 .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; }
 
 table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
+/* The browser's autofill paints a filled cell (e.g. an email you typed) solid
+   white and leaves it that way until the input is recreated - so it lingered until
+   the table was reopened. Force the cell's own colours. (Robin, 2026-11-13.) */
+table.recs td .cell:-webkit-autofill,
+table.recs td .cell:-webkit-autofill:hover,
+table.recs td .cell:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  box-shadow: 0 0 0 1000px var(--card) inset;
+  caret-color: var(--ink);
+  transition: background-color 9999s ease-in-out 0s;
+}
 /* Attachments column cells */
 .tcell-atts { display:flex; flex-wrap:wrap; gap:5px; align-items:center; padding:7px 8px; }
 .tcell-att { display:inline-flex; align-items:center; gap:5px; max-width:190px; padding:3px 5px 3px 8px; border:1px solid var(--line-2); border-radius:0; background:var(--paper-2); font-size:13px; color:var(--ink-2); cursor:pointer; transition:border-color .12s, color .12s; }
