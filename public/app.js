@@ -19841,6 +19841,28 @@ function mailDayGroupsHtml(loading) {
   const sorted = threads.slice().sort((a, b) => (new Date(b.latest.date) - new Date(a.latest.date)) || 0);
   return sorted.map((th) => mailAccordionRow(th.latest, th.count)).join('');
 }
+// Robin (2026-11-13): when reading an email you need to SEE the real sender
+// address, not just the display name - a name like "GitHub" is trivially faked,
+// the address is the tell. So an open email carries a labelled From / To block:
+// the sender's name AND full address, with the receiving account below it. The
+// address is shown plainly (not hidden behind a click) and is selectable, so a
+// phish is spotted at a glance without opening every one.
+function mailIdentHtml(o) {
+  if (!o) return '';
+  const m = state.mail;
+  let name = mailFixText((o.from && o.from.name) || '').replace(/^["'“‘]+|["'”’]+$/g, '').trim();
+  const addr = (o.from && o.from.address) ? String(o.from.address).trim() : '';
+  if (name && addr && name.toLowerCase() === addr.toLowerCase()) name = '';   // don't print the address twice
+  const acct = (m.accounts || []).find((a) => a.id === o._acct) || (((m.accounts || []).length === 1) ? m.accounts[0] : null);
+  const toAddr = (acct && (acct.email || acct.name)) || o._acctName || '';
+  const fromV = `${name ? `<span class="mail-ident-nm">${esc(name)}</span>` : ''}`
+    + `${addr ? `<span class="mail-ident-ad">${esc(addr)}</span>` : (name ? '' : '<span class="mail-ident-ad mail-ident-to">(no address)</span>')}`;
+  const toRow = toAddr ? `<div class="mail-ident-r"><span class="mail-ident-l">To</span><span class="mail-ident-v"><span class="mail-ident-ad mail-ident-to">${esc(toAddr)}</span></span></div>` : '';
+  return `<div class="mail-ident">`
+    + `<div class="mail-ident-r"><span class="mail-ident-l">From</span><span class="mail-ident-v">${fromV}</span></div>`
+    + toRow
+    + `</div>`;
+}
 // One accordion row: time · sender · (account) · subject · preview · gold
 // square if noticed · +/−. Expands to the body + a Noticed line + the action row.
 function mailAccordionRow(x, count) {
@@ -19873,7 +19895,7 @@ function mailAccordionRow(x, count) {
   // Robin: a long email buries the triage row at the bottom, so repeat the moves
   // as a bar that sticks to the top of the card while you read it.
   const triage = mailOpenTriageBar(m.open);
-  return `<div class="mail-ar open"><div class="mail-ar-card">${head}<div class="mail-ar-bar">${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${triage}${parts.make}</div><div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
+  return `<div class="mail-ar open"><div class="mail-ar-card">${head}${mailIdentHtml(m.open)}<div class="mail-ar-bar">${parts.reply ? `<div class="mail-ar-replytop">${parts.reply}</div>` : ''}${triage}${parts.make}</div><div class="mail-ar-panel">${parts.body}</div></div><div class="mail-ar-below">${parts.below}</div></div>`;
 }
 // §58 + Robin: the sticky triage bar at the top of an open email - the same four
 // moves as the action row, reachable without scrolling to the end.

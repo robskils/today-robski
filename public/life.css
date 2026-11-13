@@ -10188,6 +10188,17 @@ body.night .mail-ar-triage, :root[data-theme='dark'] .mail-ar-triage { backgroun
 .mail-ar-triage-l, .mail-ar-row-l { flex:0 0 72px; width:72px; box-sizing:border-box; font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:oklch(0.46 0.02 70); margin-right:4px; align-self:center; white-space:nowrap; }
 .mail-trg { background:transparent; border:1px solid oklch(0.85 0.014 80); padding:6px 13px; font-family:var(--k-sans); font-weight:500; font-size:12.5px; color:oklch(0.22 0.012 60); cursor:pointer; }
 .mail-trg:hover { border-color:var(--k-gold); color:var(--k-goldt); }
+/* The From / To identity block on an open email - the real sender address, plainly
+   shown so a faked display name is caught. Inherits the card's ink; hierarchy by
+   weight + opacity so it stays legible on every wash and in Sensible. No border:
+   the action bar below already owns the rule (CLAUDE.md §22). */
+.mail-ident { display:flex; flex-direction:column; gap:4px; margin:0; padding:10px 0 12px; }
+.mail-ident-r { display:flex; align-items:baseline; gap:10px; min-width:0; flex-wrap:wrap; }
+.mail-ident-l { flex:0 0 auto; min-width:34px; font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.13em; text-transform:uppercase; opacity:.66; }
+.mail-ident-v { min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.mail-ident-nm { font-family:var(--k-sans); font-weight:600; font-size:15px; }
+.mail-ident-ad { font-family:var(--k-sans); font-weight:400; font-size:14px; opacity:.95; -webkit-user-select:text; user-select:text; word-break:break-all; }
+.mail-ident-to { opacity:.72; }
 /* "Make a task / note / event" now sits on the white card directly under the
    Move to bar, so its buttons read dark (the forest-ink colour was invisible
    there). Aligned to the triage row's left inset. (Robin.) */
@@ -13373,7 +13384,7 @@ body.mailsheet-open { overflow:hidden; }
 /* Quick triage right in the row - Open · Archive · Delete · Spam - so an email can
    be dealt with without opening it. (Robin.) */
 .gln-mail-triage { flex:none; display:flex; align-items:center; gap:6px; }
-.gln-tri { background:var(--glass); border:1px solid var(--glass-edge); font-family:var(--k-sans); font-weight:500; font-size:12px; letter-spacing:.02em; color:var(--k-mute); padding:6px 10px; cursor:pointer; white-space:nowrap; transition:color .12s, border-color .12s; }
+.gln-tri { background:var(--glass-card); border:1px solid var(--glass-edge); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); font-family:var(--k-sans); font-weight:500; font-size:12px; letter-spacing:.02em; color:var(--k-ink); padding:6px 10px; cursor:pointer; white-space:nowrap; transition:color .12s, border-color .12s, background .12s; }
 .gln-tri:hover { color:var(--k-goldt); border-color:var(--k-gold); }
 .gln-tri-open { color:var(--k-goldt); }
 @media (max-width:560px){ .gln-mail { flex-wrap:wrap; } .gln-mail-triage { width:100%; justify-content:flex-start; gap:6px; margin:-2px 0 10px; } .gln-tri { padding:6px 10px; } }
