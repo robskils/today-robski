@@ -1867,7 +1867,7 @@ function themeMode() { return 'auto'; }   // deprecated: streams replaced the ol
 const COLOURFUL_LOOKS = ['dawn', 'overcast', 'dusk', 'night'];
 const SENSIBLE_LOOKS = ['splight', 'spblack'];
 const THEME_CYCLE = ['auto', ...COLOURFUL_LOOKS, ...SENSIBLE_LOOKS];   // the footer steps through these
-const LOOK_LABEL = { auto: 'Auto', dawn: 'Dawn', overcast: 'Overcast', dusk: 'Dusk', night: 'Night', splight: 'Sensible · Warm', spblack: 'Sensible · Black' };
+const LOOK_LABEL = { auto: 'Auto', dawn: 'Dawn', overcast: 'Overcast', dusk: 'Dusk', night: 'Night', splight: 'Warm', spblack: 'Black' };
 function themeStream() { try { const s = localStorage.getItem('life.theme.stream'); if (s === 'colourful' || s === 'sensible') return s; if (localStorage.getItem('life.plain') === '1') return 'sensible'; } catch {} return 'colourful'; }
 function themeLookRaw() { try { const v = localStorage.getItem('life.theme.look'); return [...COLOURFUL_LOOKS, ...SENSIBLE_LOOKS].includes(v) ? v : ''; } catch { return ''; } }
 // Sensible night is always the warm near-black now; the old green option is retired.
@@ -2005,7 +2005,7 @@ function themeSwatches() {
   const s = themeStream();
   const opts = [
     ['colourful', 'Colourful', 'linear-gradient(160deg,#F2C58A 0%,#A86A77 45%,#2E2230 100%)', '#d8b25e'],
-    ['sensible', 'Sensible', 'linear-gradient(135deg,#1B1812 0 50%,#0C0A06 50% 100%)', '#eac56a'],
+    ['sensible', 'Warm', 'linear-gradient(135deg,#1B1812 0 50%,#0C0A06 50% 100%)', '#eac56a'],
   ];
   return opts.map(([k, label, bg, dot]) => `<button class="theme-swatch-btn ${s === k ? 'on' : ''}" data-theme-stream="${k}" type="button" aria-pressed="${s === k}" title="${label}"><span class="theme-sw" style="background:${bg}"><span class="dot" style="background:${dot}"></span></span><span class="theme-sw-l">${label}</span></button>`).join('');
 }
@@ -4209,7 +4209,7 @@ function renderSettingsSix() {
     + AI_USES.map(([key, f, why]) => row(esc(f), esc(why), toggle(aiFeatureOn(key), 'aifeat:' + key, aiOff))).join('');
 
   const lookBody =
-    row('Colour scheme', 'The colourful washes that follow the time of day, or a calm Sensible page (warm gold on brown by day, black by night)', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Colourful', on: themeStream() === 'colourful', act: 'stream:colourful' }, { label: 'Sensible', on: themeStream() === 'sensible', act: 'stream:sensible' }]))
+    row('Colour scheme', 'The colourful washes that follow the time of day, or a calm warm page (warm gold on brown by day, black by night)', tLocked ? '<span class="sx-choices"><span class="sx-choice on">Auto</span></span>' : choices([{ label: 'Colourful', on: themeStream() === 'colourful', act: 'stream:colourful' }, { label: 'Warm', on: themeStream() === 'sensible', act: 'stream:sensible' }]))
     + row('Week starts on', 'Sets your weekly review window', choices([{ label: 'Monday', on: ws === 1, act: 'week:1' }, { label: 'Sunday', on: ws === 0, act: 'week:0' }]))
     + row('Currency', '', choices([{ label: '€ Euro', on: curc === 'EUR', act: 'cur:EUR' }, { label: '£ Pound', on: curc === 'GBP', act: 'cur:GBP' }, { label: '$ Dollar', on: curc === 'USD', act: 'cur:USD' }]))
     + row('Dates read as', '', choices([{ label: '23 October', on: ds === 'uk', act: 'date:uk' }, { label: 'October 23', on: ds === 'us', act: 'date:us' }]))
@@ -4425,7 +4425,7 @@ function renderSettingsLegacy() {
       </div>` : '<div class="home-empty" style="padding:8px 0 0">Loading your account…</div>';
 
   const appearancePane = `<div class="set-card">
-        <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Pick a stream: the colourful day-washes, or the calm Sensible page. Either follows the time of day (warm gold on brown by day, black by night for Sensible). The theme button in the footer flips through every individual look.'}</div>
+        <div class="set-block"><div class="set-row-t">Colour scheme</div><div class="set-row-s">${themeLocked() ? 'Automatic - day view through the day, night view after dusk, following your local sunrise &amp; sunset.' : 'Pick a stream: the colourful day-washes, or the calm warm page. Either follows the time of day (warm gold on brown by day, black by night). The theme button in the footer flips through every individual look.'}</div>
           ${themeLocked() ? `<div style="margin-top:10px"><span class="set-row-static">${autoIsDark() ? '☾ Night' : '☀ Day'} · Auto</span></div>` : `<div class="theme-swatches">${themeSwatches()}</div>`}
         </div>
         <div class="set-block"><div class="set-row-t">Accent</div><div class="set-row-s">Kaya keeps a single gold accent - warm by day, brighter by night.</div>
