@@ -9261,7 +9261,7 @@ function homeRadarBodyHtml() {
   const g = (id) => fs.gone[id];
   const cid = (id) => String(id).split(':').slice(1).join(':');   // 'b:42' -> '42'
   const goneLine = (id) => `<div style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>${esc(g(id))}</span><span data-feed-undo="${esc(id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
-  const head = (label, col, right) => `<div style="display:flex;align-items:center;gap:12px;padding-bottom:10px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:${col};white-space:nowrap">${esc(label)}</span><span style="flex:1;height:1px;background:var(--k-line)"></span>${right || ''}</div>`;
+  const head = (label, col, right) => `<div style="display:flex;align-items:center;gap:12px;padding-bottom:10px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:${col};white-space:nowrap">${esc(label)}</span><span style="flex:1"></span>${right || ''}</div>`;
   const A = (label, attr, gold) => `<span ${attr || ''} role="button" tabindex="0" style="font:${gold ? '500' : '400'} 14.5px Jost;color:${gold ? 'var(--k-goldt)' : 'var(--k-mute)'};cursor:pointer;white-space:nowrap">${esc(label)}</span>`;
   const dnum = (n) => { const d = new Date(Date.parse(todayISO() + 'T00:00') + (n || 0) * 86400000); return { num: String(d.getDate()), day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] }; };
   const snoozeRow = (id, label, chips) => fs.snz === id ? `<div style="grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;animation:kfade .25s ease"><span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">${esc(label)}</span>${chips.map(([l, msg, gold]) => `<span data-feed-snz="${esc(id)}|${esc(msg)}" role="button" tabindex="0" style="font:500 13.5px Jost;color:${gold ? 'var(--k-goldt)' : 'var(--k-ink)'};border:1px solid var(--k-line);padding:7px 12px;cursor:pointer;white-space:nowrap">${esc(l)}</span>`).join('')}</div>` : '';
@@ -9331,7 +9331,7 @@ function homeRadarBodyHtml() {
       </div>`;
     }).join('');
     const more = worthAll.length > 3 ? `<div data-feed-worthmore role="button" tabindex="0" style="padding-top:12px;font:500 14px Jost;color:var(--k-goldt);cursor:pointer">${fs.worthAll ? 'Show fewer' : 'Show ' + (worthAll.length - 3) + ' more'}</div>` : '';
-    parts.push(`<div>${head('Worth knowing', 'var(--k-ink)', A('Mark all as seen', 'data-feed-seenall'))}<div style="border-top:1px solid var(--k-line)">${rows}</div>${more}</div>`);
+    parts.push(`<div>${head('Worth knowing', 'var(--k-goldt)', A('Mark all as seen', 'data-feed-seenall'))}<div style="border-top:1px solid var(--k-line)">${rows}</div>${more}</div>`);
   }
 
   // ── 3. Keep in touch ──
@@ -9349,7 +9349,7 @@ function homeRadarBodyHtml() {
         ${snz}
       </div>`;
     }).join('');
-    parts.push(`<div>${head('Keep in touch', 'var(--k-ink)', `<span style="font:400 13.5px Jost;color:var(--k-mute);white-space:nowrap">People you asked to hear from</span>`)}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
+    parts.push(`<div>${head('Keep in touch', 'var(--k-goldt)')}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
   }
 
   // ── 4. On the horizon ──
@@ -9368,7 +9368,7 @@ function homeRadarBodyHtml() {
         ${A(o.kind === 'Birthday' ? 'WhatsApp' : (o.act || 'Open'), actAttr, true)}
       </div>`;
     }).join('');
-    parts.push(`<div>${head('On the horizon', 'var(--k-ink)')}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
+    parts.push(`<div>${head('On the horizon', 'var(--k-goldt)')}<div style="border-top:1px solid var(--k-line)">${rows}</div></div>`);
   }
 
   const foot = `<div data-wn-next role="button" tabindex="0" style="margin-top:22px;font:400 14px Jost;color:var(--k-mute);cursor:pointer">Not sure where to start? <span style="font-weight:500">What should I do next</span> ${esc(PK('⌘/'))}</div>`;

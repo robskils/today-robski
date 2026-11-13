@@ -13313,7 +13313,9 @@ body.mailsheet-open { overflow:hidden; }
    button's corner). Full set on desktop, the big four on a phone. (Robin, 2026-11-03.) */
 .newpop-wrap { position:fixed; inset:0; z-index:120; }
 .newpop-scrim { position:absolute; inset:0; background:rgba(30,25,15,.28); animation:kfade .2s ease; }
-.newpop { position:absolute; top:88px; left:50%; transform:translateX(-50%); width:min(560px,calc(100vw - 32px)); box-sizing:border-box; background:var(--k-bg); border:1px solid var(--k-line); box-shadow:0 30px 60px -30px rgba(20,16,6,.42); padding:20px 22px 18px; animation:kfade .25s cubic-bezier(.2,.7,.2,1); }
+.newpop { position:absolute; top:88px; left:50%; transform:translateX(-50%); width:min(560px,calc(100vw - 32px)); box-sizing:border-box; background:var(--k-bg); border:1px solid var(--k-line); box-shadow:0 30px 60px -30px rgba(20,16,6,.42); padding:20px 22px 18px; animation:newpop-in .18s ease; }
+/* Fade only: the box is centred by translateX(-50%), so an animated transform (kfade) would clobber the centring - the box would appear off-centre, then slide to the middle. (Robin, 2026-11-13: "just appeared in the middle immediately".) */
+@keyframes newpop-in { from { opacity:0; } to { opacity:1; } }
 .newpop-h { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .newpop-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); }
 .newpop-x { background:none; border:0; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-mute); cursor:pointer; }
