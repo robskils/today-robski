@@ -15603,11 +15603,14 @@ function calMood(byDay, todayI) {
 // Per-kind event type (§25): holidays/feeds muted Cormorant italic; all-day gold
 // Cormorant italic; quietened weekly repeats muted Jost; everything else ink Jost.
 // `big` is the list and side-panel size; month and week are the small size.
-function evStyle(e, big) {
-  if (e.feed) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${big ? 21 : 15}px;color:var(--k-mute)`;
-  if (e.allDay) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${big ? 23 : 16}px;line-height:1.2;color:var(--k-goldt)`;
-  if (e.recurringId && calQuiet()) return `font-family:var(--k-sans);font-weight:400;font-size:${big ? 15 : 12.5}px;color:var(--k-mute)`;
-  return `font-family:var(--k-sans);font-weight:400;font-size:${big ? 16 : 13}px;line-height:1.4;color:var(--k-ink)`;
+function evStyle(e, size) {
+  // size: false/'month' = compact month grid · 'week' = roomy week column · true/'list' = large (list + side panel).
+  // These font-sizes are INLINE, so they beat the .cx-*-ti stylesheet rules — tune sizes HERE, not in life.css.
+  const S = (m, w, l) => (size === true || size === 'list') ? l : (size === 'week' ? w : m);
+  if (e.feed) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${S(15, 17, 21)}px;color:var(--k-mute)`;
+  if (e.allDay) return `font-family:var(--k-serif);font-style:italic;font-weight:300;font-size:${S(16, 19, 23)}px;line-height:1.2;color:var(--k-goldt)`;
+  if (e.recurringId && calQuiet()) return `font-family:var(--k-sans);font-weight:400;font-size:${S(12.5, 16, 15)}px;color:var(--k-mute)`;
+  return `font-family:var(--k-sans);font-weight:400;font-size:${S(13, 18, 16)}px;line-height:1.4;color:var(--k-ink)`;
 }
 function renderCalendar() {
   // Contacts power the birthday lines (eventsByDay synthesises them); make sure
@@ -15647,7 +15650,7 @@ function renderCalendar() {
     };
     main = `<div class="cx-month"><div class="cx-dows">${WEEKDAYS.map((w) => `<div class="cx-dow">${w}</div>`).join('')}</div><div class="cx-cells">${monthWeeks(c.y, c.m).flat().map(cell).join('')}</div></div>`;
   } else if (c.mode === 'week') {
-    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span><button class="cx-whead-add" data-cal-add-day="${d.iso}" title="Add an event" aria-label="Add an event on ${esc(d.dow)} ${d.day}">+</button></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, false)}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
+    main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span><button class="cx-whead-add" data-cal-add-day="${d.iso}" title="Add an event" aria-label="Add an event on ${esc(d.dow)} ${d.day}">+</button></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, 'week')}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
   } else {
     const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
     main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead${iso === todayI ? ' is-today' : iso === addDayISO(todayI, 1) ? ' is-tomorrow' : ''}"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span><button class="cx-lh-add" data-cal-add-day="${iso}" title="Add an event on this day" aria-label="Add an event on this day">+</button></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span>${evJoin(e)}</div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
