@@ -121,8 +121,8 @@ const GUIDE_ANSWERS = {
     'Open <b>Tables</b> from Keep, and start a new one.',
     'Name your columns, and add a row at a time.',
   ], next: ['note-start', 'linked'] },
-  'read-watch': { title: 'Save something to read or watch', lead: 'One list for everything you mean to get to.', go: ['Open Read & Watch', 'data-open-readwatch'], steps: [
-    'Open <b>Read &amp; Watch</b> from Keep.',
+  'read-watch': { title: 'Save something to read or watch', lead: 'One list for everything you mean to get to.', go: ['Open Library', 'data-open-readwatch'], steps: [
+    'Open <b>Library</b> from Keep.',
     'Paste a link, or type the title of a book or film. Kaya fills in the details.',
     'Tick it when you\'re through it, and rate it if you like.',
     'To save from anywhere, set up the bookmarklet or iPhone Shortcut from the same page.',
@@ -245,7 +245,7 @@ const GUIDE_TOOLS = [
   { id: 'tool-spaces', title: 'Spaces', sub: 'Each part of your life', lead: 'A Space gathers one part of your life: its notes and tables, tasks, goals, events, people, links and files. Give each one the people who belong in it.', go: ['Open Spaces', 'data-open-areas'], list: ['spaces', 'share-space'] },
   { id: 'tool-people', title: 'People', sub: 'Mail, Messages, Contacts', lead: 'Everyone who writes to you. Mail brings every inbox into one, Messages is for chatting with people you\'re connected to, and Contacts keeps the people in your life close.', go: ['Open Mail', 'data-open-mail'], list: ['mail-sort', 'mail-action', 'email', 'keep-in-touch', 'connect', 'invite'] },
   { id: 'tool-plans', title: 'Plans', sub: 'Calendar, Tasks, Tracker, Local Events, Day Planner, Goals, Reviews', lead: 'From today to one day. Calendar and Tasks hold what\'s soon, the Day Planner plans the day, Goals and your bucket list look further off, and Reviews look back.', go: ['Open Tasks', 'data-view-tasks'], list: ['task-add', 'event-add', 'flow', 'practices', 'discover', 'goals', 'review'] },
-  { id: 'tool-keep', title: 'Keep', sub: 'Notes, Tables, Read & Watch', lead: 'Your reference shelf. Notes are for words, Tables for rows and columns, and Read & Watch for what you mean to get to.', go: ['Open Notes', 'data-open-notes'], list: ['note-start', 'table-start', 'read-watch', 'linked', 'import'] },
+  { id: 'tool-keep', title: 'Keep', sub: 'Notes, Tables, Library', lead: 'Your reference shelf. Notes are for words, Tables for rows and columns, and Library for what you mean to get to.', go: ['Open Notes', 'data-open-notes'], list: ['note-start', 'table-start', 'read-watch', 'linked', 'import'] },
   { id: 'tool-reflection', title: 'Reflection', sub: 'Journal, Dreams, Coaching, Compass, I Ching and more', lead: 'Room for the rest of you. Journal, Dreams and Coaching are places to think, and the other reflection tools offer a different lens when you want one. Those that write back to you use AI.', go: ['Open Reflection', 'data-open-wellbeing'], list: ['journal', 'ai'] },
   { id: 'tool-money', title: 'Money', sub: 'Spending, Investments, Advice', lead: 'What things cost, and what\'s growing. Spending reads your statements, Investments values what you hold, and Advice sums up the finance channels you follow. Advice uses AI, and is general reading rather than personal financial advice.', go: ['Open Money', 'data-open-money'], list: ['spending', 'ai'] },
 ];
@@ -260,7 +260,7 @@ const GUIDE_HELP_FOR = {
   goals: ['Goals', ['goals', 'review']], goalcard: ['Goals', ['goals', 'task-add']], reviews: ['Reviews', ['review', 'r-week', 'goals']], reviewcard: ['Reviews', ['review', 'r-week']],
   mail: ['Mail', ['mail-sort', 'mail-action', 'email']], mailaccounts: ['Mail', ['email', 'app-password']], contacts: ['Contacts', ['keep-in-touch', 'connect', 'invite']], contactcard: ['Contacts', ['keep-in-touch', 'connect']], messages: ['Messages', ['connect', 'share-space']],
   area: ['Spaces', ['spaces', 'share-space', 'note-start']], areas: ['Spaces', ['spaces', 'share-space']],
-  readwatch: ['Read & Watch', ['read-watch', 'find']], wellbeing: ['Reflection', ['tool-reflection', 'journal']], journal: ['Journal', ['journal', 'ai']], money: ['Money', ['tool-money', 'spending']], financial: ['Money', ['spending', 'tool-money']],
+  readwatch: ['Library', ['read-watch', 'find']], wellbeing: ['Reflection', ['tool-reflection', 'journal']], journal: ['Journal', ['journal', 'ai']], money: ['Money', ['tool-money', 'spending']], financial: ['Money', ['spending', 'tool-money']],
   settings: ['Settings', ['ai', 'tools', 'data', 'twofa']], admin: null,
 };
 // Installing happens on one device, but the list shows on all of them, so it's kept
