@@ -9204,7 +9204,7 @@ function homeRadarItems() {
   const whenText = (n) => n < 0 ? `${-n} day${n === -1 ? '' : 's'} past` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
   const push = (g, o) => { if (!later.has(o.id)) out[g].push(o); };
   (state.tasks || []).forEach((t) => { const p = t.props || {}; if (p.done || p.kit) return; const due = p.due; if (!due || !/^\d{4}-\d{2}-\d{2}$/.test(due)) return; const n = dd(due); if (n > 7) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Task', id: 't:' + t.id, text: t.title || 'A task', when: whenText(n), overdue: n < 0, n, attr: `data-open-task="${t.id}"`, act: 'Open', space: an(p.area) }); });
-  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, cId: k.id, taskId: k.taskId, long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, act: 'Message', space: '' }); });
+  ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, cId: k.id, taskId: k.taskId, last: k.last, every: k.every, long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, act: 'Message', space: '' }); });
   ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => { push('soon', { kind: 'Birthday', id: 'b:' + b.id, text: `${b.name}${b.turns ? ` turns ${b.turns}` : ''}`, when: b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`, overdue: false, n: b.inDays, attr: `data-open-contact="${b.id}"`, act: 'Message', space: '' }); });
   (state.goals || []).forEach((g) => { if ((gp(g).status || 'active') === 'done') return; const due = goalDueISO(g); if (!due) return; const n = dd(due); push(n < 0 ? 'overdue' : n <= 7 ? 'soon' : 'ahead', { kind: 'Goal', id: 'g:' + g.id, text: g.title || 'A goal', when: n < 0 ? whenText(n) : `due ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`, overdue: n < 0, n, attr: `data-open-goal="${g.id}"`, act: 'Open', space: an(gp(g).area) }); });
   out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
@@ -9275,7 +9275,7 @@ function homeRadarBodyHtml() {
   feedGoneSave(fs.gone);   // persist what you've dealt with, so it stays gone across navigation
   const g = (id) => fs.gone[id];
   const cid = (id) => String(id).split(':').slice(1).join(':');   // 'b:42' -> '42'
-  const goneLine = (id) => `<div style="display:flex;gap:16px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--k-line);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>${esc(g(id))}</span><span data-feed-undo="${esc(id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
+  const goneLine = (id) => `<div style="display:flex;gap:16px;align-items:baseline;padding:13px 20px;background:var(--glass-face);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);font:400 14.5px Jost;color:var(--k-mute);animation:kfade .3s ease"><span>${esc(g(id))}</span><span data-feed-undo="${esc(id)}" role="button" tabindex="0" style="font:500 14.5px Jost;color:var(--k-goldt);cursor:pointer">Undo</span></div>`;
   const head = (label, col, right) => `<div style="display:flex;align-items:center;gap:12px;padding-bottom:10px"><span style="font:600 11px Jost;letter-spacing:.16em;text-transform:uppercase;color:${col};white-space:nowrap">${esc(label)}</span><span style="flex:1"></span>${right || ''}</div>`;
   const A = (label, attr, gold) => `<span ${attr || ''} role="button" tabindex="0" style="font:${gold ? '500' : '400'} 14.5px Jost;color:${gold ? 'var(--k-goldt)' : 'var(--k-mute)'};cursor:pointer;white-space:nowrap">${esc(label)}</span>`;
   const dnum = (n) => { const d = new Date(Date.parse(todayISO() + 'T00:00') + (n || 0) * 86400000); return { num: String(d.getDate()), day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] }; };
@@ -9284,12 +9284,80 @@ function homeRadarBodyHtml() {
   const all = [...r.overdue, ...r.soon, ...r.ahead];
   const parts = [];
 
+  // ── V39 One flow: everything that needs you or is coming up, as one set of glass
+  // cards sorted most-overdue first, each with a right-hand Cormorant ledger stamp
+  // (gold when it needs you, muted when it's just ahead). Messages, Space invites and
+  // new connections ride in the same flow. (Robin, 2026-11-13: "I like it all one flow".)
+  {
+    const everyPhrase = (ev) => { if (!ev) return ''; const m = /^every:(\d+):([dwm])$/.exec(ev); if (m) { const k = +m[1]; const u = m[2] === 'd' ? 'day' : m[2] === 'w' ? 'week' : 'month'; return k === 1 ? `every ${u}` : `every ${k} ${u}s`; } return ({ daily: 'every day', every3d: 'every 3 days', weekly: 'every week', fortnightly: 'every two weeks', monthly: 'every month', quarterly: 'every three months', halfyearly: 'every six months', yearly: 'every year' })[ev] || ''; };
+    const softSpan = (a) => a >= 60 ? `${Math.round(a / 30)} month${Math.round(a / 30) === 1 ? '' : 's'}` : a >= 14 ? `${Math.round(a / 7)} week${Math.round(a / 7) === 1 ? '' : 's'}` : `${a} day${a === 1 ? '' : 's'}`;
+    const kitOverdue = (last, ev) => { if (!last || !ev) return ''; const due = taskAddPeriod(last, ev); if (!due || due === last) return ''; const od = daysBetween(todayISO(), due); return od < 0 ? `about ${softSpan(-od)} overdue` : ''; };
+    const dateLabel = (n) => new Date(Date.parse(todayISO() + 'T00:00') + (n || 0) * 86400000).toLocaleDateString(dloc(), { day: 'numeric', month: 'short' });
+    const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const elapsedStamp = (last) => { if (!last) return { word: 'New', over: true }; const a = Math.abs(daysBetween(last, todayISO())); if (a === 0) return { word: 'Today' }; const u = a >= 60 ? [Math.round(a / 30), 'month'] : a >= 14 ? [Math.round(a / 7), 'week'] : [a, 'day']; return { v: String(u[0]), l: `${u[1]}${u[0] === 1 ? '' : 's'} ago` }; };
+    const stampFor = (o) => {
+      if (o.social === 'msg') return { word: 'New', over: true };
+      if (o.social === 'connect') return { word: 'Hello', over: true };
+      if (o.invite) return { word: 'Invite', over: true };
+      if (o.kind === 'Keep in touch') { const s = elapsedStamp(o.last); return { ...s, over: !!(s.over || o.long) }; }
+      const n = o.n;
+      if (n < 0) return { v: String(-n), l: `day${n === -1 ? '' : 's'} late`, over: true };
+      if (n === 0) return { word: 'Today', over: true };
+      if (n === 1) return { word: 'Tomorrow' };
+      return { v: String(n), l: 'days away' };
+    };
+    const stampHtml = (s) => `<div class="fc-stamp${s.over ? ' over' : ''}">${s.word ? `<span class="v fc-word">${esc(s.word)}</span>` : `<span class="v">${esc(s.v)}</span><span class="l">${esc(s.l)}</span>`}</div>`;
+    const subFor = (o) => {
+      if (o.social) return o.sub || '';
+      if (o.invite) return '';
+      if (o.kind === 'Keep in touch') { const ph = [everyPhrase(o.every), kitOverdue(o.last, o.every)].filter(Boolean).join(' · '); return ph || (o.last ? `last spoke ${kitWhen(o.last)}` : 'not spoken yet'); }
+      if (o.kind === 'Birthday') { const d = new Date(Date.parse(todayISO() + 'T00:00') + (o.n || 0) * 86400000); return `${WD[d.getDay()]} · ${dateLabel(o.n)}`; }
+      if (o.kind === 'Goal' || o.kind === 'Task') return `${o.n < 0 ? 'Was due' : 'By when'} · ${dateLabel(o.n)}`;
+      return o.when || '';
+    };
+    const feedCard = (o) => {
+      if (g(o.id)) return goneLine(o.id);
+      const c = cid(o.id);
+      const eyebrow = o.social ? o.kind : (o.kind === 'Keep in touch' ? 'Keep in touch' : [o.kind, o.space].filter(Boolean).join(' · '));
+      let acts = '';
+      if (o.invite) acts = A('Join', `data-feed-join="${esc(o.areaId)}" data-feed-gid="${esc(o.id)}"`, true) + A('Not now', `data-feed-gone="${esc(o.id)}|Declined for now"`);
+      else if (o.social === 'msg') acts = A('Reply', `data-friend-chat="${esc(o.fid)}" data-friend-name="${esc(o.text)}"`, true) + A('Not now', `data-feed-gone="${esc(o.id)}|Dismissed"`);
+      else if (o.social === 'connect') acts = A('Open', 'data-open-connect', true) + A('Not now', `data-feed-gone="${esc(o.id)}|Dismissed"`);
+      else if (o.kind === 'Birthday') acts = A('WhatsApp', `data-feed-contact="wa:${esc(c)}"`, true) + A('Email', `data-feed-contact="email:${esc(c)}"`) + A('Sent my wishes', `data-feed-gone="${esc(o.id)}|Wishes sent to ${esc(o.text)}"`);
+      else if (o.kind === 'Keep in touch') acts = A('WhatsApp', `data-feed-contact="wa:${esc(o.cId)}"`, true) + A('Email', `data-feed-contact="email:${esc(o.cId)}"`) + A('Call', `data-feed-contact="call:${esc(o.cId)}"`) + (o.taskId ? A('Been in touch', `data-kit-done="${esc(o.taskId)}"`) : A('Been in touch', `data-feed-gone="${esc(o.id)}|Noted"`)) + A('Reminder', `data-feed-kitedit="${esc(o.cId)}"`) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      else if (o.kind === 'Goal') acts = A('Check in', o.attr, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      else if (o.kind === 'Review') acts = A('Do it now', 'data-open-reviews-tool', true) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      else acts = A('Done', `data-feed-done="${esc(o.id)}"`, true) + A('Open', o.attr) + A('Snooze', `data-feed-snooze="${esc(o.id)}"`);
+      const snz = (o.social || o.invite || o.kind === 'Birthday') ? '' : (o.kind === 'Keep in touch'
+        ? snoozeRow(o.id, 'Remind me in', [['3 days', 'Snoozed for 3 days'], ['A week', 'Snoozed for a week'], ['A month', 'Snoozed for a month'], ['Stop reminding me', 'Keep in touch paused', 1]])
+        : snoozeRow(o.id, 'Bring it back', [['Tomorrow', 'Snoozed: back tomorrow'], ['At the weekend', 'Snoozed: back at the weekend'], ['Next week', 'Snoozed: back next week'], ['Pick a date', 'Snoozed']]));
+      const sub = subFor(o);
+      return `<div class="feed-card" style="animation:kfade .35s ease"><div class="fc-main"><div class="fc-eyebrow">${esc(eyebrow)}</div><div class="fc-title">${esc(o.text)}</div>${sub ? `<div class="fc-sub">${esc(sub)}</div>` : ''}<div class="fc-acts">${acts}</div>${snz}</div>${stampHtml(stampFor(o))}</div>`;
+    };
+    const fInvites = (state.sharedItems || []).filter((s) => s.kind === 'area').map((s) => ({ invite: true, kind: 'Invitation', id: 'inv:' + s.id, areaId: s.id, text: `${s.owner || 'Someone'} invited you to ${s.title || 'a Space'}`, n: -0.4 }));
+    const social = [];
+    if (modOn('contacts')) {
+      const fr = (state.friends && state.friends.friends) || [];
+      const nameOf = (id) => { const f = fr.find((x) => String(x.id) === String(id)); return (f && f.name) || 'Someone'; };
+      const unreadBy = (state.friendStatus && state.friendStatus.unreadBy) || {};
+      Object.keys(unreadBy).forEach((id) => { const u = unreadBy[id] || 0; if (u <= 0) return; social.push({ social: 'msg', kind: 'Message', id: 'msg:' + id, text: nameOf(id), sub: u === 1 ? 'Sent you a message' : `${u} new messages`, fid: id, n: -0.5 }); });
+      const inc = (state.friendStatus && state.friendStatus.incoming) || 0;
+      if (inc > 0) social.push({ social: 'connect', kind: 'Connect', id: 'connect', text: inc === 1 ? 'Someone wants to connect' : `${inc} people want to connect`, sub: 'New on Kaya', n: -0.25 });
+    }
+    const flow = [...all.filter((o) => (o.n ?? 999) <= 14 || o.kind === 'Review'), ...fInvites, ...social].sort((a, b) => (a.n ?? 999) - (b.n ?? 999));
+    if (flow.length) {
+      const live = flow.filter((o) => !g(o.id)).length;
+      const cards = flow.map(feedCard).join('');
+      parts.push(`<div>${live ? `<div style="display:flex;justify-content:flex-end;padding-bottom:8px"><span style="font:400 13.5px Jost;color:var(--k-mute)">${live} in view</span></div>` : ''}<div style="display:flex;flex-direction:column;gap:10px">${cards}</div></div>`);
+    }
+  }
+
   // ── 1. Needs you ──
   const invites = (state.sharedItems || []).filter((s) => s.kind === 'area' && !g('inv:' + s.id)).map((s) => ({ invite: true, kind: 'Invitation', id: 'inv:' + s.id, areaId: s.id, who: s.owner || 'Someone', title: (s.title || 'a Space') }));
   const needR = all.filter((o) => o.n <= 0 || (o.kind === 'Goal' && o.n <= 7) || o.kind === 'Keep in touch').sort((a, b) => (a.n ?? 999) - (b.n ?? 999));
   const needAll = [...needR, ...invites];
   const needLive = needAll.filter((o) => !g(o.id));
-  if (needAll.length) {
+  if (false) {   // old Needs-you - now part of the V39 one flow above (Robin, 2026-11-13)
     const cards = needAll.map((o) => {
       if (g(o.id)) return goneLine(o.id);
       if (o.invite) {
@@ -9370,7 +9438,7 @@ function homeRadarBodyHtml() {
   // ── 4. On the horizon ──
   const horAll = all.filter((o) => o.n >= 1 && o.kind !== 'Keep in touch' && o.kind !== 'Goal');
   const horLive = horAll.filter((o) => !g(o.id));
-  if (horAll.length) {
+  if (false) {   // old On-the-horizon - now part of the V39 one flow above (Robin, 2026-11-13)
     const rows = horAll.map((o) => {
       if (g(o.id)) return goneLine(o.id);
       const d = dnum(o.n);
@@ -9884,7 +9952,7 @@ function homeTodayTabDefs() {
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
   defs.push(['cal', 'Calendar', evN, false]);
-  defs.push(['radar', 'Your Kaya', radN, r.overdue.length > 0]);
+  defs.push(['radar', 'In View', radN, r.overdue.length > 0]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
@@ -29051,6 +29119,7 @@ document.addEventListener('click', (e) => {
     const fsn = t.closest('[data-feed-snooze]'); if (fsn) { e.preventDefault(); const id = fsn.dataset.feedSnooze; const fs = feedS(); fs.snz = fs.snz === id ? null : id; renderHome(); return; }
     const fz = t.closest('[data-feed-snz]'); if (fz) { e.preventDefault(); const [id, msg] = fz.dataset.feedSnz.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Snoozed'; fs.snz = null; renderHome(); return; }
     const fg = t.closest('[data-feed-gone]'); if (fg) { e.preventDefault(); const [id, msg] = fg.dataset.feedGone.split('|'); const fs = feedS(); fs.gone[id] = msg || 'Done'; fs.snz = null; renderHome(); return; }
+    const fke = t.closest('[data-feed-kitedit]'); if (fke) { e.preventDefault(); const id = fke.dataset.feedKitedit; try { cvKitFoldSet(id, true); } catch {} openContactCard(id).then(() => { requestAnimationFrame(() => { const el = document.querySelector('[data-cv-kitfold]'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }); }).catch(() => {}); return; }
     const fj = t.closest('[data-feed-join]'); if (fj) { e.preventDefault(); const fs = feedS(); fs.gone[fj.dataset.feedGid] = 'Joined'; renderHome(); return; }
     const fse = t.closest('[data-feed-seen]'); if (fse) { e.preventDefault(); const id = fse.dataset.feedSeen; const fs = feedS(); fs.justSeen = fs.justSeen || {}; fs.justSeen[id] = 1; feedSeenMark([id]); renderHome(); return; }
     const fun = t.closest('[data-feed-unsee]'); if (fun) { e.preventDefault(); const id = fun.dataset.feedUnsee; const fs = feedS(); if (fs.justSeen) delete fs.justSeen[id]; feedSeenUnmark(id); renderHome(); return; }

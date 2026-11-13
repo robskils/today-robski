@@ -6045,7 +6045,7 @@ body.nav-collapsed[data-view="table"] .main::after { left:calc(1100px + var(--si
 body[data-view="notes"] .home-sec-h, body[data-view="tables"] .home-sec-h { color:var(--k-goldt); }
 body[data-view="notes"] .home-sec, body[data-view="tables"] .home-sec { margin-top:34px; }
 .home-sec-h .muted { font-size:11px; letter-spacing:.04em; text-transform:none; font-weight:400; }
-.home-empty { color:var(--ink-3); font-style:italic; font-family:var(--k-serif); font-size:19px; padding:8px 0; }
+.home-empty { color:var(--ink-3); font-style:italic; font-family:var(--k-serif); font-size:21px; padding:8px 0; }
 
 /* Favourites: compact cards, grouped by kind, wrapping so many fit. */
 .fav-group { margin-bottom:16px; }
@@ -8298,6 +8298,11 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
   .nav-k { display:none; }
   body.util-open .nav-k { display:none; }
   .pane { padding:20px 18px 96px; }
+  /* Mail list rows hug the screen on mobile - the ~38px side gutters were wasting
+     width (Robin, 2026-11-13). Only the collapsed list tightens; the open email keeps
+     its comfortable reading inset. Text still clears the edge (~14px). */
+  .mail-ar:not(.open) { margin-left:-18px; margin-right:-18px; padding-left:6px; padding-right:6px; }
+  .mail-ar:not(.open) .mail-ar-head.mailv2ar { padding-left:8px; padding-right:8px; }
   /* The breadcrumb pins just below the fixed brand header (--navh tracks the
      header's height, so it sits correctly whether the tools bar is open or shut).
      The negative margins bleed it to the screen edges, cancelling the pane's
@@ -13431,7 +13436,7 @@ body.mailsheet-open { overflow:hidden; }
 .gln-mail-acts .gln-mail-reply:hover, .gln-mail-acts .gln-mail-openin:hover { color:var(--k-gold); }
 .gln-mail-openin { margin-left:auto; }
 .gln-item-w { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
-.gln-empty { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:18px; color:var(--k-mute); padding:12px 0; }
+.gln-empty { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:21px; color:var(--k-mute); padding:12px 0; }
 .gln-panel-foot { display:flex; gap:22px; margin-top:12px; }
 .gln-open { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); padding:0; }
 .gln-fold { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); padding:0; }
@@ -13538,16 +13543,20 @@ body.mailsheet-open { overflow:hidden; }
 .feed-group-h::after { content:''; flex:1; height:1px; background:var(--k-line); }
 .feed-cards { display:flex; flex-direction:column; gap:10px; }
 /* Glassy, darker card - no gold border; gold reads only on the overdue tag. (Robin, 2026-11-13) */
-.feed-card { background:var(--glass-face); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); border:0; padding:18px 20px; display:flex; }
-.feed-card-b { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
-.feed-card-meta { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; font-family:var(--k-sans); font-size:13px; color:var(--k-mute); }
-.feed-card-kind { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
-.feed-card-when { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-mute); white-space:nowrap; }
-.feed-card-when.over { color:var(--k-goldt); }
-.feed-card-dot { color:var(--k-mute); opacity:.65; }
-.feed-card-space { white-space:nowrap; color:var(--k-mute); }
-.feed-card-t { font-family:var(--k-serif); font-weight:500; font-size:25px; line-height:1.2; color:var(--k-ink); text-wrap:pretty; }
-.feed-card-acts { display:flex; gap:22px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+/* §V39 The one feed flow: a glass card, identity on the left, a Cormorant ledger
+   stamp on the right (gold when it needs you, muted when it is just ahead). */
+.feed-card { background:var(--glass-face); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); border:0; padding:17px 22px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:20px; align-items:center; }
+.fc-main { min-width:0; display:flex; flex-direction:column; gap:7px; }
+.fc-eyebrow { font-family:var(--k-sans); font-weight:600; font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--k-mute); }
+.fc-title { font-family:var(--k-serif); font-weight:500; font-size:25px; line-height:1.16; color:var(--k-ink); text-wrap:pretty; }
+.fc-sub { font-family:var(--k-sans); font-weight:400; font-size:14px; line-height:1.45; color:var(--k-mute); }
+.fc-acts { display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.fc-stamp { display:flex; flex-direction:column; align-items:flex-end; justify-content:center; text-align:right; white-space:nowrap; gap:3px; }
+.fc-stamp .v { font-family:var(--k-serif); font-weight:500; font-size:36px; line-height:.86; color:var(--k-mute); }
+.fc-stamp .l { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--k-mute); }
+.fc-stamp .fc-word { font-size:24px; }
+.fc-stamp.over .v { color:var(--k-goldt); }
+@media (max-width:560px){ .feed-card { padding:15px 16px; gap:14px; } .fc-title { font-size:23px; } .fc-stamp .v { font-size:31px; } .fc-stamp .fc-word { font-size:21px; } }
 .feed-wn { margin-top:16px; padding-top:4px; font-family:var(--k-sans); font-weight:400; font-size:14px; color:var(--k-mute); cursor:pointer; }
 .feed-wn:hover { color:var(--k-goldt); }
 .feed-wn-s { font-weight:500; }
