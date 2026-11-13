@@ -9847,14 +9847,21 @@ function homeReadingsSectionHtml(inTab) {
   return `<div class="home-rd">${h}${open ? `<div class="home-rd-body">${rows}<div class="home-rd-all" data-open-wellbeing role="button" tabindex="0">All reflections →</div></div>` : ''}</div>`;
 }
 // §64: the quote of the day, one line under the greeting's weather line.
-// Whether today's quote has been hidden (keyed to its text, so a new day's quote
-// returns on its own). Robin: no "keep in notes" - just a small × to hide it.
-function quoteHidden() { try { const q = dayQuote(); return !!(q && q.text) && localStorage.getItem('life.quoteHidden') === q.text; } catch { return false; } }
+// Closing the quote dismisses it for TODAY only, server-side (kv_quote_dismissed),
+// so it hides on every device - desktop AND mobile - and returns tomorrow on its
+// own. Both the figure (home-quote) and the line (home-qline) close through here,
+// and both clear the local copies so it vanishes at once on this device. (Robin, 2026-11-13.)
+function dismissQuoteToday() {
+  const today = new Date().toISOString().slice(0, 10);
+  api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {});
+  if (state.home) state.home.quote = null;
+  state.dayQuote = null;
+  if (state.view && state.view.type === 'home') renderHome(); else rerenderCurrent();
+}
 function homeQuoteLineHtml() {
   if (!dailyQuoteOn()) return '';
   const q = dayQuote(); if (!q || !q.text) return '';
-  if (quoteHidden()) return '';
-  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span><div class="home-qline-by">${q.author ? `<span class="home-qline-a">— ${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote">×</button></div></div>`;
+  return `<div class="home-qline"><span class="home-qline-t">“${esc(q.text)}”</span><div class="home-qline-by">${q.author ? `<span class="home-qline-a">— ${esc(q.author)}</span>` : ''}<button class="home-qline-x" data-quote-hide aria-label="Hide today’s quote" title="Hide today’s quote (on all your devices)">×</button></div></div>`;
 }
 // The Tracker tab only earns its place on Home once you've actually added a
 // practice - otherwise it's noise (Robin, 2026-11-13). state.practices may not be
@@ -28908,7 +28915,7 @@ document.addEventListener('click', (e) => {
   { const fr = t.closest('[data-feed-team-rm]'); if (fr) { removeTeam(fr.dataset.feedTeamRm); return; } }
   { const ca = t.closest('[data-feed-country-add]'); if (ca) { addCountry({ code: ca.dataset.cc, name: ca.dataset.cn }); return; } }
   { const cr = t.closest('[data-feed-country-rm]'); if (cr) { removeCountry(cr.dataset.feedCountryRm); return; } }
-  if (t.closest('[data-home-quote-x]')) { const today = new Date().toISOString().slice(0, 10); api('/api/kv/quote_dismissed', { method: 'PUT', body: JSON.stringify({ value: today }) }).catch(() => {}); if (state.home) state.home.quote = null; renderHome(); return; }
+  if (t.closest('[data-home-quote-x]')) { dismissQuoteToday(); return; }
   { const hl = t.closest('[data-home-loc]'); if (hl) { state.home = state.home || {}; state.home.locEdit = !state.home.locEdit; renderHome(); if (state.home.locEdit) setTimeout(() => { const i = document.querySelector('[data-home-loc-input]'); if (i) { i.focus(); i.select(); } }, 40); return; } }
   { const hs = t.closest('[data-home-loc-save]'); if (hs) { const i = document.querySelector('[data-home-loc-input]'); setHomePlace(i ? i.value : ''); return; } }
   { const ha = t.closest('[data-home-loc-auto]'); if (ha) { setHomePlace(''); return; } }
@@ -29822,7 +29829,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-spirit-dismiss]')) { dismissSpirit(); return; }
   { const dsh = t.closest('[data-del-spirit-hist]'); if (dsh) { delSpiritHist(Number(dsh.dataset.delSpiritHist)); return; } }
   { const sh = t.closest('[data-spirit-open-hist]'); if (sh) { openSpiritHist(Number(sh.dataset.spiritOpenHist)); return; } }
-  if (t.closest('[data-quote-hide]')) { try { const q = dayQuote(); if (q && q.text) localStorage.setItem('life.quoteHidden', q.text); } catch {} if (state.view && state.view.type === 'home') renderHome(); else rerenderCurrent(); return; }
+  if (t.closest('[data-quote-hide]')) { dismissQuoteToday(); return; }
   if (t.closest('[data-open-tarot]')) { openTarot(); return; }
   { const tsp = t.closest('[data-tarot-spread]'); if (tsp) { tarotSetSpread(tsp.dataset.tarotSpread); return; } }
   if (t.closest('[data-tarot-draw]')) { tarotDraw(); return; }
