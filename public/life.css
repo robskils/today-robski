@@ -12048,7 +12048,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-greetrow > *:not(.home-watermark) { position:relative; z-index:1; }
 .home-watermark { position:absolute; top:50%; right:clamp(-210px,-12vw,-90px); transform:translateY(-50%); width:clamp(380px,46vw,600px); aspect-ratio:1; z-index:0; pointer-events:none;
   -webkit-mask:url('/brand/kaya-seal.svg') center/contain no-repeat; mask:url('/brand/kaya-seal.svg') center/contain no-repeat;
-  background:var(--ink); opacity:.025; }
+  background:var(--ink); opacity:.012; }
 @media (max-width:820px){ .home-watermark { display:none; } }
 .home-v3 .home-greet { font-family:var(--k-serif); font-weight:500; font-size:clamp(44px,5vw,64px); line-height:1.02; letter-spacing:-.01em; margin:16px 0 0; }
 .home-v3 .home-tw { display:block; margin-top:10px; padding-top:0; border-top:0; max-width:none; font-family:var(--k-sans); font-weight:400; font-size:16px; line-height:1.5; color:var(--k-mute); }
