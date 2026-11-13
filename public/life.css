@@ -12910,7 +12910,7 @@ body[data-view="tasks"] .pane { max-width:none; padding:0; margin-top:0; backgro
 .tx-tick.on { border-color:var(--k-gold); background:var(--k-gold); }
 .tx-rowmain { min-width:0; background:none; border:0; cursor:pointer; text-align:left; padding:0; }
 .tx-rowmain:hover .tx-row-t { color:var(--k-goldt); }
-.tx-row-t { display:block; font-family:var(--k-sans); font-size:16.5px; line-height:1.4; color:var(--k-ink); text-wrap:pretty; }
+.tx-row-t { display:block; font-family:var(--k-sans); font-size:18px; line-height:1.4; color:var(--k-ink); text-wrap:pretty; }
 .tx-row.done .tx-row-t { text-decoration:line-through; color:var(--k-mute); }
 .tx-row-sub { display:flex; flex-wrap:wrap; gap:2px 12px; margin-top:3px; font-family:var(--k-sans); font-size:13px; }
 .tx-row-prio { color:var(--k-goldt); font-weight:500; }
