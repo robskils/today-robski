@@ -12341,6 +12341,10 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
 .av4-tab-n { font-family:var(--k-sans); font-weight:600; font-size:12.5px; color:var(--k-goldt); }
 .av4-content { animation:kfade .35s ease; }
 .av4-pane { padding:30px 0 28px; }
+/* Per-tab "+ New X" button, top-right of each creatable Space tab (Robin, 2026-11-13). */
+.av4-addbar { display:flex; justify-content:flex-end; margin-bottom:18px; }
+.av4-addbar-b { appearance:none; display:inline-flex; align-items:center; gap:7px; min-height:40px; padding:0 18px; border:1px solid var(--k-gold); background:transparent; color:var(--k-goldt); font-family:var(--k-sans); font-weight:500; font-size:14.5px; line-height:1; cursor:pointer; border-radius:0; transition:background .12s, color .12s; }
+.av4-addbar-b:hover { background:var(--k-gold); color:var(--k-bg); }
 /* Overview glance cards */
 /* Four to a row, so a full Space reads as three tidy rows of four (Robin,
    2026-11-06: "4 cards on each of the 3 rows… fill all 12 if you can"). */

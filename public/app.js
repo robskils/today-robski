@@ -13650,6 +13650,9 @@ function renderAreaV4() {
   };
 
   // ── Tab content ──
+  // A consistent "+ New X" button at the top of each creatable tab, so adding is
+  // always one tap - not only from the empty state or the head's "+ Add" menu. (Robin, 2026-11-13.)
+  const addBar = (label, attr) => canEdit ? `<div class="av4-addbar"><button class="av4-addbar-b" ${attr}>+ ${esc(label)}</button></div>` : '';
   let content = '';
   const q = (st.q || '').trim().toLowerCase();
   if (q) {
@@ -13691,18 +13694,18 @@ function renderAreaV4() {
       ? `<div class="av3-cards av4-latest">${shown.map(({ b }) => feedCard(b)).join('')}</div>${feed.length > CAP ? `<div class="av4-latest-more">Showing the ${CAP} most recent. Use the tabs above for the full lists.</div>` : ''}`
       : `<div class="av3-empty">Nothing in this Space yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Add something</span>' : ''}</div>`;
   } else if (st.tab === 'calendar') {
-    content = `<div class="av4-pane">${events.length ? events.map(eventRow).join('') : '<div class="av3-empty">Nothing in the diary for this Space.</div>'}<button class="av3-all" data-open-calendar>Open in Calendar →</button></div>`;
+    content = `<div class="av4-pane">${addBar('New event', 'data-area-add-event')}${events.length ? events.map(eventRow).join('') : '<div class="av3-empty">Nothing in the diary for this Space.</div>'}<button class="av3-all" data-open-calendar>Open in Calendar →</button></div>`;
   } else if (st.tab === 'tasks') {
     const list = [...openTs, ...doneTs];
-    content = `<div class="av4-pane">${list.length ? `<div class="av3-cards">${list.map(taskCard).join('')}</div>` : `<div class="av3-empty">No tasks here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-task>+ Task</span>' : ''}</div>`}</div>`;
+    content = `<div class="av4-pane">${addBar('New task', 'data-area-add-task')}${list.length ? `<div class="av3-cards">${list.map(taskCard).join('')}</div>` : `<div class="av3-empty">No tasks here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-task>+ Task</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'notes') {
     const sortChip = (key, label) => { const on = st.sort.key === key; const arrow = on ? (st.sort.dir === 1 ? '↓' : '↑') : ''; return `<span class="av4-nsort${on ? ' on' : ''}" data-av4-sort="${key}">${label} <span class="av4-nsort-a">${arrow}</span></span>`; };
-    content = `<div class="av4-pane">${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Recent')}${sortChip('az', 'A to Z')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
+    content = `<div class="av4-pane">${addBar('New note', 'data-area-add-note')}${notes.length ? `<div class="av4-nsorts"><span class="av4-lbl">Sort</span>${sortChip('new', 'Recent')}${sortChip('az', 'A to Z')}</div><div class="av3-cards">${nsort.map(noteCard).join('')}</div>${noteReaderHtml()}` : `<div class="av3-empty">No notes here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-note>+ Note</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'tables') {
     // Tables use the same rich cards as Notes (noteCard spots kind==='table' and
     // marks it with the gold ▦). Add is via "+ Add to this Space" and the empty
     // state, exactly like Notes. (Robin, 2026-11-11: match the other cards.)
-    content = `<div class="av4-pane">${tables.length ? `<div class="av3-cards">${tables.map(tableCard).join('')}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
+    content = `<div class="av4-pane">${addBar('New table', 'data-area-add-table')}${tables.length ? `<div class="av3-cards">${tables.map(tableCard).join('')}</div>` : `<div class="av3-empty">No tables here yet.${canEdit ? ' <span class="av3-empty-add" data-area-add-table>+ Table</span>' : ''}</div>`}</div>`;
   } else if (st.tab === 'mail') {
     const s = streamItems();
     content = `<div class="av4-pane">${s.length ? s.map(streamRow).join('') : '<div class="av3-empty">No mail filed to this Space.</div>'}</div>`;
