@@ -7334,8 +7334,16 @@ function peAttachHtml() {
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
     rows.push(lkLinkRow(url, l.title || prettyLinkLabel(l.url), host, `data-pe-del-link="${i}"`));
   });
-  const noteResults = nres.length ? `<div class="nx-sugg">${nres.map((n) => `<button type="button" class="nx-sugg-row" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ic">▤</span>${esc(n.title || 'Untitled')}<span class="kind">Note</span></button>`).join('')}</div>` : '';
-  return lkPanelHtml({ scope: 'practice', rows, search: `<div class="nx-field"><input class="sel" data-pe-note-q placeholder="Link a page" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off"></div>${noteResults}`, actions: `
+  const rawQ = (state.practiceEdit._noteQ || '').trim();
+  const cres = q ? (state.contacts || []).filter((c) => !linkedC.has(String(c.id)) && (c.title || '').toLowerCase().includes(q)).slice(0, 6) : [];
+  const looksUrl = !!rawQ && !/\s/.test(rawQ) && /^(https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}([/?#].*)?$/i.test(rawQ);
+  const sugg = [
+    ...nres.map((n) => `<button type="button" class="nx-sugg-row" data-pe-link-note="${n.id}" data-pe-note-title="${esc(n.title || 'Untitled')}"><span class="ic">▤</span>${esc(n.title || 'Untitled')}<span class="kind">Note</span></button>`),
+    ...cres.map((c) => `<button type="button" class="nx-sugg-row" data-pe-link-contact="${c.id}"><span class="ic">👤</span>${esc(c.title || 'Unnamed')}<span class="kind">Person</span></button>`),
+    ...(looksUrl ? [`<button type="button" class="nx-sugg-row" data-pe-link-url><span class="ic">↗</span>${esc(rawQ)}<span class="kind">Web link</span></button>`] : []),
+  ].join('');
+  const noteResults = sugg ? `<div class="nx-sugg">${sugg}</div>` : '';
+  return lkPanelHtml({ scope: 'practice', rows, search: `<div class="nx-field"><input class="sel" data-pe-note-q placeholder="Search notes, people, or paste a link" value="${esc(state.practiceEdit._noteQ || '')}" autocomplete="off"></div>${noteResults}`, actions: `
     <button type="button" class="lk-act" data-pe-new-note>New note</button>
     <button type="button" class="lk-act" data-pe-add-link>Web link</button>
     <select class="lk-act" data-pe-add-contact><option value="">Link a contact</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>` });
@@ -28937,6 +28945,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
   { const el = t.closest('[data-pe-link-note]'); if (el) { peMeta().notes.push({ id: el.dataset.peLinkNote, title: el.dataset.peNoteTitle || 'Untitled' }); state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-link-contact]'); if (el) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(el.dataset.peLinkContact)])]; state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
+  { const el = t.closest('[data-pe-link-url]'); if (el) { let u = (state.practiceEdit._noteQ || '').trim(); if (u) { if (!/^https?:\/\//i.test(u)) u = 'https://' + u; peMeta().links.push({ url: u }); state.practiceEdit._noteQ = ''; renderPeAttach(); } return; } }
   { const el = t.closest('[data-pe-unlink-note]'); if (el) { const id = el.dataset.peUnlinkNote; peMeta().notes = peMeta().notes.filter((n) => String(n.id) !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-note]'); if (el) { closePracticeEditor(); openNote(el.dataset.peOpenNote).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-pe-new-note]')) { peNewNote(); return; }
