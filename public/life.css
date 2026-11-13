@@ -12771,7 +12771,7 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-whead-add:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 .cx-wev { padding:10px 0; border-bottom:1px solid var(--k-line); min-width:0; cursor:pointer; }
 .cx-wev-t { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); }
-.cx-wev-ti { margin-top:2px; text-wrap:pretty; min-width:0; font-size:19px; }
+.cx-wev-ti { margin-top:2px; text-wrap:pretty; min-width:0; font-size:22px; line-height:1.22; }
 .cx-wempty { padding:10px 0; color:var(--k-line); }
 /* list */
 .cx-lday { margin-bottom:18px; }
@@ -12828,7 +12828,7 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
   .cx-wnum { font-size:30px; }
   .cx-wev { padding:12px 0; }
   .cx-wev-t { font-size:14px; }
-  .cx-wev-ti { font-size:17px !important; line-height:1.34 !important; margin-top:3px; }
+  .cx-wev-ti { font-size:19px !important; line-height:1.3 !important; margin-top:3px; }
 
   /* Month: a 7-up grid can't hold readable titles on a phone, so cells carry dots
      and the day reads full-size in the panel below (JS renders the dots). */
