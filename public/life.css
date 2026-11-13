@@ -12771,7 +12771,7 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-whead-add:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 .cx-wev { padding:10px 0; border-bottom:1px solid var(--k-line); min-width:0; cursor:pointer; }
 .cx-wev-t { font-family:var(--k-sans); font-size:12px; color:var(--k-mute); }
-.cx-wev-ti { margin-top:2px; text-wrap:pretty; min-width:0; font-size:16.5px; }
+.cx-wev-ti { margin-top:2px; text-wrap:pretty; min-width:0; font-size:19px; }
 .cx-wempty { padding:10px 0; color:var(--k-line); }
 /* list */
 .cx-lday { margin-bottom:18px; }
