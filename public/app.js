@@ -5685,7 +5685,7 @@ function navGroupsHtml(v) {
     const badge = knavGroupBadge(g);
     return `<button class="knav-g${open ? ' open' : ''}${here ? ' here' : ''}" data-knav-group="${g.id}"><span class="knav-g-l">${g.label}</span>${badge ? `<span class="knav-g-b">${badge}</span>` : ''}</button>`;
   }).join('');
-  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><em class="brand-word">Kaya<i class="brand-dot">.</i></em></button>`;
+  const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><span class="knav-seal" aria-hidden="true"></span><em class="brand-word">Kaya<i class="brand-dot">.</i></em></button>`;
   // §71: the four daily tools, one click each in the bar (desktop). Each lights up
   // on its own page; Mail carries its to-sort count. (Robin, 2026-11-05.)
   const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Tables', 'data-open-tables', ['tables', 'table'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
@@ -5908,7 +5908,7 @@ function renderAppFoot() {
   const el = document.getElementById('app-foot'); if (!el) return;
   const v = state.view || {};
   const html = `<div class="app-foot-row">`
-    + `<span class="aff-mark">Kaya<span class="aff-dot">.</span></span>`
+    + `<span class="aff-mark"><span class="aff-seal" aria-hidden="true"></span>Kaya<span class="aff-dot">.</span></span>`
     + `<span class="aff-sp"></span>`
     + (themeLocked() ? '' : `<button class="aff" data-theme-toggle title="Theme">${themeLabel()}</button>`)
     + `<button class="aff${v.type === 'settings' ? ' on' : ''}" data-open-settings>${t('nav.settings')}</button>`

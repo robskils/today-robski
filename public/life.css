@@ -10636,6 +10636,8 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-inner .mtop-back { display:none; font-size:30px; padding:0 10px 0 0; margin:0; }
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--k-goldt); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
+/* The 香 seal in front of the wordmark. (Robin, 2026-11-13.) */
+.knav-seal { width:28px; height:28px; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
 .knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
 .knav-groups { display:flex; gap:clamp(14px,1.8vw,24px); height:100%; align-items:stretch; min-width:0; }
 .knav-g { display:flex; align-items:center; gap:5px; height:100%; box-sizing:border-box; border:0; border-bottom:1px solid transparent; margin-bottom:-1px; background:none; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:400; font-size:15px; white-space:nowrap; color:var(--ink-2); transition:color .16s; }
@@ -10783,8 +10785,9 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .aff:hover { color:var(--k-goldt); }
 .aff.on { color:var(--k-ink); }
 .aff-sp { flex:1 1 auto; }
-.aff-mark { font-family:var(--k-serif); font-weight:500; font-size:19px; line-height:1; color:var(--k-ink); }
+.aff-mark { display:inline-flex; align-items:center; font-family:var(--k-serif); font-weight:500; font-size:19px; line-height:1; color:var(--k-ink); }
 .aff-mark .aff-dot { color:var(--k-gold); }
+.aff-seal { width:19px; height:19px; flex:none; margin-right:8px; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
 .aff-name { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 @media (min-width:1600px){ .app-foot-row { padding-left:64px; padding-right:64px; } }
 @media (max-width:820px){ .app-foot { display:none; } }
@@ -10804,6 +10807,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
   .knav-bar { height:50px; }
   .knav-inner { padding:0 20px; gap:12px; }
   .knav-brand .brand-word { font-size:24px; }
+  .knav-seal { width:24px; height:24px; }
   .knav-prims, .knav-groups, .knav-right { display:none; }
   .knav-inner .mtop-back { display:inline-flex; align-items:center; }
   .knav-crumb { display:block; margin-left:auto; }
