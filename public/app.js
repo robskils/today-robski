@@ -13764,7 +13764,7 @@ document.addEventListener('input', (e) => {
   if (s) { const st = state.areaV4 = state.areaV4 || {}; st.q = s.value; st._focusSearch = true; clearTimeout(window.__av4qT); window.__av4qT = setTimeout(() => { if (document.querySelector('[data-av4-search]')) renderArea(); }, 140); }
 });
 document.addEventListener('change', (e) => {
-  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = v === 'space' ? 'space' : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
+  const tgb = e.target.closest && e.target.closest('[data-task-groupby]'); if (tgb) { const v = tgb.value; state.taskGroup = (v === 'space' || v === 'recent') ? v : 'priority'; try { localStorage.setItem('life.taskGroup', state.taskGroup); } catch {} renderTasks(); return; }
   const tsf = e.target.closest && e.target.closest('[data-task-spacefilter-sel]'); if (tsf) { state.taskFilterSpace = tsf.value || ''; renderTasks(); return; }
   if (e.target.matches && e.target.matches('[data-task-durcustom]')) { const id = e.target.dataset.taskDurcustom; const v = Math.max(5, Math.min(720, Number(e.target.value) || 0)); if (v) patchTaskProps(id, { duration: v }); return; }
   const sl = e.target.closest && e.target.closest('[data-av4-goal-slide]'); if (sl) { av4GoalSet(sl.dataset.av4GoalSlide, { pct: Number(sl.value) }); return; }
@@ -21191,7 +21191,7 @@ function commitTaskView() {
 function taskOrder() { return state.taskOrder || (state.taskOrder = localStorage.getItem('life.taskOrder') || 'priority'); }
 // How the task list is arranged: 'priority' (First/Soon/Whenever sections, dated
 // tasks floated to the top of each) or 'space' (grouped by Space). (Robin, 2026-11-09.)
-function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return state.taskGroup === 'space' ? 'space' : 'priority'; }
+function taskGroupBy() { if (!state.taskGroup) { try { state.taskGroup = localStorage.getItem('life.taskGroup') || 'priority'; } catch { state.taskGroup = 'priority'; } } return (state.taskGroup === 'space' || state.taskGroup === 'recent') ? state.taskGroup : 'priority'; }
 function txDurLabel(min) { min = Number(min); if (!min) return ''; if (min < 60) return `about ${min} minutes`; if (min === 60) return 'about an hour'; if (min % 60 === 0) return `about ${min / 60} hours`; return `about ${Math.round(min / 60 * 10) / 10} hours`; }
 function txSpaceName(t) { const a = blockAreas(t).map((id) => areaById(id)).filter(Boolean)[0]; return a ? a.title : ''; }
 function txDue(t) {
@@ -21250,12 +21250,12 @@ function renderTasks() {
   // (Robin, 2026-11-11.)
   const recentMode = state.taskRecentDir === 'old';
   const dirToggle = `<button class="tx-recentdir" data-task-recentdir title="${recentMode ? 'Most recent first' : 'Most urgent first'}" aria-label="${recentMode ? 'Most recent first' : 'Most urgent first'}">${recentMode ? '↑' : '↓'}</button>`;
-  const orders = `<span class="tx-ordersel"><select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option></select>${dirToggle}</span>`;
+  const orders = `<span class="tx-ordersel"><select class="sel tx-groupsel" data-task-groupby aria-label="Order tasks"><option value="priority"${groupBy === 'priority' ? ' selected' : ''}>By Priority</option><option value="space"${groupBy === 'space' ? ' selected' : ''}>By Space</option><option value="recent"${groupBy === 'recent' ? ' selected' : ''}>Recently added</option></select>${groupBy === 'recent' ? '' : dirToggle}</span>`;
   // In the All tab, priorities are mixed, so every task leads with its own First /
   // Soon / Whenever. The single-priority tabs don't need it. (Robin, 2026-11-07.)
   // Per-row First/Soon/Whenever only when priorities are mixed in the view - i.e.
   // the All tab grouped By Space. By Priority shows it in the section header. (Robin.)
-  const showPrio = selPile === 'all' && (groupBy === 'space' || recentMode);
+  const showPrio = selPile === 'all' && (groupBy === 'space' || groupBy === 'recent' || recentMode);
   const taskRow = (t) => {
     const done = !!t.props.done, sp = txSpaceName(t), meta = [txDurLabel(t.props.duration)].filter(Boolean).join(' · ');
     const snz = !!(t.props.hideUntil && t.props.snooze);
@@ -21274,8 +21274,15 @@ function renderTasks() {
   const byPrio = (a, b) => (txPriBucket(a) - txPriBucket(b)) || byDate(a, b);
   const tsOf = (x) => String(x.updated_at || x.created_at || '');
   const byRecent = (a, b) => tsOf(b).localeCompare(tsOf(a));   // most recently added or active first
+  // "Recently added" (the dropdown option) orders by when the task was CREATED,
+  // newest first - not updated_at, so ticking or editing a task doesn't reshuffle
+  // the list. (Robin, 2026-11-14: "most recently added tasks".)
+  const byAdded = (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''));
   let groupsHtml = '';
-  if (groupBy === 'space') {
+  if (groupBy === 'recent') {
+    const sorted = inPile.slice().sort(byAdded);
+    groupsHtml = sorted.length ? `<div class="tx-rows tx-rows-flat">${sorted.map(taskRow).join('')}</div>` : `<div class="tx-empty">Nothing here. Add something below.</div>`;
+  } else if (groupBy === 'space') {
     const spaces = [...new Set(inPile.map(txSpaceName))].sort((a, b) => (a || '~').localeCompare(b || '~'));
     // Highest priority first within each Space, then by date. (Robin, 2026-11-11.)
     groupsHtml = spaces.map((s) => { const items = inPile.filter((t) => txSpaceName(t) === s).sort(recentMode ? byRecent : byPrio); const key = selPile + '/' + s; const closed = state.taskShut && state.taskShut[key]; return `<div class="tx-group"><button class="tx-group-h" data-task-group="${esc(key)}"><span class="tx-group-l">${esc(s || 'No Space')}</span><span class="tx-group-n">${items.length}</span><span class="tx-group-rule"></span>${closed ? `<span class="tx-group-hint">${esc(items.slice(0, 2).map((t) => t.title).join(' · '))}</span>` : ''}<span class="tx-group-sign">${closed ? '+' : '−'}</span></button>${closed ? '' : `<div class="tx-rows">${items.map(taskRow).join('')}</div>`}</div>`; }).join('') || `<div class="tx-empty">Nothing here. Add something below.</div>`;
@@ -30394,7 +30401,19 @@ document.addEventListener('click', (e) => {
   const or = t.closest('[data-open-row]'); if (or) { state.tables_view.openRow = or.dataset.openRow; renderTable(); window.scrollTo(0, 0); return; }
   const ec = t.closest('[data-edit-col]'); if (ec) { editColName(ec.dataset.editCol); return; }
   const sc = t.closest('[data-sort-col]');
-  if (sc) { const id = sc.dataset.sortCol; const s = state.tables_view.sorts || []; const only = s.length === 1 && s[0].colId === id ? s[0] : null; setSorts([{ colId: id, dir: only && only.dir === 'asc' ? 'desc' : 'asc' }]); return; }
+  if (sc) {
+    // Click a column name to sort it: A→Z, then Z→A, then back to UNSORTED - so a
+    // click can always return the rows to the order you added them in. Without the
+    // third state a single stray click left a table stuck sorted, with no way back
+    // to its natural order but the Sort panel's Clear. (Robin, 2026-11-14: "rows
+    // must stay in the order I add them… it's still rearranging them".)
+    const id = sc.dataset.sortCol; const s = state.tables_view.sorts || [];
+    const only = (s.length === 1 && s[0].colId === id) ? s[0] : null;
+    if (!only) setSorts([{ colId: id, dir: 'asc' }]);
+    else if (only.dir === 'asc') setSorts([{ colId: id, dir: 'desc' }]);
+    else setSorts([]);
+    return;
+  }
   if (t.closest('[data-add-col]')) { state.tables_view.addingCol = true; renderTable(); return; }
   const dcol = t.closest('[data-del-col]'); if (dcol) { const dcId = dcol.dataset.delCol; uiConfirm('Delete this column?', { title: 'Delete column', okLabel: 'Delete', danger: true }).then((ok) => { if (ok) saveTableColumns(tcols().filter((c) => c.id !== dcId)).then(renderTable).catch((x) => toast(x.message)); }); return; }
   const drow = t.closest('[data-del-row]'); if (drow) { const id = drow.dataset.delRow; state.tables_rows = state.tables_rows.filter((r) => r.id !== id); renderTable(); api(`/api/blocks/${id}`, { method: 'DELETE' }).catch((x) => toast(x.message)); return; }
