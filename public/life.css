@@ -2422,6 +2422,9 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .alias-x { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:0; border:0; background:none; color:var(--ink-3); font-size:14px; line-height:1; cursor:pointer; }
 .alias-x:hover { color:var(--accent); background:color-mix(in srgb,var(--accent) 14%,transparent); }
 .alias-in { flex:1; min-width:180px; max-width:340px; margin:0; font-size:14px; }
+/* A readable placeholder (the browser default sat too dim on the dark panel).
+   (Robin, 2026-11-14.) */
+.alias-in::placeholder { color:var(--k-mute); opacity:1; }
 /* §28: the back arrow is plain text in gold, not a boxed button. */
 .crumb-back { flex:none; display:inline-flex; align-items:center; padding:0 4px 0 0; color:var(--k-gold); font-size:18px; border:0; background:none; cursor:pointer; transition:color .12s; }
 .crumb-back:hover { color:var(--k-goldt); background:none; }

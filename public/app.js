@@ -27396,7 +27396,7 @@ function noteAliasesControl(n, kind) {
   // Tucked behind a quiet ellipsis so it costs no space until wanted (Robin,
   // 2026-11-14: "it's wasting space"). Closed by default - no auto-open - and when
   // open the dots, chips and input sit on one row. A count shows terms are saved.
-  return `<details class="note-aliases"><summary class="na-sum" title="Also findable as - extra words to find this by (another language, an old name)">…${al.length ? `<span class="na-n">${al.length}</span>` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
+  return `<details class="note-aliases"><summary class="na-sum" title="Also findable as - extra words to find this by (another language, an old name)">…${al.length ? `<span class="na-n">${al.length}</span>` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term…" autocomplete="off"></div></details>`;
 }
 // Resolve an alias control's context ("kind:id") to the live block and the right
 // re-render. Absent/unknown context falls back to the open page, so legacy callers
