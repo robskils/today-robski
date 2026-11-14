@@ -28089,7 +28089,10 @@ function palSetQuery(q) {
 // Search-result ordering by kind, used ONLY to break ties within the same
 // relevance band (see titleRank). Rows sit mid-pack now, not dumped at the
 // bottom, so a strongly-matching table row mixes in with everything else. (Robin.)
-const SEARCH_KIND_RANK = { nav: -1, area: 0, goal: 1, contact: 2, note: 3, table: 4, row: 5, task: 6 };
+// Tables rank above Notes within a relevance band (Robin, 2026-11-14: searching
+// "Lisbon" should surface the Lisbon table before the Lisbon notes). Mirror the
+// worker's ORDER BY in searchBlocks so the 60-row cap keeps the same order.
+const SEARCH_KIND_RANK = { nav: -1, area: 0, goal: 1, contact: 2, table: 3, note: 4, row: 5, task: 6 };
 // Where typing can take you: the tools and settings pages. Shown ONLY when what you
 // type matches one (by name or a keyword), so they never flood the results or the
 // empty box - but "settings", "journal", "calendar"… still jump you there. Gated by

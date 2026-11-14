@@ -2796,7 +2796,7 @@ async function searchBlocks(request, env, url) {
   // (JSON), searched only for rows so internal flags on other kinds don't match.
   const TAIL = `AND NOT (kind = 'task' AND json_extract(props, '$.done') = 1)
         AND kind NOT IN ('contactgroup', 'finchannel', 'finvideo', 'txn', 'tracker', 'insight')
-      ORDER BY CASE kind WHEN 'area' THEN 0 WHEN 'goal' THEN 1 WHEN 'contact' THEN 2 WHEN 'note' THEN 3 WHEN 'table' THEN 4 WHEN 'task' THEN 5 WHEN 'row' THEN 6 ELSE 7 END, updated_at DESC
+      ORDER BY CASE kind WHEN 'area' THEN 0 WHEN 'goal' THEN 1 WHEN 'contact' THEN 2 WHEN 'table' THEN 3 WHEN 'note' THEN 4 WHEN 'task' THEN 5 WHEN 'row' THEN 6 ELSE 7 END, updated_at DESC
       LIMIT 60`;
   // Alt search terms a person (or AI) added live in props.aliases - matched on the
   // aliases array only, so a Portuguese-titled thing turns up in English and vice
