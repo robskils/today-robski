@@ -21,6 +21,7 @@ import { getPortfolio, addPosition, updatePosition, deletePosition, sellPosition
 import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from './advice.js';
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
 import { addTrackerItem, getTracker } from './tracker.js';
+import { mcpHandler } from './mcp.js';
 
 const TZ = 'Europe/Lisbon';   // the fallback zone when we don't know where the user is
 
@@ -5081,6 +5082,12 @@ export default {
       return new Response(null, { status: 301, headers: { Location: url.toString(), 'Strict-Transport-Security': HSTS } });
     }
     const path = url.pathname;
+
+    // Model Context Protocol endpoint: lets Claude (and any MCP client) capture
+    // into Kaya and read from it, over a static bearer token scoped to the owner.
+    // Handled before the auth gate (its own token, not the 7-day JWT) and inert
+    // until MCP_TOKEN is set. See worker/mcp.js. (Robin, 2026-11-14.)
+    if (path === '/mcp') return mcpHandler(request, env, url, { createTask, createBlock, handleDay, searchBlocks });
 
     // A publicly shared note: lifefold.co/n/<token>. Served by the Worker before
     // the assets fallback, with no auth - the unguessable token is the only key,
