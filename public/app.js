@@ -7097,8 +7097,13 @@ function practiceEmbedHtml(url) {
   if (ig) return `<div class="pe-embed-frame pe-embed-insta"><iframe src="https://www.instagram.com/${esc(ig)}/embed/" title="Instagram" scrolling="no" allowtransparency="true" loading="lazy"></iframe></div>`;
   return '';
 }
-// Live-preview the practice's embed as you paste a link into its video field.
-document.addEventListener('input', (e) => { if (e.target && e.target.id === 'pe-video') { const box = document.querySelector('[data-pe-embed]'); if (box) box.innerHTML = practiceEmbedHtml(e.target.value); } });
+// Live-preview the practice's embed as you paste a link into its video field -
+// the primary field and any of the extra "another video" rows below it.
+document.addEventListener('input', (e) => {
+  const el = e.target; if (!el) return;
+  if (el.id === 'pe-video') { const box = document.querySelector('[data-pe-embed]'); if (box) box.innerHTML = practiceEmbedHtml(el.value); return; }
+  if (el.matches && el.matches('[data-pe-exvid]')) { const row = el.closest('[data-pe-vrow]'); const box = row && row.querySelector('[data-pe-exembed]'); if (box) box.innerHTML = practiceEmbedHtml(el.value); }
+});
 // Tapping a practice opens its own page: a guide to doing it - an embedded video if
 // it has a YouTube link, your notes, the aim/streak, and anything you've linked.
 // (Robin, 2026-09-27.) Edit (✎) still opens the editor.
@@ -7260,7 +7265,7 @@ function practiceAddForm() {
 // Daily Practices page.
 function parsePracticeMeta(a) {
   let m = null; try { m = a && a.meta ? JSON.parse(a.meta) : null; } catch {}
-  return { notes: (m && Array.isArray(m.notes)) ? m.notes : [], links: (m && Array.isArray(m.links)) ? m.links : [], contacts: (m && Array.isArray(m.contacts)) ? m.contacts : [] };
+  return { notes: (m && Array.isArray(m.notes)) ? m.notes : [], links: (m && Array.isArray(m.links)) ? m.links : [], contacts: (m && Array.isArray(m.contacts)) ? m.contacts : [], videos: (m && Array.isArray(m.videos)) ? m.videos.filter((v) => typeof v === 'string') : [] };
 }
 function openPracticeEditor(id, presetArea) {
   const a = id ? (state.practices.activities || []).find((x) => String(x.id) === String(id)) : null;
@@ -7313,6 +7318,8 @@ function practiceFieldsHtml(which) {
           <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice.</div>
           <label class="pe-f"><span>▶ Video, reel or post</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"></label>
           <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
+          <div class="pe-videos" data-pe-videos>${peExtraVideosHtml()}</div>
+          <button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>
           <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
         </section>`;
   if (which === 'main') return main;
@@ -7332,7 +7339,7 @@ function practiceEditorHtml() {
 }
 // The practice's connected notes, contacts and links - the same attach options
 // the rest of Kaya has, held in the editor's state and saved with it.
-function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; return pe.meta; }
+function peMeta() { const pe = state.practiceEdit; pe.meta = pe.meta || {}; pe.meta.notes = pe.meta.notes || []; pe.meta.links = pe.meta.links || []; pe.meta.contacts = pe.meta.contacts || []; pe.meta.videos = pe.meta.videos || []; return pe.meta; }
 function loadPeNotePool() { if (state.peNotePool !== undefined) return; state.peNotePool = null; api('/api/blocks?kind=note').then((r) => { state.peNotePool = (r || []).filter((n) => n && n.id); if (document.querySelector('.pe-attach')) renderPeAttach(); }).catch(() => { state.peNotePool = []; }); }
 function peAttachHtml() {
   // Same "Linked & attached" look the note and task cards use: one list of what
@@ -7371,6 +7378,24 @@ function peAttachHtml() {
     <select class="lk-act" data-pe-add-contact><option value="">Link a contact</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>` });
 }
 function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
+// Extra videos beyond the primary one: a practice can carry a few (Robin, 2026-11-14:
+// "sometimes I want to add two"). The first lives in the activity's `video` column;
+// any more ride in meta.videos. Each embeds the same way and can be removed.
+function peExtraVideoRow(v, i) {
+  return `<div class="pe-vextra" data-pe-vrow="${i}">
+      <label class="pe-f"><span>▶ Another video</span><span class="pe-vin"><input class="sel" data-pe-exvid="${i}" value="${esc(v || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"><button type="button" class="pe-vx" data-pe-exvid-del="${i}" aria-label="Remove this video" title="Remove this video">×</button></span></label>
+      <div class="pe-embed" data-pe-exembed="${i}">${practiceEmbedHtml(v)}</div>
+    </div>`;
+}
+function peExtraVideosHtml() { if (!state.practiceEdit) return ''; return (peMeta().videos || []).map((v, i) => peExtraVideoRow(v, i)).join(''); }
+function renderPeVideos() { const box = document.querySelector('[data-pe-videos]'); if (box) box.innerHTML = peExtraVideosHtml(); }
+// Read the extra-video inputs back out of the DOM into state before any add/remove
+// re-render, so what you've just typed into the other rows is never lost.
+function syncPeVideosFromDom() {
+  if (!state.practiceEdit) return;
+  const inputs = [...document.querySelectorAll('[data-pe-exvid]')];
+  if (inputs.length) peMeta().videos = inputs.map((el) => el.value.trim());
+}
 async function peNewNote() {
   const pe = state.practiceEdit; if (!pe) return;
   const title = await uiPrompt('New note for this practice:', { placeholder: 'e.g. My routine' }); if (title == null) return;
@@ -7390,6 +7415,10 @@ async function savePractice() {
   const cur = pe.id ? (state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) : null;
   const title = (($('#pe-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
   const avoid = $('#pe-avoid') ? ($('#pe-avoid').checked ? 1 : 0) : 0;
+  // Pull the extra-video rows out of the DOM, drop the empties, and give a bare
+  // domain a scheme so the worker keeps it (it validates each like the primary).
+  syncPeVideosFromDom();
+  peMeta().videos = (peMeta().videos || []).map((v) => String(v || '').trim()).filter(Boolean).map((v) => /^https?:\/\//i.test(v) ? v : 'https://' + v);
   const body = {
     avoid,
     ...(avoid ? { avoidSince: (cur && cur.avoid_since) || todayISO() } : {}),
@@ -29214,6 +29243,8 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pe-new-note]')) { peNewNote(); return; }
   { const el = t.closest('[data-pe-add-link]'); if (el) { peAddLink(); return; } }
   { const el = t.closest('[data-pe-del-link]'); if (el) { peMeta().links.splice(Number(el.dataset.peDelLink), 1); renderPeAttach(); return; } }
+  if (t.closest('[data-pe-add-video]')) { syncPeVideosFromDom(); peMeta().videos.push(''); renderPeVideos(); const rows = document.querySelectorAll('[data-pe-exvid]'); const last = rows[rows.length - 1]; if (last) last.focus(); return; }
+  { const el = t.closest('[data-pe-exvid-del]'); if (el) { syncPeVideosFromDom(); peMeta().videos.splice(Number(el.dataset.peExvidDel), 1); renderPeVideos(); return; } }
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.prac-form'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }

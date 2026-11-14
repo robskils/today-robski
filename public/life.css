@@ -4877,6 +4877,17 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-embed-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .pe-embed-insta { max-width:400px; background:var(--card); }
 .pe-embed-insta iframe { width:100%; min-height:500px; border:0; }
+/* Extra "another video" rows in a practice's Guide: each is the same field + embed
+   as the primary, with a square remove button. The add button sits to the left,
+   as wide as its words (never full width). */
+.pe-videos { display:flex; flex-direction:column; gap:12px; }
+.pe-videos:empty { display:none; }
+.pe-vextra { display:flex; flex-direction:column; gap:6px; }
+.pe-vin { display:flex; align-items:center; gap:8px; }
+.pe-vin .sel { flex:1; min-width:0; }
+.pe-vx { flex:none; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border:1px solid var(--line); background:none; color:var(--ink-3); font-size:18px; line-height:1; cursor:pointer; border-radius:0; }
+.pe-vx:hover { color:var(--accent); border-color:var(--accent); }
+.pe-add-video { align-self:flex-start; }
 
 /* ── native Today (day canvas + practices + tasks + habits) ── */
 .t2-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
