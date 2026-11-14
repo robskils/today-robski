@@ -22172,7 +22172,7 @@ function renderContactPage() {
   const inLine = [spaces.length ? 'In ' + spaces.join(', ') : '', place].filter(Boolean).join(' · ');
   const editing = !!(state.contact_open && state.contact_open.editDetails);
   const detailsBody = () => editing
-    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div></div>`
+    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Done</button></div></div>`
     : `<div class="cc-facts">${contactDetailsView(c, p)}</div>`;
   const fold = (key, title, hint, bodyHtml, openDefault) => {
     const f = cvState().folds; if (!(key in f)) f[key] = openDefault;   // persist the default so the toggle flips the real state
@@ -22669,7 +22669,7 @@ function contactCardInner(c) {
   }
   const editing = !!(state.contact_open && state.contact_open.editDetails);
   const detailsBody = () => editing
-    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Save</button></div></div>`
+    ? `<div class="tf-meta">${contactEmailFields(p)}${contactPhoneFields(p)}${contactSocialFields(p)}<label class="tf-field"><span class="tf-label">Birthday${p.birthday ? ` <button type="button" class="tf-clear" data-clear-bday="${c.id}">clear</button>` : ''}</span>${dateFieldHtml('contactcard-bday', p.birthday || '')}</label>${contactAddressFields(p)}<div class="cc-details-foot"><button type="button" class="add-btn wide" data-cc-details-done>Done</button></div></div>`
     : `<div class="cc-facts">${contactDetailsView(c, p)}</div><button type="button" class="cv-edit" data-cc-edit-details>Edit details</button>`;
   return `
     <div class="cv-card-head">
@@ -30664,6 +30664,10 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('cc-adr-f') || e.target.classList.contains('cc-adr-label')) patchContact(cid, readCardAddresses(), true);
     if (e.target.id === 'contactcard-bday') patchContact(cid, { birthday: e.target.value || null }, true);
     if (e.target.id === 'contactcard-bdaylead') patchContact(cid, { bdayLead: e.target.value === '0' ? 0 : (Number(e.target.value) || 7) }, true);
+    // Social handles autosave on change too, like email/phone/address - so the
+    // details editor needs no Save button, just a Done that collapses it. (Robin,
+    // 2026-11-14: autosave the edit screens.)
+    if (e.target.id === 'contactcard-telegram' || e.target.id === 'contactcard-instagram' || e.target.id === 'contactcard-signal') patchContact(cid, readCardSocial(), true);
     if (e.target.matches('[data-xmas-ideas]')) patchContact(cid, { xmasIdeas: e.target.value.trim() || null }, true);
   }
   if (state.goal_open && state.view.type === 'goalcard') {
