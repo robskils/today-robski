@@ -33161,7 +33161,10 @@ async function openLinkPicker(prose, range) {
     const tblName = {}; (tables || []).forEach((t) => { tblName[t.id] = t.title || 'Table'; });
     const rowOpts = (rows || []).map((b) => ({ b, label: b.title || rowLabel(b) }))
       .filter((x) => x.label && x.label !== 'Row')
-      .map((x) => ({ id: `${x.b.parent_id}_${x.b.id}`, kind: 'row', icon: TBL_ICO, title: x.label + (tblName[x.b.parent_id] ? ` · ${tblName[x.b.parent_id]}` : '') }));
+      // Read as a breadcrumb path - "Art Training Links / Skies with Ron Ranson" -
+      // so a linked row says which table it opens into. This string is also the
+      // inserted link's text. (Robin, 2026-11-14.)
+      .map((x) => ({ id: `${x.b.parent_id}_${x.b.id}`, kind: 'row', icon: TBL_ICO, title: (tblName[x.b.parent_id] ? `${tblName[x.b.parent_id]} / ` : '') + x.label }));
     if (!state.linkpick) return;
     state.linkpick.opts = [...map(notes, 'note', ''), ...map(tables, 'table', TBL_ICO), ...rowOpts, ...map(areas, 'area', '◈')];
     state.linkpick.loaded = true;
