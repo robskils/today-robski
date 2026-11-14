@@ -16695,8 +16695,126 @@ function renderTracker() {
   const todayLabel = new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
-    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><button class="add-btn wide trk-newtop" data-prc-new>＋ New practice</button></div>
+    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><div class="t2-head-act">${(state.practices && (state.practices.activities || []).some((a) => a.tracked)) ? '<button class="ghost trkr-openbtn" data-trk-report title="A review of what you have kept up, and what has gone quiet">Take stock</button>' : ''}<button class="add-btn wide trk-newtop" data-prc-new>＋ New practice</button></div></div>
     ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
+}
+// ── "Take stock": a ledger-style review of the Tracker (Robin, 2026-11-14) ──
+// A report of what you have kept up and what has gone quiet, built entirely from
+// the practice marks already in hand - deterministic, instant, free, offline. No
+// AI: "what I've been doing, what's consistent, what's not" is a counting job.
+function trkLongestRun(desc) {
+  if (!desc || !desc.length) return 0;
+  const asc = [...desc].sort();
+  let best = 1, run = 1;
+  for (let i = 1; i < asc.length; i++) { if (daysBetweenStr(asc[i - 1], asc[i]) === 1) { run++; if (run > best) best = run; } else run = 1; }
+  return best;
+}
+function openTrackerReport() {
+  state.trkReport = state.trkReport || { win: 30 };
+  let host = document.getElementById('trk-report-host');
+  if (!host) { host = document.createElement('div'); host.id = 'trk-report-host'; document.body.appendChild(host); }
+  renderTrackerReport();
+  if (!window.__trkrEsc) { window.__trkrEsc = true; document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.trkReport) closeTrackerReport(); }); }
+  // Pull a fresh copy in case a tick landed on another device, then re-render.
+  loadPractices(true).then(() => { if (state.trkReport) renderTrackerReport(); }).catch(() => {});
+}
+function closeTrackerReport() { state.trkReport = null; const h = document.getElementById('trk-report-host'); if (h) h.remove(); }
+function renderTrackerReport() {
+  const host = document.getElementById('trk-report-host'); if (!host || !state.trkReport) return;
+  host.innerHTML = `<div class="trkr-bg" data-trkr-close></div><div class="trkr-sheet" role="dialog" aria-label="Take stock">${trackerReportHtml(trkReportData(state.trkReport.win))}</div>`;
+}
+function trkReportData(win) {
+  const P = state.practices || {};
+  const today = dayKey(new Date());
+  const t0 = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - (win - 1)); return dayKey(d); })();
+  const inWin = (day) => day >= t0 && day <= today;
+  const tracked = (P.activities || []).filter((a) => a.tracked);
+  const goods = tracked.filter((a) => !a.avoid);
+  const avoids = tracked.filter((a) => a.avoid);
+  const dowCount = [0, 0, 0, 0, 0, 0, 0];
+  const areaLive = new Map();
+  const rows = goods.map((a) => {
+    const desc = prcMarkedDays(a.id);
+    const winTicks = desc.filter(inWin).length;
+    desc.forEach((d) => { if (inWin(d)) dowCount[new Date(d + 'T00:00:00Z').getUTCDay()]++; });
+    const cad = parseCadence(a.cadence);
+    let expected = null, pct = null;
+    if (cad) { expected = cad.unit === 'd' ? win / cad.n : cad.n * (win / 7); pct = expected > 0 ? Math.min(100, Math.round((winTicks / expected) * 100)) : null; }
+    const cur = dailyStreak(desc, today);
+    const best = trkLongestRun(desc);
+    const last = desc[0] || null;
+    const daysSince = last ? daysBetweenStr(last, today) : null;
+    const status = cadenceStatus(desc, a.cadence).status;
+    const ar = practiceArea(a);
+    const key = ar ? ar.id : ('lane:' + (a.lane || 'other'));
+    const label = ar ? (ar.title || 'Untitled') : (((P.lanes || []).find((l) => l.key === a.lane) || {}).label || (a.lane || 'Other'));
+    if (!areaLive.has(key)) areaLive.set(key, { label, ticks: 0 });
+    areaLive.get(key).ticks += winTicks;
+    return { a, winTicks, expected, pct, cur, best, last, daysSince, status, cad, cadLabel: a.cadence ? cadenceLabel(a.cadence) : '' };
+  });
+  const keptSet = new Set();
+  goods.forEach((a) => prcMarkedDays(a.id).forEach((d) => { if (inWin(d)) keptSet.add(d); }));
+  const kept = keptSet.size;
+  const totalTicks = rows.reduce((s, r) => s + r.winTicks, 0);
+  const half = Math.max(1, Math.floor(win / 2));
+  const midISO = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - half); return dayKey(d); })();
+  let recent = 0, prev = 0;
+  rows.forEach((r) => prcMarkedDays(r.a.id).forEach((d) => { if (!inWin(d)) return; if (d > midISO) recent++; else prev++; }));
+  const momentum = recent > prev * 1.15 ? 'gaining' : recent < prev * 0.85 ? 'easing' : 'holding';
+  const steady = rows.filter((r) => r.winTicks > 0 && (r.status === 'ontrack' || r.cur >= 3 || (r.pct != null && r.pct >= 70)))
+    .sort((x, y) => ((y.pct != null ? y.pct : y.cur * 12) - (x.pct != null ? x.pct : x.cur * 12)) || (y.cur - x.cur));
+  const slipping = rows.filter((r) => !steady.includes(r) && r.winTicks > 0 && ((r.cad && (r.status === 'slipping' || r.status === 'due')) || (r.best >= 4 && r.cur === 0)))
+    .sort((x, y) => (y.daysSince || 0) - (x.daysSince || 0));
+  const mx = Math.max(0, ...dowCount);
+  const bestDow = mx > 0 ? dowCount.indexOf(mx) : -1;
+  const quietDow = mx > 0 ? dowCount.indexOf(Math.min(...dowCount)) : -1;
+  const areas = [...areaLive.values()].filter((x) => x.ticks > 0).sort((a, b) => b.ticks - a.ticks);
+  const quietAreas = [...areaLive.values()].filter((x) => x.ticks === 0);
+  const ledger = rows.filter((r) => r.cur >= 2).sort((a, b) => b.cur - a.cur).slice(0, 3);
+  const clean = avoids.map((a) => ({ a, days: avoidStreak(a) })).sort((x, y) => y.days - x.days);
+  return { win, kept, totalTicks, rows, steady, slipping, momentum,
+    dowCount, bestDow, quietDow, DOW: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], DOWFULL: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    areas, quietAreas, ledger, clean, nTracked: tracked.length };
+}
+function trackerReportHtml(d) {
+  const seg = [[7, '7 days'], [30, '30 days'], [90, '90 days']].map(([v, l]) => `<button class="trkr-seg${d.win === v ? ' on' : ''}" data-trkr-win="${v}">${l}</button>`).join('');
+  const ratio = d.win ? d.kept / d.win : 0;
+  const title = ratio >= 0.7 ? 'A steady stretch' : ratio >= 0.4 ? 'Finding your rhythm' : ratio > 0 ? 'A quieter stretch' : 'A fresh start';
+  const head = `<div class="trkr-head"><div><div class="trkr-eyebrow">Taking stock</div><h2 class="trkr-title">${title}</h2></div><button class="trkr-x" data-trkr-close aria-label="Close">×</button></div><div class="trkr-segrow">${seg}</div>`;
+  if (!d.nTracked || (d.totalTicks === 0 && !d.clean.length)) {
+    return head + `<div class="trkr-body"><div class="trkr-empty">Nothing to look back on just yet. Tick a practice or two on the Tracker and your first reckoning gathers here.</div></div>`;
+  }
+  const keptPractices = d.rows.filter((r) => r.winTicks > 0).length;
+  const heroSay = `You showed up on <b>${d.kept} of ${d.win} days</b>, kept <b>${keptPractices} practice${keptPractices === 1 ? '' : 's'}</b> moving${d.totalTicks ? `, <b>${d.totalTicks} tick${d.totalTicks === 1 ? '' : 's'}</b> in all` : ''}.`;
+  const momLine = d.momentum === 'gaining' ? 'Gaining - more this stretch than the one before.' : d.momentum === 'easing' ? 'Easing off - a touch quieter than the stretch before.' : 'Holding steady - much like the stretch before.';
+  const hero = `<div class="trkr-hero"><div class="trkr-hero-main"><p class="trkr-hero-say">${heroSay}</p><div class="trkr-mom"><span class="trkr-mom-dot trkr-mom-${d.momentum}"></span>${esc(momLine)}</div></div><div class="trkr-hero-fig"><span class="trkr-fig-n">${d.kept}</span><span class="trkr-fig-l">of ${d.win} days<br>you showed up</span></div></div>`;
+  const sec = (eye, inner) => `<section class="trkr-sec"><div class="trkr-eyebrow trkr-sec-eye">${eye}</div>${inner}</section>`;
+  const steadyRows = d.steady.map((r) => {
+    const bits = [];
+    if (r.cadLabel) bits.push(esc(r.cadLabel));
+    bits.push(r.pct != null ? `${r.winTicks} of ~${Math.round(r.expected)} kept` : `${r.winTicks} tick${r.winTicks === 1 ? '' : 's'}`);
+    const meter = r.pct != null ? `<div class="trkr-meter"><i style="width:${r.pct}%"></i></div>` : '';
+    const streakFig = `<div class="trkr-row-fig"><span class="trkr-row-n">${r.cur}</span><span class="trkr-row-u">day${r.cur === 1 ? '' : 's'} on the trot</span></div>`;
+    const pctFig = r.pct != null ? `<div class="trkr-row-fig"><span class="trkr-row-n">${r.pct}<small>%</small></span><span class="trkr-row-u">to your aim</span></div>` : '';
+    const fig = r.cur >= 2 ? streakFig : (pctFig || (r.cur === 1 ? streakFig : ''));
+    return `<div class="trkr-row"><div class="trkr-row-main"><span class="trkr-row-nm">${esc(r.a.title)}</span><span class="trkr-row-meta">${bits.join(' · ')}</span>${meter}</div>${fig}</div>`;
+  }).join('');
+  const slipRows = d.slipping.map((r) => {
+    const ago = r.daysSince == null ? 'not yet kept' : r.daysSince === 0 ? 'kept today' : r.daysSince === 1 ? 'last kept yesterday' : `last kept ${r.daysSince} days ago`;
+    const aim = r.cadLabel ? ` · aims for ${esc(r.cadLabel.toLowerCase())}` : '';
+    return `<div class="trkr-row trkr-row-soft"><span class="trkr-sdot"></span><div class="trkr-row-main"><span class="trkr-row-nm">${esc(r.a.title)}</span><span class="trkr-row-meta">${ago}${aim}</span></div></div>`;
+  }).join('');
+  const mxd = Math.max(1, ...d.dowCount);
+  const bars = d.dowCount.map((n, i) => `<span class="trkr-bar${i === d.bestDow ? ' best' : ''}"><i style="height:${Math.round(3 + (n / mxd) * 97)}%"></i><em>${d.DOW[i]}</em></span>`).join('');
+  const daySay = d.bestDow >= 0 ? `<b>${d.DOWFULL[d.bestDow]}s</b> are your strongest${d.quietDow >= 0 && d.quietDow !== d.bestDow ? `, ${d.DOWFULL[d.quietDow]}s the quietest` : ''}.` : '';
+  const alive = d.areas.slice(0, 4).map((x) => esc(x.label));
+  const quiet = d.quietAreas.slice(0, 3).map((x) => esc(x.label));
+  const areaSay = alive.length ? `Alive in <b>${alive.join(', ')}</b>${quiet.length ? `; quiet in <b>${quiet.join(', ')}</b>` : ''}.` : '';
+  const rhythm = `${daySay ? `<p class="trkr-say">${daySay}</p>` : ''}<div class="trkr-bars">${bars}</div>${areaSay ? `<p class="trkr-say trkr-say-areas">${areaSay}</p>` : ''}`;
+  const ledgerHtml = `<div class="trkr-led">${d.ledger.map((r) => `<div class="trkr-led-cell"><span class="trkr-led-n">${r.cur}</span><span class="trkr-led-l">${esc(r.a.title)}<br><span class="trkr-led-sub">days on the trot</span></span></div>`).join('')}</div>`;
+  const cleanRows = d.clean.map((c) => `<div class="trkr-row trkr-row-soft"><div class="trkr-row-main"><span class="trkr-row-nm">${esc(c.a.title)}</span><span class="trkr-row-meta">${c.days} day${c.days === 1 ? '' : 's'} clear</span></div></div>`).join('');
+  const body = `<div class="trkr-body">${hero}${d.steady.length ? sec("What's holding", steadyRows) : ''}${d.slipping.length ? sec("What's gone quiet", slipRows) : ''}${(daySay || areaSay) ? sec('Your rhythm', rhythm) : ''}${d.ledger.length ? sec('On the trot', ledgerHtml) : ''}${d.clean.length ? sec('Staying clear', cleanRows) : ''}<div class="trkr-foot">Gathered from your own ticks, just now. Yours alone.</div></div>`;
+  return head + body;
 }
 function renderToday() {
   const T = state.today; const data = T.data;
@@ -29478,6 +29596,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tracker]')) { openTracker().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-trk-report]')) { openTrackerReport(); return; }
+  { const wb = t.closest('[data-trkr-win]'); if (wb) { if (state.trkReport) { state.trkReport.win = Number(wb.dataset.trkrWin); renderTrackerReport(); } return; } }
+  if (t.closest('[data-trkr-close]')) { closeTrackerReport(); return; }
   if (t.closest('[data-open-today]')) { openToday(); return; }
   if (t.closest('[data-open-mail]')) {
     const m = state.mail;

@@ -4756,6 +4756,71 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-mini .pe-durwrap { font-size:13px; gap:6px; }
 .pe-foot { display:flex; align-items:center; gap:10px; padding:6px 20px 20px; }
 .pe-foot .add-btn.wide { margin-left:auto; }
+
+/* ── "Take stock": the Tracker's ledger-style review (Robin, 2026-11-14) ── */
+.t2-head-act { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.trkr-openbtn { font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:14px; }
+.trkr-bg { position:fixed; inset:0; z-index:260; background:rgba(0,0,0,.55); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); animation:kfade .25s ease; }
+.trkr-sheet { position:fixed; z-index:261; left:50%; top:50%; transform:translate(-50%,-50%); width:min(760px,94vw); max-height:92vh; overflow-y:auto; background:var(--glass-face); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur); border:1px solid var(--k-line); color:var(--k-ink); animation:trkrIn .3s cubic-bezier(.2,.7,.2,1); }
+@keyframes trkrIn { from { opacity:0; transform:translate(-50%,-46%); } to { opacity:1; transform:translate(-50%,-50%); } }
+.trkr-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:28px 32px 0; }
+.trkr-eyebrow { font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); }
+.trkr-title { font-family:var(--k-serif); font-weight:500; font-size:clamp(30px,4.6vw,44px); line-height:1.04; color:var(--k-ink); margin:7px 0 0; text-wrap:balance; }
+.trkr-x { flex:none; width:36px; height:36px; border:0; background:none; color:var(--k-mute); font-size:24px; line-height:1; cursor:pointer; }
+.trkr-x:hover { color:var(--k-goldt); }
+.trkr-segrow { display:flex; gap:8px; padding:18px 32px 0; }
+.trkr-seg { font-family:'Jost',system-ui,sans-serif; font-size:13px; font-weight:500; color:var(--k-mute); background:none; border:1px solid var(--k-line); padding:6px 15px; cursor:pointer; }
+.trkr-seg:hover { border-color:var(--k-gold); color:var(--k-ink); }
+.trkr-seg.on { color:var(--k-deep); background:var(--k-gold); border-color:var(--k-gold); }
+.trkr-body { padding:22px 32px 30px; display:flex; flex-direction:column; gap:28px; }
+.trkr-empty { font-family:var(--k-serif); font-weight:300; font-style:italic; font-size:22px; color:var(--k-mute); line-height:1.5; padding:8px 0 16px; }
+.trkr-hero { display:flex; align-items:center; justify-content:space-between; gap:26px; border-bottom:1px solid var(--k-line); padding-bottom:26px; flex-wrap:wrap; }
+.trkr-hero-main { flex:1; min-width:240px; }
+.trkr-hero-say { font-family:'Jost',system-ui,sans-serif; font-size:17px; line-height:1.62; color:var(--k-ink); margin:0; }
+.trkr-hero-say b, .trkr-say b { font-weight:600; color:var(--k-goldt); }
+.trkr-mom { display:flex; align-items:center; gap:9px; margin-top:14px; font-family:'Jost',system-ui,sans-serif; font-size:13.5px; color:var(--k-mute); }
+.trkr-mom-dot { width:9px; height:9px; flex:none; background:var(--k-gold); }
+.trkr-mom-easing { opacity:.5; }
+.trkr-hero-fig { flex:none; text-align:right; }
+.trkr-fig-n { display:block; font-family:var(--k-serif); font-weight:500; font-size:72px; line-height:.84; color:var(--k-goldt); }
+.trkr-fig-l { display:block; font-family:'Jost',system-ui,sans-serif; font-size:12.5px; color:var(--k-mute); margin-top:7px; line-height:1.3; }
+.trkr-sec { display:flex; flex-direction:column; gap:13px; }
+.trkr-sec-eye { margin-bottom:1px; }
+.trkr-row { display:flex; align-items:center; gap:16px; }
+.trkr-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.trkr-row-nm { font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:16.5px; color:var(--k-ink); }
+.trkr-row-meta { font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--k-mute); }
+.trkr-meter { height:4px; background:var(--k-line); margin-top:4px; max-width:340px; }
+.trkr-meter i { display:block; height:100%; background:var(--k-gold); }
+.trkr-row-fig { flex:none; text-align:right; min-width:70px; }
+.trkr-row-n { font-family:var(--k-serif); font-weight:500; font-size:34px; line-height:.9; color:var(--k-goldt); }
+.trkr-row-n small { font-size:16px; }
+.trkr-row-u { display:block; font-family:'Jost',system-ui,sans-serif; font-size:11px; color:var(--k-mute); margin-top:3px; }
+.trkr-row-soft { opacity:.92; }
+.trkr-row-soft .trkr-row-nm { color:var(--k-mute); font-weight:500; }
+.trkr-sdot { width:8px; height:8px; flex:none; background:var(--k-gold); opacity:.55; }
+.trkr-led { display:flex; gap:30px; flex-wrap:wrap; }
+.trkr-led-cell { flex:1; min-width:118px; }
+.trkr-led-n { font-family:var(--k-serif); font-weight:500; font-size:60px; line-height:.84; color:var(--k-goldt); }
+.trkr-led-l { display:block; font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:14.5px; color:var(--k-ink); margin-top:9px; line-height:1.35; }
+.trkr-led-sub { font-weight:400; font-size:12px; color:var(--k-mute); }
+.trkr-say { font-family:'Jost',system-ui,sans-serif; font-size:15px; line-height:1.55; color:var(--k-mute); margin:0; }
+.trkr-say-areas { margin-top:4px; }
+.trkr-bars { display:flex; align-items:flex-end; gap:10px; height:88px; margin:4px 0 2px; }
+.trkr-bar { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:8px; }
+.trkr-bar i { display:block; width:100%; max-width:34px; background:var(--k-gold); opacity:.28; }
+.trkr-bar.best i { opacity:1; }
+.trkr-bar em { font-family:'Jost',system-ui,sans-serif; font-style:normal; font-size:11px; color:var(--k-mute); }
+.trkr-foot { font-family:'Jost',system-ui,sans-serif; font-size:12px; color:var(--k-mute); opacity:.75; border-top:1px solid var(--k-line); padding-top:16px; }
+@media (max-width:560px) {
+  .trkr-head { padding:22px 20px 0; }
+  .trkr-segrow { padding:16px 20px 0; }
+  .trkr-body { padding:18px 20px 26px; gap:24px; }
+  .trkr-title { font-size:30px; }
+  .trkr-fig-n { font-size:58px; }
+  .trkr-hero-fig { text-align:left; }
+  .trkr-led-n { font-size:50px; }
+}
 .pe-del { color:var(--ink-3); } .pe-del:hover { color:var(--accent); }
 /* A practice opens straight into its editable content on its own screen (not a
    popover): the same fields, laid out down the page. (Robin, 2026-11-12.) */
