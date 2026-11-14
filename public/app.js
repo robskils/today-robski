@@ -1373,7 +1373,7 @@ function labelForView(v) {
     case 'note': return (state.note && state.note.current.title) || 'Note'; case 'notes': return t('nav.notes');
     case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'tarot': return 'Tarot'; case 'spirit': return t('wb.spirit'); case 'compass': return t('wb.compass');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
-    case 'readwatch': return 'Library';
+    case 'readwatch': return libLabel();
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
     case 'card': return 'Kaya card';
@@ -5272,7 +5272,7 @@ function navItems(v) {
     calendar: modOn('calendar') ? `<button class="nav-item ${v.type === 'calendar' ? 'on' : ''}" data-open-calendar><span class="nav-ic">▦</span><span class="nav-lbl">${t('nav.calendar')}</span><span class="nav-quick" data-quick-add="event" title="New event">+</span></button>` : '',
     discover: modOn('discover') ? `<button class="nav-item ${v.type === 'discover' ? 'on' : ''}" data-open-discover><span class="nav-ic">✦</span><span class="nav-lbl">${t('nav.discover')}</span></button>` : '',
     notes: modOn('notes') ? `<button class="nav-item ${['notes', 'note', 'table', 'tables'].includes(v.type) ? 'on' : ''}" data-open-notes><span class="nav-ic">▤</span><span class="nav-lbl">${t('nav.notes')}</span><span class="nav-quick" data-quick-add="note" title="New note">+</span></button>` : '',
-    saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${t('nav.saved')}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
+    saved: modOn('saved') ? `<button class="nav-item ${v.type === 'readwatch' ? 'on' : ''}" data-open-readwatch><span class="nav-ic">▷</span><span class="nav-lbl">${libLabel()}</span><span class="nav-quick" data-quick-add="save" title="Save a link">+</span></button>` : '',
     // Capture is a verb, so its Well-being tools appear as actions you DO, not a
     // room you enter: a whole row that writes a journal entry or logs a dream in
     // one tap (both land in the Well-being hub, where the rest - meditation, I
@@ -5474,7 +5474,7 @@ const KFOLDS = [
   { id: 'spaces', label: 'Spaces', spaces: true },
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
-      ['Notes', 'data-open-notes', 'notes'], ['Goals', 'data-open-goals', 'goals'], ['Library', 'data-open-readwatch', 'saved'],
+      ['Notes', 'data-open-notes', 'notes'], ['Goals', 'data-open-goals', 'goals'], [libLabel(), 'data-open-readwatch', 'saved'],
       ['Local Events', 'data-open-discover', 'discover'],
       ['Money', 'data-open-money', 'financial'], ['Spending', 'data-open-financial data-fin-tab="spending"', 'financial'], ['Investments', 'data-open-financial data-fin-tab="portfolio"', 'financial'], ['Advice', 'data-open-financial data-fin-tab="advice"', 'financial'] ] },
   { id: 'people', label: 'People', items: [
@@ -12657,6 +12657,14 @@ const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', '
 // alongside the readable/watchable types so a useful site can just be bookmarked.
 const RW_MEDIA = { link: { ic: '🔗', label: 'Website' }, article: { ic: '📰', label: 'Article' }, video: { ic: '▶', label: 'Video' }, book: { ic: '📖', label: 'Book' }, film: { ic: '🎬', label: 'Film' } };
 const RW_MEDIA_ORDER = ['link', 'article', 'video', 'book', 'film'];
+// The tool is "Read & Watch" on the desktop (room to breathe) and the shorter
+// "Library" on the phone. PT/IT keep their one word. (Robin, 2026-11-14.)
+function libLabel() {
+  if (locale() === 'pt') return 'Biblioteca';
+  if (locale() === 'it') return 'Libreria';
+  const mob = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
+  return mob ? 'Library' : 'Read & Watch';
+}
 // Status is per-type: a book has a middle "Reading" stage, the rest are a simple
 // want-to / done. Value 'reading' counts as still-active (not done).
 const RW_STATUS = {
@@ -12786,9 +12794,9 @@ function renderReadwatch() {
   const upCard = (b) => { const p = b.props || {}; const prog = p.progress != null ? Math.max(0, Math.min(100, Number(p.progress))) : null; return `<div class="rw-up-card" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--up')}<div class="rw-up-b"><div class="rw-up-kind">${esc(RW_MEDIA[rwMediaKey(p)].label)}</div><div class="rw-up-title">${esc(p.title || p.url || 'Untitled')}</div>${byLine(b) ? `<div class="rw-up-by">${esc(byLine(b))}</div>` : ''}<div class="rw-up-foot">${prog != null ? `<div class="rw-up-bar"><i style="width:${prog}%"></i></div>` : ''}<div class="rw-up-where">${esc(p.where || (prog != null ? `${prog}%` : 'Not started'))}</div></div></div></div>`; };
   const mood = `${todo.length} waiting · ${done.length} finished`;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Library' }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: libLabel() }])}
     <div class="rw-head2">
-      <h1 class="rw-title2">Library</h1>
+      <h1 class="rw-title2">${libLabel()}</h1>
       <div class="rw-mood">${items.length ? esc(mood) : 'Nothing saved yet'}<button class="rw-quicksave" data-rw-setup>· one-tap saving</button></div>
     </div>
     <form class="rw-savebar ${rw.saving ? 'saving' : ''}" id="rw-add-form">
@@ -28308,7 +28316,7 @@ function palNavTargets() {
   if (modOn('journal')) add('Daily review', () => Promise.resolve(newDailyReview()), 'close the day daily log bullet journal end of day review');
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
   if (modOn('financial')) { add('Spending', () => openFinancial('spending'), 'money budget expenses outgoings transactions'); add('Investments', () => openFinancial('portfolio'), 'money portfolio stocks shares holdings net worth'); add('Advice', () => openFinancial('advice'), 'money financial advice guidance'); }
-  if (modOn('saved')) add('Library', () => openReadwatch(), 'bookmarks reading list watchlist saved');
+  if (modOn('saved')) add(libLabel(), () => openReadwatch(), 'library read watch read & watch bookmarks reading list watchlist saved books films series');
   if (modOn('discover')) add('Local Events', () => openDiscover(), 'events near me what is on discover');
   if (modOn('timer')) add('Toolbox', () => openToolbox(), 'focus timer pomodoro practices');
   add('Your card', () => openCard(), 'profile tagline photo');
