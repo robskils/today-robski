@@ -2149,7 +2149,13 @@ body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 .tbl-head h1 { font-size:30px; }
 .tbl-head input.rename { font-family:var(--k-serif); font-size:clamp(30px,5vw,44px); font-weight:300; line-height:1.08; letter-spacing:-.015em; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; flex:1; }
 
-.tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); }
+/* A height-capped inner scroller so the header row (below) can freeze at the top
+   while a long/wide table scrolls inside its own box - sideways scroll stays in the
+   table instead of shoving the whole page across. Short tables shrink to fit (the
+   cap is a max, not a fixed height). --tbl-toph is the sticky toolbar's measured
+   height; --tabstrip-h is the pinned top bar (+ tab strip on desktop). (Robin,
+   2026-11-14.) */
+.tbl-scroll { overflow:auto; overscroll-behavior:contain; max-height:var(--tbl-maxh, 70vh); border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); }
 table.recs { border-collapse:collapse; width:100%; font-size:16px; }
 /* Fixed layout so the colgroup widths are honoured (resizable columns). Size the
    table to the sum of its columns (max-content) rather than 100%, so resizing one
@@ -2163,6 +2169,11 @@ table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right
 table.recs th:last-child, table.recs td:last-child { border-right:0; }
 table.recs tr:last-child td { border-bottom:0; }
 table.recs thead th { background:var(--paper-2); font-weight:600; white-space:nowrap; }
+/* Freeze the column-name row at the top of the table's scroll box while you scroll
+   the rows. border-collapse can drop a sticky cell's own border mid-scroll, so the
+   single separator rule is painted with an inset hairline (one line, never two).
+   (Robin, 2026-11-14.) */
+.tbl-scroll table.recs thead th { position:sticky; top:0; z-index:11; border-bottom:0; box-shadow:inset 0 -1px 0 var(--line); }
 .thh { display:flex; align-items:center; gap:4px; padding:10px 12px; }
 /* The column name IS the sort control: click to sort, click again to reverse. */
 .th-name { flex:1; min-width:0; display:flex; align-items:center; gap:5px; text-align:left; font:inherit; font-weight:600; color:var(--ink); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }

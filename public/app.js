@@ -27666,9 +27666,13 @@ function cellInput(r, col, forCard) {
     }
     return `<span class="cellwrap${href ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" placeholder="https://…" inputmode="url" autocomplete="off">${href ? `<a class="cell-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
   }
-  // A text cell holding a URL gets a small open-link button (still editable).
-  const url = /^\s*https?:\/\/\S+\s*$/i.test(String(v ?? '')) ? String(v).trim() : null;
-  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" autocomplete="off">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open link" tabindex="-1">↗</a>` : ''}</span>`;
+  // A text cell holding a URL gets a small open-link button (still editable). A bare
+  // domain counts as a URL too (udemy.com), opened with https:// prepended - it's
+  // still a URL. For the whole cell to be a link, use the URL column type instead.
+  // (Robin, 2026-11-14.)
+  const raw0 = String(v ?? '').trim();
+  const url = /^(https?:\/\/\S+|([\w-]+\.)+[a-z]{2,}(\/\S*)?)$/i.test(raw0) ? (/^[a-z][\w+.-]*:\/\//i.test(raw0) ? raw0 : 'https://' + raw0) : null;
+  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" autocomplete="off">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(url)}" tabindex="-1">↗</a>` : ''}</span>`;
 }
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.
@@ -27891,6 +27895,31 @@ function renderTable() {
       <tbody id="tbl-body">${tableBodyHtml()}</tbody></table></div>
     ${vw.colMenu ? colMenuHtml(vw.colMenu) : ''}`;
   if (vw.addingCol) { const n = $('#cn-name'); if (n) n.focus(); }
+  queueTableSize();
+}
+// Cap the table's scroll box so it ends at the foot of the screen: the frozen
+// header then pins at the box top and every row stays reachable by scrolling the
+// box, with sideways scroll kept inside it. Measured in px - the table's resting
+// top (its viewport top plus the page scroll, so it is scroll-independent) against
+// the live viewport height - because the gap above the table includes margins that
+// offsetHeight misses and the pane need not be exactly 100vh tall. (Robin,
+// 2026-11-14.)
+function sizeTableScroll() {
+  try {
+    const root = document.documentElement;
+    const sc = document.querySelector('#pane .tbl-scroll');
+    if (!sc) return;
+    const restTop = sc.getBoundingClientRect().top + (window.scrollY || 0);
+    root.style.setProperty('--tbl-maxh', Math.max(220, Math.round(root.clientHeight - restTop - 16)) + 'px');
+  } catch {}
+}
+let _tblSizeBound = false;
+function queueTableSize() {
+  requestAnimationFrame(sizeTableScroll);
+  if (_tblSizeBound) return;
+  _tblSizeBound = true;
+  window.addEventListener('resize', () => { if (state.view && state.view.type === 'table') requestAnimationFrame(sizeTableScroll); });
+  window.addEventListener('orientationchange', () => setTimeout(() => { if (state.view && state.view.type === 'table') sizeTableScroll(); }, 120));
 }
 
 // ── mutations ────────────────────────────────────────
