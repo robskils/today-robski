@@ -2019,7 +2019,10 @@ body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 /* Custom Monday-first date picker (the native one follows the browser locale). */
 .date-field { max-width:none; text-align:left; cursor:pointer; white-space:nowrap; }
 .date-field:hover { border-color:var(--accent); }
-.dp-bg { position:fixed; inset:0; z-index:70; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:20px; }
+/* The date/time picker floats over whatever opened it - including the New-task and
+   editor dialogs (z 120-261), so it must sit above them or it opens hidden behind
+   the box. (Robin, 2026-11-14: "the Surface on box appears behind the new task box".) */
+.dp-bg { position:fixed; inset:0; z-index:270; background:rgba(20,16,24,.34); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:20px; }
 .dp-cal { width:min(346px,94vw); background:var(--card); border:1px solid var(--line-2); border-radius:0; box-shadow:none; padding:16px; }
 .dp-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .dp-title { display:flex; align-items:center; gap:6px; font-size:17px; font-weight:600; color:var(--ink); }
