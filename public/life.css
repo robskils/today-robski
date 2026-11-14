@@ -2229,6 +2229,13 @@ table.recs td a.cell-urllink:hover { text-decoration:underline; }
 .row-add button { color:var(--ink-3); font-size:19px; padding:8px 10px; }
 
 table.recs td .cell { width:100%; border:0; background:transparent; font:inherit; color:var(--ink); padding:11px 12px; }
+/* Text cells are textareas so long text wraps onto a second line and the row grows
+   to fit, instead of scrolling out of sight. field-sizing grows it natively in
+   Chromium; a JS fallback (growCell) handles the rest. (Robin, 2026-11-14.) */
+textarea.cell { display:block; box-sizing:border-box; resize:none; overflow:hidden; line-height:1.4; white-space:pre-wrap; overflow-wrap:break-word; vertical-align:top; field-sizing:content; }
+/* With wrapping cells a row can be several lines tall; align every cell to the top
+   so the first line of each reads across. (Robin, 2026-11-14.) */
+table.recs tbody td { vertical-align:top; }
 /* The browser's autofill paints a filled cell (e.g. an email you typed) solid
    white and leaves it that way until the input is recreated - so it lingered until
    the table was reopened. Force the cell's own colours. (Robin, 2026-11-13.) */
@@ -2298,8 +2305,8 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .crow:last-child { border-bottom:0; }
 .clabel { display:flex; flex-direction:column; gap:3px; color:var(--ink-2); font-size:16.5px; }
 .clabel em { font-style:normal; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); }
-.cval input, .cval select { width:100%; padding:10px 13px; font-size:16.5px; background:var(--card); border:1px solid var(--line-2); border-radius:0; color:var(--ink); }
-.cval input:focus-visible, .cval select:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
+.cval input, .cval select, .cval textarea { width:100%; padding:10px 13px; font-size:16.5px; background:var(--card); border:1px solid var(--line-2); border-radius:0; color:var(--ink); font-family:inherit; }
+.cval input:focus-visible, .cval select:focus-visible, .cval textarea:focus-visible { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent); }
 .cval input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
 @media (max-width:620px){ .crow { grid-template-columns:1fr; gap:6px; } }
 

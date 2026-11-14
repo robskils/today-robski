@@ -27856,8 +27856,15 @@ function cellInput(r, col, forCard) {
   // (Robin, 2026-11-14.)
   const raw0 = String(v ?? '').trim();
   const url = /^(https?:\/\/\S+|([\w-]+\.)+[a-z]{2,}(\/\S*)?)$/i.test(raw0) ? (/^[a-z][\w+.-]*:\/\//i.test(raw0) ? raw0 : 'https://' + raw0) : null;
-  return `<span class="cellwrap${url ? ' has-link' : ''}"><input type="text" class="cell" data-cell="${k}" value="${esc(v ?? '')}" autocomplete="off">${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(url)}" tabindex="-1">↗</a>` : ''}</span>`;
+  // A textarea, not an input, so long text wraps onto a second line and the row
+  // grows to fit instead of hiding the overflow. (Robin, 2026-11-14.)
+  return `<span class="cellwrap${url ? ' has-link' : ''}"><textarea class="cell" data-cell="${k}" rows="1" autocomplete="off">${esc(v ?? '')}</textarea>${url ? `<a class="cell-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(url)}" tabindex="-1">↗</a>` : ''}</span>`;
 }
+// Table text cells wrap and grow to fit. Chromium does it natively with CSS
+// field-sizing; everywhere else, grow the textarea to its scroll height. (2026-11-14.)
+const CELL_FIELD_SIZING = (() => { try { return !!(window.CSS && CSS.supports && CSS.supports('field-sizing', 'content')); } catch { return false; } })();
+function growCell(el) { if (CELL_FIELD_SIZING || !el || el.tagName !== 'TEXTAREA') return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function sizeCellTextareas(root) { if (CELL_FIELD_SIZING) return; try { (root || document).querySelectorAll('textarea.cell').forEach(growCell); } catch {} }
 // View-only sort by a column (like the Tasks table). Type-aware; empty cells
 // always sink to the bottom whichever way you sort.
 // Multi-level sort: compare by the first level, break ties with the next, and
@@ -27977,7 +27984,7 @@ function tableBodyHtml() {
   // The add control lives in the toolbar (always visible); no duplicate at the foot.
   return rows + empty;
 }
-function renderTableBody() { const el = $('#tbl-body'); if (el) el.innerHTML = tableBodyHtml(); }
+function renderTableBody() { const el = $('#tbl-body'); if (el) { el.innerHTML = tableBodyHtml(); sizeCellTextareas(el); } }
 function filterPanelHtml() {
   const c = tcols(), filters = state.tables_view.filters || [];
   const rows = filters.map((f, i) => {
@@ -28094,6 +28101,7 @@ function sizeTableHead() {
     const sc = document.querySelector('#pane .tbl-scroll');
     const tbl = sc && sc.querySelector('table.recs');
     if (sc && tbl) sc.classList.toggle('tbl-fits', tbl.scrollWidth <= sc.clientWidth + 1);
+    sizeCellTextareas(sc || document);
   } catch {}
 }
 let _tblSizeBound = false;
@@ -28975,6 +28983,7 @@ document.addEventListener('drop', (e) => {
 });
 document.addEventListener('input', (e) => {
   if (e.target.classList && (e.target.classList.contains('note-title') || e.target.classList.contains('area-vision-edit'))) autoGrow(e.target);
+  if (e.target.matches && e.target.matches('textarea.cell')) growCell(e.target);   // table text cell: grow as it wraps
   if (e.target.id === 'pal-input') { state.pal.q = e.target.value; buildPalette(); }
   if (e.target.id === 'friend-email') { clearTimeout(window.__frST); window.__frST = setTimeout(peopleSearch, 250); }
   if (e.target.id === 'move-input') { state.move.q = e.target.value; renderMoveList(); }
