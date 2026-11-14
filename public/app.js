@@ -2830,16 +2830,20 @@ function renderAdmin() {
     </div>`;
 
   const BR_SW = [['#a8844a', 'Kaya Gold'], ['#c2a05f', 'Gold · on dark'], ['#e7c169', 'Gold · favicon'], ['#c6a35b', 'Gold · app icon'], ['#0d0d0f', 'Ink black'], ['#ece2cf', 'Paper']];
-  const brAsset = (href, name, note, dark) => `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${href}" target="_blank" rel="noopener" download><span class="adm-brand-prev">${dark ? `<img src="${href}" alt="">` : `<img src="${href}" alt="">`}</span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`;
+  // Bump BRAND_V whenever the icon art changes: the hrefs below carry no deploy
+  // stamp, so without it an installed PWA keeps serving a stale cached icon (the
+  // old "K." mark lingered this way after the 香 seal shipped). (Robin, 2026-11-14.)
+  const BRAND_V = '20261114';
+  const brAsset = (href, name, note, dark) => { const u = href + (href.includes('?') ? '&' : '?') + 'v=' + BRAND_V; return `<a class="adm-brand-dl${dark ? ' onblack' : ''}" href="${u}" target="_blank" rel="noopener" download><span class="adm-brand-prev"><img src="${u}" alt=""></span><span class="adm-brand-meta"><span class="adm-brand-nm">${name}</span><span class="adm-brand-note">${note}</span></span><span class="adm-brand-go">↓</span></a>`; };
   const brandPane = `<div class="set-card">
       <div class="adm-brand-hero">
-        <span class="adm-brand-lockup"><span class="adm-brand-word">Kaya</span></span>
-        <span class="adm-brand-sheet" style="opacity:.75;font-size:14px">Wordmark only, the full stop in gold. No logo mark.</span>
+        <span class="adm-brand-lockup"><span class="adm-brand-seal" aria-hidden="true"></span><span class="adm-brand-word">Kaya</span></span>
+        <span class="adm-brand-sheet" style="opacity:.75;font-size:14px">The wordmark in Cormorant Garamond, beside the gold 香 seal. No full stop.</span>
       </div>
       <div class="home-sec-h" style="margin-top:6px">App icon &amp; favicon</div>
       <div class="adm-brand-grid">
-        ${brAsset('/brand/kaya-appicon-1024.png', 'App icon', '1024px PNG · the capital K', true)}
-        ${brAsset('/favicon.svg', 'Favicon', 'SVG · vector, capital K', true)}
+        ${brAsset('/brand/kaya-appicon-1024.png', 'App icon', '1024px PNG · the 香 seal', true)}
+        ${brAsset('/favicon.svg', 'Favicon', 'SVG · vector · the 香 seal', true)}
         ${brAsset('/icon-512.png', 'Icon 512', 'PNG', true)}
         ${brAsset('/icon-192.png', 'Icon 192', 'PNG', true)}
         ${brAsset('/apple-touch-icon.png', 'Apple touch', '180px PNG', true)}

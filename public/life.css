@@ -3637,6 +3637,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-brand-lockup { display:inline-flex; align-items:center; gap:.42em; font-size:38px; color:var(--ink); }
 .adm-brand-lockup .brand-mark { font-size:1.15em; color:var(--accent); }
 .adm-brand-word { font-family:var(--k-serif); font-weight:500; letter-spacing:0; text-transform:none; white-space:nowrap; }
+.adm-brand-seal { width:1em; height:1em; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
 .adm-brand-sheet { font-size:14px; }
 .adm-brand-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:11px; }
 .adm-brand-dl { display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid var(--line); border-radius:0; background:var(--card); color:var(--ink); text-decoration:none; transition:border-color .12s, transform .1s, box-shadow .12s; }
