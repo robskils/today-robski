@@ -13812,6 +13812,13 @@ body.mailsheet-open { overflow:hidden; }
 .rw-view { cursor:pointer; color:var(--k-mute); }
 .rw-view.on { color:var(--k-ink); }
 .rw-view:hover { color:var(--k-goldt); }
+/* On the phone the Shelf / List toggle is bigger and boxed, so it's an easy tap
+   and clearly a control. The chosen one is gold. (Robin, 2026-11-14.) */
+@media (max-width:820px) {
+  .rw-fb-right { align-items:center; gap:10px; }
+  .rw-view { font-size:15px; padding:7px 15px; border:1px solid var(--k-line); }
+  .rw-view.on { color:var(--k-goldt); border-color:var(--k-goldt); }
+}
 .rw-sec2 { border-bottom:1px solid var(--k-line); }
 .rw-sec2-h { display:flex; align-items:baseline; gap:14px; padding:26px 0 16px; cursor:pointer; }
 .rw-sec2-t { font-family:var(--k-serif); font-weight:500; font-size:28px; line-height:1; color:var(--k-ink); white-space:nowrap; }
