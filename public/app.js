@@ -27393,7 +27393,10 @@ function noteAliasesControl(n, kind) {
   const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases : [];
   const ctx = `${kind}:${n.id}`;
   const chips = al.map((a, i) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-balias-del="${i}" data-alias-ctx="${ctx}" title="Remove">×</button></span>`).join('');
-  return `<details class="note-aliases" ${al.length ? 'open' : ''}><summary class="na-sum">🔎 Also findable as${al.length ? ` · ${al.length}` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
+  // Tucked behind a quiet ellipsis so it costs no space until wanted (Robin,
+  // 2026-11-14: "it's wasting space"). Closed by default - no auto-open - and when
+  // open the dots, chips and input sit on one row. A count shows terms are saved.
+  return `<details class="note-aliases"><summary class="na-sum" title="Also findable as - extra words to find this by (another language, an old name)">…${al.length ? `<span class="na-n">${al.length}</span>` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term (e.g. in another language)…" autocomplete="off"></div></details>`;
 }
 // Resolve an alias control's context ("kind:id") to the live block and the right
 // re-render. Absent/unknown context falls back to the open page, so legacy callers
@@ -27879,13 +27882,13 @@ function renderTable() {
       <button class="star ${t.props && t.props.fav ? 'on' : ''}" data-fav="${t.id}" title="Favourite">${t.props && t.props.fav ? '★' : '☆'}</button>
       ${t.sharedBy ? '' : '<button class="ghost" data-del-cur>Delete</button>'}</div>
     ${sharedBanner(t)}
-    ${noteAliasesControl(t, 'table')}
     <div class="tbl-stickytop">
     <div class="tbl-toolbar">
       <input class="list-search sel tbl-search" data-tbl-q placeholder="Search this table…" value="${esc(vw.query || '')}" autocomplete="off">
       <button class="tbl-filter-btn ${vw.sorting ? 'on' : ''} ${nSort ? 'active' : ''}" data-tbl-sort title="Sort rows">${SORTIC} Sort${nSort ? ` · ${nSort}` : ''}</button>
       <button class="tbl-filter-btn ${vw.filtering ? 'on' : ''} ${nFilt ? 'active' : ''}" data-tbl-filter title="Filter rows">${FUNNEL} Filter${nFilt ? ` · ${nFilt}` : ''}</button>
       <button class="add-btn wide tbl-add-row" data-add-row title="Add a new row">+ New</button>
+      ${noteAliasesControl(t, 'table')}
     </div>
     <div id="tbl-sort-panel">${vw.sorting ? sortPanelHtml() : ''}</div>
     <div id="tbl-filter-panel">${vw.filtering ? filterPanelHtml() : ''}</div>
@@ -27897,29 +27900,30 @@ function renderTable() {
   if (vw.addingCol) { const n = $('#cn-name'); if (n) n.focus(); }
   queueTableSize();
 }
-// Cap the table's scroll box so it ends at the foot of the screen: the frozen
-// header then pins at the box top and every row stays reachable by scrolling the
-// box, with sideways scroll kept inside it. Measured in px - the table's resting
-// top (its viewport top plus the page scroll, so it is scroll-independent) against
-// the live viewport height - because the gap above the table includes margins that
-// offsetHeight misses and the pane need not be exactly 100vh tall. (Robin,
+// Two jobs, re-run on every render, on resize, and when the aliases ellipsis opens:
+// (1) measure the sticky toolbar's height into --tbl-toph, so the pinned header sits
+// just below it; (2) decide whether THIS table fits the pane - if it does, add
+// .tbl-fits so it flows with the page and pins its header; if it is wider, leave it
+// to scroll sideways in its own box so the page and its bars never slide. (Robin,
 // 2026-11-14.)
-function sizeTableScroll() {
+function sizeTableHead() {
   try {
-    const root = document.documentElement;
+    const st = document.querySelector('#pane .tbl-stickytop');
+    document.documentElement.style.setProperty('--tbl-toph', (st ? Math.round(st.getBoundingClientRect().height) : 0) + 'px');
     const sc = document.querySelector('#pane .tbl-scroll');
-    if (!sc) return;
-    const restTop = sc.getBoundingClientRect().top + (window.scrollY || 0);
-    root.style.setProperty('--tbl-maxh', Math.max(220, Math.round(root.clientHeight - restTop - 16)) + 'px');
+    const tbl = sc && sc.querySelector('table.recs');
+    if (sc && tbl) sc.classList.toggle('tbl-fits', tbl.scrollWidth <= sc.clientWidth + 1);
   } catch {}
 }
 let _tblSizeBound = false;
 function queueTableSize() {
-  requestAnimationFrame(sizeTableScroll);
+  requestAnimationFrame(sizeTableHead);
   if (_tblSizeBound) return;
   _tblSizeBound = true;
-  window.addEventListener('resize', () => { if (state.view && state.view.type === 'table') requestAnimationFrame(sizeTableScroll); });
-  window.addEventListener('orientationchange', () => setTimeout(() => { if (state.view && state.view.type === 'table') sizeTableScroll(); }, 120));
+  window.addEventListener('resize', () => { if (state.view && state.view.type === 'table') requestAnimationFrame(sizeTableHead); });
+  // Opening the toolbar's "also findable as" ellipsis grows the toolbar, so the
+  // pinned header's offset has to be re-measured. toggle doesn't bubble - capture.
+  document.addEventListener('toggle', (e) => { if (e.target && e.target.classList && e.target.classList.contains('note-aliases') && state.view && state.view.type === 'table') requestAnimationFrame(sizeTableHead); }, true);
 }
 
 // ── mutations ────────────────────────────────────────

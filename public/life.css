@@ -2149,13 +2149,15 @@ body[data-view="reviewcard"] .rv-freewrite-h { color:var(--accent); }
 .tbl-head h1 { font-size:30px; }
 .tbl-head input.rename { font-family:var(--k-serif); font-size:clamp(30px,5vw,44px); font-weight:300; line-height:1.08; letter-spacing:-.015em; background:transparent; border:0; border-bottom:1px solid var(--line-2); color:var(--ink); padding:2px 0; min-width:200px; flex:1; }
 
-/* A height-capped inner scroller so the header row (below) can freeze at the top
-   while a long/wide table scrolls inside its own box - sideways scroll stays in the
-   table instead of shoving the whole page across. Short tables shrink to fit (the
-   cap is a max, not a fixed height). --tbl-toph is the sticky toolbar's measured
-   height; --tabstrip-h is the pinned top bar (+ tab strip on desktop). (Robin,
-   2026-11-14.) */
-.tbl-scroll { overflow:auto; overscroll-behavior:contain; max-height:var(--tbl-maxh, 70vh); border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); }
+/* The table is NEVER boxed in its own vertical scroll window (Robin, 2026-11-14: "I
+   don't like the whole table in a window"). Two cases, chosen per table by JS:
+   - Fits the pane (.tbl-fits): it flows down the page, the page is the scroller, and
+     the header row pins to the page as you scroll (like the Tasks list).
+   - Wider than the pane (default): it keeps its own contained sideways scroll, so the
+     page and its top bars never slide; the header isn't pinned, it just flows.
+   Default is the contained case, so even before JS runs nothing shoves the page. */
+.tbl-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); }
+.tbl-scroll.tbl-fits { overflow:visible; }
 table.recs { border-collapse:collapse; width:100%; font-size:16px; }
 /* Fixed layout so the colgroup widths are honoured (resizable columns). Size the
    table to the sum of its columns (max-content) rather than 100%, so resizing one
@@ -2169,11 +2171,13 @@ table.recs th, table.recs td { border-bottom:1px solid var(--line); border-right
 table.recs th:last-child, table.recs td:last-child { border-right:0; }
 table.recs tr:last-child td { border-bottom:0; }
 table.recs thead th { background:var(--paper-2); font-weight:600; white-space:nowrap; }
-/* Freeze the column-name row at the top of the table's scroll box while you scroll
-   the rows. border-collapse can drop a sticky cell's own border mid-scroll, so the
-   single separator rule is painted with an inset hairline (one line, never two).
-   (Robin, 2026-11-14.) */
-.tbl-scroll table.recs thead th { position:sticky; top:0; z-index:11; border-bottom:0; box-shadow:inset 0 -1px 0 var(--line); }
+/* border-collapse can drop a sticky cell's own border mid-scroll, so the header's
+   single separator is painted with an inset hairline (one line, never two). */
+.tbl-scroll table.recs thead th { border-bottom:0; box-shadow:inset 0 -1px 0 var(--line); }
+/* Only a table that fits the pane pins its header, just under the pinned search/sort
+   toolbar (--tbl-toph is that toolbar's measured height; --tabstrip-h the top bar +
+   tab strip). (Robin, 2026-11-14.) */
+.tbl-scroll.tbl-fits table.recs thead th { position:sticky; top:calc(var(--tabstrip-h, 0px) + var(--tbl-toph, 72px)); z-index:11; }
 .thh { display:flex; align-items:center; gap:4px; padding:10px 12px; }
 /* The column name IS the sort control: click to sort, click again to reverse. */
 .th-name { flex:1; min-width:0; display:flex; align-items:center; gap:5px; text-align:left; font:inherit; font-weight:600; color:var(--ink); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
@@ -2356,11 +2360,24 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-areas-row { margin:2px 0 14px; }
 .note-areas-row:empty { display:none; }
 /* "Also findable as": alt search terms on a page, as removable chips. */
-.note-aliases { margin:0 0 14px; }
-.note-aliases .na-sum { display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink-3); list-style:none; }
+/* "Also findable as" (extra search terms) is tucked behind a quiet ellipsis so it
+   takes almost no room; clicking it opens the chips + input on the same row. (Robin,
+   2026-11-14: "it's wasting space ... put it behind an ellipsis".) */
+.note-aliases { margin:0; }
+.note-aliases[open] { display:inline-flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.note-aliases .na-sum { display:inline-flex; align-items:center; justify-content:center; gap:5px; cursor:pointer; height:34px; min-width:42px; padding:0 12px; font-size:18px; line-height:1; letter-spacing:.14em; color:var(--ink-3); border:1px solid var(--line); border-radius:0; list-style:none; }
+.note-aliases .na-sum:hover { color:var(--ink); border-color:color-mix(in srgb,var(--accent) 38%,var(--line)); }
 .note-aliases .na-sum::-webkit-details-marker { display:none; }
-.note-aliases[open] .na-sum { margin-bottom:9px; }
+.note-aliases .na-sum::marker { content:''; }
+.note-aliases .na-n { font-size:12px; font-weight:600; letter-spacing:0; color:var(--accent); }
 .na-body { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+/* In a table's toolbar the ellipsis matches the 50px controls and sits at the end
+   of the search row; opening it drops to its own full-width line below. */
+.tbl-toolbar { flex-wrap:wrap; }
+.tbl-toolbar .note-aliases { margin-left:auto; }
+.tbl-toolbar .note-aliases .na-sum { height:50px; }
+.tbl-toolbar .note-aliases[open] { width:100%; margin-left:0; }
+.tbl-toolbar .note-aliases[open] .na-body { flex:1; min-width:0; }
 /* Note editor: "Also findable as" sits on the right of the Space row. (Robin, 2026-10-19.) */
 .note-areas-row-split { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 .note-areas-row-split .note-areas-aliases { margin-left:auto; }
