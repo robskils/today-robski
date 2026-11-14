@@ -53,7 +53,7 @@ const LANGS = [['en', 'English'], ['pt', 'Português'], ['it', 'Italiano']];
 const T_EN = {
   'nav.home': 'Home', 'nav.tasks': 'Tasks', 'nav.mail': 'Mail', 'nav.contacts': 'Contacts', 'nav.calendar': 'Calendar', 'nav.discover': 'Local Events', 'nav.today': 'Today', 'nav.notes': 'Notes', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Reviews', 'nav.goals': 'Goals', 'nav.financial': 'Money', 'nav.saved': 'Library', 'nav.timer': 'Toolbox', 'nav.guide': 'Guide',
   'nav.grp.daily': 'Today', 'nav.planner': 'Day Planner', 'nav.grp.meaningful': 'Goals and Reviews', 'nav.grp.people': 'People', 'nav.grp.tools': 'Reference', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Tools', 'nav.grp.money': 'Money', 'nav.money.spending': 'Spending', 'nav.money.portfolio': 'Portfolio', 'nav.money.tracker': 'Tracker', 'nav.money.advice': 'Advice',
-  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Tracker', 'nav.practices': 'Tracker', 'nav.connect': 'Connect',
+  'nav.journal': 'Journal', 'nav.dream': 'Dream', 'nav.tracker': 'Routines', 'nav.practices': 'Routines', 'nav.connect': 'Connect',
   'nav.settings': 'Settings', 'nav.admin': 'Admin', 'nav.signout': 'Sign out', 'nav.search': 'Search or jump…', 'nav.tools': 'Tools', 'nav.home_title': 'Home',
   'set.title': 'Settings',
   'set.tab.account': 'Account', 'set.tab.card': 'Card', 'set.tab.ai': 'Plan', 'set.tab.appearance': 'Appearance', 'set.tab.mobile': 'Mobile', 'set.tab.notifications': 'Notifications', 'set.tab.sections': 'Tools', 'set.tab.invites': 'Invites', 'set.tab.manage': 'Manage', 'set.tab.feeds': 'Calendar', 'set.tab.security': 'Security', 'set.tab.import': 'Import',
@@ -63,10 +63,10 @@ const T_EN = {
   'home.newnote': '+ Note', 'home.newtask': '+ Task', 'home.newevent': '+ Event',
   'home.sec.priority': 'Priority Tasks', 'home.sec.focus': 'Starred Goals', 'home.sec.recent': 'Recently viewed', 'home.sec.keepintouch': 'Keep in touch', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'Starred', 'home.sec.people': 'People online', 'home.sec.notepad': 'Notepad', 'home.sec.toolbox': 'Toolbox',
   'wb.journal': 'Journal', 'wb.dailyreview': 'Daily review', 'wb.coaching': 'Coaching', 'wb.compass': 'Compass', 'wb.dreams': 'Dreams', 'wb.meditation': 'Meditation', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horoscope', 'wb.insights': 'Insights',
-  'today.tracker': 'Tracker',
+  'today.tracker': 'Routines',
   'gate.sub': "New here or coming back? Enter your email and we'll send you a sign-in code.", 'gate.tag': 'For a life well lived', 'gate.email.ph': 'you@example.com', 'gate.code.ph': '6-digit code', 'gate.emailme': 'Email me a code', 'gate.smslink': 'Prefer a text? <b>Send the code to my phone</b>', 'gate.enteremail': 'Enter your email first.', 'gate.sendfail': 'Could not send a code. Try again.', 'gate.needinvite': 'Kaya is invite-only right now. <a href="/#invite">Request an invite →</a>', 'gate.texted': 'Code texted to your phone.', 'gate.codesent': 'Code sent to {email}.', 'gate.smsunavail': "No phone saved on your account, so we've emailed your code to {email}. Add a phone in Settings to get it by text next time.", 'gate.signin': 'Sign in', 'gate.badcode': 'That code did not work.', 'gate.totp': 'One more step: enter the 6-digit code from your authenticator app (or a recovery code).', 'gate.verify': 'Verify', 'gate.code.head.email': 'Enter the code we emailed you', 'gate.code.head.sms': 'Enter the code we texted you', 'gate.code.hint.email': 'A 6-digit code is on its way to {email}. It expires in 30 minutes.', 'gate.code.hint.sms': 'A 6-digit code is on its way to your phone. It expires in 30 minutes.', 'gate.totp.badge': '✓ Sign-in code accepted', 'gate.totp.head': '🔐 Now your authenticator code', 'gate.totp.hint': "This next code is <b>different</b> - it's not the one we just sent you. Open your authenticator app (Google Authenticator, Authy, 1Password…) and type the 6-digit code it shows, or one of your recovery codes.",
   'signup.welcome': "Welcome - let's set up your Kaya.", 'signup.accepted': 'What shall we call you?', 'signup.name': 'Your name', 'signup.username': 'Choose a username', 'signup.livesat': 'Your Kaya will live at', 'signup.create': 'Create my Kaya', 'signup.invitecode': 'Invite code', 'signup.invitecode.ph': 'From your invitation', 'signup.invitecode.note': 'If someone gave you a code, it goes here.', 'signup.byinvite': 'Kaya is by invitation for now.', 'signup.noinvite': 'No invitation yet? Ask for one.', 'signup.createfail': 'Could not create your account.', 'signup.signedinas': 'Signed in as {email}', 'signup.signout': 'sign out',
-  'goals.title': 'Goals', 'saved.title': 'Library', 'title.tables': 'Tables', 'title.practices': 'Tracker', 'title.mailaccounts': 'Accounts',
+  'goals.title': 'Goals', 'saved.title': 'Library', 'title.tables': 'Tables', 'title.practices': 'Routines', 'title.mailaccounts': 'Accounts',
   'btn.newarea': '+ New Space', 'btn.newtable': '+ New table', 'btn.compose': '+ Compose', 'btn.mailaccounts': 'Accounts', 'btn.addmailbox': '+ Add mailbox', 'btn.add': '+ Add', 'btn.newgoal': '+ New goal', 'btn.newreview': '+ New review',
   'field.area': 'Space', 'field.priority': 'Priority', 'field.duration': 'Duration', 'field.notes': 'Notes', 'field.repeat': 'Repeat',
   'task.search': 'Search tasks…', 'task.add': '+ Add task', 'task.whatneeds': 'What needs doing?', 'task.surfaceon': 'Surface on', 'task.notesph': 'Any details, context or links…', 'task.addtask': 'Add task', 'task.done': 'Done', 'task.showcompleted': 'Show completed', 'task.empty.filters': 'No tasks match these filters.', 'task.empty.open': 'No open tasks here.', 'task.empty.here': 'No tasks here yet.', 'task.nextdue': 'Next one is due', 'task.onschedule': 'On its schedule', 'task.aftertick': 'After I tick it off',
@@ -75,7 +75,7 @@ const T_EN = {
 const T_PT = {
   'nav.home': 'Início', 'nav.tasks': 'Tarefas', 'nav.mail': 'Correio', 'nav.contacts': 'Contactos', 'nav.calendar': 'Calendário', 'nav.discover': 'Eventos locais', 'nav.today': 'Hoje', 'nav.notes': 'Notas', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Balanços', 'nav.goals': 'Objetivos', 'nav.financial': 'Dinheiro', 'nav.saved': 'Biblioteca', 'nav.timer': 'Ferramentas', 'nav.guide': 'Guia',
   'nav.grp.daily': 'Hoje', 'nav.planner': 'Planeador do dia', 'nav.grp.meaningful': 'Objetivos e Balanços', 'nav.grp.people': 'Pessoas', 'nav.grp.tools': 'Referência', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Ferramentas', 'nav.grp.money': 'Dinheiro', 'nav.money.spending': 'Gastos', 'nav.money.portfolio': 'Portefólio', 'nav.money.tracker': 'Monitor', 'nav.money.advice': 'Conselhos',
-  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Registo', 'nav.practices': 'Registo', 'nav.connect': 'Laços',
+  'nav.journal': 'Diário', 'nav.dream': 'Sonho', 'nav.tracker': 'Rotinas', 'nav.practices': 'Rotinas', 'nav.connect': 'Laços',
   'nav.settings': 'Definições', 'nav.admin': 'Administração', 'nav.signout': 'Terminar sessão', 'nav.search': 'Pesquisar ou saltar…', 'nav.tools': 'Ferramentas', 'nav.home_title': 'Início',
   'set.title': 'Definições',
   'set.tab.account': 'Conta', 'set.tab.card': 'Cartão', 'set.tab.ai': 'Plano', 'set.tab.appearance': 'Aparência', 'set.tab.mobile': 'Telemóvel', 'set.tab.notifications': 'Notificações', 'set.tab.sections': 'Ferramentas', 'set.tab.invites': 'Convites', 'set.tab.manage': 'Gerir', 'set.tab.feeds': 'Calendário', 'set.tab.security': 'Segurança', 'set.tab.import': 'Importar',
@@ -85,10 +85,10 @@ const T_PT = {
   'home.newnote': '+ Nota', 'home.newtask': '+ Tarefa', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Tarefas prioritárias', 'home.sec.focus': 'Objetivos destacados', 'home.sec.recent': 'Vistos recentemente', 'home.sec.keepintouch': 'Manter o contacto', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'Destacados', 'home.sec.people': 'Pessoas online', 'home.sec.notepad': 'Bloco de notas', 'home.sec.toolbox': 'Ferramentas',
   'wb.journal': 'Diário', 'wb.dailyreview': 'Balanço do dia', 'wb.coaching': 'Coaching', 'wb.compass': 'Bússola', 'wb.dreams': 'Sonhos', 'wb.meditation': 'Meditação', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Horóscopo', 'wb.insights': 'Perceções',
-  'today.tracker': 'Registo',
+  'today.tracker': 'Rotinas',
   'gate.sub': 'Novo por aqui ou a regressar? Escreve o teu email e enviamos-te um código de acesso.', 'gate.tag': 'Para uma vida bem vivida', 'gate.email.ph': 'tu@exemplo.com', 'gate.code.ph': 'Código de 6 dígitos', 'gate.emailme': 'Enviar-me um código', 'gate.smslink': 'Preferes SMS? <b>Envia o código para o meu telemóvel</b>', 'gate.enteremail': 'Escreve primeiro o teu email.', 'gate.sendfail': 'Não foi possível enviar o código. Tenta novamente.', 'gate.needinvite': 'O Kaya é só por convite para já. <a href="/#invite">Pedir um convite →</a>', 'gate.texted': 'Código enviado por SMS para o teu telemóvel.', 'gate.codesent': 'Código enviado para {email}.', 'gate.smsunavail': 'Não tens telemóvel guardado na conta, por isso enviámos o código para {email}. Adiciona um telemóvel nas Definições para o receberes por SMS da próxima vez.', 'gate.signin': 'Entrar', 'gate.badcode': 'Esse código não funcionou.', 'gate.totp': 'Mais um passo: introduz o código de 6 dígitos da tua aplicação de autenticação (ou um código de recuperação).', 'gate.verify': 'Verificar', 'gate.code.head.email': 'Introduz o código que te enviámos por email', 'gate.code.head.sms': 'Introduz o código que te enviámos por SMS', 'gate.code.hint.email': 'Um código de 6 dígitos está a caminho de {email}. Expira em 10 minutos.', 'gate.code.hint.sms': 'Um código de 6 dígitos está a caminho do teu telemóvel. Expira em 10 minutos.', 'gate.totp.badge': '✓ Código de acesso aceite', 'gate.totp.head': '🔐 Agora o código da aplicação de autenticação', 'gate.totp.hint': 'Este próximo código é <b>diferente</b> - não é o que acabámos de enviar. Abre a tua aplicação de autenticação (Google Authenticator, Authy, 1Password…) e escreve o código de 6 dígitos que ela mostra, ou um dos teus códigos de recuperação.',
   'signup.welcome': 'Bem-vindo - vamos preparar o teu Kaya.', 'signup.accepted': 'Como devemos chamar-te?', 'signup.name': 'O teu nome', 'signup.username': 'Escolhe um nome de utilizador', 'signup.livesat': 'O teu Kaya ficará em', 'signup.create': 'Criar o meu Kaya', 'signup.invitecode': 'Código de convite', 'signup.invitecode.ph': 'Do teu convite', 'signup.invitecode.note': 'Se alguém te deu um código, coloca-o aqui.', 'signup.byinvite': 'Por agora, o Kaya é só por convite.', 'signup.noinvite': 'Ainda sem convite? Pede um.', 'signup.createfail': 'Não foi possível criar a tua conta.', 'signup.signedinas': 'Sessão iniciada como {email}', 'signup.signout': 'terminar sessão',
-  'goals.title': 'Objetivos', 'saved.title': 'Biblioteca', 'title.tables': 'Tabelas', 'title.practices': 'Registo', 'title.mailaccounts': 'Contas',
+  'goals.title': 'Objetivos', 'saved.title': 'Biblioteca', 'title.tables': 'Tabelas', 'title.practices': 'Rotinas', 'title.mailaccounts': 'Contas',
   'btn.newarea': '+ Novo Space', 'btn.newtable': '+ Nova tabela', 'btn.compose': '+ Escrever', 'btn.mailaccounts': 'Contas', 'btn.addmailbox': '+ Adicionar caixa de correio', 'btn.add': '+ Adicionar', 'btn.newgoal': '+ Novo objetivo', 'btn.newreview': '+ Novo balanço',
   'field.area': 'Space', 'field.priority': 'Prioridade', 'field.duration': 'Duração', 'field.notes': 'Notas', 'field.repeat': 'Repetir',
   'task.search': 'Pesquisar tarefas…', 'task.add': '+ Adicionar tarefa', 'task.whatneeds': 'O que há para fazer?', 'task.surfaceon': 'Aparecer em', 'task.notesph': 'Detalhes, contexto ou ligações…', 'task.addtask': 'Adicionar tarefa', 'task.done': 'Concluído', 'task.showcompleted': 'Mostrar concluídas', 'task.empty.filters': 'Nenhuma tarefa corresponde a estes filtros.', 'task.empty.open': 'Sem tarefas em aberto aqui.', 'task.empty.here': 'Ainda não há tarefas aqui.', 'task.nextdue': 'A próxima é devida', 'task.onschedule': 'Na data prevista', 'task.aftertick': 'Depois de a marcar',
@@ -97,7 +97,7 @@ const T_PT = {
 const T_IT = {
   'nav.home': 'Home', 'nav.tasks': 'Attività', 'nav.mail': 'Posta', 'nav.contacts': 'Contatti', 'nav.calendar': 'Calendario', 'nav.discover': 'Eventi locali', 'nav.today': 'Oggi', 'nav.notes': 'Note', 'nav.areas': 'Spaces', 'nav.reflect': 'Insight', 'nav.reviews': 'Bilanci', 'nav.goals': 'Obiettivi', 'nav.financial': 'Denaro', 'nav.saved': 'Libreria', 'nav.timer': 'Strumenti', 'nav.guide': 'Guida',
   'nav.grp.daily': 'Oggi', 'nav.planner': 'Agenda del giorno', 'nav.grp.meaningful': 'Obiettivi e Bilanci', 'nav.grp.people': 'Persone', 'nav.grp.tools': 'Riferimento', 'nav.grp.wellbeing': 'Insight', 'nav.grp.main': 'Strumenti', 'nav.grp.money': 'Denaro', 'nav.money.spending': 'Spese', 'nav.money.portfolio': 'Portafoglio', 'nav.money.tracker': 'Monitoraggio', 'nav.money.advice': 'Consigli',
-  'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Registro', 'nav.practices': 'Registro', 'nav.connect': 'Legami',
+  'nav.journal': 'Diario', 'nav.dream': 'Sogno', 'nav.tracker': 'Routine', 'nav.practices': 'Routine', 'nav.connect': 'Legami',
   'nav.settings': 'Impostazioni', 'nav.admin': 'Amministrazione', 'nav.signout': 'Esci', 'nav.search': 'Cerca o salta…', 'nav.tools': 'Strumenti', 'nav.home_title': 'Home',
   'set.title': 'Impostazioni',
   'set.tab.account': 'Account', 'set.tab.card': 'Scheda', 'set.tab.ai': 'Piano', 'set.tab.appearance': 'Aspetto', 'set.tab.mobile': 'Telefono', 'set.tab.notifications': 'Notifiche', 'set.tab.sections': 'Strumenti', 'set.tab.invites': 'Inviti', 'set.tab.manage': 'Gestisci', 'set.tab.feeds': 'Calendario', 'set.tab.security': 'Sicurezza', 'set.tab.import': 'Importa',
@@ -107,10 +107,10 @@ const T_IT = {
   'home.newnote': '+ Nota', 'home.newtask': '+ Attività', 'home.newevent': '+ Evento',
   'home.sec.priority': 'Attività prioritarie', 'home.sec.focus': 'Obiettivi in evidenza', 'home.sec.recent': 'Visti di recente', 'home.sec.keepintouch': 'Tieniti in contatto', 'home.sec.favareas': 'Spaces', 'home.sec.favs': 'In evidenza', 'home.sec.people': 'Persone online', 'home.sec.notepad': 'Blocco note', 'home.sec.toolbox': 'Strumenti',
   'wb.journal': 'Diario', 'wb.dailyreview': 'Bilancio del giorno', 'wb.coaching': 'Coaching', 'wb.compass': 'Bussola', 'wb.dreams': 'Sogni', 'wb.meditation': 'Meditazione', 'wb.spirit': 'Spirit Cards', 'wb.iching': 'I Ching', 'wb.horoscope': 'Oroscopo', 'wb.insights': 'Intuizioni',
-  'today.tracker': 'Registro',
+  'today.tracker': 'Routine',
   'gate.sub': 'Nuovo qui o di ritorno? Inserisci la tua email e ti invieremo un codice di accesso.', 'gate.tag': 'Per una vita vissuta bene', 'gate.email.ph': 'tu@esempio.com', 'gate.code.ph': 'Codice di 6 cifre', 'gate.emailme': 'Inviami un codice', 'gate.smslink': 'Preferisci un SMS? <b>Invia il codice al mio telefono</b>', 'gate.enteremail': 'Inserisci prima la tua email.', 'gate.sendfail': 'Impossibile inviare il codice. Riprova.', 'gate.needinvite': 'Kaya è solo su invito per ora. <a href="/#invite">Richiedi un invito →</a>', 'gate.texted': 'Codice inviato via SMS al tuo telefono.', 'gate.codesent': 'Codice inviato a {email}.', 'gate.smsunavail': 'Nessun telefono salvato sul tuo account, quindi abbiamo inviato il codice a {email}. Aggiungi un telefono nelle Impostazioni per riceverlo via SMS la prossima volta.', 'gate.signin': 'Accedi', 'gate.badcode': 'Quel codice non ha funzionato.', 'gate.totp': 'Un altro passo: inserisci il codice di 6 cifre della tua app di autenticazione (o un codice di recupero).', 'gate.verify': 'Verifica', 'gate.code.head.email': 'Inserisci il codice che ti abbiamo inviato via email', 'gate.code.head.sms': 'Inserisci il codice che ti abbiamo inviato via SMS', 'gate.code.hint.email': 'Un codice di 6 cifre è in arrivo a {email}. Scade tra 10 minuti.', 'gate.code.hint.sms': 'Un codice di 6 cifre è in arrivo sul tuo telefono. Scade tra 10 minuti.', 'gate.totp.badge': '✓ Codice di accesso accettato', 'gate.totp.head': "🔐 Ora il codice dell'app di autenticazione", 'gate.totp.hint': "Questo codice è <b>diverso</b> - non è quello che ti abbiamo appena inviato. Apri la tua app di autenticazione (Google Authenticator, Authy, 1Password…) e inserisci il codice di 6 cifre che mostra, o uno dei tuoi codici di recupero.",
   'signup.welcome': 'Benvenuto - prepariamo il tuo Kaya.', 'signup.accepted': 'Come dobbiamo chiamarti?', 'signup.name': 'Il tuo nome', 'signup.username': 'Scegli un nome utente', 'signup.livesat': 'Il tuo Kaya vivrà su', 'signup.create': 'Crea il mio Kaya', 'signup.invitecode': 'Codice di invito', 'signup.invitecode.ph': 'Dal tuo invito', 'signup.invitecode.note': 'Se qualcuno ti ha dato un codice, inseriscilo qui.', 'signup.byinvite': 'Per ora Kaya è solo su invito.', 'signup.noinvite': 'Non hai ancora un invito? Chiedine uno.', 'signup.createfail': 'Impossibile creare il tuo account.', 'signup.signedinas': 'Accesso come {email}', 'signup.signout': 'esci',
-  'goals.title': 'Obiettivi', 'saved.title': 'Libreria', 'title.tables': 'Tabelle', 'title.practices': 'Registro', 'title.mailaccounts': 'Account',
+  'goals.title': 'Obiettivi', 'saved.title': 'Libreria', 'title.tables': 'Tabelle', 'title.practices': 'Routine', 'title.mailaccounts': 'Account',
   'btn.newarea': '+ Nuovo Space', 'btn.newtable': '+ Nuova tabella', 'btn.compose': '+ Scrivi', 'btn.mailaccounts': 'Account', 'btn.addmailbox': '+ Aggiungi casella', 'btn.add': '+ Aggiungi', 'btn.newgoal': '+ Nuovo obiettivo', 'btn.newreview': '+ Nuovo bilancio',
   'field.area': 'Space', 'field.priority': 'Priorità', 'field.duration': 'Durata', 'field.notes': 'Note', 'field.repeat': 'Ripeti',
   'task.search': 'Cerca attività…', 'task.add': '+ Aggiungi attività', 'task.whatneeds': "Cosa c'è da fare?", 'task.surfaceon': 'Riappare il', 'task.notesph': 'Dettagli, contesto o link…', 'task.addtask': 'Aggiungi attività', 'task.done': 'Fatto', 'task.showcompleted': 'Mostra completate', 'task.empty.filters': 'Nessuna attività corrisponde a questi filtri.', 'task.empty.open': 'Nessuna attività aperta qui.', 'task.empty.here': 'Ancora nessuna attività qui.', 'task.nextdue': 'La prossima scade', 'task.onschedule': 'Secondo programma', 'task.aftertick': 'Dopo averla segnata',
@@ -4301,10 +4301,10 @@ function renderSettingsLegacy() {
   const tiles = [
     ['◈', 'Spaces', 'What your Kaya orbits', 'data-open-areas=""'],
     ['✉', 'Mail accounts', 'Inboxes you send &amp; receive from', 'data-open-mailaccounts=""'],
-    ['🧘', 'Tracker', 'The things you do again and again, shared with the Day Planner', 'data-open-practices=""'],
+    ['🧘', 'Routines', 'The things you do again and again, shared with the Day Planner', 'data-open-practices=""'],
     ['💰', 'Spending categories', 'Add, rename &amp; organise', 'data-open-spendcats=""'],
     ['🎯', 'Reviews &amp; reminders', 'Cadence, P1 nudges &amp; SMS', 'data-open-reviews=""'],
-    ['☀', 'Flow', 'Your day on a timeline - drag practices &amp; tasks onto it', 'data-open-today=""'],
+    ['☀', 'Day Planner', 'Your day on a timeline - drag routines &amp; tasks onto it', 'data-open-today=""'],
   ];
   if (state.me && state.me.id === 1) tiles.push(['🛠', 'Admin', 'Members, invitations &amp; quotes', 'data-open-admin=""']);
   // Account and Appearance lead. Each section is its own tab rather than a long
@@ -5470,7 +5470,7 @@ function navPeopleMobileHtml() {
 //    only regroups the tools into seven folds, one open at a time.
 const KFOLDS = [
   { id: 'today', label: 'Today', items: [
-      ['Day Planner', 'data-open-today', 'today'], ['Tracker', 'data-open-practices', 'today'] ] },
+      ['Day Planner', 'data-open-today', 'today'], ['Routines', 'data-open-practices', 'today'] ] },
   { id: 'spaces', label: 'Spaces', spaces: true },
   { id: 'tools', label: 'Tools', items: [
       ['Mail', 'data-open-mail', 'mail'], ['Calendar', 'data-open-calendar', 'calendar'], ['Tasks', 'data-view-tasks', 'tasks'],
@@ -5587,7 +5587,7 @@ function knavGroups() {
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
         ['Spaces', 'data-open-areas', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-        ['Tracker', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
+        ['Routines', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
         ['Local Events', 'data-open-discover', ''], ['Library', 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ...revTools ],
@@ -6697,7 +6697,7 @@ function pomoPanel() {
 const TBX_TOOLS = [
   { k: 'focus', ic: '⏱', label: 'Focus', desc: 'Pomodoro sessions for deep work', panel: () => pomoPanel() },
   { k: 'timer', ic: '⏲', label: 'Timer', desc: 'A simple countdown for anything', panel: () => timerPanel() },
-  { k: 'tracker', ic: '✓', label: 'Tracker', desc: 'Your practices, streaks and history', panel: () => trackerPanel() },
+  { k: 'tracker', ic: '✓', label: 'Routines', desc: 'Your routines, streaks and history', panel: () => trackerPanel() },
 ];
 function tbxToolBadge(k) {
   return (k === 'focus' && pomo.running) ? `<span class="tbx-run js-pomo-time">${pomoFmt(pomoRemaining())}</span>`
@@ -7048,11 +7048,11 @@ async function openPractices() { return openTracker(); }
 function renderPractices() {
   if (!state.practices) return;
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Tracker' }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'Settings', attr: 'data-open-settings' }, { label: 'Routines' }])}
     <div class="pane-head home-head"><h1>${t('title.practices')}</h1>
-      <div class="prac-head-act"><button class="ghost prac-track-link" data-open-tracker title="Open the Tracker to tick off practices and see your streaks">✓ Go to the Tracker →</button><button class="add-btn wide prac-new-top" data-prc-new>＋ New practice</button></div></div>
+      <div class="prac-head-act"><button class="ghost prac-track-link" data-open-tracker title="Open Routines to tick them off and see your streaks">✓ Go to Routines →</button><button class="add-btn wide prac-new-top" data-prc-new>＋ New routine</button></div></div>
     <p class="t2-sub">Activities you want to repeat</p>
-    <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by page. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it on the <b>Tracker</b>.</p>
+    <p class="home-empty" style="margin:6px 0 18px">Your menu of options for a well-lived day, grouped by page. Tap one to edit it; drag it onto your <b>Today</b> when the mood strikes, or tick it off in <b>Routines</b>.</p>
     ${practicesManageHtml()}`;
 }
 // The Practices page as clean area cards (matching the Tracker). Each row opens
@@ -7060,7 +7060,7 @@ function renderPractices() {
 // shaping your practices. Delete lives inside the editor.
 function practicesManageHtml() {
   const P = state.practices; const acts = (P.activities || []);
-  if (!acts.length) return '<div class="home-empty" style="padding:8px 0">No practices yet.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New practice</button></div>';
+  if (!acts.length) return '<div class="home-empty" style="padding:8px 0">No routines yet.<br><button class="add-btn wide trk-newbtn" data-prc-new style="margin-top:14px">＋ New routine</button></div>';
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
   acts.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
@@ -7068,14 +7068,14 @@ function practicesManageHtml() {
   const body = ordered.map((g) => {
     const rows = g.items.map((a) => {
       const meta = !a.timed ? '<span class="pm-len">habit</span>' : (a.duration ? `<span class="pm-len">${a.duration} min</span>` : '');
-      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="prc-vid">Video</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit practice">✎</button></div>`;
+      return `<div class="pm-row pm-row-click ${a.avoid ? 'pm-avoid' : ''}" data-prc-id="${a.id}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}"><span class="pm-grip" data-prc-grip="${a.id}" title="Drag to reorder" aria-hidden="true">⠿</span><span class="pm-name pm-name-link">${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}${a.video ? ' <span class="prc-vid">Video</span>' : ''}</span>${meta}<button class="pm-edit-btn" data-prc-edit="${a.id}" title="Edit routine">✎</button></div>`;
     }).join('');
     return `<div class="trk-area" style="--h:${g.hue}">
       <div class="trk-area-h"><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span></div>
       <div class="pm-rows">${rows}</div>
     </div>`;
   }).join('');
-  return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button>`;
+  return `<div class="trk-dash">${body}</div><button class="add-btn wide trk-newbtn" data-prc-new>＋ New routine</button>`;
 }
 // The 11-char YouTube id from any of its URL shapes (watch, youtu.be, shorts, embed).
 function youtubeId(url) {
@@ -7119,8 +7119,8 @@ function renderPracticeCard() {
   // Back goes UP one level - to Practices, the folder this practice lives in -
   // not wherever you happened to start (Robin: a sub-page's Back is its parent,
   // not Home). Always shown, since a practice always has Practices above it.
-  const crumb = `<div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Practice')}</span></div>`;
-  if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This practice was not found.</div>`; return; }
+  const crumb = `<div class="note-crumbs"><button class="crumb" data-view-home>Today</button><span class="crumb-sep">›</span><button class="crumb" data-open-practices>${t('nav.practices')}</button><span class="crumb-sep">›</span><span class="crumb cur">${esc(a ? a.title : 'Routine')}</span></div>`;
+  if (!a) { $('#pane').innerHTML = `${crumb}<div class="home-empty" style="padding:24px">This routine was not found.</div>`; return; }
   // Open straight into the editable content on the practice's own screen - not a
   // read-only guide with an Edit popover. Set up the shared editor state for this
   // practice so the fields, attach rows and Save all work. (Robin, 2026-11-12.)
@@ -7132,10 +7132,9 @@ function renderPracticeCard() {
   const today = dayKey(new Date());
   const done = practiceMarked(a.id, today);
   // A calm summary line under the name - the Space, how often, and when you last
-  // did it - the things you glance at. Everything you change lives in Setup, which
-  // folds away so the page leads with the videos and instructions. (Robin,
-  // 2026-11-14: "mainly see the videos and the instructions… to change most of
-  // that, you open the setup section".)
+  // did it. Then the doing, in two columns: instructions on the left, video on the
+  // right. The settings fold away under Setup (an Open button, not a +), and the
+  // linked & attached things sit at the very bottom. (Robin, 2026-11-14.)
   const cadLbl = a.cadence ? cadenceLabel(a.cadence) : '';
   const cadTxt = a.avoid ? 'Avoiding' : (cadLbl || 'Whenever');
   const metaBits = [
@@ -7146,15 +7145,19 @@ function renderPracticeCard() {
   let setupClosed = true; try { setupClosed = localStorage.getItem('life.prc.setup') !== '0'; } catch {}
   $('#pane').innerHTML = `${crumb}
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
-    <div class="pc-meta">${metaBits}</div>
+    <div class="pc-sumline">${metaBits}</div>
     <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
     <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
-      <div class="pc-guide-main">${practiceFieldsHtml('guide')}</div>
-      <div class="pc-setup${setupClosed ? ' is-closed' : ''}">
-        <h2 class="lk-h"><button type="button" class="lk-fold" data-prc-setup-toggle aria-expanded="${!setupClosed}"><span>Setup</span><span class="lk-sign" aria-hidden="true">${setupClosed ? '+' : '−'}</span></button></h2>
-        <div class="pc-setup-body">${practiceFieldsHtml('main')}</div>
+      <div class="pc-cols2">
+        <div class="pc-col-instr">${practiceFieldsHtml('instructions')}</div>
+        <aside class="pc-col-video">${practiceFieldsHtml('videos')}</aside>
       </div>
-      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete practice</button><button class="add-btn wide" data-prc-save>Save</button></div>
+      <div class="pc-setup${setupClosed ? ' is-closed' : ''}">
+        <div class="pc-setup-h"><h2 class="pc-setup-title">Setup</h2><button type="button" class="pc-setup-btn" data-prc-setup-toggle aria-expanded="${!setupClosed}">${setupClosed ? 'Open' : 'Close'}</button></div>
+        <div class="pc-setup-body">${practiceFieldsHtml('setup')}</div>
+      </div>
+      <div class="pc-attach-sec">${practiceFieldsHtml('attach')}</div>
+      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><button class="add-btn wide" data-prc-save>Save</button></div>
     </div>`;
 }
 function practiceToggle(id, day) {
@@ -7188,17 +7191,18 @@ function practiceLastDone(a) {
   for (const k in P.marks) { if (!P.marks[k] || k.indexOf(pre) !== 0) continue; const day = k.slice(pre.length); if (!best || day > best) best = day; }
   return best;
 }
-// A short "when you last did it" line for the practice header.
+// A short "when you last did it" line for the routine header, e.g.
+// "Last done: 2 days ago". (Robin, 2026-11-14: "Last done: 2 days ago or sth".)
 function practiceLastDoneLabel(a) {
   const d = practiceLastDone(a);
+  const lead = a.avoid ? 'Last slip' : 'Last done';
   if (!d) return a.avoid ? 'No slips yet' : 'Not done yet';
   const today = dayKey(new Date());
-  if (d >= today) return a.avoid ? 'Slip logged today' : 'Done today';
+  if (d >= today) return `${lead}: today`;
   const diff = Math.round((Date.parse(today) - Date.parse(d)) / 86400000);
-  const base = a.avoid ? 'Last slip ' : 'Last done ';
-  if (diff <= 1) return base + 'yesterday';
-  if (diff <= 13) return base + diff + ' days ago';
-  return base + fmtDate(d);
+  if (diff <= 1) return `${lead}: yesterday`;
+  if (diff <= 13) return `${lead}: ${diff} days ago`;
+  return `${lead}: ${fmtDate(d)}`;
 }
 function practiceStreak(id) {
   if (!state.practices) return 0;
@@ -7283,8 +7287,8 @@ function practicesGroups(withWeek) {
       return `<div class="prc-row prc-row-click ${a.avoid ? 't2-avoid' : ''}" data-prc-open="${a.id}" role="button" tabindex="0" title="Open ${esc(a.title)}">
         <button class="trk-tick ${practiceMarked(a.id, today) ? 'on' : ''} ${a.avoid ? 't2-tick-slip' : ''}" data-prc-tick="${a.id}" title="${a.avoid ? (practiceMarked(a.id, today) ? 'Slipped today - tap to undo' : 'Tap if you slipped today') : 'Done today'}">${a.avoid ? '✕' : '✓'}</button>
         <span class="prc-name prc-name-link">${esc(a.title)}${(() => { const s = withWeek && !a.avoid ? practiceStreak(a.id) : 0; return s > 1 ? `<span class="trk-streak">${s} days</span>` : ''; })()}${badges}${withWeek ? '' : len}</span>
-        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit practice">✎</button>`}
-        <button class="trk-del" data-prc-del="${a.id}" title="Remove practice">×</button>
+        ${withWeek ? `<span class="trk-week">${days.map((d) => `<span class="trk-dot ${practiceMarked(a.id, d) ? (a.avoid ? 'slip' : 'on') : ''} ${d === today ? 'today' : ''}" data-prc-day="${a.id}:${d}" title="${d}"><i>${dow[new Date(d + 'T00:00').getDay()]}</i></span>`).join('')}</span>` : `<button class="prc-edit" data-prc-edit="${a.id}" title="Edit routine">✎</button>`}
+        <button class="trk-del" data-prc-del="${a.id}" title="Remove routine">×</button>
       </div>`;
     }).join('');
     return `<div class="prc-group"><div class="prc-lane" style="--h:${g.hue}"><span class="prc-lane-dot"></span>${esc(g.label)}</div>${rows}</div>`;
@@ -7292,10 +7296,10 @@ function practicesGroups(withWeek) {
 }
 function practiceAddForm() {
   // Hidden behind a button until you want it (Robin, 2026-11-04): the always-on
-  // "No space / New practice / Add" row was clutter. The name comes first, the
+  // "No space / New routine / Add" row was clutter. The name comes first, the
   // Space second.
-  if (!state.pracAddOpen) return `<button class="add-btn wide prc-addtoggle" data-prc-addtoggle>＋ Add a practice</button>`;
-  return `<form class="prc-add" data-prc-add-form><input class="sel" id="prc-new" placeholder="New practice…" autocomplete="off"><select class="sel prc-lane-sel" id="prc-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><button class="add-btn wide" type="submit">Add</button><button type="button" class="prc-addcancel" data-prc-addtoggle title="Cancel" aria-label="Cancel">✕</button></form>`;
+  if (!state.pracAddOpen) return `<button class="add-btn wide prc-addtoggle" data-prc-addtoggle>＋ Add a routine</button>`;
+  return `<form class="prc-add" data-prc-add-form><input class="sel" id="prc-new" placeholder="New routine…" autocomplete="off"><select class="sel prc-lane-sel" id="prc-area"><option value="">No space</option>${editableAreas().map((a) => `<option value="${a.id}">${esc(a.title || 'Untitled')}${sharedTag(a)}</option>`).join('')}</select><button class="add-btn wide" type="submit">Add</button><button type="button" class="prc-addcancel" data-prc-addtoggle title="Cancel" aria-label="Cancel">✕</button></form>`;
 }
 // ── practice editor ───────────────────────────────────────────────────
 // A body-level overlay, so the editor opens from the Today page as well as the
@@ -7313,7 +7317,7 @@ function openPracticeEditor(id, presetArea) {
   setTimeout(() => { const t = document.getElementById('pe-title'); if (t) t.focus(); }, 30);
 }
 function closePracticeEditor() { state.practiceEdit = null; const h = document.getElementById('prac-editor-host'); if (h) h.remove(); }
-// The editor's fields, shared by the "New practice" popover and the full-screen
+// The editor's fields, shared by the "New routine" popover and the full-screen
 // edit page a practice opens into (Robin, 2026-11-12: open a practice straight into
 // its editable content, on the proper screen, not a popover).
 function practiceFieldsHtml(which) {
@@ -7322,19 +7326,17 @@ function practiceFieldsHtml(which) {
   const timed = a.timed == null ? true : !!a.timed;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
-  const main = `<section class="pe-sec">
+  const basics = `<section class="pe-sec">
           <div class="pe-sec-h">Basics</div>
           <label class="pe-f"><span>Name</span><input class="sel" id="pe-title" value="${esc(a.title || '')}" placeholder="What do you do?" autocomplete="off"></label>
           <label class="pe-f"><span>Space</span><select class="sel" id="pe-area"><option value="">No space</option>${editableAreas().map((x) => `<option value="${x.id}" ${selArea === x.id ? 'selected' : ''}>${esc(x.title || 'Untitled')}${sharedTag(x)}</option>`).join('')}</select></label>
-        </section>
-
-        <section class="pe-sec">
+        </section>`;
+  const avoidSec = `<section class="pe-sec">
           <div class="pe-mini">
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
           </div>
-        </section>
-
-        <section class="pe-sec">
+        </section>`;
+  const timingSec = `<section class="pe-sec">
           <div class="pe-sec-h">Timing &amp; tracking</div>
           <div class="pe-mini">
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
@@ -7345,23 +7347,40 @@ function practiceFieldsHtml(which) {
               return `<select class="sel pe-mini-sel" id="pe-cadence" data-prev="${cur}"><option value="" ${!cur ? 'selected' : ''}>Whenever</option>${opts.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom">Custom…</option></select>`;
             })()}</div>
           </div>
-        </section>
-
-        <section class="pe-sec">
+        </section>`;
+  const attachSec = `<section class="pe-sec">
           <div class="pe-attach">${peAttachHtml()}</div>
         </section>`;
+  // The video field + its live embed + any extra videos + the add button.
+  const videos = `<section class="pe-sec pc-vidsec">
+          <div class="pe-sec-h">Video</div>
+          <input class="sel pc-vid-in" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link, or any page" autocomplete="off">
+          <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
+          <div class="pe-videos" data-pe-videos>${peExtraVideosHtml()}</div>
+          <button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>
+        </section>`;
+  const instructions = `<section class="pe-sec pc-instrsec">
+          <div class="pe-sec-h">Instructions</div>
+          <textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea>
+        </section>`;
+  // The New-routine popover stacks everything with the Guide label + hint; the
+  // routine page composes the parts into its own layout (see renderPracticeCard).
   const guide = `<section class="pe-sec pe-sec-guide">
           <div class="pe-sec-h">Guide</div>
-          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the practice.</div>
+          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the routine.</div>
           <label class="pe-f"><span>▶ Video, reel or post</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"></label>
           <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
           <div class="pe-videos" data-pe-videos>${peExtraVideosHtml()}</div>
           <button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>
           <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
         </section>`;
-  if (which === 'main') return main;
+  if (which === 'setup') return basics + avoidSec + timingSec;
+  if (which === 'attach') return attachSec;
+  if (which === 'videos') return videos;
+  if (which === 'instructions') return instructions;
+  if (which === 'main') return basics + avoidSec + timingSec + attachSec;
   if (which === 'guide') return guide;
-  return main + guide;
+  return basics + avoidSec + timingSec + attachSec + guide;
 }
 function practiceEditorHtml() {
   const pe = state.practiceEdit;
@@ -7369,9 +7388,9 @@ function practiceEditorHtml() {
   const timed = a.timed == null ? true : !!a.timed;
   return `<div class="pe-bg" data-prc-close></div>
     <div class="pe-panel prac-form ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
-      <div class="pe-head"><h2>${pe.id ? 'Edit practice' : 'New practice'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
+      <div class="pe-head"><h2>${pe.id ? 'Edit routine' : 'New routine'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">${practiceFieldsHtml()}</div>
-      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add practice'}</button></div>
+      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
@@ -7435,7 +7454,7 @@ function syncPeVideosFromDom() {
 }
 async function peNewNote() {
   const pe = state.practiceEdit; if (!pe) return;
-  const title = await uiPrompt('New note for this practice:', { placeholder: 'e.g. My routine' }); if (title == null) return;
+  const title = await uiPrompt('New note for this routine:', { placeholder: 'e.g. My warm-up' }); if (title == null) return;
   const t = (title.trim() || 'Untitled');
   const area = (document.getElementById('pe-area') || {}).value || '';
   try { const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: t, props: area ? { area } : {} }) }); peMeta().notes.push({ id: n.id, title: n.title || t }); if (Array.isArray(state.peNotePool)) state.peNotePool.push(n); renderPeAttach(); toast('Note created & linked'); }
@@ -7476,14 +7495,14 @@ async function savePractice() {
     let a;
     if (pe.id) { a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: JSON.stringify(body) }); const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id)); if (i >= 0) state.practices.activities[i] = a; }
     else { a = await api('/api/activities', { method: 'POST', body: JSON.stringify(body) }); state.practices.activities.push(a); }
-    closePracticeEditor(); toast(pe.id ? 'Saved' : 'Practice added');
+    closePracticeEditor(); toast(pe.id ? 'Saved' : 'Routine added');
     if (state.view.type === 'today') renderToday(); else rerenderPractices();
   } catch (e) { toast(e.message); }
 }
 function trackerPanel() {
-  if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHomeSoon(); }); return '<div class="home-empty" style="padding:6px 0">Loading practices…</div>'; }
+  if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHomeSoon(); }); return '<div class="home-empty" style="padding:6px 0">Loading routines…</div>'; }
   const groups = practicesGroups(true);
-  return `<div class="prc"><div class="prc-manage"><button class="ghost prc-edit-link" data-open-practices>✎ Edit practices</button></div>${groups || '<div class="home-empty" style="padding:6px 0">No practices yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
+  return `<div class="prc"><div class="prc-manage"><button class="ghost prc-edit-link" data-open-practices>✎ Edit routines</button></div>${groups || '<div class="home-empty" style="padding:6px 0">No routines yet. Add one below - it shows in the Today tool too.</div>'}${practiceAddForm()}</div>`;
 }
 
 // Gentle Home notifications - today's birthdays and open P1 tasks. Each can be
@@ -8980,7 +8999,7 @@ function homeWnPracticesBodyHtml() {
   // The full practices interface - the very panel the Tracker uses: an edit link, every
   // practice with its tick, the last 7 days and the streak, and the add form. Not a
   // stripped list. (Robin, 2026-11-03.)
-  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open Tracker →</button></div>`;
+  const foot = `<div class="gln-panel-foot"><button class="gln-open" data-open-tracker>Open Routines →</button></div>`;
   return `<div class="home-wn-prc">${trackerPanel()}</div>${foot}`;
 }
 function homeWhatNextTabsHtml() {
@@ -9867,7 +9886,7 @@ function homeCalBodyHtml(off) {
     return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.eventId || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
-  const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Practices</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
+  const pracHtml = pracs.length ? `<div class="home-cal-prac"><span class="home-cal-prac-l">Routines</span>${pracs.map((p) => `<span class="home-cal-chip${p.done ? ' on' : ''}" data-open-calendar role="button" tabindex="0"><span class="home-cal-chipbox"></span>${esc(p.title)}</span>`).join('')}</div>` : '';
   return `${tabs}${evHtml}${pracHtml}<button class="home-cal-open" data-open-calendar>Open Calendar →</button>`;
 }
 function homeCalSectionHtml(off) {
@@ -10039,7 +10058,7 @@ function homeTodayTabDefs() {
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
-  if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Tracker', 0, false]);
+  if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Routines', 0, false]);
   if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
   return defs;
 }
@@ -16774,8 +16793,8 @@ function renderTracker() {
   const todayLabel = new Date().toLocaleDateString(dloc(), { weekday: 'long', day: 'numeric', month: 'long' });
   $('#pane').innerHTML = `
     ${pageCrumb(t('nav.practices'))}
-    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><div class="t2-head-act">${(state.practices && (state.practices.activities || []).some((a) => a.tracked)) ? '<button class="ghost trkr-openbtn" data-trk-report title="A review of what you have kept up, and what has gone quiet">Take stock</button>' : ''}<button class="add-btn wide trk-newtop" data-prc-new>＋ New practice</button></div></div>
-    ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your practices…</div>'}`;
+    <div class="pane-head t2-head"><h1>${t('nav.practices')} <span class="t2-dsmall">${esc(todayLabel)}</span></h1><div class="t2-head-act">${(state.practices && (state.practices.activities || []).some((a) => a.tracked)) ? '<button class="ghost trkr-openbtn" data-trk-report title="A review of what you have kept up, and what has gone quiet">Take stock</button>' : ''}<button class="add-btn wide trk-newtop" data-prc-new>＋ New routine</button></div></div>
+    ${(state.practices && state.practices.activities) ? t2TrackerHtml(true) : '<div class="home-empty" style="padding:24px">Loading your routines…</div>'}`;
 }
 // ── "Take stock": a ledger-style review of the Tracker (Robin, 2026-11-14) ──
 // A report of what you have kept up and what has gone quiet, built entirely from
@@ -16861,10 +16880,10 @@ function trackerReportHtml(d) {
   const title = ratio >= 0.7 ? 'A steady stretch' : ratio >= 0.4 ? 'Finding your rhythm' : ratio > 0 ? 'A quieter stretch' : 'A fresh start';
   const head = `<div class="trkr-head"><div><div class="trkr-eyebrow">Taking stock</div><h2 class="trkr-title">${title}</h2></div><button class="trkr-x" data-trkr-close aria-label="Close">×</button></div><div class="trkr-segrow">${seg}</div>`;
   if (!d.nTracked || (d.totalTicks === 0 && !d.clean.length)) {
-    return head + `<div class="trkr-body"><div class="trkr-empty">Nothing to look back on just yet. Tick a practice or two on the Tracker and your first reckoning gathers here.</div></div>`;
+    return head + `<div class="trkr-body"><div class="trkr-empty">Nothing to look back on just yet. Tick a routine or two in Routines and your first reckoning gathers here.</div></div>`;
   }
   const keptPractices = d.rows.filter((r) => r.winTicks > 0).length;
-  const heroSay = `You showed up on <b>${d.kept} of ${d.win} days</b>, kept <b>${keptPractices} practice${keptPractices === 1 ? '' : 's'}</b> moving${d.totalTicks ? `, <b>${d.totalTicks} tick${d.totalTicks === 1 ? '' : 's'}</b> in all` : ''}.`;
+  const heroSay = `You showed up on <b>${d.kept} of ${d.win} days</b>, kept <b>${keptPractices} routine${keptPractices === 1 ? '' : 's'}</b> moving${d.totalTicks ? `, <b>${d.totalTicks} tick${d.totalTicks === 1 ? '' : 's'}</b> in all` : ''}.`;
   const momLine = d.momentum === 'gaining' ? 'Gaining - more this stretch than the one before.' : d.momentum === 'easing' ? 'Easing off - a touch quieter than the stretch before.' : 'Holding steady - much like the stretch before.';
   const hero = `<div class="trkr-hero"><div class="trkr-hero-main"><p class="trkr-hero-say">${heroSay}</p><div class="trkr-mom"><span class="trkr-mom-dot trkr-mom-${d.momentum}"></span>${esc(momLine)}</div></div><div class="trkr-hero-fig"><span class="trkr-fig-n">${d.kept}</span><span class="trkr-fig-l">of ${d.win} days<br>you showed up</span></div></div>`;
   const sec = (eye, inner) => `<section class="trkr-sec"><div class="trkr-eyebrow trkr-sec-eye">${eye}</div>${inner}</section>`;
@@ -16969,7 +16988,7 @@ try { window.matchMedia('(max-width:820px)').addEventListener('change', () => { 
 function t2TrackerHtml(manage) {
   const P = state.practices || {}; const T = state.today || {};   // callable from Home too
   const tracked = (P.activities || []).filter((a) => a.tracked);
-  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">No practices yet. Add one and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New practice</button></div></div>';
+  if (!tracked.length) return '<div class="home-empty" style="padding:24px 0">No routines yet. Add one and its run of days appears here.<br><div class="trk-foot" style="margin-top:14px;justify-content:center"><button class="add-btn wide trk-newbtn" data-prc-new>＋ New routine</button></div></div>';
   const today = dayKey(new Date());
   const yesterday = dayKey(new Date(Date.now() - 86400000));
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
@@ -17084,8 +17103,8 @@ function t2DayHtml() {
     if (link) {
       const done = !!link.done; const hue = act ? (hueOf(practiceArea(act)) ?? 220) : 220;
       return `<div class="t2-block t2-event t2-evlink ${done ? 'done' : ''}" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round((e.duration || 30) * T2_PPM))}px;--h:${hue}">
-        <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${link.id}" title="${done ? 'Done' : 'Mark done'}">✓</button><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}<button class="t2-x" data-t2-uncount="${link.id}" title="Don't count as ${esc(act ? act.title : 'practice')}">×</button></div>
-        <div class="t2-evtag">counts as ${esc(act ? act.title : 'a practice')}</div></div>`;
+        <div class="t2-brow"><button class="t2-tick ${done ? 'on' : ''}" data-t2-slot-tick="${link.id}" title="${done ? 'Done' : 'Mark done'}">✓</button><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}<button class="t2-x" data-t2-uncount="${link.id}" title="Don't count as ${esc(act ? act.title : 'routine')}">×</button></div>
+        <div class="t2-evtag">counts as ${esc(act ? act.title : 'a routine')}</div></div>`;
     }
     const match = isToday ? practiceForEvent(e.title) : null;
     const evDur = e.duration || ((e.end_min != null && e.end_min > e.start_min) ? e.end_min - e.start_min : 60);
@@ -17095,7 +17114,7 @@ function t2DayHtml() {
     const recur = !!e.recurringId;
     const dragAttrs = recur ? '' : ` data-t2-drag="event" data-t2-drag-id="${esc(e.id)}" data-t2-drag-label="${esc(e.title || 'Event')}"`;
     return `<div class="t2-block t2-event t2-evedit" style="top:${t2Top(e.start_min)}px;height:${Math.max(26, Math.round(evDur * T2_PPM))}px" data-t2-ev-id="${esc(e.id)}" data-ev-start="${e.start_min}" data-ev-dur="${evDur}"${dragAttrs}>
-    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle" data-t2-editev="${esc(e.id)}" title="Edit this event">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}${match ? `<button class="t2-countbtn" data-t2-count-ev="${e.id}" title="Count this as your ${esc(match.title)} practice">＋ ${esc(match.title)}</button>` : ''}<button class="t2-x" data-t2-delev="${esc(e.id)}" data-t2-recur="${recur ? 1 : 0}" title="Delete event">×</button></div>
+    <div class="t2-brow"><span class="t2-btime">${prcHHMM(e.start_min)}</span><span class="t2-btitle" data-t2-editev="${esc(e.id)}" title="Edit this event">${esc(e.title || '(event)')}</span>${e.url ? `<a class="t2-join" href="${esc(e.url)}" target="_blank" rel="noopener">🎥</a>` : ''}${match ? `<button class="t2-countbtn" data-t2-count-ev="${e.id}" title="Count this as your ${esc(match.title)} routine">＋ ${esc(match.title)}</button>` : ''}<button class="t2-x" data-t2-delev="${esc(e.id)}" data-t2-recur="${recur ? 1 : 0}" title="Delete event">×</button></div>
     ${recur ? '' : '<div class="t2-rz t2-rz-top" data-t2-resize="top"></div><div class="t2-rz t2-rz-bot" data-t2-resize="bot"></div>'}</div>`;
   }).join('');
   const slotBlocks = placed.map((s) => t2SlotBlock(s)).join('');
@@ -17149,12 +17168,12 @@ function t2PracticesHtml() {
       ${streak ? `<span class="t2-streak${a.avoid ? ' t2-clean' : ''}">${streak}${a.avoid ? ' days clean' : ' days'}</span>` : ''}
     </div>`;
   }).join('')}</div>`).join('');
-  const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No practices yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add practices</button></div>';
+  const body = acts.length ? (inner || '<div class="t2-emptycol">None match the filter.</div>') : '<div class="t2-emptycol">No routines yet.<br><button class="add-btn wide" data-open-practices style="margin-top:10px">Add routines</button></div>';
   const filterBar = open ? t2FilterBar(areas, f, prios, 'data-t2-pracfilter', 'data-t2-pracprio') : '';
-  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Practices', shown.length, 'prac', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
+  return `<div class="t2-scroll t2-colscroll">${t2ColHead('Routines', shown.length, 'prac', (f ? 1 : 0) + prios.size, open)}${filterBar}</div>
       <div class="t2-list">${body}</div>
     </div>
-    <div class="t2-pfoot"><button class="t2-newrow" data-prc-new>＋ New practice</button><button class="t2-plink" data-open-practices title="Open the Practices page to edit, group and track them">Manage all →</button></div>`;
+    <div class="t2-pfoot"><button class="t2-newrow" data-prc-new>＋ New routine</button><button class="t2-plink" data-open-practices title="Open the Practices page to edit, group and track them">Manage all →</button></div>`;
 }
 const T2_FILTER_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M2 3.2h12l-4.6 5.4v4.2L6.6 11V8.6z"/></svg>';
 // A sticky one-row column header: name + count + a filter button that reveals a
@@ -25647,7 +25666,7 @@ function reviewInsight(m, p) {
   }
   // Momentum from practices kept - links to your practices.
   const pk = (m.practices || []).reduce((a, x) => a + x.count, 0);
-  if (pk) lines.push(`You kept <b>${pk}</b> practice${pk > 1 ? 's' : ''} going${(m.practices || []).length > 1 ? ` across ${(m.practices || []).length} habits` : ''} - steady momentum. <button class="rvi-link" data-open-practices>see practices →</button>`);
+  if (pk) lines.push(`You kept <b>${pk}</b> routine${pk > 1 ? 's' : ''} going - steady momentum. <button class="rvi-link" data-open-practices>see routines →</button>`);
   // What still hangs over you - a nudge, with the board one tap away.
   if ((m.openP1 || []).length) lines.push(`<b>${m.openP1.length}</b> P1${m.openP1.length > 1 ? 's' : ''} still open - which one truly matters most next ${period}? <button class="rvi-link" data-view-tasks>open the board →</button>`);
   // What thinned out - kept to a single, quiet, actionable line.
@@ -26681,7 +26700,7 @@ function reviewPracticesHtml(m) {
     const a = (live && live.area) ? areaById(live.area) : null;
     return `<button class="rvm-card rvm-prac ${live ? '' : 'rvm-static'}" ${live ? `data-prc-open="${live.id}"` : ''} ${a ? `style="--h:${hueOf(a)}"` : ''}><span class="rvm-t">${esc(x.title || 'Untitled')}</span><span class="rvm-praccount">×${x.count}</span></button>`;
   };
-  return `<div class="rvd-list rvd-prac"><div class="rvd-total"><span class="rvd-prac-ic">☯</span><b>${total}</b> practice tick${total === 1 ? '' : 's'} across <b>${kept.length}</b> practice${kept.length === 1 ? '' : 's'} · tap any to open it</div><div class="rvm-cards">${kept.map(card).join('')}</div></div>`;
+  return `<div class="rvd-list rvd-prac"><div class="rvd-total"><span class="rvd-prac-ic">☯</span><b>${total}</b> routine tick${total === 1 ? '' : 's'} across <b>${kept.length}</b> routine${kept.length === 1 ? '' : 's'} · tap any to open it</div><div class="rvm-cards">${kept.map(card).join('')}</div></div>`;
 }
 // The compact record the summary is written from - the same mirror the card
 // already shows, with area ids resolved to names so the brief can name them.
@@ -27127,7 +27146,7 @@ function prcToggleSetup(btn) {
   const closed = wrap.classList.toggle('is-closed');
   try { localStorage.setItem('life.prc.setup', closed ? '1' : '0'); } catch {}
   btn.setAttribute('aria-expanded', String(!closed));
-  const s = btn.querySelector('.lk-sign'); if (s) s.textContent = closed ? '+' : '−';
+  btn.textContent = closed ? 'Open' : 'Close';
 }
 // The search box is always on show now, so load what it searches on first focus,
 // not every time a page opens.
@@ -28179,7 +28198,7 @@ function palNavTargets() {
   add('Today', () => openHome(), 'home start homepage overview');   // the homepage - the breadcrumb calls it "Today", so both words land here (Robin, 2026-11-12)
   add('What next', () => wnToggle(true), 'what now next do suggestion');   // §44
   if (modOn('today')) add('Day Planner', () => openToday(), 'flow day plan timeline canvas');
-  if (modOn('today')) add('Tracker', () => openTracker(), 'practice practices habit habits streak streaks routine routines track tracking consistency log');
+  if (modOn('today')) add('Routines', () => openTracker(), 'tracker practice practices habit habits streak streaks routine routines track tracking consistency log');
   if (modOn('today')) add('Take stock', () => Promise.resolve(openTrackerReport()), 'tracker review report consistency what is consistent progress momentum rhythm');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
@@ -33823,7 +33842,7 @@ function onbWelcome() {
   const name = (state.me && state.me.name) ? esc(state.me.name.split(' ')[0]) : '';
   const sub = esc((state.me && state.me.subdomain) || 'you');
   return `<h2 class="onb-h">Welcome to Kaya${name ? `, ${name}` : ''}</h2>
-    <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, practices and a place to reflect - all on one screen.</p>
+    <p class="onb-p">Your own private space for tasks, notes, tables, your calendar, email, goals, routines and a place to reflect - all on one screen.</p>
     <p class="onb-p"><b>Almost everything is optional.</b> Every tool can be switched on or off in <b>Settings → Tools</b>, so you can start with just what you need and turn the rest on whenever you like.</p>
     <p class="onb-p">And they all talk to each other - a task, a note, a goal, an email all attach to a page - so Kaya helps you <b>join the dots across your life</b> without the overwhelm.</p>
     <p class="onb-p onb-muted">The next two steps are optional too - skip them and set anything up later.</p>`;
@@ -33839,7 +33858,7 @@ function onbAi() {
   const a = state.onb.account || {};
   const connected = a.aiAnySet && a.aiProvider;
   return `<h2 class="onb-h">Add your AI <span class="onb-opt">optional</span></h2>
-    <p class="onb-p"><b>Kaya works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, practices and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
+    <p class="onb-p"><b>Kaya works fully without AI.</b> Your tasks, notes, tables, calendar, email, goals, routines and reflections all run with no AI and no key - nothing in the app is locked behind it.</p>
     <p class="onb-p">AI just adds a few optional helpers - Insight coaching, Email Scribe, a written read on your reviews. If you already use <b>Claude, ChatGPT or Gemini</b>, paste one key and it powers all of them.</p>
     ${connected
       ? `<div class="onb-ok">✓ Connected - <b>${esc(aiProvLabel(a.aiProvider))}</b>. Change it anytime in Settings → Plan.</div>`

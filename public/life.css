@@ -4855,34 +4855,39 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-del { color:var(--ink-3); } .pe-del:hover { color:var(--accent); }
 /* A practice opens straight into its editable content on its own screen (not a
    popover): the same fields, laid out down the page. (Robin, 2026-11-12.) */
-/* The practice page leads with the doing - the videos and the instructions - in
-   one calm, readable column; the name, Space, cadence and last-done sit in a quiet
-   line under the title, and every setting folds away under Setup. (Robin, 2026-11-14:
-   "mainly see the videos and the instructions… to change most of that, open setup".) */
-.pc-edit { display:flex; flex-direction:column; gap:26px; max-width:760px; margin-top:8px; }
-.pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:4px; padding-top:18px; border-top:1px solid var(--line); }
+/* The routine page leads with the doing: instructions on the left, the video on
+   the right. A quiet summary line sits under the name; the settings fold away under
+   Setup (opened with a button, not a +), and the linked & attached things sit at the
+   very bottom. (Robin, 2026-11-14: instructions left / video right, make it mint.) */
+.pc-edit { display:flex; flex-direction:column; gap:30px; max-width:980px; margin-top:8px; }
+.pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:20px; border-top:1px solid var(--line); }
 .pc-edit-foot .add-btn.wide { margin-left:auto; }
-/* Summary line under the name. */
-.pc-meta { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:4px 0 20px; font-family:var(--k-sans); font-size:15px; line-height:1.4; color:var(--ink-3); }
-.pc-meta .pcm-space { color:var(--ink); }
-.pc-meta .pcm-sep { opacity:.5; }
-/* The primary content: videos + instructions, with a taller writing area. */
-.pc-guide-main { display:flex; flex-direction:column; }
-.pc-guide-main .pe-note { min-height:136px; }
-/* Setup: a house fold (serif heading + / −), its body the old settings column. */
-.pc-setup { border-top:1px solid var(--line); padding-top:18px; }
+/* Summary line under the name: Space · how often · Last done: … */
+.pc-sumline { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:6px 0 22px; font-family:var(--k-sans); font-size:15.5px; line-height:1.4; color:var(--ink-3); }
+.pc-sumline .pcm-space { color:var(--ink); }
+.pc-sumline .pcm-last { color:var(--k-goldt); }
+.pc-sumline .pcm-sep { opacity:.45; }
+/* The doing, in two balanced columns. */
+.pc-cols2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:40px; align-items:start; }
+.pc-col-instr, .pc-col-video { min-width:0; }
+.pc-col-instr .pe-note { min-height:340px; line-height:1.6; }
+.pc-vidsec .pc-vid-in { width:100%; max-width:none; }
+.pc-vidsec .pe-add-video { align-self:flex-start; }
+/* Setup: a serif heading with an Open / Close button, its body the settings. */
+.pc-setup { max-width:700px; border-top:1px solid var(--line); padding-top:18px; }
+.pc-setup-h { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.pc-setup-title { margin:0; font-family:var(--k-serif); font-weight:500; font-size:28px; line-height:1.1; color:var(--ink); }
+.pc-setup-btn { appearance:none; flex:none; border:1px solid var(--line); background:none; color:var(--ink-2); font-family:var(--k-sans); font-weight:500; font-size:14px; letter-spacing:.03em; padding:8px 20px; cursor:pointer; border-radius:0; transition:border-color .12s, color .12s; }
+.pc-setup-btn:hover { border-color:var(--k-goldt); color:var(--k-goldt); }
 .pc-setup.is-closed .pc-setup-body { display:none; }
-.pc-setup-body { display:flex; flex-direction:column; gap:22px; padding-top:10px; }
-/* Tracker entry: the Guide (video + how-to) sits in a right-hand column beside the
-   settings on desktop; on a narrow screen it moves to the top, under "Mark done
-   today", so the how-to leads. (Robin, 2026-11-13.) */
-.pc-cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(380px,520px); gap:44px; align-items:start; }
-.pc-col-main { min-width:0; display:flex; flex-direction:column; gap:22px; }
-.pc-col-guide { min-width:0; }
-@media (max-width:820px){
-  .pc-edit { max-width:640px; }
-  .pc-cols { grid-template-columns:1fr; gap:22px; }
-  .pc-col-guide { order:-1; }
+.pc-setup-body { display:flex; flex-direction:column; gap:22px; padding-top:16px; }
+/* Linked & attached, at the very bottom. */
+.pc-attach-sec { max-width:700px; }
+@media (max-width:860px){
+  .pc-edit { max-width:640px; gap:24px; }
+  .pc-cols2 { grid-template-columns:1fr; gap:22px; }
+  .pc-col-video { order:-1; }
+  .pc-col-instr .pe-note { min-height:170px; }
 }
 /* Embedded media in a practice's guide (YouTube / Vimeo player, or an Instagram
    post), shown right in the editor as you paste the link. (Robin, 2026-11-12.) */
