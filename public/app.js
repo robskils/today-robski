@@ -7131,11 +7131,29 @@ function renderPracticeCard() {
   const timed = a.timed == null ? true : !!a.timed;
   const today = dayKey(new Date());
   const done = practiceMarked(a.id, today);
+  // A calm summary line under the name - the Space, how often, and when you last
+  // did it - the things you glance at. Everything you change lives in Setup, which
+  // folds away so the page leads with the videos and instructions. (Robin,
+  // 2026-11-14: "mainly see the videos and the instructions… to change most of
+  // that, you open the setup section".)
+  const cadLbl = a.cadence ? cadenceLabel(a.cadence) : '';
+  const cadTxt = a.avoid ? 'Avoiding' : (cadLbl || 'Whenever');
+  const metaBits = [
+    ar ? `<span class="pcm-space">${esc(ar.title || 'Untitled')}</span>` : '',
+    `<span>${esc(cadTxt)}</span>`,
+    `<span class="pcm-last">${esc(practiceLastDoneLabel(a))}</span>`,
+  ].filter(Boolean).join('<span class="pcm-sep" aria-hidden="true">·</span>');
+  let setupClosed = true; try { setupClosed = localStorage.getItem('life.prc.setup') !== '0'; } catch {}
   $('#pane').innerHTML = `${crumb}
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
+    <div class="pc-meta">${metaBits}</div>
     <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
     <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
-      <div class="pc-cols"><div class="pc-col-main">${practiceFieldsHtml('main')}</div><aside class="pc-col-guide">${practiceFieldsHtml('guide')}</aside></div>
+      <div class="pc-guide-main">${practiceFieldsHtml('guide')}</div>
+      <div class="pc-setup${setupClosed ? ' is-closed' : ''}">
+        <h2 class="lk-h"><button type="button" class="lk-fold" data-prc-setup-toggle aria-expanded="${!setupClosed}"><span>Setup</span><span class="lk-sign" aria-hidden="true">${setupClosed ? '+' : '−'}</span></button></h2>
+        <div class="pc-setup-body">${practiceFieldsHtml('main')}</div>
+      </div>
       <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete practice</button><button class="add-btn wide" data-prc-save>Save</button></div>
     </div>`;
 }
@@ -7162,6 +7180,25 @@ async function renamePractice(id, title) {
   try { await api('/api/activities/' + id, { method: 'PATCH', body: JSON.stringify({ title: clean }) }); }
   catch (e) { toast(e.message); }
   rerenderPractices();
+}
+// The most recent day this practice was marked (done, or a slip), or null.
+function practiceLastDone(a) {
+  const P = state.practices; if (!P || !P.marks) return null;
+  const pre = a.id + ':'; let best = null;
+  for (const k in P.marks) { if (!P.marks[k] || k.indexOf(pre) !== 0) continue; const day = k.slice(pre.length); if (!best || day > best) best = day; }
+  return best;
+}
+// A short "when you last did it" line for the practice header.
+function practiceLastDoneLabel(a) {
+  const d = practiceLastDone(a);
+  if (!d) return a.avoid ? 'No slips yet' : 'Not done yet';
+  const today = dayKey(new Date());
+  if (d >= today) return a.avoid ? 'Slip logged today' : 'Done today';
+  const diff = Math.round((Date.parse(today) - Date.parse(d)) / 86400000);
+  const base = a.avoid ? 'Last slip ' : 'Last done ';
+  if (diff <= 1) return base + 'yesterday';
+  if (diff <= 13) return base + diff + ' days ago';
+  return base + fmtDate(d);
 }
 function practiceStreak(id) {
   if (!state.practices) return 0;
@@ -27083,6 +27120,15 @@ function lkToggleFold(btn) {
   btn.setAttribute('aria-expanded', String(!closed));
   const s = btn.querySelector('.lk-sign'); if (s) s.textContent = closed ? '+' : '−';
 }
+// The Setup fold on a practice page. Its own remembered state (not the shared
+// lk fold key), since the "Linked & attached" panel nests inside it. (Robin, 2026-11-14.)
+function prcToggleSetup(btn) {
+  const wrap = btn.closest('.pc-setup'); if (!wrap) return;
+  const closed = wrap.classList.toggle('is-closed');
+  try { localStorage.setItem('life.prc.setup', closed ? '1' : '0'); } catch {}
+  btn.setAttribute('aria-expanded', String(!closed));
+  const s = btn.querySelector('.lk-sign'); if (s) s.textContent = closed ? '+' : '−';
+}
 // The search box is always on show now, so load what it searches on first focus,
 // not every time a page opens.
 document.addEventListener('focusin', (e) => {
@@ -29235,6 +29281,7 @@ document.addEventListener('click', (e) => {
   { const pe = t.closest('[data-prc-edit]'); if (pe) { openPracticeCard(pe.dataset.prcEdit); return; } }   // edit opens the practice's own full screen (not a popover)
   if (t.closest('[data-prc-close]')) { closePracticeEditor(); return; }
   if (t.closest('[data-prc-save]')) { savePractice(); return; }
+  { const sb = t.closest('[data-prc-setup-toggle]'); if (sb) { prcToggleSetup(sb); return; } }
   { const el = t.closest('[data-pe-link-note]'); if (el) { peMeta().notes.push({ id: el.dataset.peLinkNote, title: el.dataset.peNoteTitle || 'Untitled' }); state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-link-contact]'); if (el) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(el.dataset.peLinkContact)])]; state.practiceEdit._noteQ = ''; renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-link-url]'); if (el) { let u = (state.practiceEdit._noteQ || '').trim(); if (u) { if (!/^https?:\/\//i.test(u)) u = 'https://' + u; peMeta().links.push({ url: u }); state.practiceEdit._noteQ = ''; renderPeAttach(); } return; } }

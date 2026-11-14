@@ -4855,9 +4855,24 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-del { color:var(--ink-3); } .pe-del:hover { color:var(--accent); }
 /* A practice opens straight into its editable content on its own screen (not a
    popover): the same fields, laid out down the page. (Robin, 2026-11-12.) */
-.pc-edit { display:flex; flex-direction:column; gap:22px; max-width:1080px; margin-top:8px; }
+/* The practice page leads with the doing - the videos and the instructions - in
+   one calm, readable column; the name, Space, cadence and last-done sit in a quiet
+   line under the title, and every setting folds away under Setup. (Robin, 2026-11-14:
+   "mainly see the videos and the instructions… to change most of that, open setup".) */
+.pc-edit { display:flex; flex-direction:column; gap:26px; max-width:760px; margin-top:8px; }
 .pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:4px; padding-top:18px; border-top:1px solid var(--line); }
 .pc-edit-foot .add-btn.wide { margin-left:auto; }
+/* Summary line under the name. */
+.pc-meta { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:4px 0 20px; font-family:var(--k-sans); font-size:15px; line-height:1.4; color:var(--ink-3); }
+.pc-meta .pcm-space { color:var(--ink); }
+.pc-meta .pcm-sep { opacity:.5; }
+/* The primary content: videos + instructions, with a taller writing area. */
+.pc-guide-main { display:flex; flex-direction:column; }
+.pc-guide-main .pe-note { min-height:136px; }
+/* Setup: a house fold (serif heading + / −), its body the old settings column. */
+.pc-setup { border-top:1px solid var(--line); padding-top:18px; }
+.pc-setup.is-closed .pc-setup-body { display:none; }
+.pc-setup-body { display:flex; flex-direction:column; gap:22px; padding-top:10px; }
 /* Tracker entry: the Guide (video + how-to) sits in a right-hand column beside the
    settings on desktop; on a narrow screen it moves to the top, under "Mark done
    today", so the how-to leads. (Robin, 2026-11-13.) */
