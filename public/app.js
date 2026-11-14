@@ -5754,12 +5754,25 @@ function navGroupsHtml(v) {
   if (kn.find) {
     let sections;
     if (q) {
-      const navMatches = groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: g.label, attrs, isTool: true }))).filter((x) => (x.a + ' ' + x.b).toLowerCase().includes(q));
       const res = ((kn.resultsFor || '').trim().toLowerCase() === q) ? (kn.results || []) : [];
-      const contentItems = res.map((h, i) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
+      // Content (notes, tables, rows, people, Spaces…) stays under "In your Spaces";
+      // tool & page destinations (kind 'nav', opened through run()) go under "Go to",
+      // so a search jumps you to the Tracker, a review, Calendar… not just content.
+      // (Robin, 2026-11-14: "open the tracker tool, most tools, from universal search".)
+      const contentItems = res.map((h, i) => ({ h, i })).filter((x) => x.h.kind !== 'nav')
+        .map(({ h, i }) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
+      const goItems = res.map((h, i) => ({ h, i })).filter((x) => x.h.kind === 'nav')
+        .map(({ h, i }) => ({ a: h.title || 'Open', b: '', hitIdx: i }));
+      // Any menu tool not already caught by a nav target (and not already shown as
+      // content, e.g. a Space), so nothing in the menu is unreachable from search.
+      const goNames = new Set(goItems.map((x) => x.a.toLowerCase()));
+      const contentNames = new Set(contentItems.map((x) => x.a.toLowerCase()));
+      groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: '', attrs, isTool: true })))
+        .filter((x) => x.a.toLowerCase().includes(q) && !goNames.has(x.a.toLowerCase()) && !contentNames.has(x.a.toLowerCase()))
+        .forEach((x) => { if (!goNames.has(x.a.toLowerCase())) { goItems.push(x); goNames.add(x.a.toLowerCase()); } });
       sections = [];
       if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
-      if (navMatches.length) sections.push({ label: 'Go to', badge: String(navMatches.length), open: true, items: navMatches });
+      if (goItems.length) sections.push({ label: 'Go to', badge: String(goItems.length), open: true, items: goItems });
     } else {
       const sh = knavShared(); const rc = knavRecent();
       sections = [];
@@ -28088,6 +28101,8 @@ function palNavTargets() {
   add('Today', () => openHome(), 'home start homepage overview');   // the homepage - the breadcrumb calls it "Today", so both words land here (Robin, 2026-11-12)
   add('What next', () => wnToggle(true), 'what now next do suggestion');   // §44
   if (modOn('today')) add('Day Planner', () => openToday(), 'flow day plan timeline canvas');
+  if (modOn('today')) add('Tracker', () => openTracker(), 'practice practices habit habits streak streaks routine routines track tracking consistency log');
+  if (modOn('today')) add('Take stock', () => Promise.resolve(openTrackerReport()), 'tracker review report consistency what is consistent progress momentum rhythm');
   if (modOn('calendar')) add('Calendar', () => openCalendar(), 'schedule diary events agenda');
   if (modOn('tasks')) add('Tasks', () => openTasks(), 'todo to-do to do list');
   add('Spaces', () => openAreasList(), 'life space spaces area areas folios pillars overview all your spaces');
@@ -28095,6 +28110,8 @@ function palNavTargets() {
   if (modOn('mail')) add('Mail', () => openMail(), 'email inbox');
   if (modOn('contacts')) add('Contacts', () => openContacts(), 'people connect address book');
   if (modOn('contacts')) add('Shared', () => openSharedHub(), 'shared with me by me notes tasks life spaces assigned');
+  if (modOn('contacts')) add('Messages', () => openMessagesPage(), 'chat chats dm direct message messages talk conversation');
+  if (modOn('contacts')) add('Connect', () => openConnect(), 'connect friends people on kaya invite link accounts find');
   if (reflectOn()) add('Insight', () => openWellbeing(), 'wellbeing meditate i ching horoscope dreams coaching tarot spirit compass insights tools');
   if (modOn('dreams')) add('Dream analyser', () => openJournal('dreams'), 'dream dreams analyser analyzer interpret interpretation sleep reflection insight tool');
   if (modOn('tarot')) add('Tarot', () => Promise.resolve(openTarot()), 'cards reading draw divination reflection insight tool');
@@ -28106,8 +28123,12 @@ function palNavTargets() {
   if (modOn('insights')) add('Insights', () => openInsights(), 'patterns themes reflection insight tool');
   if (modOn('journal')) add('Journal', () => openJournal(), 'diary write morning pages free write');
   if (modOn('goals')) { add(modOn('reviews') ? 'Goals & Reviews' : 'Goals', () => openGoals('goals'), 'review vision wheel of life'); add('Bucket list', () => openGoals('bucket'), 'wishlist'); }
+  if (modOn('goals')) { add('Wheel of Life', () => openWheel(), 'wheel of life balance satisfaction rate your life areas'); add('Vision board', () => openVisionWall(), 'vision board dreams aspirations visualise images wall'); }
   if (modOn('reviews')) add('Reviews', () => openReviews(), 'weekly monthly quarterly yearly review reflect check-in wheel of life');
+  if (modOn('reviews')) { add('Weekly review', () => openReviews('weekly'), 'week reflect check-in'); add('Monthly review', () => openReviews('monthly'), 'month reflect check-in'); add('Quarterly review', () => openReviews('quarterly'), 'quarter reflect check-in'); add('Yearly review', () => openReviews('yearly'), 'year annual reflect check-in'); }
+  if (modOn('journal')) add('Daily review', () => Promise.resolve(newDailyReview()), 'close the day daily log bullet journal end of day review');
   if (modOn('financial')) add('Money', () => openMoney(), 'spending budget finances');
+  if (modOn('financial')) { add('Spending', () => openFinancial('spending'), 'money budget expenses outgoings transactions'); add('Investments', () => openFinancial('portfolio'), 'money portfolio stocks shares holdings net worth'); add('Advice', () => openFinancial('advice'), 'money financial advice guidance'); }
   if (modOn('saved')) add('Library', () => openReadwatch(), 'bookmarks reading list watchlist saved');
   if (modOn('discover')) add('Local Events', () => openDiscover(), 'events near me what is on discover');
   if (modOn('timer')) add('Toolbox', () => openToolbox(), 'focus timer pomodoro practices');
