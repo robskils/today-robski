@@ -8322,7 +8322,7 @@ const capAreaTitle = (id) => { const a = areaById(id); return a ? (a.title || ''
 // detail came from, asks when it doesn't know, and saves nothing until Enter.
 // The rule-based parse below is the reliable base (it runs with AI off); an LLM
 // pass refines it when AI is on.
-const CAP_KINDS = [['task', 'Task'], ['event', 'Event'], ['note', 'Note'], ['email', 'Email'], ['bookmark', 'Library'], ['inbox', 'Just set it down']];
+const CAP_KINDS = [['task', 'Task'], ['event', 'Event'], ['note', 'Note'], ['email', 'Email'], ['bookmark', 'Read & Watch'], ['inbox', 'Just set it down']];
 const CAP_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const capCap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 // Best-guess kind from the words. Returns [kind|null, confident].
@@ -8575,15 +8575,20 @@ async function submitCap() {
     } else if (kind === 'bookmark') {
       const m = raw.match(/https?:\/\/\S+/i) || raw.match(/\bwww\.\S+/i);
       const link = m ? (/^https?:\/\//i.test(m[0]) ? m[0] : 'https://' + m[0]) : '';
-      if (link) {
-        const title = raw.replace(/https?:\/\/\S+/ig, '').replace(/\bwww\.\S+/ig, '').replace(/\s{2,}/g, ' ').trim();
-        await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: link, title }) });
-      } else {
-        const props = { title: p.title || raw, status: 'todo', added: new Date().toISOString() };
-        if (area) { props.area = area; props.areas = [area]; }
-        await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: p.title || raw, props }) });
+      if (!link) {
+        // A typed name: close the capture bar, then run the SAME staged kind →
+        // exact-one flow the Read & Watch bar uses, so it lands with the right media
+        // type instead of a bare entry. (Robin, 2026-11-14: same flow from set-it-down.)
+        const nm = (p.title || raw).trim();
+        c.open = false; c.text = ''; c.kind = null; c.ans = {}; c.rec = false; renderCapBar(true);
+        let bm = null; try { bm = await rwStagedAdd(nm, { area }); } catch (e) { toast(e.message); }
+        if (bm) { if (state.rw && state.rw.items) state.rw.items.unshift(bm); if (state.view && state.view.type === 'readwatch') renderReadwatch(); toast(`Saved to ${rwName()}.`); }
+        capRefreshHome();
+        return;
       }
-      toast('Saved to Library.');
+      const title = raw.replace(/https?:\/\/\S+/ig, '').replace(/\bwww\.\S+/ig, '').replace(/\s{2,}/g, ' ').trim();
+      await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: link, title }) });
+      toast(`Saved to ${rwName()}.`);
     } else if (kind === 'inbox') {
       await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: raw, props: { inbox: true } }) });
       toast('Set down in your inbox to sort.');
@@ -12655,8 +12660,8 @@ async function delJournalEntry() {
 const RW_SORTS = [['added-desc', 'Newest'], ['added-asc', 'Oldest'], ['title', 'Title A–Z'], ['media', 'Type'], ['rating', 'My rating']];
 // The kinds of thing you can save. 'link' (a plain website/reference) sits
 // alongside the readable/watchable types so a useful site can just be bookmarked.
-const RW_MEDIA = { link: { ic: '🔗', label: 'Website' }, article: { ic: '📰', label: 'Article' }, video: { ic: '▶', label: 'Video' }, book: { ic: '📖', label: 'Book' }, film: { ic: '🎬', label: 'Film' } };
-const RW_MEDIA_ORDER = ['link', 'article', 'video', 'book', 'film'];
+const RW_MEDIA = { link: { ic: '🔗', label: 'Website' }, article: { ic: '📰', label: 'Article' }, video: { ic: '▶', label: 'Video' }, series: { ic: '📺', label: 'Series' }, book: { ic: '📖', label: 'Book' }, film: { ic: '🎬', label: 'Film' } };
+const RW_MEDIA_ORDER = ['link', 'article', 'video', 'series', 'book', 'film'];
 // The tool is "Read & Watch" everywhere. Only the nav menu button shrinks to the
 // shorter "Library" on the phone, where the full name is too wide. (Robin, 2026-11-14.)
 function rwName() {
@@ -12804,8 +12809,7 @@ function renderReadwatch() {
     </div>
     <form class="rw-savebar ${rw.saving ? 'saving' : ''}" id="rw-add-form">
       <span class="rw-save-plus">+</span>
-      <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book or film title" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
-      <span class="rw-save-guess" id="rw-save-guess"></span>
+      <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book, film or series…" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
       <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button>
     </form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
@@ -12827,13 +12831,13 @@ function renderReadwatch() {
     ${rwPanelHtml()}`;
   rwBindOnce();
 }
-function rwGuess(tx) { tx = (tx || '').trim(); if (!tx) return ''; if (/youtu|vimeo|watch/i.test(tx)) return 'Looks like a video'; if (/^https?:/i.test(tx) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(tx)) return 'Looks like an article'; if (/\bfilm|movie\b/i.test(tx)) return 'Looks like a film'; return 'Looks like a book'; }
-// Esc closes the item panel; the save bar shows a live "Looks like a …" guess and
-// lights its border as you type. Bound once. (V35 §69.)
+// Esc closes the item panel; the save bar lights its border as you type. The old
+// "Looks like a …" guess is gone - you pick the kind in the staged add, so it's no
+// longer guessing (and guessing wrong). Bound once. (Robin, 2026-11-14.)
 function rwBindOnce() {
   if (window.__rwBound) return; window.__rwBound = true;
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.view && state.view.type === 'readwatch' && state.rw && state.rw.sel) { state.rw.sel = null; renderReadwatch(); } });
-  document.addEventListener('input', (e) => { if (e.target && e.target.id === 'rw-url') { const v = e.target.value.trim(); const g = document.getElementById('rw-save-guess'); if (g) g.textContent = v ? rwGuess(v) : ''; const bar = e.target.closest('.rw-savebar'); if (bar) bar.classList.toggle('on', !!v); } });
+  document.addEventListener('input', (e) => { if (e.target && e.target.id === 'rw-url') { const bar = e.target.closest('.rw-savebar'); if (bar) bar.classList.toggle('on', !!e.target.value.trim()); } });
 }
 function rwSetupHtml() {
   const s = state.rw && state.rw.setup;
@@ -12865,11 +12869,9 @@ function rwPickMedia(input, cands) {
   return new Promise((resolve) => {
     const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
     const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
-    const sub = (c) => c.media === 'film'
-      ? `🎬 Film${c.year ? ` · ${esc(c.year)}` : ''}`
-      : `📖 Book${c.site ? ` · ${esc(c.site)}` : (c.year ? ` · ${esc(c.year)}` : '')}`;   // site already carries author · year
+    const sub = (c) => { const md = RW_MEDIA[c.media] || RW_MEDIA.article; const extra = c.media === 'book' ? (c.site || c.year || '') : (c.year || c.site || ''); return `${md.ic} ${md.label}${extra ? ` · ${esc(extra)}` : ''}`; };   // book's site carries author · year
     const row = (c, i) => `<button class="rwpick-opt" data-rwpick="${i}">
-      <span class="rwpick-cov${c.image ? '' : ' rwpick-cov-gen'}">${c.media === 'film' ? '🎬' : '📖'}${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>
+      <span class="rwpick-cov${c.image ? '' : ' rwpick-cov-gen'}">${(RW_MEDIA[c.media] || {}).ic || '🔖'}${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>
       <span class="rwpick-main"><span class="rwpick-t">${esc(c.title)}</span><span class="rwpick-sub">${sub(c)}</span></span></button>`;
     el.innerHTML = `<div class="pal-bg"><div class="rwpick-box ui-dialog-box">
       <div class="rwpick-h">Which “${esc(input)}”?</div>
@@ -12885,10 +12887,57 @@ function rwPickMedia(input, cands) {
     document.addEventListener('keydown', onKey, true);
   });
 }
+// Step 2 of adding by name: what kind of thing is it? You choose - no regex
+// guessing wrong. Resolves to a media key, or null if cancelled. (Robin, 2026-11-14.)
+const RW_TYPE_ORDER = ['book', 'film', 'series', 'video', 'article', 'link'];
+function rwPickType(name) {
+  const el = uiDialogHost();
+  return new Promise((resolve) => {
+    const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
+    const btn = (k) => `<button class="rwtype-opt" data-rwtype="${k}"><span class="rwtype-ic">${RW_MEDIA[k].ic}</span><span class="rwtype-l">${RW_MEDIA[k].label}</span></button>`;
+    el.innerHTML = `<div class="pal-bg"><div class="rwtype-box ui-dialog-box">
+      <div class="rwpick-h">What is “${esc(name)}”?</div>
+      <div class="rwpick-sub2">Pick the kind, then choose the exact one.</div>
+      <div class="rwtype-grid">${RW_TYPE_ORDER.map(btn).join('')}</div>
+      <div class="rwpick-foot"><button class="ui-btn cancel" data-rwtype="cancel">Cancel</button></div>
+    </div></div>`;
+    el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
+    el.querySelectorAll('[data-rwtype]').forEach((b) => b.addEventListener('click', () => { const v = b.dataset.rwtype; close(v === 'cancel' ? null : v); }));
+    document.addEventListener('keydown', onKey, true);
+  });
+}
+// The staged add-by-name flow, shared by the Read & Watch bar and "Set something
+// down": step 2 pick the kind, step 3 (book/film/series) pick the exact one from
+// the catalogue or just save the title. Returns the created block, or null if
+// cancelled. (Robin, 2026-11-14.)
+async function rwStagedAdd(name, opts = {}) {
+  name = (name || '').trim(); if (!name) return null;
+  const type = await rwPickType(name);
+  if (!type) return null;
+  let chosen = null;
+  if (type === 'book' || type === 'film' || type === 'series') {
+    let cands = [];
+    try { const d = await api('/api/lookup?multi=1&type=' + type + '&q=' + encodeURIComponent(name)); cands = d.candidates || []; } catch {}
+    if (cands.length) {
+      const pick = await rwPickMedia(name, cands);
+      if (pick === null) return null;              // cancelled
+      chosen = pick.typed ? null : pick;
+    }
+  }
+  const props = {
+    title: ((chosen && chosen.title) || name).slice(0, 300),
+    url: (chosen && chosen.url) || '', image: (chosen && chosen.image) || '',
+    site: (chosen && chosen.site) || '', year: (chosen && chosen.year) || '',
+    media: type, status: 'todo', added: new Date().toISOString(),
+  };
+  if (opts.area) { props.area = opts.area; props.areas = [opts.area]; }
+  return api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
+}
 async function rwSave(input) {
   input = (input || '').trim(); if (!input || !state.rw) return;
   // A link (http… or a bare domain with no spaces) is fetched for its metadata;
-  // anything else is treated as a book / film title to look up.
+  // anything else is a typed name, which goes through the staged kind → exact-one flow.
   const isLink = /^https?:\/\//i.test(input) || /^[^\s]+\.[a-z]{2,}(\/|\?|#|$)/i.test(input);
   if (isLink) {
     state.rw.saving = true; renderReadwatch();
@@ -12896,29 +12945,12 @@ async function rwSave(input) {
     catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
     return;
   }
-  // A typed title: fetch the candidates. If a forced type is set use just that;
-  // otherwise, when there's more than one match (e.g. a book AND a film of the same
-  // name), let you choose the exact one. A single match saves straight away.
-  const forced = ['film', 'book'].includes(state.rw.addType) ? state.rw.addType : '';
-  state.rw.saving = true; renderReadwatch();
-  let cands = [];
-  try { const d = await api('/api/lookup?multi=1&q=' + encodeURIComponent(input)); cands = (d.candidates || []); } catch {}
-  if (forced) cands = cands.filter((c) => c.media === forced);
-  state.rw.saving = false;
-  let chosen = null;
-  if (cands.length >= 2) {
-    const pick = await rwPickMedia(input, cands);
-    if (pick === null) { renderReadwatch(); return; }     // cancelled: save nothing
-    chosen = pick.typed ? null : pick;
-  } else if (cands.length === 1) { chosen = cands[0]; }
-  const media = chosen ? chosen.media : (forced || 'book');
-  const props = { title: ((chosen && chosen.title) || input).slice(0, 300), url: (chosen && chosen.url) || '', image: (chosen && chosen.image) || '', site: (chosen && chosen.site) || '', year: (chosen && chosen.year) || '', media, status: 'todo', added: new Date().toISOString() };
-  state.rw.saving = true; renderReadwatch();
-  try {
-    const bm = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'bookmark', title: props.title, props }) });
-    state.rw.items.unshift(bm); state.rw.saving = false; renderReadwatch();
-    toast(media === 'film' ? '🎬 Film added' : '📖 Book added');
-  } catch (e) { state.rw.saving = false; renderReadwatch(); toast(e.message); }
+  let bm;
+  try { bm = await rwStagedAdd(input); } catch (e) { toast(e.message); renderReadwatch(); return; }
+  if (!bm) { renderReadwatch(); return; }           // cancelled
+  state.rw.items.unshift(bm); renderReadwatch();
+  const md = RW_MEDIA[rwMediaKey(bm.props || {})] || RW_MEDIA.article;
+  toast(`${md.ic} ${md.label} added`);
 }
 async function rwSetDone(id, done) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
@@ -29283,7 +29315,6 @@ document.addEventListener('click', (e) => {
   { const rsc = t.closest('[data-rw-sec]'); if (rsc) { if (state.rw) { state.rw.fold = state.rw.fold || { todo: true, done: true }; const k = rsc.dataset.rwSec; state.rw.fold[k] = !state.rw.fold[k]; renderReadwatch(); } return; } }
   { const rp = t.closest('[data-rw-pin]'); if (rp) { rwTogglePin(rp.dataset.rwPin); return; } }
   const rwf = t.closest('[data-rw-filter]'); if (rwf) { if (state.rw) { state.rw.filter = rwf.dataset.rwFilter; renderReadwatch(); } return; }
-  const rwt = t.closest('[data-rw-type]'); if (rwt) { if (state.rw) { const typed = ($('#rw-url') || {}).value || ''; state.rw.addType = state.rw.addType === rwt.dataset.rwType ? null : rwt.dataset.rwType; renderReadwatch(); const i = $('#rw-url'); if (i) { i.value = typed; i.focus(); try { i.setSelectionRange(typed.length, typed.length); } catch {} } } return; }
   { const rss = t.closest('[data-rw-setstatus]'); if (rss) { const i = rss.dataset.rwSetstatus.indexOf(':'); rwSetStatus(rss.dataset.rwSetstatus.slice(0, i), rss.dataset.rwSetstatus.slice(i + 1)); return; } }
   const rwd = t.closest('[data-rw-done]'); if (rwd) { const b = (state.rw.items || []).find((x) => x.id === rwd.dataset.rwDone); rwSetDone(rwd.dataset.rwDone, !(b && b.props && b.props.status === 'done')); return; }
   const rwr = t.closest('[data-rw-rate]'); if (rwr) { rwSetRating(rwr.dataset.rwRate, Number(rwr.dataset.rwRateN)); return; }

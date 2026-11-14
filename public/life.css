@@ -7263,6 +7263,13 @@ textarea.fb-textarea { height:auto; min-height:120px; line-height:1.5; resize:ve
 .rwpick-sub { font-size:13px; color:var(--ink-2); }
 .rwpick-foot { display:flex; justify-content:space-between; gap:9px; margin-top:16px; }
 .rwpick-typed { font-size:14px; }
+/* Staged add, step 2: pick what kind of thing it is (book / film / series / …). */
+.rwtype-box { width:min(440px,94vw); background:var(--card); border:1px solid var(--line-2); border-radius:0; padding:20px; }
+.rwtype-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:10px; margin:4px 0; }
+.rwtype-opt { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:16px 10px; background:var(--paper-2); border:1px solid var(--line); border-radius:0; cursor:pointer; transition:border-color .12s, background .12s; }
+.rwtype-opt:hover { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--paper-2)); }
+.rwtype-ic { font-size:26px; line-height:1; }
+.rwtype-l { font-family:var(--k-sans); font-size:15px; font-weight:500; color:var(--ink); }
 /* Life-area colour: the gear in the hero, and the picker it opens. */
 /* Change-colour affordances. The old ⚙ gear read as generic settings; a
    labelled swatch pill makes "change this area's colour" obvious, and the dot
