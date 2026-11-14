@@ -7146,15 +7146,12 @@ function renderPracticeCard() {
   $('#pane').innerHTML = `${crumb}
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
     <div class="pc-sumline">${metaBits}</div>
-    <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button></div>
+    <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button><button type="button" class="pc-setup-btn ${setupClosed ? '' : 'on'}" data-prc-setup-toggle aria-expanded="${!setupClosed}">${setupClosed ? 'Setup' : 'Close'}</button></div>
     <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
+      <div class="pc-setup${setupClosed ? ' is-closed' : ''}"><div class="pc-setup-body">${practiceFieldsHtml('setup')}</div></div>
       <div class="pc-cols2">
         <div class="pc-col-instr">${practiceFieldsHtml('instructions')}</div>
         <aside class="pc-col-video">${practiceFieldsHtml('videos')}</aside>
-      </div>
-      <div class="pc-setup${setupClosed ? ' is-closed' : ''}">
-        <div class="pc-setup-h"><h2 class="pc-setup-title">Setup</h2><button type="button" class="pc-setup-btn" data-prc-setup-toggle aria-expanded="${!setupClosed}">${setupClosed ? 'Open' : 'Close'}</button></div>
-        <div class="pc-setup-body">${practiceFieldsHtml('setup')}</div>
       </div>
       <div class="pc-attach-sec">${practiceFieldsHtml('attach')}</div>
       <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><button class="add-btn wide" data-prc-save>Save</button></div>
@@ -27094,8 +27091,11 @@ const lkClosed = () => { try { return localStorage.getItem('life.lk.closed') ===
 function lkRowHtml(kind, mainHtml, meta, removeAttr, name, thumb) {
   const shown = LK_SINGULAR[kind] || kind || '';
   const group = LK_GROUP[kind] || (kind ? `${kind}s` : 'Other');
-  const sub = [shown, meta].filter(Boolean).join(' · ');
-  return `<div class="lk-row" data-lk-group="${esc(group)}">${thumb || ''}<span class="lk-main">${mainHtml}${sub ? `<span class="lk-sub">${sub}</span>` : ''}</span><button type="button" class="lk-x" ${removeAttr} title="Remove" aria-label="Remove ${esc(name || '')}">✕</button></div>`;
+  // A gold type chip makes each attached thing obvious at a glance - what it IS
+  // (Note, Person, Link, File) rather than a faint word in the sub-line. (Robin,
+  // 2026-11-14: "make it more obvious what has already been attached".)
+  const chip = shown === 'Web link' ? 'Link' : shown;
+  return `<div class="lk-row" data-lk-group="${esc(group)}">${thumb || ''}${chip ? `<span class="lk-kind">${esc(chip)}</span>` : ''}<span class="lk-main">${mainHtml}${meta ? `<span class="lk-sub">${meta}</span>` : ''}</span><button type="button" class="lk-x" ${removeAttr} title="Remove" aria-label="Remove ${esc(name || '')}">✕</button></div>`;
 }
 function lkLinkRow(url, label, host, removeAttr) {
   return lkRowHtml('Web link', `<a class="lk-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`, host ? `${esc(host)} ↗` : '', removeAttr, label);
@@ -27142,11 +27142,13 @@ function lkToggleFold(btn) {
 // The Setup fold on a practice page. Its own remembered state (not the shared
 // lk fold key), since the "Linked & attached" panel nests inside it. (Robin, 2026-11-14.)
 function prcToggleSetup(btn) {
-  const wrap = btn.closest('.pc-setup'); if (!wrap) return;
+  // The button sits up by "Mark done today"; the panel it opens is lower in the page.
+  const wrap = document.querySelector('.pc-setup'); if (!wrap) return;
   const closed = wrap.classList.toggle('is-closed');
   try { localStorage.setItem('life.prc.setup', closed ? '1' : '0'); } catch {}
   btn.setAttribute('aria-expanded', String(!closed));
-  btn.textContent = closed ? 'Open' : 'Close';
+  btn.classList.toggle('on', !closed);
+  btn.textContent = closed ? 'Setup' : 'Close';
 }
 // The search box is always on show now, so load what it searches on first focus,
 // not every time a page opens.

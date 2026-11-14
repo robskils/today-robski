@@ -4874,13 +4874,15 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pc-vidsec .pc-vid-in { width:100%; max-width:none; }
 .pc-vidsec .pe-add-video { align-self:flex-start; }
 /* Setup: a serif heading with an Open / Close button, its body the settings. */
-.pc-setup { max-width:700px; border-top:1px solid var(--line); padding-top:18px; }
-.pc-setup-h { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.pc-setup-title { margin:0; font-family:var(--k-serif); font-weight:500; font-size:28px; line-height:1.1; color:var(--ink); }
-.pc-setup-btn { appearance:none; flex:none; border:1px solid var(--line); background:none; color:var(--ink-2); font-family:var(--k-sans); font-weight:500; font-size:14px; letter-spacing:.03em; padding:8px 20px; cursor:pointer; border-radius:0; transition:border-color .12s, color .12s; }
+/* Setup is folded away by default, so its toggle rides up in the tick row next to
+   "Mark done today"; opening it unfolds the settings there, above the content.
+   (Robin, 2026-11-14: "have the setup button at the top… it's going to be hidden anyway".) */
+.pc-setup-btn { appearance:none; flex:none; border:1px solid var(--line); background:none; color:var(--ink-2); font-family:var(--k-sans); font-weight:500; font-size:15px; letter-spacing:.02em; padding:0 20px; min-height:44px; cursor:pointer; border-radius:0; transition:border-color .12s, color .12s; }
 .pc-setup-btn:hover { border-color:var(--k-goldt); color:var(--k-goldt); }
-.pc-setup.is-closed .pc-setup-body { display:none; }
-.pc-setup-body { display:flex; flex-direction:column; gap:22px; padding-top:16px; }
+.pc-setup-btn.on { border-color:var(--k-goldt); color:var(--k-goldt); }
+.pc-setup { max-width:700px; }
+.pc-setup.is-closed { display:none; }
+.pc-setup-body { display:flex; flex-direction:column; gap:22px; padding:2px 0 26px; margin-bottom:4px; border-bottom:1px solid var(--line); }
 /* Linked & attached, at the very bottom. */
 .pc-attach-sec { max-width:700px; }
 @media (max-width:860px){
@@ -5087,7 +5089,7 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pc-video { position:relative; width:100%; aspect-ratio:16/9; border-radius:0; overflow:hidden; margin:4px 0 18px; background:#000; box-shadow:var(--shadow); }
 .pc-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .pc-dolink { max-width:340px; margin:4px 0 18px; }
-.pc-tickrow { margin:0 0 20px; }
+.pc-tickrow { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:0 0 20px; }
 .pc-tick.on { background:var(--done); border-color:var(--done); }
 .pc-sec { margin-top:20px; }
 .pc-note { color:var(--ink); }
@@ -14072,14 +14074,16 @@ select.lk-act { max-width:none; width:auto; }
 .lk-filter.on { color:var(--k-ink); font-weight:600; border-bottom-color:var(--k-gold); }
 .lk-filters + .lk-list { margin-top:-12px; }
 .lk-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr)); column-gap:28px; }
-.lk-row { display:flex; align-items:center; gap:10px; min-width:0; padding:0 4px 0 12px; border-bottom:1px solid var(--k-line); background:var(--k-panel); }
+.lk-row { display:flex; align-items:center; gap:12px; min-width:0; padding:0 6px 0 14px; border-bottom:1px solid var(--k-line); background:var(--k-panel); }
 .lk-row[hidden] { display:none; }
+/* Type chip: what this attached thing IS, at a glance. */
+.lk-kind { flex:none; align-self:center; font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--k-goldt); border:1px solid color-mix(in srgb, var(--k-goldt) 40%, var(--k-line)); padding:3px 8px; white-space:nowrap; }
 .lk-main { flex:1 1 auto; min-width:0; display:block; padding:12px 0; }
 .lk-open { appearance:none; display:block; width:100%; padding:0; border:0; background:none; cursor:pointer; text-align:left; color:var(--k-ink); font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1.3; overflow-wrap:anywhere; text-decoration:none; }
 .lk-open:hover { color:var(--k-goldt); }
 .lk-sub { display:block; margin-top:2px; color:var(--k-mute); font-size:16px; line-height:1.3; overflow-wrap:anywhere; }
 .lk-row .nx-thumb { flex:none; width:44px; height:44px; object-fit:cover; }
-.lk-x { appearance:none; flex:none; display:flex; align-items:center; justify-content:center; width:32px; height:44px; padding:0; border:0; background:none; cursor:pointer; color:var(--k-mute); font-size:18px; opacity:0; transition:opacity .12s; }
+.lk-x { appearance:none; flex:none; display:flex; align-items:center; justify-content:center; width:32px; height:44px; padding:0; border:0; background:none; cursor:pointer; color:var(--k-mute); font-size:18px; opacity:.45; transition:opacity .12s, color .12s; }
 .lk-row:hover .lk-x, .lk-x:focus-visible { opacity:1; }
 .lk-x:hover { color:var(--k-goldt); }
 .lk-fold:focus-visible, .lk-act:focus-visible, .lk-filter:focus-visible, .lk-open:focus-visible, .lk-x:focus-visible { outline:2px solid var(--k-goldt); outline-offset:2px; }
