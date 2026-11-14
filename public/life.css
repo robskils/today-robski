@@ -4862,6 +4862,10 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pc-edit { display:flex; flex-direction:column; gap:30px; max-width:980px; margin-top:8px; }
 .pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:20px; border-top:1px solid var(--line); }
 .pc-edit-foot .add-btn.wide { margin-left:auto; }
+/* The routine page autosaves; this is the quiet status where Save used to be. */
+.pc-savestate { margin-left:auto; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); transition:color .12s, opacity .12s; }
+.pc-savestate.saving { opacity:.75; }
+.pc-savestate.error { color:var(--k-goldt); }
 /* Summary line under the name: Space · how often · Last done: … */
 .pc-sumline { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:6px 0 22px; font-family:var(--k-sans); font-size:15.5px; line-height:1.4; color:var(--ink-3); }
 .pc-sumline .pcm-space { color:var(--ink); }

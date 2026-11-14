@@ -7135,13 +7135,7 @@ function renderPracticeCard() {
   // did it. Then the doing, in two columns: instructions on the left, video on the
   // right. The settings fold away under Setup (an Open button, not a +), and the
   // linked & attached things sit at the very bottom. (Robin, 2026-11-14.)
-  const cadLbl = a.cadence ? cadenceLabel(a.cadence) : '';
-  const cadTxt = a.avoid ? 'Avoiding' : (cadLbl || 'Whenever');
-  const metaBits = [
-    ar ? `<span class="pcm-space">${esc(ar.title || 'Untitled')}</span>` : '',
-    `<span>${esc(cadTxt)}</span>`,
-    `<span class="pcm-last">${esc(practiceLastDoneLabel(a))}</span>`,
-  ].filter(Boolean).join('<span class="pcm-sep" aria-hidden="true">·</span>');
+  const metaBits = practiceSummaryBits(a);
   let setupClosed = true; try { setupClosed = localStorage.getItem('life.prc.setup') !== '0'; } catch {}
   $('#pane').innerHTML = `${crumb}
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
@@ -7154,8 +7148,9 @@ function renderPracticeCard() {
         <aside class="pc-col-video">${practiceFieldsHtml('videos')}</aside>
       </div>
       <div class="pc-attach-sec">${practiceFieldsHtml('attach')}</div>
-      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><button class="add-btn wide" data-prc-save>Save</button></div>
+      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><span class="pc-savestate" data-prc-savestate aria-live="polite">✓ Saved</span></div>
     </div>`;
+  prcMarkSavedBaseline();   // the just-loaded state is the baseline; a no-op never saves
 }
 function practiceToggle(id, day) {
   const P = state.practices; if (!P) return; const k = `${id}:${day}`; if (P.marks[k]) delete P.marks[k]; else P.marks[k] = 1; savePracticeMarks();
@@ -7430,7 +7425,7 @@ function peAttachHtml() {
     <button type="button" class="lk-act" data-pe-add-link>Web link</button>
     <select class="lk-act" data-pe-add-contact><option value="">Link a contact</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>` });
 }
-function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); }
+function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); scheduleAutosave(); }
 // Extra videos beyond the primary one: a practice can carry a few (Robin, 2026-11-14:
 // "sometimes I want to add two"). The first lives in the activity's `video` column;
 // any more ride in meta.videos. Each embeds the same way and can be removed.
@@ -7441,7 +7436,7 @@ function peExtraVideoRow(v, i) {
     </div>`;
 }
 function peExtraVideosHtml() { if (!state.practiceEdit) return ''; return (peMeta().videos || []).map((v, i) => peExtraVideoRow(v, i)).join(''); }
-function renderPeVideos() { const box = document.querySelector('[data-pe-videos]'); if (box) box.innerHTML = peExtraVideosHtml(); }
+function renderPeVideos() { const box = document.querySelector('[data-pe-videos]'); if (box) box.innerHTML = peExtraVideosHtml(); scheduleAutosave(); }
 // Read the extra-video inputs back out of the DOM into state before any add/remove
 // re-render, so what you've just typed into the other rows is never lost.
 function syncPeVideosFromDom() {
@@ -7463,16 +7458,20 @@ async function peAddLink() {
   let title = await uiPrompt('Name it (optional)', { placeholder: prettyLinkLabel(url) }); title = (title || '').trim();
   peMeta().links.push(title ? { url, title } : { url }); renderPeAttach();
 }
-async function savePractice() {
-  const pe = state.practiceEdit; if (!pe) return;
-  const cur = pe.id ? (state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) : null;
-  const title = (($('#pe-title') || {}).value || '').trim(); if (!title) { toast('Give it a name'); return; }
+// The routine's current field values, read straight from the DOM. Shared by the
+// explicit save (the New-routine popover) and the routine page's autosave. Returns
+// null when there's no name yet (never save a nameless routine).
+function prcEditBody() {
+  const titleEl = $('#pe-title'); if (!titleEl) return null;
+  const title = (titleEl.value || '').trim(); if (!title) return null;
+  const pe = state.practiceEdit;
+  const cur = (pe && pe.id) ? (state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) : null;
   const avoid = $('#pe-avoid') ? ($('#pe-avoid').checked ? 1 : 0) : 0;
   // Pull the extra-video rows out of the DOM, drop the empties, and give a bare
   // domain a scheme so the worker keeps it (it validates each like the primary).
   syncPeVideosFromDom();
   peMeta().videos = (peMeta().videos || []).map((v) => String(v || '').trim()).filter(Boolean).map((v) => /^https?:\/\//i.test(v) ? v : 'https://' + v);
-  const body = {
+  return {
     avoid,
     ...(avoid ? { avoidSince: (cur && cur.avoid_since) || todayISO() } : {}),
     title: title.slice(0, 80),
@@ -7480,7 +7479,7 @@ async function savePractice() {
     duration: Math.max(5, Math.min(720, Number(($('#pe-dur') || {}).value) || 30)),
     timed: avoid ? false : ($('#pe-timed') ? $('#pe-timed').checked : true),
     tracked: avoid ? true : ($('#pe-tracked') ? $('#pe-tracked').checked : true),
-    days: '',        // practices are a palette of options, not a timetable
+    days: '',        // routines are a palette of options, not a timetable
     time_min: '',
     cadence: ($('#pe-cadence') || {}).value || '',
     priority: ($('#pe-prio') || {}).value || '',
@@ -7488,6 +7487,12 @@ async function savePractice() {
     note: (($('#pe-note') || {}).value || '').trim(),
     meta: JSON.stringify(peMeta()),
   };
+}
+// The explicit save: used only by the New-routine popover now (the routine page
+// autosaves - see below). Creates a new routine, or patches an existing one.
+async function savePractice() {
+  const pe = state.practiceEdit; if (!pe) return;
+  const body = prcEditBody(); if (!body) { toast('Give it a name'); return; }
   try {
     let a;
     if (pe.id) { a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: JSON.stringify(body) }); const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id)); if (i >= 0) state.practices.activities[i] = a; }
@@ -7496,6 +7501,66 @@ async function savePractice() {
     if (state.view.type === 'today') renderToday(); else rerenderPractices();
   } catch (e) { toast(e.message); }
 }
+// ── Routine autosave ──────────────────────────────────────────────────────
+// The routine page has no Save button: it saves itself (Robin, 2026-11-14 "can we
+// not autosave?"). Typing schedules a debounced PATCH; committing a field (change
+// / blur), changing what's attached, or leaving the page saves at once, so an edit
+// is always in flight before you navigate away. The popover (a NEW routine) keeps
+// its explicit Add button and is never autosaved (it has no id yet).
+let _prcSaveTimer = null, _prcSaving = false, _prcDirty = false, _prcLastSaved = null;
+function prcAutosaveOn() { return !!(state.view && state.view.type === 'practicecard' && state.practiceEdit && state.practiceEdit.id && document.getElementById('pe-title')); }
+// The baseline a save compares against, so merely opening a routine - or focusing
+// and leaving a field without changing it - never writes (and never bumps the
+// "recently updated" clock). Set when the page renders; refreshed after each save.
+function prcMarkSavedBaseline() { try { _prcLastSaved = prcAutosaveOn() ? JSON.stringify(prcEditBody()) : null; } catch { _prcLastSaved = null; } }
+function scheduleAutosave(delay = 800) { if (!prcAutosaveOn()) return; clearTimeout(_prcSaveTimer); _prcSaveTimer = setTimeout(autosavePractice, delay); }
+async function autosavePractice() {
+  clearTimeout(_prcSaveTimer);
+  if (!prcAutosaveOn()) return;
+  const pe = state.practiceEdit;
+  const body = prcEditBody(); if (!body) return;            // no name yet: leave the last good save be
+  const bj = JSON.stringify(body);
+  if (bj === _prcLastSaved) { setPrcSaveStatus('saved'); return; }   // nothing actually changed
+  if (_prcSaving) { _prcDirty = true; return; }             // coalesce: re-run after the in-flight save
+  _prcSaving = true; _prcDirty = false; setPrcSaveStatus('saving');
+  try {
+    const a = await api('/api/activities/' + pe.id, { method: 'PATCH', body: bj });
+    const i = state.practices.activities.findIndex((x) => String(x.id) === String(pe.id));
+    if (i >= 0) state.practices.activities[i] = a;
+    _prcLastSaved = bj; setPrcSaveStatus('saved'); updatePracticeSummary(a);
+  } catch (e) { setPrcSaveStatus('error'); }
+  _prcSaving = false;
+  if (_prcDirty && prcAutosaveOn()) scheduleAutosave(200);
+}
+function setPrcSaveStatus(s) {
+  const el = document.querySelector('[data-prc-savestate]'); if (!el) return;
+  el.classList.remove('saving', 'saved', 'error');
+  if (s === 'saving') { el.classList.add('saving'); el.textContent = 'Saving…'; }
+  else if (s === 'error') { el.classList.add('error'); el.textContent = 'Not saved - check your connection'; }
+  else { el.classList.add('saved'); el.textContent = '✓ Saved'; }
+}
+// Refresh the summary line (Space · how often · last done) + hue after a save,
+// without touching the fields you're editing.
+function updatePracticeSummary(a) {
+  const el = document.querySelector('.pc-sumline'); if (el) el.innerHTML = practiceSummaryBits(a);
+  const head = document.querySelector('.pc-head'); if (head) { const ar = practiceArea(a); head.style.setProperty('--h', String(ar ? hueOf(ar) : 220)); }
+}
+function practiceSummaryBits(a) {
+  const ar = practiceArea(a);
+  const cadLbl = a.cadence ? cadenceLabel(a.cadence) : '';
+  const cadTxt = a.avoid ? 'Avoiding' : (cadLbl || 'Whenever');
+  return [
+    ar ? `<span class="pcm-space">${esc(ar.title || 'Untitled')}</span>` : '',
+    `<span>${esc(cadTxt)}</span>`,
+    `<span class="pcm-last">${esc(practiceLastDoneLabel(a))}</span>`,
+  ].filter(Boolean).join('<span class="pcm-sep" aria-hidden="true">·</span>');
+}
+// Typing saves (debounced); committing a field or leaving it saves at once.
+document.addEventListener('input', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) scheduleAutosave(); });
+document.addEventListener('change', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) autosavePractice(); });
+document.addEventListener('focusout', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) autosavePractice(); });
+window.addEventListener('pagehide', () => { if (prcAutosaveOn()) autosavePractice(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && prcAutosaveOn()) autosavePractice(); });
 function trackerPanel() {
   if (!state.practices) { loadPractices().then(() => { if (state.view.type === 'home') renderHomeSoon(); }); return '<div class="home-empty" style="padding:6px 0">Loading routines…</div>'; }
   const groups = practicesGroups(true);
