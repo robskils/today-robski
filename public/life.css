@@ -2879,12 +2879,11 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
 .wm-bk { font-style:normal; margin-left:0; }
 /* The sign:  (Kaya) rendered as text, the octagram retired. Sizes come from
    font-size per context (was width/height for the old SVG). (Robin, 2026-10-30.) */
-/* The mark is the Mandombe "ko" (ink consonants, gold vowels), sized by font-size
-   like the old glyph; width tracks the ~1.22:1 art via background contain. Night
-   swaps to the ivory-stroke version. (Kaya, 2026-10-30.) */
-.brand-mark { display:inline-block; width:1.22em; height:1em; margin:0 .24em; vertical-align:-.14em;
-  background:url(/brand/mandombe-ko-ink.svg) center/contain no-repeat; }
-body.night .brand-mark, :root[data-theme='dark'] .brand-mark { background-image:url(/brand/mandombe-ko-ivory.svg); }
+/* The mark is the gold 香 seal (kaya-seal.svg), sized by font-size. It reads on
+   both light and dark, so there's no night swap. (2026-11-15: finished moving the
+   header mark off the old Mandombe "ko" to the 香 seal.) */
+.brand-mark { display:inline-block; width:1em; height:1em; margin:0 .24em; vertical-align:-.14em;
+  background:url(/brand/kaya-seal.svg) center/contain no-repeat; }
 /* The wordmark: "Kaya" in Cormorant Garamond 500 with a gold full stop. */
 .brand-word { font-family:var(--k-serif); font-style:normal; font-weight:500; letter-spacing:0; text-transform:none; }
 .brand-dot { color:var(--k-gold,#c99a3e); font-style:normal; }
