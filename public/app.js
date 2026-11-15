@@ -12810,7 +12810,7 @@ function renderReadwatch() {
     <form class="rw-savebar ${rw.saving ? 'saving' : ''}" id="rw-add-form">
       <span class="rw-save-plus">+</span>
       <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book, film or series…" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
-      <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button>
+      <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Search'}</button>
     </form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     ${items.length ? `
@@ -20564,7 +20564,7 @@ function quickTaskFormHtml() {
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option value="P1">First</option><option value="P2">Soon</option><option value="P3" selected>Whenever</option></select></label>
       <label class="atf"><span>Duration</span><select id="qt-dur" class="sel">${DURATION_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf"><span>Surface on</span>${dateFieldHtml('qt-snooze', '')}</label>
-      <label class="atf"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
+      <label class="atf atf-rep"><span>Repeat</span><select id="qt-repeat" class="sel">${REPEATS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
       <label class="atf" id="qt-repeatfrom-wrap" hidden><span>Next one is due</span><select id="qt-repeatfrom" class="sel"><option value="due">On its schedule</option><option value="done">After I tick it off</option></select></label>
     </div>
     <label class="atf atf-full"><span>Notes</span><textarea id="qt-notes" class="sel" rows="3" placeholder="Any details, context or links…" autocomplete="off"></textarea></label>
