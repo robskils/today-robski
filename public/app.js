@@ -9385,12 +9385,54 @@ function homeRadarItems() {
   const an = (id) => { const a = id ? areaById(id) : null; return a ? a.title : ''; };
   const whenText = (n) => n < 0 ? `${-n} day${n === -1 ? '' : 's'} past` : n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`;
   const push = (g, o) => { if (!later.has(o.id)) out[g].push(o); };
-  (state.tasks || []).forEach((t) => { const p = t.props || {}; if (p.done || p.kit) return; const due = p.due; if (!due || !/^\d{4}-\d{2}-\d{2}$/.test(due)) return; const n = dd(due); if (n > 7) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Task', id: 't:' + t.id, text: t.title || 'A task', when: whenText(n), overdue: n < 0, n, attr: `data-open-task="${t.id}"`, act: 'Open', space: an(p.area) }); });
+  (state.tasks || []).forEach((t) => {
+    const p = t.props || {}; if (p.done || p.kit) return;
+    const snz = p.snooze ? String(p.snooze).slice(0, 10) : '';
+    if (snz && snz > today) return;                        // still snoozed - stays hidden until it surfaces
+    const surfacedDays = snz ? -dd(snz) : null;            // days since a past snooze let it surface
+    const justSurfaced = surfacedDays != null && surfacedDays >= 0 && surfacedDays <= 3;
+    const due = (p.due && /^\d{4}-\d{2}-\d{2}$/.test(p.due)) ? p.due : '';
+    if (!due && !justSurfaced) return;                     // needs a date, unless it only just surfaced
+    const n = due ? dd(due) : 0;                           // a surfaced-but-undated task reads as "today"
+    if (due && n > 7) return;
+    push(n < 0 ? 'overdue' : 'soon', { kind: 'Task', id: 't:' + t.id, text: t.title || 'A task', when: whenText(n), overdue: n < 0, n, attr: `data-open-task="${t.id}"`, act: 'Open', space: an(p.area), created: t.created_at || '', snooze: snz });
+  });
   ((state.home.alerts && state.home.alerts.keepInTouch) || []).forEach((k) => { const n = k.due ? dd(k.due) : 999; if (n > 1) return; push(n < 0 ? 'overdue' : 'soon', { kind: 'Keep in touch', id: 'k:' + (k.taskId || k.id), text: k.name || 'Someone', when: k.last ? `${kitWhen(k.last)} since you spoke` : 'not spoken yet', overdue: n < 0, n, attr: `data-open-contact="${k.id}"`, cId: k.id, taskId: k.taskId, last: k.last, every: k.every, long: k.last ? (Date.now() - Date.parse(k.last)) > 28 * 86400000 : true, act: 'Message', space: '' }); });
   ((state.home.alerts && state.home.alerts.birthdays) || []).forEach((b) => { push('soon', { kind: 'Birthday', id: 'b:' + b.id, text: `${b.name}${b.turns ? ` turns ${b.turns}` : ''}`, when: b.inDays === 0 ? 'today' : b.inDays === 1 ? 'tomorrow' : `in ${b.inDays} days`, overdue: false, n: b.inDays, attr: `data-open-contact="${b.id}"`, act: 'Message', space: '' }); });
   (state.goals || []).forEach((g) => { if ((gp(g).status || 'active') === 'done') return; const due = goalDueISO(g); if (!due) return; const n = dd(due); push(n < 0 ? 'overdue' : n <= 7 ? 'soon' : 'ahead', { kind: 'Goal', id: 'g:' + g.id, text: g.title || 'A goal', when: n < 0 ? whenText(n) : `due ${new Date(due + 'T00:00').toLocaleDateString(dloc(), { day: 'numeric', month: 'short' })}`, overdue: n < 0, n, attr: `data-open-goal="${g.id}"`, act: 'Open', space: an(gp(g).area) }); });
   out.overdue.sort((a, b) => a.n - b.n); out.soon.sort((a, b) => a.n - b.n); out.ahead.sort((a, b) => a.n - b.n);
   return out;
+}
+// The feed's order. NOT a pure most-overdue sort (that parks the same guilty item at
+// the top until the tab goes stale) but a blend: a task that JUST surfaced from a
+// snooze leaps to the top for a few days; overdue still counts but saturates, so a
+// chronically-late item can't own #1 forever; a freshly-added task earns a place near
+// the pressing ones; and what's due soon fills in below. Deterministic - no shuffle;
+// higher score sits higher. (Robin, 2026-11-15: "it's overdue, but recency matters
+// too - always seeing the most-overdue thing first gets boring.")
+function feedScore(o) {
+  const today = todayISO();
+  const ageDays = (iso) => { if (!iso) return null; const d = Math.round((Date.parse(today + 'T00:00') - Date.parse(String(iso).slice(0, 10) + 'T00:00')) / 86400000); return d < 0 ? null : d; };
+  // New & time-sensitive (a message, a connect request, a Space invite): a fixed slot
+  // just above what's due today and below a genuinely overdue task - where it was before.
+  if (o.social === 'msg') return 290;
+  if (o.social === 'connect') return 280;
+  if (o.invite) return 275;
+  let s = 0;
+  const n = (o.n ?? 999);
+  // Just surfaced: a snooze that ended today or in the last 3 days -> straight to the top.
+  if (o.snooze && String(o.snooze).slice(0, 10) <= today) { const since = ageDays(o.snooze); if (since != null && since <= 3) s += 1000 - since * 40; }
+  // Overdue counts, but saturates (1 day late = 305, 30+ days late = 450).
+  if (n < 0) s += 300 + Math.min(-n, 30) * 5;
+  else if (n === 0) s += 260;
+  else if (n === 1) s += 180;
+  else if (n <= 7) s += Math.max(0, 110 - n * 6);
+  else s += Math.max(0, 40 - n);
+  // Recency: a task added in the last ~12 days gets a decaying lift, so new things
+  // surface near the pressing ones instead of being buried (added today = +192).
+  const age = ageDays(o.created);
+  if (age != null && age <= 12) s += (12 - age) * 16;
+  return s;
 }
 function homeFeedFilter() { return (state.home && state.home.feedF) || 'all'; }
 // §70: what others did in shared Spaces, since you last looked. Best-effort from the
@@ -9526,7 +9568,7 @@ function homeRadarBodyHtml() {
       const inc = (state.friendStatus && state.friendStatus.incoming) || 0;
       if (inc > 0) social.push({ social: 'connect', kind: 'Connect', id: 'connect', text: inc === 1 ? 'Someone wants to connect' : `${inc} people want to connect`, sub: 'New on Kaya', n: -0.25 });
     }
-    const flow = [...all.filter((o) => (o.n ?? 999) <= 14 || o.kind === 'Review'), ...fInvites, ...social].sort((a, b) => (a.n ?? 999) - (b.n ?? 999));
+    const flow = [...all.filter((o) => (o.n ?? 999) <= 14 || o.kind === 'Review'), ...fInvites, ...social].sort((a, b) => feedScore(b) - feedScore(a) || (a.n ?? 999) - (b.n ?? 999));
     if (flow.length) {
       const live = flow.filter((o) => !g(o.id)).length;
       const cards = flow.map(feedCard).join('');
