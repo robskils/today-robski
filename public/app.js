@@ -38,7 +38,7 @@ function markRingOn() { try { return localStorage.getItem('life.markring') === '
 function applyMarkRing(on) { try { localStorage.setItem('life.markring', on ? '1' : '0'); } catch {} document.documentElement.setAttribute('data-mark-ring', on ? '1' : '0'); }
 // Optional sections/tools. Turn any off in Settings and it vanishes from the nav,
 // launcher and home. Home itself is always on. A module is ON unless set false.
-const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Local Events'], ['tasks', 'Tasks'], ['today', 'Day Planner'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Library'], ['areas', 'Spaces']];
+const MODULES = [['mail', 'Mail'], ['calendar', 'Calendar'], ['discover', 'Local Events'], ['tasks', 'Tasks'], ['today', 'Day Planner'], ['notes', 'Notes'], ['financial', 'Money'], ['goals', 'Goals'], ['reviews', 'Reviews'], ['contacts', 'Contacts'], ['saved', 'Read & Watch'], ['areas', 'Spaces']];
 // The Insight page's own tools, each switchable on its own. reflectOn() is true
 // while any one is on, so the Insight hub and its Home pins stay put until the
 // last is switched off. (Robin, 2026-10-29: "add the Insight tools individually".)
@@ -5588,7 +5588,7 @@ function knavGroups() {
       tools: [
         ['Spaces', 'data-open-areas', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
         ['Routines', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
-        ['Local Events', 'data-open-discover', ''], ['Library', 'data-open-readwatch', ''],
+        ['Local Events', 'data-open-discover', ''], [rwName(), 'data-open-readwatch', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ...revTools ],
       rows: [['Your life', 3], ['Day to day', 2], ['Inspire', 2], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
@@ -8439,7 +8439,7 @@ function capReadoutHtml() {
   } else if (isInbox) {
     body = `<div class="cap-inbox">Saved word for word to your inbox. Sort it when you're ready - nothing is filed for you.</div>`;
   }
-  const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', bookmark: 'Add to Library', inbox: 'Set it down' }[kind] || 'Set it down';
+  const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', bookmark: `Add to ${rwName()}`, inbox: 'Set it down' }[kind] || 'Set it down';
   const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? '' : 'Not sure what this is - choose a kind above, or just set it down.';
   return `${kindRow}${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
 }
@@ -13103,7 +13103,7 @@ function renderBookmarkCard() {
   const openBtn = (href && href !== '#') ? `<a class="rwc-open" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${openLbl}</a>` : '';
   const openTop = mk === 'video'; // YouTube etc. keep the watch button up top
   $('#pane').innerHTML = `
-    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('saved.title'), attr: 'data-open-readwatch' }, { label: p.title || 'Saved' }])}
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: rwName(), attr: 'data-open-readwatch' }, { label: p.title || 'Saved' }])}
     <div class="rwc${ar ? ' has-area' : ''}"${ar ? ` style="--h:${ahue}"` : ''}>
       <div class="rwc-cover rwc-${mk}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="rwc-cover-ic">${media.ic}</span></div>
       <div class="rwc-main">
