@@ -12218,10 +12218,21 @@ async function jcKeep() {
   toast('Kept');
 }
 function jxGrow(ta) { ta = ta || document.getElementById('jx-text'); if (!ta) return; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+// Typewriter scroll: once the line you're writing comes within ~3 lines of the
+// bottom of the screen, scroll the page up so you keep writing in a comfortable
+// band instead of hunched at the very bottom. Only while writing at the end, so it
+// never yanks the page during a mid-text edit. (Robin, 2026-11-15.)
+function jxKeepCaretVisible(ta) {
+  ta = ta || document.getElementById('jx-text'); if (!ta) return;
+  if (ta.selectionStart < ta.value.length - 2) return;
+  const line = parseFloat(getComputedStyle(ta).lineHeight) || 40;
+  const over = ta.getBoundingClientRect().bottom - (window.innerHeight - line * 3);
+  if (over > 0) window.scrollBy(0, over);
+}
 function jcBindCompose() {
   const ta = document.getElementById('jx-text'); if (!ta || ta.__bound) return; ta.__bound = true;
   jxGrow(ta);   // fit whatever is already written, so the page never opens as a cramped box
-  ta.addEventListener('input', () => { jxGrow(ta); jcOnText(ta.value); });
+  ta.addEventListener('input', () => { jxGrow(ta); jcOnText(ta.value); jxKeepCaretVisible(ta); });
   ta.addEventListener('blur', () => { try { jcSave(); } catch {} });
   ta.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); jcKeep(); } });
 }

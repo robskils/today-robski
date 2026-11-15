@@ -11808,8 +11808,12 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
 .jx-eyebrow-lbl { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-goldt); white-space:nowrap; }
 .jx-title { font-family:var(--k-serif); font-weight:300; font-size:clamp(52px,6.5vw,88px); line-height:.98; margin:12px 0 0; color:var(--k-ink); }
 .jx-sub { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(20px,2.1vw,26px); line-height:1.3; color:var(--k-mute); margin-top:10px; }
-.jx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,340px); gap:clamp(40px,5vw,88px); align-items:start; margin-top:30px; }
-.jx-main { min-width:0; max-width:980px; }
+/* Flex-wrap, not a fixed 2-col grid: the writing column keeps a comfortable
+   ~500px basis and the side rail drops BELOW it whenever the real container
+   (narrowed by the nav + page padding) can't fit both - so the writing never
+   gets squeezed to one-word-per-line on a mid-width window. (Robin, 2026-11-15.) */
+.jx-grid { display:flex; flex-wrap:wrap; gap:clamp(40px,5vw,88px); align-items:flex-start; margin-top:30px; }
+.jx-main { flex:999 1 500px; min-width:0; max-width:980px; }
 .jx-newrow { margin:24px 0 10px; }
 /* Today's page */
 .jx-compose { padding-top:18px; border-top:1px solid var(--k-ink); }
@@ -11862,7 +11866,7 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
 .jx-open-link { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); padding:0; }
 .jx-open-link:hover { color:var(--k-ink); }
 /* Right column */
-.jx-side { position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); padding-top:4px; }
+.jx-side { flex:1 1 280px; max-width:360px; position:sticky; top:calc(var(--tabstrip-h,68px) + 16px); padding-top:4px; }
 .jx-side-sec { border-top:1px solid var(--k-ink); }
 .jx-side-head { display:flex; align-items:center; gap:12px; padding:16px 0; cursor:pointer; }
 .jx-side-title { font-family:var(--k-sans); font-weight:600; font-size:10.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--k-ink); white-space:nowrap; }
