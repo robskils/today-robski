@@ -3,7 +3,8 @@
 //
 // Transport: Streamable HTTP, stateless, one POST endpoint at /mcp. Each request
 // carries everything needed, so there are no sessions to keep. Auth is a single
-// static bearer token (env.MCP_TOKEN), and every tool is scoped to the owner
+// static token (env.MCP_TOKEN), sent either as an `Authorization: Bearer` header
+// or as a `?key=` on the URL, and every tool is scoped to the owner
 // (user 1) - this is a personal connector, not a multi-tenant one. It sits BEFORE
 // the normal JWT auth gate (its own token, not the 7-day session JWT) and is
 // completely inert until MCP_TOKEN is set, like the other optional integrations.
@@ -109,7 +110,11 @@ export async function mcpHandler(request, env, url, deps) {
   if (request.method === 'GET') return jres({ error: 'this server has no event stream; POST JSON-RPC' }, 405);
   if (request.method !== 'POST') return jres({ error: 'method not allowed' }, 405);
 
-  const tok = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  // The token can arrive as an `Authorization: Bearer` header (Claude Code and any
+  // client that sends headers) or as a `?key=` on the URL - the Claude app's "add
+  // custom connector" box takes a URL only, so there the key has to ride in it.
+  const tok = ((request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim())
+    || (url.searchParams.get('key') || '').trim();
   if (!tsEq(tok, env.MCP_TOKEN)) return jres(rpcErr(null, -32001, 'unauthorized'), 401);
 
   let msg; try { msg = await request.json(); } catch { return jres(rpcErr(null, -32700, 'parse error'), 400); }
