@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the Kaya social share card -> public/brand/og-image.v4.png (1200x630).
+"""Render the Kaya social share card -> public/brand/og-image.v6.png (1200x630).
 
 Pure Pillow, no browser. Converts the self-hosted woff2 faces to ttf, uses the
 exact brand tokens (oklch -> sRGB), renders at 2x and downscales for crisp AA.
@@ -7,7 +7,7 @@ To change the card, edit HEADLINE_1 / HEADLINE_2 / GROUND below and re-run:
 
     python3 tools/og/make-card.py
 
-Then bump the filename (v4 -> v5) in the og:image / twitter:image meta across
+Then bump the filename (v5 -> v6) in the og:image / twitter:image meta across
 public/home.html, public/how.html, public/blog.html and public/{pt,fr,es,it,de}
 /index.html so social scrapers refetch instead of serving a cached copy.
 """
@@ -21,11 +21,11 @@ except Exception:
 
 REPO  = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 FONTS = os.path.join(REPO, "public", "fonts")
-OUT   = os.path.join(REPO, "public", "brand", "og-image.v5.png")
+OUT   = os.path.join(REPO, "public", "brand", "og-image.v6.png")
 TMP   = tempfile.mkdtemp(prefix="kaya-og-")
 
 # ---- copy: the live homepage hero line (home.html h1) ----
-WORDMARK   = "Kaya"            # + a gold full stop, no logo mark
+WORDMARK   = "Kaya"            # no full stop (dropped 2026-11-13), no logo mark
 HEADLINE_1 = "A dozen apps to run your life."   # ivory, Cormorant 500
 HEADLINE_2 = "Kaya makes them one."             # gold,  Cormorant 300 italic
 DOMAIN     = "KAYA.SO"
@@ -75,10 +75,8 @@ f_word=ImageFont.truetype(c500,48*SS); f_h1=ImageFont.truetype(c500,76*SS)
 f_h2=ImageFont.truetype(c300i,76*SS);  f_dom=ImageFont.truetype(j600,18*SS)
 cx=W/2
 
-wk=d.textlength(WORDMARK,font=f_word); wd=d.textlength(".",font=f_word)
-sx=cx-(wk+wd)/2; by=118*SS
-d.text((sx,by),WORDMARK,font=f_word,fill=IVORY,anchor="ls")
-d.text((sx+wk,by),".",font=f_word,fill=GOLD,anchor="ls")
+by=118*SS
+d.text((cx,by),WORDMARK,font=f_word,fill=IVORY,anchor="ms")
 
 d.text((cx,302*SS),HEADLINE_1,font=f_h1,fill=IVORY,anchor="ms")
 d.text((cx,384*SS),HEADLINE_2,font=f_h2,fill=GOLD,anchor="ms")
