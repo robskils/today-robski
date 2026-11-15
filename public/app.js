@@ -12075,7 +12075,7 @@ function journalKindLabel(mode) {
 // The person's own words from a page (prompts and headings stripped).
 function journalPlainText(n) {
   const d = document.createElement('div');
-  d.innerHTML = String((n && n.body) || '').replace(/<blockquote[\s\S]*?<\/blockquote>/gi, ' ').replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ');
+  d.innerHTML = String((n && n.body) || '').replace(/<blockquote[\s\S]*?<\/blockquote>/gi, ' ').replace(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi, ' ').replace(/<br\s*\/?>|<\/(p|div|li|h[1-6])>/gi, ' ');
   return (d.textContent || '').replace(/\s+/g, ' ').trim();
 }
 function journalDayLabel(iso) {
@@ -12325,12 +12325,10 @@ function journalMonthsHtml() {
     const open = !!q || j.monthsOpen[m.ym];
     const rows = m.items.map((n) => {
       const iso = (n.props && n.props.date) || n.created_at;
-      const expanded = j.openPage === n.id;
       const txt = journalPlainText(n) || 'Empty page';
-      return `<div class="jx-page${expanded ? ' open' : ''}" data-jexpand="${n.id}">
+      return `<div class="jx-page" data-open-jentry="${n.id}" role="button" tabindex="0" title="Open this page">
         <div class="jx-page-meta"><div class="jx-page-day">${esc(journalDayLabel(iso))}</div><div class="jx-page-kind">${esc(journalKindLabel((n.props && n.props.mode) || 'free'))}</div></div>
         <div class="jx-page-text">${esc(txt)}</div>
-        ${expanded ? `<div class="jx-page-open"><button class="jx-open-link" data-open-jentry="${n.id}">Open page →</button></div>` : ''}
       </div>`;
     }).join('');
     return `<div class="jx-month">
