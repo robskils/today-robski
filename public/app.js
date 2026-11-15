@@ -7441,9 +7441,11 @@ function videoSectionHtml() {
   const addBtn = tabbed ? '' : `<button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>`;
   return `${tabs}<div class="pc-vpanels">${panel0}${extraPanels}</div>${addBtn}`;
 }
+// Re-render the video section from STATE. Callers (add / remove) sync the DOM into
+// state FIRST, so this must not re-sync - reading the not-yet-rerendered DOM here
+// would wipe the video that was just added. (Robin, 2026-11-15: couldn't add more.)
 function renderVideoSection() {
   const s = document.querySelector('[data-video-section]'); if (!s) return;
-  syncPeVideosFromDom();
   s.innerHTML = `<div class="pe-sec-h">Video</div>${videoSectionHtml()}`;
   scheduleAutosave();
 }

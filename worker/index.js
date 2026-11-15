@@ -4132,7 +4132,7 @@ async function practiceFields(env, b) {
       const contacts = Array.isArray(m.contacts) ? m.contacts.filter(Boolean).map(String).slice(0, 100) : [];
       // Extra "another video" links, beyond the one in the `video` column. Each is
       // validated like the primary video (http/https only); bad ones are dropped.
-      const videos = Array.isArray(m.videos) ? m.videos.map((v) => safeUrl(String(v || ''))).filter(Boolean).slice(0, 10) : [];
+      const videos = Array.isArray(m.videos) ? m.videos.map((v) => safeUrl(String(v || ''))).filter(Boolean).slice(0, 30) : [];
       meta = (notes.length || links.length || contacts.length || videos.length) ? JSON.stringify({ notes, links, contacts, videos }) : null;
     } catch { meta = null; }
   }
