@@ -8105,9 +8105,12 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
 .mail-acct-card:has(.mail-sig:not([hidden])) { max-width:1120px; }
 /* A compact fields column beside a big, full-height live preview that takes the
    rest of the (widened) card - so neither the screen nor the panel sits empty. */
-.sig-build-grid { display:grid; grid-template-columns:340px minmax(0,1fr); gap:28px; align-items:stretch; }
-@media (max-width:820px){ .sig-build-grid { grid-template-columns:minmax(0,1fr); } }
-.sig-fields { display:flex; flex-direction:column; gap:11px; }
+/* Flex-wrap, not a grid with a viewport media query: this panel lives inside the
+   app's content column (far narrower than the viewport), so a max-width:820px
+   query never fired and the preview got crushed to ~190px - clipping the email
+   and wrapping the name. Flex wraps on the CONTAINER, so it stacks when cramped. */
+.sig-build-grid { display:flex; flex-wrap:wrap; gap:28px; align-items:stretch; }
+.sig-fields { flex:1 1 320px; min-width:0; display:flex; flex-direction:column; gap:11px; }
 .sig-tpls { display:flex; gap:8px; }
 .sig-tpl { flex:1; padding:8px 6px; border:1px solid var(--line); border-radius:0; background:var(--card); color:var(--ink-2); font-size:13.5px; font-weight:600; cursor:pointer; }
 .sig-tpl:hover { border-color:var(--accent); color:var(--accent); }
@@ -8125,7 +8128,7 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
 .sig-two { display:flex; gap:11px; }
 .sig-two .sig-f { flex:1; min-width:0; }
 .sig-accent-row { display:flex; align-items:center; gap:10px; }
-.sig-preview-col { display:flex; flex-direction:column; gap:8px; }
+.sig-preview-col { flex:2 1 320px; min-width:0; display:flex; flex-direction:column; gap:8px; }
 .sig-preview-lbl { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); font-weight:600; }
 /* The preview fills the column's full height (matching the fields) so there's no
    empty band, with the signature sitting comfortably near the top on a white
