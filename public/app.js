@@ -33733,7 +33733,7 @@ function showSignup(email, inviteRequired, invited, notice) {
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
       <div class="gate2-mark"><img class="gate2-seal" src="/brand/kaya-seal.svg" width="42" height="42" alt="" aria-hidden="true"><span class="gate2-word">Kaya</span></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : needCode ? t('signup.byinvite') : t('signup.welcome')}</p>
-      <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" autocomplete="name" required></label>
+      <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" placeholder="e.g. Tara" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
       ${saved && saved.kind === 'friend' ? `<p class="su-hint">You and ${esc(saved.from)} will be connected, and we'll let ${esc(saved.from)} know you've arrived.</p>` : ''}
       ${needCode ? `<label class="signup-l">${t('signup.invitecode')}<input class="gate2-input" id="su-invite" placeholder="${t('signup.invitecode.ph')}" autocomplete="off" spellcheck="false" required>
