@@ -198,6 +198,22 @@ CREATE TABLE IF NOT EXISTS shares (
 );
 CREATE INDEX IF NOT EXISTS idx_shares_friend ON shares(friend_id);
 
+-- Sharing ONE contact (minus the private info) with a friend. Unlike `shares`
+-- (which grants whole-block read access), a contact share carries a WHITELIST of
+-- which prop keys the recipient may see (`fields`); the server redacts to it on
+-- every read, so the recipient never receives body ("Notes to self") or any key
+-- off the list. Name is always included. Revoked by deleting the row. (Robin,
+-- 2026-11-15: "share a contact, minus the private info; I say how much I share.")
+CREATE TABLE IF NOT EXISTS contact_shares (
+  contact_id TEXT NOT NULL,
+  owner_id   INTEGER NOT NULL,
+  friend_id  INTEGER NOT NULL,
+  fields     TEXT NOT NULL,     -- JSON array of whitelisted prop keys
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (contact_id, friend_id)
+);
+CREATE INDEX IF NOT EXISTS idx_contact_shares_friend ON contact_shares(friend_id);
+
 -- Assigning a task to a friend. One row per (task, assignee); status is
 -- 'pending' until they accept, then 'accepted' (at which point a shares row
 -- grants them edit access to the one task block, so status syncs both ways).

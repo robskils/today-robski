@@ -3,7 +3,7 @@ import { LANES, laneForArea } from '../shared/lanes.js';
 import { isAuthed, isAllowed, resolveUser, requestCode, verifyCode, verifyTotp, verifyJWT, signJWT } from './auth.js';
 import { inviteInfo, handleSignup, getUserByEmail, hasPendingInvite, listInvites, createInvite, resendInvite, cancelInvite, giftsUsed, GIFT_LIMIT, getAccount, patchAccount, addAlias, removeAlias, verifyAlias, sendAliasCode, setPrimaryEmail, closeAccount } from './accounts.js';
 import { touchPresence, getFriends, friendStatus, requestFriend, acceptFriend, removeFriend, getMessages, sendMessage, reactMessage, unreadCounts, messageThreads, searchPeople, isOnline, isActivelyPresent } from './friends.js';
-import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe } from './sharing.js';
+import { shareBlock, unshareBlock, listBlockShares, listBlockViewers, sharedWithMe, sharedByMe, shareContact, unshareContact, listContactShares, contactsSharedWithMe } from './sharing.js';
 import { assignTask, listTaskAssignees, unassign, myAssignments, assignedByMe, acceptAssignment, declineAssignment } from './assignments.js';
 import { aiKey, aiIsOff, aiNeedsKey, logAiUsage, setAiKey, setAiProvider, detectProvider, callAI, encryptSecret, decryptSecret } from './ai.js';
 import { randomSecret, totpVerify, otpauthURI, makeRecoveryCodes, hashRecovery } from './totp.js';
@@ -5940,6 +5940,21 @@ export default {
           const b = await request.json().catch(() => ({}));
           if (request.method === 'POST') return json(await shareBlock(env, bid, b.friendId, b.canEdit), request, 201);
           if (request.method === 'DELETE') return json(await unshareBlock(env, bid, b.friendId), request);
+        } catch (e) { return err(e.message, request, 400); }
+      }
+      // Sharing ONE contact with a friend, minus the private fields. Separate from
+      // the block `shares` path above because it carries a per-recipient field
+      // whitelist and the server redacts to it, so a contact never leaks a field
+      // it wasn't given. (Robin, 2026-11-15.)
+      if (path === '/api/contacts/shared' && request.method === 'GET') return json(await contactsSharedWithMe(env), request);
+      const cShareMatch = path.match(/^\/api\/contacts\/([\w-]+)\/shares?$/);
+      if (cShareMatch) {
+        const cid = cShareMatch[1];
+        try {
+          if (request.method === 'GET') return json(await listContactShares(env, cid), request);
+          const b = await request.json().catch(() => ({}));
+          if (request.method === 'POST') return json(await shareContact(env, cid, b.friendId, b.fields), request, 201);
+          if (request.method === 'DELETE') return json(await unshareContact(env, cid, b.friendId), request);
         } catch (e) { return err(e.message, request, 400); }
       }
       // Publish a note to a public link (POST -> mints/returns a token) or revoke

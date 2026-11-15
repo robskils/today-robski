@@ -143,3 +143,96 @@ export async function sharedWithMe(env) {
     }),
   };
 }
+
+// ── Sharing a single contact (minus the private info) with a friend ──────────
+// Modelled on getPublicCard's redaction, NOT on blockAccess: a contact share
+// never grants whole-block access. It stores a WHITELIST of prop keys per
+// recipient (`fields`); the server emits only those, so body ("Notes to self")
+// and anything off the list never leave the owner's tenant. (Robin, 2026-11-15.)
+const CONTACT_SHARE_FIELDS = ['phones', 'emails', 'telegram', 'instagram', 'signal', 'addresses', 'birthday', 'photo'];
+const cleanShareFields = (fields) =>
+  [...new Set((Array.isArray(fields) ? fields : []).map(String))].filter((f) => CONTACT_SHARE_FIELDS.includes(f));
+
+async function ownedContact(env, id) {
+  return env.DB.prepare("SELECT props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'contact' AND archived = 0")
+    .bind(id, env.uid).first().catch(() => null);
+}
+
+export async function shareContact(env, contactId, friendId, fields) {
+  friendId = Number(friendId);
+  const c = await ownedContact(env, contactId);
+  if (!c) throw new Error('That is not a contact of yours to share.');
+  let props = {}; try { props = c.props ? JSON.parse(c.props) : {}; } catch {}
+  if (props.private) throw new Error('This contact is private - unmark it before sharing.');
+  if (!friendId || friendId === env.uid) throw new Error('Pick a friend to share with.');
+  if (!(await areFriends(env, friendId))) throw new Error('You can only share with people you are connected to.');
+  await env.DB.prepare(
+    `INSERT INTO contact_shares (contact_id, owner_id, friend_id, fields, created_at) VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(contact_id, friend_id) DO UPDATE SET fields = excluded.fields`,
+  ).bind(contactId, env.uid, friendId, JSON.stringify(cleanShareFields(fields)), new Date().toISOString()).run();
+  return listContactShares(env, contactId);
+}
+
+export async function unshareContact(env, contactId, friendId) {
+  if (!(await ownedContact(env, contactId))) throw new Error('That is not a contact of yours.');
+  await env.DB.prepare('DELETE FROM contact_shares WHERE contact_id = ? AND owner_id = ? AND friend_id = ?')
+    .bind(contactId, env.uid, Number(friendId)).run();
+  return listContactShares(env, contactId);
+}
+
+// Who I've shared this contact with, and which fields each of them gets. Owner-only.
+export async function listContactShares(env, contactId) {
+  if (!(await ownedContact(env, contactId))) throw new Error('That is not a contact of yours.');
+  const rows = (await env.DB.prepare(
+    `SELECT cs.friend_id AS id, cs.fields, u.name, u.subdomain
+       FROM contact_shares cs JOIN users u ON u.id = cs.friend_id
+      WHERE cs.contact_id = ? AND cs.owner_id = ? ORDER BY u.name`,
+  ).bind(contactId, env.uid).all().catch(() => ({ results: [] }))).results || [];
+  return {
+    shares: rows.map((r) => {
+      let f = []; try { f = JSON.parse(r.fields || '[]'); } catch {}
+      return { id: r.id, name: r.name || r.subdomain, subdomain: r.subdomain, fields: Array.isArray(f) ? f : [] };
+    }),
+  };
+}
+
+// Redact a contact's props to the whitelist, emitting both the canonical array and
+// its legacy mirror so the recipient's existing card renderer works unchanged.
+// Name (title) is handled by the caller; body/kit/xmas/private/areas never appear.
+function redactContact(props, fields) {
+  const out = {}; const has = (k) => fields.includes(k);
+  if (has('photo') && props.photo) out.photo = props.photo;
+  if (has('emails')) { const e = (Array.isArray(props.emails) ? props.emails : (props.email ? [props.email] : [])).filter(Boolean); out.emails = e; out.email = e[0] || ''; }
+  if (has('phones')) { const p = Array.isArray(props.phones) ? props.phones : []; out.phones = p; out.phone = props.phone || (p[0] ? [p[0].cc, p[0].number].filter(Boolean).join(' ').trim() : ''); }
+  if (has('addresses')) { out.addresses = Array.isArray(props.addresses) ? props.addresses : []; if (props.address) out.address = props.address; }
+  for (const k of ['telegram', 'instagram', 'signal']) if (has(k) && props[k]) out[k] = props[k];
+  if (has('birthday') && props.birthday) out.birthday = props.birthday;
+  return out;
+}
+
+// Contacts other people have shared with me, redacted to what each chose. They
+// never appear in my owned kind='contact' list (that query is owner-scoped); the
+// client surfaces these separately and read-only. (Robin, 2026-11-15.)
+export async function contactsSharedWithMe(env) {
+  const rows = (await env.DB.prepare(
+    `SELECT b.id, b.title, b.props, cs.fields, cs.created_at AS shared_at,
+            u.id AS owner_id, u.name AS owner_name, u.subdomain AS owner_sub
+       FROM contact_shares cs
+       JOIN blocks b ON b.id = cs.contact_id AND b.archived = 0
+       JOIN users u ON u.id = cs.owner_id
+      WHERE cs.friend_id = ? ORDER BY cs.created_at DESC`,
+  ).bind(env.uid).all().catch(() => ({ results: [] }))).results || [];
+  return {
+    items: rows.map((r) => {
+      let props = {}; try { props = r.props ? JSON.parse(r.props) : {}; } catch {}
+      let fields = []; try { fields = JSON.parse(r.fields || '[]'); } catch {}
+      fields = (Array.isArray(fields) ? fields : []).filter((f) => CONTACT_SHARE_FIELDS.includes(f));
+      return {
+        id: r.id, kind: 'contact', title: r.title || '',
+        props: redactContact(props, fields),
+        sharedBy: r.owner_name || r.owner_sub, ownerId: r.owner_id, ownerSub: r.owner_sub,
+        sharedFields: fields, shared_at: r.shared_at || null, readonly: true,
+      };
+    }),
+  };
+}
