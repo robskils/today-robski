@@ -27,7 +27,7 @@ const isManagedPlan = (p) => normPlan(p) === 'managed';
 // squares) - sacred-geometry, and a true evolution of the old asterisk-in-a-ring.
 // The enclosing ring (.brand-ring) is optional, toggled in Settings > Appearance
 // via :root[data-mark-ring] - "starred ring" on, plain octagram off. (Robin.)
-const MARK = '';
+const MARK = '<img class="brand-mark" src="/brand/kaya-seal.svg" width="46" height="46" alt="" aria-hidden="true">';
 // The same mark cropped to its own bounds, for places that size it as an icon
 // rather than setting it in a line of text. Derived, never a second copy.
 const MARK_TIGHT = MARK.replace('viewBox="0 0 32 32"', 'viewBox="3 12.6 26 13.6"');
@@ -33666,7 +33666,7 @@ const onApex = () => /^(www\.)?((daybook|lifebook)\.fyi|lifefold\.co)$/.test(loc
 function showGate(sub) {
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="gate2"><form class="gate2-card" id="gate-form">
-      <div class="gate2-mark"><span class="mark-lockup"><em class="brand-word">Kaya</em></span></div>
+      <div class="gate2-mark"><img class="gate2-seal" src="/brand/kaya-seal.svg" width="42" height="42" alt="" aria-hidden="true"><span class="gate2-word">Kaya</span></div>
       <p class="gate2-sub" id="gate-sub">${sub || t('gate.sub')}</p>
       <input class="gate2-input" id="gate-email" type="email" placeholder="${t('gate.email.ph')}" autocomplete="email" required>
       <div class="gate2-codehead" id="gate-codehead" hidden></div>
@@ -33731,7 +33731,7 @@ function showSignup(email, inviteRequired, invited, notice) {
   const saved = inviteInfoSaved();
   document.body.insertAdjacentHTML('beforeend', `
     <div class="gate2" id="signup"><form class="gate2-card signup-card" id="signup-form">
-      <div class="gate2-mark"><em>Kaya</em></div>
+      <div class="gate2-mark"><img class="gate2-seal" src="/brand/kaya-seal.svg" width="42" height="42" alt="" aria-hidden="true"><span class="gate2-word">Kaya</span></div>
       <p class="gate2-sub">${invited || preInvite ? t('signup.accepted') : needCode ? t('signup.byinvite') : t('signup.welcome')}</p>
       <label class="signup-l">${t('signup.name')}<input class="gate2-input" id="su-name" autocomplete="name" required></label>
       <input type="hidden" id="su-sub" value="${esc(presub)}">
@@ -34349,7 +34349,7 @@ function showRequired2fa() {
   let wrap = document.getElementById('req2fa');
   if (!wrap) { document.body.insertAdjacentHTML('beforeend', '<div class="gate2" id="req2fa"><div class="gate2-card" id="req2fa-card"></div></div>'); wrap = document.getElementById('req2fa'); }
   const card = document.getElementById('req2fa-card');
-  const mark = '<div class="gate2-mark"><em>Kaya</em></div>';
+  const mark = '<div class="gate2-mark"><img class="gate2-seal" src="/brand/kaya-seal.svg" width="42" height="42" alt="" aria-hidden="true"><span class="gate2-word">Kaya</span></div>';
   const head = (txt) => `<div style="font-family:var(--k-serif);font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--ink)">${txt}</div>`;
   const signout = '<p class="gate2-alt"><button type="button" class="su-signout" id="r2-signout">sign out</button></p>';
   const bindSignout = () => { const b = document.getElementById('r2-signout'); if (b) b.onclick = () => { clearToken(); location.reload(); }; };

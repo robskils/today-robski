@@ -8554,7 +8554,9 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
 .gate2-card { width:100%; max-width:400px; display:flex; flex-direction:column; gap:20px; text-align:center;
   background:var(--card); border:1px solid var(--line); border-radius:0; padding:48px 40px 42px;
   box-shadow:var(--shadow); }
-.gate2-mark { font-family:var(--k-serif); font-size:40px; font-weight:500; letter-spacing:-.01em; }
+.gate2-mark { display:flex; align-items:center; justify-content:center; gap:13px; font-family:var(--k-serif); font-size:40px; font-weight:500; letter-spacing:-.01em; }
+.gate2-seal { width:42px; height:42px; flex:none; }
+.gate2-word { font-family:var(--k-serif); font-weight:500; font-style:normal; font-size:40px; line-height:1; color:var(--ink); }
 .gate2-mark em { font-style:italic; color:var(--accent); } .gate2-mark .dot { color:var(--gold); margin:0 5px; }
 /* Keep the sunrise mark on the same line as "Kaya" when the wordmark wraps. */
 .mark-lockup { white-space:nowrap; }
