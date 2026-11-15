@@ -12217,9 +12217,11 @@ async function jcKeep() {
   const ta = document.getElementById('jx-text'); if (ta) ta.focus();
   toast('Kept');
 }
+function jxGrow(ta) { ta = ta || document.getElementById('jx-text'); if (!ta) return; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
 function jcBindCompose() {
   const ta = document.getElementById('jx-text'); if (!ta || ta.__bound) return; ta.__bound = true;
-  ta.addEventListener('input', () => jcOnText(ta.value));
+  jxGrow(ta);   // fit whatever is already written, so the page never opens as a cramped box
+  ta.addEventListener('input', () => { jxGrow(ta); jcOnText(ta.value); });
   ta.addEventListener('blur', () => { try { jcSave(); } catch {} });
   ta.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); jcKeep(); } });
 }
@@ -12260,7 +12262,7 @@ async function jcVoiceSend(blob, btn) {
     const r = await api('/api/journal/voice', { method: 'POST', body: JSON.stringify({ audio: b64, mime: blob.type || 'audio/webm', prompt: '', mode: c.kind, questions: '' }) });
     const tmp = document.createElement('div'); tmp.innerHTML = String((r && r.entry) || '');
     const txt = (tmp.textContent || '').replace(/\s+\n/g, '\n').trim();
-    if (txt) { c.text = (c.text.trim() ? c.text.trim() + '\n\n' : '') + txt; const ta = document.getElementById('jx-text'); if (ta) ta.value = c.text; jcPaintStatus(); jcSave(); }
+    if (txt) { c.text = (c.text.trim() ? c.text.trim() + '\n\n' : '') + txt; const ta = document.getElementById('jx-text'); if (ta) { ta.value = c.text; jxGrow(ta); } jcPaintStatus(); jcSave(); }
     else toast('Nothing came back - try again.');
   } catch (e) { toast((e && e.message) || 'Could not transcribe that recording.'); }
   jcSpeakPaint(btn, 'idle');

@@ -11822,7 +11822,7 @@ body[data-view="messages"] .pane { max-width:none; padding:0; margin:0; backgrou
 .jx-prompt { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:clamp(26px,2.6vw,34px); line-height:1.3; color:var(--k-goldt); flex:1; min-width:280px; text-wrap:pretty; }
 .jx-another { font-family:var(--k-sans); font-size:13.5px; color:var(--k-mute); cursor:pointer; white-space:nowrap; }
 .jx-another:hover { color:var(--k-goldt); }
-.jx-text { display:block; width:100%; box-sizing:border-box; margin-top:16px; border:0; background:transparent; outline:none; resize:vertical; padding:0; font-family:var(--k-serif); font-weight:300; font-size:clamp(23px,2.2vw,27px); line-height:1.6; color:var(--k-ink); }
+.jx-text { display:block; width:100%; box-sizing:border-box; margin-top:16px; border:0; background:transparent; outline:none; resize:none; overflow:hidden; min-height:13rem; padding:0; font-family:var(--k-serif); font-weight:300; font-size:clamp(23px,2.2vw,27px); line-height:1.6; color:var(--k-ink); }
 .jx-text::placeholder { color:var(--k-mute); }
 .jx-foot { display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px; padding:14px 0; margin-top:4px; border-top:1px solid var(--k-line); border-bottom:1px solid var(--k-line); }
 .jx-foot-status { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); flex:1; min-width:200px; }
