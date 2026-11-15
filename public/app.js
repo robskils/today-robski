@@ -3084,7 +3084,7 @@ function inviteToKoyeba(prefill) {
     <div class="recur-h">Invite someone to Kaya</div>
     <p class="recur-p">They get an email with a one-click link. No code to type, no plan to choose, nothing to set up first.</p>
     <label class="inv-f"><span>Their email</span>
-      <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
+      <input class="ui-dialog-input" id="inv-d-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(prefill || '')}" autocomplete="off"></label>
     <label class="inv-f"><span>A note from you <em>optional</em></span>
       <textarea class="ui-dialog-input inv-d-msg" id="inv-d-msg" rows="3" placeholder="Thought you'd like this - it's how I run my day."></textarea></label>
     ${giftHtml}
@@ -3136,7 +3136,7 @@ function adminInvite(prefill, onDone) {
     <div class="recur-h">Invite someone (admin)</div>
     <p class="recur-p">The full set of controls - pick their plan and any complimentary period. They still get a one-click link, no code to type.</p>
     <label class="inv-f"><span>Their email</span>
-      <input class="ui-dialog-input" id="ainv-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="name@example.com" value="${esc(prefill || '')}" autocomplete="off"></label>
+      <input class="ui-dialog-input" id="ainv-email" type="email" inputmode="email" autocapitalize="none" spellcheck="false" value="${esc(prefill || '')}" autocomplete="off"></label>
     <div class="inv-two">
       <label class="inv-f"><span>Plan</span><select class="ui-dialog-input" id="ainv-plan">${planOpts}</select></label>
       <label class="inv-f"><span>Free period</span><select class="ui-dialog-input" id="ainv-free">${freeOpts.map(([v, l]) => `<option value="${v}" ${v === '0' ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -4387,10 +4387,10 @@ function renderSettingsLegacy() {
           ? `<div class="set-field set-field-ro"><span>Primary email</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.email || '')}">${esc(state.account.email || '')}</span><button type="button" class="set-edit-ic" data-edit-email title="Edit" aria-label="Edit primary email">✎</button></div></div>`
           : ec.step === 'code'
             ? `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">We emailed a 6-digit code to <b>${esc(ec.email)}</b>. Enter it to make it your primary address - your current address stays as a backup sign-in and gets a heads-up.</p><div class="email-change-row"><input class="sel av-code" id="email-change-code" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-confirm>Confirm &amp; switch</button><button type="button" class="ghost" data-email-change-resend>Resend</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`
-            : `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">Enter your new email. We'll send a 6-digit code to confirm it's yours; your current address stays on as a backup sign-in.</p><div class="email-change-row"><input class="sel" id="email-change-input" type="email" inputmode="email" placeholder="new@email.com" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-send>Send code</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`}
+            : `<div class="set-field"><span>Primary email</span><div class="email-change"><p class="set-row-s">Enter your new email. We'll send a 6-digit code to confirm it's yours; your current address stays on as a backup sign-in.</p><div class="email-change-row"><input class="sel" id="email-change-input" type="email" inputmode="email" autocomplete="off"><button type="button" class="add-btn wide" data-email-change-send>Send code</button><button type="button" class="ghost" data-email-change-cancel>Cancel</button></div></div></div>`}
         ${(phoneSet && !editingPhone)
           ? `<div class="set-field set-field-ro"><span>Phone</span><div class="set-ro-row"><span class="set-ro-val" title="${esc(state.account.phone)}">${esc(state.account.phone)}</span><button type="button" class="set-edit-ic" data-edit-phone title="Edit" aria-label="Edit phone">✎</button></div></div>`
-          : (() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="set-ro-row"><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" placeholder="211 234 400" autocomplete="off"></span>${phoneSet ? '<button type="button" class="ghost set-edit" data-done-phone>Done</button>' : ''}</span></label>${ccDatalist()}`; })()}
+          : (() => { const ph = splitPhone(state.account.phone); return `<label class="set-field"><span>Phone</span><span class="set-ro-row"><span class="acct-phone"><input class="sel acct-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel acct-phone-num" type="tel" value="${esc(ph.number)}" autocomplete="off"></span>${phoneSet ? '<button type="button" class="ghost set-edit" data-done-phone>Done</button>' : ''}</span></label>${ccDatalist()}`; })()}
         </div>
         <div class="set-field"><span>Also sign in with these addresses</span>
           <div class="alias-list">${(state.account.aliases || []).filter((a) => { const em = typeof a === 'string' ? a : a.email; return !(ec && ec.email && String(em).toLowerCase() === String(ec.email).toLowerCase()); }).map((a) => {
@@ -16337,7 +16337,7 @@ function showCalForm(ev) {
       ${(() => { const sel = eventAlarmList(ev); return `<div class="ce-field ce-rem-field"><span class="ce-flbl">Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
         <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
-        <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric" placeholder="e.g. 45"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
+        <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
       </div>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => {
         // Repeat: Daily/Weekly/Monthly/Yearly or Custom (every N days/weeks/months).
@@ -21700,7 +21700,7 @@ function readCardContacts() {
 // a + to add more and an × to drop any but the first.
 function contactEmailFields(p) {
   const emails = contactEmails(p); if (!emails.length) emails.push('');
-  const rows = emails.map((em, i) => `<div class="cc-multi-row"><input class="sel cc-email-in" type="email" value="${esc(em)}" placeholder="name@example.com" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-email="${i}" title="Remove">×</button>`}</div>`).join('');
+  const rows = emails.map((em, i) => `<div class="cc-multi-row"><input class="sel cc-email-in" type="email" value="${esc(em)}" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-email="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Email</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-email>+ Add email</button></div></div>`;
 }
 // Country dial codes for the phone picker: type a country name (or a code) and
@@ -21730,7 +21730,7 @@ function localDial() { const c = localCountry(); if (!c) return ''; const hit = 
 const ccDatalist = () => { const c = localCountry(); const hit = c ? COUNTRY_DIAL.find(([n]) => n === c) : null; const ordered = hit ? [hit, ...COUNTRY_DIAL.filter((x) => x !== hit)] : COUNTRY_DIAL; return `<datalist id="cc-dial-list">${ordered.map(([n, cc]) => `<option value="${cc}">${esc(n)} (${cc})</option>`).join('')}</datalist>`; };
 function contactPhoneFields(p) {
   const phones = contactPhones(p); if (!phones.length) phones.push({ cc: '', number: '' });
-  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" placeholder="211 234 400" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
+  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div>${ccDatalist()}</div>`;
 }
 // Messaging / social handles that open in the respective app. Stored on the
@@ -22307,7 +22307,7 @@ function contactAddForm() {
   return `<form id="contact-form" class="add-task expanded">
     <input id="ct-name" type="text" placeholder="${t('ct.name')}" autocomplete="off" required>
     <div class="atf-grid">
-      <label class="atf"><span>${t('field.email')}</span><input id="ct-email" type="email" class="sel" placeholder="name@example.com" autocomplete="off"></label>
+      <label class="atf"><span>${t('field.email')}</span><input id="ct-email" type="email" class="sel" autocomplete="off"></label>
       <label class="atf"><span>${t('field.phone')}</span><span class="ctf-phone"><input id="ct-phone-cc" class="sel ctf-phone-cc" type="tel" list="cc-dial-list" value="${localDial()}" placeholder="" title="Country code - type or pick" autocomplete="off"><input id="ct-phone-num" class="sel ctf-phone-num" type="tel" placeholder="Phone number" autocomplete="off"></span></label>
       <label class="atf"><span>${t('ct.birthday')}</span>${dateFieldHtml('ct-bday', '')}</label>
     </div>
@@ -22916,7 +22916,7 @@ async function newContactGroup() {
     }).join('');
     el.innerHTML = `<div class="pal-bg"><div class="recur-dialog ui-dialog-box cgm-dialog">
       <div class="recur-h">New group</div>
-      <input class="ui-dialog-input" id="cgm-input" placeholder="e.g. Family, Clients, Forró" autocomplete="off">
+      <input class="ui-dialog-input" id="cgm-input" autocomplete="off">
       <div class="cgm-or">Or create from a page</div>
       <div class="cgm-areas">${chips || '<span class="muted">No spaces yet.</span>'}</div>
       <div class="ui-dialog-btns">
@@ -25099,7 +25099,7 @@ function renderBucketCard() {
     <div class="tf-meta">
       <div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('bucket', b)}</div>
       <label class="tf-field"><span class="tf-label">Stage</span><select class="sel" id="bucketcard-status">${BSTATUS.map(([v, l]) => `<option value="${v}" ${(p.status || 'someday') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}" placeholder="e.g. 2030"></label>
+      <label class="tf-field"><span class="tf-label">Target year</span><input class="sel" id="bucketcard-year" value="${esc(p.targetYear || '')}"></label>
     </div>
     ${notesSection(b.body, 'bucket', b.id)}
     ${attachSection(b)}`;
@@ -29887,8 +29887,8 @@ document.addEventListener('click', (e) => {
   const svc = t.closest('[data-save-contact]'); if (svc) { saveSender(svc.dataset.cName, svc.dataset.cEmail); return; }
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
-  if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" placeholder="name@example.com" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
-  if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" placeholder="211 234 400" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
+  if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
+  if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   if (t.closest('[data-cc-edit-details]') && state.contact_open) { state.contact_open.editDetails = true; renderContactCard(); return; }
@@ -34086,7 +34086,7 @@ function onbPhone() {
     <p class="onb-p">Add your phone now and you'll always have a way in: if you ever can't reach your email, we can <b>text your sign-in code</b> instead. (It's also used for any reminders you switch on.)</p>
     ${saved ? `<div class="onb-ok">✓ Phone saved. Change it anytime in <b>Settings → Account</b>.</div>` : ''}
     <div class="onb-mailform">
-      <input id="onb-phone" class="sel" type="tel" inputmode="tel" placeholder="+351 912 345 678" value="${esc(saved)}" autocomplete="tel">
+      <input id="onb-phone" class="sel" type="tel" inputmode="tel" placeholder="Phone" value="${esc(saved)}" autocomplete="tel">
       <button class="add-btn wide" data-onb-phone-save>${saved ? 'Update phone' : 'Save phone'}</button>
     </div>
     <p class="onb-p onb-muted">Only ever for sign-in codes and reminders you turn on - never marketing.</p>`;
