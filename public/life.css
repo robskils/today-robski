@@ -4890,6 +4890,16 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pc-col-instr .pe-note { min-height:340px; line-height:1.6; }
 .pc-vidsec .pc-vid-in { width:100%; max-width:none; }
 .pc-vidsec .pe-add-video { align-self:flex-start; }
+/* Two or more videos go in tabs (Video 1 / Video 2 / ＋) rather than stacking, so
+   only the chosen one shows. (Robin, 2026-11-15.) */
+.pc-vtabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.pc-vtab { appearance:none; border:1px solid var(--line); background:none; color:var(--ink-2); font-family:var(--k-sans); font-weight:500; font-size:14px; padding:6px 14px; cursor:pointer; border-radius:0; transition:border-color .12s, color .12s; }
+.pc-vtab:hover { border-color:var(--k-goldt,var(--accent)); color:var(--k-goldt,var(--accent)); }
+.pc-vtab.on { border-color:var(--k-goldt,var(--accent)); color:var(--k-goldt,var(--accent)); background:color-mix(in srgb, var(--accent) 10%, transparent); }
+.pc-vtab-add { font-size:18px; line-height:1; padding:5px 13px; }
+.pc-vpanels { display:flex; flex-direction:column; }
+.pc-vpanel { display:flex; flex-direction:column; gap:6px; }
+.pc-vpanel[hidden] { display:none; }
 /* Setup: a serif heading with an Open / Close button, its body the settings. */
 /* Setup is folded away by default, so its toggle rides up in the tick row next to
    "Mark done today"; opening it unfolds the settings there, above the content.

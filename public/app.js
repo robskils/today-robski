@@ -7102,7 +7102,7 @@ function practiceEmbedHtml(url) {
 document.addEventListener('input', (e) => {
   const el = e.target; if (!el) return;
   if (el.id === 'pe-video') { const box = document.querySelector('[data-pe-embed]'); if (box) box.innerHTML = practiceEmbedHtml(el.value); return; }
-  if (el.matches && el.matches('[data-pe-exvid]')) { const row = el.closest('[data-pe-vrow]'); const box = row && row.querySelector('[data-pe-exembed]'); if (box) box.innerHTML = practiceEmbedHtml(el.value); }
+  if (el.matches && el.matches('[data-pe-exvid]')) { const box = document.querySelector('[data-pe-exembed="' + el.dataset.peExvid + '"]'); if (box) box.innerHTML = practiceEmbedHtml(el.value); }
 });
 // Tapping a practice opens its own page: a guide to doing it - an embedded video if
 // it has a YouTube link, your notes, the aim/streak, and anything you've linked.
@@ -7344,27 +7344,17 @@ function practiceFieldsHtml(which) {
           <div class="pe-attach">${peAttachHtml()}</div>
         </section>`;
   // The video field + its live embed + any extra videos + the add button.
-  const videos = `<section class="pe-sec pc-vidsec">
-          <div class="pe-sec-h">Video</div>
-          <input class="sel pc-vid-in" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link, or any page" autocomplete="off">
-          <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
-          <div class="pe-videos" data-pe-videos>${peExtraVideosHtml()}</div>
-          <button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>
-        </section>`;
+  const videos = `<section class="pe-sec pc-vidsec" data-video-section><div class="pe-sec-h">Video</div>${videoSectionHtml()}</section>`;
   const instructions = `<section class="pe-sec pc-instrsec">
           <div class="pe-sec-h">Instructions</div>
           <textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea>
         </section>`;
-  // The New-routine popover stacks everything with the Guide label + hint; the
-  // routine page composes the parts into its own layout (see renderPracticeCard).
-  const guide = `<section class="pe-sec pe-sec-guide">
-          <div class="pe-sec-h">Guide</div>
-          <div class="pe-sec-note">A video and a few notes so it's ready to do, right from the routine.</div>
-          <label class="pe-f"><span>▶ Video, reel or post</span><input class="sel" id="pe-video" value="${esc(a.video || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"></label>
-          <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(a.video)}</div>
-          <div class="pe-videos" data-pe-videos>${peExtraVideosHtml()}</div>
-          <button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>
-          <label class="pe-f"><span>Instructions</span><textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea></label>
+  // The New-routine popover stacks the same parts; the routine page lays them out
+  // in its own two columns (see renderPracticeCard).
+  const guide = `<section class="pe-sec pc-vidsec" data-video-section><div class="pe-sec-h">Video</div>${videoSectionHtml()}</section>
+        <section class="pe-sec pc-instrsec">
+          <div class="pe-sec-h">Instructions</div>
+          <textarea class="sel pe-note" id="pe-note" rows="3" placeholder="How to do it, cues to remember, anything that helps">${esc(noteText)}</textarea>
         </section>`;
   if (which === 'setup') return basics + avoidSec + timingSec;
   if (which === 'attach') return attachSec;
@@ -7426,23 +7416,44 @@ function peAttachHtml() {
     <select class="lk-act" data-pe-add-contact><option value="">Link a contact</option>${others.map((c) => `<option value="${c.id}">${esc(c.title || 'Unnamed')}</option>`).join('')}</select>` });
 }
 function renderPeAttach() { const el = document.querySelector('.pe-attach'); if (el) el.innerHTML = peAttachHtml(); scheduleAutosave(); }
-// Extra videos beyond the primary one: a practice can carry a few (Robin, 2026-11-14:
-// "sometimes I want to add two"). The first lives in the activity's `video` column;
-// any more ride in meta.videos. Each embeds the same way and can be removed.
-function peExtraVideoRow(v, i) {
-  return `<div class="pe-vextra" data-pe-vrow="${i}">
-      <label class="pe-f"><span>▶ Another video</span><span class="pe-vin"><input class="sel" data-pe-exvid="${i}" value="${esc(v || '')}" placeholder="Paste a YouTube, Vimeo or Instagram link to embed it, or any page" autocomplete="off"><button type="button" class="pe-vx" data-pe-exvid-del="${i}" aria-label="Remove this video" title="Remove this video">×</button></span></label>
-      <div class="pe-embed" data-pe-exembed="${i}">${practiceEmbedHtml(v)}</div>
+// A routine's videos. The first lives in the activity's `video` column; any more
+// ride in meta.videos. One video shows plainly; TWO OR MORE go in tabs (Video 1 /
+// Video 2 / ＋) so they don't stack down the page (Robin, 2026-11-15). Every video's
+// input stays in the DOM - hidden tabs included - so a save never drops one.
+const RW_VID_PH = 'Paste a YouTube, Vimeo or Instagram link, or any page';
+function videoSectionHtml() {
+  const pe = state.practiceEdit; if (!pe) return '';
+  const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
+  const primary = (pe._pvid != null) ? pe._pvid : (a.video || '');
+  const extras = peMeta().videos || [];
+  const total = 1 + extras.length;
+  const tabbed = total >= 2;
+  const active = Math.min(Math.max(0, pe.vtab || 0), total - 1);
+  const panel0 = `<div class="pc-vpanel" data-pc-vpanel="0"${tabbed && active !== 0 ? ' hidden' : ''}>
+      <input class="sel pc-vid-in" id="pe-video" value="${esc(primary)}" placeholder="${RW_VID_PH}" autocomplete="off">
+      <div class="pe-embed" data-pe-embed>${practiceEmbedHtml(primary)}</div>
     </div>`;
+  const extraPanels = extras.map((v, i) => `<div class="pc-vpanel" data-pc-vpanel="${i + 1}"${tabbed && active !== i + 1 ? ' hidden' : ''}>
+      <span class="pe-vin"><input class="sel pc-vid-in" data-pe-exvid="${i}" value="${esc(v || '')}" placeholder="${RW_VID_PH}" autocomplete="off"><button type="button" class="pe-vx" data-pe-exvid-del="${i}" aria-label="Remove this video" title="Remove this video">×</button></span>
+      <div class="pe-embed" data-pe-exembed="${i}">${practiceEmbedHtml(v)}</div>
+    </div>`).join('');
+  const tabs = tabbed ? `<div class="pc-vtabs" role="tablist">${Array.from({ length: total }, (_, i) => `<button type="button" class="pc-vtab${i === active ? ' on' : ''}" data-pc-vtab="${i}">Video ${i + 1}</button>`).join('')}<button type="button" class="pc-vtab pc-vtab-add" data-pe-add-video title="Add another video" aria-label="Add another video">＋</button></div>` : '';
+  const addBtn = tabbed ? '' : `<button type="button" class="lk-act pe-add-video" data-pe-add-video>+ Add another video</button>`;
+  return `${tabs}<div class="pc-vpanels">${panel0}${extraPanels}</div>${addBtn}`;
 }
-function peExtraVideosHtml() { if (!state.practiceEdit) return ''; return (peMeta().videos || []).map((v, i) => peExtraVideoRow(v, i)).join(''); }
-function renderPeVideos() { const box = document.querySelector('[data-pe-videos]'); if (box) box.innerHTML = peExtraVideosHtml(); scheduleAutosave(); }
-// Read the extra-video inputs back out of the DOM into state before any add/remove
-// re-render, so what you've just typed into the other rows is never lost.
+function renderVideoSection() {
+  const s = document.querySelector('[data-video-section]'); if (!s) return;
+  syncPeVideosFromDom();
+  s.innerHTML = `<div class="pe-sec-h">Video</div>${videoSectionHtml()}`;
+  scheduleAutosave();
+}
+// Read the primary + extra video inputs back out of the DOM into state before any
+// add/remove re-render, so what you've just typed is never lost.
 function syncPeVideosFromDom() {
   if (!state.practiceEdit) return;
+  const pv = document.getElementById('pe-video'); if (pv) state.practiceEdit._pvid = pv.value;
   const inputs = [...document.querySelectorAll('[data-pe-exvid]')];
-  if (inputs.length) peMeta().videos = inputs.map((el) => el.value.trim());
+  if (inputs.length || document.querySelector('.pc-vpanels')) peMeta().videos = inputs.map((el) => el.value.trim());
 }
 async function peNewNote() {
   const pe = state.practiceEdit; if (!pe) return;
@@ -29434,8 +29445,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-pe-new-note]')) { peNewNote(); return; }
   { const el = t.closest('[data-pe-add-link]'); if (el) { peAddLink(); return; } }
   { const el = t.closest('[data-pe-del-link]'); if (el) { peMeta().links.splice(Number(el.dataset.peDelLink), 1); renderPeAttach(); return; } }
-  if (t.closest('[data-pe-add-video]')) { syncPeVideosFromDom(); peMeta().videos.push(''); renderPeVideos(); const rows = document.querySelectorAll('[data-pe-exvid]'); const last = rows[rows.length - 1]; if (last) last.focus(); return; }
-  { const el = t.closest('[data-pe-exvid-del]'); if (el) { syncPeVideosFromDom(); peMeta().videos.splice(Number(el.dataset.peExvidDel), 1); renderPeVideos(); return; } }
+  if (t.closest('[data-pe-add-video]')) { syncPeVideosFromDom(); peMeta().videos.push(''); const E = peMeta().videos.length; if (state.practiceEdit) state.practiceEdit.vtab = E; renderVideoSection(); const inp = document.querySelector('[data-pe-exvid="' + (E - 1) + '"]'); if (inp) inp.focus(); return; }
+  { const el = t.closest('[data-pe-exvid-del]'); if (el) { syncPeVideosFromDom(); peMeta().videos.splice(Number(el.dataset.peExvidDel), 1); if (state.practiceEdit) state.practiceEdit.vtab = Math.min(state.practiceEdit.vtab || 0, peMeta().videos.length); renderVideoSection(); return; } }
+  { const vt = t.closest('[data-pc-vtab]'); if (vt) { const i = Number(vt.dataset.pcVtab); if (state.practiceEdit) state.practiceEdit.vtab = i; const sec = vt.closest('[data-video-section]'); if (sec) { sec.querySelectorAll('.pc-vtab').forEach((b) => b.classList.toggle('on', b.dataset.pcVtab === String(i))); sec.querySelectorAll('.pc-vpanel').forEach((p) => { p.hidden = p.dataset.pcVpanel !== String(i); }); } return; } }
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.prac-form'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
