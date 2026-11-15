@@ -5098,7 +5098,7 @@ export default {
     // into Kaya and read from it, over a static bearer token scoped to the owner.
     // Handled before the auth gate (its own token, not the 7-day JWT) and inert
     // until MCP_TOKEN is set. See worker/mcp.js. (Robin, 2026-11-14.)
-    if (path === '/mcp') return mcpHandler(request, env, url, { createTask, createBlock, handleDay, searchBlocks });
+    if (path === '/mcp') return mcpHandler(request, env, url, { createTask, createBlock, handleDay, searchBlocks, setTaskDone, updateBlock });
 
     // A publicly shared note: lifefold.co/n/<token>. Served by the Worker before
     // the assets fallback, with no auth - the unguessable token is the only key,

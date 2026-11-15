@@ -77,6 +77,32 @@ const TOOLS = [
       required: ['query'],
     },
   },
+  {
+    name: 'kaya_complete_task',
+    description: 'Mark a task in Kaya as done. Identify it by a distinctive part of its title (e.g. "pay rent"), or by its id. If several open tasks match, you get the list back to choose from, so the wrong one is never ticked.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'A distinctive part of the task\'s title, or its id.' },
+      },
+      required: ['task'],
+    },
+  },
+  {
+    name: 'kaya_update_task',
+    description: 'Change a task in Kaya - its title, priority, Life Space, or due date. Identify it by a distinctive part of its current title, or its id. Only the fields you pass change; the rest stay as they are.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'A distinctive part of the task\'s current title, or its id.' },
+        title: { type: 'string', description: 'A new title (optional).' },
+        priority: { type: 'string', enum: ['first', 'soon', 'whenever'], description: 'New urgency: first, soon or whenever (optional).' },
+        space: { type: 'string', description: 'Move it to this Life Space, by name (optional).' },
+        due: { type: 'string', description: 'A due date as YYYY-MM-DD (optional).' },
+      },
+      required: ['task'],
+    },
+  },
 ];
 
 // ---- small helpers ----
@@ -102,6 +128,22 @@ async function resolveSpace(env, name) {
   return rows.find((r) => String(r.title || '').trim().toLowerCase() === n)
       || rows.find((r) => String(r.title || '').trim().toLowerCase().includes(n))
       || null;
+}
+// Resolve the task a complete/update tool should act on. `q` is a block id or a
+// slice of the title. Returns { task } for one clear OPEN-task match, { many } to
+// disambiguate, or { none }. Only open tasks (not done, not a keep-in-touch nudge)
+// match, so "mark the rent task done" can't re-tick or disturb the wrong thing.
+async function findOpenTask(env, q) {
+  const s = String(q || '').trim(); if (!s) return { none: true };
+  const { results } = await env.DB.prepare("SELECT id, title, props FROM blocks WHERE kind = 'task' AND user_id = ? AND archived = 0").bind(env.uid).all().catch(() => ({ results: [] }));
+  const open = (results || []).filter((r) => { let p = {}; try { p = r.props ? JSON.parse(r.props) : {}; } catch {} return !p.done && !p.kit; });
+  const byId = open.find((r) => r.id === s);
+  if (byId) return { task: byId };
+  const low = s.toLowerCase();
+  const hits = open.filter((r) => String(r.title || '').toLowerCase().includes(low));
+  if (hits.length === 1) return { task: hits[0] };
+  if (hits.length > 1) return { many: hits };
+  return { none: true };
 }
 
 export async function mcpHandler(request, env, url, deps) {
@@ -209,6 +251,33 @@ async function callTool(name, args, env, deps) {
     });
     const more = rows.length > lines.length ? `\n…and ${rows.length - lines.length} more.` : '';
     return text(`${rows.length} match${rows.length === 1 ? '' : 'es'} for "${q}":\n` + lines.join('\n') + more);
+  }
+
+  if (name === 'kaya_complete_task') {
+    const f = await findOpenTask(env, args.task);
+    if (f.none) return fail(`No open task matches "${args.task}".`);
+    if (f.many) return fail(`Several open tasks match "${args.task}" - pass the id of the right one:\n` + f.many.slice(0, 10).map((r) => `- ${r.title || 'Untitled'} (id: ${r.id})`).join('\n'));
+    try { await deps.setTaskDone(env, f.task.id, true); } catch (e) { return fail('Kaya would not complete it: ' + ((e && e.message) || 'error')); }
+    return text(`Marked "${f.task.title || 'Untitled'}" done.`);
+  }
+
+  if (name === 'kaya_update_task') {
+    const f = await findOpenTask(env, args.task);
+    if (f.none) return fail(`No open task matches "${args.task}".`);
+    if (f.many) return fail(`Several open tasks match "${args.task}" - pass the id of the right one:\n` + f.many.slice(0, 10).map((r) => `- ${r.title || 'Untitled'} (id: ${r.id})`).join('\n'));
+    const body = {}; const props = {};
+    const newTitle = args.title != null ? String(args.title).trim() : '';
+    if (newTitle) body.title = newTitle;
+    if (args.priority) { const pr = PRIO_IN[String(args.priority).toLowerCase()]; if (pr) props.priority = pr; }
+    if (isDay(args.due)) props.due = args.due;
+    let spaceNote = '';
+    if (args.space) { const sp = await resolveSpace(env, args.space); if (sp) props.area = sp.id; else spaceNote = ` (no Space called "${args.space}", so that was left alone)`; }
+    if (Object.keys(props).length) body.props = props;
+    if (!('title' in body) && !body.props) return fail('Nothing to change - pass a new title, priority, space or due date.');
+    const res = await deps.updateBlock(internalReq(body), env, f.task.id);
+    if (!res.ok) return fail('Kaya would not update the task: ' + await resErr(res));
+    const bits = [body.title ? 'title' : '', props.priority ? `priority ${PRIO_LABEL[props.priority]}` : '', props.due ? `due ${props.due}` : '', props.area ? 'Space' : ''].filter(Boolean).join(', ');
+    return text(`Updated "${newTitle || f.task.title || 'the task'}"${bits ? ` - ${bits}` : ''}${spaceNote}.`);
   }
 
   return fail(`Unknown tool: ${name}`);
