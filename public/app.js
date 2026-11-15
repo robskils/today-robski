@@ -19348,14 +19348,14 @@ function sigDefaults(a) {
     title: d.title || '', company: d.company || '',
     phone: d.phone || '', email: d.email != null ? d.email : (a.email || ''),
     website: d.website || '', address: d.address || '', tagline: d.tagline || '',
-    accent: normHex(d.accent) || normHex(a.color) || '#c4412e',
+    accent: normHex(d.accent) || normHex(a.color) || '#8a6d1f',
   };
 }
 function sigWorking(a) { state.sigEdit = state.sigEdit || {}; if (!state.sigEdit[a.id]) state.sigEdit[a.id] = sigDefaults(a); return state.sigEdit[a.id]; }
 // The email-safe signature markup for a set of fields. Table-based, inline
 // styles only, web-safe fonts. Shared by the live preview and the saved output.
 function renderSignatureHtml(d) {
-  const acc = normHex(d.accent) || '#c4412e';
+  const acc = normHex(d.accent) || '#8a6d1f';
   const ink = '#1b1820', sub = '#8a8072', val = '#4a4238';
   const sans = "-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
   const serif = "Georgia,'Times New Roman',serif";
