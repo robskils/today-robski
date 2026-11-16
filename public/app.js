@@ -10008,7 +10008,8 @@ function homeCalBodyHtml(off) {
   const pracs = items.filter((it) => it.badge === 'practice');
   const events = items.filter((it) => it.badge !== 'practice');
   const isTom = off >= 1;
-  const tabs = `<div class="home-cal-tabs"><span class="home-cal-tab${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-cal-tab${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span></div>`;
+  const dayIso = homeDayISO(off);
+  const tabs = `<div class="home-cal-tabs"><span class="home-cal-tab${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-cal-tab${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span><button class="home-cal-add" data-home-cal-add="${dayIso}" title="Add an event on this day" aria-label="Add an event">+</button></div>`;
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const note = it.kind === 'event' ? locText(it.location) : '';
@@ -29971,6 +29972,9 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-open-p1]')) { openP1Tasks(); return; }
   if (t.closest('[data-view-tasks]')) { openTasks().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-calendar]')) { openCalendar().catch((x) => toast(x.message)); return; }
+  // The + on Today's calendar glance: open the calendar on the shown day (today or
+  // tomorrow) with a fresh event form, so you can add without first opening Calendar.
+  { const hca = t.closest('[data-home-cal-add]'); if (hca) { e.preventDefault(); e.stopPropagation(); const iso = hca.dataset.homeCalAdd; openCalendar(iso).then(() => { state.cal.adding = true; state.cal.editing = null; state.cal.viewing = null; state.cal.draftNotes = []; renderCalendar(); setTimeout(() => { const i = $('#ce-title'); if (i) i.focus({ preventScroll: true }); }, 0); }).catch((x) => toast(x.message)); return; } }
   if (t.closest('[data-open-tracker]')) { openTracker().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-trk-report]')) { openTrackerReport(); return; }
   { const wb = t.closest('[data-trkr-win]'); if (wb) { if (state.trkReport) { state.trkReport.win = Number(wb.dataset.trkrWin); renderTrackerReport(); } return; } }
