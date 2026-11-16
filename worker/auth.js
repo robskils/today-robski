@@ -386,7 +386,7 @@ export function codeEmail(code, kind) {
              serif wordmark below already says Kaya, so a blocked image
              should leave nothing behind rather than a second "Kaya". -->
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://kaya.so/email-mark.png?v=6" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <img src="https://kaya.so/brand/kaya-seal.png" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya</p>
         </td></tr>
 
