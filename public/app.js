@@ -16323,7 +16323,7 @@ function showCalView(ev) {
       ${contact ? row('👤', esc(contact.title || 'Contact')) : ''}
       ${(() => { const al = eventAlarmList(ev); return al.length ? row('🔔', esc(al.map((m) => m === 0 ? 'at the time' : `${alarmChipLabel(m)} before`).join(' · '))) : ''; })()}
       ${repeats ? row('↻', esc(recurDescribe(ev))) : ''}
-      ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a>`) : ''}
+      ${ev.url ? row('🔗', `<a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer" title="${esc(ev.url)}">${esc(prettyLinkText(ev.url))}</a>`) : ''}
     </div>
     ${ev.notes ? `<div class="ce-view-notes">${linkifyText(ev.notes)}</div>` : ''}
     <div class="ce-foot">${ev.feed ? `<span class="ce-view-src">${ev.feed === 'gcal' ? 'Synced from Google Calendar' : ev.feed === 'caldav' ? `Synced from ${esc(ev.acctLabel || 'your calendar')}` : 'From a calendar feed'}</span>` : `<button class="add-btn wide" type="button" data-cal-edit>Edit</button>`}<button type="button" class="ghost" data-cal-close>Close</button></div>
