@@ -366,6 +366,13 @@ document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; c
 // typing-pause debounce - pressing Enter felt dead before (no handler at all).
 // (Robin, 2026-11-09.)
 document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter' || !ev.target.closest) return; const mq = ev.target.closest('[data-mail-q]'); if (!mq || !state.mail) return; ev.preventDefault(); clearTimeout(window.__mailSearchT); state.mail.query = mq.value; state.mail.limit = 40; loadMessages(true); });
+// A plain Enter in a compose header field (From, To, Cc, Bcc, Subject) must never
+// fire the email. Those are form controls, so a bare Enter implicitly submits the
+// form - picking a From address with Enter sent a half-written message. Mail only
+// ever sends from the Send button or the deliberate ⌘/Ctrl+Enter chord, so cancel
+// the implicit submit here. The message body is a contenteditable, where Enter
+// already just makes a new line and never submitted. (Robin, 2026-11-16.)
+document.addEventListener('keydown', (ev) => { if (ev.key !== 'Enter' || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return; const t = ev.target; if (t && t.closest && t.closest('#mail-compose-form') && t.matches && t.matches('input, select')) ev.preventDefault(); }, true);
 // Enter in the open-row title commits (blurs) rather than adding a newline - it's a
 // title, and it wraps on its own. Shift+Enter still inserts a line. (Robin, 2026-11-09.)
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey && ev.target && ev.target.classList && ev.target.classList.contains('card-title-ed')) { ev.preventDefault(); ev.target.blur(); } });
