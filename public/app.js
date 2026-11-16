@@ -8151,7 +8151,7 @@ function homeTimelineHtml() {
       : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
     const ct = (it.kind === 'event' && it.contact) ? findContact(it.contact) : null;
     const meta = [];
-    if (it.kind === 'event') { if (ct && ct.title) meta.push(esc(ct.title)); if (it.location) meta.push(esc(it.location)); }
+    if (it.kind === 'event') { if (ct && ct.title) meta.push(esc(ct.title)); const lt = locText(it.location); if (lt) meta.push(esc(lt)); }
     else if (it.badge) meta.push(esc(it.badge));
     return `<div class="ktl-row${it.done ? ' done' : ''}${it.kind === 'slot' ? ' ktl-plan' : ''}" data-home-cal role="button" tabindex="0" title="Open in the calendar">
       <span class="ktl-time">${time}</span>
@@ -9863,7 +9863,7 @@ function homeGlancePanelHtml(tool) {
     }
   }
   else if (tool === 'tasks') { label = 'Tasks'; const ts = (state.tasks || []).filter((t) => t.props && !t.props.done && !t.props.kit).slice(0, 4); rows = ts.map((t) => open(`data-open-task="${t.id}"`, 'task', t.title || 'A task', '', '')).join('') || '<div class="gln-empty">Nothing to do.</div>'; link = 'data-view-tasks'; }
-  else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', e.location || '', e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
+  else if (tool === 'calendar') { label = 'Calendar'; const evs = ((state.home && state.home.events) || []).slice(0, 4); rows = evs.map((e) => open(`data-open-calendar`, 'cal', e.title || 'Event', locText(e.location), e.allDay ? 'all day' : hhmm(e.start_min || 0))).join('') || '<div class="gln-empty">Nothing today.</div>'; link = 'data-open-calendar'; }
   else if (tool === 'notes') { label = 'Notes'; const ns = (state.noteTops || []).slice(0, 4); rows = ns.map((n) => open(`data-open-note="${n.id}"`, 'note', n.title || 'Untitled', '', '')).join('') || '<div class="gln-empty">No notes yet.</div>'; link = 'data-open-notes'; }
   else { label = 'Goals'; const gs = (state.goals || []).filter((g) => (gp(g).status || 'active') !== 'done').slice(0, 4); rows = gs.map((g) => open(`data-open-goal="${g.id}"`, 'goal', g.title || 'A goal', '', '')).join('') || '<div class="gln-empty">No goals yet.</div>'; link = 'data-open-goals'; }
   return `<div class="gln-panel-rows">${rows}</div><div class="gln-panel-foot"><button class="gln-open" ${link}>Open ${esc(label)} →</button><button class="gln-fold" data-glance-fold aria-label="Close" title="Close">✕</button></div>`;
@@ -10011,7 +10011,7 @@ function homeCalBodyHtml(off) {
   const tabs = `<div class="home-cal-tabs"><span class="home-cal-tab${!isTom ? ' on' : ''}" data-home-when="today" role="button" tabindex="0">Today</span><span class="home-cal-tab${isTom ? ' on' : ''}" data-home-when="tomorrow" role="button" tabindex="0">Tomorrow</span></div>`;
   const row = (it) => {
     const time = it.kind === 'event' ? (it.allDay ? 'all day' : hhmm(it.start_min)) : (it.start_min == null ? 'anytime' : hhmm(it.start_min));
-    const note = it.kind === 'event' ? (it.location || '') : '';
+    const note = it.kind === 'event' ? locText(it.location) : '';
     return `<div class="home-cal-row" ${it.kind === 'event' ? `data-home-cal data-ev-id="${esc(String(it.eventId || ''))}" data-ev-date="${esc(it.date || homeDayISO(off))}" role="button" tabindex="0" title="Open this event"` : ''}><span class="home-cal-time">${esc(time)}</span><div class="home-cal-b"><div class="home-cal-t">${esc(it.title)}</div>${note ? `<div class="home-cal-note">${esc(note)}</div>` : ''}${eventJoinLinkHtml(it)}</div></div>`;
   };
   const evHtml = state.home.dayLoading ? '<div class="home-empty">Loading…</div>' : (events.length ? events.map(row).join('') : '<div class="home-empty">Nothing in the diary.</div>');
@@ -13969,7 +13969,7 @@ function renderAreaV4() {
   };
   const eventRow = (e) => {
     const d = av3Due(e.date); const time = (e.allDay || e.start_min == null) ? 'all day' : hhmm(e.start_min);
-    return `<div class="av4-evrow" data-open-calendar role="button" tabindex="0"><span class="av4-ev-day${d.gold ? ' gold' : ''}">${esc(d.t || '—')}</span><span class="av4-ev-dot"></span><div class="av4-ev-b"><div class="av4-ev-t">${esc(e.title || 'Event')}</div>${e.location ? `<div class="av4-ev-sub">${esc(e.location)}</div>` : ''}</div><span class="av4-ev-time">${esc(time)}</span></div>`;
+    return `<div class="av4-evrow" data-open-calendar role="button" tabindex="0"><span class="av4-ev-day${d.gold ? ' gold' : ''}">${esc(d.t || '—')}</span><span class="av4-ev-dot"></span><div class="av4-ev-b"><div class="av4-ev-t">${esc(e.title || 'Event')}</div>${locText(e.location) ? `<div class="av4-ev-sub">${esc(locText(e.location))}</div>` : ''}</div><span class="av4-ev-time">${esc(time)}</span></div>`;
   };
 
   // Notes sort
@@ -14513,7 +14513,7 @@ function renderAreaOld() {
     }
     const rows = days.map((d) => {
       const evs = byDay[d.iso] || [];
-      const chips = evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${e.location ? `<span class="awk-loc">${esc(e.location)}</span>` : ''}</button>`).join('');
+      const chips = evs.map((e) => `<button class="awk-ev${e.allDay ? ' awk-allday' : ''}${e.feed ? ' awk-feed' : ''}" data-open-event-date="${esc(d.iso)}" title="Show in calendar">${e.allDay ? '' : `<span class="awk-t2">${esc(hhmm(e.start_min || 0))}</span>`}<span class="awk-ttl">${esc(e.title || 'Event')}</span>${locText(e.location) ? `<span class="awk-loc">${esc(locText(e.location))}</span>` : ''}</button>`).join('');
       const addDay = canEditArea ? `<button class="awk-dayadd" data-area-day-add="${area.id}::${d.iso}" title="Add an activity on this day" aria-label="Add on this day">＋</button>` : (evs.length ? '' : '<span class="awk-empty">·</span>');
       return `<div class="awk-day${d.today ? ' awk-today' : ''}${evs.length ? '' : ' awk-day-empty'}"><div class="awk-date"><span class="awk-dow">${d.dow}</span><span class="awk-num">${d.day}</span></div><div class="awk-evs">${chips}${addDay}</div></div>`;
     }).join('');
@@ -14721,7 +14721,7 @@ function renderAreaOld() {
   </section>`;
   // ── sticky side: Coming up / People / Kept here ──
   const comingList = [];
-  upcomingEvents.slice(0, 6).forEach((e) => comingList.push({ when: e.date === t0 ? `Today ${evWhen(e)}` : new Date(e.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), a: e.title || 'Event', b: e.location || (e.allDay ? 'All day' : evWhen(e)), attr: `data-open-event-date="${esc(e.date)}"` }));
+  upcomingEvents.slice(0, 6).forEach((e) => comingList.push({ when: e.date === t0 ? `Today ${evWhen(e)}` : new Date(e.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), a: e.title || 'Event', b: locText(e.location) || (e.allDay ? 'All day' : evWhen(e)), attr: `data-open-event-date="${esc(e.date)}"` }));
   openTs.filter((t) => t.props && (t.props.due || t.props.snooze)).sort((a, b) => String(a.props.due || a.props.snooze).localeCompare(String(b.props.due || b.props.snooze))).slice(0, 4).forEach((t) => comingList.push({ when: dpLabel(t.props.due || t.props.snooze), a: t.title || 'A task', b: 'Task', attr: `data-open-task="${t.id}"` }));
   const comingHtml = comingList.length ? comingList.slice(0, 8).map((it) => `<div class="sp-side-row" ${it.attr} role="button" tabindex="0"><span class="sp-side-when">${esc(it.when)}</span><div class="sp-side-b"><span class="sp-side-a">${esc(it.a)}</span>${it.b ? `<span class="sp-side-c">${esc(it.b)}</span>` : ''}</div></div>`).join('') : '<div class="sp-side-empty">Nothing coming up.</div>';
   const peopleHtml = (contacts.length ? contacts.slice(0, 10).map((c) => `<div class="sp-side-row" data-open-contact="${c.id}" role="button" tabindex="0"><div class="sp-side-b"><span class="sp-side-a">${esc(c.title || 'Someone')}</span>${(c.props && c.props.role) ? `<span class="sp-side-c">${esc(c.props.role)}</span>` : ''}</div></div>`).join('') : '<div class="sp-side-empty">No one here yet.</div>') + (canEditArea ? '<button class="sp-addrow" data-area-add-contact>+ Add a person</button>' : '');
@@ -16024,14 +16024,14 @@ function renderCalendar() {
     main = `<div class="cx-week">${weekMon(c.selected || todayI).map((d) => { const evs = dayEvs(d.iso); return `<div class="cx-wcol" data-cal-day="${d.iso}"><div class="cx-whead${d.iso === c.selected ? ' sel' : ''}"><span class="cx-wdow">${d.dow}</span><span class="cx-wnum${d.today ? ' today' : ''}">${d.day}</span><button class="cx-whead-add" data-cal-add-day="${d.iso}" title="Add an event" aria-label="Add an event on ${esc(d.dow)} ${d.day}">+</button></div><div class="cx-wevs">${evs.map((e) => `<div class="cx-wev${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><div class="cx-wev-t">${esc(evRange(e))}</div><div class="cx-wev-ti" style="${evStyle(e, 'week')}">${esc(stripEmoji(e.title))}</div></div>`).join('') || '<div class="cx-wempty">—</div>'}</div></div>`; }).join('')}</div>`;
   } else {
     const days = []; for (let i = 0; i < 15; i++) { const iso = addDayISO(c.selected || todayI, i); const evs = dayEvs(iso); if (evs.length) days.push([iso, evs]); if (days.length >= 14) break; }
-    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead${iso === todayI ? ' is-today' : iso === addDayISO(todayI, 1) ? ' is-tomorrow' : ''}"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span><button class="cx-lh-add" data-cal-add-day="${iso}" title="Add an event on this day" aria-label="Add an event on this day">+</button></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(e.location ? stripEmoji(e.location) : '')}</span>${evJoin(e)}</div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
+    main = days.length ? `<div class="cx-list">${days.map(([iso, evs]) => `<div class="cx-lday"><div class="cx-lhead${iso === todayI ? ' is-today' : iso === addDayISO(todayI, 1) ? ' is-tomorrow' : ''}"><span class="cx-lh-date">${esc(prettyDate(iso))}</span><span class="cx-lh-sub">${iso === todayI ? 'Today' : iso === addDayISO(todayI, 1) ? 'Tomorrow' : ''}</span><button class="cx-lh-add" data-cal-add-day="${iso}" title="Add an event on this day" aria-label="Add an event on this day">+</button></div>${evs.map((e) => `<div class="cx-lrow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-lr-range">${esc(evRange(e))}</span><span class="cx-lr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</span><span class="cx-lr-place">${esc(locText(e.location))}</span>${evJoin(e)}</div>`).join('')}</div>`).join('')}</div>` : '<div class="cx-empty">Nothing in the next fortnight.</div>';
   }
   // ── Selected-day side panel ──
   const [sy, sm, sd] = (c.selected || todayI).split('-').map(Number);
   const sideEyebrow = (c.selected || todayI) === todayI ? 'Today' : WEEKDAYS_LONG[new Date(sy, sm - 1, sd).getDay()];
   const sideDate = `${sd} ${MONTHS_LONG[sm - 1]}`;
   const sevs = dayEvs(c.selected || todayI);
-  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${e.location ? `<div class="cx-sr-place">${esc(stripEmoji(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}${evJoin(e)}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
+  const sideRows = sevs.length ? sevs.map((e) => `<div class="cx-srow${e.bday ? ' cx-ev-bday' : ''}" ${evAttr(e)}><span class="cx-sr-range">${esc(evRange(e))}</span><div class="cx-sr-main"><div class="cx-sr-ti" style="${evStyle(e, true)}">${esc(stripEmoji(e.title))}</div>${locText(e.location) ? `<div class="cx-sr-place">${esc(locText(e.location))}</div>` : ''}${e.recurringId ? '<div class="cx-sr-note">Repeats weekly</div>' : (e.note ? `<div class="cx-sr-note">${esc(e.note)}</div>` : '')}${evJoin(e)}</div></div>`).join('') : '<div class="cx-sempty">Nothing planned. A clear day.</div>';
   const views = [['list', 'List'], ['week', 'Week'], ['month', 'Month']].map(([id, l]) => `<button class="cx-view${c.mode === id ? ' on' : ''}" data-cal-mode="${id}">${l}</button>`).join('');
   // Search is a button that opens into a field, sitting next to New event. It
   // counts as open while the button has been pressed (calSearchOpen) or a query
@@ -16133,6 +16133,23 @@ function restoreCalForm(s) {
 // across every surface - calendar (e.id), Today (e.eventId) - and strips the
 // ::date suffix of a native recurring instance. (Robin, 2026-11-09.)
 function eventLinkKey(e) { return String((e && (e.recurringId || e.id || e.eventId)) || '').split('::')[0]; }
+// For display only: an event's Location with any pasted web link removed. A
+// meeting link dropped into Location (Preply, Zoom, Meet) is already one tap away
+// as the ▶ Join / Open link, so printing the whole address again just streaked a
+// giant unbreakable URL across the row. Keep any real place text beside it
+// ("Online", a venue name); return '' when the Location was nothing but the link,
+// so its row/column collapses. A plain location (no URL) is returned untouched.
+// (Robin, 2026-11-16: "we don't need to show ALL of it. As long as we can click on it".)
+function locText(loc) {
+  const s = stripEmoji(loc);
+  BARE_URL.lastIndex = 0;
+  if (!BARE_URL.test(s)) return s;
+  BARE_URL.lastIndex = 0;
+  return s.replace(BARE_URL, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s·,|/–—-]+|[\s·,|/–—-]+$/g, '')
+    .trim();
+}
 function eventJoinUrl(e) {
   // A link Robin pasted onto this event (or its series) inside Kaya wins - it lets
   // an online class carry an Open link even when the event itself has none.
@@ -16281,14 +16298,15 @@ function calWhenLabel(ev) {
 function showCalView(ev) {
   const area = ev.area ? areaById(ev.area) : null;
   const loc = (ev.location || '').trim();
-  const q = encodeURIComponent(loc);
+  const locShown = locText(loc);
+  const q = encodeURIComponent(locShown);
   const contact = ev.contact ? findContact(ev.contact) : null;
   const row = (ic, body) => `<div class="ce-view-row"><span class="ce-view-rt">${body}</span></div>`;
   const repeats = (ev.repeat && ev.repeat !== 'none') || ev.recurringId;
   $('#cal-form').innerHTML = `<div class="ce-view" data-ev="${esc(ev.id)}">
     <div class="ce-head"><span class="ce-head-t">Event</span><button type="button" class="ce-close" data-cal-close aria-label="Close">×</button></div>
     <h2 class="ce-view-title">${esc(ev.title || 'Untitled event')}</h2>
-    ${loc ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">Map</a></div>` : ''}
+    ${locShown ? `<div class="ce-view-maprow"><a class="ce-view-dir" href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener noreferrer">Directions</a><a class="ce-view-map" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener noreferrer">Map</a></div>` : ''}
     ${(() => {
       const u = eventJoinUrl(ev); const key = eventLinkKey(ev);
       const btn = u ? `<a class="ce-join" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${eventJoinLabel(u)[1]}</a>` : '';
@@ -16300,7 +16318,7 @@ function showCalView(ev) {
     })()}
     <div class="ce-view-rows">
       ${row('🕒', esc(calWhenLabel(ev)))}
-      ${loc ? row('📍', esc(loc)) : ''}
+      ${locShown ? row('📍', esc(locShown)) : ''}
       ${area ? row('◈', `<span class="ce-view-area" style="--h:${hueOf(area)}"><span class="ce-view-dot"></span>${esc(area.title)}</span>`) : ''}
       ${contact ? row('👤', esc(contact.title || 'Contact')) : ''}
       ${(() => { const al = eventAlarmList(ev); return al.length ? row('🔔', esc(al.map((m) => m === 0 ? 'at the time' : `${alarmChipLabel(m)} before`).join(' · '))) : ''; })()}

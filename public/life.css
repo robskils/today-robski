@@ -12979,14 +12979,14 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
   .cx-lh-date { font-size:21px; white-space:nowrap; }
   .cx-lhead.is-today .cx-lh-date::after { content:''; display:inline-block; width:10px; height:10px; background:var(--k-gold); margin-left:9px; vertical-align:middle; }
 }
-.cx-lrow { display:grid; grid-template-columns:110px minmax(0,1fr) auto; gap:18px; align-items:baseline; padding:13px 0; border-bottom:1px solid var(--k-line); cursor:pointer; }
+.cx-lrow { display:grid; grid-template-columns:110px minmax(0,1fr) minmax(0,auto); gap:18px; align-items:baseline; padding:13px 0; border-bottom:1px solid var(--k-line); cursor:pointer; }
 .cx-lr-range { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 .cx-lr-ti { min-width:0; font-size:16px; }
-.cx-lr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
+.cx-lr-place { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); min-width:0; overflow-wrap:anywhere; }
 /* The Open/Join link on a List row sits boxed on the right (like the Today
    calendar), not underneath. The 4th column holds it at the far right; the
    boxed look is in daylight.css next to .home-cal-b. (Robin, 2026-11-09.) */
-.cx-lrow:has(> .ev-join-link){ grid-template-columns:110px minmax(0,1fr) auto auto; }
+.cx-lrow:has(> .ev-join-link){ grid-template-columns:110px minmax(0,1fr) minmax(0,auto) auto; }
 .cx-empty { padding:40px 0; font-family:var(--k-serif); font-style:italic; font-size:21px; color:var(--k-mute); }
 /* selected-day side */
 .cx-side-head { padding-bottom:14px; border-bottom:1px solid var(--k-gold); }
