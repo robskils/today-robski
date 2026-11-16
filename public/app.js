@@ -20186,6 +20186,11 @@ function mailAfterTriageOpen(openKey, visKeys, gone) {
     for (let j = i + 1; j < visKeys.length && !next; j++) if (!gone.has(visKeys[j])) next = visKeys[j];
     for (let j = i - 1; j >= 0 && !next; j--) if (!gone.has(visKeys[j])) next = visKeys[j];
   }
+  // The email we just filed wasn't locatable in the captured order (a filtered or
+  // snapshot key): still honour "move onto the next one" - open the first message
+  // left standing rather than dropping back to the list. Only closes to the list
+  // once the list is genuinely empty. (Robin, 2026-11-16: archive should move me on.)
+  if (!next && i < 0) { for (let j = 0; j < visKeys.length && !next; j++) if (!gone.has(visKeys[j])) next = visKeys[j]; }
   renderMail();
   if (next) openMessage(next);
 }
