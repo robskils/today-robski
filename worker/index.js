@@ -22,6 +22,7 @@ import { addChannel, pollChannels, synthesiseTrends, maybePollChannels } from '.
 import { importTxns, clearTxns, parseStatementPdf } from './spending.js';
 import { addTrackerItem, getTracker } from './tracker.js';
 import { mcpHandler } from './mcp.js';
+import { handleExchange } from './exchange.js';
 
 const TZ = 'Europe/Lisbon';   // the fallback zone when we don't know where the user is
 
@@ -6104,6 +6105,7 @@ export default {
       }
       if (path.startsWith('/api/mail/')) return handleMail(request, env, url, json, err);
       if (path.startsWith('/api/push/')) return handlePush(request, env, path, json, err);
+      if (path === '/api/exchange' || path.startsWith('/api/exchange/')) return handleExchange(request, env, path, json, err);
       if (path === '/api/wellbeing/iching' && request.method === 'POST') return ichingReflect(request, env, json, err);
       if (path === '/api/wellbeing/tarot' && request.method === 'POST') return tarotReflect(request, env, json, err);
       if (path === '/api/wellbeing/horoscope' && request.method === 'POST') return horoscopeReading(request, env, json, err);

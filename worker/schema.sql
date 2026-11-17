@@ -388,3 +388,20 @@ CREATE TABLE IF NOT EXISTS feedback (
   body       TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+-- The Exchange: notes people share to a shelf others can browse and Take a copy of.
+-- The instance owner (user 1) approves what goes live. One row per shared note.
+CREATE TABLE IF NOT EXISTS exchange (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  block_id     TEXT NOT NULL,                   -- the shared note block
+  owner_id     INTEGER NOT NULL,                -- who shared it
+  token        TEXT NOT NULL,                   -- the note's shareToken, for the public /n/ view
+  status       TEXT NOT NULL DEFAULT 'pending', -- pending | live | unlisted | declined
+  anon         INTEGER NOT NULL DEFAULT 0,      -- 1 = name hidden on the shelf
+  title        TEXT,
+  preview      TEXT,
+  submitted_at TEXT NOT NULL,
+  reviewed_at  TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_exchange_block ON exchange(block_id);
+CREATE INDEX IF NOT EXISTS idx_exchange_status ON exchange(status, id);
