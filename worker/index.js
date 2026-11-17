@@ -4358,19 +4358,38 @@ const CSP = [
 // its session token lives in localStorage and must never be reachable by a
 // third-party script. Only pass MARKETING_CSP to the public pages. (Robin, 2026-11-10.)
 const MARKETING_CSP = CSP
-  .replace("script-src 'self' 'unsafe-inline'", "script-src 'self' 'unsafe-inline' https://app.visitortracking.com https://*.visitortracking.com")
-  .replace("connect-src 'self'", "connect-src 'self' https://app.visitortracking.com https://*.visitortracking.com");
+  .replace("script-src 'self' 'unsafe-inline'", "script-src 'self' 'unsafe-inline' https://app.visitortracking.com https://*.visitortracking.com https://static.cloudflareinsights.com")
+  .replace("connect-src 'self'", "connect-src 'self' https://app.visitortracking.com https://*.visitortracking.com https://cloudflareinsights.com https://static.cloudflareinsights.com");
+
+// Cloudflare Web Analytics (RUM): a cookieless, privacy-first page beacon that
+// rides ONLY on the public marketing pages (the ones served with MARKETING_CSP) -
+// never the signed-in app, whose CSP stays closed to third-party scripts. It sets
+// no cookies, so it needs no consent gate. The "site tag" is public (it ships in
+// the page), so it lives here, not in a secret. Empty string = OFF: nothing is
+// injected, so this is safe to deploy before the tag exists. (Robin, 2026-11-17.)
+const CF_WA_TOKEN = '';
+const CF_WA_BEACON = CF_WA_TOKEN
+  ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${CF_WA_TOKEN}"}'></script>`
+  : '';
 function withHsts(res, csp) {
   const h = new Headers(res.headers);
   h.set('Strict-Transport-Security', HSTS);
   const ct = (h.get('Content-Type') || '').toLowerCase();
-  if (ct.includes('text/html')) {
+  const isHtml = ct.includes('text/html');
+  if (isHtml) {
     h.set('Content-Security-Policy', csp || CSP);
     h.set('X-Content-Type-Options', 'nosniff');
     h.set('X-Frame-Options', 'SAMEORIGIN');
     h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   }
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  const out = new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  // The Cloudflare Web Analytics beacon rides only on the public marketing pages,
+  // recognised by their marketing CSP - never the app's strict-CSP shell. No-op
+  // until CF_WA_TOKEN is set (CF_WA_BEACON is empty).
+  if (isHtml && CF_WA_BEACON && csp === MARKETING_CSP) {
+    return new HTMLRewriter().on('head', { element(el) { el.append(CF_WA_BEACON, { html: true }); } }).transform(out);
+  }
+  return out;
 }
 
 // Marketing HTML must never be cached, so a deploy reaches everyone at once
@@ -5077,7 +5096,57 @@ export default {
     ctx.waitUntil(maybePushMail(env, { byUser, fromByUser, subjByUser, keyByUser }).catch(() => {}));
   },
 
+  // Every request flows through here so Workers Analytics Engine records one data
+  // point per meaningful request (API calls, auth, page/app loads - static assets
+  // and CORS preflights skipped). Server-side, so it needs no cookie consent and
+  // no client code, and it covers the signed-in app that the public web beacon
+  // deliberately never touches. The binding is optional: any env without KAYA_AE
+  // bound (e.g. staging) just skips logging. (Robin, 2026-11-17.)
   async fetch(request, env, ctx) {
+    const t0 = Date.now();
+    let resp;
+    try {
+      resp = await this._handle(request, env, ctx);
+    } catch (e) {
+      try { this._logEvent(env, request, null, t0, e); } catch {}
+      throw e;
+    }
+    try { this._logEvent(env, request, resp, t0, null); } catch {}
+    return resp;
+  },
+
+  _logEvent(env, request, resp, t0, err) {
+    if (!env || !env.KAYA_AE) return;
+    let url;
+    try { url = new URL(request.url); } catch { return; }
+    const p = url.pathname;
+    // Static assets and CORS preflights are noise - skip them.
+    if (request.method === 'OPTIONS') return;
+    if (/\.(?:js|mjs|css|svg|png|jpe?g|webp|gif|ico|webmanifest|json|woff2?|ttf|map|txt|xml)$/i.test(p)) return;
+    // Collapse per-record / per-token paths so the dataset stays low-cardinality.
+    const route = p
+      .replace(/^\/n\/[a-f0-9]{16,64}$/, '/n/:token')
+      .replace(/^\/u\/[^/]+$/, '/u/:handle')
+      .replace(/^\/join\/[^/]+$/, '/join/:code')
+      .replace(/^\/invite\/[^/]+$/, '/invite/:who')
+      .replace(/^\/blog\/[^/]+$/, '/blog/:slug')
+      .replace(/\/\d+(?=\/|$)/g, '/:id')
+      .slice(0, 96);
+    const host = url.hostname;
+    const kind = p.startsWith('/api/') ? 'api' : p.startsWith('/auth/') ? 'auth' : 'page';
+    const country = request.headers.get('cf-ipcountry') || (request.cf && request.cf.country) || '';
+    const status = resp ? resp.status : 0;
+    const ms = Date.now() - t0;
+    try {
+      env.KAYA_AE.writeDataPoint({
+        indexes: [host],
+        blobs: [host, route, request.method, kind, country, String(status), err ? String((err && err.name) || 'error') : ''],
+        doubles: [1, ms, status],
+      });
+    } catch {}
+  },
+
+  async _handle(request, env, ctx) {
     const url = new URL(request.url);
 
     // Force HTTPS. An http:// visit (an old bookmark, or typing the bare
@@ -5215,7 +5284,7 @@ export default {
       // here, and the installed app's start_url points at it. (Robin, 2026-10-15.)
       // The page behind the QR code on Robin's business card.
       if (path === '/invite/robin' || path === '/invite/robin/') {
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/invite-robin.html', url.origin), request)));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/invite-robin.html', url.origin), request)), MARKETING_CSP);
       }
       // Invitations already sent can point at an old domain. Nobody is signed in yet
       // at this stage, so send them home instead of signing up on the old origin.
@@ -5270,7 +5339,7 @@ export default {
         if (LOCALE_PAGES[clean]) {
           // no-store like the EN home, so a redeploy of the marketing copy reaches
           // visitors at once rather than sitting stale behind a cache.
-          return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL(LOCALE_PAGES[clean], url.origin), request))));
+          return withHsts(noStore(await env.ASSETS.fetch(new Request(new URL(LOCALE_PAGES[clean], url.origin), request))), MARKETING_CSP);
         }
       }
       if (isApex && path === '/') {
@@ -5300,14 +5369,14 @@ export default {
       }
       // Public legal pages (privacy required by Google's OAuth consent screen).
       if (isApex && (path === '/privacy' || path === '/privacy/')) {
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/privacy.html', url.origin), request)));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/privacy.html', url.origin), request)), MARKETING_CSP);
       }
       if (isApex && (path === '/terms' || path === '/terms/')) {
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/terms.html', url.origin), request)));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/terms.html', url.origin), request)), MARKETING_CSP);
       }
       // Support page (App Store / Play require a support URL).
       if (isApex && (path === '/support' || path === '/support/')) {
-        return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)));
+        return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)), MARKETING_CSP);
       }
       // How it works.
       if (isApex && (path === '/how' || path === '/how/')) {
@@ -5320,7 +5389,7 @@ export default {
       }
       {
         const m = isApex && path.match(/^\/blog\/([a-z0-9][a-z0-9-]{0,59})\/?$/);
-        if (m) return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog/' + m[1] + '.html', url.origin), request)));
+        if (m) return withHsts(await env.ASSETS.fetch(new Request(new URL('/blog/' + m[1] + '.html', url.origin), request)), MARKETING_CSP);
       }
       // <subdomain>.daybook.fyi/today opens Today INSIDE the app now: the day
       // planner is a native SPA view (openToday on the /today boot route), not

@@ -261,6 +261,17 @@ database_id = "0360e843-4b3c-4d98-beb6-4d185fb12cbc"
 binding = "ATTACHMENTS"
 bucket_name = "life-attachments"
 
+# ── Analytics Engine ──────────────────────────────────────────────────
+# Server-side usage analytics. The fetch handler writes one data point per
+# meaningful request (route, method, status, country, duration) to this dataset;
+# query it in the dashboard (Workers & Pages > today-robski > Metrics, or the
+# Analytics Engine SQL/GraphQL API). Free tier covers a personal app's volume.
+# The write is guarded in code (env.KAYA_AE), so staging - which doesn't bind the
+# dataset - simply skips logging. (Robin, 2026-11-17.)
+[[analytics_engine_datasets]]
+binding = "KAYA_AE"
+dataset = "kaya_events"
+
 # ── Queues ────────────────────────────────────────────────────────────
 # Mail sync fans out here: the every-minute cron enqueues one job per due
 # mailbox, and this same Worker consumes them with bounded concurrency - so the
