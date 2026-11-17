@@ -12906,10 +12906,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
    them, so Today can be wider and breathe; List/Week/Month are bordered buttons with a
    solid-gold active state. (Robin, 2026-11-17.) */
 .cx-step { display:inline-flex; align-items:stretch; gap:6px; font-family:var(--k-sans); font-size:15px; white-space:nowrap; }
-.cx-nav { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:18px; line-height:1; color:var(--k-mute); padding:9px 16px; transition:color .12s, border-color .12s; }
-.cx-nav:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
-.cx-stepnow { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-ink); padding:9px 24px; transition:color .12s, border-color .12s; }
-.cx-stepnow:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+.cx-nav { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-gold); cursor:pointer; font-family:var(--k-sans); font-size:18px; line-height:1; color:var(--k-goldt); padding:9px 16px; transition:color .12s, border-color .12s, background .12s; }
+.cx-nav:hover { border-color:var(--k-goldt); background:color-mix(in srgb, var(--k-gold) 14%, transparent); }
+.cx-stepnow { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-gold); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-goldt); padding:9px 24px; transition:color .12s, border-color .12s, background .12s; }
+.cx-stepnow:hover { border-color:var(--k-goldt); background:color-mix(in srgb, var(--k-gold) 14%, transparent); }
 .cx-views { display:flex; gap:10px; }
 .cx-view { background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-mute); padding:9px 18px; line-height:1; transition:color .12s, border-color .12s, background .12s; }
 .cx-view:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
