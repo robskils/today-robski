@@ -13552,8 +13552,8 @@ body.mailsheet-open { overflow:hidden; }
 .mailv2ar .mail-ar-space { display:block; font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); margin-bottom:3px; max-width:160px; overflow:hidden; text-overflow:ellipsis; }
 .mailv2ar.unread .mail-ar-time { color:var(--k-goldt); }
 .mailv2ar .mail-ar-tri { display:none; position:absolute; top:0; right:0; gap:14px; }
-.mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:hidden; }
-.mail-ar-head.mailv2ar:hover .mail-ar-tri { display:flex; }
+.mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-time { visibility:hidden; }
+.mail-ar:not(.open) .mail-ar-head.mailv2ar:hover .mail-ar-tri { display:flex; }
 .mailv2ar .mail-ar-n { font-family:var(--k-sans); font-size:11px; color:var(--k-mute); margin-left:6px; }
 .mailv2ar .mail-ar-acct { font-family:var(--k-sans); font-size:11px; color:var(--k-mute); margin-left:8px; }
 .mailv2ar .mrt { font-family:var(--k-sans); font-size:12.5px; color:var(--k-mute); cursor:pointer; }

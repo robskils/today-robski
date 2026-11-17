@@ -19014,6 +19014,26 @@ function mailScrollOpenIntoView() {
     if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'start' }); } catch { el.scrollIntoView(); } }
   });
 }
+// Pin a mail row's header across a re-render, so collapsing the open card doesn't jump
+// the page: note the header's viewport position now, and return a fn that puts it back
+// after renderMail by nudging whichever element actually scrolls. (Robin, 2026-11-17.)
+function pinMailHeader(key, fromEl) {
+  const h0 = ((fromEl && fromEl.closest('.mail-ar')) || document).querySelector('.mail-ar-head[data-mail-open]');
+  const y0 = h0 ? h0.getBoundingClientRect().top : null;
+  return () => {
+    if (y0 == null) return;
+    try {
+      const el = Array.from(document.querySelectorAll('.mail-ar-head[data-mail-open]')).find((n) => n.dataset.mailOpen === key);
+      if (!el) return;
+      const dy = el.getBoundingClientRect().top - y0;
+      if (Math.abs(dy) <= 1) return;
+      let sc = el.parentElement;
+      while (sc && sc !== document.body && sc !== document.documentElement) { const st = getComputedStyle(sc); if (/(auto|scroll)/.test(st.overflowY) && sc.scrollHeight > sc.clientHeight + 4) break; sc = sc.parentElement; }
+      sc = (sc && sc !== document.body && sc !== document.documentElement) ? sc : (document.scrollingElement || document.documentElement);
+      const b = sc.scrollTop; sc.scrollTop += dy; if (sc.scrollTop === b) window.scrollBy(0, dy);
+    } catch {}
+  };
+}
 async function openMessage(key) {
   const row = (state.mail.messages || []).find((x) => x._key === key) || (state.mail.snapMsgs && state.mail.snapMsgs[key]);
   // A visible row whose key no longer resolves (list filtered, cache not loaded,
@@ -20420,7 +20440,9 @@ function mailAccordionRow(x, count) {
     + `<span class="mail-ar-right">`
     + (isOpen ? (() => { const fa = (state.mailAreas && state.mailAreas[mailFileKey(x)]) || []; const names = fa.map((e) => (areaById(e.a) || {}).title).filter(Boolean); return names.length ? `<span class="mail-ar-space" title="Filed in ${esc(names.join(', '))}">${esc(names.join(' · '))}</span>` : ''; })() : '')
     + `<span class="mail-ar-time">${mailDate(x.date)}</span>`
-    + `<span class="mail-ar-tri"><span class="mail-ar-tri-l">Action</span><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span><span class="mail-ar-tri-l">Move</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`
+    // Triage-on-hover belongs to the closed list rows only; an open email has its own
+    // action + Move-to bar below, so showing it here just overlaps the time. (Robin, 2026-11-17.)
+    + (isOpen ? '' : `<span class="mail-ar-tri"><span class="mail-ar-tri-l">Action</span><span class="mrt" data-mail-archive="${k}">Archive</span><span class="mrt" data-mail-rowdel="${k}">Delete</span><span class="mrt" data-mail-spam="${k}">Spam</span><span class="mail-ar-tri-l">Move</span><span class="mrt" data-mail-quad-set="${k}:urgent">Urgent</span><span class="mrt" data-mail-quad-set="${k}:important">Important</span><span class="mrt" data-mail-quad-set="${k}:chilled">Read later</span></span>`)
     + `</span>`
     + `</button>`;
   // §58: closed, the row is just its header. Open, the header + body sit on a
@@ -30083,7 +30105,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-mail-vip-tog]')) { e.preventDefault(); e.stopPropagation(); toggleVipFeature(); return; }
   const mvip = t.closest('[data-mail-vip]'); if (mvip) { e.preventDefault(); e.stopPropagation(); toggleVipSender(mvip.dataset.mailVip); return; }
   const munblk = t.closest('[data-mail-unblock]'); if (munblk) { mailUnblock(munblk.dataset.mailUnblock, munblk.dataset.mailUnblockAcct); return; }
-  const mo = t.closest('[data-mail-open]'); if (mo) { if (mo.classList.contains('mail-ident') && window.getSelection && String(window.getSelection()).trim()) return; if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) { mailToggleSelect(mo.dataset.mailOpen); return; } if (state.mail.open && state.mail.open._key === mo.dataset.mailOpen) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; } openMessage(mo.dataset.mailOpen); return; }
+  const mo = t.closest('[data-mail-open]'); if (mo) { if (mo.classList.contains('mail-ident') && window.getSelection && String(window.getSelection()).trim()) return; if (Date.now() - mailTapOpenedAt < 600) return; if (Date.now() - mailDragSuppressClick < 400) return; if (state.mail.selected && state.mail.selected.size) { mailToggleSelect(mo.dataset.mailOpen); return; } if (state.mail.open && state.mail.open._key === mo.dataset.mailOpen) { const _restore = pinMailHeader(mo.dataset.mailOpen, mo); state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); _restore(); return; } openMessage(mo.dataset.mailOpen); return; }
   if (t.closest('[data-mail-back]')) { state.mail.open = null; state.view = { type: 'mail' }; syncActiveTab(); renderMail(); return; }
   if (t.closest('[data-mail-compose]')) { startCompose(); return; }
   if (t.closest('[data-mail-stray-hide]')) { state.mail.strayHidden = state.mail._stray || 0; renderMail(); return; }
