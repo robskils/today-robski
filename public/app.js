@@ -6326,7 +6326,13 @@ const firstName = () => {
 // editorial, never shouting. (Robin, 2026-10-30: full-glory home.)
 function homePartOfDay() { const h = new Date().getHours(); return h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
 function homeEyebrow() {
-  const wd = new Date().toLocaleDateString(dloc(), { weekday: 'long' });
+  const now = new Date();
+  const wd = now.toLocaleDateString(dloc(), { weekday: 'long' });
+  // The eyebrow's first line is the full date, ordered by the user's Date style:
+  // UK "Tuesday 12 November", US "Tuesday November 12" - no comma either way, so it
+  // matches how dates read elsewhere in the app. (Robin, 2026-11-17.)
+  const mo = now.toLocaleDateString(dloc(), { month: 'long' });
+  const dateLine = dateStyle() === 'us' ? `${wd} ${mo} ${now.getDate()}` : `${wd} ${now.getDate()} ${mo}`;
   const p = homePartOfDay();
   let wx = ''; try { const w = state.weather; if (w && w.code != null) { const m = WMO_WX(w.code); if (m && m[1]) wx = m[1].toLowerCase(); } } catch {}
   // WMO_WX labels are nouns ("showers", "drizzle") - right on the quiet chip
@@ -6339,10 +6345,10 @@ function homeEyebrow() {
   const adj = wx ? (wx in WX_ADJ ? WX_ADJ[wx] : wx) : '';
   const noun = p === 'night' ? 'night' : p;
   const phrase = adj ? `${/^[aeiou]/i.test(adj) ? 'an' : 'a'} ${adj} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
-  // Weekday and phrase as separate spans so a narrow phone can drop the phrase to a
-  // second line instead of clipping it ("...Mornin" with the g cut off). (Robin,
-  // 2026-11-12.)
-  return `<span class="kg-eb-day">${esc(wd)}</span><span class="kg-eb-sep"> · </span><span class="kg-eb-ph">${esc(phrase)}</span>`;
+  // Date and phrase as separate spans: the phrase now always sits on its own line
+  // under the date (CSS makes .kg-eb-ph a block and hides the separator). (Robin,
+  // 2026-11-17.)
+  return `<span class="kg-eb-day">${esc(dateLine)}</span><span class="kg-eb-sep"> · </span><span class="kg-eb-ph">${esc(phrase)}</span>`;
 }
 function homeSubClause() { return ({ night: 'The day has come to rest.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'The day is drawing in.' })[homePartOfDay()]; }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so
