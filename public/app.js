@@ -1387,6 +1387,7 @@ function labelForView(v) {
     case 'wellbeing': return t('nav.reflect'); case 'insights': return t('wb.insights'); case 'meditation': return t('wb.meditation'); case 'iching': return t('wb.iching'); case 'tarot': return 'Tarot'; case 'spirit': return t('wb.spirit'); case 'compass': return t('wb.compass');
     case 'journal': return (v.mode === 'coaching' ? t('wb.coaching') : v.mode === 'dreams' ? t('wb.dreams') : t('wb.journal')); case 'journalentry': return (state.journal && state.journal.current && journalDateLabel((state.journal.current.props || {}).date)) || t('wb.journal');
     case 'readwatch': return rwName();
+    case 'exchange': return 'The Exchange';
     case 'bookmarkcard': return (state.rw_open && state.rw && (state.rw.items || []).find((x) => x.id === state.rw_open.id) || {}).title || 'Saved item';
     case 'settings': return t('set.title');
     case 'card': return 'Kaya card';
@@ -1426,6 +1427,7 @@ function openView(v) {
     case 'iching': return openIChing(); case 'tarot': return openTarot(); case 'spirit': return openSpiritCards(); case 'compass': return openCompass();
     case 'journal': return openJournal(v.mode || null); case 'journalentry': return openJournalEntry(v.id);
     case 'readwatch': return openReadwatch();
+    case 'exchange': return openExchange();
     case 'bookmarkcard': return openBookmarkCard(v.id);
     case 'table': return openTable(v.id); case 'tables': return openTablesList();
     case 'area': return openArea(v.id); case 'areas': return openAreasList();
@@ -5601,10 +5603,10 @@ function knavGroups() {
       tools: [
         ['Spaces', 'data-open-areas', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
         ['Routines', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
-        ['Local Events', 'data-open-discover', ''], [rwName(), 'data-open-readwatch', ''],
+        ['Local Events', 'data-open-discover', ''], [rwName(), 'data-open-readwatch', ''], ['The Exchange', 'data-open-exchange', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ...revTools ],
-      rows: [['Your life', 3], ['Day to day', 2], ['Inspire', 2], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
+      rows: [['Your life', 3], ['Day to day', 2], ['Inspire', 3], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
   ];
@@ -5613,7 +5615,7 @@ function knavGroups() {
 const KNAV_VIEW = {
   area: 'spaces', areas: 'spaces', visioncard: 'spaces', visionwall: 'spaces',
   discover: 'keep', today: 'keep', practices: 'keep', practicecard: 'keep',
-  readwatch: 'keep',
+  readwatch: 'keep', exchange: 'keep',
   goals: 'keep', goalcard: 'keep', bucketcard: 'keep', reviews: 'keep', reviewcard: 'keep',
   wellbeing: 'inner', journal: 'inner', journalentry: 'inner', coaching: 'inner', meditation: 'inner', iching: 'inner', tarot: 'inner', compass: 'inner', spirit: 'inner', insights: 'inner', dreams: 'inner', horoscope: 'inner', tracker: 'keep',
   money: 'keep', financial: 'keep',
@@ -12804,6 +12806,79 @@ async function openReadwatch() {
   catch (e) { state.rw = { items: [], filter: 'todo' }; toast(e.message); }
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
+}
+// ── The Exchange (community note-sharing) ────────────────────────────────────
+// A shared shelf in Tools › Inspire: people publish a note, others browse and Take a
+// copy into their own Notes. The owner (user 1) sees a review queue; everyone browses
+// the live shelf. Plain by design - no counts, likes or badges. Backend: worker/exchange.js.
+async function openExchange() {
+  state.view = { type: 'exchange' };
+  renderNav();
+  let items = [], pending = [], owner = false;
+  try { const r = await api('/api/exchange'); items = r.items || []; } catch (e) { toast(e.message); }
+  try { const p = await api('/api/exchange/pending'); pending = p.items || []; owner = true; } catch {}   // 403 for members = not the owner
+  state.exchange = { items, pending, owner };
+  renderExchange();
+}
+function exchangeCardHtml(it, owner) {
+  const act = it.mine
+    ? '<span class="xch-tag">Yours</span>'
+    : it.took
+      ? '<span class="xch-tag xch-tag-done">In your Notes ✓</span>'
+      : `<button class="xch-take" data-exchange-take="${it.id}">Take a copy</button>`;
+  const unlist = (owner && !it.mine) ? `<button class="xch-ghost" data-exchange-unlist="${it.id}">Unlist</button>` : '';
+  return `<article class="xch-card">
+    <div class="xch-card-b">
+      <h3 class="xch-ttl">${esc(it.title)}</h3>
+      <p class="xch-prev">${esc(it.preview)}</p>
+    </div>
+    <div class="xch-foot">
+      <span class="xch-by">${it.mine ? 'Shared by you' : 'from ' + esc(it.author)}</span>
+      <span class="xch-acts"><a class="xch-read" href="/n/${esc(it.token)}" target="_blank" rel="noopener noreferrer">Read</a>${act}${unlist}</span>
+    </div>
+  </article>`;
+}
+function renderExchange() {
+  const x = state.exchange || { items: [], pending: [], owner: false };
+  const queue = (x.owner && x.pending.length) ? `<section class="xch-sec">
+      <div class="home-sub-eyebrow">Waiting for your nod</div>
+      <div class="xch-grid">${x.pending.map((p) => `<article class="xch-card xch-pend">
+        <div class="xch-card-b"><h3 class="xch-ttl">${esc(p.title)}</h3><p class="xch-prev">${esc(p.preview)}</p></div>
+        <div class="xch-foot"><span class="xch-by">Shared by ${esc(p.author)}</span>
+          <span class="xch-acts"><a class="xch-read" href="/n/${esc(p.token)}" target="_blank" rel="noopener noreferrer">Read</a><button class="xch-take" data-exchange-approve="${p.id}">Add to the shelf</button><button class="xch-ghost" data-exchange-decline="${p.id}">Not this one</button></span></div>
+      </article>`).join('')}</div>
+    </section>` : '';
+  const shelf = x.items.length
+    ? `<div class="xch-grid">${x.items.map((it) => exchangeCardHtml(it, x.owner)).join('')}</div>`
+    : `<div class="xch-empty">Nothing on the shelf yet. Share one of your own notes - open a note, choose <b>⋯ More</b>, then <b>Share to The Exchange</b> - and once it's approved it appears here for everyone.</div>`;
+  $('#pane').innerHTML = `<div class="kwrap kpage kpage-exchange">
+    ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'The Exchange' }])}
+    <div class="xch-head"><h1 class="xch-h1">The Exchange</h1>
+      <p class="xch-lead">Notes people have shared, for anyone to find and keep. Take a copy and it's yours - edit it, add to it, or let it go.</p></div>
+    ${queue}${shelf}
+  </div>`;
+}
+async function shareToExchange(noteId) {
+  try {
+    const r = await api('/api/exchange/submit', { method: 'POST', body: JSON.stringify({ block: noteId, anon: false }) });
+    toast(r.status === 'live' ? 'Added to The Exchange' : 'On its way to The Exchange - it appears once approved');
+  } catch (e) { toast(e.message); }
+}
+async function exchangeTake(id) {
+  try {
+    await api('/api/exchange/take', { method: 'POST', body: JSON.stringify({ id: Number(id) }) });
+    const it = (state.exchange && state.exchange.items || []).find((y) => y.id === Number(id)); if (it) it.took = true;
+    renderExchange();
+    toast('Taken into your Notes ✓');
+  } catch (e) { toast(e.message); }
+}
+async function exchangeReview(id, action) {
+  try { await api('/api/exchange/review', { method: 'POST', body: JSON.stringify({ id: Number(id), action }) }); openExchange(); }
+  catch (e) { toast(e.message); }
+}
+async function exchangeUnlist(id) {
+  try { await api('/api/exchange/unlist', { method: 'POST', body: JSON.stringify({ id: Number(id) }) }); openExchange(); }
+  catch (e) { toast(e.message); }
 }
 // ── Library covers (V35 §69) ────────────────────────────────────────────
 // A real cover/thumbnail when we have one (props.image), else a generated cover
@@ -27842,7 +27917,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}">Share to The Exchange</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -29451,6 +29526,12 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-journal-coach]')) { journalCoach(); return; }
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
+  if (t.closest('[data-open-exchange]')) { openExchange().catch((x) => toast(x.message)); return; }
+  { const el = t.closest('[data-exchange-share]'); if (el) { shareToExchange(el.dataset.exchangeShare); return; } }
+  { const el = t.closest('[data-exchange-take]'); if (el) { exchangeTake(el.dataset.exchangeTake); return; } }
+  { const el = t.closest('[data-exchange-approve]'); if (el) { exchangeReview(el.dataset.exchangeApprove, 'approve'); return; } }
+  { const el = t.closest('[data-exchange-decline]'); if (el) { exchangeReview(el.dataset.exchangeDecline, 'decline'); return; } }
+  { const el = t.closest('[data-exchange-unlist]'); if (el) { exchangeUnlist(el.dataset.exchangeUnlist); return; } }
   { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
   // §69 Library: the slide-in item panel, shelf/list, sort flip, section folds, pin.
   { const ro = t.closest('[data-rw-open]'); if (ro) { if (state.rw) { state.rw.sel = ro.dataset.rwOpen; renderReadwatch(); } return; } }
