@@ -6345,10 +6345,11 @@ function homeEyebrow() {
   const adj = wx ? (wx in WX_ADJ ? WX_ADJ[wx] : wx) : '';
   const noun = p === 'night' ? 'night' : p;
   const phrase = adj ? `${/^[aeiou]/i.test(adj) ? 'an' : 'a'} ${adj} ${noun}` : ({ night: 'the small hours', morning: 'a new morning', afternoon: 'the afternoon', evening: 'a quiet evening' })[p];
-  // Date and phrase as separate spans: the phrase now always sits on its own line
-  // under the date (CSS makes .kg-eb-ph a block and hides the separator). (Robin,
-  // 2026-11-17.)
-  return `<span class="kg-eb-day">${esc(dateLine)}</span><span class="kg-eb-sep"> · </span><span class="kg-eb-ph">${esc(phrase)}</span>`;
+  // Date (with the live time after a comma) on the first line, the phrase on its own
+  // line beneath (CSS makes .kg-eb-ph a block and hides the separator). The time
+  // rides in a .home-time span so the clock ticker keeps it live without re-rendering
+  // the date; a scoped CSS rule makes it inherit the eyebrow look. (Robin, 2026-11-17.)
+  return `<span class="kg-eb-day">${esc(dateLine)}, <span class="home-time">${esc(homeTimeStr())}</span></span><span class="kg-eb-sep"> · </span><span class="kg-eb-ph">${esc(phrase)}</span>`;
 }
 function homeSubClause() { return ({ night: 'The day has come to rest.', morning: 'The day is still unwritten.', afternoon: 'The day is yours to shape.', evening: 'The day is drawing in.' })[homePartOfDay()]; }
 // The live time beside the date on Home. Updated in place by a quiet ticker, so
@@ -9749,10 +9750,12 @@ function homeTimeWeatherHtml() {
     if (w.sunset) { const sm = String(w.sunset).match(/T(\d{2}:\d{2})/); if (sm) segs.push({ t: `sunset ${sm[1]}` }); }
     if (w.tHigh != null) { const tw = wxWord(w.tCode); segs.push({ t: `tomorrow ${w.tHigh}°${tw ? ' ' + tw : ''}` }); }
   } else { segs.push({ h: placeBtn }); }
-  const segHtml = segs.map((s) => ` · ${s.h || esc(s.t)}`).join('');
+  // The time moved up into the eyebrow (beside the date), so this line is weather
+  // only now - join the segments with ' · ' and no leading separator. (Robin, 2026-11-17.)
+  const segHtml = segs.map((s) => s.h || esc(s.t)).join(' · ');
   const autoHint = manual ? '' : `<span class="home-loc-hint">${(lp && lp.name) ? 'Following your location' : 'Allow location, or set a city below'}</span>`;
   const editRow = (state.home && state.home.locEdit) ? `<div class="home-loc-edit"><input class="sel home-loc-in" data-home-loc-input type="text" placeholder="Set a city…" value="${esc((manual && manual.name) || '')}" autocomplete="off" spellcheck="false"><button class="home-loc-save" data-home-loc-save type="button">Set</button>${manual ? '<button class="home-loc-auto" data-home-loc-auto type="button">Use my location</button>' : ''}${autoHint}</div>` : '';
-  return `<div class="home-tw"><span class="home-time">${esc(homeTimeStr())}</span>${segHtml}</div>${editRow}`;
+  return `<div class="home-tw">${segHtml}</div>${editRow}`;
 }
 // §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
 // a count word unfolds a panel of that tool's top few items in place.

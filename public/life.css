@@ -11104,6 +11104,9 @@ body[data-view="goals"] .pane { max-width:none; padding:0; margin-top:0; backgro
    these rules never touch the single-line eyebrows elsewhere. (Robin, 2026-11-17.) */
 .kg-eyebrow-t .kg-eb-ph { display:block; }
 .kg-eyebrow-t .kg-eb-sep { display:none; }
+/* The live time sits on the first line beside the date; override the big accent
+   global .home-time so it reads as part of the gold eyebrow. (Robin, 2026-11-17.) */
+.kg-eyebrow-t .home-time { font-size:inherit; font-weight:inherit; letter-spacing:inherit; color:inherit; }
 /* On a narrow phone let the longer date line wrap rather than clip. (Robin, 2026-11-12.) */
 @media (max-width:560px){
   .kg-eyebrow-t { white-space:normal; }
