@@ -12898,27 +12898,45 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-yr { font-family:var(--k-serif); font-weight:300; font-size:40px; color:var(--k-mute); }
 .cx-mood { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; line-height:1.35; color:var(--k-mute); margin-top:10px; }
 .cx-controls { display:flex; flex-wrap:wrap; align-items:center; gap:14px 30px; margin-top:34px; padding:14px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
-/* The day-stepper is a bordered segmented control (‹ Today ›), and List/Week/Month
-   are bordered buttons with a solid-gold active state - clearer and more obviously
-   tappable than the old bare text. (Robin, 2026-11-17.) */
-.cx-step { display:inline-flex; align-items:stretch; border:1px solid var(--k-line); font-family:var(--k-sans); font-size:15px; white-space:nowrap; }
-.cx-nav { display:inline-flex; align-items:center; justify-content:center; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:18px; line-height:1; color:var(--k-mute); padding:9px 16px; transition:color .12s; }
-.cx-nav:hover { color:var(--k-goldt); }
-.cx-stepnow { display:inline-flex; align-items:center; justify-content:center; background:none; border:0; border-left:1px solid var(--k-line); border-right:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-ink); padding:9px 18px; transition:color .12s; }
-.cx-stepnow:hover { color:var(--k-goldt); }
+/* The day-stepper is three bordered buttons (‹  Today  ›) with a little space between
+   them, so Today can be wider and breathe; List/Week/Month are bordered buttons with a
+   solid-gold active state. (Robin, 2026-11-17.) */
+.cx-step { display:inline-flex; align-items:stretch; gap:6px; font-family:var(--k-sans); font-size:15px; white-space:nowrap; }
+.cx-nav { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:18px; line-height:1; color:var(--k-mute); padding:9px 16px; transition:color .12s, border-color .12s; }
+.cx-nav:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
+.cx-stepnow { display:inline-flex; align-items:center; justify-content:center; background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-ink); padding:9px 24px; transition:color .12s, border-color .12s; }
+.cx-stepnow:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 .cx-views { display:flex; gap:10px; }
 .cx-view { background:none; border:1px solid var(--k-line); cursor:pointer; font-family:var(--k-sans); font-size:15px; color:var(--k-mute); padding:9px 18px; line-height:1; transition:color .12s, border-color .12s, background .12s; }
 .cx-view:hover { color:var(--k-goldt); border-color:var(--k-goldt); }
 .cx-view.on { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); }
 .cx-view.on:hover { background:var(--k-goldt); color:var(--k-ongold); }
+.cx-new-short { display:none; }
+/* Desktop: List/Week/Month on the left, the Today/arrows stepper centred in the row,
+   Search/New on the right. A 1fr-auto-1fr grid centres the stepper regardless of the
+   side groups' widths. (Robin, 2026-11-17.) */
+@media (min-width:761px){
+  .cx-controls { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; column-gap:20px; }
+  .cx-views { order:1; justify-self:start; }
+  .cx-step { order:2; justify-self:center; }
+  .cx-actions { order:3; justify-self:end; margin-left:0; }
+}
+/* Mobile: List/Week/Month + Search + New on one line up top (smaller buttons, Search
+   icon only, "New" not "New event"), with the Today/arrows stepper on its own centred
+   row underneath - a wider Today and space around it. (Robin, 2026-11-17.) */
 @media (max-width:760px){
-  /* Today + arrows on their own centred row, and bigger, so the day-stepper is easy
-     to hit; the whole control cluster stacks and centres. (Robin, 2026-11-17.) */
-  .cx-controls { flex-direction:column; align-items:center; gap:18px; }
-  .cx-actions { margin-left:0; justify-content:center; }
-  .cx-step { font-size:16px; }
-  .cx-nav { font-size:22px; padding:12px 26px; }
-  .cx-stepnow { font-size:16px; padding:12px 26px; }
+  .cx-controls { flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px 10px; }
+  .cx-views { order:1; gap:6px; }
+  .cx-view { font-size:13px; padding:7px 12px; }
+  .cx-actions { order:2; margin-left:0; gap:8px; }
+  .cx-searchbtn { padding:8px 11px; }
+  .cx-searchbtn span { display:none; }
+  .cx-new { font-size:10px; padding:9px 14px; }
+  .cx-new-long { display:none; }
+  .cx-new-short { display:inline; }
+  .cx-step { order:3; flex-basis:100%; justify-content:center; gap:10px; font-size:16px; }
+  .cx-nav { font-size:22px; padding:13px 24px; }
+  .cx-stepnow { font-size:16px; padding:13px 36px; }
 }
 .cx-quiet { display:flex; align-items:center; gap:8px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); white-space:nowrap; }
 .cx-quiet.on { color:var(--k-goldt); }

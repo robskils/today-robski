@@ -16059,7 +16059,7 @@ function renderCalendar() {
           ${searchOpen
             ? `<div class="cx-search"><input data-cal-q placeholder="Search the calendar" value="${esc(state.calQuery || '')}" autocomplete="off"></div>`
             : `<button class="cx-searchbtn" data-cal-search-open title="Search the calendar" aria-label="Search the calendar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.2" y2="16.2"></line></svg><span>Search</span></button>`}
-          <button class="cx-new" data-cal-add>New event</button>
+          <button class="cx-new" data-cal-add><span class="cx-new-long">New event</span><span class="cx-new-short">New</span></button>
         </div>
       </div>
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
