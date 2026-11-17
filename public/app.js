@@ -18446,12 +18446,12 @@ async function pushTest() {
 function pushSectionHtml() {
   if (!pushSupported()) {
     return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-      <p class="scope">To get a badge on the app icon when mail arrives, add Kaya to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here.</p></section>`;
+      <p class="scope">To get a notification on your phone when a message, mail or reminder arrives, add Kaya to your Home Screen (iPhone: Safari → Share → Add to Home Screen), then open it from there and come back here to turn them on.</p></section>`;
   }
   const perm = Notification.permission;
   const on = perm === 'granted';
   return `<section class="push-sec"><div class="home-sec-h">Notifications</div>
-    <p class="scope">Show a number on the Kaya app icon when new mail arrives. Install it as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen).</p>
+    <p class="scope">Get a notification on your phone when a message, a mail or a reminder arrives, and a count on the app icon for unread mail. Install Kaya as an app first (Brave: menu → Install; iPhone: Share → Add to Home Screen), then open it from there.</p>
     <div class="push-acts">${perm === 'denied'
       ? '<span class="push-status">Blocked in your browser settings. Allow notifications for this site, then reload.</span>'
       : `<button class="add-btn wide" data-push-enable>${on ? '✓ Notifications on' : 'Enable notifications'}</button>${on ? '<button class="ghost" data-push-test>Send test</button>' : ''}`}</div></section>`;
