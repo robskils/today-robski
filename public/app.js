@@ -519,6 +519,12 @@ function mdToHtml(md) {
 // Turn any bare http(s) URL into a clickable link, without touching URLs that
 // are already inside an <a> (or a <code> span). Works on rendered HTML.
 const BARE_URL = /\bhttps?:\/\/[^\s<>()]+[^\s<>().,;:!?'"]/gi;
+// A link pasted WITHOUT the https:// - a www address, or a domain that carries a path
+// (like "luma.com/join/…"). Used as a fallback so an event's Join/Open link and the
+// tidy of its Location work even when someone leaves the protocol off. A bare domain
+// with no path isn't matched, to avoid mistaking an ordinary place for a link.
+const BARE_URL_NOPROTO = /\b(?:www\.[^\s<>()]+|[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\/[^\s<>()]+)/i;
+const BARE_URL_NOPROTO_G = new RegExp(BARE_URL_NOPROTO.source, 'gi');
 // Plain emails and phone numbers typed into a note, so they become tappable
 // mailto:/tel: links too (phone: starts + / 0 / (, 8-15 digits - strict enough
 // not to swallow ordinary numbers). (Robin.)
@@ -16152,11 +16158,11 @@ function eventLinkKey(e) { return String((e && (e.recurringId || e.id || e.event
 // so its row/column collapses. A plain location (no URL) is returned untouched.
 // (Robin, 2026-11-16: "we don't need to show ALL of it. As long as we can click on it".)
 function locText(loc) {
-  const s = stripEmoji(loc);
+  const s0 = stripEmoji(loc);
   BARE_URL.lastIndex = 0;
-  if (!BARE_URL.test(s)) return s;
-  BARE_URL.lastIndex = 0;
-  return s.replace(BARE_URL, ' ')
+  const hasProto = BARE_URL.test(s0); BARE_URL.lastIndex = 0;
+  if (!hasProto && !BARE_URL_NOPROTO.test(s0)) return s0;
+  return s0.replace(BARE_URL, ' ').replace(BARE_URL_NOPROTO_G, ' ')
     .replace(/\s{2,}/g, ' ')
     .replace(/^[\s·,|/–—-]+|[\s·,|/–—-]+$/g, '')
     .trim();
@@ -16172,7 +16178,11 @@ function eventJoinUrl(e) {
   // Pick the first URL from either, wherever its link was put. (Robin, 2026-11-09.)
   const hay = `${(e && e.location) || ''}\n${(e && e.notes) || ''}`;
   BARE_URL.lastIndex = 0; const m = BARE_URL.exec(hay);
-  return m ? m[0] : '';
+  if (m) return m[0];
+  // Also accept a link pasted without the https:// - a www address or a domain with a
+  // path, like "luma.com/join/…". Assume https. (Robin, 2026-11-18.)
+  const b = hay.match(BARE_URL_NOPROTO);
+  return b ? 'https://' + b[0] : '';
 }
 // "Join" for a recognised video-meeting link, "Open" for any other link (a class
 // page, a doc), so the word matches what the tap does. (Robin, 2026-11-09.)
@@ -20036,7 +20046,7 @@ const CICO = {
   invite: mIco('<circle cx="9.5" cy="8" r="3.2"/><path d="M4 19a5.5 5.5 0 0 1 11 0"/><path d="M18.5 8.5v5M16 11h5"/>'),
 };
 // Recognised video-meeting links, so we can float a "Join" button.
-const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+)/i;
+const MEETING_RE = /https?:\/\/(?:[\w.-]*\.)?(?:zoom\.us\/(?:j|my|w|wc)\/\S+|meet\.google\.com\/[a-z0-9-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+|teams\.live\.com\/meet\/\S+|[\w.-]*webex\.com\/\S+|whereby\.com\/\S+|meet\.jit\.si\/\S+|lu\.ma\/\S+|luma\.com\/\S+)/i;
 function mailMeetingLink(o) {
   const m = `${o.text || ''}\n${o.html || ''}`.match(MEETING_RE);
   return (m ? m[0].replace(/["'&<>]+$/, '') : '') || (o.invite && o.invite.url) || '';

@@ -165,7 +165,7 @@ const GUIDE_ANSWERS = {
       'Tap the <b>⋮</b> menu at the top right.',
       'Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.',
     ]],
-  ], note: 'Open it from your home screen from now on. The +, the Menu and Search sit along the bottom.', next: ['desktop', 'set-down', 'twofa'] },
+  ], note: 'Open it from your home screen from now on. The +, the Menu and Search sit along the bottom. To get a buzz when a message or mail arrives, turn on notifications next.', next: ['notifications', 'desktop', 'set-down'] },
   desktop: { title: 'Put Kaya on your computer', lead: 'It opens in its own clean window, from your Dock or taskbar, with no browser tabs or address bar.', installed: 'computer', parts: [
     ['Mac, in Safari', [
       'Open <b>koyeba.co</b> in Safari and sign in.',
@@ -178,7 +178,14 @@ const GUIDE_ANSWERS = {
       'Click <b>Install</b>.',
       'No icon? In Chrome, open the <b>⋮</b> menu at the top right and look for <b>Install Kaya</b>. Menu wording changes between browser versions, so it may sit under <b>Cast, save and share</b>. In Edge, it is under <b>Apps</b> in the <b>…</b> menu.',
     ]],
-  ], note: 'Kaya now lives in your Dock on a Mac, or can be pinned to your taskbar on Windows.', next: ['phone', 'set-down', 'find'] },
+  ], note: 'Kaya now lives in your Dock on a Mac, or can be pinned to your taskbar on Windows.', next: ['notifications', 'phone', 'set-down'] },
+  notifications: { title: 'Turn on notifications', lead: 'A quiet buzz on your phone when a message, a mail or a reminder arrives. This is a separate step from putting Kaya on your phone, and the one most people miss.', go: ['Open the settings', 'data-guide-settings="notifications"'], steps: [
+    '<b>Put Kaya on your phone first.</b> Notifications only work once Kaya is on your <b>Home Screen</b> (see "Put Kaya on your phone"). A browser tab can\'t receive them.',
+    '<b>Open Kaya from its own icon,</b> not from a browser tab.',
+    '<b>Open Settings, then Notifications,</b> and choose <b>Enable notifications</b>. Tap <b>Allow</b> when your phone asks.',
+    '<b>Send a test.</b> The <b>Send test</b> button rings the device, so you know it worked.',
+    'Turn them on <b>on each device</b> you want notified. Your phone and your computer are separate.',
+  ], note: 'You\'re told about a new message, new mail and reminders. Kaya stays quiet while you\'re looking at it, and a run of messages buzzes once until you\'ve read them.', next: ['phone', 'desktop', 'set-down'] },
   twofa: { title: 'Turn on two-factor sign-in', lead: 'A second step at sign-in, from an authenticator app. It becomes required 90 days after you join.', go: ['Set it up', 'data-onb-open-hub="twofa"'], steps: [
     'Choose <b>Set it up</b> above.',
     'Scan the code with your authenticator app.',
@@ -231,6 +238,7 @@ const GUIDE_START = [
   ['spaces', () => !!homeWelcomeSteps().spaces, 'Open'],
   ['phone', () => guideInstalled('phone'), 'Show me'],
   ['desktop', () => guideInstalled('computer'), 'Show me'],
+  ['notifications', () => (typeof Notification !== 'undefined' && Notification.permission === 'granted'), 'Turn on'],
 ];
 const GUIDE_HOW = [
   ['Every day', ['set-down', 'find', 'notepad', 'side-by-side', 'linked']],
@@ -239,7 +247,7 @@ const GUIDE_HOW = [
   ['Keep', ['note-start', 'table-start', 'read-watch', 'import']],
   ['Spaces', ['spaces', 'share-space']],
   ['Reflection and Money', ['journal', 'spending']],
-  ['Your account', ['phone', 'desktop', 'twofa', 'ai', 'tools', 'data']],
+  ['Your account', ['phone', 'desktop', 'notifications', 'twofa', 'ai', 'tools', 'data']],
 ];
 const GUIDE_TOOLS = [
   { id: 'tool-spaces', title: 'Spaces', sub: 'Each part of your life', lead: 'A Space gathers one part of your life: its notes and tables, tasks, goals, events, people, links and files. Give each one the people who belong in it.', go: ['Open Spaces', 'data-open-areas'], list: ['spaces', 'share-space'] },
@@ -258,7 +266,7 @@ const GUIDE_HELP_FOR = {
   tasks: ['Tasks', ['task-add', 'flow', 'set-down']], taskcard: ['Tasks', ['task-add', 'linked', 'flow']],
   calendar: ['Calendar', ['event-add', 'calendar', 'holidays']], today: ['Day Planner', ['flow', 'practices', 'task-add']], practices: ['Tracker', ['practices', 'flow']], practicecard: ['Tracker', ['practices', 'flow']], discover: ['Local Events', ['discover', 'event-add']],
   goals: ['Goals', ['goals', 'review']], goalcard: ['Goals', ['goals', 'task-add']], reviews: ['Reviews', ['review', 'r-week', 'goals']], reviewcard: ['Reviews', ['review', 'r-week']],
-  mail: ['Mail', ['mail-sort', 'mail-action', 'email']], mailaccounts: ['Mail', ['email', 'app-password']], contacts: ['Contacts', ['keep-in-touch', 'connect', 'invite']], contactcard: ['Contacts', ['keep-in-touch', 'connect']], messages: ['Messages', ['connect', 'share-space']],
+  mail: ['Mail', ['mail-sort', 'mail-action', 'email']], mailaccounts: ['Mail', ['email', 'app-password']], contacts: ['Contacts', ['keep-in-touch', 'connect', 'invite']], contactcard: ['Contacts', ['keep-in-touch', 'connect']], messages: ['Messages', ['connect', 'notifications', 'share-space']],
   area: ['Spaces', ['spaces', 'share-space', 'note-start']], areas: ['Spaces', ['spaces', 'share-space']],
   readwatch: ['Library', ['read-watch', 'find']], wellbeing: ['Reflection', ['tool-reflection', 'journal']], journal: ['Journal', ['journal', 'ai']], money: ['Money', ['tool-money', 'spending']], financial: ['Money', ['spending', 'tool-money']],
   settings: ['Settings', ['ai', 'tools', 'data', 'twofa']], admin: null,
