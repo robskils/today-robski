@@ -16053,7 +16053,7 @@ function renderCalendar() {
       <div class="cx-titlerow"><h1 class="cx-h1">${esc(t('nav.calendar'))}</h1></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
       <div class="cx-controls">
-        <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today title="Back to today">${c.mode === 'week' ? `Week ${isoWeekInfo(c.selected || todayISO()).week}` : 'Today'}</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
+        <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today title="Back to today">${c.mode === 'week' ? (isThisISOWeek(c.selected || todayISO()) ? 'This Week' : `Week ${isoWeekInfo(c.selected || todayISO()).week}`) : c.mode === 'month' ? esc(MONTHS_LONG[c.m]) : 'Today'}</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
         <div class="cx-views">${views}</div>
         <div class="cx-actions">
           ${searchOpen
@@ -25930,6 +25930,12 @@ function isoWeekInfo(dateStr) {
   const isoYear = dt.getUTCFullYear();
   const week = Math.ceil(((dt - new Date(Date.UTC(isoYear, 0, 1))) / 86400000 + 1) / 7);
   return { week, total: isoWeeksInYear(isoYear) };
+}
+// True when `iso` falls in the same ISO week (Mon-Sun) as today, so the week view's
+// stepper can read "This Week" on the current week and "Week N" once you step away.
+function isThisISOWeek(iso) {
+  const mon = (s) => { const [y, m, d] = String(s).split('-').map(Number); const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1)); const wd = dt.getUTCDay() || 7; dt.setUTCDate(dt.getUTCDate() - (wd - 1)); return dt.getTime(); };
+  return mon(iso) === mon(todayISO());
 }
 function reviewWhenHtml(p) {
   const from = p.from, to = p.to;
