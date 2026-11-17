@@ -16050,7 +16050,7 @@ function renderCalendar() {
   $('#pane').innerHTML = `
     <div class="kpage-cal cal-mode-${c.mode}">
       ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: t('nav.calendar') }])}
-      <div class="cx-titlerow"><h1 class="cx-h1">${esc(MONTHS_LONG[c.m])}</h1><span class="cx-yr">${c.y}</span></div>
+      <div class="cx-titlerow"><h1 class="cx-h1">${esc(t('nav.calendar'))}</h1></div>
       <div class="cx-mood">${esc(calMood(byDay, todayI))}</div>
       <div class="cx-controls">
         <div class="cx-step"><button class="cx-nav" data-cal-prev aria-label="Previous">‹</button><button class="cx-stepnow" data-cal-today title="Back to today">${c.mode === 'week' ? `Week ${isoWeekInfo(c.selected || todayISO()).week}` : 'Today'}</button><button class="cx-nav" data-cal-next aria-label="Next">›</button></div>
@@ -16063,6 +16063,7 @@ function renderCalendar() {
         </div>
       </div>
       ${c.error && c.error !== null ? `<div class="cal-warn">Calendar: ${esc(String(c.error))}</div>` : ''}
+      <div class="cx-period">${esc(MONTHS_LONG[c.m])} ${c.y}</div>
       <div class="cx-grid">
         <div class="cx-col"><div id="cal-form"></div>${main}</div>
         <aside class="cx-side">

@@ -12897,6 +12897,10 @@ body[data-view="calendar"] .pane { max-width:none; padding:0; margin-top:0; back
 .cx-h1 { margin:0; font-family:var(--k-serif); font-weight:300; font-size:clamp(60px,6vw,96px); line-height:.95; color:var(--k-ink); }
 .cx-yr { font-family:var(--k-serif); font-weight:300; font-size:40px; color:var(--k-mute); }
 .cx-mood { font-family:var(--k-serif); font-style:italic; font-weight:300; font-size:24px; line-height:1.35; color:var(--k-mute); margin-top:10px; }
+/* The month+year moved off the page title (now "Calendar") to sit right above the
+   grid, close to the action. (Robin, 2026-11-17.) */
+.cx-period { font-family:var(--k-serif); font-weight:300; font-size:clamp(28px,3.2vw,40px); line-height:1; color:var(--k-ink); margin-top:24px; }
+.cx-period + .cx-grid { margin-top:12px; }
 .cx-controls { display:flex; flex-wrap:wrap; align-items:center; gap:14px 30px; margin-top:34px; padding:14px 0; border-top:1px solid var(--k-ink); border-bottom:1px solid var(--k-line); }
 /* The day-stepper is three bordered buttons (‹  Today  ›) with a little space between
    them, so Today can be wider and breathe; List/Week/Month are bordered buttons with a
