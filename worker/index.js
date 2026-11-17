@@ -4367,9 +4367,9 @@ const MARKETING_CSP = CSP
 // no cookies, so it needs no consent gate. The "site tag" is public (it ships in
 // the page), so it lives here, not in a secret. Empty string = OFF: nothing is
 // injected, so this is safe to deploy before the tag exists. (Robin, 2026-11-17.)
-const CF_WA_TOKEN = '';
+const CF_WA_TOKEN = 'ce3c3984290443c4ac75b816d5007341';
 const CF_WA_BEACON = CF_WA_TOKEN
-  ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token":"${CF_WA_TOKEN}"}'></script>`
+  ? `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${CF_WA_TOKEN}"}'></script>`
   : '';
 function withHsts(res, csp) {
   const h = new Headers(res.headers);
