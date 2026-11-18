@@ -2883,7 +2883,7 @@ body.resizing-nav { cursor:col-resize; user-select:none; }
    both light and dark, so there's no night swap. (2026-11-15: finished moving the
    header mark off the old Mandombe "ko" to the 香 seal.) */
 .brand-mark { display:inline-block; width:1em; height:1em; margin:0 .24em; vertical-align:-.14em;
-  background:url(/brand/kaya-seal.svg) center/contain no-repeat; }
+  background:url(/brand/kaya-seal.svg?v=2) center/contain no-repeat; }
 /* The wordmark: "Kaya" in Cormorant Garamond 500 with a gold full stop. */
 .brand-word { font-family:var(--k-serif); font-style:normal; font-weight:500; letter-spacing:0; text-transform:none; }
 .brand-dot { color:var(--k-gold,#c99a3e); font-style:normal; }
@@ -3680,7 +3680,7 @@ summary.ce-links-h:hover { color:var(--ink-2); }
 .adm-brand-lockup { display:inline-flex; align-items:center; gap:.42em; font-size:38px; color:var(--ink); }
 .adm-brand-lockup .brand-mark { font-size:1.15em; color:var(--accent); }
 .adm-brand-word { font-family:var(--k-serif); font-weight:500; letter-spacing:0; text-transform:none; white-space:nowrap; }
-.adm-brand-seal { width:1em; height:1em; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
+.adm-brand-seal { width:1em; height:1em; flex:none; background:url('/brand/kaya-seal.svg?v=2') center/contain no-repeat; }
 .adm-brand-sheet { font-size:14px; }
 .adm-brand-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:11px; }
 .adm-brand-dl { display:flex; align-items:center; gap:12px; padding:11px 13px; border:1px solid var(--line); border-radius:0; background:var(--card); color:var(--ink); text-decoration:none; transition:border-color .12s, transform .1s, box-shadow .12s; }
@@ -10840,7 +10840,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-brand .brand-word { font-family:'Cormorant Garamond',Georgia,serif; font-weight:500; font-size:28px; line-height:1; color:var(--k-goldt); }
 .knav-brand .brand-dot { color:var(--accent); font-style:normal; }
 /* The 香 seal in front of the wordmark. (Robin, 2026-11-13.) */
-.knav-seal { width:28px; height:28px; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
+.knav-seal { width:28px; height:28px; flex:none; background:url('/brand/kaya-seal.svg?v=2') center/contain no-repeat; }
 .knav-crumb { display:none; font-family:'Jost',system-ui,sans-serif; font-size:13px; color:var(--ink-2); }
 .knav-groups { display:flex; gap:clamp(14px,1.8vw,24px); height:100%; align-items:stretch; min-width:0; }
 .knav-g { display:flex; align-items:center; gap:5px; height:100%; box-sizing:border-box; border:0; border-bottom:1px solid transparent; margin-bottom:-1px; background:none; cursor:pointer; font-family:'Jost',system-ui,sans-serif; font-weight:400; font-size:15px; white-space:nowrap; color:var(--ink-2); transition:color .16s; }
@@ -10990,7 +10990,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .aff-sp { flex:1 1 auto; }
 .aff-mark { display:inline-flex; align-items:center; font-family:var(--k-serif); font-weight:500; font-size:19px; line-height:1; color:var(--k-ink); }
 .aff-mark .aff-dot { color:var(--k-gold); }
-.aff-seal { width:19px; height:19px; flex:none; margin-right:8px; background:url('/brand/kaya-seal.svg') center/contain no-repeat; }
+.aff-seal { width:19px; height:19px; flex:none; margin-right:8px; background:url('/brand/kaya-seal.svg?v=2') center/contain no-repeat; }
 .aff-name { font-family:var(--k-sans); font-size:13px; color:var(--k-mute); white-space:nowrap; }
 @media (min-width:1600px){ .app-foot-row { padding-left:64px; padding-right:64px; } }
 @media (max-width:820px){ .app-foot { display:none; } }
@@ -12275,7 +12275,7 @@ body[data-view="contacts"] .pane { max-width:none; padding:0; margin:0; backgrou
 .home-greetrow { position:relative; }
 .home-greetrow > *:not(.home-watermark) { position:relative; z-index:1; }
 .home-watermark { position:absolute; top:50%; right:clamp(-210px,-12vw,-90px); transform:translateY(-50%); width:clamp(380px,46vw,600px); aspect-ratio:1; z-index:0; pointer-events:none;
-  -webkit-mask:url('/brand/kaya-char.svg') center/contain no-repeat; mask:url('/brand/kaya-char.svg') center/contain no-repeat;
+  -webkit-mask:url('/brand/kaya-char.svg?v=2') center/contain no-repeat; mask:url('/brand/kaya-char.svg?v=2') center/contain no-repeat;
   background:#fff; opacity:.04; }
 @media (max-width:820px){ .home-watermark { display:none; } }
 .home-v3 .home-greet { font-family:var(--k-serif); font-weight:500; font-size:clamp(44px,5vw,64px); line-height:1.02; letter-spacing:-.01em; margin:16px 0 0; }

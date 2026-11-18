@@ -22,5 +22,5 @@ h1, h2, h3, h4, .brand, .brand b, .wm-word { font-family:'Cormorant Garamond',se
 /* Kaya's mark: the kanji 香 (incense) in a gold seal, set before the wordmark.
    (Robin, 2026-11-12. Replaces the dropped Mandombe "ko" mark.) */
 .brand svg, .brand img, .wm-mark { display:none !important; }
-.brand .brand-mark { display:inline-block !important; width:1.42em; height:1.42em; flex:none; background:url('/brand/kaya-seal.svg') center/contain no-repeat !important; vertical-align:-0.26em; color:transparent !important; }
+.brand .brand-mark { display:inline-block !important; width:1.42em; height:1.42em; flex:none; background:url('/brand/kaya-seal.svg?v=2') center/contain no-repeat !important; vertical-align:-0.26em; color:transparent !important; }
 .brand-mark::before, .brand-mark::after { content:none !important; display:none !important; }
