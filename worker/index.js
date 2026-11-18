@@ -1704,8 +1704,11 @@ function titleCloseness(q, title) {
   const a = norm(q), b = norm(title);
   if (!a || !b) return 0;
   if (a === b) return 3;
-  if (b.startsWith(a) || a.startsWith(b)) return 2;
-  if (b.includes(a) || a.includes(b)) return 1;
+  if (b.startsWith(a)) return 2;   // the result COMPLETES what you typed ("Dune" -> "Dune: Part Two"): a strong match
+  // A result that is only a PREFIX of what you typed drops your own words
+  // ("The Guardian of Stories" -> "The Guardian") - almost always a different, more
+  // generic work, so it ranks as a weak overlap, never a near-exact one.
+  if (a.startsWith(b) || b.includes(a) || a.includes(b)) return 1;
   return 0;
 }
 async function lookupMedia(request, env, url, json, err) {
@@ -1754,6 +1757,11 @@ async function lookupMedia(request, env, url, json, err) {
     const noise = (c) => /^(list of|outline of)\b|\b(accolades|soundtrack|discography|video game|franchise|cast and crew|episodes)\b/i.test(`${c.title} ${c.site || ''}`);
     const keep = (c) => !noise(c) && titleCloseness(q, c.title) >= 1;
     const uniq = (arr) => { const seen = new Set(); const o = []; for (const c of arr) { const k = (c.media + '|' + c.title + '|' + c.year).toLowerCase(); if (seen.has(k)) continue; seen.add(k); o.push(c); } return o; };
+    // When nothing really matched, collapse by title alone: two films that both
+    // cleaned down to "The Guardian" must not fill the picker with the same name.
+    // (With a real match we keep the per-year rows, so "The Guardian" 2006 vs 1990
+    // can still be told apart by someone who typed exactly that.)
+    const uniqTitle = (arr) => { const seen = new Set(); const o = []; for (const c of arr) { const k = (c.media + '|' + c.title).toLowerCase(); if (seen.has(k)) continue; seen.add(k); o.push(c); } return o; };
     // Best first: exact title, then title that starts with it, then a cover.
     const rank = (a, b) => titleCloseness(q, b.title) - titleCloseness(q, a.title) || (b.image ? 1 : 0) - (a.image ? 1 : 0);
     const RUN = { film: filmCands, book: bookCands, series: seriesCands };
@@ -1763,7 +1771,16 @@ async function lookupMedia(request, env, url, json, err) {
     const types = wantType ? [wantType] : ['film', 'book'];
     const lists = await Promise.all(types.map((t) => RUN[t]().catch(() => [])));
     const out = [];
-    types.forEach((t, i) => { let a = uniq(lists[i].filter(keep)).sort(rank); if (!a.length) a = uniq(lists[i]).sort(rank).slice(0, 1); out.push(...a.slice(0, wantType ? 6 : 3)); });
+    types.forEach((t, i) => {
+      let a = uniq(lists[i].filter(keep)).sort(rank);
+      if (!a.length) a = uniq(lists[i]).sort(rank).slice(0, 1);
+      // A list led by a real match/completion (closeness >= 2) keeps its per-year rows;
+      // a list of weak overlaps is collapsed by name and kept short, so an unfound title
+      // shows a tidy "closest" set, not a wall of one repeated name.
+      const strong = a.length && titleCloseness(q, a[0].title) >= 2;
+      if (!strong) a = uniqTitle(a).slice(0, wantType ? 4 : 2);
+      out.push(...a.slice(0, wantType ? 6 : 3));
+    });
     return json({ candidates: out }, request);
   }
   const base = { title: q, image: '', url: '', site: '', year: '', media: type === 'auto' ? 'book' : type };

@@ -13038,6 +13038,12 @@ async function rwToggleSetup() {
 // for "just the title", or null if cancelled. (Robin, 2026-11-11.)
 function rwPickMedia(input, cands) {
   const el = uiDialogHost();
+  // Does any suggestion actually match what was typed? Same normalisation as the
+  // worker's titleCloseness, so "The Guardian of Stories" is NOT counted as found
+  // just because a generic "The Guardian" came back.
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const typedN = norm(input);
+  const hasExact = cands.some((c) => norm(c.title) === typedN);
   return new Promise((resolve) => {
     const close = (v) => { el.innerHTML = ''; document.removeEventListener('keydown', onKey, true); resolve(v); };
     const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(null); } };
@@ -13045,11 +13051,16 @@ function rwPickMedia(input, cands) {
     const row = (c, i) => `<button class="rwpick-opt" data-rwpick="${i}">
       <span class="rwpick-cov${c.image ? '' : ' rwpick-cov-gen'}">${(RW_MEDIA[c.media] || {}).ic || '🔖'}${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>
       <span class="rwpick-main"><span class="rwpick-t">${esc(c.title)}</span><span class="rwpick-sub">${sub(c)}</span></span></button>`;
+    // When nothing matches, your own title leads the list as the first, emphasised
+    // choice, so an obscure or brand-new title is never lost behind wrong guesses.
+    const typedRow = `<button class="rwpick-opt is-typed" data-rwpick="typed">
+      <span class="rwpick-cov rwpick-cov-gen">+</span>
+      <span class="rwpick-main"><span class="rwpick-t">${esc(input)}</span><span class="rwpick-sub">Add exactly as you typed</span></span></button>`;
     el.innerHTML = `<div class="pal-bg"><div class="rwpick-box ui-dialog-box">
-      <div class="rwpick-h">Which “${esc(input)}”?</div>
-      <div class="rwpick-sub2">Pick the exact one, or just save the title.</div>
-      <div class="rwpick-list">${cands.map(row).join('')}</div>
-      <div class="rwpick-foot"><button class="ui-btn rwpick-typed" data-rwpick="typed">Save just “${esc(input.slice(0, 40))}”</button><button class="ui-btn cancel" data-rwpick="cancel">Cancel</button></div>
+      <div class="rwpick-h">${hasExact ? `Which “${esc(input)}”?` : `Add “${esc(input)}”`}</div>
+      <div class="rwpick-sub2">${hasExact ? 'Pick the exact one, or just save the title.' : 'We couldn’t find it exactly. Add it as you typed, or pick the closest below.'}</div>
+      <div class="rwpick-list">${hasExact ? '' : typedRow}${cands.map(row).join('')}</div>
+      <div class="rwpick-foot">${hasExact ? `<button class="ui-btn rwpick-typed" data-rwpick="typed">Save just “${esc(input.slice(0, 40))}”</button>` : '<span></span>'}<button class="ui-btn cancel" data-rwpick="cancel">Cancel</button></div>
     </div></div>`;
     el.querySelector('.pal-bg').addEventListener('click', (e) => { if (e.target.classList.contains('pal-bg')) close(null); });
     el.querySelectorAll('[data-rwpick]').forEach((b) => b.addEventListener('click', () => {
