@@ -244,6 +244,23 @@ h1, h2, h3 { font-weight: 500; }
 .know { max-width: 20em; margin: clamp(64px,7vw,104px) auto 0; text-align: center; font-family: var(--k-serif); font-weight: 500; font-size: clamp(36px,4.8vw,68px); line-height: 1.08; }
 .know i { font-weight: 300; color: var(--k-goldt); }
 
+/* ── the name: 香, incense ── */
+.kn-grid { display: grid; grid-template-columns: minmax(0,1fr) clamp(188px,22vw,300px); gap: clamp(40px,6vw,88px); align-items: start; margin-top: clamp(28px,3vw,44px); }
+.kn-word { font-family: var(--k-serif); font-weight: 500; font-size: clamp(64px,10.5vw,150px); line-height: .9; letter-spacing: -.02em; }
+.kn-word .ko { font-family: "Hiragino Mincho ProN","Yu Mincho","Songti SC",serif; font-weight: 400; color: var(--k-gold); font-size: .62em; margin-left: .16em; letter-spacing: 0; }
+.kn-dict { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px; margin-top: clamp(20px,2.2vw,32px); padding-bottom: clamp(18px,2vw,30px); border-bottom: 1px solid var(--k-line); }
+.kn-say { font-size: clamp(18px,1.5vw,22px); color: var(--k-mute); white-space: nowrap; }
+.kn-pos { font-family: var(--k-serif); font-weight: 300; font-style: italic; font-size: clamp(22px,1.9vw,28px); line-height: 1.2; color: var(--k-goldt); white-space: nowrap; }
+.kn-def { flex: 1 1 300px; font-family: var(--k-serif); font-weight: 500; font-size: clamp(26px,2.8vw,40px); line-height: 1.1; text-align: right; text-wrap: balance; }
+.kn-story { margin-top: clamp(26px,2.8vw,40px); max-width: 30em; }
+.kn-story .lead + .lead { margin-top: 14px; }
+.kn-know { margin-top: clamp(36px,4vw,60px); max-width: 16em; font-family: var(--k-serif); font-weight: 500; font-size: clamp(34px,4.2vw,58px); line-height: 1.06; letter-spacing: -.005em; text-wrap: balance; }
+.kn-know i { font-weight: 300; color: var(--k-goldt); }
+.kn-fig { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.kn-fig svg { display: block; width: clamp(150px,20vw,236px); height: auto; color: color-mix(in oklab, var(--k-ink), transparent 42%); }
+.kn-cap { font-family: var(--k-sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-faint); }
+@media (max-width: 860px) { .kn-grid { grid-template-columns: 1fr; gap: clamp(28px,6vw,44px); } .kn-fig { order: -1; align-items: flex-start; } .kn-def { text-align: left; flex-basis: 100%; } }
+
 /* ── made to be quick: the capture demo ── */
 .quick { align-items: center; }
 .quick .lead { margin-top: 24px; max-width: 30em; }
@@ -487,6 +504,52 @@ h1, h2, h3 { font-weight: 500; }
       <div><div class="ethos-w">Ispirante</div><p class="lead">Tiene in vista ciò a cui aspiri.</p></div>
       <div><div class="ethos-w">Illuminante</div><p class="lead">I tuoi giorni, restituiti come qualcosa su cui agire.</p></div>
       <div><div class="ethos-w">Bello</div><p class="lead">Perché è qui che va la tua vita, e se lo merita.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="rule-top" id="name">
+  <div class="wrap band reveal">
+    <div class="eyebrow">Il nome</div>
+    <div class="kn-grid">
+      <div class="kn-main">
+        <div class="kn-word">Kaya<span class="ko">香</span></div>
+        <div class="kn-dict">
+          <span class="kn-say">KAH-ya</span>
+          <span class="kn-pos">da 香, incenso</span>
+          <span class="kn-def">Incenso, e la consapevolezza che porta in una stanza.</span>
+        </div>
+        <div class="kn-story">
+          <p class="lead">Kaya è 香: incenso. Ne accendi uno e una stanza cambia - non di molto, quanto basta per accorgersene. La giornata si fa un po' più intenzionale.</p>
+          <p class="lead">È tutta qui l'idea. Una consapevolezza, un'intenzione, una quieta dignità portata alle ore ordinarie - finché il quotidiano smette di essere qualcosa da sbrigare e diventa qualcosa che si pratica.</p>
+        </div>
+        <p class="kn-know">Il quotidiano, <i>vissuto come una pratica.</i></p>
+      </div>
+      <div class="kn-fig">
+        <svg viewBox="0 0 200 460" aria-hidden="true">
+          <defs>
+            <linearGradient id="knFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#000"></stop>
+              <stop offset="0.14" stop-color="#000"></stop>
+              <stop offset="0.5" stop-color="#fff" stop-opacity="0.5"></stop>
+              <stop offset="0.84" stop-color="#fff"></stop>
+              <stop offset="1" stop-color="#fff"></stop>
+            </linearGradient>
+            <mask id="knSmoke"><rect x="0" y="0" width="200" height="460" fill="url(#knFade)"></rect></mask>
+          </defs>
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" mask="url(#knSmoke)">
+            <path d="M100 314 C 113 286 85 267 96 239 C 107 211 123 195 108 165 C 93 135 83 119 98 91 C 111 65 104 51 100 34" stroke-width="1.9"></path>
+            <path d="M100 316 C 89 291 115 271 104 244 C 93 217 79 199 94 171 C 109 143 119 125 104 99 C 91 77 98 59 103 44" stroke-width="1.25" opacity=".72"></path>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-linecap="round">
+            <path d="M66 410 Q100 428 134 410" stroke-width="1.8" opacity=".85"></path>
+            <line x1="100" y1="322" x2="100" y2="412" stroke-width="2" opacity=".85"></line>
+          </g>
+          <circle cx="100" cy="320" r="7" fill="var(--k-gold)" opacity=".2"></circle>
+          <circle cx="100" cy="320" r="3.2" fill="var(--k-gold)"></circle>
+        </svg>
+        <span class="kn-cap">香 · kō · incenso</span>
+      </div>
     </div>
   </div>
 </section>
