@@ -1711,6 +1711,33 @@ function titleCloseness(q, title) {
   if (a.startsWith(b) || b.includes(a) || a.includes(b)) return 1;
   return 0;
 }
+// IMDb's own search (the autocomplete behind the search box on imdb.com). Keyless,
+// and it finds films and TV that Wikipedia has no page for - obscure, foreign and
+// brand-new titles - with a poster, year, cast line and a link. It is an unofficial
+// endpoint (IMDb's licensed API is paid), so every caller falls back to Wikipedia /
+// the bare title if it ever stops answering. (Robin, 2026-11-18.)
+const IMDB_FILM_Q = new Set(['movie', 'tvMovie', 'short', 'video']);
+const IMDB_SERIES_Q = new Set(['tvSeries', 'tvMiniSeries']);
+// IMDb posters come enormous (several MB); ask Amazon's image host for a 320px-wide
+// JPEG instead by splicing the resize tokens into the filename.
+function imdbPoster(u) { return (typeof u === 'string' && u) ? u.replace(/\._V1_[^/]*?(\.(?:jpg|jpeg|png))$/i, '._V1_QL75_UX320_$1') : ''; }
+async function imdbSuggest(q) {
+  try {
+    const r = await fetch(`https://v3.sg.media-imdb.com/suggestion/x/${encodeURIComponent(q)}.json?includeVideos=0`,
+      { headers: { 'User-Agent': 'RobskiKaya/1.0 (personal reading list)' }, cf: { cacheTtl: 86400, cacheEverything: true } });
+    const d = await r.json().catch(() => ({}));
+    // Keep titles only: real works have a "tt…" id, people (nm…) and empty rows don't.
+    return Array.isArray(d.d) ? d.d.filter((x) => x && typeof x.id === 'string' && x.id.startsWith('tt') && x.l) : [];
+  } catch { return []; }
+}
+// One IMDb row -> a media candidate in the shape the picker and the card expect.
+function imdbCand(x) {
+  const year = x.y ? String(x.y) : (String(x.tl || '').match(/\d{4}/) || [''])[0];
+  const media = IMDB_SERIES_Q.has(x.qid) ? 'series' : 'film';
+  const label = media === 'series' ? 'TV series' : 'Film';
+  const site = [year, x.s].filter(Boolean).join(' · ') || label;   // "2025 · Lead, Co-lead"
+  return { title: x.l, year, image: imdbPoster((x.i || {}).imageUrl), url: `https://www.imdb.com/title/${x.id}/`, site, media };
+}
 async function lookupMedia(request, env, url, json, err) {
   const q = (url.searchParams.get('q') || '').trim();
   const asked = url.searchParams.get('type');
@@ -1740,10 +1767,15 @@ async function lookupMedia(request, env, url, json, err) {
       }));
       return out.filter(Boolean);
     };
-    const filmCands = () => wikiCands('film', /\b(film|movie|television film|tv film)\b/i, /\s*\((?:\d{4}\s+)?[^)]*\bfilm\b[^)]*\)\s*$/i, 'Film', 'film');
+    // Films and TV both come from IMDb's search now; Wikipedia is the fallback if it
+    // ever returns nothing. IMDb answers films and series in one call, split by type.
+    const imdbCands = async (qids) => (await imdbSuggest(q)).filter((x) => qids.has(x.qid)).map(imdbCand);
+    const wikiFilm = () => wikiCands('film', /\b(film|movie|television film|tv film)\b/i, /\s*\((?:\d{4}\s+)?[^)]*\bfilm\b[^)]*\)\s*$/i, 'Film', 'film');
     // A TV series' main page is usually just its title (not "X (TV series)"), so we
     // search the bare title and keep the pages the summary confirms are a series.
-    const seriesCands = () => wikiCands('', /\b(television series|tv series|miniseries|sitcom|anime series|web series|drama series|soap opera|tv show)\b/i, /\s*\((?:\d{4}\s+)?[^)]*\b(?:tv |television )?series\b[^)]*\)\s*$/i, 'Series', 'series');
+    const wikiSeries = () => wikiCands('', /\b(television series|tv series|miniseries|sitcom|anime series|web series|drama series|soap opera|tv show)\b/i, /\s*\((?:\d{4}\s+)?[^)]*\b(?:tv |television )?series\b[^)]*\)\s*$/i, 'Series', 'series');
+    const filmCands = async () => { const a = await imdbCands(IMDB_FILM_Q); return a.length ? a : wikiFilm(); };
+    const seriesCands = async () => { const a = await imdbCands(IMDB_SERIES_Q); return a.length ? a : wikiSeries(); };
     const bookCands = async () => {
       const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6&fields=title,author_name,first_publish_year,cover_i,key`, { cf: { cacheTtl: 86400, cacheEverything: true } });
       const d = await r.json().catch(() => ({}));
@@ -1801,7 +1833,7 @@ async function lookupMedia(request, env, url, json, err) {
       // perfect match against itself. A real hit is the one carrying a link or a
       // cover back from the catalogue.
       const found = (r) => !!(r && (r.url || r.image));
-      const filmScore = found(film) ? titleCloseness(q, film.title) + (/\b(film|movie|series|miniseries)\b/i.test(film.site || '') ? 2 : 0) : -1;
+      const filmScore = found(film) ? titleCloseness(q, film.title) + ((film.media === 'film' || film.media === 'series' || /\b(film|movie|series|miniseries)\b/i.test(film.site || '')) ? 2 : 0) : -1;
       const bookScore = found(book) ? titleCloseness(q, book.title) + (book.image ? 1 : 0) : -1;
       if (filmScore < 0 && bookScore < 0) return json(base, request);
       const win = filmScore > bookScore ? film : book;
@@ -1810,7 +1842,13 @@ async function lookupMedia(request, env, url, json, err) {
   }
   try {
     if (type === 'film') {
-      // Wikipedia, in two hops: find the film's page, then pull its summary
+      // IMDb first: it finds films and TV that Wikipedia has no page for. Take the
+      // closest title among its suggestions (films and series both count here).
+      const imdbBest = (await imdbSuggest(q))
+        .filter((x) => IMDB_FILM_Q.has(x.qid) || IMDB_SERIES_Q.has(x.qid))
+        .sort((h1, h2) => titleCloseness(q, h2.l) - titleCloseness(q, h1.l))[0];
+      if (imdbBest) return json(imdbCand(imdbBest), request);
+      // Wikipedia fallback, in two hops: find the film's page, then pull its summary
       // (poster thumbnail + a one-line blurb like "2010 film by Christopher
       // Nolan"). Keyless and reliable where iTunes' movie storefront isn't.
       const WIKI = { 'User-Agent': 'RobskiKaya/1.0 (personal reading list)' };
