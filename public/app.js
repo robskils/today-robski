@@ -8435,18 +8435,26 @@ function capHintsHtml() {
   // Just the one line - no examples, no "what to do next". (Robin, 2026-11-03.)
   return `<div class="cap-hints"><span class="cap-hint-lead">Write it as you'd say it</span></div>`;
 }
+// The type chips (Task/Event/Note/…) with the guess marked. Rendered in their
+// OWN row directly under the input - above Photo/Scan on mobile - so the first
+// thing you can fix after typing is what it is, before you hit send. (Robin,
+// 2026-11-18: "change it quickly before I add it".)
+function capKindRowHtml() {
+  const c = capState(); const raw = (c.text || '').trim();
+  const [g] = raw ? capGuess(raw) : [null];
+  const kind = c.kind || g;
+  return `<div class="cap-kinds">${CAP_KINDS.map(([id, label]) => {
+    const on = kind === id, isG = !c.kind && g === id;
+    return `<span class="cap-kind${on ? ' on' : ''}${isG ? ' guess' : ''}" data-cap-kind="${id}" role="button" tabindex="0">${esc(label)}${isG ? '<span class="cap-kind-tag">guess</span>' : ''}</span>`;
+  }).join('')}</div>`;
+}
 function capReadoutHtml() {
   const c = capState(); const raw = (c.text || '').trim();
   const [g] = raw ? capGuess(raw) : [null];
   const kind = c.kind || g;
   const askQ = (!c.kind && raw && !g) ? ['A task or a note?', ['Task', 'Note']] : null;
-  const kindRow = `<div class="cap-kinds">${CAP_KINDS.map(([id, label]) => {
-    const on = kind === id, isG = !c.kind && g === id;
-    return `<span class="cap-kind${on ? ' on' : ''}${isG ? ' guess' : ''}" data-cap-kind="${id}" role="button" tabindex="0">${esc(label)}${isG ? '<span class="cap-kind-tag">guess</span>' : ''}</span>`;
-  }).join('')}</div>`;
-  // Empty: still show the type buttons (so you can say what it is up front) above
-  // the hint. (Robin, 2026-11-03.)
-  if (!raw) return `${kindRow}${capHintsHtml()}`;
+  // The type chips now render separately (capKindRowHtml), above this readout.
+  if (!raw) return capHintsHtml();
   const qHtml = (askQ && !c.kind) ? `<div class="cap-q"><span class="cap-q-t">${esc(askQ[0])}</span>${askQ[1].map((l) => `<span class="cap-q-b" data-cap-askq="${l.toLowerCase()}" role="button" tabindex="0">${esc(l)}</span>`).join('')}</div>` : '';
   const isInbox = kind === 'inbox' || (!kind && !askQ && !!raw);
   let body = '';
@@ -8463,7 +8471,7 @@ function capReadoutHtml() {
   }
   const saveLabel = { task: 'Set down as a task', event: 'Add to calendar', note: 'Save the note', email: 'Start the draft', bookmark: `Add to ${rwName()}`, inbox: 'Set it down' }[kind] || 'Set it down';
   const foot = isInbox ? 'Nothing recognised yet - it goes to your inbox to sort.' : kind ? '' : 'Not sure what this is - choose a kind above, or just set it down.';
-  return `${kindRow}${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
+  return `${qHtml}${body}<div class="cap-foot"><span class="cap-foot-t">${esc(foot)}</span><button class="cap-submit" data-cap-submit>${esc(saveLabel)} ↵</button></div>`;
 }
 // §31 Notepad mode: a plain scratch page inside the drawer. Never parsed or
 // filed. Its text is the existing Notepad's lines, joined; typing saves back.
@@ -8482,7 +8490,7 @@ function capRecHtml() {
   return `<div class="cap-rec"><span class="cap-rec-l">Listening…</span><div class="cap-waves">${bars}</div><span class="cap-rectime" id="cap-rectime">${capFmtTime(c.recT)}</span><button class="cap-rec-stop" data-cap-recstop><span class="cap-bar-dot"></span>Done</button></div>${c.text ? `<div class="cap-interim" id="cap-interim">${esc(c.text)}</div>` : '<div class="cap-interim" id="cap-interim"></div>'}`;
 }
 function capFmtTime(s) { s = s || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-function updateCapReadout() { const el = document.getElementById('cap-readout'); if (el) el.innerHTML = capReadoutHtml(); }
+function updateCapReadout() { const el = document.getElementById('cap-readout'); if (el) el.innerHTML = capReadoutHtml(); const kr = document.getElementById('cap-kinds-row'); if (kr) kr.innerHTML = capKindRowHtml(); }
 // §52: fade the resting tab to 40% while scrolling down, back to full on scroll
 // up or at the top (and on hover, via CSS). A cheap size guard warns if it drifts.
 let _capLastY = 0;
@@ -8514,7 +8522,7 @@ function renderCapBar(force) {
   // §47: the Notepad is the header panel now, not a mode here.
   if (c.mode === 'pad') c.mode = 'set';
   const modeTabs = '<span class="cap-eyebrow"><span class="cap-l-wide">Set it down</span><span class="cap-l-phone">Capture</span></span>';
-  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div><div class="cap-media"><label class="cap-media-btn"><input type="file" accept="image/*" capture="environment" hidden data-cap-photo>Take a photo</label><button type="button" class="cap-media-btn" data-cap-scan>Scan</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
+  const bodyHtml = `${c.rec ? capRecHtml() : `<div class="cap-input-row"><textarea id="cap-input" class="cap-input" rows="1" aria-label="Set it down" autocomplete="off" spellcheck="false">${esc(c.text || '')}</textarea><button class="cap-speak" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button></div><div id="cap-kinds-row">${capKindRowHtml()}</div><div class="cap-media"><label class="cap-media-btn"><input type="file" accept="image/*" capture="environment" hidden data-cap-photo>Take a photo</label><button type="button" class="cap-media-btn" data-cap-scan>Scan</button></div>`}<div id="cap-readout">${c.rec ? '' : capReadoutHtml()}</div>`;
   root.innerHTML = `<div class="cap-scrim" data-cap-close></div><div class="cap-drawer" role="dialog" aria-label="Set something down">
     <div class="cap-dh"><span class="cap-dh-plus">+</span><div class="cap-modes">${modeTabs}</div>${c.rec ? '' : '<button class="cap-speak-h" data-cap-speak title="Speak it instead"><span class="cap-bar-dot"></span>Speak</button>'}<button class="cap-esc" data-cap-close aria-label="Close">Close</button></div>
     ${bodyHtml}
