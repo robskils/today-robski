@@ -2206,8 +2206,12 @@ table.recs thead th { background:var(--paper-2); font-weight:600; white-space:no
 .cell-link:hover { background:color-mix(in srgb,var(--accent) 16%,transparent); }
 /* A URL column cell in the grid: the whole URL is a clickable link (edit it from
    the row's card). Truncates with an ellipsis so a long link never stretches the
-   table. */
-table.recs td a.cell-urllink { display:inline-block; max-width:100%; box-sizing:border-box; color:var(--accent); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+   table. width:0 + min-width:100% is the key: the link fills the column but
+   contributes ZERO to its intrinsic width, so a long URL can't force the column
+   wider (the table is width:max-content, so a content-sized inline-block would).
+   That lets a URL column be narrowed and cut off like any other type. (Robin,
+   2026-11-18: "cut off the text for a URL, like any other column".) */
+table.recs td a.cell-urllink { display:block; width:0; min-width:100%; box-sizing:border-box; color:var(--accent); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 table.recs td a.cell-urllink:hover { text-decoration:underline; }
 /* Column header right-click menu. */
 .colmenu { position:fixed; z-index:60; min-width:212px; max-width:240px; background:var(--card); border:1px solid var(--line-2); border-radius:0; box-shadow:none; padding:6px; display:flex; flex-direction:column; gap:1px; overflow-y:auto; overscroll-behavior:contain; }
