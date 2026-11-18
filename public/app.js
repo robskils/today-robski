@@ -21617,6 +21617,7 @@ function renderTasks() {
     <div class="tx-main">
       <h1 class="nx-h1">${t('nav.tasks')}</h1>
       <div class="nx-lead">${esc(txMood(openVis, 'priority'))}</div>
+      <div class="cvx-searchrow nx-searchrow"><input class="cvx-search" data-task-q type="search" placeholder="${esc(t('task.search'))}" value="${esc(state.taskQuery || '')}" autocomplete="off" spellcheck="false"></div>
       <div class="tx-piles-row">${piles}</div>
       <div class="tx-toolbar">
         <button class="tx-addbtn" data-task-new>${t('task.add')}</button>
