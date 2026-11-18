@@ -9017,7 +9017,12 @@ body.has-undo .undo-fab:hover { color:var(--accent-ink); background:var(--accent
 .rwc-seg:hover { border-color:var(--accent); color:var(--ink); }
 .rwc-seg.on { background:var(--accent); border-color:var(--accent); color:#fff; }
 .rwc-notes-l { display:flex; flex-direction:column; gap:6px; }
-.rwc-notes { min-height:340px; resize:vertical; width:100%; max-width:none; box-sizing:border-box; }
+/* Auto-grows to fit its text (see rwcGrowNotes), so it never has its own inner
+   scroll. A native textarea that scrolls internally traps the touch on a phone -
+   the page can't move and the header rubber-bands instead - which is why the film
+   details felt stuck. No inner scroll means a drag over it scrolls the page.
+   (Robin, 2026-11-18.) */
+.rwc-notes { min-height:200px; overflow-y:hidden; resize:none; width:100%; max-width:none; box-sizing:border-box; }
 .rwc-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:6px; border-top:1px solid var(--line); }
 .rwc-added { font-size:12.5px; color:var(--ink-3); }
 .rwc-del { color:var(--danger,#c4412e); }

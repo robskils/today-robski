@@ -10561,13 +10561,16 @@ function renderNotesList() {
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No notes in this Space yet.</div>'}</div></section>`;
   } else {
     const favs = allNotes.filter((n) => n.props && n.props.fav);
-    // Recent leads the page (Robin, 2026-11-04): the notes you opened most
-    // recently first, then topped up with the newest by edit time so it always
-    // fills about three rows - not just the two or three you happened to open.
-    const seen = new Set();
-    const opened = recentItems().filter((x) => x && x.kind === 'note').map((x) => allNotes.find((n) => n.id === x.id)).filter(Boolean);
-    opened.forEach((n) => seen.add(n.id));
-    const recent = [...opened, ...nxSortRecent(allNotes).filter((n) => !seen.has(n.id))].slice(0, 18);
+    // Recent leads the page: your most recently touched notes, where "touched" is
+    // the LATER of when you last opened it and when it was created or edited. A note
+    // Claude just made for you (never opened in this browser) therefore lands at the
+    // top, beside the ones you opened by hand, and every note falls away naturally as
+    // newer ones arrive. (Robin, 2026-11-18; was opened-first, then edit-time top-up,
+    // which buried a fresh note below pages you'd opened weeks earlier.)
+    const viewTs = new Map();
+    for (const x of recentItems()) { if (x && x.kind === 'note' && x.id != null) viewTs.set(x.id, Number(x.ts) || 0); }
+    const touchedAt = (n) => Math.max(nxStamp(n), viewTs.get(n.id) || 0);
+    const recent = allNotes.filter((n) => touchedAt(n) > 0).slice().sort((a, b) => touchedAt(b) - touchedAt(a)).slice(0, 18);
     const all = nxSortRecent(allNotes);
     const recentSec = recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : '';
     const starredSec = favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : '';
@@ -13217,6 +13220,10 @@ function openBookmarkCard(id) {
   if (!state.rw || !state.rw.items) { return openReadwatch().then(() => { state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); }); }
   state.rw_open = { id }; state.view = { type: 'bookmarkcard', id }; renderNav(); renderBookmarkCard(); return Promise.resolve();
 }
+// Grow the Notes textarea to fit its text, so it never scrolls inside itself. On a
+// phone a scrollable native textarea swallows the touch and the page won't move;
+// fitting the content means a drag over it scrolls the page like anything else.
+function rwcGrowNotes(el) { if (!el) return; const cs = getComputedStyle(el); const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0); el.style.height = 'auto'; el.style.height = (el.scrollHeight + borderY) + 'px'; }
 function renderBookmarkCard() {
   const b = (state.rw && state.rw.items || []).find((x) => x.id === (state.rw_open && state.rw_open.id));
   if (!b) { openReadwatch(); return; }
@@ -13247,6 +13254,7 @@ function renderBookmarkCard() {
         <div class="rwc-foot"><span class="rwc-added">Added ${fmtDate(p.added || b.created_at)}</span><button class="ghost rwc-del" data-rw-del="${b.id}">Delete</button></div>
       </div>
     </div>`;
+  rwcGrowNotes($('#pane').querySelector('.rwc-notes'));
 }
 
 // ── view: pages ─────────────────────────────────
@@ -30894,7 +30902,7 @@ document.addEventListener('change', (e) => {
   if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
   if (e.target.matches('[data-rw-type-sel]')) { rwSetType(e.target.dataset.rwTypeSel, e.target.value); return; }
   if (e.target.matches('[data-rw-name]')) { rwSetName(e.target.dataset.rwName, e.target.value); return; }
-  if (e.target.matches('[data-rw-note]')) { rwSetNote(e.target.dataset.rwNote, e.target.value); return; }
+  if (e.target.matches('[data-rw-note]')) { rwSetNote(e.target.dataset.rwNote, e.target.value); if (e.target.classList.contains('rwc-notes')) rwcGrowNotes(e.target); return; }
   if (e.target.matches('[data-rw-area]')) { rwSetArea(e.target.dataset.rwArea, e.target.value); return; }
   if (e.target.matches('[data-rw-date]')) { rwSetDate(e.target.dataset.rwDate, e.target.value); return; }
   if (e.target.matches('[data-accent-custom]')) { setAccent(e.target.value); }
