@@ -378,7 +378,7 @@ export function codeEmail(code, kind) {
     <tr><td align="center">
       <!-- Fluid card: width:100% up to a 440px cap, so it shrinks to fit a phone
            instead of a fixed 440px that runs off a narrow screen. -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border:1px solid #e4ddcf">
 
         <!-- Wordmark: the Kaya seal (香) as a PNG - the
              favicon is an SVG and every major client strips those - over the
@@ -386,7 +386,7 @@ export function codeEmail(code, kind) {
              serif wordmark below already says Kaya, so a blocked image
              should leave nothing behind rather than a second "Kaya". -->
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://kaya.so/brand/kaya-seal.png?v=2" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr><td width="46" height="46" bgcolor="#c79a40" style="width:46px;height:46px;line-height:0;font-size:0"><img src="https://kaya.so/brand/kaya-seal.png?v=2" width="46" height="46" alt="" style="display:block;border:0;outline:none"></td></tr></table>
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya</p>
         </td></tr>
 
@@ -407,7 +407,7 @@ export function codeEmail(code, kind) {
 
         <tr><td style="padding:24px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td align="center" style="background:#f4f1ea;border:1px solid #e4ddcf;border-radius:12px;padding:24px">
+            <tr><td align="center" style="background:#f4f1ea;border:1px solid #e4ddcf;padding:24px">
               <span style="font-size:38px;font-weight:700;letter-spacing:0.2em;color:#a8844a;font-family:'Courier New',Courier,monospace">${code}</span>
             </td></tr>
           </table>

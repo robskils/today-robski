@@ -19,7 +19,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
   // tagline. Email-safe (a background-colour circle, no data-URI image).
   const cardBlock = tagline ? `<tr><td style="padding:20px 38px 0" align="center">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td width="48" style="width:48px"><div style="width:48px;height:48px;border-radius:50%;background:${dbc};color:#ffffff;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:48px;text-align:center">${initial}</div></td>
+            <td width="48" style="width:48px"><div style="width:48px;height:48px;background:${dbc};color:#ffffff;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:48px;text-align:center">${initial}</div></td>
             <td style="padding-left:13px;text-align:left"><p style="margin:0;font-size:15.5px;color:#211c17;line-height:1.45"><b>${who}</b><br><span style="font-size:14.5px;color:#8b7f72">${escHtml(tagline)}</span></p></td>
           </tr></table>
         </td></tr>` : '';
@@ -31,10 +31,10 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 16px">
     <tr><td align="center">
       <!-- Fluid card: 100% up to a 440px cap, so it fits a phone screen. -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border-radius:18px;overflow:hidden;border:1px solid #e4ddcf">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:440px;background:#fbf9f4;border:1px solid #e4ddcf">
 
         <tr><td style="padding:34px 38px 0;background:#fbf9f4;background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)" align="center">
-          <img src="https://kaya.so/brand/kaya-seal.png?v=2" width="46" height="46" alt="Kaya" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none">
+          <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto"><tr><td width="46" height="46" bgcolor="#c79a40" style="width:46px;height:46px;line-height:0;font-size:0"><img src="https://kaya.so/brand/kaya-seal.png?v=2" width="46" height="46" alt="Kaya" style="display:block;border:0;outline:none"></td></tr></table>
           <p style="margin:13px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:27px;font-weight:500;letter-spacing:-0.01em;color:#211c17">Kaya</p>
         </td></tr>
 
@@ -52,7 +52,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
 
         ${message ? `<tr><td style="padding:22px 38px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:#f4f1ea;border-left:3px solid #a8844a;border-radius:0 10px 10px 0;padding:16px 18px">
+            <td style="background:#f4f1ea;border-left:3px solid #a8844a;padding:16px 18px">
               <p style="margin:0;font-size:15.5px;color:#3f382f;line-height:1.6;white-space:pre-wrap">${escHtml(message)}</p>
             </td>
           </tr></table>
@@ -64,7 +64,7 @@ export function inviteEmail({ from, message, link, tagline, accent }) {
 
         <tr><td style="padding:26px 38px 0" align="center">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:#a8844a;border-radius:11px">
+            <td style="background:#a8844a;border-radius:0">
               <a href="${escHtml(link)}" style="display:inline-block;padding:15px 30px;font-size:16px;font-weight:600;color:#fbf9f4;text-decoration:none">Accept the invitation</a>
             </td>
           </tr></table>

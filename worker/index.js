@@ -3080,15 +3080,15 @@ function brandedSystemEmail({ home, eyebrow, headline, bodyHtml, ctaHref, ctaLab
   <div style="display:none;max-height:0;overflow:hidden;opacity:0">${escHtml(preheader || '')}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};padding:34px 0 46px">
     <tr><td align="center" style="padding:0 12px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:2px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${CARD};border:1px solid ${RULE};border-radius:0">
         <tr><td align="center" style="padding:40px 34px 0;background:${CARD};background-image:linear-gradient(121deg, rgba(255,251,242,0.7) 0 44%, rgba(168,132,74,0.055) 44.6%)">
-          <a href="${home}" style="text-decoration:none;display:inline-block"><img src="https://kaya.so/brand/kaya-seal.png?v=2" width="44" height="44" alt="" style="display:block;margin:0 auto 12px;border:0;outline:none;text-decoration:none"><span style="display:block;font-family:${SERIF};font-size:30px;font-weight:500;color:#a8844a;line-height:1">Kaya</span></a>
+          <table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto 12px"><tr><td width="44" height="44" bgcolor="#c79a40" style="width:44px;height:44px;line-height:0;font-size:0"><img src="https://kaya.so/brand/kaya-seal.png?v=2" width="44" height="44" alt="" style="display:block;border:0;outline:none"></td></tr></table><a href="${home}" style="text-decoration:none"><span style="display:block;font-family:${SERIF};font-size:30px;font-weight:500;color:#a8844a;line-height:1">Kaya</span></a>
           ${eyebrow ? `<p style="margin:9px 0 0;font-family:${SANS};font-size:12px;letter-spacing:0.34em;text-transform:uppercase;color:${MIST}">${escHtml(eyebrow)}</p>` : ''}
           <p style="margin:14px 0 0;font-family:${SERIF};font-size:30px;line-height:1.25;color:${INK}">${escHtml(headline)}</p>
         </td></tr>
         <tr><td style="padding:22px 34px 0;font-family:${SANS};font-size:17px;line-height:1.6;color:${MIST}">${bodyHtml}</td></tr>
         ${ctaHref ? `<tr><td align="center" style="padding:26px 34px 4px">
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:${GOLD};border-radius:999px">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:${GOLD};border-radius:0">
             <a href="${ctaHref}" style="display:inline-block;padding:13px 30px;font-family:${SANS};font-size:15px;font-weight:600;letter-spacing:0.06em;color:${CARD};text-decoration:none">${escHtml(ctaLabel)} &#8594;</a>
           </td></tr></table>
         </td></tr>` : ''}
