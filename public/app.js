@@ -12963,8 +12963,9 @@ function renderReadwatch() {
   const byLine = (b) => { const p = b.props || {}; return [p.author, p.year || p.length, p.site].filter(Boolean).join(' · '); };
   const starsOf = (b) => { const raw = Number((b.props || {}).rating) || 0; return raw > 5 ? Math.round(raw / 2) : raw; };
   // Shelf cell + list row.
-  const shelfItem = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); return `<div class="rw-si" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--shelf')}<div class="rw-si-kind">${esc(kindLabel(b))}</div><div class="rw-si-title">${esc(p.title || p.url || 'Untitled')}</div>${byLine(b) ? `<div class="rw-si-by">${esc(byLine(b))}</div>` : ''}${d && r ? `<div class="rw-si-stars">${'★'.repeat(r)}${'☆'.repeat(5 - r)}</div>` : ''}</div>`; };
-  const listRow = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); const right = d ? (r ? '★'.repeat(r) : 'Finished') : (p.year || p.length || fmtDate(p.added || b.created_at)); return `<div class="rw-lr" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--list')}<div class="rw-lr-b"><div class="rw-lr-title">${esc(p.title || p.url || 'Untitled')}</div><div class="rw-lr-by"><span class="rw-lr-kind">${esc(kindLabel(b))}</span>${esc(byLine(b))}</div></div><span class="rw-lr-right ${d && r ? 'gold' : ''}">${esc(right)}</span></div>`; };
+  const rwDelBtn = (b, cls) => `<button class="${cls}" data-rw-del="${b.id}" title="Remove" aria-label="Remove ${esc((b.props || {}).title || 'this item')}">×</button>`;
+  const shelfItem = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); return `<div class="rw-si" data-rw-open="${b.id}" role="button" tabindex="0">${rwDelBtn(b, 'rw-si-x')}${rwCoverHtml(b, 'rw-cov--shelf')}<div class="rw-si-kind">${esc(kindLabel(b))}</div><div class="rw-si-title">${esc(p.title || p.url || 'Untitled')}</div>${byLine(b) ? `<div class="rw-si-by">${esc(byLine(b))}</div>` : ''}${d && r ? `<div class="rw-si-stars">${'★'.repeat(r)}${'☆'.repeat(5 - r)}</div>` : ''}</div>`; };
+  const listRow = (b) => { const p = b.props || {}; const d = p.status === 'done'; const r = starsOf(b); const right = d ? (r ? '★'.repeat(r) : 'Finished') : (p.year || p.length || fmtDate(p.added || b.created_at)); return `<div class="rw-lr" data-rw-open="${b.id}" role="button" tabindex="0">${rwCoverHtml(b, 'rw-cov--list')}<div class="rw-lr-b"><div class="rw-lr-title">${esc(p.title || p.url || 'Untitled')}</div><div class="rw-lr-by"><span class="rw-lr-kind">${esc(kindLabel(b))}</span>${esc(byLine(b))}</div></div><span class="rw-lr-right ${d && r ? 'gold' : ''}">${esc(right)}</span>${rwDelBtn(b, 'rw-lr-x')}</div>`; };
   const sectionBody = (list) => shelf ? `<div class="rw-shelf">${list.map(shelfItem).join('')}</div>` : `<div class="rw-listv">${list.map(listRow).join('')}</div>`;
   const section = (key, title, list) => list.length ? `<div class="rw-sec2"><div class="rw-sec2-h" data-rw-sec="${key}" role="button" tabindex="0"><span class="rw-sec2-t">${title}</span><span class="rw-sec2-n">${list.length}</span><span class="rw-sec2-sign">${rw.fold[key] ? '−' : '+'}</span></div>${rw.fold[key] ? `<div class="rw-sec2-body">${sectionBody(list)}</div>` : ''}</div>` : '';
   // Filter chips with counts (across everything, not just the current filter).
@@ -13206,7 +13207,13 @@ async function rwSetArea(id, areaId) {
 }
 async function rwDelete(id) {
   const inCard = state.view && state.view.type === 'bookmarkcard';
-  try { await api(`/api/blocks/${id}`, { method: 'DELETE' }); state.rw.items = (state.rw.items || []).filter((x) => x.id !== id); if (inCard) openReadwatch(); else renderReadwatch(); } catch (e) { toast(e.message); }
+  const block = (state.rw.items || []).find((x) => x.id === id);
+  try {
+    await api(`/api/blocks/${id}`, { method: 'DELETE' });
+    state.rw.items = (state.rw.items || []).filter((x) => x.id !== id);
+    if (block) undoableBlockDelete(block);   // removing is recoverable: a toast + the Undo button bring it back
+    if (inCard) openReadwatch(); else renderReadwatch();
+  } catch (e) { toast(e.message); }
 }
 async function rwSetNote(id, note) {
   const b = (state.rw.items || []).find((x) => x.id === id); if (!b) return;
@@ -29563,6 +29570,8 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-exchange-unlist]'); if (el) { exchangeUnlist(el.dataset.exchangeUnlist); return; } }
   { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
   // §69 Library: the slide-in item panel, shelf/list, sort flip, section folds, pin.
+  // The × sits inside a card, so its delete must be caught BEFORE the card's open.
+  { const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; } }
   { const ro = t.closest('[data-rw-open]'); if (ro) { if (state.rw) { state.rw.sel = ro.dataset.rwOpen; renderReadwatch(); } return; } }
   { const rc = t.closest('[data-rw-close]'); if (rc) { if (state.rw) { state.rw.sel = null; renderReadwatch(); } return; } }
   { const rv = t.closest('[data-rw-view]'); if (rv) { if (state.rw) { state.rw.view = rv.dataset.rwView; try { localStorage.setItem('life.rwView', state.rw.view); } catch {} renderReadwatch(); } return; } }
@@ -29578,7 +29587,6 @@ document.addEventListener('click', (e) => {
   const bcu = t.closest('[data-bc-unlink]'); if (bcu) { removeBlockContact(bcu.dataset.bcKind, bcu.dataset.bcId, bcu.dataset.bcCid); return; }
   { const rtf = t.closest('[data-rw-typefilter]'); if (rtf) { if (state.rw) { state.rw.typeFilter = rtf.dataset.rwTypefilter; try { localStorage.setItem('life.rwType', state.rw.typeFilter); } catch {} renderReadwatch(); } return; } }
   const rwed = t.closest('[data-rw-edit]'); if (rwed) { rwToggleEdit(rwed.dataset.rwEdit); return; }
-  const rwx = t.closest('[data-rw-del]'); if (rwx) { rwDelete(rwx.dataset.rwDel); return; }
   if (t.closest('[data-rw-setup]')) { rwToggleSetup(); return; }
   if (t.closest('[data-rw-bm]')) { e.preventDefault(); toast('Drag this button up to your bookmarks bar to install it'); return; }
   if (t.closest('[data-open-areas]')) { openAreasList(); return; }

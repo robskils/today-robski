@@ -13953,13 +13953,26 @@ body.mailsheet-open { overflow:hidden; }
 .rw-sec2-sign { margin-left:auto; font-family:var(--k-sans); font-weight:400; font-size:20px; line-height:1; color:var(--k-mute); }
 .rw-sec2-body { padding:0 0 34px; }
 .rw-shelf { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:30px 22px; }
-.rw-si { cursor:pointer; min-width:0; }
+.rw-si { position:relative; cursor:pointer; min-width:0; }
+/* Remove (×) on a saved item: over the cover on the shelf, in the row on the list.
+   Hover-reveals on a desktop, stays faintly shown on touch so it's findable, and
+   deleting is undoable (a toast and the Undo button bring it back). Square, no red
+   (gold is the only accent); it darkens to confirm the hit. */
+.rw-si-x, .rw-lr-x { appearance:none; -webkit-appearance:none; border:0; border-radius:0; cursor:pointer; font-family:var(--k-sans); line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+.rw-si-x { position:absolute; top:7px; right:7px; z-index:3; width:28px; height:28px; font-size:19px; color:#fff; background:color-mix(in srgb,#000 44%,transparent); opacity:0; transition:opacity .12s ease, background .12s ease; }
+.rw-si:hover .rw-si-x, .rw-si:focus-within .rw-si-x { opacity:.92; }
+.rw-si-x:hover { background:color-mix(in srgb,#000 66%,transparent); }
+@media (hover:none){ .rw-si-x { opacity:.9; } }
+.rw-lr-x { width:30px; height:30px; font-size:20px; color:var(--k-mute); background:none; opacity:0; transition:opacity .12s ease, color .12s ease, background .12s ease; }
+.rw-lr:hover .rw-lr-x, .rw-lr:focus-within .rw-lr-x { opacity:.65; }
+.rw-lr-x:hover { opacity:1; color:var(--k-ink); background:var(--k-soft); }
+@media (hover:none){ .rw-lr-x { opacity:.55; } }
 .rw-si-kind { font-family:var(--k-sans); font-weight:600; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--k-goldt); margin-top:14px; }
 .rw-si-title { font-family:var(--k-sans); font-weight:500; font-size:15.5px; line-height:1.3; margin-top:4px; color:var(--k-ink); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .rw-si-by { font-family:var(--k-sans); font-weight:400; font-size:13px; color:var(--k-mute); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .rw-si-stars { font-family:var(--k-sans); font-size:13px; color:var(--k-gold); margin-top:4px; letter-spacing:.1em; }
 .rw-listv { display:flex; flex-direction:column; }
-.rw-lr { display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:16px; align-items:center; padding:10px 0; border-top:1px solid var(--k-line); cursor:pointer; }
+.rw-lr { display:grid; grid-template-columns:44px minmax(0,1fr) auto auto; gap:16px; align-items:center; padding:10px 0; border-top:1px solid var(--k-line); cursor:pointer; }
 .rw-lr:hover { background:var(--k-soft); }
 .rw-lr-b { min-width:0; }
 .rw-lr-title { font-family:var(--k-sans); font-weight:500; font-size:17px; line-height:1.3; color:var(--k-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
