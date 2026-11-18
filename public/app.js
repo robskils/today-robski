@@ -10561,17 +10561,13 @@ function renderNotesList() {
     sections = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>${esc(sp ? sp.title : 'Space')} · ${inSpace.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(inSpace) || '<div class="empty">No notes in this Space yet.</div>'}</div></section>`;
   } else {
     const favs = allNotes.filter((n) => n.props && n.props.fav);
-    // Recent leads the page: your most recently touched notes, where "touched" is
-    // the LATER of when you last opened it and when it was created or edited. A note
-    // Claude just made for you (never opened in this browser) therefore lands at the
-    // top, beside the ones you opened by hand, and every note falls away naturally as
-    // newer ones arrive. (Robin, 2026-11-18; was opened-first, then edit-time top-up,
-    // which buried a fresh note below pages you'd opened weeks earlier.)
-    const viewTs = new Map();
-    for (const x of recentItems()) { if (x && x.kind === 'note' && x.id != null) viewTs.set(x.id, Number(x.ts) || 0); }
-    const touchedAt = (n) => Math.max(nxStamp(n), viewTs.get(n.id) || 0);
-    const recent = allNotes.filter((n) => touchedAt(n) > 0).slice().sort((a, b) => touchedAt(b) - touchedAt(a)).slice(0, 18);
+    // Recent leads the page: simply the most recently created or edited notes, newest
+    // first, so the top-left card is always the latest one you (or Claude) added or
+    // worked on. (Robin, 2026-11-18: "top-left should be the most recent". Dropped the
+    // old "recently opened leads" weighting - counting when a note was last OPENED
+    // pushed a note just created/edited below pages that had only been glanced at.)
     const all = nxSortRecent(allNotes);
+    const recent = all.slice(0, 18);
     const recentSec = recent.length ? `<section class="home-sec"><div class="home-sec-h">Recent</div><div class="tbl-cards">${grid(recent)}</div></section>` : '';
     const starredSec = favs.length ? `<section class="home-sec"><div class="home-sec-h">Starred</div><div class="tbl-cards">${grid(favs)}</div></section>` : '';
     const allSec = `<section class="home-sec"><div class="home-sec-h sec-head-act"><span>All notes · ${allNotes.length}</span><button class="sec-new" data-new-note>${t('notes.newnote')}</button></div><div class="tbl-cards">${grid(all) || '<div class="empty">No notes yet.</div>'}</div></section>`;
