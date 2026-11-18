@@ -12980,8 +12980,10 @@ function renderReadwatch() {
       <div class="rw-mood">${items.length ? esc(mood) : 'Nothing saved yet'}<button class="rw-quicksave" data-rw-setup>· one-tap saving</button></div>
     </div>
     <form class="rw-savebar ${rw.saving ? 'saving' : ''}" id="rw-add-form">
-      <span class="rw-save-plus">+</span>
-      <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book, film or series…" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
+      <span class="rw-save-field">
+        <span class="rw-save-plus">+</span>
+        <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book, film or series…" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
+      </span>
       <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Search'}</button>
     </form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>

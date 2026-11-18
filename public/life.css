@@ -13885,6 +13885,7 @@ body.mailsheet-open { overflow:hidden; }
 .rw-quicksave:hover { color:var(--k-goldt); }
 .rw-savebar { margin-top:26px; display:flex; align-items:center; gap:14px; padding:8px 8px 8px 20px; background:var(--k-panel); border:1px solid var(--k-line); transition:border-color .2s ease; }
 .rw-savebar.on { border-color:var(--k-gold); }
+.rw-save-field { display:flex; align-items:center; gap:14px; flex:1; min-width:0; }
 .rw-save-plus { font-family:var(--k-sans); font-weight:400; font-size:22px; line-height:1; color:var(--k-goldt); }
 .rw-save-in { flex:1; min-width:0; border:0; background:transparent; outline:none; font-family:var(--k-sans); font-weight:400; font-size:18px; color:var(--k-ink); padding:8px 0; }
 .rw-save-guess { font-family:var(--k-sans); font-weight:500; font-size:13.5px; color:var(--k-mute); white-space:nowrap; }
@@ -13931,6 +13932,14 @@ body.mailsheet-open { overflow:hidden; }
   .rw-fks { gap:8px; }
   .rw-fk { padding:7px 13px; border:1px solid var(--k-line); margin-bottom:0; color:var(--k-ink); background:var(--k-panel); }
   .rw-fk.on { color:var(--k-goldt); border-color:var(--k-goldt); background:color-mix(in srgb, var(--k-goldt) 12%, var(--k-panel)); }
+}
+/* On a phone the gold Search button sits BELOW the field, outside the box - inside
+   it the button crowded the input and read oddly. The field keeps the keyline box
+   (and its gold focus glow); the button stays as wide as its word. (Robin, 2026-11-18.) */
+@media (max-width:560px) {
+  .rw-savebar { flex-direction:column; align-items:flex-start; gap:12px; padding:0; background:none; border:0; }
+  .rw-save-field { align-self:stretch; padding:10px 16px; background:var(--k-panel); border:1px solid var(--k-line); transition:border-color .2s ease; }
+  .rw-savebar.on .rw-save-field { border-color:var(--k-gold); }
 }
 .rw-sec2 { border-bottom:1px solid var(--k-line); }
 .rw-sec2-h { display:flex; align-items:baseline; gap:14px; padding:26px 0 16px; cursor:pointer; }

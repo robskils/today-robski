@@ -205,6 +205,15 @@
 :root[data-light] :is(.tbl-card, .trk-area, .g-row, .g-tile, .g-start, .g-input, .dz-card, .mny-link, .mny-card, .tbx-card, .mail-acct, .set-mod, .j-ins-item, .j-insights-page, .rr-keys, .wheeltrack-row, .am-row, .fin-chip, .fh-wrap, .fin-rates, .cn-band, .gcal-bar, .gcal-extra, .rw-filterbar, .rw-savebar, .src-chip, .list-search, .seg, .sel, .mp-row.sel) {
   background-color:var(--glass-card); background-image:none; border-color:var(--glass-edge); box-shadow:none;
 }
+/* Phone Read & Watch: the glass box is on the field, not the whole bar, so the
+   Search button can drop below it, outside the box. The bar selector is doubled
+   (.rw-savebar.rw-savebar) only to outweigh the shared glass :is() rule above,
+   which carries a two-class specificity. (Robin, 2026-11-18.) */
+@media (max-width:560px) {
+  :root[data-light] .rw-savebar.rw-savebar { background-color:transparent; border-color:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  :root[data-light] .rw-save-field { background-color:var(--glass-card); background-image:none; border:1px solid var(--glass-edge); box-shadow:none; }
+  :root[data-light] .rw-savebar.on .rw-save-field { border-color:var(--k-gold); }
+}
 :root[data-light] .mp-msg.mine { background-color:rgba(255,255,255,.14); }
 /* The selected week day is a gold underline, nothing more. It shares the 'sel' class
    with dropdowns, which leaked a glass box, 12px/16px padding (the indent) and a
