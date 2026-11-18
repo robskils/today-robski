@@ -16087,11 +16087,16 @@ function calMood(byDay, todayI) {
   const real = all.filter((e) => !e.feed);
   const n = real.length;
   const count = (W[n] != null ? W[n] : n) + (n === 1 ? ' thing today.' : ' things today.');
-  const timed = all.filter((e) => !e.allDay && !e.feed && !e.recurringId && e.start_min != null).sort((a, b) => a.start_min - b.start_min)[0];
+  // Feature the NEXT timed event still to come - one that's already passed shouldn't
+  // lead the day (the same rule the month grid uses for today). When everything is
+  // done, just the count stands. (Robin, 2026-11-18.)
+  const nowMin = (() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
+  const timed = all.filter((e) => !e.allDay && !e.feed && !e.recurringId && e.start_min != null && e.start_min >= nowMin).sort((a, b) => a.start_min - b.start_min)[0];
   if (!timed) return count + (n ? '' : ' A clear day.');
   const h = Math.floor(timed.start_min / 60), m = timed.start_min % 60;
   const when = m === 0 ? `at ${HR[h % 12]}` : `at ${minToLabel(timed.start_min)}`;
-  const place = timed.location ? `, in ${stripEmoji(timed.location).split(', ').pop()}` : '';
+  const pl = locText(timed.location);   // drop any meeting link so the place never sprawls
+  const place = pl ? `, in ${pl.split(', ').pop()}` : '';
   return `${count} ${stripEmoji(timed.title)} ${when}${place}.`;
 }
 // Per-kind event type (§25): holidays/feeds muted Cormorant italic; all-day gold
