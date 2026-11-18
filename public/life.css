@@ -13509,6 +13509,15 @@ body.mailsheet-open { overflow:hidden; }
 .cvx-detail-acts { display:flex; gap:14px; white-space:nowrap; }
 .cvx-detail-act { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:12.5px; color:var(--k-goldt); padding:0; text-decoration:none; }
 .cvx-detail-act:hover { color:var(--k-ink); }
+/* Contact card (the .cc-facts box): a tighter label->value gap, and long emails
+   or phones truncate with an ellipsis so the row never pushes Copy out of reach.
+   Copy still carries the full value. (Robin, 2026-11-18.) */
+.cc-facts .cvx-detail { grid-template-columns:66px minmax(0,1fr) auto; column-gap:14px; }
+.cc-facts .cvx-detail-trunc .cvx-detail-v { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cc-facts .cvx-detail-trunc .cvx-detail-v a { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
+/* The "Edit" shortcut sitting beside the Details heading (same as Edit details). */
+.cv-sec-edit { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-weight:500; font-size:13px; color:var(--k-goldt); padding:0; white-space:nowrap; align-self:center; }
+.cv-sec-edit:hover { color:var(--k-ink); }
 .cvx-cpage .cv-edit { margin-top:12px; background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:13px; color:var(--k-goldt); padding:0; }
 /* §48 Merge picker overlay */
 #cv-merge { position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center; }

@@ -21994,10 +21994,10 @@ function contactDetailsView(c, p) {
   // §48: an uppercase label, the value, and Copy or Map as text. No icon tiles,
   // no boxed copy buttons. Birthday has its own section, so it's not repeated.
   const copy = (val) => val ? `<button type="button" class="cvx-detail-act" data-copy-val="${esc(val)}">Copy</button>` : '';
-  const row = (label, valueHtml, actions) => `<div class="cvx-detail"><span class="cvx-detail-l">${esc(label)}</span><span class="cvx-detail-v">${valueHtml}</span><span class="cvx-detail-acts">${actions || ''}</span></div>`;
+  const row = (label, valueHtml, actions, trunc) => `<div class="cvx-detail${trunc ? ' cvx-detail-trunc' : ''}"><span class="cvx-detail-l">${esc(label)}</span><span class="cvx-detail-v">${valueHtml}</span><span class="cvx-detail-acts">${actions || ''}</span></div>`;
   const rows = [];
-  contactEmails(p).forEach((em) => rows.push(row('Email', `<a href="mailto:${encodeURIComponent(em).replace(/%40/g, '@')}">${esc(em)}</a>`, copy(em))));
-  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(row('Phone', `<a href="tel:${esc(tel)}">${esc(disp)}</a>`, copy(disp))); });
+  contactEmails(p).forEach((em) => rows.push(row('Email', `<a href="mailto:${encodeURIComponent(em).replace(/%40/g, '@')}">${esc(em)}</a>`, copy(em), true)));
+  contactPhones(p).forEach((ph) => { const disp = `${ph.cc ? ph.cc + ' ' : ''}${ph.number || ''}`.trim(); const tel = `${ph.cc || ''}${(ph.number || '').replace(/\s+/g, '')}`; if (disp) rows.push(row('Phone', `<a href="tel:${esc(tel)}">${esc(disp)}</a>`, copy(disp), true)); });
   const addrs = contactAddresses(p);
   if (addrs.length) { const a = formatAddress(addrs[0]); rows.push(row('Address', contactAddressViewBlocks(addrs), copy(a))); }
   return rows.join('') || '<p class="cc-box-empty">No details yet — tap Edit to add email, phone or an address.</p>';
@@ -22895,9 +22895,9 @@ function cvKeepBand(c) {
     ${every ? '<p class="cv-keep-note">The clock restarts whenever you’re in touch, by any means.</p>' : ''}
   </div>`;
 }
-function cvFold(c, key, title, hint, bodyHtml) {
+function cvFold(c, key, title, hint, bodyHtml, action) {
   const open = !!cvState().folds[key];
-  return `<section class="cv-sec"><div class="cv-sec-h" data-cv-fold="${key}" role="button" tabindex="0"><span class="cv-sec-t">${esc(title)}</span>${!open && hint ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${bodyHtml()}</div>` : ''}</section>`;
+  return `<section class="cv-sec"><div class="cv-sec-h" data-cv-fold="${key}" role="button" tabindex="0"><span class="cv-sec-t">${esc(title)}</span>${action || ''}${!open && hint ? `<span class="cv-sec-hint">${esc(hint)}</span>` : ''}<span class="cv-sec-sign">${open ? '−' : '+'}</span></div>${open ? `<div class="cv-sec-body">${bodyHtml()}</div>` : ''}</section>`;
 }
 function contactCardInner(c) {
   const p = c.props || {};
@@ -22937,7 +22937,7 @@ function contactCardInner(c) {
     </div>
     ${cvKeepBand(c)}
     ${bday}
-    ${cvFold(c, 'details', 'Details', contactEmails(p).map(() => 'email').concat(contactPhones(p).length ? ['phone'] : [], p.birthday ? ['birthday'] : []).join(' · ') || 'Nothing saved yet', detailsBody)}
+    ${cvFold(c, 'details', 'Details', contactEmails(p).map(() => 'email').concat(contactPhones(p).length ? ['phone'] : [], p.birthday ? ['birthday'] : []).join(' · ') || 'Nothing saved yet', detailsBody, '<button class="cv-sec-edit" type="button" data-cc-edit-details>Edit</button>')}
     ${cvFold(c, 'together', 'Together', 'Messages, events and notes', () => contactBoxesHtml(c))}
     ${cvFold(c, 'notes', 'Notes to self', (c.body || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 60) || 'Nothing written', () => notesSection(c.body, 'contact', c.id, false, ''))}
     ${cvFold(c, 'spaces', 'Spaces and settings', spaces.join(' · ') || 'No spaces', () => `<div class="tf-field"><span class="tf-label">Spaces</span>${blockAreasControl('contact', c)}</div><div class="cv-settings-acts"><button class="cv-del" data-del-contact="${c.id}">Delete contact…</button></div>`)}`;
@@ -30034,7 +30034,7 @@ document.addEventListener('click', (e) => {
   { const ckd = t.closest('[data-cvkit-done]'); if (ckd) { e.preventDefault(); e.stopPropagation(); cvKitDone(ckd.dataset.cvkitDone); return; } }
   { const cks = t.closest('[data-cvkit-snooze]'); if (cks) { e.preventDefault(); e.stopPropagation(); cvKitSnooze(cks.dataset.cvkitSnooze); return; } }
   { const cvo = t.closest('[data-cv-open]'); if (cvo) { cvSelect(cvo.dataset.cvOpen); return; } }
-  { const cvf = t.closest('[data-cv-fold]'); if (cvf) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
+  { const cvf = t.closest('[data-cv-fold]'); if (cvf && !t.closest('[data-cc-edit-details]')) { const f = cvState().folds; const k = cvf.dataset.cvFold; f[k] = !f[k]; renderContacts(); return; } }
   if (t.closest('[data-cv-touched]')) { kitSetLast(todayISO()); return; }
   { const cvfr = t.closest('[data-cv-freq]'); if (cvfr) { const v = cvfr.dataset.cvFreq; if (v) kitSetEvery(v); else { if (cvState().cur) cvKitFoldSet(cvState().cur, false); kitToggle(false); } return; } }
   { const cstar = t.closest('[data-contact-star]'); if (cstar) { e.preventDefault(); e.stopPropagation(); toggleContactStar(cstar.dataset.contactStar); return; } }
@@ -30062,7 +30062,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
-  if (t.closest('[data-cc-edit-details]') && state.contact_open) { state.contact_open.editDetails = true; renderContactCard(); return; }
+  if (t.closest('[data-cc-edit-details]') && state.contact_open) { cvState().folds.details = true; state.contact_open.editDetails = true; renderContactCard(); return; }
   if (t.closest('[data-cc-details-done]') && state.contact_open) { const cid = state.contact_open.contact.id; patchContact(cid, readCardContacts(), true); patchContact(cid, readCardAddresses(), true); patchContact(cid, readCardSocial(), true); state.contact_open.editDetails = false; renderContactCard(); return; }
   if (t.closest('[data-cc-add-addr]')) { const btn = t.closest('[data-cc-add-addr]'); btn.insertAdjacentHTML('beforebegin', contactAddrRowHtml({}, 'n' + Date.now().toString(36), true)); btn.previousElementSibling.querySelector('.cc-adr-label')?.focus(); return; }
   { const dca = t.closest('[data-cc-del-addr]'); if (dca && state.contact_open) { dca.closest('[data-adr-row]').remove(); patchContact(state.contact_open.contact.id, readCardAddresses(), true); return; } }

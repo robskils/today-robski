@@ -635,15 +635,17 @@ body.split #pane2:has(> .pane2-frame) { display:flex; flex-direction:column; ove
   .knav-bottom { height:calc(62px + env(safe-area-inset-bottom)); padding:7px 24px env(safe-area-inset-bottom); align-items:start; }
   :root[data-light] .knav-b-set { width:auto; height:48px; margin-top:0; padding:0 10px; background:none; border:0; box-shadow:none; color:var(--k-ink); font-family:'Jost',system-ui,sans-serif; font-size:16px; font-weight:500; line-height:1; white-space:nowrap; }
   .knav-b-contents, .knav-b-find { padding:0; min-height:48px; align-self:start; }
-  /* Each footer control is its own white-rimmed glass button. (Robin, 2026-11-11:
-     "a white box around each one individually so they look like buttons".) */
+  /* Each footer control is its own white-rimmed button. (Robin, 2026-11-11: "a
+     white box around each one individually so they look like buttons".) The fill
+     is the header bar's own colour (--k-bg), darker than the footer, so the
+     buttons read solid, not see-through. (Robin, 2026-11-18.) */
   :root[data-light] .knav-bottom .knav-b-contents,
   :root[data-light] .knav-bottom .knav-b-find,
   :root[data-light] .knav-bottom .knav-b-set {
     height:auto; min-height:42px; padding:0 16px; align-self:center; margin-top:15px;
     display:inline-flex; align-items:center; justify-content:center;
     border:1px solid rgba(255,255,255,.78); border-radius:0;
-    background:var(--glass); -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+    background:var(--k-bg); -webkit-backdrop-filter:none; backdrop-filter:none;
     color:var(--k-ink);
   }
   .knav-find, .knav-contents { bottom:calc(62px + env(safe-area-inset-bottom)); }
