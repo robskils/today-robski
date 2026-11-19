@@ -382,19 +382,38 @@ CREATE TABLE IF NOT EXISTS feedback (
   created_at TEXT NOT NULL
 );
 
--- The Exchange: notes people share to a shelf others can browse and Take a copy of.
--- The instance owner (user 1) approves what goes live. One row per shared note.
+-- The Exchange: notes AND routines people share to a shelf others browse and Take a
+-- copy of. The instance owner (user 1) approves what goes live. One row per shared
+-- item. For a note, block_id is the note block and kind='note'; for a routine,
+-- activity_id is the activities row, block_id is the synthetic key 'act-<id>' (so the
+-- unique index still gives one row per routine) and kind='routine'.
 CREATE TABLE IF NOT EXISTS exchange (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  block_id     TEXT NOT NULL,                   -- the shared note block
+  block_id     TEXT NOT NULL,                   -- note block id, or 'act-<id>' for a routine
   owner_id     INTEGER NOT NULL,                -- who shared it
-  token        TEXT NOT NULL,                   -- the note's shareToken, for the public /n/ view
+  token        TEXT NOT NULL,                   -- the note's shareToken (/n/ view); '' for a routine
   status       TEXT NOT NULL DEFAULT 'pending', -- pending | live | unlisted | declined
   anon         INTEGER NOT NULL DEFAULT 0,      -- 1 = name hidden on the shelf
   title        TEXT,
   preview      TEXT,
   submitted_at TEXT NOT NULL,
-  reviewed_at  TEXT
+  reviewed_at  TEXT,
+  kind         TEXT NOT NULL DEFAULT 'note',    -- note | routine
+  activity_id  INTEGER,                         -- the shared activities row, for a routine
+  -- JSON for routine display: { rhythm, hasVideo, duration }
+  meta         TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_exchange_block ON exchange(block_id);
 CREATE INDEX IF NOT EXISTS idx_exchange_status ON exchange(status, id);
+
+-- A quiet "arigato": one person saying a shelf item helped them. Gratitude, not a
+-- score - anonymous (we never show who), reversible (tick off = row gone), and shown
+-- only as a count. One row per (item, person); giving your own share a thank-you is
+-- not offered, so a sharer can't inflate their own.
+CREATE TABLE IF NOT EXISTS exchange_kudos (
+  exchange_id INTEGER NOT NULL,
+  user_id     INTEGER NOT NULL,
+  created_at  TEXT NOT NULL,
+  PRIMARY KEY (exchange_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_exchange_kudos_item ON exchange_kudos(exchange_id);

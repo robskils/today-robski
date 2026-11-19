@@ -7394,7 +7394,7 @@ function practiceEditorHtml() {
     <div class="pe-panel prac-form ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit routine' : 'New routine'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">${practiceFieldsHtml()}</div>
-      <div class="pe-foot">${pe.id ? `<button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
+      <div class="pe-foot">${pe.id ? `<span class="pe-foot-l"><button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button><button class="ghost pe-share" data-exchange-share-routine="${pe.id}" data-exchange-share-title="${esc(a.title || '')}" title="Put this routine on The Exchange for others to take a copy">Share to The Exchange</button></span>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
     </div>`;
 }
 // The practice's connected notes, contacts and links - the same attach options
@@ -12814,69 +12814,191 @@ async function openReadwatch() {
   state.rw.items.sort((a, b) => String((b.props && b.props.added) || b.created_at || '').localeCompare(String((a.props && a.props.added) || a.created_at || '')));
   renderReadwatch();
 }
-// ── The Exchange (community note-sharing) ────────────────────────────────────
-// A shared shelf in Tools › Inspire: people publish a note, others browse and Take a
-// copy into their own Notes. The owner (user 1) sees a review queue; everyone browses
-// the live shelf. Plain by design - no counts, likes or badges. Backend: worker/exchange.js.
-async function openExchange() {
+// ── The Exchange (community note- and routine-sharing) ───────────────────────
+// A shared shelf in Tools › Inspire: people publish a note OR a routine, others browse
+// and Take a copy into their own Notes / Routines. The owner (user 1) sees a review
+// queue; everyone browses the live shelf. One warm touch - a quiet "arigato" you can
+// give something that helped you - but no ranking or badges. Backend: worker/exchange.js.
+const EXCHANGE_THANKS = 'Arigato';   // the word for a quiet thank-you; one place to change it
+function exKindLabel(k) { return k === 'routine' ? 'Routine' : 'Note'; }
+function exDaysLabel(csv) {
+  const nums = [...new Set(String(csv).split(',').map((x) => Number(x)).filter((x) => x >= 0 && x <= 6))];
+  if (!nums.length) return '';
+  if (nums.length === 7) return 'Every day';
+  const set = new Set(nums);
+  if (set.size === 5 && [1, 2, 3, 4, 5].every((d) => set.has(d))) return 'Weekdays';
+  if (set.size === 2 && set.has(0) && set.has(6)) return 'Weekends';
+  return nums.sort((a, b) => a - b).map((n) => DOW_ABBR[n]).join(', ');
+}
+function exRhythmLabel(r) {
+  if (!r) return '';
+  const bits = [];
+  if (r.cadence) { const c = cadenceLabel(r.cadence); if (c) bits.push(c); }
+  else if (r.days) { const d = exDaysLabel(r.days); if (d) bits.push(d); }
+  if (r.hasVideo) bits.push('has a video');
+  if (!bits.length) bits.push('Any time');
+  return bits.join(' · ');
+}
+// A quiet "arigato": an outlined gold square you fill in to say an item helped you.
+// Anonymous and reversible. On your own share it's read-only - a count of the thanks
+// others left, never a tap - so nobody can thank themselves up a ranking.
+function exKuHtml(it) {
+  if (it.mine) {
+    return it.kudos ? `<span class="xch-ku xch-ku-own" title="How many people said this helped them"><span class="xch-ku-sq on" aria-hidden="true"></span><span class="xch-ku-n">${it.kudos}</span></span>` : '';
+  }
+  return `<button class="xch-ku ${it.kudoed ? 'on' : ''}" data-exchange-kudo="${it.id}" aria-pressed="${it.kudoed ? 'true' : 'false'}" title="${it.kudoed ? 'Thanked - tap to take it back' : 'Say this one helped you'}"><span class="xch-ku-sq" aria-hidden="true"></span><span class="xch-ku-l">${EXCHANGE_THANKS}</span>${it.kudos ? `<span class="xch-ku-n">${it.kudos}</span>` : ''}</button>`;
+}
+async function openExchange(opts = {}) {
+  const prev = state.exchange || {};
+  const filter = opts.filter || prev.filter || 'all';
+  const sort = opts.sort || prev.sort || 'recent';
   state.view = { type: 'exchange' };
   renderNav();
-  let items = [], pending = [], owner = false;
-  try { const r = await api('/api/exchange'); items = r.items || []; } catch (e) { toast(e.message); }
+  state.exchange = { items: prev.items || [], pending: prev.pending || [], owner: prev.owner || false, filter, sort, loading: true };
+  renderExchange();
+  let items = [], pending = [], owner = prev.owner || false;
+  const qs = `?filter=${encodeURIComponent(filter)}&sort=${encodeURIComponent(sort)}`;
+  try { const r = await api('/api/exchange' + qs); items = r.items || []; } catch (e) { toast(e.message); }
   try { const p = await api('/api/exchange/pending'); pending = p.items || []; owner = true; } catch {}   // 403 for members = not the owner
-  state.exchange = { items, pending, owner };
+  state.exchange = { items, pending, owner, filter, sort, loading: false };
   renderExchange();
 }
 function exchangeCardHtml(it, owner) {
   const act = it.mine
     ? '<span class="xch-tag">Yours</span>'
     : it.took
-      ? '<span class="xch-tag xch-tag-done">In your Notes ✓</span>'
+      ? `<span class="xch-tag xch-tag-done">${it.kind === 'routine' ? 'In your Routines ✓' : 'In your Notes ✓'}</span>`
       : `<button class="xch-take" data-exchange-take="${it.id}">Take a copy</button>`;
   const unlist = (owner && !it.mine) ? `<button class="xch-ghost" data-exchange-unlist="${it.id}">Unlist</button>` : '';
-  return `<article class="xch-card">
+  const look = it.kind === 'routine'
+    ? `<button class="xch-read" data-exchange-preview="${it.id}">Preview</button>`
+    : `<a class="xch-read" href="/n/${esc(it.token)}" target="_blank" rel="noopener noreferrer">Read</a>`;
+  const meta = it.kind === 'routine' ? `<div class="xch-metaline">${esc(exRhythmLabel(it.rhythm))}</div>` : '';
+  return `<article class="xch-card xch-card-${it.kind}">
     <div class="xch-card-b">
+      <div class="xch-kind">${exKindLabel(it.kind)}</div>
       <h3 class="xch-ttl">${esc(it.title)}</h3>
+      ${meta}
       <p class="xch-prev">${esc(it.preview)}</p>
     </div>
-    <div class="xch-foot">
-      <span class="xch-by">${it.mine ? 'Shared by you' : 'from ' + esc(it.author)}</span>
-      <span class="xch-acts"><a class="xch-read" href="/n/${esc(it.token)}" target="_blank" rel="noopener noreferrer">Read</a>${act}${unlist}</span>
-    </div>
+    <div class="xch-byrow"><span class="xch-by">${it.mine ? 'Shared by you' : 'from ' + esc(it.author)}</span>${exKuHtml(it)}</div>
+    <div class="xch-foot"><span class="xch-acts">${look}${act}${unlist}</span></div>
+  </article>`;
+}
+function exPendCardHtml(p) {
+  const look = p.kind === 'routine'
+    ? `<button class="xch-read" data-exchange-preview="${p.id}">Preview</button>`
+    : `<a class="xch-read" href="/n/${esc(p.token)}" target="_blank" rel="noopener noreferrer">Read</a>`;
+  const meta = p.kind === 'routine' ? `<div class="xch-metaline">${esc(exRhythmLabel(p.rhythm))}</div>` : '';
+  return `<article class="xch-card xch-card-${p.kind} xch-pend">
+    <div class="xch-card-b"><div class="xch-kind">${exKindLabel(p.kind)}</div><h3 class="xch-ttl">${esc(p.title)}</h3>${meta}<p class="xch-prev">${esc(p.preview)}</p></div>
+    <div class="xch-byrow"><span class="xch-by">Shared by ${esc(p.author)}</span></div>
+    <div class="xch-foot"><span class="xch-acts">${look}<button class="xch-take" data-exchange-approve="${p.id}">Add to the shelf</button><button class="xch-ghost" data-exchange-decline="${p.id}">Not this one</button></span></div>
   </article>`;
 }
 function renderExchange() {
-  const x = state.exchange || { items: [], pending: [], owner: false };
+  const x = state.exchange || { items: [], pending: [], owner: false, filter: 'all', sort: 'recent' };
+  const filter = x.filter || 'all', sort = x.sort || 'recent';
   const queue = (x.owner && x.pending.length) ? `<section class="xch-sec">
       <div class="home-sub-eyebrow">Waiting for your nod</div>
-      <div class="xch-grid">${x.pending.map((p) => `<article class="xch-card xch-pend">
-        <div class="xch-card-b"><h3 class="xch-ttl">${esc(p.title)}</h3><p class="xch-prev">${esc(p.preview)}</p></div>
-        <div class="xch-foot"><span class="xch-by">Shared by ${esc(p.author)}</span>
-          <span class="xch-acts"><a class="xch-read" href="/n/${esc(p.token)}" target="_blank" rel="noopener noreferrer">Read</a><button class="xch-take" data-exchange-approve="${p.id}">Add to the shelf</button><button class="xch-ghost" data-exchange-decline="${p.id}">Not this one</button></span></div>
-      </article>`).join('')}</div>
+      <div class="xch-grid">${x.pending.map(exPendCardHtml).join('')}</div>
     </section>` : '';
+  const fb = (val, cur, key, label) => `<button class="xch-fb ${val === cur ? 'on' : ''}" data-exchange-${key}="${val}">${label}</button>`;
+  const controls = (x.items.length || filter !== 'all') ? `<div class="xch-controls">
+    <div class="xch-fgroup">${fb('all', filter, 'filter', 'All')}${fb('note', filter, 'filter', 'Notes')}${fb('routine', filter, 'filter', 'Routines')}</div>
+    <div class="xch-fgroup xch-sort"><span class="xch-sortl">Show</span>${fb('recent', sort, 'sort', 'Recent')}${fb('appreciated', sort, 'sort', 'Most appreciated')}</div>
+  </div>` : '';
+  const emptyMsg = x.loading
+    ? 'Looking on the shelf…'
+    : filter === 'routine'
+      ? 'No routines on the shelf yet. Open one of your routines, then <b>Share to The Exchange</b>.'
+      : filter === 'note'
+        ? 'No notes on the shelf yet. Open one of your notes, choose <b>⋯ More</b>, then <b>Share to The Exchange</b>.'
+        : 'Nothing on the shelf yet. Share one of your notes (<b>⋯ More</b>) or routines (open it, then <b>Share to The Exchange</b>) - once it\'s approved it appears here for everyone.';
   const shelf = x.items.length
     ? `<div class="xch-grid">${x.items.map((it) => exchangeCardHtml(it, x.owner)).join('')}</div>`
-    : `<div class="xch-empty">Nothing on the shelf yet. Share one of your own notes - open a note, choose <b>⋯ More</b>, then <b>Share to The Exchange</b> - and once it's approved it appears here for everyone.</div>`;
+    : `<div class="xch-empty">${emptyMsg}</div>`;
   $('#pane').innerHTML = `<div class="kwrap kpage kpage-exchange">
     ${crumbNav([{ label: 'Home', attr: 'data-view-home' }, { label: 'The Exchange' }])}
     <div class="xch-head"><h1 class="xch-h1">The Exchange</h1>
-      <p class="xch-lead">Notes people have shared, for anyone to find and keep. Take a copy and it's yours - edit it, add to it, or let it go.</p></div>
-    ${queue}${shelf}
+      <p class="xch-lead">Notes and routines people have shared, for anyone to find and keep. Take a copy and it's yours - change it, build on it, or let it go.</p></div>
+    ${queue}${controls}${shelf}
   </div>`;
 }
-async function shareToExchange(noteId) {
+// The share chooser: a small glass sheet to pick your name or anonymous before an
+// item goes to the shelf. Used for both notes and routines.
+function openExchangeShare(kind, id, title) {
+  state.exShare = { kind: kind === 'routine' ? 'routine' : 'note', id, title: title || '', anon: false };
+  let host = document.getElementById('ex-share-host');
+  if (!host) { host = document.createElement('div'); host.id = 'ex-share-host'; document.body.appendChild(host); }
+  host.innerHTML = exShareHtml();
+}
+function closeExchangeShare() { state.exShare = null; const h = document.getElementById('ex-share-host'); if (h) h.remove(); }
+function exShareHtml() {
+  const s = state.exShare; if (!s) return '';
+  const kindN = s.kind === 'routine' ? 'routine' : 'note';
+  return `<div class="pe-bg" data-exshare-close></div>
+    <div class="pe-panel xsh-panel" role="dialog" aria-label="Share to The Exchange">
+      <div class="xsh-kind">Share to The Exchange</div>
+      <h2 class="xsh-ttl">${esc(s.title || ('A ' + kindN))}</h2>
+      <p class="xsh-note">Others can find this ${kindN} and take their own copy to change or build on. ${(state.me && state.me.id === 1) ? 'It goes on the shelf straight away.' : 'It appears on the shelf once approved.'}</p>
+      <div class="xsh-seg" role="group" aria-label="How your name shows">
+        <button class="xsh-sb ${!s.anon ? 'on' : ''}" data-exshare-anon="0">Under your name</button>
+        <button class="xsh-sb ${s.anon ? 'on' : ''}" data-exshare-anon="1">Anonymously</button>
+      </div>
+      <div class="xsh-foot"><button class="xch-ghost" data-exshare-close>Cancel</button><button class="xch-take" data-exshare-go>Share</button></div>
+    </div>`;
+}
+async function exShareGo() {
+  const s = state.exShare; if (!s) return;
+  const body = s.kind === 'routine' ? { activity: Number(s.id), anon: s.anon } : { block: s.id, anon: s.anon };
   try {
-    const r = await api('/api/exchange/submit', { method: 'POST', body: JSON.stringify({ block: noteId, anon: false }) });
+    const r = await api('/api/exchange/submit', { method: 'POST', body: JSON.stringify(body) });
+    closeExchangeShare();
     toast(r.status === 'live' ? 'Added to The Exchange' : 'On its way to The Exchange - it appears once approved');
   } catch (e) { toast(e.message); }
 }
+function shareToExchange(noteId, title) { openExchangeShare('note', noteId, title); }
+// Preview a shelf routine in-app (it has no public page): its rhythm, instructions and
+// any follow-along video, then Take a copy from the same sheet.
+async function previewExchangeRoutine(id) {
+  try {
+    const d = await api('/api/exchange/preview?id=' + encodeURIComponent(id));
+    if (d.kind === 'note') { if (d.url) window.open(d.url, '_blank', 'noopener'); return; }
+    state.exPreview = { id: Number(id), d };
+    let host = document.getElementById('ex-prev-host');
+    if (!host) { host = document.createElement('div'); host.id = 'ex-prev-host'; document.body.appendChild(host); }
+    host.innerHTML = exPreviewHtml();
+  } catch (e) { toast(e.message); }
+}
+function closeExPreview() { state.exPreview = null; const h = document.getElementById('ex-prev-host'); if (h) h.remove(); }
+function exPreviewHtml() {
+  const p = state.exPreview; if (!p) return '';
+  const d = p.d;
+  const vids = (d.videos || []).map((u) => `<a class="xpv-vid" href="${esc(/^https?:\/\//i.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener noreferrer">▶ Watch the video<span class="xpv-vid-h">${esc(prettyHost(u))}</span></a>`).join('');
+  const taken = (state.exchange && state.exchange.items || []).find((y) => y.id === p.id && y.took);
+  const takeBtn = taken ? '<span class="xch-tag xch-tag-done">In your Routines ✓</span>' : `<button class="xch-take" data-exprev-take="${p.id}">Take a copy</button>`;
+  return `<div class="pe-bg" data-exprev-close></div>
+    <div class="pe-panel xpv-panel" role="dialog" aria-label="Routine preview">
+      <div class="xpv-head"><div><div class="xch-kind">Routine</div><h2 class="xpv-ttl">${esc(d.title)}</h2>${d.rhythm ? `<div class="xch-metaline">${esc(exRhythmLabel(d.rhythm))}</div>` : ''}</div><button class="pe-x" data-exprev-close aria-label="Close">×</button></div>
+      <div class="xpv-body">${d.note ? `<div class="xpv-note">${d.note}</div>` : '<p class="xpv-empty">No instructions written for this one.</p>'}${vids ? `<div class="xpv-vids">${vids}</div>` : ''}</div>
+      <div class="xpv-foot">${takeBtn}</div>
+    </div>`;
+}
+async function exchangeKudo(id) {
+  const it = (state.exchange && state.exchange.items || []).find((y) => y.id === Number(id));
+  if (it) { it.kudoed = !it.kudoed; it.kudos = Math.max(0, (it.kudos || 0) + (it.kudoed ? 1 : -1)); renderExchange(); }   // optimistic
+  try {
+    const r = await api('/api/exchange/kudo', { method: 'POST', body: JSON.stringify({ id: Number(id) }) });
+    if (it) { it.kudoed = !!r.kudoed; it.kudos = Number(r.kudos) || 0; renderExchange(); }
+  } catch (e) { toast(e.message); if (it) { it.kudoed = !it.kudoed; it.kudos = Math.max(0, (it.kudos || 0) + (it.kudoed ? 1 : -1)); renderExchange(); } }
+}
 async function exchangeTake(id) {
   try {
-    await api('/api/exchange/take', { method: 'POST', body: JSON.stringify({ id: Number(id) }) });
+    const r = await api('/api/exchange/take', { method: 'POST', body: JSON.stringify({ id: Number(id) }) });
     const it = (state.exchange && state.exchange.items || []).find((y) => y.id === Number(id)); if (it) it.took = true;
     renderExchange();
-    toast('Taken into your Notes ✓');
+    toast(r.kind === 'routine' ? 'Taken into your Routines ✓' : 'Taken into your Notes ✓');
   } catch (e) { toast(e.message); }
 }
 async function exchangeReview(id, action) {
@@ -27970,7 +28092,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}">Share to The Exchange</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -29580,11 +29702,21 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-del-journal]')) { delJournalEntry(); return; }
   if (t.closest('[data-open-readwatch]')) { openReadwatch().catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-exchange]')) { openExchange().catch((x) => toast(x.message)); return; }
-  { const el = t.closest('[data-exchange-share]'); if (el) { shareToExchange(el.dataset.exchangeShare); return; } }
+  { const el = t.closest('[data-exchange-share]'); if (el) { shareToExchange(el.dataset.exchangeShare, el.dataset.exchangeShareTitle); return; } }
+  { const el = t.closest('[data-exchange-share-routine]'); if (el) { openExchangeShare('routine', el.dataset.exchangeShareRoutine, el.dataset.exchangeShareTitle); return; } }
   { const el = t.closest('[data-exchange-take]'); if (el) { exchangeTake(el.dataset.exchangeTake); return; } }
+  { const el = t.closest('[data-exchange-kudo]'); if (el) { exchangeKudo(el.dataset.exchangeKudo); return; } }
+  { const el = t.closest('[data-exchange-preview]'); if (el) { previewExchangeRoutine(el.dataset.exchangePreview); return; } }
+  { const el = t.closest('[data-exchange-filter]'); if (el) { openExchange({ filter: el.dataset.exchangeFilter }).catch((x) => toast(x.message)); return; } }
+  { const el = t.closest('[data-exchange-sort]'); if (el) { openExchange({ sort: el.dataset.exchangeSort }).catch((x) => toast(x.message)); return; } }
   { const el = t.closest('[data-exchange-approve]'); if (el) { exchangeReview(el.dataset.exchangeApprove, 'approve'); return; } }
   { const el = t.closest('[data-exchange-decline]'); if (el) { exchangeReview(el.dataset.exchangeDecline, 'decline'); return; } }
   { const el = t.closest('[data-exchange-unlist]'); if (el) { exchangeUnlist(el.dataset.exchangeUnlist); return; } }
+  { const el = t.closest('[data-exshare-close]'); if (el) { closeExchangeShare(); return; } }
+  { const el = t.closest('[data-exshare-anon]'); if (el) { if (state.exShare) { state.exShare.anon = el.dataset.exshareAnon === '1'; const h = document.getElementById('ex-share-host'); if (h) h.innerHTML = exShareHtml(); } return; } }
+  { const el = t.closest('[data-exshare-go]'); if (el) { exShareGo(); return; } }
+  { const el = t.closest('[data-exprev-close]'); if (el) { closeExPreview(); return; } }
+  { const el = t.closest('[data-exprev-take]'); if (el) { const id = el.dataset.exprevTake; closeExPreview(); exchangeTake(id); return; } }
   { const ob = t.closest('[data-open-bookmark]'); if (ob) { openBookmarkCard(ob.dataset.openBookmark); return; } }
   // §69 Library: the slide-in item panel, shelf/list, sort flip, section folds, pin.
   // The × sits inside a card, so its delete must be caught BEFORE the card's open.
