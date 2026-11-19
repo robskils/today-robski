@@ -16372,6 +16372,19 @@ function remChipsHtml(sel) {
     + extra.map((m) => chip(m, alarmChipLabel(m))).join('')
     + `<button type="button" class="ce-rem-chip ce-rem-add" data-alarm-addcustom>+ Custom</button>`;
 }
+// On a phone the chip wall becomes one glass dropdown you add from, with the leads
+// you've chosen shown as square removable tags below. Desktop keeps the quick
+// toggle chips (they sit on a line there and a tap is faster). (Robin, 2026-11-19.)
+function remPickOptionsHtml() {
+  return `<option value="">Add a reminder…</option>`
+    + REM_PRESETS.map(([m, l]) => `<option value="${m}">${l}</option>`).join('')
+    + `<option value="custom">Custom…</option>`;
+}
+function remSelectedChipsHtml(sel) {
+  const arr = [...new Set((sel || []).map(Number).filter((n) => Number.isFinite(n) && n >= 0))].sort((a, b) => a - b);
+  if (!arr.length) return `<span class="ce-rem-none">No reminder set</span>`;
+  return arr.map((m) => `<button type="button" class="ce-rem-tag" data-alarm-remove="${m}" aria-label="Remove reminder: ${esc(alarmChipLabel(m))}">${esc(alarmChipLabel(m))}<span class="ce-rem-tag-x" aria-hidden="true">×</span></button>`).join('');
+}
 function remSelected(form) { try { return JSON.parse((form && form.querySelector('#ce-alarms') || {}).value || '[]') || []; } catch { return []; } }
 // Write the chosen leads back to the hidden field + repaint the chips + show the
 // channel picker only when at least one reminder is set.
@@ -16380,6 +16393,7 @@ function remSetSelected(form, arr) {
   const u = [...new Set((arr || []).map(Number).filter((n) => Number.isFinite(n) && n >= 0 && n <= 525600).map((n) => Math.round(n)))].sort((a, b) => b - a);
   const h = form.querySelector('#ce-alarms'); if (h) h.value = JSON.stringify(u);
   const box = form.querySelector('.ce-rem-chips'); if (box) box.innerHTML = remChipsHtml(u);
+  const selbox = form.querySelector('.ce-rem-selected'); if (selbox) selbox.innerHTML = remSelectedChipsHtml(u);
   const chw = form.querySelector('.ce-alarm-ch'); if (chw) chw.hidden = u.length === 0;
 }
 const CE_REPEAT_SHORT = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
@@ -16506,6 +16520,7 @@ function showCalForm(ev) {
       ${(() => { const sel = eventAlarmList(ev); return `<div class="ce-field ce-rem-field"><span class="ce-flbl">Remind me<span class="ce-rem-sub">pick as many as you like</span></span>
         <input type="hidden" id="ce-alarms" value="${esc(JSON.stringify(sel))}">
         <div class="ce-rem-chips">${remChipsHtml(sel)}</div>
+        <div class="ce-rem-pick"><select id="ce-rem-select" class="sel ce-rem-select" aria-label="Add a reminder">${remPickOptionsHtml()}</select><div class="ce-rem-selected">${remSelectedChipsHtml(sel)}</div></div>
         <div class="ce-rem-custom" hidden><input id="ce-rem-n" class="sel" type="number" min="1" max="999" inputmode="numeric"><select id="ce-rem-u" class="sel"><option value="m">minutes before</option><option value="h">hours before</option><option value="d">days before</option></select><button type="button" class="add-btn wide ce-rem-addbtn" data-alarm-customadd>Add</button></div>
       </div>`; })()}
       ${(ev && ev.recurringId) ? '' : (() => {
@@ -30383,6 +30398,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-recur-clearend]')) { const f = $('#cal-ev-form'); if (f && f.dataset.ev) calSetRecurEnd(f.dataset.ev, null); return; }
   // Reminder chips: toggle a lead, open the custom-lead row, or add a custom lead.
   { const tg = t.closest('[data-alarm-toggle]'); if (tg) { const f = tg.closest('#cal-ev-form'); const m = Number(tg.dataset.alarmToggle); const cur = remSelected(f); const i = cur.indexOf(m); if (i >= 0) cur.splice(i, 1); else cur.push(m); remSetSelected(f, cur); return; } }
+  { const rm = t.closest('[data-alarm-remove]'); if (rm) { const f = rm.closest('#cal-ev-form'); const m = Number(rm.dataset.alarmRemove); remSetSelected(f, remSelected(f).filter((x) => x !== m)); return; } }
   if (t.closest('[data-alarm-addcustom]')) { const f = t.closest('#cal-ev-form'); const c = f && f.querySelector('.ce-rem-custom'); const chip = t.closest('[data-alarm-addcustom]'); if (c) { c.hidden = !c.hidden; if (chip) chip.classList.toggle('on', !c.hidden); if (!c.hidden) { const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } return; }
   if (t.closest('[data-alarm-customadd]')) { const f = t.closest('#cal-ev-form'); if (!f) return; const n = Math.max(1, Math.min(999, parseInt((f.querySelector('#ce-rem-n') || {}).value, 10) || 0)); const u = (f.querySelector('#ce-rem-u') || {}).value || 'm'; if (n) { const mins = n * (u === 'd' ? 1440 : u === 'h' ? 60 : 1); const cur = remSelected(f); cur.push(mins); remSetSelected(f, cur); } const c = f.querySelector('.ce-rem-custom'); if (c) c.hidden = true; const ni = f.querySelector('#ce-rem-n'); if (ni) ni.value = ''; return; }
   const cmode = t.closest('[data-cal-mode]'); if (cmode) { setCalMode(cmode.dataset.calMode); return; }
@@ -31023,6 +31039,9 @@ document.addEventListener('change', (e) => {
   // Recurrence: reveal the End control when it repeats, and the Every-N row for Custom.
   if (e.target.id === 'ce-repeat') { const none = e.target.value === 'none'; const custom = e.target.value === 'custom'; const ew = $('#ce-end-wrap'), cw = $('#ce-rep-custom'); if (ew) ew.hidden = none; if (cw) cw.hidden = !custom; const sv = $('#ce-repeat-sumv'); if (sv) { const o = e.target.selectedOptions && e.target.selectedOptions[0]; sv.textContent = none ? 'Does not repeat' : custom ? 'Custom' : (o ? o.textContent : e.target.value); } }
   if (e.target.id === 'ce-end') { const m = e.target.value; const dw = $('#ce-until-wrap'), cw = $('#ce-end-countwrap'); if (dw) dw.hidden = m !== 'date'; if (cw) cw.hidden = m !== 'count'; }
+  // Phone reminder dropdown: pick a preset to add it (the chosen leads show as tags
+  // below), or Custom… to open the minutes/hours/days row. Resets to the placeholder.
+  if (e.target.id === 'ce-rem-select') { const f = $('#cal-ev-form'); const val = e.target.value; e.target.value = ''; if (f && val) { if (val === 'custom') { const c = f.querySelector('.ce-rem-custom'); if (c) { c.hidden = false; const n = f.querySelector('#ce-rem-n'); if (n) { try { n.focus(); } catch {} } } } else { const cur = remSelected(f); cur.push(Number(val)); remSetSelected(f, cur); } } }
   if (e.target.id === 'qe-allday') { const f = $('#qe-form'); if (f) f.classList.toggle('allday-on', e.target.checked); }
   // An event's end follows its start. Changing the start date/time slides the end
   // along, preserving the length; editing the end sets a new length. So the end is

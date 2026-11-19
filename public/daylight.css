@@ -343,7 +343,7 @@
   .mailv2ar .mail-ar-main { min-width:0; }
   .mail-ar:not(.open) .mailv2ar .mail-ar-from { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-ar-replytop, .mail-maketop) { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; }
-  .mail-ar-bar { position:sticky; top:var(--tabstrip-h,68px); z-index:7; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; padding:12px 0; }
+  .mail-ar-bar { position:sticky; top:var(--tabstrip-h,68px); z-index:7; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; padding:12px 10px; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage, .mail-replyacts, .mail-makeacts) { display:block; width:100%; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-triage-l, .mail-ar-row-l) { display:none; }
   :root[data-light] .mail-ar-bar :is(.mail-ar-replytop, .mail-maketop) { display:block; }

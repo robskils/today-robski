@@ -3270,6 +3270,20 @@ details.ce-repeat-fold[open] > summary.ce-repeat-sum::after { content:'▾'; }
 .ce-rem-custom #ce-rem-n { flex:none; width:84px; max-width:84px; }
 .ce-rem-custom #ce-rem-u { flex:1; min-width:0; }
 .ce-rem-custom .ce-rem-addbtn { flex:none; width:auto; }
+/* Phones: the chip wall collapses to one glass dropdown you add from, with the
+   chosen leads shown as square removable tags below - desktop keeps the toggle
+   chips (they fit on a line there and a tap is quick). (Robin, 2026-11-19.) */
+.ce-rem-pick { display:none; flex-direction:column; gap:10px; }
+.ce-rem-select { width:100%; max-width:none; }
+.ce-rem-selected { display:flex; flex-wrap:wrap; gap:7px; }
+.ce-rem-none { font-size:13.5px; color:var(--ink-3); align-self:center; }
+.ce-rem-tag { display:inline-flex; align-items:center; gap:7px; padding:7px 10px 7px 13px; border-radius:0; border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink,#fff); font:inherit; font-size:14px; font-weight:600; line-height:1; cursor:pointer; }
+.ce-rem-tag-x { font-weight:400; font-size:17px; line-height:1; opacity:.85; }
+.ce-rem-tag:hover .ce-rem-tag-x { opacity:1; }
+@media (max-width:767px) {
+  .ce-rem-field .ce-rem-chips { display:none; }
+  .ce-rem-field .ce-rem-pick { display:flex; }
+}
 /* The three ways to link an event out - a URL, a person, a note - grouped in one
    soft panel so they read as a set rather than scattered fields. (Robin.) */
 .ce-links { display:flex; flex-direction:column; gap:12px; padding:13px 14px; border:1px solid var(--line); border-radius:0; background:var(--paper-2); }
