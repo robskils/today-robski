@@ -4830,11 +4830,16 @@ async function handleInviteRequest(request, env, json, err) {
   } catch (e) { console.error('invite-request store:', e.message); }
   try {
     const to = env.BRIEF_EMAIL || 'contact@daybook.fyi';
-    const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:520px;font-size:16px;color:#211c17">
-      <p><b>${escHtml(name)}</b> &lt;${escHtml(email)}&gt; would like a Kaya invite.</p>
-      ${why ? `<p style="color:#574e44;border-left:3px solid #a8844a;padding-left:12px">${escHtml(why)}</p>` : ''}
-      <p style="color:#8b7f72;font-size:13px">Reply to them at ${escHtml(email)}.</p></div>`;
-    await sendSystemMail(env, { to, subject: `Kaya invite request — ${name}`, html, text: `${name} <${email}>\n\n${why}` });
+    const first = name.split(/\s+/)[0];
+    const bodyHtml = `<p style="margin:0">${escHtml(name)} would like a Kaya invite. Their email, to reply when you're ready:</p>
+      <p style="margin:13px 0 0;font-size:18px"><a href="mailto:${email}" style="color:#a8844a;text-decoration:none;font-weight:600">${escHtml(email)}</a></p>
+      ${why ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0"><tr><td style="border-left:2px solid #d8cdb6;padding:2px 0 2px 16px;font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;line-height:1.4;color:#574e44">${escHtml(why)}</td></tr></table>` : ''}`;
+    const html = brandedSystemEmail({
+      home: 'https://kaya.so', eyebrow: 'Invite request', headline: `${first} would like in.`,
+      bodyHtml, ctaHref: `mailto:${email}`, ctaLabel: `Reply to ${first}`,
+      preheader: `${name} <${email}>${why ? ' - ' + why.slice(0, 90) : ''}`, title: `Kaya invite request — ${name}`,
+    });
+    await sendSystemMail(env, { to, subject: `Kaya invite request — ${name}`, html, text: `${name} <${email}> would like a Kaya invite.\n\n${why ? why + '\n\n' : ''}Reply to them at ${email}.` });
     mailed = true;
   } catch (e) { console.error('invite-request mail:', e.message); }
   // Lost both ways: say so, so the form can offer the email address, not a false "thank you".
@@ -4842,7 +4847,7 @@ async function handleInviteRequest(request, env, json, err) {
   if (!seenBefore && stored) {
     try {
       const first = name.split(/\s+/)[0];
-      const html = brandedSystemEmail({ home: 'https://kaya.so', eyebrow: 'Your invitation', headline: `Thank you, ${escHtml(first)}.`, bodyHtml: "<p>We've got your request. Kaya grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.</p>", ctaHref: 'https://kaya.so', ctaLabel: 'See what Kaya is', preheader: "We've got your request.", title: 'Your Kaya invitation' });
+      const html = brandedSystemEmail({ home: 'https://kaya.so', eyebrow: 'Your invitation', headline: `Thank you, ${first}.`, bodyHtml: "<p>We've got your request. Kaya grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.</p>", ctaHref: 'https://kaya.so', ctaLabel: 'See what Kaya is', preheader: "We've got your request.", title: 'Your Kaya invitation' });
       await sendSystemMail(env, { to: email, subject: "We've got your request for Kaya", html, text: `Thank you, ${first}.\n\nWe've got your request. Kaya grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.\n\nhttps://kaya.so` });
     } catch (e) { console.error('invite-request ack:', e.message); }
   }
