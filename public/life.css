@@ -2242,7 +2242,11 @@ table.recs td .cell { width:100%; border:0; background:transparent; font:inherit
 /* Text cells are textareas so long text wraps onto a second line and the row grows
    to fit, instead of scrolling out of sight. field-sizing grows it natively in
    Chromium; a JS fallback (growCell) handles the rest. (Robin, 2026-11-14.) */
-textarea.cell { display:block; box-sizing:border-box; resize:none; overflow:hidden; line-height:1.4; white-space:pre-wrap; overflow-wrap:break-word; vertical-align:top; field-sizing:content; }
+/* overflow-wrap:anywhere (not break-word) so a long unbroken string - a URL pasted
+   into a text column - can break to fit a narrow column. break-word still pinned the
+   column's minimum width to the whole URL, so it couldn't be made thinner. (Robin,
+   2026-11-19.) */
+textarea.cell { display:block; box-sizing:border-box; resize:none; overflow:hidden; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; vertical-align:top; field-sizing:content; }
 /* With wrapping cells a row can be several lines tall; align every cell to the top
    so the first line of each reads across. (Robin, 2026-11-14.) */
 table.recs tbody td { vertical-align:top; }
