@@ -686,7 +686,7 @@ async function lightFetchMessage(im, uid) {
   }
   // Robust header parse: fetch just the header block, let PostalMime read it.
   // If that fails, bail to the full parse so we never lose sender/subject.
-  let hp = null; try { const hb = await im.fetchPart(uid, 'HEADER'); if (hb) hp = await PostalMime.parse(hb); } catch {}
+  let hp = null, hdrText = ''; try { const hb = await im.fetchPart(uid, 'HEADER'); if (hb) { hdrText = new TextDecoder('utf-8', { fatal: false }).decode(hb); hp = await PostalMime.parse(hb); } } catch {}
   if (!hp) return null;
   // A calendar invite: parse the text/calendar part if there is one.
   let invite = null;
@@ -699,6 +699,7 @@ async function lightFetchMessage(im, uid) {
     cc: (hp.cc || []).map((a) => ({ name: a.name, address: a.address })),
     date: hp.date ? new Date(hp.date).toISOString() : '', messageId: hp.messageId || null,
     html: html || null, text: text || '', invite, attachments,
+    unsub: unsubscribeOptions(hdrText, html || '').has,
   };
 }
 
@@ -934,6 +935,47 @@ async function readCachedInbox(env, accountIds) {
   const unseen = {}; let syncedAt = null;
   (meta.results || []).forEach((m) => { unseen[m.account] = m.unseen; if (m.synced_at && (!syncedAt || m.synced_at > syncedAt)) syncedAt = m.synced_at; });
   return { messages, unseen, syncedAt };
+}
+
+// ── Unsubscribe (RFC 2369 List-Unsubscribe / RFC 8058 one-click + a body fallback)
+// Kaya does the chore of finding the unsubscribe path so you don't have to hunt for
+// a tiny grey link. Reading the options is pure (and tested); acting on them is
+// server-side only (the 'unsubscribe' route), never from the browser.
+// One header value from a raw header block, folded continuation lines joined.
+export function rawHeaderValue(headerText, name) {
+  const unfolded = String(headerText || '').replace(/\r?\n[ \t]+/g, ' ');
+  const re = new RegExp('^' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':[ \\t]*(.*)$', 'im');
+  const m = unfolded.match(re);
+  return m ? m[1].trim() : '';
+}
+// Work out how to unsubscribe from a message, given its header block and HTML body.
+// Prefers a true one-click POST, then an unsubscribe email, then a link to open.
+export function unsubscribeOptions(headerText, html) {
+  const lu = rawHeaderValue(headerText, 'List-Unsubscribe');
+  const post = rawHeaderValue(headerText, 'List-Unsubscribe-Post');
+  const urls = [...lu.matchAll(/<([^>]+)>/g)].map((x) => x[1].trim());
+  const mailto = urls.find((u) => /^mailto:/i.test(u)) || '';
+  const httpUrl = urls.find((u) => /^https?:/i.test(u)) || '';
+  const oneClick = (/one-?click/i.test(post) && httpUrl) ? httpUrl : '';
+  let bodyLink = '';
+  if (!mailto && !httpUrl && html) {
+    const re = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi; let m;
+    while ((m = re.exec(html))) {
+      const href = m[1]; if (!/^https?:/i.test(href)) continue;
+      const label = m[2].replace(/<[^>]+>/g, ' ');
+      if (/unsubscrib|opt[\s-]?out|email preferences|manage[\s\S]{0,24}preferences|notification settings|stop (receiving|these|getting)/i.test(href + ' ' + label)) { bodyLink = href; break; }
+    }
+  }
+  const has = !!(oneClick || mailto || httpUrl || bodyLink);
+  const method = oneClick ? 'one-click' : mailto ? 'email' : (httpUrl || bodyLink) ? 'open' : 'none';
+  return { has, method, oneClick, mailto, httpUrl, bodyLink };
+}
+// mailto:addr?subject=…&body=… → { to, subject, body }.
+export function parseMailto(s) {
+  const mm = String(s || '').match(/^mailto:([^?]*)(?:\?(.*))?$/i); if (!mm) return null;
+  const to = decodeURIComponent((mm[1] || '').trim()); if (!to || !/@/.test(to)) return null;
+  const q = new URLSearchParams(mm[2] || '');
+  return { to, subject: q.get('subject') || 'unsubscribe', body: q.get('body') || 'Please unsubscribe me.' };
 }
 
 // ── routes ────────────────────────────────────────────────────────────
@@ -1280,7 +1322,7 @@ export async function handleMail(request, env, url, json, err) {
             filename: a.filename, size: a.size, type: a.type,
             url: await signedAttUrl(env, url, acct.id, mailbox, uid, { part: a.part, enc: a.encoding, type: a.type, name: a.filename }),
           })));
-          return json({ uid, subject: light.subject, from: light.from, to: light.to, cc: light.cc, date: light.date, messageId: light.messageId, html: light.html, text: light.text, invite: light.invite, attachments }, request);
+          return json({ uid, subject: light.subject, from: light.from, to: light.to, cc: light.cc, date: light.date, messageId: light.messageId, html: light.html, text: light.text, invite: light.invite, attachments, unsub: light.unsub }, request);
         }
         const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
         const p = await PostalMime.parse(raw);
@@ -1314,6 +1356,8 @@ export async function handleMail(request, env, url, json, err) {
           date: (p.date ? new Date(p.date).toISOString() : ''),
           messageId: p.messageId || null, html: html || null, text: p.text || '', invite, attachments,
         };
+        // Can Kaya unsubscribe from this one? (A newsletter header, or a body link.)
+        try { const ht = new TextDecoder('utf-8', { fatal: false }).decode(raw.slice(0, 65536)); out.unsub = unsubscribeOptions(ht, out.html || '').has; } catch {}
         // Store the body for instant re-opens. Only attachment-free messages (their
         // URLs are signed and time-bound), keyed by the Message-ID the client asked
         // with, capped in size. Best-effort - a failure never affects the reply.
@@ -1324,6 +1368,50 @@ export async function handleMail(request, env, url, json, err) {
           } catch {}
         }
         return json(out, request);
+      } finally { await im.logout(); }
+    }
+
+    // Unsubscribe from a mailing list. Re-fetch the raw message (so the target is
+    // taken from the real message, never a client-supplied URL), read its
+    // List-Unsubscribe options, and act: a true one-click POST, else an unsubscribe
+    // email from the user's own account, else hand back a link for the browser to
+    // open. The click in the UI is the consent.
+    if (sub === 'unsubscribe' && method === 'POST') {
+      const b = await request.json().catch(() => ({}));
+      let mailbox = b.mailbox || 'INBOX'; let uid = Number(b.uid) || 0; const mid = String(b.messageId || '').trim();
+      const im = await imapOpen(env, acct);
+      try {
+        await im.login();
+        mailbox = await resolveMailbox(im, mailbox);
+        await selectCount(im, mailbox);
+        if (mid) {
+          let found = null;
+          try { const u = await im.searchMessageId(mid); if (u) found = { mailbox, uid: Number(u) }; } catch {}
+          if (!found) found = await findByMsgId(im, mid, mailbox);
+          if (found) { mailbox = found.mailbox; uid = found.uid; await selectCount(im, mailbox); }
+        }
+        if (!uid) return err('message not found', request, 404);
+        const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
+        let bodyHtml = ''; try { const p = await PostalMime.parse(raw); bodyHtml = p.html || ''; } catch {}
+        const ht = new TextDecoder('utf-8', { fatal: false }).decode(raw.slice(0, 65536));
+        const o = unsubscribeOptions(ht, bodyHtml);
+        if (o.oneClick) {
+          // RFC 8058 one-click. 8s cap so a slow endpoint can't hang the request.
+          try {
+            const r = await fetch(o.oneClick, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'List-Unsubscribe=One-Click', redirect: 'follow', signal: AbortSignal.timeout(8000) });
+            if (r.ok) return json({ ok: true, method: 'one-click' }, request);
+          } catch {}
+          // One-click didn't take: fall back to opening the page.
+          if (o.httpUrl) return json({ ok: true, method: 'open', url: o.httpUrl }, request);
+        }
+        if (o.mailto) {
+          const mt = parseMailto(o.mailto); if (!mt) return err('no usable unsubscribe address', request, 422);
+          const rawMsg = buildMessage(acct, { to: cleanAddr(mt.to), subject: mt.subject, text: mt.body });
+          await smtpSend(env, acct, { rcpts: [cleanAddr(mt.to)], raw: rawMsg });
+          return json({ ok: true, method: 'email' }, request);
+        }
+        if (o.httpUrl || o.bodyLink) return json({ ok: true, method: 'open', url: o.httpUrl || o.bodyLink }, request);
+        return json({ ok: false, method: 'none' }, request);
       } finally { await im.logout(); }
     }
 

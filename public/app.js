@@ -18557,6 +18557,23 @@ async function mailBlock(key, address) {
     toast(`Blocked ${address}`); renderMail();
   } catch (e) { toast(e.message); }
 }
+// Kaya does the unsubscribe hunt for you: it finds the List-Unsubscribe path (or a
+// link in the body) and acts on it. One-click and email happen server-side; a page
+// that needs a confirming step is opened for you. (Robin, 2026-11-19.)
+async function mailUnsubscribe() {
+  const o = state.mail && state.mail.open; if (!o) return;
+  const sender = mailFrom(o) || 'this sender';
+  if (!(await uiConfirm(`Unsubscribe from ${sender}? Kaya will find the unsubscribe and do it for you.`, { title: 'Unsubscribe', okLabel: 'Unsubscribe' }))) return;
+  const dd = document.querySelector('.mail-more[open]'); if (dd) dd.removeAttribute('open');
+  toast('Unsubscribing…');
+  try {
+    const r = await mailApi('/unsubscribe', { method: 'POST', body: JSON.stringify({ account: o._acct, mailbox: o._mailbox, uid: o.uid, messageId: o.messageId }) });
+    if (r.method === 'open' && r.url) { window.open(r.url, '_blank', 'noopener'); toast(`Opened the unsubscribe page for ${sender}`); }
+    else if (r.ok && r.method === 'one-click') toast(`Unsubscribed from ${sender} ✓`);
+    else if (r.ok && r.method === 'email') toast(`Unsubscribe request sent for ${sender} ✓`);
+    else toast('No unsubscribe link in this one - use Block to stop it instead.');
+  } catch (e) { toast(e.message || 'Could not unsubscribe just now.'); }
+}
 async function mailUnblock(address, accountId) {
   try {
     await mailApi('/unblock', { method: 'POST', body: JSON.stringify({ account: accountId || state.mail.account, address }) });
@@ -20808,6 +20825,7 @@ function mailMoreHtml(o) {
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
   items.push(`<button class="mail-more-item" data-mail-area>Add to a Space</button>`);
+  if (o.unsub) items.push(`<button class="mail-more-item mail-more-unsub" data-mail-unsub title="Kaya will find the unsubscribe and do it for you">Unsubscribe</button>`);
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
@@ -30363,6 +30381,7 @@ document.addEventListener('click', (e) => {
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-plain]')) { state.mail.plain = !state.mail.plain; renderMail(); return; }
+  if (t.closest('[data-mail-unsub]')) { mailUnsubscribe(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mjoin = t.closest('[data-mail-join]'); if (mjoin) { openExternal(mjoin.dataset.mailJoin); return; }
   if (t.closest('[data-mail-invite-add]')) { mailInviteAdd(); return; }

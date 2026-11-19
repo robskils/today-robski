@@ -10528,6 +10528,7 @@ body.night .mail-ar-replytop, :root[data-theme='dark'] .mail-ar-replytop { backg
 .mail-more-menu { position:absolute; right:0; top:calc(100% + 8px); z-index:40; width:234px; background:var(--card); border:1px solid var(--line); padding:6px 0; display:grid; }
 .mail-more-item { display:block; width:100%; text-align:left; background:none; border:0; padding:11px 18px; font-family:'Jost',system-ui,sans-serif; font-size:14px; color:var(--ink); cursor:pointer; white-space:nowrap; }
 .mail-more-item:hover { background:var(--paper-2); color:var(--k-goldt); }
+.mail-more-unsub { margin-top:6px; border-top:1px solid var(--line); color:var(--ink-2); }
 
 /* ── A line for the evening (I Ching) ───────────────────────────────────────── */
 .kline { display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--line); padding:20px 0; cursor:pointer; }
