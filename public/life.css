@@ -2278,8 +2278,8 @@ table.recs td.num .cell { font-variant-numeric:tabular-nums; text-align:right; }
 .cell-cur { display:flex; align-items:center; gap:4px; width:100%; }
 .cell-cur .cur-sym { flex:none; color:var(--ink-3); font-size:14.5px; padding-left:6px; }
 .cell-cur .cur-in { flex:1; min-width:0; text-align:right; font-variant-numeric:tabular-nums; }
-table.recs td.check { text-align:center; }
-table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); }
+table.recs td.check { text-align:center; vertical-align:middle; }
+table.recs td.check input { width:19px; height:19px; accent-color:var(--accent); display:inline-block; margin:0 auto; vertical-align:middle; }
 table.recs select.cell { appearance:none; cursor:pointer; }
 /* Type-ahead Select cell (text input + datalist). Fills the cell like any other. */
 .cell-select { width:100%; }
