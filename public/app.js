@@ -7194,7 +7194,7 @@ function renderPracticeCard() {
         <aside class="pc-col-video">${practiceFieldsHtml('videos')}</aside>
       </div>
       <div class="pc-attach-sec">${practiceFieldsHtml('attach')}</div>
-      <div class="pc-edit-foot"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><span class="pc-savestate" data-prc-savestate aria-live="polite">✓ Saved</span></div>
+      <div class="pc-edit-foot"><span class="pe-foot-l"><button class="ghost pe-del" data-prc-del="${a.id}">Delete routine</button><button class="ghost pe-share" data-exchange-share-routine="${a.id}" data-exchange-share-title="${esc(a.title || '')}" title="Put this routine on The Exchange for others to take a copy">Share to The Exchange</button></span><span class="pc-savestate" data-prc-savestate aria-live="polite">✓ Saved</span></div>
     </div>`;
   prcMarkSavedBaseline();   // the just-loaded state is the baseline; a no-op never saves
 }

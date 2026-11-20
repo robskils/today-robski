@@ -4894,7 +4894,7 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
    Setup (opened with a button, not a +), and the linked & attached things sit at the
    very bottom. (Robin, 2026-11-14: instructions left / video right, make it mint.) */
 .pc-edit { display:flex; flex-direction:column; gap:30px; max-width:980px; margin-top:8px; }
-.pc-edit-foot { display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:20px; border-top:1px solid var(--line); }
+.pc-edit-foot { display:flex; flex-wrap:wrap; align-items:center; gap:12px; row-gap:10px; margin-top:6px; padding-top:20px; border-top:1px solid var(--line); }
 .pc-edit-foot .add-btn.wide { margin-left:auto; }
 /* The routine page autosaves; this is the quiet status where Save used to be. */
 .pc-savestate { margin-left:auto; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); transition:color .12s, opacity .12s; }
