@@ -12937,7 +12937,9 @@ function exRhythmLabel(r) {
   const bits = [];
   if (r.cadence) { const c = cadenceLabel(r.cadence); if (c) bits.push(c); }
   else if (r.days) { const d = exDaysLabel(r.days); if (d) bits.push(d); }
-  if (r.hasVideo) bits.push('has a video');
+  // The meta line stays rhythm-only. The instructions text is what a routine is
+  // really about, so we don't summarise or advertise the video here; the video is
+  // still a plain "Watch" link in the preview for anyone who wants it. (Robin, 2026-11-20.)
   if (!bits.length) bits.push('Any time');
   return bits.join(' · ');
 }

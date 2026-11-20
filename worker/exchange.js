@@ -221,13 +221,16 @@ async function takeNote(env, e, author) {
 }
 
 // Take a copy of a shelf ROUTINE into my own Routines: a fresh activities row from the
-// live source, mine to keep. The sharer's Life Area doesn't exist for me, so it comes
-// across unfiled (area = NULL); the rhythm, instructions and video do come across.
+// live source, mine to keep. It comes across UNFILED: no Space (area = NULL) and the
+// neutral 'other' lane, never the sharer's own lane - their "Personal" (or any other)
+// grouping is theirs, not mine, so a taken routine must not land in a folder I didn't
+// choose (Robin, 2026-11-20). The rhythm, instructions and video do come across.
 async function takeRoutine(env, e, author) {
   const a = await env.DB.prepare('SELECT * FROM activities WHERE id = ?').bind(Number(e.activity_id)).first();
   if (!a) throw new Error('that routine is no longer available');
   const n = now();
-  const pos = await env.DB.prepare('SELECT COALESCE(MAX(position),-1)+1 AS p FROM activities WHERE lane = ? AND user_id = ?').bind(a.lane, env.uid).first();
+  const lane = 'other';   // the catch-all; keeps it out of any named Space/lane the taker didn't pick
+  const pos = await env.DB.prepare('SELECT COALESCE(MAX(position),-1)+1 AS p FROM activities WHERE lane = ? AND user_id = ?').bind(lane, env.uid).first();
   let meta = {}; try { meta = a.meta ? JSON.parse(a.meta) : {}; } catch { meta = {}; }
   // Only the shape of the routine travels - not the sharer's private connections.
   const takerMeta = { takenFrom: author, takenFromExchangeId: Number(e.id), takenAt: n };
@@ -235,7 +238,7 @@ async function takeRoutine(env, e, author) {
   const r = await env.DB.prepare(
     `INSERT INTO activities (lane, title, url, duration, position, user_id, area, note, video, timed, tracked, days, time_min, cadence, priority, avoid, avoid_since, meta)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id`,
-  ).bind(a.lane, a.title || 'A routine', a.url || null, Number(a.duration) || 30, pos.p, env.uid, null, a.note || null, a.video || null,
+  ).bind(lane, a.title || 'A routine', a.url || null, Number(a.duration) || 30, pos.p, env.uid, null, a.note || null, a.video || null,
     a.timed == null ? 1 : a.timed, a.tracked == null ? 1 : a.tracked, a.days || null, a.time_min != null ? a.time_min : null,
     a.cadence || null, a.priority || null, 0, null, JSON.stringify(takerMeta)).first();
   return { ok: true, kind: 'routine', id: r && r.id, title: a.title || 'A routine', from: author };
