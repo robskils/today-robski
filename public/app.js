@@ -8404,12 +8404,63 @@ const capCap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 function capGuess(raw) {
   const s = (raw || '').toLowerCase().trim(); if (!s) return [null, false];
   if (/\bhttps?:\/\/\S+|\bwww\.\S+/i.test(s)) return ['bookmark', true];
+  if (!/\b(email|draft)\b/.test(s)) {
+    if (capAbsDate(s)) return ['event', true];                                             // "15 Jan 2027", "15/01", ISO…
+    if (/\b([01]?\d|2[0-3])[:.][0-5]\d\b/.test(s) && !/[€£$]/.test(s)) return ['event', true]; // a bare 24-hour clock
+  }
   if (/\b(\d{1,2}\s?(am|pm)|until|repeat|every week|remind)\b/.test(s) && !/\b(email|draft)\b/.test(s)) return ['event', true];
   if (/\b(email|draft|write to|reply to)\b/.test(s)) return ['email', true];
   if (/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|\d{1,2}(:\d\d)?\s?(am|pm)|at \d)\b/.test(s)) return ['event', true];
   if (/^(call|buy|book|send|pay|fix|order|ring|renew|sign|pick up|collect|text|message|email|chase|email|remind me)\b/.test(s)) return ['task', true];
   if (s.split(/\s+/).length > 12) return ['note', true];
   return [null, false];
+}
+// Explicit dates, bare 24-hour clocks and "for 2 hours" durations, so a line
+// written plainly ("15 Jan 2027 15.45 Dentist for 2 hours") is understood, not
+// just relative days. All day-first (European); no AI. (Robin, 2026-11-20.)
+const CAP_MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+const CAP_MON_RE = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)';
+function capYMD(y, mo, d) {
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const dt = new Date(y, mo - 1, d, 12, 0, 0, 0);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null; // e.g. 31 Feb
+  return dt;
+}
+function capFullYear(y) { if (y == null || y === '') return null; y = +y; return y < 100 ? 2000 + y : y; }
+// No year written: this year, rolling to next year once the day has passed.
+function capYearForBare(mo, d, today) {
+  const cand = capYMD(today.getFullYear(), mo, d); if (!cand) return null;
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const c0 = new Date(cand.getFullYear(), cand.getMonth(), cand.getDate());
+  return c0 < t0 ? capYMD(today.getFullYear() + 1, mo, d) : cand;
+}
+// First explicit calendar date in the text, or null. { d:Date, text:matched }.
+function capAbsDate(str, today) {
+  today = today || new Date(); let m;
+  if ((m = str.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/))) { const d = capYMD(+m[1], +m[2], +m[3]); if (d) return { d, text: m[0] }; }
+  if ((m = str.match(new RegExp('\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+' + CAP_MON_RE + '[a-z]*\\.?(?:[\\s,]+(\\d{4}|\\d{2}(?![:.]\\d)))?\\b', 'i')))) {
+    const mo = CAP_MON[m[2].toLowerCase()], day = +m[1], yr = capFullYear(m[3]);
+    const d = yr ? capYMD(yr, mo, day) : capYearForBare(mo, day, today); if (d) return { d, text: m[0] };
+  }
+  if ((m = str.match(new RegExp('\\b' + CAP_MON_RE + '[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:[\\s,]+(\\d{4}|\\d{2}(?![:.]\\d)))?\\b', 'i')))) {
+    const mo = CAP_MON[m[1].toLowerCase()], day = +m[2], yr = capFullYear(m[3]);
+    const d = yr ? capYMD(yr, mo, day) : capYearForBare(mo, day, today); if (d) return { d, text: m[0] };
+  }
+  if ((m = str.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/))) { const d = capYMD(capFullYear(m[3]), +m[2], +m[1]); if (d) return { d, text: m[0] }; } // 15/01/2027, 15.01.2027 (dot needs a year)
+  if ((m = str.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/))) { const d = capYearForBare(+m[2], +m[1], today); if (d) return { d, text: m[0] }; } // 15/01 (never a dot — that's a clock)
+  return null;
+}
+// A bare 24-hour clock, no am/pm and no leading "at": "15.45", "9:05". { h, mi, text }.
+function capClock(str) { const m = str.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\b/); return m ? { h: +m[1], mi: +m[2], text: m[0] } : null; }
+// "for 2 hours" · "for 90 minutes" · "for an hour and a half" · "for 1.5 hours". { mins, text }.
+function capDurFor(str) {
+  const m = str.match(/\bfor\s+(\d+(?:[.,]\d+)?|an?|one|two|three|four|five|six|seven|eight|half(?:\s+an?)?)\s*(hours?|hrs?|minutes?|mins?)(\s+and\s+a\s+half)?\b/i);
+  if (!m) return null;
+  const N = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
+  const w = m[1].toLowerCase(); let n = /^half/.test(w) ? 0.5 : (N[w] ?? parseFloat(w.replace(',', '.')));
+  if (!isFinite(n)) return null;
+  const isH = /^h/i.test(m[2]); let mins = isH ? n * 60 : n; if (m[3] && isH) mins += 30; mins = Math.round(mins);
+  return mins > 0 ? { mins, text: m[0] } : null;
 }
 // Lift the details out of the sentence; the remainder (tidied) is the title.
 function capParse2(raw0) {
@@ -8419,11 +8470,18 @@ function capParse2(raw0) {
   const out = {}; const TODAY = new Date(); const pad = (n) => String(n).padStart(2, '0');
   const dLabel = (d) => d.toLocaleDateString(dloc(), { weekday: 'short', day: 'numeric', month: 'short' });
   let sh, sm = 0, eh, em = 0;
+  const durTxt = (mins) => mins % 60 === 0 ? (mins / 60) + (mins === 60 ? ' hour' : ' hours') : (Math.floor(mins / 60) ? Math.floor(mins / 60) + 'h ' : '') + (mins % 60) + 'm';
+  // An explicit date ("15 Jan 2027", "15/01/2027") and a "for 2 hours" duration,
+  // lifted out first so neither pollutes the time parse or the title. (Robin.)
+  let absDay = null; { const ab = capAbsDate(t, TODAY); if (ab) { absDay = ab.d; t = t.replace(ab.text, ' '); } }
+  { const fm = capDurFor(t); if (fm) { out.durMin = fm.mins; out.dur = durTxt(fm.mins); t = t.replace(fm.text, ' '); } }
   let m = cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\s*(?:-|–|to|until|till)\s*(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i);
   if (m) { sh = +m[1]; sm = +(m[2] || 0); eh = +m[4]; em = +(m[5] || 0); const ap1 = (m[3] || m[6] || '').toLowerCase(), ap2 = (m[6] || m[3] || '').toLowerCase(); if (ap1 === 'pm' && sh < 12) sh += 12; if (ap2 === 'pm' && eh < 12) eh += 12; }
   else { m = cut(/\b(?:at\s+)?(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)\b/i) || cut(/\bat\s+(\d{1,2})[:.](\d\d)\b/i); if (m) { sh = +m[1]; sm = +(m[2] || 0); if ((m[3] || '').toLowerCase() === 'pm' && sh < 12) sh += 12; }
     const e = cut(/\b(?:until|till|to)\s+(\d{1,2})(?:[:.](\d\d))?\s*(am|pm)?\b/i); if (e) { eh = +e[1]; em = +(e[2] || 0); if (((e[3] || '').toLowerCase() === 'pm' || (sh >= 12 && !e[3])) && eh < 12) eh += 12; } }
-  let day = null; const dm = cut(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+  // Still no time? Accept a bare 24-hour clock ("15.45", "9:05"). (Robin, 2026-11-20.)
+  if (sh === undefined) { const ck = capClock(t); if (ck) { sh = ck.h; sm = ck.mi; t = t.replace(ck.text, ' '); } }
+  let day = absDay; const dm = day ? null : cut(/\b(today|tonight|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
   if (dm) { const w = dm[1].toLowerCase(); day = new Date(TODAY); if (w === 'tomorrow') day.setDate(day.getDate() + 1); else if (CAP_DAYS.includes(w)) { const k = (CAP_DAYS.indexOf(w) - day.getDay() + 7) % 7 || 7; day.setDate(day.getDate() + k); } out.dayWord = (w === 'today' || w === 'tonight') ? 'Today, ' : w === 'tomorrow' ? 'Tomorrow, ' : ''; }
   // A part of the day ("Thursday evening", "in the morning") - lift it out of the
   // title (it was leaving a dangling "on evening"), and if there's no clock time
@@ -8438,7 +8496,7 @@ function capParse2(raw0) {
   out.title = title ? capCap(title) : '';
   out.hasWhen = !!(day || sh !== undefined); out.hasTime = sh !== undefined;
   if (out.hasWhen) { const d = day || TODAY; out.date = dayKey(d); out.when = (out.dayWord || '') + dLabel(d) + (sh !== undefined ? ', ' + pad(sh) + ':' + pad(sm) + (eh !== undefined ? '–' + pad(eh) + ':' + pad(em) : '') : ''); out.wd = CAP_DAYS[d.getDay()]; out.startMin = sh !== undefined ? sh * 60 + sm : null; }
-  if (sh !== undefined && eh !== undefined) { let mins = (eh * 60 + em) - (sh * 60 + sm); if (mins < 0) mins += 1440; out.durMin = mins; out.dur = mins % 60 === 0 ? (mins / 60) + (mins === 60 ? ' hour' : ' hours') : (Math.floor(mins / 60) ? Math.floor(mins / 60) + 'h ' : '') + (mins % 60) + 'm'; }
+  if (sh !== undefined && eh !== undefined) { let mins = (eh * 60 + em) - (sh * 60 + sm); if (mins < 0) mins += 1440; out.durMin = mins; out.dur = durTxt(mins); }
   if (rm) { const r = rm[1].toLowerCase(); const wd = out.wd || CAP_DAYS[TODAY.getDay()]; out.repeat = /week|weekly/.test(r) ? 'Every week, on ' + capCap(wd) + 's' : (/day|daily/.test(r) && !/mon|tue|wed|thu|fri|sat|sun/.test(r)) ? 'Every day' : /fortnight/.test(r) ? 'Every other ' + capCap(wd) : /month/.test(r) ? 'Every month' : 'Every ' + capCap(r.replace('every ', '')); out.repeatKey = /week|weekly/.test(r) ? 'weekly' : (/day|daily/.test(r) && !/mon|tue|wed|thu|fri|sat|sun/.test(r)) ? 'daily' : /month/.test(r) ? 'monthly' : 'weekly'; }
   if (re) { const N = { a: 1, an: 1, one: 1, two: 2, three: 3 }; const n = N[re[1].toLowerCase()] ?? (/half/.test(re[1]) ? 0.5 : +re[1]); const isH = /^h/i.test(re[2]); const mins = isH ? n * 60 : n; out.remindMin = mins; out.remindTxt = isH ? (n === 1 ? 'An hour before' : n + ' hours before') : mins + ' minutes before'; if (sh !== undefined) { let x = sh * 60 + sm - mins; x = (x + 1440) % 1440; out.remindTxt += ' – ' + pad(Math.floor(x / 60)) + ':' + pad(x % 60); } }
   if (wm) out.who = wm[1];
