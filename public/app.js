@@ -10403,8 +10403,9 @@ function renderTablesList() {
   const card = (tb) => `<button class="tbl-card" data-open-table="${tb.id}"><span class="tc-ic ico-tbl">▦</span><span class="tc-t">${esc(tb.title || 'Untitled')}</span></button>`;
   const grid = (list) => list.map(card).join('');
   const chip = (id, label, on) => `<button class="nsp${on ? ' on' : ''}" data-tables-space="${id}">${esc(label)}</button>`;
+  const spaceSel = `<select class="sel nsp-select" data-tables-area aria-label="Filter tables by Space"><option value="" ${!space ? 'selected' : ''}>${t('filter.allareas')}</option>${spaces.map((a) => `<option value="${a.id}" ${space === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const spaceRow = spaces.length
-    ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
+    ? `<div class="nsp-filter"><div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>${spaceSel}</div>`
     : '';
   const q = (state.tablesQuery || '').trim().toLowerCase();
   let sections;
@@ -10587,8 +10588,11 @@ function renderNotesList() {
   const card = (n) => `<button class="tbl-card" data-open-note="${n.id}"><span class="tc-ic ico-note">▤</span><span class="tc-t">${esc(n.title || 'Untitled')}</span></button>`;
   const grid = (list) => list.map(card).join('');
   const chip = (id, label, on) => `<button class="nsp${on ? ' on' : ''}" data-notes-space="${id}">${esc(label)}</button>`;
+  // A row of pills on a wide screen; the same choices as one tidy dropdown on a phone,
+  // so a long Space list never stacks down the page. (Robin, 2026-11-20.)
+  const spaceSel = `<select class="sel nsp-select" data-notes-area aria-label="Filter notes by Space"><option value="" ${!space ? 'selected' : ''}>${t('filter.allareas')}</option>${spaces.map((a) => `<option value="${a.id}" ${space === a.id ? 'selected' : ''}>${esc(a.title)}</option>`).join('')}</select>`;
   const spaceRow = spaces.length
-    ? `<div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>`
+    ? `<div class="nsp-filter"><div class="nsp-row">${chip('', t('filter.allareas'), !space)}${spaces.map((a) => chip(a.id, a.title, space === a.id)).join('')}</div>${spaceSel}</div>`
     : '';
   const q = (state.notesQuery || '').trim().toLowerCase();
   let sections;
@@ -28101,6 +28105,16 @@ function noteAliasesControl(n, kind) {
   // open the dots, chips and input sit on one row. A count shows terms are saved.
   return `<details class="note-aliases"><summary class="na-sum" title="Also findable as - extra words to find this by (another language, an old name)">…${al.length ? `<span class="na-n">${al.length}</span>` : ''}</summary><div class="na-body"><div class="alias-chips">${chips}</div><input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term…" autocomplete="off"></div></details>`;
 }
+// The same "extra search terms" control, but as a section to live INSIDE the main ⋯
+// menu rather than as its own second ellipsis - one menu, not two. (Robin, 2026-11-20.)
+function noteAliasSection(n, kind) {
+  kind = kind || 'note';
+  if (n.sharedBy) return '';
+  const al = Array.isArray(n.props && n.props.aliases) ? n.props.aliases : [];
+  const ctx = `${kind}:${n.id}`;
+  const chips = al.map((a, i) => `<span class="alias-chip">${esc(a)}<button class="alias-x" data-balias-del="${i}" data-alias-ctx="${ctx}" title="Remove">×</button></span>`).join('');
+  return `<div class="note-more-sec"><div class="note-more-seclbl">Also findable as${al.length ? ` · ${al.length}` : ''}</div>${chips ? `<div class="alias-chips">${chips}</div>` : ''}<input class="sel alias-in" data-balias-add data-alias-ctx="${ctx}" placeholder="Add a search term…" autocomplete="off"></div>`;
+}
 // Resolve an alias control's context ("kind:id") to the live block and the right
 // re-render. Absent/unknown context falls back to the open page, so legacy callers
 // and any stray chip still work.
@@ -28176,7 +28190,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Share or publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item note-more-desktop" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Share or publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item note-more-desktop" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button>${n.sharedBy ? '' : noteAliasSection(n, 'note')}</div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -28189,7 +28203,7 @@ function renderNote() {
           <button class="star note-star ${n.props && n.props.fav ? 'on' : ''}" data-fav="${n.id}" data-tip="Favourite" aria-label="Favourite">${n.props && n.props.fav ? '★' : '☆'}</button>
           <span class="note-faces-wrap note-hide-mobile">${noteFacesRow(n)}</span>
           ${noteAreasControl(n)}
-          <span class="note-areas-actions">${nLock}${nDel}${nMore}<span class="note-areas-aliases">${noteAliasesControl(n)}</span></span>
+          <span class="note-areas-actions">${nLock}${nDel}${nMore}</span>
         </div>
         <textarea class="note-title" id="note-title" rows="1" placeholder="Untitled" ${n.sharedBy && !n.canEdit ? 'readonly' : ''}>${esc(n.title || '')}</textarea>
         ${notePublishedStrip(n)}
@@ -31141,6 +31155,7 @@ document.addEventListener('change', (e) => {
   { const tfv = e.target.closest('[data-tf-val]'); if (tfv) { loadTaskFilters(); const i = Number(tfv.dataset.tfVal); state.taskFilters[i].value = e.target.value; saveTaskFilters(); renderTasks(); return; } }
   if (e.target.matches('[data-notes-sort]')) { state.notesSort = e.target.value; try { localStorage.setItem('life.notesSort', e.target.value); } catch {} renderNotesList(); }
   if (e.target.matches('[data-notes-area]')) { state.notesArea = e.target.value; renderNotesList(); }
+  if (e.target.matches('[data-tables-area]')) { state.tablesArea = e.target.value; renderTablesList(); }
   if (e.target.matches('[data-rw-sort]')) { if (state.rw) { state.rw.sort = e.target.value; try { localStorage.setItem('life.rwSort', e.target.value); } catch {} renderReadwatch(); } }
   if (e.target.matches('[data-bc-add]')) { const cid = e.target.value; if (cid) addBlockContact(e.target.dataset.bcKind, e.target.dataset.bcId, cid); return; }
   if (e.target.matches('[data-pe-add-contact]')) { const cid = e.target.value; if (cid && state.practiceEdit) { peMeta().contacts = [...new Set([...peMeta().contacts.map(String), String(cid)])]; renderPeAttach(); } return; }
