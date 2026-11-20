@@ -9262,7 +9262,8 @@ input[type=search]::-webkit-search-cancel-button:hover { opacity:1; background-c
 .cc-multi { display:flex; flex-direction:column; gap:6px; }
 .cc-multi-row { display:flex; align-items:center; gap:6px; }
 .cc-multi-row .cc-email-in, .cc-multi-row .cc-phone-num { flex:1 1 auto; min-width:0; }
-.cc-phone-cc { flex:0 0 104px; width:104px; text-align:center; }
+.cc-phone-cc { flex:0 0 96px; width:96px; text-align:center; }
+.cc-flag { flex:0 0 auto; width:22px; text-align:center; font-size:18px; line-height:1; }
 /* Settings phone: same dial-code picker + number as a contact card. */
 .acct-phone { display:flex; align-items:center; gap:6px; }
 .acct-phone .acct-phone-cc { flex:0 0 104px; width:104px; text-align:center; }

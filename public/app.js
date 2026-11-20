@@ -7594,6 +7594,22 @@ function practiceSummaryBits(a) {
 document.addEventListener('input', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) scheduleAutosave(); });
 document.addEventListener('change', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) autosavePractice(); });
 document.addEventListener('focusout', (e) => { const el = e.target; if (el && el.closest && el.closest('.pc-edit') && prcAutosaveOn()) autosavePractice(); });
+// Contact phone picker: show the country's flag as you type/pick the code, and tidy
+// the number into that country's national shape when you leave the field. (Robin.)
+document.addEventListener('input', (e) => {
+  const cc = e.target && e.target.closest && e.target.closest('.cc-phone-cc'); if (!cc) return;
+  const fl = cc.closest('.cc-phone-row') && cc.closest('.cc-phone-row').querySelector('[data-cc-flag]');
+  if (fl) fl.textContent = isoFlag((ccMeta(cc.value) || {}).iso);
+});
+document.addEventListener('focusout', (e) => {
+  const t = e.target; if (!t || !t.closest) return;
+  const row = t.closest('.cc-phone-row'); if (!row) return;
+  const num = row.querySelector('.cc-phone-num'), cc = row.querySelector('.cc-phone-cc');
+  if ((t === num || t === cc) && num && cc && num.value.trim()) {
+    const meta = ccMeta(cc.value);
+    if (meta && meta.template) { const f = fmtNational(num.value, meta.template); if (f && f !== num.value) num.value = f; }
+  }
+});
 window.addEventListener('pagehide', () => { if (prcAutosaveOn()) autosavePractice(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && prcAutosaveOn()) autosavePractice(); });
 function trackerPanel() {
@@ -22058,31 +22074,57 @@ function contactEmailFields(p) {
 // Country dial codes for the phone picker: type a country name (or a code) and
 // choose it clearly from the list; the field stores just the + code. One shared
 // datalist serves every phone row on the card.
+// [name, +code, ISO-2 (for the flag), national format template]. The template uses
+// 'd' for each digit; any other char (space, parens, dash) is a literal separator.
+// A country with no template keeps the number exactly as typed - never reformat into
+// a shape we're unsure of.
 const COUNTRY_DIAL = [
-  ['Portugal', '+351'], ['United Kingdom', '+44'], ['Ireland', '+353'], ['Spain', '+34'], ['France', '+33'],
-  ['Germany', '+49'], ['Italy', '+39'], ['Netherlands', '+31'], ['Belgium', '+32'], ['Luxembourg', '+352'],
-  ['Switzerland', '+41'], ['Austria', '+43'], ['Denmark', '+45'], ['Sweden', '+46'], ['Norway', '+47'],
-  ['Finland', '+358'], ['Iceland', '+354'], ['Poland', '+48'], ['Czech Republic', '+420'], ['Slovakia', '+421'],
-  ['Hungary', '+36'], ['Romania', '+40'], ['Bulgaria', '+359'], ['Greece', '+30'], ['Croatia', '+385'],
-  ['Slovenia', '+386'], ['Serbia', '+381'], ['Estonia', '+372'], ['Latvia', '+371'], ['Lithuania', '+370'],
-  ['Ukraine', '+380'], ['Russia', '+7'], ['Turkey', '+90'], ['Cyprus', '+357'], ['Malta', '+356'],
-  ['United States', '+1'], ['Canada', '+1'], ['Mexico', '+52'], ['Brazil', '+55'], ['Argentina', '+54'],
-  ['Chile', '+56'], ['Colombia', '+57'], ['Peru', '+51'], ['Venezuela', '+58'], ['Uruguay', '+598'],
-  ['Australia', '+61'], ['New Zealand', '+64'], ['Japan', '+81'], ['China', '+86'], ['South Korea', '+82'],
-  ['India', '+91'], ['Pakistan', '+92'], ['Bangladesh', '+880'], ['Indonesia', '+62'], ['Malaysia', '+60'],
-  ['Singapore', '+65'], ['Thailand', '+66'], ['Vietnam', '+84'], ['Philippines', '+63'], ['Hong Kong', '+852'],
-  ['United Arab Emirates', '+971'], ['Saudi Arabia', '+966'], ['Israel', '+972'], ['Qatar', '+974'], ['Kuwait', '+965'],
-  ['South Africa', '+27'], ['Nigeria', '+234'], ['Kenya', '+254'], ['Egypt', '+20'], ['Morocco', '+212'],
-  ['Ghana', '+233'], ['Angola', '+244'], ['Mozambique', '+258'], ['Cape Verde', '+238'], ['Tunisia', '+216'],
+  ['Portugal', '+351', 'PT', 'ddd ddd ddd'], ['United Kingdom', '+44', 'GB', 'dddd dddddd'], ['Ireland', '+353', 'IE', 'dd ddd dddd'], ['Spain', '+34', 'ES', 'ddd dd dd dd'], ['France', '+33', 'FR', 'd dd dd dd dd'],
+  ['Germany', '+49', 'DE', ''], ['Italy', '+39', 'IT', 'ddd ddd dddd'], ['Netherlands', '+31', 'NL', ''], ['Belgium', '+32', 'BE', 'ddd dd dd dd'], ['Luxembourg', '+352', 'LU', ''],
+  ['Switzerland', '+41', 'CH', 'dd ddd dd dd'], ['Austria', '+43', 'AT', ''], ['Denmark', '+45', 'DK', 'dd dd dd dd'], ['Sweden', '+46', 'SE', ''], ['Norway', '+47', 'NO', 'ddd dd ddd'],
+  ['Finland', '+358', 'FI', ''], ['Iceland', '+354', 'IS', 'ddd dddd'], ['Poland', '+48', 'PL', 'ddd ddd ddd'], ['Czech Republic', '+420', 'CZ', 'ddd ddd ddd'], ['Slovakia', '+421', 'SK', ''],
+  ['Hungary', '+36', 'HU', ''], ['Romania', '+40', 'RO', 'ddd ddd ddd'], ['Bulgaria', '+359', 'BG', ''], ['Greece', '+30', 'GR', 'ddd ddd dddd'], ['Croatia', '+385', 'HR', ''],
+  ['Slovenia', '+386', 'SI', ''], ['Serbia', '+381', 'RS', ''], ['Estonia', '+372', 'EE', ''], ['Latvia', '+371', 'LV', ''], ['Lithuania', '+370', 'LT', ''],
+  ['Ukraine', '+380', 'UA', ''], ['Russia', '+7', 'RU', ''], ['Turkey', '+90', 'TR', 'ddd ddd dd dd'], ['Cyprus', '+357', 'CY', ''], ['Malta', '+356', 'MT', ''],
+  ['United States', '+1', 'US', '(ddd) ddd-dddd'], ['Canada', '+1', 'CA', '(ddd) ddd-dddd'], ['Mexico', '+52', 'MX', ''], ['Brazil', '+55', 'BR', 'dd ddddd-dddd'], ['Argentina', '+54', 'AR', ''],
+  ['Chile', '+56', 'CL', ''], ['Colombia', '+57', 'CO', 'ddd ddd dddd'], ['Peru', '+51', 'PE', ''], ['Venezuela', '+58', 'VE', ''], ['Uruguay', '+598', 'UY', ''],
+  ['Australia', '+61', 'AU', 'ddd ddd ddd'], ['New Zealand', '+64', 'NZ', ''], ['Japan', '+81', 'JP', ''], ['China', '+86', 'CN', 'ddd dddd dddd'], ['South Korea', '+82', 'KR', ''],
+  ['India', '+91', 'IN', 'ddddd ddddd'], ['Pakistan', '+92', 'PK', ''], ['Bangladesh', '+880', 'BD', ''], ['Indonesia', '+62', 'ID', ''], ['Malaysia', '+60', 'MY', ''],
+  ['Singapore', '+65', 'SG', 'dddd dddd'], ['Thailand', '+66', 'TH', ''], ['Vietnam', '+84', 'VN', ''], ['Philippines', '+63', 'PH', ''], ['Hong Kong', '+852', 'HK', 'dddd dddd'],
+  ['United Arab Emirates', '+971', 'AE', ''], ['Saudi Arabia', '+966', 'SA', ''], ['Israel', '+972', 'IL', ''], ['Qatar', '+974', 'QA', ''], ['Kuwait', '+965', 'KW', ''],
+  ['South Africa', '+27', 'ZA', 'dd ddd dddd'], ['Nigeria', '+234', 'NG', ''], ['Kenya', '+254', 'KE', ''], ['Egypt', '+20', 'EG', ''], ['Morocco', '+212', 'MA', ''],
+  ['Ghana', '+233', 'GH', ''], ['Angola', '+244', 'AO', ''], ['Mozambique', '+258', 'MZ', ''], ['Cape Verde', '+238', 'CV', ''], ['Tunisia', '+216', 'TN', ''],
 ];
+// A country's flag from its ISO-2 code, as the two regional-indicator glyphs.
+const isoFlag = (iso) => { const s = String(iso || '').trim().toUpperCase(); if (!/^[A-Z]{2}$/.test(s)) return ''; return String.fromCodePoint(...[...s].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)); };
+// The country for a +code: an exact match wins (so +1 is the United States, listed
+// before Canada), else the longest code the value starts with.
+function ccMeta(cc) {
+  const c = String(cc || '').trim(); if (!c) return null;
+  let hit = COUNTRY_DIAL.find(([, code]) => code === c);
+  if (!hit) { let best = null; for (const row of COUNTRY_DIAL) { if (c.startsWith(row[1]) && (!best || row[1].length > best[1].length)) best = row; } hit = best; }
+  return hit ? { name: hit[0], code: hit[1], iso: hit[2] || '', template: hit[3] || '' } : null;
+}
+// Format a national number into its country's shape. Empty template = leave as typed.
+function fmtNational(raw, template) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (!template || !digits) return String(raw || '').trim();
+  let out = '', di = 0;
+  for (const ch of template) {
+    if (di >= digits.length) break;
+    out += ch === 'd' ? digits[di++] : ch;
+  }
+  if (di < digits.length) out += ' ' + digits.slice(di);
+  return out.trim();
+}
 // Your own dialling code, from your country (timezone) - so a phone defaults to and
 // suggests your code first: +44 in the UK, +351 in Portugal, +33 in France, and so
 // on. Falls back to empty when the country has no entry. (Robin, 2026-11-05.)
 function localDial() { const c = localCountry(); if (!c) return ''; const hit = COUNTRY_DIAL.find(([n]) => n === c); return hit ? hit[1] : ''; }
-const ccDatalist = () => { const c = localCountry(); const hit = c ? COUNTRY_DIAL.find(([n]) => n === c) : null; const ordered = hit ? [hit, ...COUNTRY_DIAL.filter((x) => x !== hit)] : COUNTRY_DIAL; return `<datalist id="cc-dial-list">${ordered.map(([n, cc]) => `<option value="${cc}">${esc(n)} (${cc})</option>`).join('')}</datalist>`; };
+const ccDatalist = () => { const c = localCountry(); const hit = c ? COUNTRY_DIAL.find(([n]) => n === c) : null; const ordered = hit ? [hit, ...COUNTRY_DIAL.filter((x) => x !== hit)] : COUNTRY_DIAL; return `<datalist id="cc-dial-list">${ordered.map(([n, cc, iso]) => `<option value="${cc}">${isoFlag(iso)} ${esc(n)} (${cc})</option>`).join('')}</datalist>`; };
 function contactPhoneFields(p) {
   const phones = contactPhones(p); if (!phones.length) phones.push({ cc: '', number: '' });
-  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
+  const rows = phones.map((ph, i) => `<div class="cc-multi-row cc-phone-row"><span class="cc-flag" data-cc-flag aria-hidden="true">${isoFlag((ccMeta(ph.cc) || {}).iso)}</span><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(ph.cc || '')}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" value="${esc(ph.number || '')}" autocomplete="off">${i === 0 ? '' : `<button type="button" class="cc-multi-x" data-cc-del-phone="${i}" title="Remove">×</button>`}</div>`).join('');
   return `<div class="tf-field"><span class="tf-label">Phone</span><div class="cc-multi">${rows}<button type="button" class="cc-multi-add" data-cc-add-phone>+ Add phone</button></div>${ccDatalist()}</div>`;
 }
 // Messaging / social handles that open in the respective app. Stored on the
@@ -30263,7 +30305,7 @@ document.addEventListener('click', (e) => {
   const cml = t.closest('[data-contact-mail]'); if (cml) { emailContact(cml.dataset.contactMail).catch((x) => toast(x.message)); return; }
   const clrb = t.closest('[data-clear-bday]'); if (clrb) { patchContact(clrb.dataset.clearBday, { birthday: null }, true).then(renderContactCard); return; }
   if (t.closest('[data-cc-add-email]')) { const btn = t.closest('[data-cc-add-email]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row"><input class="sel cc-email-in" type="email" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-email title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-email-in')?.focus(); return; }
-  if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); btn.insertAdjacentHTML('beforebegin', '<div class="cc-multi-row cc-phone-row"><input class="sel cc-phone-cc" type="tel" placeholder="" title="Country code"><input class="sel cc-phone-num" type="tel" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>'); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
+  if (t.closest('[data-cc-add-phone]')) { const btn = t.closest('[data-cc-add-phone]'); const dial = localDial(); btn.insertAdjacentHTML('beforebegin', `<div class="cc-multi-row cc-phone-row"><span class="cc-flag" data-cc-flag aria-hidden="true">${isoFlag((ccMeta(dial) || {}).iso)}</span><input class="sel cc-phone-cc" type="tel" list="cc-dial-list" value="${esc(dial)}" placeholder="" title="Country - type a name or code" autocomplete="off"><input class="sel cc-phone-num" type="tel" autocomplete="off"><button type="button" class="cc-multi-x" data-cc-del-phone title="Remove">×</button></div>`); btn.previousElementSibling.querySelector('.cc-phone-num')?.focus(); return; }
   const dce = t.closest('[data-cc-del-email]'); if (dce && state.contact_open) { dce.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   const dcp = t.closest('[data-cc-del-phone]'); if (dcp && state.contact_open) { dcp.closest('.cc-multi-row').remove(); patchContact(state.contact_open.contact.id, readCardContacts(), true); return; }
   if (t.closest('[data-cc-edit-details]') && state.contact_open) { cvState().folds.details = true; state.contact_open.editDetails = true; renderContactCard(); return; }
