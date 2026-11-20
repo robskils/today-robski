@@ -5690,12 +5690,67 @@ function knavRunSearch(qraw) {
     const titleRank = (b) => { const t0 = (b.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(b) : (b.title || '')) : (b.title || '')).toLowerCase(); return t0 === ql ? 0 : t0.startsWith(ql) ? 1 : 2; };
     merged.sort((a, b) => titleRank(a) - titleRank(b) || ((SEARCH_KIND_RANK[a.kind] ?? 5) - (SEARCH_KIND_RANK[b.kind] ?? 5)));
     state.knav.results = merged; state.knav.resultsFor = q; state.knav.searching = false;
-    renderNav();
-    const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} }
+    renderKnavFindBody();   // repaint results only - never the input, so typing is never disturbed
   }, 160);
 }
 const KNAV_KIND_LABEL = { note: 'Note', task: 'Task', table: 'Table', row: 'Row', area: 'Space', goal: 'Goal', contact: 'Contact', bookmark: 'Saved', journal: 'Insight', event: 'Event', bucket: 'Bucket list', nav: 'Open' };
 function knavKindLabel(h) { const base = KNAV_KIND_LABEL[h.kind] || 'Item'; const ar = h.parentTitle || (h.area ? ((areaById(h.area) || {}).title || '') : ''); return ar ? `${base} · ${ar}` : base; }
+// Search filters: narrow the results to one kind. Emails aren't in /api/search (they
+// live over IMAP and are slow), so the Emails chip is an ACTION - it hands your term
+// to the Mail tool's own thorough search rather than searching inline. (Robin, 2026-11-20.)
+const KNAV_FILTER_KINDS = { notes: new Set(['note', 'table', 'row']), calendar: new Set(['event']) };
+function knavFilters() {
+  const f = [['all', 'All'], ['notes', 'Notes']];
+  if (modOn('calendar')) f.push(['calendar', 'Calendar']);
+  if (modOn('mail')) f.push(['emails', 'Emails']);
+  return f;
+}
+// The find-panel BODY: filter chips + the result sections. Regenerated as you type
+// and when a chip changes, but the search <input> above it is left untouched.
+function knavFindBodyHtml(kn, groups, q) {
+  kn.fShut = kn.fShut || {};
+  const filter = kn.filter || 'all';
+  const chips = `<div class="knav-find-filters" role="group" aria-label="Narrow the search">${knavFilters().map(([v, l]) => `<button class="knav-fchip ${v === filter && v !== 'emails' ? 'on' : ''}" data-knav-filter="${v}"${v === 'emails' ? ' title="Search your mail for this"' : ''}>${l}</button>`).join('')}</div>`;
+  let sections = [];
+  if (q) {
+    const res0 = ((kn.resultsFor || '').trim().toLowerCase() === q) ? (kn.results || []) : [];
+    const kinds = KNAV_FILTER_KINDS[filter];
+    // Map with the ORIGINAL index (data-knav-hit indexes into kn.results), then filter.
+    const withIdx = res0.map((h, i) => ({ h, i }));
+    const contentItems = withIdx.filter((x) => x.h.kind !== 'nav' && (!kinds || kinds.has(x.h.kind)))
+      .map(({ h, i }) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
+    const goItems = (filter === 'all') ? withIdx.filter((x) => x.h.kind === 'nav').map(({ h, i }) => ({ a: h.title || 'Open', b: '', hitIdx: i })) : [];
+    if (filter === 'all') {
+      const goNames = new Set(goItems.map((x) => x.a.toLowerCase()));
+      const contentNames = new Set(contentItems.map((x) => x.a.toLowerCase()));
+      groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: '', attrs, isTool: true })))
+        .filter((x) => x.a.toLowerCase().includes(q) && !goNames.has(x.a.toLowerCase()) && !contentNames.has(x.a.toLowerCase()))
+        .forEach((x) => { if (!goNames.has(x.a.toLowerCase())) { goItems.push(x); goNames.add(x.a.toLowerCase()); } });
+    }
+    if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
+    if (goItems.length) sections.push({ label: 'Go to', badge: String(goItems.length), open: true, items: goItems });
+  } else if (filter === 'all') {
+    const sh = knavShared(); const rc = knavRecent();
+    if (sh.length) sections.push({ id: 'shared', label: 'Shared with you', badge: knavSharedNew() && !kn.findSeen ? `${sh.filter((x) => x.badge).length || ''} new`.trim() : '', open: !kn.fShut.shared, items: sh });
+    sections.push({ id: 'recent', label: 'Recent', badge: '', open: !kn.fShut.recent, items: rc });
+  }
+  const secHtml = sections.map((s) => `<div class="knav-find-sec">
+      <button class="knav-find-sh"${s.id ? ` data-knav-fsec="${s.id}"` : ''}><span class="knav-find-sl">${s.label}</span>${s.badge ? `<span class="knav-find-sb">${esc(s.badge)}</span>` : ''}<span class="knav-find-ss">${s.id ? (s.open ? '−' : '+') : ''}</span></button>
+      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.hitIdx != null ? ` data-knav-hit="${it.hitIdx}"` : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
+    </div>`).join('');
+  const searching = !!q && kn.searching && kn.resultsFor !== q;
+  const emptyMsg = filter === 'notes' ? 'No notes or tables match' : filter === 'calendar' ? 'No events match' : 'Nothing matches';
+  const empty = q && sections.length === 0 && !searching ? `<div class="knav-find-empty">${emptyMsg} “${esc(kn.q || '')}”.${filter !== 'all' ? ' <button class="knav-find-allbtn" data-knav-filter="all">Search everything →</button>' : ''}</div>` : '';
+  const searchNote = searching ? '<div class="knav-find-searching">Searching…</div>' : '';
+  return `${chips}${secHtml}${searchNote}${empty}`;
+}
+// Repaint ONLY the find-panel body, leaving the search input (and its caret/focus)
+// alone - this is what makes typing stable.
+function renderKnavFindBody() {
+  const host = document.querySelector('.knav-find-body'); if (!host) return;
+  const kn = state.knav || (state.knav = {});
+  host.innerHTML = knavFindBodyHtml(kn, knavGroups(), (kn.q || '').trim().toLowerCase());
+}
 function navGroupsHtml(v) {
   state.knav = state.knav || { group: null, contents: false, find: false, findSeen: false, mGroup: null, q: '', fShut: {} };
   const kn = state.knav;
@@ -5767,44 +5822,13 @@ function navGroupsHtml(v) {
   // ── Find panel (shared + recent before typing; results after) ──
   let find = '';
   if (kn.find) {
-    let sections;
-    if (q) {
-      const res = ((kn.resultsFor || '').trim().toLowerCase() === q) ? (kn.results || []) : [];
-      // Content (notes, tables, rows, people, Spaces…) stays under "In your Spaces";
-      // tool & page destinations (kind 'nav', opened through run()) go under "Go to",
-      // so a search jumps you to the Tracker, a review, Calendar… not just content.
-      // (Robin, 2026-11-14: "open the tracker tool, most tools, from universal search".)
-      const contentItems = res.map((h, i) => ({ h, i })).filter((x) => x.h.kind !== 'nav')
-        .map(({ h, i }) => ({ a: h.title || (h.kind === 'row' ? (typeof rowLabel === 'function' ? rowLabel(h) : 'Row') : 'Untitled'), b: knavKindLabel(h), hitIdx: i }));
-      const goItems = res.map((h, i) => ({ h, i })).filter((x) => x.h.kind === 'nav')
-        .map(({ h, i }) => ({ a: h.title || 'Open', b: '', hitIdx: i }));
-      // Any menu tool not already caught by a nav target (and not already shown as
-      // content, e.g. a Space), so nothing in the menu is unreachable from search.
-      const goNames = new Set(goItems.map((x) => x.a.toLowerCase()));
-      const contentNames = new Set(contentItems.map((x) => x.a.toLowerCase()));
-      groups.flatMap((g) => g.tools.map(([l, attrs]) => ({ a: l, b: '', attrs, isTool: true })))
-        .filter((x) => x.a.toLowerCase().includes(q) && !goNames.has(x.a.toLowerCase()) && !contentNames.has(x.a.toLowerCase()))
-        .forEach((x) => { if (!goNames.has(x.a.toLowerCase())) { goItems.push(x); goNames.add(x.a.toLowerCase()); } });
-      sections = [];
-      if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
-      if (goItems.length) sections.push({ label: 'Go to', badge: String(goItems.length), open: true, items: goItems });
-    } else {
-      const sh = knavShared(); const rc = knavRecent();
-      sections = [];
-      if (sh.length) sections.push({ id: 'shared', label: 'Shared with you', badge: knavSharedNew() && !kn.findSeen ? `${sh.filter((x) => x.badge).length || ''} new`.trim() : '', open: !kn.fShut.shared, items: sh });
-      sections.push({ id: 'recent', label: 'Recent', badge: '', open: !kn.fShut.recent, items: rc });
-    }
-    const secHtml = sections.map((s) => `<div class="knav-find-sec">
-      <button class="knav-find-sh"${s.id ? ` data-knav-fsec="${s.id}"` : ''}><span class="knav-find-sl">${s.label}</span>${s.badge ? `<span class="knav-find-sb">${esc(s.badge)}</span>` : ''}<span class="knav-find-ss">${s.id ? (s.open ? '−' : '+') : ''}</span></button>
-      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.hitIdx != null ? ` data-knav-hit="${it.hitIdx}"` : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
-    </div>`).join('');
-    const searching = !!q && kn.searching && kn.resultsFor !== q;
-    const empty = q && sections.length === 0 && !searching ? `<div class="knav-find-empty">Nothing matches “${esc(kn.q || '')}”.</div>` : '';
-    const searchNote = searching ? '<div class="knav-find-searching">Searching your Spaces…</div>' : '';
+    // The <input> lives in .knav-find-top and is NEVER re-rendered while you type -
+    // only .knav-find-body updates (renderKnavFindBody). The old code re-rendered the
+    // whole nav on every keystroke, which dropped letters as you typed, brutally on
+    // mobile. The body carries the filter chips + results now. (Robin, 2026-11-20.)
     find = `<div class="knav-find">
       <div class="knav-find-top"><input class="knav-find-q" data-knav-q placeholder="Search" value="${esc(kn.q || '')}" autocomplete="off"><button class="knav-find-close" data-knav-findclose>Close</button></div>
-      <div class="knav-find-acts"><button class="knav-find-act" data-new-note>+ New note</button><button class="knav-find-act" data-quick-event>+ New event</button><button class="knav-find-act" data-new-table>+ New table</button></div>
-      ${secHtml}${searchNote}${empty}
+      <div class="knav-find-body">${knavFindBodyHtml(kn, groups, q)}</div>
     </div>`;
   }
   // ── Contents overlay (groups only; a quiet utility footer) ──
@@ -28152,7 +28176,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Share or publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item note-more-desktop" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button></div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -29165,7 +29189,7 @@ document.addEventListener('keydown', (e) => {
     }
   }
   if (e.key === 'Escape' && state.knav && (state.knav.group || state.knav.contents || state.knav.find)) { e.preventDefault(); state.knav.group = null; state.knav.contents = false; state.knav.find = false; renderNav(); return; }
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.filter = 'all'; kn.findSeen = true; renderNav(); if (op) setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; }
   // §44: ⌘/ opens the What next band anywhere (it used to open the Menu, which
   // still has its button in the header).
   if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); wnToggle(); return; }
@@ -29292,7 +29316,7 @@ function looksMarkdown(t) {
 // list, like a Markdown editor. Done on `input` (fires reliably on every phone
 // and desktop keyboard, and outside the beforeinput dispatch where execCommand
 // is inert), detecting the moment the line reads exactly "- ".
-document.addEventListener('input', (e) => { if (e.target && e.target.matches && e.target.matches('[data-knav-q]')) { const kn = state.knav || (state.knav = {}); kn.q = e.target.value; knavRunSearch(kn.q); renderNav(); const el = document.querySelector('[data-knav-q]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch {} } } });
+document.addEventListener('input', (e) => { if (e.target && e.target.matches && e.target.matches('[data-knav-q]')) { const kn = state.knav || (state.knav = {}); kn.q = e.target.value; knavRunSearch(kn.q); renderKnavFindBody(); } });
 document.addEventListener('input', (e) => {
   const ed = e.target && e.target.closest && e.target.closest('.prose[contenteditable="true"]');
   if (!ed || ed.__autobullet) return;   // guard: our own execCommands re-fire input
@@ -29705,10 +29729,11 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-guide-home]')) { Promise.resolve(openHome()).then(() => window.scrollTo(0, 0)).catch((x) => toast(x.message)); return; }
   { const kg = t.closest('[data-knav-group]'); if (kg) { const kn = state.knav || (state.knav = {}); const id = kg.dataset.knavGroup; const was = kn.group === id && !kn.contents && !kn.find; kn.group = was ? null : id; kn.contents = false; kn.find = false; renderNav(); return; } }
   if (t.closest('[data-knav-contents]')) { const kn = state.knav || (state.knav = {}); kn.contents = !kn.contents; kn.group = null; kn.find = false; renderNav(); return; }
-  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.findSeen = true; renderNav(); if (op) { const el = document.querySelector('[data-knav-q]'); if (el) { try { el.focus({ preventScroll: true }); } catch { el.focus(); } } } return; }  // focus SYNCHRONOUSLY inside the tap - a setTimeout focus loses the user gesture, so iOS won't raise the keyboard or show the caret. renderNav() is synchronous (it has already moved .knav-find to <body> by the time it returns), so the input is in its final place now. (Robin: "put the cursor in the search box", 2026-11-04.)
+  if (t.closest('[data-knav-find]')) { const kn = state.knav || (state.knav = {}); const op = !kn.find; kn.find = op; kn.group = null; kn.contents = false; kn.q = ''; kn.results = []; kn.resultsFor = ''; kn.searching = false; kn.filter = 'all'; kn.findSeen = true; renderNav(); if (op) { const el = document.querySelector('[data-knav-q]'); if (el) { try { el.focus({ preventScroll: true }); } catch { el.focus(); } } } return; }  // focus SYNCHRONOUSLY inside the tap - a setTimeout focus loses the user gesture, so iOS won't raise the keyboard or show the caret. renderNav() is synchronous (it has already moved .knav-find to <body> by the time it returns), so the input is in its final place now. (Robin: "put the cursor in the search box", 2026-11-04.)
   if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
-  { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderNav(); setTimeout(() => { const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); }, 0); return; } }
+  { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderKnavFindBody(); return; } }
+  { const fc = t.closest('[data-knav-filter]'); if (fc) { const kn = state.knav || (state.knav = {}); const v = fc.dataset.knavFilter; if (v === 'emails') { const q = (kn.q || '').trim(); kn.find = false; renderNav(); if (modOn('mail')) { openMail().then(() => { if (q) { state.mail.query = q; state.mail.limit = 40; loadMessages(true); } }).catch((x) => toast(x.message)); } return; } kn.filter = v; renderKnavFindBody(); const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); return; } }
   if (t.closest('[data-view-home]')) { if (t.closest('.knav-brand')) { state.home = state.home || {}; state.home.ltab = 'cal'; }   /* the logo opens Today with the calendar tab (Robin, 2026-11-05) */ Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openTablesList(); return; }   // Tables has its own page (Robin: it opened Notes)
   if (t.closest('[data-open-notes]')) { openNotesList(); return; }

@@ -8025,8 +8025,9 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
   .mail-msg { max-width:100%; }
   .mail-subj { overflow-wrap:anywhere; word-break:break-word; }
   .mail-back { display:inline-flex; flex:none; }
-  /* Turning a note into a table is a desktop action - hide the ⋯ on mobile. */
-  .note-more { display:none; }
+  /* Share / publish / Exchange must be reachable on mobile, so the ⋯ stays; only the
+     desktop-oriented items inside it (Turn into a table) drop away. (Robin, 2026-11-20.) */
+  .note-more-desktop { display:none; }
   /* Keyboard shortcuts are a desktop thing - hide every shortcuts button on mobile. */
   [data-mail-shortcuts], [data-open-shortcuts], .home-foot { display:none; }
   /* Reader actions overflow 375px, so pin the bar to the top (stays above the
@@ -10964,6 +10965,13 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-find-acts { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 2px; }
 .knav-find-act { background:transparent; border:1px solid var(--k-gold); color:var(--k-goldt); font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:14px; padding:8px 14px; cursor:pointer; border-radius:0; transition:color .12s, border-color .12s, background .12s; }
 .knav-find-act:hover { background:var(--k-gold); color:var(--k-ongold); border-color:var(--k-gold); }
+/* Search filter chips - narrow to All / Notes / Calendar, or hand the term to Mail. */
+.knav-find-filters { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 4px; }
+.knav-fchip { background:transparent; border:1px solid var(--line); color:var(--ink-2); font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:13.5px; padding:7px 15px; cursor:pointer; border-radius:0; transition:color .12s, border-color .12s, background .12s; }
+.knav-fchip:hover { border-color:var(--k-goldt); color:var(--k-goldt); }
+.knav-fchip.on { background:var(--k-gold); border-color:var(--k-gold); color:var(--k-ongold); }
+.knav-find-allbtn { background:none; border:0; color:var(--k-goldt); font-family:'Jost',system-ui,sans-serif; font-weight:500; font-size:15px; cursor:pointer; padding:0; margin-left:4px; }
+.knav-find-allbtn:hover { text-decoration:underline; }
 .knav-find-sec { border-bottom:1px solid var(--line); }
 .knav-find-sh { display:flex; align-items:center; gap:10px; width:100%; padding:14px 0; text-align:left; }
 .knav-find-sl { font-family:'Jost',system-ui,sans-serif; font-weight:600; font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink); white-space:nowrap; }
