@@ -20775,7 +20775,7 @@ function mailOpenPanelHtml(o) {
     : o._bodyError ? `<div class="mail-text mail-body-err">${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
     : (o.html && !m.plain) ? '<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>'
     : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`;
-  const atts = (o.attachments && o.attachments.length) ? `<div class="mail-att2">${o.attachments.map((a) => `<a class="mail-att2-chip" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer">${esc(a.filename || 'attachment')} <span class="mail-att2-sz">${fmtBytes(a.size)}</span></a>`).join('')}</div>` : '';
+  const atts = (o.attachments && o.attachments.length) ? `<div class="mail-att2 mail-att2-top"><span class="mail-att2-l">${o.attachments.length === 1 ? 'Attachment' : o.attachments.length + ' attachments'}</span>${o.attachments.map((a) => `<a class="mail-att2-chip" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open ${esc(a.filename || 'attachment')}">${esc(a.filename || 'attachment')} <span class="mail-att2-sz">${fmtBytes(a.size)}</span></a>`).join('')}</div>` : '';
   const ml = mailMeetingLink(o);
   const join = ml ? `<div class="mail-join2"><button class="mail-join-btn" data-mail-join="${esc(ml)}">Join meeting →</button><span class="mail-join-url">${esc(ml)}</span></div>` : '';
   const imgs = mailImagesBlocked(o) ? `<div class="mail-imgbar2"><span>Remote images are hidden to protect your privacy.</span><button class="mail-showimg" data-mail-show-imgs="${o.from && o.from.address ? esc(o.from.address) : ''}">Show images</button></div>` : '';
@@ -20805,7 +20805,7 @@ function mailOpenPanelHtml(o) {
   // buttons read fine. They reuse the same handlers as the top row. (Robin, 2026-11-05.)
   const footActs = `<div class="mail-ar-footacts"><button class="mail-footact" data-mail-archive="${k}">Archive</button><button class="mail-footact" data-mail-del="${k}">Delete</button><button class="mail-footact" data-mail-area>Add to Space</button></div>`;
   return {
-    body: `${convStrip}${bodyInner}${atts}${join}${imgs}${footActs}`,
+    body: `${convStrip}${atts}${bodyInner}${join}${imgs}${footActs}`,
     // Robin: the "Make a task / note / event" row sits right under the "Move to"
     // bar at the top, not stranded at the bottom under the email.
     make: `<div class="mail-maketop">${makeActs}</div>`,

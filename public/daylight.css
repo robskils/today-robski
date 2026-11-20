@@ -245,6 +245,7 @@
 :root[data-light] .mail-ar-card :is(a, .mail-make:hover, .mail-noticed-l, .mail-noticed-act) { color:var(--k-goldt); }
 :root[data-light] .mail-ar-card .mail-make { border-color:var(--glass-edge); background:transparent; font-size:14px; }
 :root[data-light] .mail-ar-card :is(.mail-ar-triage-l, .mail-ar-row-l) { color:var(--k-goldt); font-size:13px; }
+:root[data-light] .mail-ar-card .mail-att2-l { color:var(--k-goldt); }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain { background:#fff; padding:20px 24px; max-width:none; }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain, :root[data-light] .mail-ar-card .mail-text.mail-text-plain * { color:#1b1820; }
 :root[data-light] .mail-ar-card .mail-text.mail-text-plain a { color:#6E4C0C; }
