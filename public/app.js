@@ -7174,7 +7174,6 @@ function renderPracticeCard() {
     state.practiceEdit = { id: a.id, area: '', meta: parsePracticeMeta(a), _noteQ: '' };
   }
   const ar = practiceArea(a); const hue = ar ? hueOf(ar) : 220;
-  const timed = a.timed == null ? true : !!a.timed;
   const today = dayKey(new Date());
   const done = practiceMarked(a.id, today);
   // A calm summary line under the name - the Space, how often, and when you last
@@ -7187,7 +7186,7 @@ function renderPracticeCard() {
     <div class="pane-head pc-head" style="--h:${hue}"><h1>${esc(a.title)}${a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : ''}</h1></div>
     <div class="pc-sumline">${metaBits}</div>
     <div class="pc-tickrow"><button class="add-btn wide pc-tick ${done ? 'on' : ''}" data-prc-tick="${a.id}">${done ? (a.avoid ? '✕ Slipped today' : '✓ Done today') : (a.avoid ? 'Log a slip today' : '✓ Mark done today')}</button><button type="button" class="pc-setup-btn ${setupClosed ? '' : 'on'}" data-prc-setup-toggle aria-expanded="${!setupClosed}">${setupClosed ? 'Setup' : 'Close'}</button></div>
-    <div class="pc-edit prac-form ${timed ? 'timed-on' : ''} tracked-on">
+    <div class="pc-edit prac-form tracked-on">
       <div class="pc-setup${setupClosed ? ' is-closed' : ''}"><div class="pc-setup-body">${practiceFieldsHtml('setup')}</div></div>
       <div class="pc-cols2">
         <div class="pc-col-instr">${practiceFieldsHtml('instructions')}</div>
@@ -7361,7 +7360,6 @@ function closePracticeEditor() { state.practiceEdit = null; const h = document.g
 function practiceFieldsHtml(which) {
   const pe = state.practiceEdit;
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
-  const timed = a.timed == null ? true : !!a.timed;
   const noteText = a.note ? String(a.note).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim() : '';
   const selArea = pe.id ? (a.area || '') : (pe.area || '');   // a new practice can be pre-set to an area (e.g. from the Tracker)
   const basics = `<section class="pe-sec">
@@ -7374,11 +7372,15 @@ function practiceFieldsHtml(which) {
             <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>I'm avoiding this</b><small>a bad habit - the flame counts clean days, a tick logs a slip</small></span><input type="checkbox" id="pe-avoid" ${a.avoid ? 'checked' : ''}></label>
           </div>
         </section>`;
+  // Length is optional and always shown: put a number in it and the routine "takes
+  // time" (it can be dropped on your day); leave it empty and it's a plain habit you
+  // just tick. The number is the only signal now - there's no "takes time" switch.
+  // (Robin, 2026-11-21.)
+  const lenVal = (a.timed && a.duration) ? a.duration : '';
   const timingSec = `<section class="pe-sec">
           <div class="pe-sec-h">Timing &amp; tracking</div>
           <div class="pe-mini">
-            <label class="pe-mini-row pe-mini-tog"><span class="pe-mini-t"><b>Takes time</b><small>drop it on your day</small></span><input type="checkbox" id="pe-timed" data-pe-timed ${timed ? 'checked' : ''}></label>
-            <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" step="5" value="${a.duration || 30}"> min</span></div>
+            <div class="pe-mini-row pe-timing"><span class="pe-mini-l">Length</span><span class="pe-durwrap"><input class="sel pe-num" id="pe-dur" type="number" min="5" max="720" step="5" value="${lenVal}"> min</span></div>
             <div class="pe-mini-row pe-aim"><span class="pe-mini-l">Aim to do it</span>${(() => {
               const cur = a.cadence || '';
               const opts = (cur && !PRESET_CADS.some(([v]) => v === cur)) ? [[cur, areaCadLabel(cur)], ...PRESET_CADS] : PRESET_CADS;
@@ -7413,9 +7415,8 @@ function practiceFieldsHtml(which) {
 function practiceEditorHtml() {
   const pe = state.practiceEdit;
   const a = pe.id ? ((state.practices.activities || []).find((x) => String(x.id) === String(pe.id)) || {}) : {};
-  const timed = a.timed == null ? true : !!a.timed;
   return `<div class="pe-bg" data-prc-close></div>
-    <div class="pe-panel prac-form ${timed ? 'timed-on' : ''} tracked-on" role="dialog" aria-label="Practice">
+    <div class="pe-panel prac-form tracked-on" role="dialog" aria-label="Practice">
       <div class="pe-head"><h2>${pe.id ? 'Edit routine' : 'New routine'}</h2><button class="pe-x" data-prc-close aria-label="Close">×</button></div>
       <div class="pe-body">${practiceFieldsHtml()}</div>
       <div class="pe-foot">${pe.id ? `<span class="pe-foot-l"><button class="ghost pe-del" data-prc-del="${pe.id}">Delete</button><button class="ghost pe-share" data-exchange-share-routine="${pe.id}" data-exchange-share-title="${esc(a.title || '')}" title="Put this routine on The Exchange for others to take a copy">Share to The Exchange</button></span>` : '<span></span>'}<button class="add-btn wide" data-prc-save>${pe.id ? 'Save' : 'Add routine'}</button></div>
@@ -7530,13 +7531,19 @@ function prcEditBody() {
   // domain a scheme so the worker keeps it (it validates each like the primary).
   syncPeVideosFromDom();
   peMeta().videos = (peMeta().videos || []).map((v) => String(v || '').trim()).filter(Boolean).map((v) => /^https?:\/\//i.test(v) ? v : 'https://' + v);
+  // Length drives "takes time" now (the checkbox is gone): a number means timed (it
+  // can go on your day); an empty Length means a plain habit. duration is NOT NULL in
+  // D1, so an empty Length keeps the stored number (or 30) and just flips timed off.
+  const durRaw = String((($('#pe-dur') || {}).value) || '').trim();
+  const durNum = Number(durRaw);
+  const hasLen = durRaw !== '' && Number.isFinite(durNum) && durNum > 0;
   return {
     avoid,
     ...(avoid ? { avoidSince: (cur && cur.avoid_since) || todayISO() } : {}),
     title: title.slice(0, 80),
     area: ($('#pe-area') || {}).value || '',
-    duration: Math.max(5, Math.min(720, Number(($('#pe-dur') || {}).value) || 30)),
-    timed: avoid ? false : ($('#pe-timed') ? $('#pe-timed').checked : true),
+    duration: hasLen ? Math.max(5, Math.min(720, Math.round(durNum))) : ((cur && cur.duration) || 30),
+    timed: avoid ? false : hasLen,
     tracked: avoid ? true : ($('#pe-tracked') ? $('#pe-tracked').checked : true),
     days: '',        // routines are a palette of options, not a timetable
     time_min: '',
@@ -7603,6 +7610,12 @@ function setPrcSaveStatus(s) {
 function updatePracticeSummary(a) {
   const el = document.querySelector('.pc-sumline'); if (el) el.innerHTML = practiceSummaryBits(a);
   const head = document.querySelector('.pc-head'); if (head) { const ar = practiceArea(a); head.style.setProperty('--h', String(ar ? hueOf(ar) : 220)); }
+  // Keep the card's title and breadcrumb in step with a rename - the name lives in the
+  // Setup section, and a save shouldn't leave the old title showing up top. (Robin.)
+  const h1 = document.querySelector('.pc-head h1');
+  if (h1) h1.innerHTML = esc(a.title || 'Routine') + (a.avoid ? ' <span class="t2-avoidtag">avoiding</span>' : '');
+  const curCrumb = document.querySelector('.note-crumbs .crumb.cur');
+  if (curCrumb) curCrumb.textContent = a.title || 'Routine';
 }
 function practiceSummaryBits(a) {
   const ar = practiceArea(a);
@@ -30010,7 +30023,6 @@ document.addEventListener('click', (e) => {
   { const vt = t.closest('[data-pc-vtab]'); if (vt) { const i = Number(vt.dataset.pcVtab); if (state.practiceEdit) state.practiceEdit.vtab = i; const sec = vt.closest('[data-video-section]'); if (sec) { sec.querySelectorAll('.pc-vtab').forEach((b) => b.classList.toggle('on', b.dataset.pcVtab === String(i))); sec.querySelectorAll('.pc-vpanel').forEach((p) => { p.hidden = p.dataset.pcVpanel !== String(i); }); } return; } }
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
-  { const pt = t.closest('[data-pe-timed]'); if (pt) { const panel = pt.closest('.prac-form'); if (panel) panel.classList.toggle('timed-on', pt.checked); return; } }
   // Today (native) view
   { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }

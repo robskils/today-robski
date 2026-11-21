@@ -4789,9 +4789,9 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .pe-inline > span { }
 .pe-durwrap { display:flex; align-items:center; gap:7px; color:var(--ink-3); font-size:14px; }
 .pe-num { width:84px; }
-/* "Takes time" off hides the timing block. (.prac-form covers both the New-practice
-   popover and the full-screen edit page a practice opens into.) */
-.prac-form:not(.timed-on) .pe-timing { display:none; }
+/* Length (.pe-timing) is always shown now - a number in it is what marks a routine as
+   timed (it can go on the day); there's no "takes time" switch to gate it on. .prac-form
+   covers both the New-routine popover and the full-screen edit page. (Robin, 2026-11-21.) */
 /* Cadence belongs to "Track it": show it only when tracking, as an inset sub-row. */
 .prac-form:not(.tracked-on) .pe-aim { display:none; }
 .pe-aim, .pe-timing { background:color-mix(in srgb, var(--accent) 4%, transparent); }
