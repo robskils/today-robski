@@ -665,7 +665,12 @@ async function lightFetchMessage(im, uid) {
   const leaves = bsLeaves(tree, '');
   if (!leaves.length) return null;
   const isBody = (l) => l.type === 'text' && (l.subtype === 'html' || l.subtype === 'plain') && l.disposition !== 'attachment';
-  const isInlineImg = (l) => l.type === 'image' && (l.disposition === 'inline' || l.cid);
+  // Only a SMALL inline image rides with the body (inlined as a data URL below). A big
+  // inline photo - the kind a friend sends - is treated like an attachment: skipped here
+  // and loaded on demand through its signed URL, so a photo-heavy message opens fast
+  // instead of timing out while it pulls every picture with the text. (Robin, 2026-11-21.)
+  const INLINE_IMG_CAP = 300000;
+  const isInlineImg = (l) => l.type === 'image' && (l.disposition === 'inline' || l.cid) && (l.size || 0) <= INLINE_IMG_CAP;
   const attachLeaves = leaves.filter((l) => !isBody(l) && !isInlineImg(l));
   const skipped = attachLeaves.reduce((s, l) => s + (l.size || 0), 0);
   if (skipped < 200000) return null;   // not enough weight to skip - use the simple full parse
@@ -692,7 +697,7 @@ async function lightFetchMessage(im, uid) {
   let invite = null;
   const cal = leaves.find((l) => l.type === 'text' && l.subtype === 'calendar');
   if (cal) { try { const cb = await im.fetchPart(uid, cal.part); if (cb) invite = parseIcs(new TextDecoder(cal.charset || 'utf-8', { fatal: false }).decode(decodeBinary(cb, cal.encoding))); } catch {} }
-  const attachments = attachLeaves.map((l) => ({ part: l.part, filename: l.filename || 'attachment', size: l.size, type: `${l.type}/${l.subtype}`, encoding: l.encoding }));
+  const attachments = attachLeaves.map((l) => ({ part: l.part, filename: l.filename || 'attachment', size: l.size, type: `${l.type}/${l.subtype}`, encoding: l.encoding, cid: l.cid || null }));
   return {
     subject: hp.subject || '(no subject)', from: hp.from || null,
     to: (hp.to || []).map((a) => ({ name: a.name, address: a.address })),
@@ -1318,11 +1323,18 @@ export async function handleMail(request, env, url, json, err) {
         // Falls back to a full parse on anything unusual, so display never breaks.
         let light = null; try { light = await lightFetchMessage(im, uid); } catch { light = null; }
         if (light) {
-          const attachments = await Promise.all(light.attachments.map(async (a) => ({
-            filename: a.filename, size: a.size, type: a.type,
+          let lhtml = light.html || null;
+          const signed = await Promise.all(light.attachments.map(async (a) => ({
+            filename: a.filename, size: a.size, type: a.type, cid: a.cid,
             url: await signedAttUrl(env, url, acct.id, mailbox, uid, { part: a.part, enc: a.encoding, type: a.type, name: a.filename }),
           })));
-          return json({ uid, subject: light.subject, from: light.from, to: light.to, cc: light.cc, date: light.date, messageId: light.messageId, html: light.html, text: light.text, invite: light.invite, attachments, unsub: light.unsub }, request);
+          // A big inline photo referenced by cid: point the body at its signed URL, so it
+          // shows inline but loads on demand, and drop it from the attachment chips (the
+          // same trick the full parse uses with data URLs, minus the eager download).
+          const embedded = new Set();
+          if (lhtml) for (const a of signed) { if (a.cid && lhtml.includes(`cid:${a.cid}`)) { lhtml = lhtml.split(`cid:${a.cid}`).join(a.url); embedded.add(a); } }
+          const attachments = signed.filter((a) => !embedded.has(a)).map((a) => ({ filename: a.filename, size: a.size, type: a.type, url: a.url }));
+          return json({ uid, subject: light.subject, from: light.from, to: light.to, cc: light.cc, date: light.date, messageId: light.messageId, html: lhtml, text: light.text, invite: light.invite, attachments, unsub: light.unsub }, request);
         }
         const raw = await im.fetchRaw(uid); if (!raw) return err('message not found', request, 404);
         const p = await PostalMime.parse(raw);
