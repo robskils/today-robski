@@ -4562,8 +4562,9 @@ export function publicNotePage({ title, bodyHtml, author, home, notFound, locked
     html{background:#0D1220}
     body{margin:0;min-height:100vh;background:#0D1220 url(/wash/night.webp) top center/cover fixed no-repeat;color:var(--ink);font-family:'Jost',sans-serif;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
     .pn-brand{display:flex;justify-content:center;padding:28px 16px 0}
-    .pn-brand a{color:var(--ink);text-decoration:none;font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px}
-    .pn-brand i{font-style:normal;color:var(--gold)}
+    .pn-brand a{display:inline-flex;align-items:center;gap:12px;color:var(--ink);text-decoration:none}
+    .pn-brand img{width:30px;height:30px;display:block}
+    .pn-brand span{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:30px;line-height:1}
     .pn-wrap{max-width:760px;margin:0 auto;padding:26px 20px 40px}
     .pn-box{background:var(--glass);border:1px solid var(--edge);padding:clamp(22px,4vw,40px);-webkit-backdrop-filter:blur(14px) saturate(1.7);backdrop-filter:blur(14px) saturate(1.7)}
     h1.pn-title{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(40px,4.4vw,56px);line-height:1.05;margin:0 0 6px;text-wrap:balance}
@@ -4594,7 +4595,7 @@ export function publicNotePage({ title, bodyHtml, author, home, notFound, locked
     .pn-lock input{display:block;width:100%;padding:12px 14px;margin-bottom:16px;background:rgba(8,11,22,.55);border:1px solid var(--edge);color:var(--ink);font-family:'Jost',sans-serif;font-size:17px}
     .pn-lock input:focus{outline:0;border-color:#fff}
   </style></head><body>
-  <div class="pn-brand"><a href="${escH(home)}">Kaya<i>.</i></a></div>`;
+  <div class="pn-brand"><a href="${escH(home)}"><img src="/brand/kaya-seal.svg" width="30" height="30" alt="" aria-hidden="true"><span>Kaya</span></a></div>`;
   const cta = `<div class="pn-cta"><div class="pn-cta-s">A calm, private home for your whole life.</div><a class="pn-btn" href="${escH(home)}">Join Kaya</a></div></body></html>`;
   if (notFound) return `${head}<div class="pn-wrap"><div class="pn-empty">This note isn't published any more, or the link is wrong.</div></div>${cta}`;
   if (locked) return `${head}<div class="pn-wrap"><form class="pn-box pn-lock" method="post"><h1>This note has a password</h1>${message ? `<p class="pn-msg" role="alert">${escH(message)}</p>` : '<p>Enter it to read the note.</p>'}<label for="pn-pw">Password</label><input id="pn-pw" name="password" type="password" autocomplete="current-password" required autofocus><button class="pn-btn" type="submit">Open the note</button></form></div>${cta}`;

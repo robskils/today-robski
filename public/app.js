@@ -12987,9 +12987,9 @@ function exchangeCardHtml(it, owner) {
       ? `<span class="xch-tag xch-tag-done">${it.kind === 'routine' ? 'In your Routines ✓' : 'In your Notes ✓'}</span>`
       : `<button class="xch-take" data-exchange-take="${it.id}">Take a copy</button>`;
   const unlist = (owner && !it.mine) ? `<button class="xch-ghost" data-exchange-unlist="${it.id}">Unlist</button>` : '';
-  const look = it.kind === 'routine'
-    ? `<button class="xch-read" data-exchange-preview="${it.id}">Preview</button>`
-    : `<a class="xch-read" href="/n/${esc(it.token)}" target="_blank" rel="noopener noreferrer">Read</a>`;
+  // Notes and routines both open in the in-app reader now (members only, never a public
+  // page): "Read" a note, "Preview" a routine.
+  const look = `<button class="xch-read" data-exchange-preview="${it.id}">${it.kind === 'routine' ? 'Preview' : 'Read'}</button>`;
   const meta = it.kind === 'routine' ? `<div class="xch-metaline">${esc(exRhythmLabel(it.rhythm))}</div>` : '';
   return `<article class="xch-card xch-card-${it.kind}">
     <div class="xch-card-b">
@@ -13003,9 +13003,7 @@ function exchangeCardHtml(it, owner) {
   </article>`;
 }
 function exPendCardHtml(p) {
-  const look = p.kind === 'routine'
-    ? `<button class="xch-read" data-exchange-preview="${p.id}">Preview</button>`
-    : `<a class="xch-read" href="/n/${esc(p.token)}" target="_blank" rel="noopener noreferrer">Read</a>`;
+  const look = `<button class="xch-read" data-exchange-preview="${p.id}">${p.kind === 'routine' ? 'Preview' : 'Read'}</button>`;
   const meta = p.kind === 'routine' ? `<div class="xch-metaline">${esc(exRhythmLabel(p.rhythm))}</div>` : '';
   return `<article class="xch-card xch-card-${p.kind} xch-pend">
     <div class="xch-card-b"><div class="xch-kind">${exKindLabel(p.kind)}</div><h3 class="xch-ttl">${esc(p.title)}</h3>${meta}<p class="xch-prev">${esc(p.preview)}</p></div>
@@ -13076,12 +13074,12 @@ async function exShareGo() {
   } catch (e) { toast(e.message); }
 }
 function shareToExchange(noteId, title) { openExchangeShare('note', noteId, title); }
-// Preview a shelf routine in-app (it has no public page): its rhythm, instructions and
-// any follow-along video, then Take a copy from the same sheet.
-async function previewExchangeRoutine(id) {
+// Open a shelf item in the in-app reader (members only, never a public page): a note's
+// text, or a routine's rhythm, instructions and follow-along video - then Take a copy
+// from the same sheet.
+async function openExchangePreview(id) {
   try {
     const d = await api('/api/exchange/preview?id=' + encodeURIComponent(id));
-    if (d.kind === 'note') { if (d.url) window.open(d.url, '_blank', 'noopener'); return; }
     state.exPreview = { id: Number(id), d };
     let host = document.getElementById('ex-prev-host');
     if (!host) { host = document.createElement('div'); host.id = 'ex-prev-host'; document.body.appendChild(host); }
@@ -13089,16 +13087,31 @@ async function previewExchangeRoutine(id) {
   } catch (e) { toast(e.message); }
 }
 function closeExPreview() { state.exPreview = null; const h = document.getElementById('ex-prev-host'); if (h) h.remove(); }
+// One video in a preview: the real embedded player when we can (a YouTube / Vimeo /
+// Instagram poster you can press play on - "an image of the video at least"), otherwise a
+// tidy link out. Reuses the same embed the routine's own page uses.
+function exVidHtml(u) {
+  const url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  const emb = practiceEmbedHtml(url);
+  if (emb) return `<div class="xpv-embed">${emb}</div>`;
+  return `<a class="xpv-vid" href="${esc(url)}" target="_blank" rel="noopener noreferrer">▶ Watch the video<span class="xpv-vid-h">${esc(prettyHost(u))}</span></a>`;
+}
 function exPreviewHtml() {
   const p = state.exPreview; if (!p) return '';
   const d = p.d;
-  const vids = (d.videos || []).map((u) => `<a class="xpv-vid" href="${esc(/^https?:\/\//i.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener noreferrer">▶ Watch the video<span class="xpv-vid-h">${esc(prettyHost(u))}</span></a>`).join('');
+  const isRoutine = d.kind === 'routine';
   const taken = (state.exchange && state.exchange.items || []).find((y) => y.id === p.id && y.took);
-  const takeBtn = taken ? '<span class="xch-tag xch-tag-done">In your Routines ✓</span>' : `<button class="xch-take" data-exprev-take="${p.id}">Take a copy</button>`;
+  const takeBtn = taken
+    ? `<span class="xch-tag xch-tag-done">${isRoutine ? 'In your Routines ✓' : 'In your Notes ✓'}</span>`
+    : `<button class="xch-take" data-exprev-take="${p.id}">Take a copy</button>`;
+  const vids = isRoutine ? (d.videos || []).map(exVidHtml).join('') : '';
+  const bodyInner = isRoutine
+    ? `${d.note ? `<div class="xpv-note">${d.note}</div>` : '<p class="xpv-empty">No instructions written for this one.</p>'}${vids ? `<div class="xpv-vids">${vids}</div>` : ''}`
+    : (d.body ? `<div class="xpv-note">${d.body}</div>` : '<p class="xpv-empty">This note is empty.</p>');
   return `<div class="pe-bg" data-exprev-close></div>
-    <div class="pe-panel xpv-panel" role="dialog" aria-label="Routine preview">
-      <div class="xpv-head"><div><div class="xch-kind">Routine</div><h2 class="xpv-ttl">${esc(d.title)}</h2>${d.rhythm ? `<div class="xch-metaline">${esc(exRhythmLabel(d.rhythm))}</div>` : ''}</div><button class="pe-x" data-exprev-close aria-label="Close">×</button></div>
-      <div class="xpv-body">${d.note ? `<div class="xpv-note">${d.note}</div>` : '<p class="xpv-empty">No instructions written for this one.</p>'}${vids ? `<div class="xpv-vids">${vids}</div>` : ''}</div>
+    <div class="pe-panel xpv-panel" role="dialog" aria-label="${isRoutine ? 'Routine preview' : 'Note'}">
+      <div class="xpv-head"><div><div class="xch-kind">${isRoutine ? 'Routine' : 'Note'}</div><h2 class="xpv-ttl">${esc(d.title)}</h2>${isRoutine && d.rhythm ? `<div class="xch-metaline">${esc(exRhythmLabel(d.rhythm))}</div>` : ''}</div><button class="pe-x" data-exprev-close aria-label="Close">×</button></div>
+      <div class="xpv-body">${bodyInner}</div>
       <div class="xpv-foot">${takeBtn}</div>
     </div>`;
 }
@@ -29878,7 +29891,7 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-exchange-share-routine]'); if (el) { openExchangeShare('routine', el.dataset.exchangeShareRoutine, el.dataset.exchangeShareTitle); return; } }
   { const el = t.closest('[data-exchange-take]'); if (el) { exchangeTake(el.dataset.exchangeTake); return; } }
   { const el = t.closest('[data-exchange-kudo]'); if (el) { exchangeKudo(el.dataset.exchangeKudo); return; } }
-  { const el = t.closest('[data-exchange-preview]'); if (el) { previewExchangeRoutine(el.dataset.exchangePreview); return; } }
+  { const el = t.closest('[data-exchange-preview]'); if (el) { openExchangePreview(el.dataset.exchangePreview); return; } }
   { const el = t.closest('[data-exchange-filter]'); if (el) { openExchange({ filter: el.dataset.exchangeFilter }).catch((x) => toast(x.message)); return; } }
   { const el = t.closest('[data-exchange-sort]'); if (el) { openExchange({ sort: el.dataset.exchangeSort }).catch((x) => toast(x.message)); return; } }
   { const el = t.closest('[data-exchange-approve]'); if (el) { exchangeReview(el.dataset.exchangeApprove, 'approve'); return; } }

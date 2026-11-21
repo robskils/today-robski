@@ -18,9 +18,10 @@
 //   - "Arigato" is one row per (item, person) in exchange_kudos: anonymous, reversible,
 //     shown only as a count. You can't thank your own share.
 
+import { sanitizeNoteHtml, basicMd } from './index.js';   // render a shared note's body safely for the in-app reader
+
 const OWNER_ID = 1;                                     // the instance owner curates the shelf
 const now = () => new Date().toISOString();
-const tok = () => crypto.randomUUID().replace(/-/g, ''); // 32 hex - matches the /n/<token> route
 const stripTags = (s) => String(s || '').replace(/<[^>]*>/g, ' ');
 const previewOf = (body, max = 180) => stripTags(body).replace(/&[a-z]+;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 const kindOf = (r) => (r && r.kind) || 'note';          // NULL kind (pre-migration rows) = a note
@@ -36,14 +37,13 @@ const routineMeta = (a) => JSON.stringify({ cadence: a.cadence || '', days: a.da
 // owner's own goes live at once. Re-sharing updates the row. `anon` hides my name.
 export async function submitToExchange(env, blockId, opts = {}) {
   const anon = opts.anon ? 1 : 0;
-  const row = await env.DB.prepare("SELECT title, body, props FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note' AND archived = 0").bind(blockId, env.uid).first();
+  const row = await env.DB.prepare("SELECT title, body FROM blocks WHERE id = ? AND user_id = ? AND kind = 'note' AND archived = 0").bind(blockId, env.uid).first();
   if (!row) throw new Error('note not found');
-  let props = {}; try { props = row.props ? JSON.parse(row.props) : {}; } catch { props = {}; }
-  if (!props.shareToken) {
-    props.shareToken = tok();
-    await env.DB.prepare('UPDATE blocks SET props = ?, updated_at = ? WHERE id = ? AND user_id = ?').bind(JSON.stringify(props), now(), blockId, env.uid).run();
-  }
-  return lodge(env, { blockId, kind: 'note', activityId: null, token: props.shareToken, meta: null, title: row.title || 'A note', preview: previewOf(row.body), anon });
+  // Sharing to the Exchange no longer makes the note public: the shelf shows it in an
+  // in-app reader to signed-in members only, and Take copies the block server-side. So we
+  // mint no /n/ share token here (and leave any the owner set for a deliberate public
+  // publish untouched); the shelf row's token stays empty. (Robin, 2026-11-21.)
+  return lodge(env, { blockId, kind: 'note', activityId: null, token: '', meta: null, title: row.title || 'A note', preview: previewOf(row.body), anon });
 }
 
 // Share one of my own routines to The Exchange. Same curation path; no public token
@@ -137,8 +137,8 @@ function shelfItem(r, env, taken) {
   return {
     id: r.id,
     kind,
-    token: r.token || '',
-    url: kind === 'note' && r.token ? `https://kaya.so/n/${r.token}` : '',
+    token: '',                                            // notes read in-app now - no public /n/ link is exposed
+    url: '',
     title: r.title || (kind === 'routine' ? 'A routine' : 'A note'),
     preview: r.preview || '',
     rhythm: kind === 'routine' ? parseMeta(r.meta) : null,
@@ -164,8 +164,8 @@ export async function pendingExchange(env) {
     items: rows.map((r) => ({
       id: r.id,
       kind: kindOf(r),
-      token: r.token || '',
-      url: kindOf(r) === 'note' && r.token ? `https://kaya.so/n/${r.token}` : '',
+      token: '',
+      url: '',
       title: r.title || (kindOf(r) === 'routine' ? 'A routine' : 'A note'),
       preview: r.preview || '',
       rhythm: kindOf(r) === 'routine' ? parseMeta(r.meta) : null,
@@ -193,9 +193,18 @@ export async function unlistExchange(env, id) {
 // The full read of one shelf item, for an in-app preview. A routine has no public
 // page, so this is how you look before you take: its rhythm, instructions and video.
 export async function previewExchangeItem(env, id) {
-  const e = await env.DB.prepare("SELECT id, token, anon, title, preview, COALESCE(kind,'note') AS kind, activity_id, meta, status, owner_id FROM exchange WHERE id = ?").bind(Number(id)).first();
+  const e = await env.DB.prepare("SELECT id, block_id, token, anon, title, preview, COALESCE(kind,'note') AS kind, activity_id, meta, status, owner_id FROM exchange WHERE id = ?").bind(Number(id)).first();
   if (!e || (e.status !== 'live' && !(env.uid === OWNER_ID && e.status === 'pending'))) throw new Error('that item is no longer on the shelf');
-  if (kindOf(e) !== 'routine') return { kind: 'note', title: e.title || 'A note', token: e.token || '', url: e.token ? `https://kaya.so/n/${e.token}` : '' };
+  if (kindOf(e) !== 'routine') {
+    // A note is read in-app now (no public page): return its body, rendered safely the
+    // same way the public note page does, so the community reader shows the note itself.
+    const b = await env.DB.prepare("SELECT title, body FROM blocks WHERE id = ? AND kind = 'note' AND archived = 0").bind(e.block_id).first();
+    if (!b) throw new Error('that note is no longer available');
+    const raw = b.body || '';
+    const isHtml = /<(p|h[1-3]|blockquote|div|ul|ol|details)[\s>]/i.test(raw);
+    const body = isHtml ? await sanitizeNoteHtml(raw) : basicMd(raw);
+    return { kind: 'note', title: b.title || e.title || 'A note', body };
+  }
   const a = await env.DB.prepare('SELECT title, note, video, meta FROM activities WHERE id = ?').bind(Number(e.activity_id)).first();
   if (!a) throw new Error('that routine is no longer available');
   const vids = [];
