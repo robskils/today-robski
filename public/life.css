@@ -8341,7 +8341,12 @@ body[data-view="mail"] .pane:has(.mail2-compose) { padding:0; }
   /* Tracker/Practices page: keep the name legible by dropping the week + streak to
      a second line, rather than letting the 7 dots squeeze the name to an ellipsis. */
   body[data-view="tracker"] .trk-prow { flex-wrap:wrap; align-items:center; }
-  body[data-view="tracker"] .trk-pname { white-space:normal; flex:1 1 auto; }
+  /* flex-basis MUST be 0, never auto: with an auto basis flex line-collection measures
+     the name at its FULL width, so a long name ("Posture Sculpting using the pole") can't
+     "fit" beside the tick and the whole name drops to the next line, leaving the tick box
+     stranded alone. A 0 basis keeps the name starting right of the tick and wraps it onto a
+     second line within its own column. (Robin, 2026-11-21.) */
+  body[data-view="tracker"] .trk-pname { white-space:normal; flex:1 1 0%; min-width:0; }
   /* The edit (✎) and the week dots share the SECOND row, so the name row stays clean
      and each practice is a touch more compact. A zero-height full-width pseudo forces
      the wrap after the name. The ✎ is bigger here - easier to hit on a phone. (Robin,
