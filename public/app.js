@@ -20925,10 +20925,9 @@ function mailOpenPanelHtml(o) {
   // splitting the view beside an email is its own control now.
   const k = esc(o._key);
   const inSpam = m.folder === 'spam' || /junk|spam/i.test(o._mailbox || '');
-  const addr = (o.from && o.from.address) ? esc(o.from.address) : '';
-  const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-area>Add to Space</button><button class="mail-make" data-mail-task>Make a task</button><button class="mail-make" data-mail-note>Make a note</button><button class="mail-make" data-mail-event>Add event</button>${mailRowSelectHtml('Tools', ['Add to Space', 'Make a task', 'Make a note', 'Add event'])}</div>`;
+  const makeActs = `<div class="mail-makeacts"><span class="mail-ar-row-l">Tools</span><button class="mail-make" data-mail-area>Add to Space</button><button class="mail-make" data-mail-task>Make task</button><button class="mail-make" data-mail-note>Make note</button><button class="mail-make" data-mail-event>Add event</button>${mailRowSelectHtml('Tools', ['Add to Space', 'Make task', 'Make note', 'Add event'])}</div>`;
   const spamBtn = inSpam ? `<button class="mail-reply" data-mail-notspam="${k}">Not spam</button>` : `<button class="mail-reply" data-mail-spam="${k}">Spam</button>`;
-  const replyBtns = `<button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-forward>Forward</button><button class="mail-reply" data-mail-archive="${k}">Archive</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}<button class="mail-reply" data-mail-block="${k}" data-mail-from="${addr}">Block</button>${mailMoreHtml(o)}`;
+  const replyBtns = `<button class="mail-reply mail-reply-primary" data-mail-reply>Reply</button><button class="mail-reply" data-mail-reply-all>Reply all</button><button class="mail-reply" data-mail-forward>Forward</button><button class="mail-reply" data-mail-archive="${k}">Archive</button><button class="mail-reply" data-mail-del="${k}">Delete</button>${spamBtn}${mailMoreHtml(o)}`;
   const replyActs = `<div class="mail-replyacts"><span class="mail-ar-row-l">Action</span>${replyBtns}${mailRowSelectHtml('Action', mailRowLabels(replyBtns))}</div>`;
   // Archive · Delete again at the very foot of the email, INSIDE the glass box, below
   // the attachments - the glass area under the white paper, where the white-rim glass
@@ -20944,16 +20943,20 @@ function mailOpenPanelHtml(o) {
   };
 }
 // The "More" menu in the open row: the quieter extras that don't earn a first-class
-// button - Email Scribe (AI draft), the plain-text toggle, and Unsubscribe. Forward is
-// in the Action row and Add to Space in the Tools row now. (Robin, 2026-11-21.)
+// button - Email Scribe (AI draft), the plain-text toggle, Unsubscribe and Block.
+// Forward is in the Action row and Add to Space in the Tools row now. (Robin, 2026-11-21.)
 function mailMoreHtml(o) {
   const m = state.mail;
-  // Delete / Spam / Block are first-class in the Action row (and Forward now too), so
-  // More keeps only the quieter extras. (Robin, 2026-11-04.)
+  const k = esc(o._key);
+  const addr = (o.from && o.from.address) ? esc(o.from.address) : '';
+  // Delete / Spam are first-class in the Action row (and Forward now too); Block sits
+  // here in More, grouped with Unsubscribe - both are quiet "make it stop" actions.
+  // (Robin, 2026-11-22.)
   const items = [];
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
   if (o.unsub) items.push(`<button class="mail-more-item mail-more-unsub" data-mail-unsub title="Kaya will find the unsubscribe and do it for you">Unsubscribe</button>`);
+  items.push(`<button class="mail-more-item" data-mail-block="${k}" data-mail-from="${addr}">Block sender</button>`);
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
 }
 
