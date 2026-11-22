@@ -8744,16 +8744,23 @@ async function submitCap() {
       await api('/api/bookmark', { method: 'POST', body: JSON.stringify({ url: link, title }) });
       toast(`Saved to ${rwName()}.`);
     } else if (kind === 'inbox') {
-      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: raw, props: { inbox: true } }) });
+      const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: raw, props: { inbox: true } }) });
+      // Add it to the in-memory notes list right away, or a note set down here is
+      // missing from the Notes page (and Home's band) until a cold reload - the list
+      // reads this cache and nothing else refreshed it. (Robin, 2026-11-22.)
+      if (n && n.id && Array.isArray(state.noteTops)) state.noteTops.unshift(n);
       toast('Set down in your inbox to sort.');
     } else {
       const props = area ? { area, areas: [area] } : {};
-      await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: p.title || raw, props }) });
+      const n = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title: p.title || raw, props }) });
+      if (n && n.id && Array.isArray(state.noteTops)) state.noteTops.unshift(n);
       toast(`Saved the note${area ? ' in ' + capAreaTitle(area) : ''}. Find it with ⌘K.`);
     }
   } catch (e) { toast((e && e.message) || 'Could not set that down.'); return; }
   c.open = false; c.text = ''; c.kind = null; c.ans = {}; c.rec = false; renderCapBar(true);
   capRefreshHome();
+  // If you set something down while looking at the Notes page, show it there at once.
+  if (state.view && state.view.type === 'notes' && typeof renderNotesList === 'function') renderNotesList();
 }
 // ── §20 Notepad: a popover, not a Today section ───────────────────────────
 // One running page per person - never sorted, never tidied, always exactly as
@@ -10515,6 +10522,10 @@ function openNotesList() {
   state.noteMenu = null;
   renderNav();
   renderNotesList();
+  // Always pull a fresh copy from the server too: a note added by Set-something-down,
+  // or on another device, must never be missing from the list because the cache is
+  // stale. Renders instantly from cache above, then repaints when this lands.
+  api('/api/blocks?kind=note').then((r) => { if (Array.isArray(r)) { state.noteTops = r; if (state.view && state.view.type === 'notes') renderNotesList(); } }).catch(() => {});
   loadNotesShared();
   // Areas power the right-click "file under pages" menu and the area filter.
   if (!state.areas || !state.areas.length) api('/api/blocks?kind=area').then((a) => { if (Array.isArray(a) && a.length) { state.areas = a.sort((x, y) => (x.title || '').localeCompare(y.title || '')); if (state.view.type === 'notes') renderNotesList(); } }).catch(() => {});
