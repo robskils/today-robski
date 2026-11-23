@@ -19530,7 +19530,11 @@ async function mailSend(to, cc, bcc, subject, bodyHtml, inReplyTo) {
     mailApi('/send', { method: 'POST', body: JSON.stringify(payload) })
       .then(() => {
         const addr = (String(to || '').match(/[\w.+-]+@[\w.-]+\.[\w-]+/) || [])[0]; if (addr) kitAutoRoll({ email: addr });   // §48: emailing resets their keep-in-touch clock
-        clearDraft(); toast('Sent');
+        // Remove THIS draft by the id we captured before closing the composer.
+        // clearDraft() read state.mail.composing, but we set that false on line ~19528
+        // to close the screen at once, so by the time this send resolves it's gone and
+        // the draft was never cleared - which is why sent mail piled up in Drafts.
+        removeDraft(draft._draftId); toast('Sent');
       })
       .catch((e) => {
         state.mail.composing = draft;
