@@ -2748,7 +2748,14 @@ tr:hover td.row-open .ro-ic { opacity:1; }
 .note-linkside { min-width:0; position:sticky; top:16px; }
 .note-linkside .nx-wrap { margin-top:0; }
 @container notecq (max-width:900px){
-  .note-layout-side { display:flex; flex-direction:column; }
+  /* align-items:stretch is essential: the base .note-layout-side is a GRID with
+     align-items:start (so the two desktop columns top-align). When we fall back to
+     a flex column here, that start value carries over and means the children are
+     sized to their own content instead of the column width - so .note-main (and the
+     note body/title inside it) grew WIDER than the pane and ran off the right of a
+     phone screen. stretch holds every child to the column width so text wraps.
+     (Robin, 2026-11-23: note contents running off the side on mobile.) */
+  .note-layout-side { display:flex; flex-direction:column; align-items:stretch; }
   /* Beat the legacy .note-main{order:1} rule so the writing stays on top and
      Linked & attached stacks beneath it when the column is narrow. */
   .note-layout-side .note-main { order:0; }
