@@ -20254,6 +20254,127 @@ function openExternal(url) {
   a.dataset.extOpen = '1';
   document.body.appendChild(a); a.click(); a.remove();
 }
+
+// ── Print & export to PDF ────────────────────────────────────────────────────
+// A note or an email, printed from a hidden, same-origin iframe holding a clean
+// white-paper document in the brand's own fonts. The browser's print dialog also
+// offers "Save as PDF", so this one path serves both Print and Export as PDF, and
+// the doc <title> becomes the saved PDF's default filename. No library: a text
+// document prints as crisp vector type this way, and the app CSP (script-src
+// 'self') blocks a CDN lib anyway. (Robin, 2026-11-23.)
+const PRINT_FONTS = `
+@font-face{font-family:'Cormorant Garamond';src:url('/fonts/CormorantGaramond-500.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Cormorant Garamond';src:url('/fonts/CormorantGaramond-300-italic.woff2') format('woff2');font-weight:300;font-style:italic;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-400.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-500.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Jost';src:url('/fonts/Jost-600.woff2') format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4.woff2') format('woff2');font-weight:400 600;font-display:swap}
+@font-face{font-family:'Source Serif 4';src:url('/fonts/SourceSerif4-italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}`;
+const PRINT_CSS = `
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:#2b2718;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pw{max-width:720px;margin:0 auto;padding:36px 30px 48px}
+.p-eyebrow{font-family:'Jost',system-ui,sans-serif;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#8a6d1f;margin:0 0 12px}
+.p-title{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:32px;line-height:1.14;color:#2b2718;margin:0 0 10px}
+.p-meta{font-family:'Jost',system-ui,sans-serif;font-size:13px;line-height:1.7;color:#6b6355;margin:0 0 18px}
+.p-meta .l{display:inline-block;min-width:46px;color:#9b917d}
+.p-meta b{font-weight:600;color:#2b2718}
+.p-rule{border:0;border-top:1px solid #e3dccb;margin:0 0 22px}
+.p-email{font-family:'Source Serif 4',Georgia,serif;font-size:15.5px;line-height:1.6;color:#1b1820}
+.p-email img{max-width:100%;height:auto}
+.p-email a{color:#6E4C0C}
+.p-email table{max-width:100%}
+.p-note{font-family:'Jost',system-ui,sans-serif;font-size:15.5px;line-height:1.66;color:#2b2718}
+.p-note h1,.p-note h2,.p-note h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;color:#2c2718;line-height:1.16;margin:1.25em 0 .35em}
+.p-note h1{font-size:1.5em}.p-note h2{font-size:1.28em}.p-note h3{font-size:1.12em}
+.p-note p{margin:0 0 .85em}
+.p-note ul,.p-note ol{padding-left:1.4em;margin:0 0 .85em}
+.p-note li{margin:.18em 0}
+.p-note img{max-width:100%;height:auto;border-radius:0}
+.p-note a{color:#6E4C0C;text-decoration:underline;text-underline-offset:2px}
+.p-note blockquote{margin:1em 0;padding:2px 0 2px 16px;border-left:2px solid rgba(44,39,24,.3);color:#574e3c}
+.p-note hr{border:0;border-top:1px solid #e3dccb;margin:1.3em 0}
+.p-note table{border-collapse:collapse;max-width:100%}
+.p-note td,.p-note th{border:1px solid #e3dccb;padding:6px 9px;text-align:left;vertical-align:top}
+.p-foot{margin-top:30px;padding-top:12px;border-top:1px solid #e3dccb;font-family:'Jost',system-ui,sans-serif;font-size:11px;letter-spacing:.04em;color:#a99f88}
+@page{margin:15mm}
+@media print{.pw{max-width:none;padding:0}}`;
+// Build the standalone doc and print it from a throwaway offscreen iframe. The
+// iframe's own inline script waits for its webfonts, then prints ITS document (not
+// the app), and tells us when the dialog closes so we can bin the frame.
+function runPrint(title, inner) {
+  const prev = document.getElementById('kaya-print-frame'); if (prev) prev.remove();
+  const doc = `<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="light"><title>${esc(title || 'Kaya')}</title><style>${PRINT_FONTS}${PRINT_CSS}</style></head><body><div class="pw">${inner}</div><script>(function(){var done=false;function go(){if(done)return;done=true;try{window.focus();window.print();}catch(e){}}if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go);}setTimeout(go,900);window.addEventListener('afterprint',function(){try{parent.postMessage({__kayaPrintDone:1},'*');}catch(e){}});})();<\/script></body></html>`;
+  const f = document.createElement('iframe');
+  f.id = 'kaya-print-frame';
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:fixed;left:-10000px;top:0;width:820px;height:1040px;border:0;opacity:0;pointer-events:none';
+  f.srcdoc = doc;
+  document.body.appendChild(f);
+  const clean = () => { const el = document.getElementById('kaya-print-frame'); if (el) el.remove(); window.removeEventListener('message', onMsg); };
+  const onMsg = (ev) => { if (ev.data && ev.data.__kayaPrintDone) setTimeout(clean, 300); };
+  window.addEventListener('message', onMsg);
+  setTimeout(clean, 120000);   // belt-and-braces if afterprint never fires (dialog left open)
+}
+function printFoot() {
+  const d = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  return `<div class="p-foot">Kaya · ${esc(d)}</div>`;
+}
+// Read a same-origin blob: URL back as a data: URL, so an inline note image embeds
+// in the print document (a parent-created blob URL can be flaky inside the iframe).
+async function blobUrlToDataUrl(u) {
+  const r = await fetch(u); const b = await r.blob();
+  return await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); });
+}
+function printEmailOpen() {
+  const o = state.mail && state.mail.open;
+  if (!o) { toast('Open an email first.'); return; }
+  const subject = mailFixText(o.subject || '') || '(no subject)';
+  let fromName = mailFixText((o.from && o.from.name) || '').replace(/^["'“‘]+|["'”’]+$/g, '').trim();
+  const fromAddr = (o.from && o.from.address) ? String(o.from.address).trim() : '';
+  if (fromName && fromAddr && fromName.toLowerCase() === fromAddr.toLowerCase()) fromName = '';
+  const from = `${fromName ? esc(fromName) + ' ' : ''}${fromAddr ? `&lt;${esc(fromAddr)}&gt;` : ''}`.trim() || '(unknown)';
+  const toList = Array.isArray(o.to) ? o.to.map((a) => a && (a.name || a.address)).filter(Boolean).join(', ') : (typeof o.to === 'string' ? o.to : '');
+  const acct = (state.mail.accounts || []).find((a) => a.id === o._acct);
+  const to = toList || (acct && (acct.email || acct.name)) || o._acctName || '';
+  let when = '';
+  if (o.date) { const dt = new Date(o.date); if (!isNaN(dt)) when = dt.toLocaleString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  const bodyHtml = (o.html && String(o.html).trim())
+    ? sanitizeEmailHtml(o.html, false)
+    : `<div>${linkifyText(mailPlainText(o))}</div>`;
+  const meta = `<div class="p-meta">`
+    + `<div><span class="l">From</span> <b>${from}</b></div>`
+    + (to ? `<div><span class="l">To</span> ${esc(to)}</div>` : '')
+    + (when ? `<div><span class="l">Date</span> ${esc(when)}</div>` : '')
+    + `</div>`;
+  const inner = `<h1 class="p-title">${esc(subject)}</h1>${meta}<hr class="p-rule"><div class="p-email">${bodyHtml}</div>${printFoot()}`;
+  runPrint(subject, inner);
+}
+async function printNoteCurrent(asPdf) {
+  const n = state.note && state.note.current;
+  if (!n) { toast('Open a note first.'); return; }
+  const title = (n.title || '').trim() || 'Untitled note';
+  let bodyHtml = (n.body && String(n.body).trim()) ? String(n.body) : '<p style="color:#9b917d">This note is empty.</p>';
+  // Hydrate inline-image placeholders the way the note view does, then inline them as
+  // data URLs so the photos appear in the print / PDF too.
+  try {
+    const tmp = document.createElement('div'); tmp.innerHTML = bodyHtml;
+    const imgs = [...tmp.querySelectorAll('img[data-att-inline]')];
+    if (imgs.length) {
+      await Promise.all(imgs.map(async (img) => {
+        const id = img.getAttribute('data-att-inline');
+        try { const u = await attUrl(n.id, { id }); img.src = await blobUrlToDataUrl(u).catch(() => u); } catch {}
+        img.removeAttribute('data-att-inline'); img.removeAttribute('data-loaded');
+      }));
+      bodyHtml = tmp.innerHTML;
+    }
+  } catch {}
+  const areas = blockAreas(n).map((id) => areaById(id)).filter(Boolean);
+  const eyebrow = areas[0] ? `<div class="p-eyebrow">${esc(areas[0].title)}</div>` : '';
+  const inner = `${eyebrow}<h1 class="p-title">${esc(title)}</h1><div class="p-note">${bodyHtml}</div>${printFoot()}`;
+  runPrint(title, inner);
+  if (asPdf) toast('In the print dialog, choose “Save as PDF” as the destination.');
+}
 // Grow #mail-body-frame to whatever height it reports (installed once).
 if (typeof window !== 'undefined' && !window.__mailFrameSizer) {
   window.__mailFrameSizer = true;
@@ -20966,6 +21087,7 @@ function mailMoreHtml(o) {
   const items = [];
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
+  items.push(`<button class="mail-more-item" data-mail-print>Print</button>`);
   if (o.unsub) items.push(`<button class="mail-more-item mail-more-unsub" data-mail-unsub title="Kaya will find the unsubscribe and do it for you">Unsubscribe</button>`);
   items.push(`<button class="mail-more-item" data-mail-block="${k}" data-mail-from="${addr}">Block sender</button>`);
   return `<details class="mail-more"><summary class="mail-more-sum">More ⌄</summary><div class="mail-more-menu">${items.join('')}</div></details>`;
@@ -28288,7 +28410,7 @@ function renderNote() {
   const canEditNote = !(n.sharedBy && !n.canEdit);
   const nLock = (n.sharedBy || !noteInSharedArea(n)) ? '' : `<button class="note-lock ghost note-hide-mobile ${n.props && n.props.private ? 'on' : ''}" data-block-private-btn="note:${n.id}" data-tip="${n.props && n.props.private ? 'Private to you' : 'Keep private to you'}" aria-label="${n.props && n.props.private ? 'Private to you - hidden from the Space\'s members' : 'Keep private to you'}">${n.props && n.props.private ? '🔒' : '🔓'}</button>`;
   const nDel = n.sharedBy ? '' : `<button class="note-del note-del-ic ghost" data-del-note data-tip="Delete this note" aria-label="Delete this note">${MAIL_ICO.trash}</button>`;
-  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Share or publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item note-more-desktop" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button>${n.sharedBy ? '' : noteAliasSection(n, 'note')}</div></details>`;
+  const nMore = (n.sharedBy && !n.canEdit) ? '' : `<details class="mail-dd note-more"><summary class="note-more-sum" title="More" aria-label="More actions">⋯</summary><div class="mail-dd-menu note-more-menu">${n.sharedBy ? '' : `<button class="mail-dd-item" data-share-open="${n.id}" data-share-kind="note" data-share-title="${esc(n.title || '')}">Share or publish…</button><button class="mail-dd-item" data-exchange-share="${n.id}" data-exchange-share-title="${esc(n.title || '')}">Share to The Exchange</button>`}<button class="mail-dd-item note-more-desktop" data-note-to-table>▦ Turn into a table</button><button class="mail-dd-item" data-note-tidy>↻ Tidy up formatting</button><button class="mail-dd-item" data-note-print>Print</button><button class="mail-dd-item" data-note-pdf>Export as PDF</button>${n.sharedBy ? '' : noteAliasSection(n, 'note')}</div></details>`;
   const nFloat = canEditNote ? `<div class="note-float-ins"><button class="nfi-btn" data-note-insert-image data-tip="Insert an image" aria-label="Insert an image">${MAIL_ICO.image}</button><button class="nfi-btn" data-note-insert-file data-tip="Insert a file (PDF, doc…)" aria-label="Insert a file">${MAIL_ICO.paperclip}</button><button class="nfi-btn" data-note-insert-table data-tip="Insert a table" aria-label="Insert a table"><svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3.5" width="13" height="11"/><path d="M2.5 7.5h13M2.5 11h13M7 3.5v11M11.5 3.5v11"/></svg></button></div>` : '';
   $('#pane').innerHTML = `
     <div class="note-crumbs note-crumbs-split note-crumbs-slim">
@@ -30559,6 +30681,7 @@ document.addEventListener('click', (e) => {
   const mth = t.closest('[data-mail-thread]'); if (mth) { const k = mth.dataset.mailThread; state.mail.expanded = state.mail.expanded || {}; state.mail.expanded[k] = !state.mail.expanded[k]; renderMail(); return; }
   if (t.closest('[data-mail-shortcuts]')) { state.mail.shortcuts = !state.mail.shortcuts; renderMail(); return; }
   if (t.closest('[data-mail-plain]')) { state.mail.plain = !state.mail.plain; renderMail(); return; }
+  if (t.closest('[data-mail-print]')) { const dd = t.closest('details.mail-more'); if (dd) dd.removeAttribute('open'); printEmailOpen(); return; }
   if (t.closest('[data-mail-unsub]')) { mailUnsubscribe(); return; }
   if (t.closest('[data-mail-sc-close]')) { state.mail.shortcuts = false; renderMail(); return; }
   const mjoin = t.closest('[data-mail-join]'); if (mjoin) { openExternal(mjoin.dataset.mailJoin); return; }
@@ -30974,6 +31097,8 @@ document.addEventListener('click', (e) => {
   { const nc = t.closest('[data-note-cols]'); if (nc) { setNoteCols(Number(nc.dataset.noteCols) === 2 ? 2 : 1); return; } }
   if (t.closest('[data-note-to-table]')) { noteToTable(); return; }
   if (t.closest('[data-note-tidy]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); tidyNoteFormat(); return; }
+  if (t.closest('[data-note-print]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); printNoteCurrent(false); return; }
+  if (t.closest('[data-note-pdf]')) { const dd = t.closest('details.note-more'); if (dd) dd.removeAttribute('open'); printNoteCurrent(true); return; }
 
   // tasks
   const sh = t.closest('[data-sort]');
