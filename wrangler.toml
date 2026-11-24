@@ -15,26 +15,9 @@ run_worker_first = true
 # -> / (clean URLs), which loops when the Worker fetches it for the root.
 html_handling = "none"
 
-# Daybook's public marketing site. Same worker serves /home.html at the apex
-# (see the hostname switch in worker/index.js).
-#
-# A zone route (not custom_domain) because daybook.fyi already had DNS records:
-# this attaches the worker to the existing PROXIED record rather than creating a
-# new one. The apex/www records must be orange-clouded (proxied) for it to fire.
-[[routes]]
-pattern = "daybook.fyi/*"
-zone_name = "daybook.fyi"
-
-[[routes]]
-pattern = "www.daybook.fyi/*"
-zone_name = "daybook.fyi"
-
-# Per-user tenant subdomains (robski.daybook.fyi, and everyone else). Needs a
-# proxied wildcard DNS record (*.daybook.fyi) on the zone to resolve; the more
-# specific apex/www routes above still win for those hostnames.
-[[routes]]
-pattern = "*.daybook.fyi/*"
-zone_name = "daybook.fyi"
+# daybook.fyi routes removed 2026-11-24: that zone was retired in the move to
+# kaya.so, so wrangler could no longer find it and every deploy errored on it.
+# (Apex, www and the *.daybook.fyi tenant wildcard all lived on that one zone.)
 
 # ── lifebook.fyi (the rebrand) - same worker, served in parallel during the
 # transition. INERT until the lifebook.fyi zone has PROXIED (orange-cloud) DNS
