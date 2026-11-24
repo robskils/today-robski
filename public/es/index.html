@@ -261,6 +261,12 @@ h1, h2, h3 { font-weight: 500; }
 .kn-cap { font-family: var(--k-sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-faint); }
 @media (max-width: 860px) { .kn-grid { grid-template-columns: 1fr; gap: clamp(28px,6vw,44px); } .kn-fig { order: -1; align-items: flex-start; } .kn-def { text-align: left; flex-basis: 100%; } }
 
+/* The incense hero (#top) and the "dozen apps" hero below it are one opening:
+   close the band between them so they read as a pair, not two separate heroes.
+   (Robin, 2026-11-24.) */
+.kn-hero .band { padding-bottom: clamp(32px,4vw,60px); }
+.kn-hero + header.hero .hero-in { padding-top: clamp(36px,4vw,60px); }
+
 /* ── made to be quick: the capture demo ── */
 .quick { align-items: center; }
 .quick .lead { margin-top: 24px; max-width: 30em; }
@@ -420,7 +426,53 @@ h1, h2, h3 { font-weight: 500; }
   </div>
 </nav>
 
-<header id="top" class="hero">
+<section class="kn-hero" id="top">
+  <div class="wrap band reveal">
+    <div class="eyebrow">El nombre</div>
+    <div class="kn-grid">
+      <div class="kn-main">
+        <div class="kn-word">Kaya<span class="ko">香</span></div>
+        <div class="kn-dict">
+          <span class="kn-say">KAH-ya</span>
+          <span class="kn-pos">de 香, incienso</span>
+          <span class="kn-def">Incienso, y la conciencia que trae a una habitación.</span>
+        </div>
+        <div class="kn-story">
+          <p class="lead">Kaya es 香: incienso. Enciende uno y una habitación cambia - no mucho, solo lo justo para notarlo. El día se vuelve un poco más intencionado.</p>
+          <p class="lead">Esa es toda la idea. Una conciencia, una intención, una dignidad serena llevada a las horas corrientes - hasta que lo cotidiano deja de ser un trámite y se convierte en una práctica.</p>
+        </div>
+        <p class="kn-know">Lo cotidiano, <i>vivido como una práctica.</i></p>
+      </div>
+      <div class="kn-fig">
+        <svg viewBox="0 0 200 460" aria-hidden="true">
+          <defs>
+            <linearGradient id="knFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#000"></stop>
+              <stop offset="0.14" stop-color="#000"></stop>
+              <stop offset="0.5" stop-color="#fff" stop-opacity="0.5"></stop>
+              <stop offset="0.84" stop-color="#fff"></stop>
+              <stop offset="1" stop-color="#fff"></stop>
+            </linearGradient>
+            <mask id="knSmoke"><rect x="0" y="0" width="200" height="460" fill="url(#knFade)"></rect></mask>
+          </defs>
+          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" mask="url(#knSmoke)">
+            <path d="M100 314 C 113 286 85 267 96 239 C 107 211 123 195 108 165 C 93 135 83 119 98 91 C 111 65 104 51 100 34" stroke-width="1.9"></path>
+            <path d="M100 316 C 89 291 115 271 104 244 C 93 217 79 199 94 171 C 109 143 119 125 104 99 C 91 77 98 59 103 44" stroke-width="1.25" opacity=".72"></path>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-linecap="round">
+            <path d="M66 410 Q100 428 134 410" stroke-width="1.8" opacity=".85"></path>
+            <line x1="100" y1="322" x2="100" y2="412" stroke-width="2" opacity=".85"></line>
+          </g>
+          <circle cx="100" cy="320" r="7" fill="var(--k-gold)" opacity=".2"></circle>
+          <circle cx="100" cy="320" r="3.2" fill="var(--k-gold)"></circle>
+        </svg>
+        <span class="kn-cap">香 · kō · incienso</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<header class="hero">
   <div class="wrap hero-in reveal">
     <div class="eyebrow">Solo por invitación · acceso anticipado</div>
     <h1>Una docena de apps para gestionar tu vida. <i>Kaya las hace una.</i></h1>
@@ -504,52 +556,6 @@ h1, h2, h3 { font-weight: 500; }
       <div><div class="ethos-w">Inspirador</div><p class="lead">Mantiene a la vista aquello a lo que aspiras.</p></div>
       <div><div class="ethos-w">Revelador</div><p class="lead">Tus propios días, devueltos como algo con lo que actuar.</p></div>
       <div><div class="ethos-w">Bello</div><p class="lead">Porque aquí es donde va tu vida, y se lo merece.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="rule-top" id="name">
-  <div class="wrap band reveal">
-    <div class="eyebrow">El nombre</div>
-    <div class="kn-grid">
-      <div class="kn-main">
-        <div class="kn-word">Kaya<span class="ko">香</span></div>
-        <div class="kn-dict">
-          <span class="kn-say">KAH-ya</span>
-          <span class="kn-pos">de 香, incienso</span>
-          <span class="kn-def">Incienso, y la conciencia que trae a una habitación.</span>
-        </div>
-        <div class="kn-story">
-          <p class="lead">Kaya es 香: incienso. Enciende uno y una habitación cambia - no mucho, solo lo justo para notarlo. El día se vuelve un poco más intencionado.</p>
-          <p class="lead">Esa es toda la idea. Una conciencia, una intención, una dignidad serena llevada a las horas corrientes - hasta que lo cotidiano deja de ser un trámite y se convierte en una práctica.</p>
-        </div>
-        <p class="kn-know">Lo cotidiano, <i>vivido como una práctica.</i></p>
-      </div>
-      <div class="kn-fig">
-        <svg viewBox="0 0 200 460" aria-hidden="true">
-          <defs>
-            <linearGradient id="knFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#000"></stop>
-              <stop offset="0.14" stop-color="#000"></stop>
-              <stop offset="0.5" stop-color="#fff" stop-opacity="0.5"></stop>
-              <stop offset="0.84" stop-color="#fff"></stop>
-              <stop offset="1" stop-color="#fff"></stop>
-            </linearGradient>
-            <mask id="knSmoke"><rect x="0" y="0" width="200" height="460" fill="url(#knFade)"></rect></mask>
-          </defs>
-          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" mask="url(#knSmoke)">
-            <path d="M100 314 C 113 286 85 267 96 239 C 107 211 123 195 108 165 C 93 135 83 119 98 91 C 111 65 104 51 100 34" stroke-width="1.9"></path>
-            <path d="M100 316 C 89 291 115 271 104 244 C 93 217 79 199 94 171 C 109 143 119 125 104 99 C 91 77 98 59 103 44" stroke-width="1.25" opacity=".72"></path>
-          </g>
-          <g fill="none" stroke="currentColor" stroke-linecap="round">
-            <path d="M66 410 Q100 428 134 410" stroke-width="1.8" opacity=".85"></path>
-            <line x1="100" y1="322" x2="100" y2="412" stroke-width="2" opacity=".85"></line>
-          </g>
-          <circle cx="100" cy="320" r="7" fill="var(--k-gold)" opacity=".2"></circle>
-          <circle cx="100" cy="320" r="3.2" fill="var(--k-gold)"></circle>
-        </svg>
-        <span class="kn-cap">香 · kō · incienso</span>
-      </div>
     </div>
   </div>
 </section>
