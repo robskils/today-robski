@@ -20909,9 +20909,13 @@ function mailPilesRowHtml() {
     const cnt = p.n == null ? '' : `<span class="mail-pile-c${hot ? ' hot' : ''}">${p.n}</span>`;
     return `<button class="mail-pile${sel === p.k ? ' on' : ''}" ${p.attr}><span class="mail-pile-l">${p.label}</span>${cnt}</button>`;
   }).join('');
+  // Robin (2026-11-25): one row. Drafts/Sent/Spam/Bin join the piles at the SAME
+  // size, rendered as .mail-pile tabs, not quiet links pushed to the right. Their
+  // keys never collide with the pile keys, so mailSelectedPile() keeps exactly one
+  // tab active across the whole row.
   const FOLDS = [['drafts', 'Drafts'], ['sent', 'Sent'], ['spam', 'Spam'], ['trash', 'Bin']];
-  const foldEls = FOLDS.map(([k, l]) => { const dc = k === 'drafts' ? draftCount() : 0; return `<button class="mail-foldlink${m.folder === k ? ' on' : ''}" data-mail-folder="${k}">${l}${dc ? ` ${dc}` : ''}</button>`; }).join('');
-  return `<div class="mail-piles"><div class="mail-piles-row">${pileEls}</div><div class="mail-folds">${foldEls}</div></div>`;
+  const foldEls = FOLDS.map(([k, l]) => { const dc = k === 'drafts' ? draftCount() : 0; const cnt = dc ? `<span class="mail-pile-c">${dc}</span>` : ''; return `<button class="mail-pile${sel === k ? ' on' : ''}" data-mail-folder="${k}"><span class="mail-pile-l">${l}</span>${cnt}</button>`; }).join('');
+  return `<div class="mail-piles"><div class="mail-piles-row">${pileEls}${foldEls}</div></div>`;
 }
 // Which day-group an email falls in, newest first.
 function mailDayLabel(dateStr) {
