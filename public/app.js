@@ -10326,9 +10326,9 @@ function homeTodayTabDefs() {
   const defs = [];
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
-  defs.push(['cal', 'Calendar', evN, false]);
+  defs.push(['cal', 'Today', evN, false]);
   defs.push(['radar', 'In View', radN, r.overdue.length > 0]);
-  if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Mail', n, n > 0]); }
+  if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Inbox', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Routines', 0, false]);
