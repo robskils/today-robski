@@ -10337,9 +10337,9 @@ function homeTodayTabDefs() {
   defs.push(['radar', 'In View', radN, r.overdue.length > 0]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Inbox', n, n > 0]); }
   if (modOn('tasks')) defs.push(['tasks', 'First', priorityTasks().length, false]);
-  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Routines', 0, false]);
   if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
+  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }   // Messages last, after Cards (Robin, 2026-11-25)
   return defs;
 }
 function homeTodayTabBody(k, off) {
