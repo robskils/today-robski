@@ -391,10 +391,17 @@ document.addEventListener('keydown', (ev) => {
   const cn = ev.target.closest('[data-goal-connect]');
   if (cn && g) { ev.preventDefault(); const v = cn.value.trim(); if (!v) return;
     if (/^https?:\/\//i.test(v) || /^[\w-]+\.[a-z]{2,}(\/|$)/i.test(v)) { const url = /^https?:\/\//i.test(v) ? v : 'https://' + v; const links = blockLinks(g).slice(); links.push({ url }); gp(g).links = links; cn.value = ''; patchGoal(g.id, { links }, true); renderGoalCard(); toast('Link connected.'); return; }
-    const q = v.toLowerCase(); const linked = new Set((state.goal_open.notes || []).map((n) => n.id));
+    const q = v.toLowerCase();
+    // People first: a typed name is almost always a contact (this panel leads with
+    // People), then fall back to a note by title. The box searched only notes
+    // before, so typing a contact's name found nothing. (Robin, 2026-11-25.)
+    const linkedC = new Set((state.goal_open.contacts || []).map((c) => c.id));
+    const c = (state.goal_open.allContacts || []).find((x) => (x.title || '').toLowerCase().includes(q) && !linkedC.has(x.id));
+    if (c) { cn.value = ''; linkContactToGoal(c.id); return; }
+    const linked = new Set((state.goal_open.notes || []).map((n) => n.id));
     const n = (state.goal_open.allNotes || []).find((x) => (x.title || '').toLowerCase().includes(q) && !linked.has(x.id));
     if (n) { cn.value = ''; linkNoteToGoal(n.id); return; }
-    toast('Paste a link, or type part of a note’s name to connect it.'); return; }
+    toast('Nothing matched. Paste a link, or type part of a person or note name.'); return; }
 });
 document.addEventListener('mousedown', (ev) => {
   const d = ev.target.closest && ev.target.closest('#pane-div'); if (!d || !state.split) return; ev.preventDefault();
@@ -10329,7 +10336,7 @@ function homeTodayTabDefs() {
   defs.push(['cal', 'Today', evN, false]);
   defs.push(['radar', 'In View', radN, r.overdue.length > 0]);
   if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Inbox', n, n > 0]); }
-  if (modOn('tasks')) defs.push(['tasks', 'Tasks', priorityTasks().length, false]);
+  if (modOn('tasks')) defs.push(['tasks', 'First', priorityTasks().length, false]);
   if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }
   if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Routines', 0, false]);
   if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
