@@ -435,6 +435,32 @@ document.addEventListener('dragend', () => { state.besideDragKey = null; const p
 document.addEventListener('dragover', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && state.split && state.split.tool && state.besideDragKey) { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch {} if (!p2.classList.contains('beside-over')) { p2.classList.add('beside-over'); p2.setAttribute('data-drop-hint', besideDropHint()); } } });
 document.addEventListener('dragleave', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && !p2.contains(ev.relatedTarget)) { p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); } });
 document.addEventListener('drop', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (!p2 || !state.split || !state.split.tool) return; ev.preventDefault(); p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); let key = state.besideDragKey; try { key = ev.dataTransfer.getData('text/plain') || key; } catch {} state.besideDragKey = null; if (key) besideMakeFromMail(state.split.tool, key); });
+// Routines: drag a space group's grip to reorder the groups. The grip is the only
+// drag source; the whole .trk-area is a drop target. (Robin, 2026-11-25.)
+document.addEventListener('dragstart', (ev) => {
+  const grip = ev.target.closest && ev.target.closest('[data-trk-areagrip]'); if (!grip) return;
+  const area = grip.closest('[data-trk-area-key]'); if (!area) return;
+  state.trkDragKey = area.getAttribute('data-trk-area-key');
+  try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', state.trkDragKey); } catch {}
+  area.classList.add('trk-area-dragging');
+});
+document.addEventListener('dragover', (ev) => {
+  if (!state.trkDragKey) return;
+  const area = ev.target.closest && ev.target.closest('[data-trk-area-key]'); if (!area) return;
+  ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'move'; } catch {}
+  document.querySelectorAll('.trk-area-over').forEach((e) => { if (e !== area) e.classList.remove('trk-area-over'); });
+  if (area.getAttribute('data-trk-area-key') !== state.trkDragKey) area.classList.add('trk-area-over');
+});
+document.addEventListener('drop', (ev) => {
+  if (!state.trkDragKey) return;
+  const area = ev.target.closest && ev.target.closest('[data-trk-area-key]');
+  const from = state.trkDragKey; state.trkDragKey = null;
+  document.querySelectorAll('.trk-area-over, .trk-area-dragging').forEach((e) => e.classList.remove('trk-area-over', 'trk-area-dragging'));
+  if (!area) return; ev.preventDefault();
+  const to = area.getAttribute('data-trk-area-key');
+  if (from && to && from !== to) trkReorderAreas(from, to);
+});
+document.addEventListener('dragend', () => { if (state.trkDragKey == null && !document.querySelector('.trk-area-dragging')) return; state.trkDragKey = null; document.querySelectorAll('.trk-area-over, .trk-area-dragging').forEach((e) => e.classList.remove('trk-area-over', 'trk-area-dragging')); });
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -13900,6 +13926,23 @@ const areaSecOpen = (k) => {
 // Tracker area sections: collapsible, remembered per area.
 const trkOpen = (k) => { try { return !(JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}')[k]); } catch { return true; } };
 function trkToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.trk.collapsed') || '{}'); if (c[k]) delete c[k]; else c[k] = 1; localStorage.setItem('life.trk.collapsed', JSON.stringify(c)); } catch {} rerenderCurrent(); }
+// Routines space-group order: alphabetical is only the STARTING position - you can
+// drag the groups to reorder them, and the custom order (a list of space keys) is
+// remembered and synced across devices via kv. (Robin, 2026-11-25.)
+function trkAreaOrderGet() {
+  if (!state.__trkOrderSynced) { state.__trkOrderSynced = true; api('/api/kv/trk_areaorder').then((r) => { if (r && r.value) { try { localStorage.setItem('life.trk.areaorder', r.value); } catch {} if (state.view && state.view.type === 'tracker') renderTracker(); } }).catch(() => {}); }
+  try { const v = JSON.parse(localStorage.getItem('life.trk.areaorder') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function trkAreaOrderSet(keys) { try { localStorage.setItem('life.trk.areaorder', JSON.stringify(keys)); } catch {} api('/api/kv/trk_areaorder', { method: 'PUT', body: JSON.stringify({ value: JSON.stringify(keys) }) }).catch(() => {}); }
+function trkReorderAreas(fromKey, toKey) {
+  const keys = [...document.querySelectorAll('.trk-dash [data-trk-area-key]')].map((e) => e.getAttribute('data-trk-area-key'));
+  const fi = keys.indexOf(fromKey); if (fi === -1) return;
+  keys.splice(fi, 1);
+  const ti = keys.indexOf(toKey);
+  keys.splice(ti === -1 ? keys.length : ti, 0, fromKey);   // land just above the group dropped on
+  trkAreaOrderSet(keys);
+  if (state.view && state.view.type === 'tracker') renderTracker();
+}
 function areaSecToggle(k) { try { const c = JSON.parse(localStorage.getItem('life.area.secs') || '{}'); c[areaSecKey(k)] = areaSecOpen(k) ? 1 : 0; localStorage.setItem('life.area.secs', JSON.stringify(c)); } catch {} renderArea(); }
 // Jump from the area header's count line to that section: open it if collapsed,
 // then scroll it into view. (Robin: the counts should be clickable.)
@@ -17608,7 +17651,12 @@ function t2TrackerHtml(manage) {
   const laneOf = (k) => (P.lanes || []).find((l) => l.key === k) || { label: k, hue: 0 };
   const groups = new Map();
   tracked.forEach((a) => { const ar = practiceArea(a); const key = ar ? ar.id : `lane:${a.lane}`; if (!groups.has(key)) groups.set(key, { areaId: ar ? ar.id : null, area: ar, label: ar ? (ar.title || 'Untitled') : laneOf(a.lane).label, hue: ar ? hueOf(ar) : laneOf(a.lane).hue, items: [] }); groups.get(key).items.push(a); });
-  const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label));
+  // Alphabetical is only the STARTING order; a saved drag order (by space key) wins,
+  // with any space not yet placed falling in alphabetically at the end.
+  const _keyOf = (g) => g.areaId || ('lane:' + g.label);
+  const _ord = trkAreaOrderGet();
+  const _rank = (g) => { const i = _ord.indexOf(_keyOf(g)); return i === -1 ? 1e9 : i; };
+  const ordered = [...groups.values()].sort((x, y) => x.label.localeCompare(y.label)).sort((x, y) => _rank(x) - _rank(y));
   // A DAILY habit tracker: today is the point (the big ✓), but you can still tick
   // back a recent day you missed. So we keep a short run of day-dots ENDING TODAY -
   // no "7-13 Sept" range label and no week-paging navigator, nothing that frames
@@ -17645,8 +17693,8 @@ function t2TrackerHtml(manage) {
     }).join('');
     const key = g.areaId || ('lane:' + g.label);
     const open = trkOpen(key);
-    return `<div class="trk-area" style="--h:${g.hue}">
-      <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button"><span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
+    return `<div class="trk-area" style="--h:${g.hue}" data-trk-area-key="${esc(key)}">
+      <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button">${manage ? `<span class="trk-area-grip" data-trk-areagrip draggable="true" title="Drag to reorder spaces" aria-hidden="true">⠿</span>` : ''}<span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yest' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
       ${areaStat && areaStat.status === 'slipping' && areaStat.label ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>
@@ -30186,7 +30234,7 @@ document.addEventListener('click', (e) => {
   { const el = t.closest('[data-pe-unlink-contact]'); if (el) { const id = el.dataset.peUnlinkContact; peMeta().contacts = peMeta().contacts.map(String).filter((x) => x !== String(id)); renderPeAttach(); return; } }
   { const el = t.closest('[data-pe-open-contact]'); if (el) { closePracticeEditor(); openContactCard(el.dataset.peOpenContact).catch((x) => toast(x.message)); return; } }
   // Today (native) view
-  { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad]')) { trkToggle(tt.dataset.trkToggle); return; } }
+  { const tt = t.closest('[data-trk-toggle]'); if (tt && !t.closest('select, button, a, [data-trk-area-cad], [data-trk-areagrip]')) { trkToggle(tt.dataset.trkToggle); return; } }
   { const tb = t.closest('[data-t2-tab]'); if (tb) { state.today.tab = tb.dataset.t2Tab; renderToday(); return; } }
   { const pr = t.closest('[data-t2-prio]'); if (pr) { const s = state.today.taskPrios instanceof Set ? state.today.taskPrios : (state.today.taskPrios = new Set()); const p = pr.dataset.t2Prio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
   { const pr = t.closest('[data-t2-pracprio]'); if (pr) { const s = state.today.pracPrios instanceof Set ? state.today.pracPrios : (state.today.pracPrios = new Set()); const p = pr.dataset.t2Pracprio; if (s.has(p)) s.delete(p); else s.add(p); renderToday(); return; } }
