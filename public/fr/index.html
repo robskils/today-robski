@@ -105,10 +105,8 @@ i, em, .i { font-style: italic; }
 .goldt { color: var(--k-goldt); }
 
 /* ── eyebrow: a 28×1px gold rule, then a wide-tracked Jost label ── */
-.eyebrow { display: inline-flex; align-items: center; gap: 12px; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); white-space: nowrap; }
-.eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
+.eyebrow { display: inline-flex; align-items: center; font-family: var(--k-sans); font-weight: 500; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--k-goldt); white-space: nowrap; }
 .eyebrow.center { justify-content: center; }
-.eyebrow.center::after { content: ""; width: 28px; height: 1px; background: var(--k-gold); flex: none; }
 .eyebrow.on-forest { color: var(--k-gold); }
 
 /* ── buttons: small, square, Jost 500 uppercase ── */
@@ -181,6 +179,9 @@ h1, h2, h3 { font-weight: 500; }
 /* ── hero ── */
 .hero-in { padding-top: clamp(56px,7vw,112px); padding-bottom: clamp(64px,7vw,112px); }
 .hero h1 { margin: 28px 0 0; font-size: clamp(56px,9.6vw,140px); line-height: .98; letter-spacing: -.015em; text-wrap: balance; }
+/* The "dozen apps" block is now the second statement, below the incense hero -
+   a strong sub-headline, not a co-equal hero. (Robin, 2026-11-25.) */
+.intro h1 { font-size: clamp(38px,5.4vw,84px); line-height: 1.0; }
 .hero h1 i { font-weight: 300; color: var(--k-goldt); }
 .hero-row { margin-top: clamp(36px,4.4vw,64px); align-items: end; }
 .hero-sub { font-size: clamp(20px,1.8vw,25px); line-height: 1.5; color: var(--k-mute); max-width: 34em; text-wrap: pretty; }
@@ -258,6 +259,11 @@ h1, h2, h3 { font-weight: 500; }
 .kn-know i { font-weight: 300; color: var(--k-goldt); }
 .kn-fig { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .kn-fig svg { display: block; width: clamp(150px,20vw,236px); height: auto; color: color-mix(in oklab, var(--k-ink), transparent 42%); }
+/* Real incense photo (smoke on near-black): mix-blend screen drops the dark
+   ground into the night sky so only the smoke and the ember glow show, the way
+   the drawn version used to. A touch more contrast crushes the background edges. */
+.kn-smoke { display: block; width: 100%; max-width: 272px; height: auto; mix-blend-mode: screen; filter: contrast(1.32) brightness(0.98);
+  -webkit-mask-image: radial-gradient(118% 94% at 50% 44%, #000 64%, transparent 100%); mask-image: radial-gradient(118% 94% at 50% 44%, #000 64%, transparent 100%); }
 .kn-cap { font-family: var(--k-sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--k-faint); }
 @media (max-width: 860px) { .kn-grid { grid-template-columns: 1fr; gap: clamp(28px,6vw,44px); } .kn-fig { order: -1; align-items: flex-start; } .kn-def { text-align: left; flex-basis: 100%; } }
 
@@ -360,7 +366,7 @@ h1, h2, h3 { font-weight: 500; }
 .lang-menu a.on { color: var(--k-goldt); }
 @media (max-width: 760px){ .lang-menu { right: 0; left: auto; } }
 
-@media (max-width: 640px) { .priv-body { padding-left: 0; } .eyebrow { white-space: normal; letter-spacing: .2em; } .eyebrow::before { align-self: center; } .know { font-size: 32px; } }
+@media (max-width: 640px) { .priv-body { padding-left: 0; } .eyebrow { white-space: normal; letter-spacing: .2em; } .know { font-size: 32px; } }
 @media (prefers-reduced-motion: reduce) { .pair-join, .mark, .demo-rows { transition: none; animation: none; } }
 
 </style>
@@ -435,44 +441,23 @@ h1, h2, h3 { font-weight: 500; }
         <div class="kn-dict">
           <span class="kn-say">KAH-ya</span>
           <span class="kn-pos">de 香, encens</span>
-          <span class="kn-def">L'encens, et la conscience qu'il apporte dans une pièce.</span>
+          <span class="kn-def">L'encens apporte la conscience.</span>
         </div>
         <div class="kn-story">
-          <p class="lead">Kaya, c'est 香 : l'encens. On en allume un, et une pièce change - à peine, juste assez pour qu'on le remarque. La journée devient un peu plus intentionnelle.</p>
+          <p class="lead">Allumer de l'encens est un petit geste délibéré. Kaya apporte cette même intention et cette conscience au quotidien.</p>
           <p class="lead">C'est toute l'idée. Une conscience, une intention, une dignité tranquille apportée aux heures ordinaires - jusqu'à ce que le quotidien cesse d'être une corvée et devienne une pratique.</p>
         </div>
         <p class="kn-know">Le quotidien, <i>vécu comme une pratique.</i></p>
       </div>
       <div class="kn-fig">
-        <svg viewBox="0 0 200 460" aria-hidden="true">
-          <defs>
-            <linearGradient id="knFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#000"></stop>
-              <stop offset="0.14" stop-color="#000"></stop>
-              <stop offset="0.5" stop-color="#fff" stop-opacity="0.5"></stop>
-              <stop offset="0.84" stop-color="#fff"></stop>
-              <stop offset="1" stop-color="#fff"></stop>
-            </linearGradient>
-            <mask id="knSmoke"><rect x="0" y="0" width="200" height="460" fill="url(#knFade)"></rect></mask>
-          </defs>
-          <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" mask="url(#knSmoke)">
-            <path d="M100 314 C 113 286 85 267 96 239 C 107 211 123 195 108 165 C 93 135 83 119 98 91 C 111 65 104 51 100 34" stroke-width="1.9"></path>
-            <path d="M100 316 C 89 291 115 271 104 244 C 93 217 79 199 94 171 C 109 143 119 125 104 99 C 91 77 98 59 103 44" stroke-width="1.25" opacity=".72"></path>
-          </g>
-          <g fill="none" stroke="currentColor" stroke-linecap="round">
-            <path d="M66 410 Q100 428 134 410" stroke-width="1.8" opacity=".85"></path>
-            <line x1="100" y1="322" x2="100" y2="412" stroke-width="2" opacity=".85"></line>
-          </g>
-          <circle cx="100" cy="320" r="7" fill="var(--k-gold)" opacity=".2"></circle>
-          <circle cx="100" cy="320" r="3.2" fill="var(--k-gold)"></circle>
-        </svg>
+        <img class="kn-smoke" src="/brand/incense.jpg?v=202611241131" alt="Incense smoke rising from a glowing ember" width="1200" height="1504">
         <span class="kn-cap">香 · kō · encens</span>
       </div>
     </div>
   </div>
 </section>
 
-<header class="hero">
+<header class="hero intro">
   <div class="wrap hero-in reveal">
     <div class="eyebrow">Sur invitation · accès anticipé</div>
     <h1>Une dizaine d'applis pour gérer votre vie. <i>Kaya n'en fait qu'une.</i></h1>
