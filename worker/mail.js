@@ -485,7 +485,7 @@ export async function smtpSend(env, acct, msg) {
   await say(btoa(acct.username)); await expect(['334'], 'AUTH user');
   await say(btoa(pass)); await expect(['235'], 'AUTH pass');
   await say(`MAIL FROM:<${cleanAddr(acct.email)}>`); await expect(['250'], 'MAIL FROM');
-  for (const to of msg.rcpts) { await say(`RCPT TO:<${to}>`); await expect(['250', '251'], 'RCPT TO'); }
+  for (const to of msg.rcpts) { await say(`RCPT TO:<${cleanAddr(to)}>`); await expect(['250', '251'], 'RCPT TO'); }
   await say('DATA'); await expect(['354'], 'DATA');
   const body = msg.raw.replace(/\r?\n/g, '\r\n').replace(/\r\n\./g, '\r\n..'); // dot-stuff
   await writer.write(enc.encode(body + '\r\n.\r\n')); await expect(['250'], 'send');
@@ -1600,7 +1600,12 @@ export async function handleMail(request, env, url, json, err) {
 
     if (sub === 'send' && method === 'POST') {
       const b = await request.json();
-      const rcpts = [b.to, b.cc, b.bcc].filter(Boolean).join(',').split(',').map((s) => s.trim()).filter(Boolean);
+      // Envelope recipients must be BARE addr-specs. Split on comma OR semicolon,
+      // and reduce each "Name <addr>" (or a space-padded addr) to just the address
+      // via cleanAddr - the same helper the From/MAIL FROM use. Without this a
+      // recipient entered as a display name hit "553 5.1.3 Syntax error in recipient
+      // address" at RCPT TO and the whole send aborted before DATA. (Robin.)
+      const rcpts = [b.to, b.cc, b.bcc].filter(Boolean).join(',').split(/[,;]/).map((s) => cleanAddr(s)).filter((s) => s.includes('@'));
       if (!rcpts.length) return err('a recipient is required', request, 400);
       // Pull each attachment's bytes from R2 and base64 them into the message.
       const outAtts = [];
