@@ -4820,10 +4820,17 @@ async function handleInviteRequest(request, env, json, err) {
   const email = String(b.email || '').trim().toLowerCase().slice(0, 200);
   const why = String(b.why || '').trim().slice(0, 1200);
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('Please add your name and a valid email.', request, 400);
+  // Already on Kaya? Don't queue them for a place they already have - tell them to
+  // sign in instead (no password; a one-time code goes to their inbox). This is the
+  // trap where someone already a member kept "requesting to join" forever. (Robin.)
+  try { if (await getUserByEmail(env, email)) return json({ ok: true, already: true }, request); }
+  catch (e) { console.error('invite-request member check:', e.message); }
+  // One pending request per address. If they've already asked - and we haven't yet
+  // invited or dismissed them, which deletes the row - don't add a duplicate, and
+  // don't re-notify the owner. (Robin: two requests from the same person isn't two.)
+  const pendingDup = await env.DB.prepare('SELECT 1 FROM invite_requests WHERE email = ? LIMIT 1').bind(email).first().catch(() => null);
+  if (pendingDup) return json({ ok: true, duplicate: true }, request);
   let stored = false, mailed = false;
-  // Only the first request from an address gets an acknowledgement, so this form
-  // can't be used to fill someone's inbox.
-  const seenBefore = await env.DB.prepare('SELECT 1 FROM invite_requests WHERE email = ? LIMIT 1').bind(email).first().catch(() => true);
   try {
     await env.DB.prepare('INSERT INTO invite_requests (name, email, why, source, created_at) VALUES (?,?,?,?,?)')
       .bind(name, email, why, String(b.source || '').slice(0, 300), new Date().toISOString()).run();
@@ -4845,7 +4852,7 @@ async function handleInviteRequest(request, env, json, err) {
   } catch (e) { console.error('invite-request mail:', e.message); }
   // Lost both ways: say so, so the form can offer the email address, not a false "thank you".
   if (!stored && !mailed) return err('We could not save that just now.', request, 503);
-  if (!seenBefore && stored) {
+  if (stored) {
     try {
       const first = name.split(/\s+/)[0];
       const html = brandedSystemEmail({ home: 'https://kaya.so', eyebrow: 'Your invitation', headline: `Thank you, ${first}.`, bodyHtml: "<p>We've got your request. Kaya grows slowly, by word of mouth, so it may take a little while. We'll write again when your place is ready.</p>", ctaHref: 'https://kaya.so', ctaLabel: 'See what Kaya is', preheader: "We've got your request.", title: 'Your Kaya invitation' });

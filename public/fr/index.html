@@ -759,7 +759,7 @@ h1, h2, h3 { font-weight: 500; }
     note.hidden = true; btn.disabled = true; btn.textContent = 'Envoi…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Kaya grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’aimerait, parlez-lui de nous.</p></div>'; })
+      .then(function (d) { if (d && d.already) { invForm.innerHTML = '<div class="invite-thanks"><h3>Vous êtes déjà sur Kaya.</h3><p>Rien à attendre - et pas de mot de passe. Connectez-vous, et nous vous enverrons un code à usage unique par e-mail.</p><p style="margin-top:18px"><button type="button" class="btn btn-primary" id="if-signin">Se connecter →</button></p></div>'; var b2 = document.getElementById('if-signin'); if (b2) b2.addEventListener('click', function () { var se = document.getElementById('signin-email'); if (se) se.value = email; openSignin(); }); return; } invForm.innerHTML ='<div class="invite-thanks"><h3>Merci.</h3><p>Nous reviendrons vers vous bientôt. Kaya grandit par le bouche-à-oreille - si vous connaissez quelqu’un qui l’aimerait, parlez-lui de nous.</p></div>'; })
       .catch(function () { fail('Un problème est survenu - écrivez à contact@kaya.so et nous arrangerons cela.'); });
   });
 

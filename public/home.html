@@ -764,7 +764,7 @@ function init_tracer() { var tracer = new Tracer({ websiteId: "6d578802-9a70-462
     note.hidden = true; btn.disabled = true; btn.textContent = 'Sending…';
     fetch('/api/invite-request', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name, email: email, why: heard, hp: hp, source: document.referrer || '' }) })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-      .then(function () { invForm.innerHTML = '<div class="invite-thanks"><h3>Thank you.</h3><p>We\'ll be in touch soon. Kaya grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
+      .then(function (d) { if (d && d.already) { invForm.innerHTML = '<div class="invite-thanks"><h3>You\'re already on Kaya.</h3><p>No account to wait for - and no password. Just sign in and we\'ll email you a one-time code.</p><p style="margin-top:18px"><button type="button" class="btn btn-primary" id="if-signin">Sign in →</button></p></div>'; var b2 = document.getElementById('if-signin'); if (b2) b2.addEventListener('click', function () { var se = document.getElementById('signin-email'); if (se) se.value = email; openSignin(); }); return; } invForm.innerHTML ='<div class="invite-thanks"><h3>Thank you.</h3><p>We\'ll be in touch soon. Kaya grows by word of mouth - if you know someone who\'d love it, send them our way.</p></div>'; })
       .catch(function () { fail('Something went wrong - email contact@kaya.so and we\'ll sort you out.'); });
   });
 
