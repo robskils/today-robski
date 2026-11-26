@@ -9423,9 +9423,9 @@ function homeSpacesAsideHtml() {
   scored2.sort((x, y) => ((y.pinned ? 1 : 0) - (x.pinned ? 1 : 0)) || ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
   // Robin (2026-11-26): keep it simple - four boxes, the four most RECENT Spaces,
   // then a "see all" link. No per-row item lines, deadlines, dots or counts.
-  const recent = areas.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 4);
+  const recent = areas.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 6);
   const boxes = recent.map((a) => `<button class="home-sa-box" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('');
-  const allLine = areas.length > 4 ? `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>` : '';
+  const allLine = areas.length > 6 ? `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>` : '';
   return `<div class="home-sa-head home-sa-head-nav" data-open-areas role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap"><div class="home-sa-boxes">${boxes}</div>${allLine}</div>`;
 }
 // Your Notes on Today: the four most recent, mirroring Your Spaces and sitting beside
@@ -9434,8 +9434,8 @@ function homeNotesAsideHtml() {
   const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note')
     .slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
   // Robin (2026-11-26): four boxes, the four most recent notes, then "see all".
-  const boxes = notes.slice(0, 4).map((n) => `<button class="home-sa-box" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
-  const allLine = notes.length > 4 ? `<button class="home-sa-allrow" data-open-notes><span class="home-sa-alltxt">See all ${notes.length} notes →</span></button>` : '';
+  const boxes = notes.slice(0, 6).map((n) => `<button class="home-sa-box" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
+  const allLine = notes.length > 6 ? `<button class="home-sa-allrow" data-open-notes><span class="home-sa-alltxt">See all ${notes.length} notes →</span></button>` : '';
   return `<div class="home-sa-head home-sa-head-nav" data-open-notes role="button" tabindex="0"><span class="home-sa-title">Your Notes</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap"><div class="home-sa-boxes">${boxes}</div>${allLine}</div>`;
 }
 // Today's two-up band: Your Spaces (left) and Your Notes (right), half a row each, up
