@@ -435,32 +435,35 @@ document.addEventListener('dragend', () => { state.besideDragKey = null; const p
 document.addEventListener('dragover', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && state.split && state.split.tool && state.besideDragKey) { ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch {} if (!p2.classList.contains('beside-over')) { p2.classList.add('beside-over'); p2.setAttribute('data-drop-hint', besideDropHint()); } } });
 document.addEventListener('dragleave', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (p2 && !p2.contains(ev.relatedTarget)) { p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); } });
 document.addEventListener('drop', (ev) => { const p2 = ev.target.closest && ev.target.closest('#pane2'); if (!p2 || !state.split || !state.split.tool) return; ev.preventDefault(); p2.classList.remove('beside-over'); p2.removeAttribute('data-drop-hint'); let key = state.besideDragKey; try { key = ev.dataTransfer.getData('text/plain') || key; } catch {} state.besideDragKey = null; if (key) besideMakeFromMail(state.split.tool, key); });
-// Routines: drag a space group's grip to reorder the groups. The grip is the only
-// drag source; the whole .trk-area is a drop target. (Robin, 2026-11-25.)
-document.addEventListener('dragstart', (ev) => {
+// Routines: drag a space group's grip to reorder the groups. POINTER-based (not
+// HTML5 drag) so it works with a mouse AND on touch - native drag-and-drop was not
+// firing inside the app, and never works from a touch screen. (Robin, 2026-11-26.)
+let _trkDrag = null;
+document.addEventListener('pointerdown', (ev) => {
   const grip = ev.target.closest && ev.target.closest('[data-trk-areagrip]'); if (!grip) return;
   const area = grip.closest('[data-trk-area-key]'); if (!area) return;
-  state.trkDragKey = area.getAttribute('data-trk-area-key');
-  try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', state.trkDragKey); } catch {}
-  area.classList.add('trk-area-dragging');
+  ev.preventDefault();
+  _trkDrag = { key: area.getAttribute('data-trk-area-key'), overKey: null };
+  area.classList.add('trk-area-dragging'); document.body.classList.add('trk-reordering');
+  try { grip.setPointerCapture(ev.pointerId); } catch {}
 });
-document.addEventListener('dragover', (ev) => {
-  if (!state.trkDragKey) return;
-  const area = ev.target.closest && ev.target.closest('[data-trk-area-key]'); if (!area) return;
-  ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'move'; } catch {}
-  document.querySelectorAll('.trk-area-over').forEach((e) => { if (e !== area) e.classList.remove('trk-area-over'); });
-  if (area.getAttribute('data-trk-area-key') !== state.trkDragKey) area.classList.add('trk-area-over');
+document.addEventListener('pointermove', (ev) => {
+  if (!_trkDrag) return;
+  const under = document.elementFromPoint(ev.clientX, ev.clientY);
+  const area = under && under.closest && under.closest('[data-trk-area-key]');
+  document.querySelectorAll('.trk-area-over').forEach((e) => e.classList.remove('trk-area-over'));
+  _trkDrag.overKey = (area && area.getAttribute('data-trk-area-key') !== _trkDrag.key) ? area.getAttribute('data-trk-area-key') : null;
+  if (_trkDrag.overKey && area) area.classList.add('trk-area-over');
 });
-document.addEventListener('drop', (ev) => {
-  if (!state.trkDragKey) return;
-  const area = ev.target.closest && ev.target.closest('[data-trk-area-key]');
-  const from = state.trkDragKey; state.trkDragKey = null;
+function trkDragFinish() {
+  if (!_trkDrag) return;
+  const d = _trkDrag; _trkDrag = null;
+  document.body.classList.remove('trk-reordering');
   document.querySelectorAll('.trk-area-over, .trk-area-dragging').forEach((e) => e.classList.remove('trk-area-over', 'trk-area-dragging'));
-  if (!area) return; ev.preventDefault();
-  const to = area.getAttribute('data-trk-area-key');
-  if (from && to && from !== to) trkReorderAreas(from, to);
-});
-document.addEventListener('dragend', () => { if (state.trkDragKey == null && !document.querySelector('.trk-area-dragging')) return; state.trkDragKey = null; document.querySelectorAll('.trk-area-over, .trk-area-dragging').forEach((e) => e.classList.remove('trk-area-over', 'trk-area-dragging')); });
+  if (d.overKey && d.overKey !== d.key) trkReorderAreas(d.key, d.overKey);
+}
+document.addEventListener('pointerup', trkDragFinish);
+document.addEventListener('pointercancel', trkDragFinish);
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
 // Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
@@ -5634,12 +5637,12 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
-        ['Spaces', 'data-open-areas', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-        ['Routines', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''],
+        ['Spaces', 'data-open-areas', ''], ['Routines', 'data-open-practices', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
+        ['Day Planner', 'data-open-today', ''],
         ['Local Events', 'data-open-discover', ''], [rwName(), 'data-open-readwatch', ''], ['The Exchange', 'data-open-exchange', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ...revTools ],
-      rows: [['Your life', 3], ['Day to day', 2], ['Inspire', 3], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
+      rows: [['Your life', 4], ['Day to day', 1], ['Inspire', 3], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
   ];
@@ -9926,7 +9929,7 @@ function homeTimeWeatherHtml() {
 }
 // §50: "+ New" (the one gold button) and the at-a-glance counts row. One click on
 // a count word unfolds a panel of that tool's top few items in place.
-const HOME_NEW = [['journal', 'Note', '⌥N'], ['task', 'Task', '⌥T'], ['event', 'Event', '⌥E'], ['email', 'Email', '⌥M'], ['message', 'Message', ''], ['table', 'Table', ''], ['goal', 'Goal', ''], ['contact', 'Contact', ''], ['space', 'Space', ''], ['review', 'Review', '']];
+const HOME_NEW = [['journal', 'Note', '⌥N'], ['event', 'Event', '⌥E'], ['task', 'Task', '⌥T'], ['email', 'Email', '⌥M'], ['message', 'Message', ''], ['table', 'Table', ''], ['save', 'Read & Watch', ''], ['goal', 'Goal', ''], ['contact', 'Contact', ''], ['space', 'Space', ''], ['review', 'Review', '']];
 function homeNewMake(kind) {
   if (state.home) state.home.newMenu = false;
   // Each item MAKES the new thing (opens its create flow), not just the page -
@@ -9943,6 +9946,7 @@ function homeNewMake(kind) {
     else if (kind === 'contact') openMakeNew('contact');           // New -> Contact: the same floating box, with the add-contact form. (Robin, 2026-11-05: "the New Contact dialog box in the same position as the Task box".)
     else if (kind === 'space') newArea().catch((x) => toast(x.message));
     else if (kind === 'review') Promise.resolve(openReviews()).catch(() => {});
+    else if (kind === 'save') quickAdd('save');                    // -> Read & Watch, with the save bar focused
     else quickAdd('note');
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
 }
@@ -13280,7 +13284,7 @@ function renderReadwatch() {
         <span class="rw-save-plus">+</span>
         <input id="rw-url" class="rw-save-in" placeholder="Paste a link, or type a book, film or series…" autocomplete="off" ${rw.saving ? 'disabled' : ''}>
       </span>
-      <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Search'}</button>
+      <button class="rw-save-btn" type="submit" ${rw.saving ? 'disabled' : ''}>${rw.saving ? 'Saving…' : 'Save'}</button>
     </form>
     <div id="rw-setup">${rw.showSetup ? rwSetupHtml() : ''}</div>
     ${items.length ? `
@@ -17694,7 +17698,7 @@ function t2TrackerHtml(manage) {
     const key = g.areaId || ('lane:' + g.label);
     const open = trkOpen(key);
     return `<div class="trk-area" style="--h:${g.hue}" data-trk-area-key="${esc(key)}">
-      <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button">${manage ? `<span class="trk-area-grip" data-trk-areagrip draggable="true" title="Drag to reorder spaces" aria-hidden="true">⠿</span>` : ''}<span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
+      <div class="trk-area-h" data-trk-toggle="${esc(key)}" role="button">${manage ? `<span class="trk-area-grip" data-trk-areagrip title="Drag to reorder spaces" aria-hidden="true">⠿</span>` : ''}<span class="acw-chev">${open ? '▾' : '▸'}</span><span class="cd"></span><span class="trk-area-name">${esc(g.label)}</span>${cadSel}</div>
       ${open ? `<div class="trk-dayhdr"><span class="trk-week">${days.map((d) => `<span class="trk-daycell${d === today ? ' today-col' : d === yesterday ? ' yest-col' : ''}"><span class="trk-dh${d === today ? ' is-today' : d === yesterday ? ' is-yest' : ''}">${d === today ? 'Today' : d === yesterday ? 'Yest' : dow[new Date(d + 'T00:00').getDay()]}</span></span>`).join('')}</span></div>
       ${areaStat && areaStat.status === 'slipping' && areaStat.label ? `<div class="trk-area-status trk-s-${areaStat.status}"><span class="trk-dot2 trk-${areaStat.status}"></span><b>${esc(areaStat.label)}</b></div>` : ''}
       <div class="pm-rows">${rows}</div>

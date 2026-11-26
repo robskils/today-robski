@@ -5170,7 +5170,8 @@ body[data-bg="paisley"], .bg-swatch[data-bg="paisley"] { background-image:var(--
 .trk-area-h { display:flex; align-items:center; gap:9px; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid var(--line); flex-wrap:wrap; cursor:pointer; }
 /* Drag a space group to reorder (Routines). The grip is the handle; a dragged-over
    group shows a gold line at its top, where the dragged group will land. */
-.trk-area-grip { cursor:grab; color:var(--ink-3); font-size:13px; margin-right:1px; flex:none; user-select:none; opacity:.55; transition:opacity .15s; }
+.trk-area-grip { cursor:grab; color:var(--ink-3); font-size:13px; margin-right:1px; flex:none; user-select:none; touch-action:none; opacity:.55; transition:opacity .15s; }
+body.trk-reordering { user-select:none; cursor:grabbing; }
 .trk-area-h:hover .trk-area-grip { opacity:1; }
 .trk-area-grip:active { cursor:grabbing; }
 .trk-area.trk-area-dragging { opacity:.45; }
