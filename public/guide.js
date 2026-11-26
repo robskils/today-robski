@@ -3,11 +3,10 @@
 // its button goes to the real place, reusing that place's existing data-attribute.
 // Loaded after app.js; everything here runs at call time.
 const GUIDE_ANSWERS = {
-  'set-down': { title: 'Set something down', lead: "Get it out of your head in a few seconds. Kaya works out what it is and where it goes.", go: ['Try it now', 'data-cap-open'], steps: [
-    '<b>Open it from anywhere.</b> Press <kbd>⌘.</kbd> or the Set something down bar. On a phone, tap the gold <b>+</b> at the bottom.',
-    '<b>Write it as you\'d say it,</b> or tap Speak. For example, "Dentist Tuesday at 9am" or "Ring Mum tomorrow".',
-    '<b>Check what it understood.</b> It shows whether it\'s an event, a task or a note, with the day and any Space. Tap anything that\'s wrong.',
-    '<b>Set it down.</b> Press Return and carry on with your day.',
+  'set-down': { title: 'Add anything', lead: 'One button opens everything you can make in Kaya - a note, an event, a task and more - each with its proper form.', go: ['Open New', 'data-newmenu-toggle'], steps: [
+    '<b>Open it from anywhere.</b> Choose <b>New</b> in the top bar. On a phone, tap the gold <b>+</b> at the foot of the screen.',
+    '<b>Pick what you\'re making</b> - a note, event, task, email, Read &amp; Watch, contact, Space and more.',
+    '<b>Fill in its form and save.</b> It lands in the right place, ready to find whenever you need it.',
   ], next: ['notepad', 'find', 'spaces'] },
   notepad: { title: 'Keep a Notepad', lead: 'One running page for rough thoughts, always exactly as you left it.', go: ['Open the Notepad', 'data-notepad-open'], steps: [
     'Press <kbd>⌘J</kbd>, or choose <b>Notepad</b> in the top bar or the Menu.',
@@ -48,7 +47,7 @@ const GUIDE_ANSWERS = {
     'Your events appear on your Calendar and on Today.',
   ], next: ['event-add', 'holidays', 'email'] },
   'event-add': { title: 'Add an event', lead: 'The quickest way is to write it as you\'d say it.', go: ['Open Calendar', 'data-open-calendar'], steps: [
-    'Set it down with <kbd>⌘.</kbd> and a day and time, such as "Lunch with Ana Friday at 1".',
+    'Choose <b>New</b> → <b>Event</b> and give it a day and time, such as "Lunch with Ana Friday at 1".',
     'Or open <b>Calendar</b> and add it there, where you can also make it repeat.',
       ], next: ['set-down', 'holidays'] },
   holidays: { title: 'Add holidays and sport', lead: 'Show your country\'s public holidays and your team\'s fixtures on your calendar.', go: ['Open the settings', 'data-guide-settings="feeds"'], steps: [
@@ -95,7 +94,7 @@ const GUIDE_ANSWERS = {
   ], next: ['connect', 'share-space'] },
 
   'task-add': { title: 'Add and manage tasks', lead: 'Every task has a priority: First, Soon or Whenever.', go: ['Open Tasks', 'data-view-tasks'], steps: [
-    'Set one down with <kbd>⌘.</kbd>, or use the quick add on <b>Tasks</b>.',
+    'Choose <b>New</b> → <b>Task</b>, or use the quick add on <b>Tasks</b>.',
     'Keep <b>First</b> for what truly matters. Those are what surface on Today and in your morning brief.',
     'Open a task to give it a date, a Space, notes or links.',
     'Tick it anywhere, and it\'s done everywhere.',
@@ -225,7 +224,7 @@ const GUIDE_ANSWERS = {
 const GUIDE_RHYTHM = [
   { id: 'r-day', title: 'Each day', lead: 'Start on Today. Set things down as they come. Close the day with a line, if you like.', go: ['Go to Today', 'data-view-home'], steps: [
     '<b>Begin on Today.</b> Your day, what\'s next and what\'s coming into view are all there.',
-    '<b>Set things down as they come.</b> Press <kbd>⌘.</kbd> or tap <b>+</b>, and get back to what you were doing. Trust that it will come back when you need it.',
+    '<b>Add things as they come.</b> Choose <b>New</b> (the gold <b>+</b> on a phone), and get back to what you were doing. Trust that it will come back when you need it.',
     '<b>Sort your mail once or twice,</b> not all day.',
     '<b>Close the day,</b> if you like, with a line in your daily review.',
   ], next: ['set-down', 'mail-sort', 'flow'] },

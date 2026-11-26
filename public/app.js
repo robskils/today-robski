@@ -466,11 +466,10 @@ document.addEventListener('pointerup', trkDragFinish);
 document.addEventListener('pointercancel', trkDragFinish);
 // Esc closes the flyer overlay; paste an image straight into it.
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('flyer')) { closeFlyer(); } });
-// Capture: ⌘. / Ctrl. opens (and folds away) "Set it down"; Esc folds it away.
+// The "Set it down" capture flow is retired (Robin, 2026-11-26). Esc still folds
+// away the drawer when it opens for "Turn into note/task/event" from mail/messages.
 document.addEventListener('keydown', (ev) => {
-  if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && (ev.key === '.' || ev.code === 'Period')) {
-    if (!state.me) return; ev.preventDefault(); const c = capState(); if (c.open && c.mode === 'set') { c.open = false; } else { capSetMode('set'); c.open = true; } renderCapBar(true);
-  } else if (ev.key === 'Escape' && state.cap && state.cap.open) { ev.preventDefault(); capCancel(); }
+  if (ev.key === 'Escape' && state.cap && state.cap.open) { ev.preventDefault(); capCancel(); }
 });
 document.addEventListener('paste', (ev) => {
   if (!document.getElementById('flyer')) return;
@@ -5901,7 +5900,7 @@ function navGroupsHtml(v) {
   // ── mobile bottom bar: Contents · gold + · Find ──
   const bottom = `<div class="knav-bottom">
       <button class="knav-b-contents${kn.contents ? ' on' : ''}" data-knav-contents>Menu</button>
-      <button class="knav-b-set" data-cap-open title="Capture">Capture</button>
+      <button class="knav-b-set" data-newmenu-toggle title="New" aria-haspopup="dialog">New</button>
       <button class="knav-b-find${kn.find ? ' on' : ''}" data-knav-find>Search${knavFindBadge() ? '<span class="knav-g-b">·</span>' : ''}</button>
     </div>`;
   return `${header}${sheet}${find}${contents}${bottom}`;
@@ -8660,12 +8659,12 @@ function renderCapBar(force) {
   if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
   root.dataset.sig = sig;
   if (!c.open) {
-    // Robin (2026-11-26): no "Set something down" bar on desktop (the nav already has
-    // New). On mobile it becomes "New" and opens the New chooser - pick a type, then
-    // its proper form - instead of the free-text capture drawer.
+    // Robin (2026-11-26): the "Set something down" capture flow is gone completely.
+    // There is no capture bar anywhere - the nav and the mobile footer carry "New",
+    // which opens the New chooser (pick a type, then its proper form). #cap-root stays
+    // empty until a drawer opens for "Turn into note/task/event" from mail or messages.
     root.className = '';
-    const isPhone = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
-    root.innerHTML = isPhone ? `<button class="cap-bar" data-newmenu-toggle title="New"><span class="cap-bar-plus">+</span><span class="cap-bar-t">New</span></button>` : '';
+    root.innerHTML = '';
     capSizeCheck();
     return;
   }
