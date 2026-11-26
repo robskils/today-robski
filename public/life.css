@@ -10487,6 +10487,12 @@ body.night .mail-maketop, :root[data-theme='dark'] .mail-maketop { background:ok
 .mail-ar-below { padding:12px 2px 8px; }
 .mail-ar-card .mail-text.mail-text-plain { font-family:var(--k-read); font-size:17px; line-height:1.7; max-width:680px; color:oklch(0.2 0.01 60); }
 body.night .mail-ar-card .mail-text.mail-text-plain, :root[data-theme='dark'] .mail-ar-card .mail-text.mail-text-plain { color:oklch(0.2 0.01 60); }
+/* The "Translated to English" banner sits on the email's white paper, so its gold is
+   the deep white-paper gold, never the light app gold. */
+.mail-transbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; max-width:680px; margin:2px 0 16px; padding:9px 13px; box-sizing:border-box; border:1px solid oklch(0.85 0.014 80); background:oklch(0.975 0.012 85); }
+.mail-transbar-l { font-family:'Jost',system-ui,sans-serif; font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:11px; color:#8a6d1f; }
+.mail-transbar-x { background:none; border:0; font-family:'Jost',system-ui,sans-serif; font-weight:600; font-size:13px; color:#8a6d1f; cursor:pointer; }
+.mail-transbar-x:hover { text-decoration:underline; }
 .mail-ar-head { display:grid; grid-template-columns:58px minmax(0,1fr) auto; gap:18px; align-items:baseline; width:100%; padding:18px 0; background:none; border:0; cursor:pointer; text-align:left; }
 .mail-ar-time { font-family:var(--msans); font-size:13px; color:var(--ink-3); white-space:nowrap; }
 .mail-ar-main { min-width:0; }

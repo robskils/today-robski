@@ -19506,6 +19506,7 @@ async function openMessage(key) {
   // rather than dying silently.
   if (!row) { toast('Reloading this mailbox…'); loadMessages().catch(() => {}); return; }
   state.mail.sel = key; state.mail.hoverThread = null; state.mail.plain = false;   // each email opens formatted; toggle to plain if it's cramped
+  state.mail.translated = false; state.mail.translation = null; state.mail.translationKey = null;   // a translation belongs to one email only
   mailStamp();   // reading counts as using Mail - keeps a quick return landing back here
   // Record the open message on the view so this tab reopens it after a switch.
   state.view = { type: 'mail', open: key }; syncActiveTab();
@@ -19822,6 +19823,30 @@ async function mailClaudius() {
   } catch (e) {
     toast(e.message);
     if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
+}
+
+// Translate the open email into English (AI, same key as Email Scribe). The result
+// replaces the body in the reader, with a banner to switch back; it's cached per
+// email so toggling between the original and the translation never re-calls the model.
+async function mailTranslate() {
+  const o = state.mail.open; if (!o) return;
+  const m = state.mail;
+  if (m.translated) { m.translated = false; renderMail(); return; }   // showing translation -> back to original
+  if (m.translation != null && m.translationKey === o._key) { m.translated = true; renderMail(); return; }   // cached -> show it again
+  if (m.translating) return;
+  const btn = document.querySelector('[data-mail-translate]');
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); btn.textContent = 'Translating…'; }
+  m.translating = true;
+  try {
+    const { translation } = await mailApi('/translate', { method: 'POST', body: JSON.stringify({ account: o._acct, subject: o.subject || '', text: mailPlainText(o) || o.text || '' }) });
+    m.translation = translation; m.translationKey = o._key; m.translated = true;
+    toast('Translated to English');
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    m.translating = false;
+    renderMail();
   }
 }
 
@@ -21089,8 +21114,11 @@ function mailOpenPanelHtml(o) {
   const convStrip = (oThread && oThread.count > 1)
     ? `<div class="mail-conv2">${oThread.messages.map((mm) => `<button class="mail-conv2-it${mm._key === o._key ? ' on' : ''}" data-mail-open="${esc(mm._key)}"><span class="mail-conv2-f">${esc(mailFrom(mm) || '?')}</span><span class="mail-conv2-d">${mailDate(mm.date)}</span></button>`).join('')}</div>`
     : '';
+  const showTrans = m.translated && m.translation != null && m.translationKey === o._key;
+  const transBar = showTrans ? `<div class="mail-transbar"><span class="mail-transbar-l">Translated to English</span><button class="mail-transbar-x" data-mail-translate>Show the original</button></div>` : '';
   const bodyInner = o._loadingBody ? '<div class="mail-text mail-body-loading"><span class="mail-body-spin"></span>Loading message…</div>'
     : o._bodyError ? `<div class="mail-text mail-body-err">${esc(o._bodyError)}<button class="ghost mail-retry-btn" data-mail-retry>Try again</button></div>`
+    : showTrans ? `${transBar}<div class="mail-text mail-text-plain mail-text-trans">${linkifyText(m.translation)}</div>`
     : (o.html && !m.plain) ? '<iframe class="mail-body-frame" id="mail-body-frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts" title="Message"></iframe>'
     : `<div class="mail-text mail-text-plain">${linkifyText(mailPlainText(o))}</div>`;
   const atts = (o.attachments && o.attachments.length) ? `<div class="mail-att2 mail-att2-top"><span class="mail-att2-l">${o.attachments.length === 1 ? 'Attachment' : o.attachments.length + ' attachments'}</span>${o.attachments.map((a) => `<a class="mail-att2-chip" href="${esc(a.url || '#')}" target="_blank" rel="noopener noreferrer" title="Open ${esc(a.filename || 'attachment')}">${esc(a.filename || 'attachment')} <span class="mail-att2-sz">${fmtBytes(a.size)}</span></a>`).join('')}</div>` : '';
@@ -21142,6 +21170,7 @@ function mailMoreHtml(o) {
   // (Robin, 2026-11-22.)
   const items = [];
   items.push(`<button class="mail-more-item" data-mail-claudius>Draft a reply with Email Scribe</button>`);
+  items.push(`<button class="mail-more-item" data-mail-translate>${m.translated ? 'Show the original' : 'Translate to English'}</button>`);
   if (o.html) items.push(`<button class="mail-more-item" data-mail-plain>${m.plain ? 'Formatted view' : 'Plain-text view'}</button>`);
   items.push(`<button class="mail-more-item" data-mail-print>Print</button>`);
   if (o.unsub) items.push(`<button class="mail-more-item mail-more-unsub" data-mail-unsub title="Kaya will find the unsubscribe and do it for you">Unsubscribe</button>`);
@@ -21274,7 +21303,7 @@ function renderMail(loading) {
     ${m.moveMenu ? mailMoveMenuHtml() : ''}
     ${m.areaMenu ? mailAreaMenuHtml() : ''}
     ${m.taskMenu ? mailTaskMenuHtml() : ''}`;
-  if (m.open && m.open.html && !m.plain) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
+  if (m.open && m.open.html && !m.plain && !m.translated) { const f = document.getElementById('mail-body-frame'); if (f) f.srcdoc = wrapEmailHtml(m.open.html, mailImagesBlocked(m.open)); }
 }
 
 // The full add-task form markup (area, priority, duration, surface-on, repeat,
@@ -29926,7 +29955,7 @@ document.addEventListener('focusout', (e) => { if (e.target && e.target.matches 
 // The info icon's hover tip. mouseover/out bubble (mouseenter/leave don't), so
 // one pair of document listeners covers the button however the tabs re-render.
 // Close an open Mail action dropdown (Reply / Transform) on any click outside it.
-document.addEventListener('click', (e) => { document.querySelectorAll('details.mail-dd[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); }); }, true);
+document.addEventListener('click', (e) => { document.querySelectorAll('details.mail-dd[open], details.mail-more[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); }); }, true);
 document.addEventListener('click', (e) => {
   // The sidebar is frozen for the whole gesture (see navHeld above), so the button
   // the browser hit-tested at pointerdown is still the button under this click - a
@@ -30771,6 +30800,7 @@ document.addEventListener('click', (e) => {
   const madel = t.closest('[data-mail-att-del]'); if (madel) { mailRemoveAttachment(madel.dataset.mailAttDel); return; }
   if (t.closest('[data-mail-discard]')) { clearDraft(); (state.mail.composing && state.mail.composing.attachments || []).forEach((a) => mailApi(`/attach/${a.id}?account=${encodeURIComponent(composeAcctId())}`, { method: 'DELETE' }).catch(() => {})); state.mail.composing = false; renderMail(); toast('Draft discarded'); return; }
   if (t.closest('[data-mail-claudius]')) { mailClaudius(); return; }
+  if (t.closest('[data-mail-translate]')) { mailTranslate(); return; }
   if (t.closest('[data-mail-reply]')) { mailReplyStart(false); return; }
   if (t.closest('[data-mail-reply-all]')) { mailReplyStart(true); return; }
   { const mt = t.closest('[data-mail-task]'); if (mt) { openMailTaskMenu(mt); return; } }
