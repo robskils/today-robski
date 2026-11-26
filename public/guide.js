@@ -18,6 +18,16 @@ const GUIDE_ANSWERS = {
     'Press <kbd>⌘K</kbd>, or choose <b>Search</b>. On a phone it\'s at the bottom right.',
     'Type a few words, then choose a result to go straight there.',
   ], next: ['set-down', 'linked'] },
+  shortcuts: { title: 'Keyboard shortcuts', lead: 'Learn a handful of keys and Kaya keeps up with you, with no reaching for the mouse. These are the ones worth knowing. On Windows, use Ctrl wherever you see ⌘.', steps: [
+    '<b><kbd>⌘K</kbd> — Jump to anything.</b> Search your notes, tasks, people, events and Spaces, and land straight on the one you want. The fastest way around Kaya.',
+    '<b><kbd>⌘N</kbd> — New note.</b> A fresh page, ready to type.',
+    '<b><kbd>⌥⌘N</kbd> — New task.</b> The full add-task box, over whatever you\'re on.',
+    '<b><kbd>⌘E</kbd> — Mail.</b> Your whole inbox, from wherever you are.',
+    '<b><kbd>⌘;</kbd> — Notepad.</b> Your running scratch page (<kbd>⌘J</kbd> does the same).',
+    '<b><kbd>⌘T</kbd> — New tab.</b> Open a second thing beside the first.',
+    '<b><kbd>⌘Z</kbd> — Undo.</b> Bring back what you just deleted.',
+    '<b><kbd>Esc</kbd> — Back out.</b> Close a box, a search or a drawer.',
+  ], note: 'On a phone there\'s no keyboard to lean on - the gold + at the foot of the screen opens the New menu, which is the quick way in there.', next: ['find', 'side-by-side', 'notepad'] },
   'side-by-side': { title: 'Work with two things side by side', lead: 'Keep one thing open while you work on another - an email beside a note, your calendar beside your tasks. A second pane opens alongside the page you\'re on, and you set how much room each side gets.', go: ['Open Split', 'data-split-open'], steps: [
     'On a computer, choose <b>Split</b> in the top bar. A second pane opens beside the page you\'re on.',
     'Search for what to show there - a tool, a note, a task, a Space or an email - and choose it.',
@@ -241,7 +251,7 @@ const GUIDE_START = [
   ['notifications', () => (typeof Notification !== 'undefined' && Notification.permission === 'granted'), 'Turn on'],
 ];
 const GUIDE_HOW = [
-  ['Every day', ['set-down', 'find', 'notepad', 'side-by-side', 'linked']],
+  ['Every day', ['set-down', 'find', 'shortcuts', 'notepad', 'side-by-side', 'linked']],
   ['Mail and people', ['mail-sort', 'mail-action', 'email', 'app-password', 'keep-in-touch', 'connect', 'invite']],
   ['Plans', ['task-add', 'event-add', 'calendar', 'holidays', 'flow', 'practices', 'goals', 'review', 'discover']],
   ['Keep', ['note-start', 'table-start', 'read-watch', 'import']],

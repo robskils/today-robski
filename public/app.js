@@ -5637,12 +5637,11 @@ function knavGroups() {
     { id: 'spaces', label: 'Spaces', about: 'Each part of your life', attr: 'data-open-areas', tools: areaTools },
     { id: 'keep', label: 'Tools', about: 'Your day-to-day toolkit',
       tools: [
-        ['Spaces', 'data-open-areas', ''], ['Routines', 'data-open-practices', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
-        ['Day Planner', 'data-open-today', ''],
-        ['Local Events', 'data-open-discover', ''], [rwName(), 'data-open-readwatch', ''], ['The Exchange', 'data-open-exchange', ''],
+        ['Spaces', 'data-open-areas', ''], ['Routines', 'data-open-practices', ''], ['Day Planner', 'data-open-today', ''], ['Goals', 'data-open-goals', ''], ['Bucket list', 'data-open-bucketlist', ''],
+        [rwName(), 'data-open-readwatch', ''], ['Local Events', 'data-open-discover', ''], ['The Exchange', 'data-open-exchange', ''],
         ['Overview', 'data-open-money', ''], ['Spending', 'data-open-financial data-fin-tab="spending"', ''], ['Investments', 'data-open-financial data-fin-tab="portfolio"', ''], ['Advice', 'data-open-financial data-fin-tab="advice"', ''],
         ...revTools ],
-      rows: [['Your life', 4], ['Day to day', 1], ['Inspire', 3], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
+      rows: [['Your life', 5], ['Inspire', 3], ['Money', 4], ...(modOn('reviews') ? [['Reviews', 5]] : [])] },
     { id: 'inner', label: 'Insight', about: 'Room for the rest of you', attr: 'data-open-wellbeing', tools: [
       ['Overview', 'data-open-wellbeing', ''], ['Spirit Cards', 'data-spirit-open', ''], ['I Ching', 'data-open-iching', ''], ['Tarot', 'data-open-tarot', ''], ['Horoscope', 'data-open-horo', ''], ['Journal', 'data-open-journal', ''], ['Dreams', 'data-open-dreams', ''], ['Coaching', 'data-open-coaching', ''], ['Compass', 'data-open-compass', ''], ['Insights', 'data-open-insights', ''] ] },
   ];
