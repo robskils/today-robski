@@ -113,7 +113,8 @@ async function anthropicCall(env, feature, key, { system, user, max_tokens = 500
   // An optional assistant prefill: the model continues it instead of deciding whether
   // to answer, which heads off spurious refusals on benign tasks (e.g. translation).
   const messages = [{ role: 'user', content }];
-  if (prefill) messages.push({ role: 'assistant', content: prefill });
+  // The API rejects an assistant prefill that ends with whitespace, so trim the tail.
+  if (prefill) { const p = String(prefill).replace(/\s+$/, ''); if (p) messages.push({ role: 'assistant', content: p }); }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
