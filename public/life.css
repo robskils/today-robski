@@ -6968,10 +6968,11 @@ body[data-view="notes"] .home-sec, body[data-view="tables"] .home-sec { margin-t
 .lb-check { width:34px; height:34px; flex:none; border-radius:0; border:1.5px solid var(--line-2); background:var(--card); color:transparent; font-size:15px; line-height:1; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
 .lb-check:hover { border-color:var(--accent); color:var(--accent); }
 .lb-check:active { background:var(--paper-2); }
-.lb-x { position:absolute; top:9px; right:4px; width:26px; height:26px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:0; font-size:18px; line-height:1; color:var(--ink-3); background:transparent; cursor:pointer; opacity:0; transition:opacity .12s,color .12s,background .12s; }
-.lb-item:hover .lb-x, .lb-item:focus-within .lb-x { opacity:.65; }
+/* The clear × rests visibly, not hidden until hover - so the dismiss is findable
+   on touch too (Robin, 2026-11-26: birthdays in In View need a clear way to clear). */
+.lb-x { position:absolute; top:9px; right:4px; width:26px; height:26px; flex:none; display:inline-flex; align-items:center; justify-content:center; border-radius:0; font-size:18px; line-height:1; color:var(--ink-3); background:transparent; cursor:pointer; opacity:.55; transition:opacity .12s,color .12s,background .12s; }
+.lb-item:hover .lb-x, .lb-item:focus-within .lb-x { opacity:.9; }
 .lb-x:hover { opacity:1; color:var(--danger,#c0392b); background:var(--paper-2); }
-@media (hover:none){ .lb-x { opacity:.5; } }
 .upd-row { display:flex; align-items:flex-start; gap:12px; padding:11px 4px; border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); }
 .upd-row:first-child { border-top:0; }
 /* A folio-feed item that's new since your last visit: a soft gold rail. */
@@ -13783,9 +13784,10 @@ body.mailsheet-open { overflow:hidden; }
 .mkn-body { flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:0 -4px; padding:2px 4px; }
 .mkn-body .add-task.expanded { margin-bottom:0; }
 @media (max-width:620px) {
-  .newpop { top:76px; width:calc(100vw - 28px); padding:18px; }
+  .newpop { top:76px; width:calc(100vw - 28px); padding:18px; max-height:calc(100vh - 92px); overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .newpop-grid { grid-template-columns:1fr 1fr; }
-  .newpop-item:not(.big) { display:none; }
+  /* Robin, 2026-11-26: show every New option on mobile, not just the first four -
+     the full desktop set, in a two-column grid that scrolls if it runs long. */
   /* The "or just write it…" hint is about the separate Set-it-down capture, not
      +New - drop it here. (Robin, 2026-11-03.) */
   .newpop-foot { display:none; }
