@@ -8661,7 +8661,12 @@ function renderCapBar(force) {
   if (!force && root.dataset.sig === sig && root.firstChild) return;   // leave an open drawer alone on a background re-render
   root.dataset.sig = sig;
   if (!c.open) {
-    root.className = ''; root.innerHTML = `<button class="cap-bar" data-cap-open title="Set something down (⌘.)"><span class="cap-bar-plus">+</span><span class="cap-bar-t">Set something down</span></button>`;
+    // Robin (2026-11-26): no "Set something down" bar on desktop (the nav already has
+    // New). On mobile it becomes "New" and opens the New chooser - pick a type, then
+    // its proper form - instead of the free-text capture drawer.
+    root.className = '';
+    const isPhone = window.matchMedia && window.matchMedia('(max-width:820px)').matches;
+    root.innerHTML = isPhone ? `<button class="cap-bar" data-newmenu-toggle title="New"><span class="cap-bar-plus">+</span><span class="cap-bar-t">New</span></button>` : '';
     capSizeCheck();
     return;
   }
