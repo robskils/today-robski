@@ -3801,11 +3801,27 @@ async function mpReact(id) {
   try { const r = await api('/api/messages/react', { method: 'POST', body: JSON.stringify({ id: Number(id), on }) }); if (state.mp && state.mp.cur != null && r && r.messages) { state.mp.sig = r.messages.map((m) => `${m.id}:${m.body}:${m.reaction || ''}`).join('\u0000'); state.mp.messages = r.messages; mpRenderThread(); } }
   catch (e) { if (state.mp) { const mm = (state.mp.messages || []).find((m) => Number(m.id) === Number(id)); if (mm) { mm.reaction = prev; mpRenderThread(); } } toast((e && e.message) || 'Could not update the heart.'); }
 }
-// Hand the last message to Set something down (§27) with the kind pre-chosen.
+// Turn the last message into a note, task or event - straight into the proper
+// create flow (like mail's Make note/task/event), not the retired capture drawer.
 function mpTurnInto(kind) {
   if (!(state.mp && state.mp.messages && state.mp.messages.length)) return;
   const last = state.mp.messages[state.mp.messages.length - 1];
-  const c = capState(); c.text = last.body || ''; c.kind = kind; c.ans = {}; capSetMode('set'); c.open = true; renderCapBar(true);
+  const text = (last.body || '').trim();
+  if (!text) { toast('That message is empty.'); return; }
+  const oneLine = text.replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (kind === 'note') {
+    const title = (text.split('\n').find((l) => l.trim()) || 'Saved message').trim().slice(0, 80);
+    const html = '<p>' + text.split(/\n{2,}/).map((p) => esc(p.trim()).replace(/\n/g, '<br>')).join('</p><p>') + '</p>';
+    const body = sanitizeProse(html) || '<p></p>';
+    api('/api/blocks', { method: 'POST', body: JSON.stringify({ kind: 'note', title, body, parent_id: null }) })
+      .then((note) => { if (Array.isArray(state.noteTops)) state.noteTops.push(note); toast('Saved to Notes'); if (note && note.id) openNote(note.id).catch(() => {}); })
+      .catch((e) => toast((e && e.message) || 'Could not make the note.'));
+  } else if (kind === 'task') {
+    state.makeNewPrefill = { title: oneLine };
+    openMakeNew('task');
+  } else if (kind === 'event') {
+    quickAdd('event').then(() => { setTimeout(() => { const i = document.getElementById('ce-title'); if (i) { i.value = oneLine; i.focus(); } }, 80); }).catch(() => {});
+  }
 }
 function mpGrow(el) { el = el || document.getElementById('mp-input'); if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; }
 function mpSyncSend() { const inp = document.getElementById('mp-input'); const btn = document.querySelector('.mp-send'); if (inp && btn) btn.classList.toggle('ready', !!(inp.value || '').trim()); }
@@ -7774,7 +7790,6 @@ function homeWelcomeHtml() {
   }
   const done = homeWelcomeSteps();
   const steps = [
-    ['Set something down', 'The quickest way to feel the difference.', !!done.first, 'Show me', 'data-hw-focus'],
     ['Bring in your calendar', 'See your days alongside everything else.', (state.gcalAccounts || []).length > 0, 'Connect', 'data-onb-open-hub="calendar"'],
     ['Bring in your email', 'Sort your inbox, and turn messages into tasks.', !!(state.mail && (state.mail.accounts || []).length), 'Connect', 'data-onb-open-hub="email"'],
     ['Shape your Spaces', 'The parts of your life, and who shares them.', !!done.spaces, 'Open', 'data-hw-spaces'],
@@ -7789,14 +7804,10 @@ function homeWelcomeHtml() {
       <button type="button" class="hw-go" ${attr}>${go} →</button>
     </div>`).join('');
   return `<div class="hw">
-    <section class="hw-panel" aria-label="Set something down">
-      <h2 class="hw-h">${state.hwJustFirst ? "That's your first one. What else is on your mind?" : "What's on your mind?"}</h2>
-      <p class="hw-p">Write it as you'd say it. It comes back when you need it.</p>
-      <form class="hw-form" data-hw-form>
-        <input class="hw-input" id="hw-input" aria-label="Set something down" placeholder="Set something down…" autocomplete="off" value="${esc(state.hwText || '')}">
-        <button type="submit" class="hw-submit">Set it down</button>
-      </form>
-      <div class="hw-egs"><span>Or try:</span><button type="button" class="hw-eg" data-hw-eg="Dentist Tuesday at 9am">Dentist Tuesday at 9am</button><button type="button" class="hw-eg" data-hw-eg="Ring Mum tomorrow">Ring Mum tomorrow</button></div>
+    <section class="hw-panel">
+      <h2 class="hw-h">Welcome to Kaya</h2>
+      <p class="hw-p">Your mail, calendar, notes, tasks and the rest of your life, in one calm place. Start by making your first thing.</p>
+      <button type="button" class="hw-submit" style="align-self:flex-start" data-newmenu-toggle aria-haspopup="dialog">Make something new</button>
     </section>
     <section class="hw-list">
       <h2 class="hw-lh"><button type="button" class="hw-fold" data-hfold="kwelcome" aria-expanded="${open}"><span class="hw-fold-t">Make it yours</span><span class="hw-fold-n">${n} of ${steps.length}</span><span class="hw-sign" aria-hidden="true">${open ? '−' : '+'}</span></button></h2>
@@ -21271,9 +21282,10 @@ function renderMail(loading) {
 // floating New dialog can render the same form - the New dialog can't share
 // #qt-wrap because Home already has one earlier in the DOM. (Robin, 2026-11-05.)
 function quickTaskFormHtml() {
+  const pf = state.makeNewPrefill || {}; state.makeNewPrefill = null;   // one-shot prefill (e.g. a message turned into a task)
   const opts = `<option value="">No space</option>` + editableAreas().map((a) => `<option value="${a.id}">${esc(a.title)}${sharedTag(a)}</option>`).join('');
   return `<form id="qt-form" class="add-task expanded" style="margin-bottom:0">
-    <input id="qt-title" placeholder="Add a task…" autocomplete="off" required>
+    <input id="qt-title" placeholder="Add a task…" autocomplete="off" required value="${esc(pf.title || '')}">
     <div class="atf-grid">
       <label class="atf"><span>Space</span><select id="qt-area" class="sel">${opts}</select></label>
       <label class="atf"><span>Priority</span><select id="qt-prio" class="sel"><option value="">—</option><option value="P1">First</option><option value="P2">Soon</option><option value="P3" selected>Whenever</option></select></label>
