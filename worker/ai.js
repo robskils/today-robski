@@ -106,14 +106,18 @@ export async function callAI(env, feature, opts = {}) {
   if (provider === 'gemini') return geminiCall(env, feature, key, opts);
   return anthropicCall(env, feature, key, opts);
 }
-async function anthropicCall(env, feature, key, { system, user, max_tokens = 500, images }) {
+async function anthropicCall(env, feature, key, { system, user, max_tokens = 500, images, prefill }) {
   const content = (images && images.length)
     ? [...images.map((im) => ({ type: 'image', source: { type: 'base64', media_type: im.media_type, data: im.data } })), { type: 'text', text: user }]
     : user;
+  // An optional assistant prefill: the model continues it instead of deciding whether
+  // to answer, which heads off spurious refusals on benign tasks (e.g. translation).
+  const messages = [{ role: 'user', content }];
+  if (prefill) messages.push({ role: 'assistant', content: prefill });
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens, thinking: { type: 'disabled' }, system, messages: [{ role: 'user', content }] }),
+    body: JSON.stringify({ model: env.CLAUDIUS_MODEL || 'claude-opus-5', max_tokens, thinking: { type: 'disabled' }, system, messages }),
   });
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error(`AI error ${res.status}: ${t.slice(0, 160)}`); }
   const data = await res.json();
