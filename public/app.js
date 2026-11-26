@@ -9416,47 +9416,22 @@ function homeSpacesAsideHtml() {
   }).filter((x) => x.hasAnything);
   const need = scored2.filter((x) => x.needs).length;
   scored2.sort((x, y) => ((y.pinned ? 1 : 0) - (x.pinned ? 1 : 0)) || ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
-  const CAP = 4;   // Your Spaces shows four now - it sits beside Your Notes. (Robin, 2026-11-05.)
-  const shown = scored2.slice(0, CAP);
-  const rows = shown.map(({ a, needs, act, item }) => {
-    const when = act ? timeAgo(act) : '';
-    const itemInner = item
-      ? `${item.kind ? `<span class="home-sa-k2">${esc(item.kind)}</span> · ` : ''}${esc(item.text)}`
-      : 'Open it →';
-    // Two targets: the name opens the Space; the item line deep-links to that item.
-    const itemAttr = (item && item.attr) ? item.attr : `data-open-area="${a.id}"`;
-    return `<div class="home-sa-row">
-      <button class="home-sa-nm2" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>
-      <span class="home-sa-rt">${needs ? '<span class="home-sa-dot on"></span>' : ''}<span class="home-sa-when">${esc(when)}</span></span>
-      <button class="home-sa-item${needs ? ' needs' : ''}" ${itemAttr}>${itemInner}</button>
-    </div>`;
-  }).join('');
-  const count = `${areas.length}${need ? ` · ${need} need${need === 1 ? 's' : ''} you` : ''}`;
-  const allLine = `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>`;
-  // The header is a link to the Spaces page now, not a fold; the body always shows
-  // its four. (Robin, 2026-11-06: "when I click Your Spaces, take me to my spaces page".)
-  return `<div class="home-sa-head home-sa-head-nav" data-open-areas role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-count">${esc(count)}</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-area>+ New Space</button></div>`;
+  // Robin (2026-11-26): keep it simple - four boxes, the four most RECENT Spaces,
+  // then a "see all" link. No per-row item lines, deadlines, dots or counts.
+  const recent = areas.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 4);
+  const boxes = recent.map((a) => `<button class="home-sa-box" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('');
+  const allLine = areas.length > 4 ? `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>` : '';
+  return `<div class="home-sa-head home-sa-head-nav" data-open-areas role="button" tabindex="0"><span class="home-sa-title">Your Spaces</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap"><div class="home-sa-boxes">${boxes}</div>${allLine}</div>`;
 }
 // Your Notes on Today: the four most recent, mirroring Your Spaces and sitting beside
 // it. Shown only once there are notes. (Robin, 2026-11-05.)
 function homeNotesAsideHtml() {
   const notes = (state.noteTops || []).filter((n) => (n.kind || 'note') === 'note')
     .slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
-  const rows = notes.slice(0, 4).map((n) => {
-    const when = timeAgo(Date.parse(n.updated_at || n.created_at || '') || Date.now());
-    const ex = String(n.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
-    // The note's Space, in gold under the time - so you see where it lives. (Robin, 2026-11-05.)
-    const sp = (() => { const a = (blockAreas(n) || []).map((id) => areaById(id)).filter(Boolean)[0]; return a ? (a.title || '') : ''; })();
-    return `<div class="home-sa-row">
-      <button class="home-sa-nm2" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>
-      <span class="home-sa-rt home-sa-rt-col"><span class="home-sa-when">${esc(when)}</span>${sp ? `<span class="home-sa-space">${esc(sp)}</span>` : ''}</span>
-      ${ex ? `<button class="home-sa-item" data-open-note="${n.id}">${esc(ex)}</button>` : ''}
-    </div>`;
-  }).join('');
+  // Robin (2026-11-26): four boxes, the four most recent notes, then "see all".
+  const boxes = notes.slice(0, 4).map((n) => `<button class="home-sa-box" data-open-note="${n.id}">${esc(n.title || 'Untitled')}</button>`).join('');
   const allLine = notes.length > 4 ? `<button class="home-sa-allrow" data-open-notes><span class="home-sa-alltxt">See all ${notes.length} notes →</span></button>` : '';
-  // The header is a link to the Notes page now, not a fold; the body always shows
-  // its four. (Robin, 2026-11-06: "when I click Your Notes, take me to the notes page".)
-  return `<div class="home-sa-head home-sa-head-nav" data-open-notes role="button" tabindex="0"><span class="home-sa-title">Your Notes</span><span class="home-sa-count">${notes.length}</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap">${rows}${allLine}<button class="home-sa-new" data-new-note>+ New Note</button></div>`;
+  return `<div class="home-sa-head home-sa-head-nav" data-open-notes role="button" tabindex="0"><span class="home-sa-title">Your Notes</span><span class="home-sa-sign" aria-hidden="true">→</span></div><div class="home-sa-bodywrap"><div class="home-sa-boxes">${boxes}</div>${allLine}</div>`;
 }
 // Today's two-up band: Your Spaces (left) and Your Notes (right), half a row each, up
 // to four of each. Each column appears only when it has content, so before you've
