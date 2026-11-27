@@ -9386,52 +9386,8 @@ function homeSpaceItems(a) {
 function homeSpacesAsideHtml() {
   const areas = (state.areas || []);
   if (!areas.length) return `<div class="home-sa-head"><span class="home-sa-title">Your Spaces</span></div><button class="home-sa-new" data-new-area>+ New Space</button>`;
-  // §46: only the lively ones. Needs-you (and pinned) first, then by most recent
-  // activity; a Space quiet for 30+ days is never in the first 8 unless it needs
-  // you. The foot line goes to the full Spaces page for the rest.
-  if (state.areaSummary === undefined) { state.areaSummary = null; api('/api/areas/summary').then((r) => { state.areaSummary = (r && r.summary) || {}; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => { state.areaSummary = {}; }); }
-  const sum = state.areaSummary || {};
-  const now = Date.now();
-  const scored = areas.map((a) => {
-    const { line, needs } = homeSpaceLine(a);
-    const s = sum[a.id] || {};
-    const act = s.last ? new Date(s.last).getTime() : (a.updated_at ? new Date(a.updated_at).getTime() : 0);
-    return { a, line, needs, act, inactive: act ? (now - act) / 86400000 : 9999, pinned: !!(a.props && a.props.pinToday) };
-  });
-  // §61: each Space is a plain LINK to its page - never a fold, never empty.
-  // The row shows the name and when the latest thing happened, then one line for
-  // that latest item. Today doesn't load every Space's mail/notes, so the item is
-  // best-effort client-side: the top open task, else the deadline/activity line.
-  // A Space with nothing at all is hidden.
-  // Deep-link attr for a block kind + id, so the item line jumps to that exact item.
-  const bkAttr = (bk, id) => {
-    if (!id) return '';
-    switch (bk) {
-      case 'task': return `data-open-task="${esc(id)}"`;
-      case 'note': case 'table': return `data-open-note="${esc(id)}"`;
-      case 'goal': return `data-open-goal="${esc(id)}"`;
-      case 'contact': return `data-open-contact="${esc(id)}"`;
-      case 'journal': return `data-open-jentry="${esc(id)}"`;
-      case 'event': return 'data-open-calendar';
-      default: return '';
-    }
-  };
-  const scored2 = scored.map((x) => {
-    const s = sum[x.a.id] || {};
-    const top = homeSpaceItems(x.a)[0] || null;
-    // §61: the single latest item - from the summary (any block kind, including
-    // events), falling back to the top open task or the deadline/activity line.
-    // Each carries a deep-link so the item line opens that exact item.
-    const item = (s.latest && s.latest.title) ? { kind: s.latest.kind, text: s.latest.title, attr: bkAttr(s.latest.bk, s.latest.id) }
-      : top ? { kind: 'Task', text: top.t, attr: top.attr }
-      : (x.line && x.line !== 'Quiet just now') ? { kind: '', text: x.line, attr: '' } : null;
-    const hasAnything = !!item || !!s.last || (s.tasks | 0) > 0 || (s.notes | 0) > 0 || (s.goals | 0) > 0;
-    return { ...x, item, hasAnything };
-  }).filter((x) => x.hasAnything);
-  const need = scored2.filter((x) => x.needs).length;
-  scored2.sort((x, y) => ((y.pinned ? 1 : 0) - (x.pinned ? 1 : 0)) || ((y.needs ? 1 : 0) - (x.needs ? 1 : 0)) || (y.act - x.act));
-  // Robin (2026-11-26): keep it simple - four boxes, the four most RECENT Spaces,
-  // then a "see all" link. No per-row item lines, deadlines, dots or counts.
+  // Just the most recently active Spaces - six boxes, then "see all". No pinning and
+  // no scoring: Today simply reflects the Spaces you've been in. (Robin, 2026-11-27.)
   const recent = areas.slice().sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''))).slice(0, 6);
   const boxes = recent.map((a) => `<button class="home-sa-box" data-open-area="${a.id}">${esc(a.title || 'Untitled')}</button>`).join('');
   const allLine = areas.length > 6 ? `<button class="home-sa-allrow" data-open-areas><span class="home-sa-alltxt">See all ${areas.length} Spaces →</span></button>` : '';
@@ -13659,7 +13615,6 @@ function renderAreasList() {
   // A space I own: the full card with live metrics, draggable in "My order".
   const card = (a) => {
     const hue = hueOf(a); const s = S(a.id); const fav = !!(a.props && a.props.fav);
-    const pin = !!(a.props && a.props.pinToday);
     const vision = (a.props && (a.props.vision || '').trim()) || '';
     const act = areaActivity(s.last);
     // Wheel-of-Life marker: a mini donut filled to this area's last score (in its own
@@ -13683,7 +13638,6 @@ function renderAreasList() {
         <span class="agc-metrics">${chips}</span>
       </button>
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
-      <div class="agc-foot"><button class="agc-today${pin ? ' on' : ''}" data-area-today="${a.id}" aria-pressed="${pin ? 'true' : 'false'}" title="${pin ? 'Pinned to Your Spaces on the Today page - tap to remove' : 'Pin this Space to Your Spaces on the Today page'}">${pin ? 'On Today' : 'Show on Today'}</button></div>
     </div>`;
   };
   // A space shared WITH me: someone else's, so no metrics, star or drag - just a
@@ -13721,18 +13675,6 @@ function renderAreasList() {
     <p class="t2-sub" style="font-style:normal">A Space is a living chapter in your Kaya - everything about what matters, in one place.</p>
     ${controls}
     ${sections.join('')}`;
-}
-// §46: "Keep on Today" pins a Space into Today's Your Spaces column whatever its
-// activity - homeSpacesAsideHtml reads props.pinToday and sorts pinned (and
-// needs-you) Spaces first, counting towards the shown 8. A quiet per-card toggle
-// on the full Spaces page, mirrored optimistically into state.areas.
-async function areaTogglePinToday(id) {
-  const a = (state.areas || []).find((x) => String(x.id) === String(id)); if (!a) return;
-  const pin = !(a.props && a.props.pinToday);
-  a.props = { ...(a.props || {}), pinToday: pin };
-  if (state.view && state.view.type === 'areas') renderAreasList();
-  try { await api(`/api/blocks/${id}`, { method: 'PATCH', body: JSON.stringify({ props: { pinToday: pin } }) }); toast(pin ? 'Kept on Today' : 'Removed from Today'); }
-  catch (e) { a.props.pinToday = !pin; if (state.view && state.view.type === 'areas') renderAreasList(); toast((e && e.message) || 'Could not update that.'); }
 }
 async function openArea(id) {
   state.view = { type: 'area', id };
@@ -31003,7 +30945,6 @@ document.addEventListener('click', (e) => {
   { const kh = t.closest('[data-knav-hit]'); if (kh) { const kn = state.knav || (state.knav = {}); const hit = (kn.results || [])[+kh.dataset.knavHit]; const qq = (kn.q || '').trim(); kn.find = false; renderNav(); if (hit) { if (qq && typeof pushRecentSearch === 'function') pushRecentSearch(qq); openSearchHit(hit).catch((x) => toast(x.message)); } return; } }
   const fo = t.closest('[data-fav-open]'); if (fo) { openFav(fo.dataset.favOpen).catch((x) => toast(x.message)); return; }
   const fv = t.closest('[data-fav]'); if (fv) { toggleFav(fv.dataset.fav); return; }
-  { const at = t.closest('[data-area-today]'); if (at) { e.preventDefault(); e.stopPropagation(); areaTogglePinToday(at.dataset.areaToday); return; } }
   const uf = t.closest('[data-unfav]'); if (uf) { unfav(uf.dataset.unfav); return; }
   { const tv = t.closest('[data-tasks-view]'); if (tv) { setTasksBoard(tv.dataset.tasksView === 'board'); renderTasks(); return; } }
   { const av = t.closest('[data-area-view]'); if (av) { setAreaBoard(av.dataset.areaView === 'board'); renderArea(); return; } }
