@@ -9938,6 +9938,11 @@ function homeNewMake(kind) {
     else if (kind === 'save') quickAdd('save');                    // -> Read & Watch, with the save bar focused
     else quickAdd('note');
   } catch (e) { toast((e && e.message) || 'Could not start that.'); }
+  // Put the cursor straight in the new thing's main field (Space uses its own prompt,
+  // Message/Review have no single field). focusFieldSoon rides out the open's async
+  // renders and pairs with each flow's keyboard primer. (Robin, 2026-11-27.)
+  const FIELD = { journal: '#note-title', note: '#note-title', event: '#ce-title', task: '#qt-title', email: '#mc-to', save: '#rw-url', goal: '#goalcard-title', contact: '#ct-name', table: '.tbl-head input.rename' };
+  focusFieldSoon(FIELD[kind]);
 }
 // ── The floating "New" box (Robin, 2026-11-05) ───────────────────────────────
 // New -> Task / Contact open a small dialog that floats OVER the current page,
@@ -9949,9 +9954,11 @@ function homeNewMake(kind) {
 function makeNewTitle(kind) { return kind === 'task' ? 'New task' : kind === 'contact' ? 'New contact' : 'New'; }
 function openMakeNew(kind) {
   if (state.home) state.home.newMenu = false;   // close the "Add to Kaya" chooser
+  const primer = primeMobileKeyboard();          // raise the phone keyboard within the tap (task/contact)
   try { renderNewPop(); renderNav(); } catch {}
   state.makeNew = kind;
   renderMakeNew();
+  keepKeyboardUntilFocus(primer);
 }
 function closeMakeNew() {
   state.makeNew = null;
@@ -28985,6 +28992,25 @@ function keepKeyboardUntilFocus(primer) {
     if (!primer.parentNode) return;
     if (document.activeElement && document.activeElement !== primer && document.activeElement !== document.body) { primer.remove(); return; }
     if (++n > 60) { primer.remove(); return; }   // ~1s: give up rather than trap focus
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+// Land the cursor in a create form's main field as soon as it renders, and keep it
+// there through the open's follow-up re-renders (a fetch that repaints the view can
+// otherwise blur it). Polls briefly; never steals focus once the user is typing in the
+// field or has moved to another one; gives up after ~1.5s. Paired with the keyboard
+// primer, the phone keyboard comes up too - so "New -> Note/Event/…" needs no second tap.
+// (Robin, 2026-11-27.)
+function focusFieldSoon(selector, ms = 1500) {
+  if (!selector) return;
+  const now = () => ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now());
+  const t0 = now();
+  const tick = () => {
+    const el = document.querySelector(selector);
+    const a = document.activeElement;
+    if (el && a !== el && (!a || a === document.body)) { try { el.focus({ preventScroll: true }); } catch {} }
+    if (now() - t0 > ms) return;
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
