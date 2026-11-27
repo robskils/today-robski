@@ -5818,7 +5818,7 @@ function navGroupsHtml(v) {
   const wordmark = `<button type="button" class="knav-brand" data-view-home title="Today" aria-label="Today"><span class="knav-seal" aria-hidden="true"></span><em class="brand-word">Kaya</em></button>`;
   // §71: the four daily tools, one click each in the bar (desktop). Each lights up
   // on its own page; Mail carries its to-sort count. (Robin, 2026-11-05.)
-  const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Tables', 'data-open-tables', ['tables', 'table'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts'], ['Messages', 'data-messages-page', ['messages'], 'contacts']];
+  const PRIMS = [['Mail', 'data-open-mail', ['mail', 'mailaccounts'], 'mail'], ['Calendar', 'data-open-calendar', ['calendar'], 'calendar'], ['Tasks', 'data-view-tasks', ['tasks', 'taskcard'], 'tasks'], ['Notes', 'data-open-notes', ['notes', 'note'], 'notes'], ['Tables', 'data-open-tables', ['tables', 'table'], 'notes'], ['Contacts', 'data-open-contacts', ['contacts', 'contactcard', 'connect', 'friends', 'daybookpeople', 'shared'], 'contacts']];   // Messages now lives on the right, between New and Notepad (Robin, 2026-11-27)
   const primTabs = PRIMS.filter(([l, a, views, mod]) => modOn(mod)).map(([label, attr, views]) => {
     const here = views.includes((v && v.type) || '');
     const n = label === 'Mail' ? mailHeaderCount() : (label === 'Messages' && typeof navUnread === 'function') ? navUnread() : 0;
@@ -5843,6 +5843,7 @@ function navGroupsHtml(v) {
       <span class="knav-sep" aria-hidden="true"></span>
       <div class="knav-right">
         <button class="knav-new-btn${(state.home && state.home.newMenu) ? ' on' : ''}" data-newmenu-toggle aria-haspopup="dialog" title="Add to Kaya">New</button>
+        ${modOn('contacts') ? `<button class="knav-msg-btn${v && v.type === 'messages' ? ' on' : ''}" data-messages-page title="Messages">Messages${navUnread() ? ` <i class="knav-mail-n">${navUnread() > 99 ? '99+' : navUnread()}</i>` : ''}</button>` : ''}
         <button class="knav-np-btn${(state.notepad && state.notepad.open) ? ' on' : ''}" data-notepad-open title="Notepad (${PK('⌘J')})">Notepad</button>
         <button class="knav-find-btn${kn.find ? ' on' : ''}" data-knav-find>Search <kbd>${PK('⌘K')}</kbd>${knavFindBadge() ? `<span class="knav-g-b">${knavFindBadge()}</span>` : ''}</button>
         <button class="knav-help-btn" data-guide-help aria-haspopup="dialog">Help</button>

@@ -10955,7 +10955,7 @@ body.night .knav-bar, :root[data-theme='dark'] .knav-bar { background:oklch(0.14
 .knav-p.here { color:var(--ink); border-bottom-color:var(--accent); }
 /* Every menubar item reads the same size and weight - the primaries no longer
    sit bolder than the groups or the right-side actions. (Robin, 2026-11-05.) */
-.knav-right .knav-new-btn, .knav-right .knav-np-btn, .knav-right .knav-find-btn, .knav-right .knav-split-btn, .knav-right .knav-help-btn, .knav-right .knav-contents-btn { font-size:15px; }
+.knav-right .knav-new-btn, .knav-right .knav-msg-btn, .knav-right .knav-np-btn, .knav-right .knav-find-btn, .knav-right .knav-split-btn, .knav-right .knav-help-btn, .knav-right .knav-contents-btn { font-size:15px; }
 .knav-right { margin-left:auto; display:flex; align-items:center; gap:22px; flex:none; }
 /* New + Split added two items; on narrower laptops tighten gaps and drop the ⌘K hint
    so the menubar still fits on one line. (Robin, 2026-11-04.) */
@@ -12714,7 +12714,8 @@ body.night .av4-search, :root[data-theme='dark'] .av4-search { background:var(--
 .av4-tabsel { display:none; }
 @media (max-width:620px) {
   .av4-tabs { display:none; }
-  .av4-tabsel { display:block; width:100%; box-sizing:border-box; position:sticky; top:var(--navh,68px); z-index:10; margin:0; background:var(--k-bg); color:var(--k-ink); border:0; border-bottom:1px solid var(--k-line); padding:13px 4px; font-family:var(--k-serif); font-weight:500; font-size:21px; line-height:1.15; }
+  .av4-tabsel { display:block; width:100%; box-sizing:border-box; position:sticky; top:var(--navh,68px); z-index:10; margin:14px 0 18px; background:var(--k-bg); color:var(--k-ink); border:1px solid var(--k-line); border-radius:0; padding:13px 46px 13px 15px; font-family:var(--k-serif); font-weight:500; font-size:20px; line-height:1.2; -webkit-appearance:none; -moz-appearance:none; appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c79a40' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6.5l4 4 4-4'/></svg>"); background-repeat:no-repeat; background-position:right 15px center; background-size:15px; }
+  .av4-tabsel:focus { outline:none; border-color:var(--k-gold); }
 }
 .av4-tab { display:flex; align-items:baseline; gap:8px; padding:18px 0 14px; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; white-space:nowrap; color:var(--k-mute); transition:color .2s ease; }
 .av4-tab:hover { color:var(--k-ink); }
@@ -13581,9 +13582,10 @@ body.mailsheet-open { overflow:hidden; }
 }
 
 /* ══ §47 Notepad in the header + right-hand panel ════════════════════════════ */
-.knav-np-btn { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); padding:0 0 3px; white-space:nowrap; border-bottom:1px solid transparent; }
-.knav-np-btn:hover { color:var(--k-ink); }
-.knav-np-btn.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.knav-np-btn, .knav-msg-btn { background:none; border:0; cursor:pointer; font-family:var(--k-sans); font-size:14px; color:var(--k-mute); padding:0 0 3px; white-space:nowrap; border-bottom:1px solid transparent; display:inline-flex; align-items:baseline; }
+.knav-np-btn:hover, .knav-msg-btn:hover { color:var(--k-ink); }
+.knav-np-btn.on, .knav-msg-btn.on { color:var(--k-ink); border-bottom-color:var(--k-gold); }
+.knav-msg-btn .knav-mail-n { font-size:15px; }   /* smaller than the primaries' badge, to sit in the compact right bar */
 .cap-eyebrow { font-family:var(--k-sans); font-weight:500; font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--k-gold); }
 #notepad-panel { position:fixed; top:var(--tabstrip-h,68px); right:0; bottom:0; z-index:43; width:min(440px,92vw); box-sizing:border-box; display:flex; flex-direction:column; background:var(--k-bg); border-left:1px solid var(--k-line); box-shadow:-18px 0 50px rgba(30,25,10,.10); padding:22px clamp(20px,3vw,30px) 20px; animation:npslide .4s cubic-bezier(.2,.7,.2,1); }
 @keyframes npslide { from { transform:translateX(24px); opacity:.4; } to { transform:none; opacity:1; } }
