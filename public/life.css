@@ -6473,7 +6473,10 @@ body[data-view="notes"] .home-sec, body[data-view="tables"] .home-sec { margin-t
 /* Life areas page: a colourful grid of area cards - a monogram in the area's
    colour, its vision, and live counts - clicking through to the area dashboard. */
 .area-gcards { grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
-.area-gcard { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); position:relative; border:1px solid var(--line); border-radius:0; background:var(--card); box-shadow:var(--shadow); overflow:hidden; transition:border-color .12s, transform .1s, box-shadow .12s; }
+.area-gcard { --c:hsl(var(--h,220) var(--lane-s) var(--lane-l)); position:relative; border:1px solid var(--line-2); border-radius:0; background:var(--card); box-shadow:var(--shadow); overflow:hidden; transition:border-color .12s, transform .1s, box-shadow .12s; }
+/* Spaces-page "New Space" button: flat gold so its 1px border reads on all four
+   sides - the gradient version made the top and bottom edges disappear. (Robin, 2026-11-27.) */
+body[data-view="areas"] .pane-head .add-btn.wide { background:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 50%,#000 32%); }
 .area-gcard::before { content:''; position:absolute; inset:0 0 auto 0; height:4px; background:var(--c); }
 .area-gcard:hover { transform:translateY(-2px); border-color:color-mix(in srgb,var(--c) 55%,var(--line)); box-shadow:0 14px 32px -18px color-mix(in srgb,var(--c) 65%,transparent); }
 .area-gcard[draggable] { cursor:grab; }

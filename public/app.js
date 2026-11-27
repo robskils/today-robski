@@ -13683,7 +13683,7 @@ function renderAreasList() {
         <span class="agc-metrics">${chips}</span>
       </button>
       <button class="star agc-star ${fav ? 'on' : ''}" data-fav="${a.id}" title="Favourite">${fav ? '★' : '☆'}</button>
-      <div class="agc-foot"><button class="agc-today${pin ? ' on' : ''}" data-area-today="${a.id}" aria-pressed="${pin ? 'true' : 'false'}" title="${pin ? 'Showing on Today - click to remove' : 'Keep this Space on Today'}">${pin ? 'On Today' : 'Keep on Today'}</button></div>
+      <div class="agc-foot"><button class="agc-today${pin ? ' on' : ''}" data-area-today="${a.id}" aria-pressed="${pin ? 'true' : 'false'}" title="${pin ? 'Pinned to Your Spaces on the Today page - tap to remove' : 'Pin this Space to Your Spaces on the Today page'}">${pin ? 'On Today' : 'Show on Today'}</button></div>
     </div>`;
   };
   // A space shared WITH me: someone else's, so no metrics, star or drag - just a
