@@ -3,6 +3,9 @@
 <head>
 <script>try{if(localStorage.getItem('today.token'))location.replace('/app');}catch(e){}</script>
 <meta charset="utf-8">
+<script>window.KAYA_TRACK=(function(){try{var k='kaya_notrack',p=location.pathname;
+if(p==='/notrack/'||p==='/notrack'){if(/[?&]undo=1/.test(location.search))localStorage.removeItem(k);else localStorage.setItem(k,'1');return false;}
+return localStorage.getItem(k)!=='1';}catch(e){return true;}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kaya - tutta la tua vita in un solo posto</title>
 <meta name="description" content="Posta, calendario, attività, note, denaro e il tuo diario, sparsi in una dozzina di app che non si parlano mai. Kaya ti toglie questo peso e riunisce tutto in un solo posto, dove ogni parte lavora insieme.">
@@ -381,6 +384,7 @@ h1, h2, h3 { font-weight: 500; }
 (function () {
   var KEY = 'daybook.consent';
   function loadTrackers() {
+    if (window.KAYA_TRACK === false) return;
     try {
       window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
       var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);

@@ -2,6 +2,9 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
+<script>window.KAYA_TRACK=(function(){try{var k='kaya_notrack',p=location.pathname;
+if(p==='/notrack/'||p==='/notrack'){if(/[?&]undo=1/.test(location.search))localStorage.removeItem(k);else localStorage.setItem(k,'1');return false;}
+return localStorage.getItem(k)!=='1';}catch(e){return true;}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A sua vida, em Spaces</title>
 <meta name="description" content="Um Space é um quarto para uma parte da sua vida - o trabalho, uma casa, uma pessoa, um projeto - e reúne discretamente o correio, os eventos, as tarefas, as notas e o dinheiro que lhe pertencem.">
@@ -32,6 +35,7 @@
 (function () {
   var KEY = 'daybook.consent';
   function loadTrackers() {
+    if (window.KAYA_TRACK === false) return;
     try {
       window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
       var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);

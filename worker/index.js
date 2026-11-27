@@ -4424,9 +4424,18 @@ const MARKETING_CSP = CSP
 // the page), so it lives here, not in a secret. Empty string = OFF: nothing is
 // injected, so this is safe to deploy before the tag exists. (Robin, 2026-11-17.)
 const CF_WA_TOKEN = 'ce3c3984290443c4ac75b816d5007341';
+// Injected by script, not a plain <script src>, so a browser that opened /notrack/
+// (localStorage kaya_notrack=1, see the KAYA_TRACK gate atop each marketing page)
+// never loads it. Self-contained check so pages without the gate are covered too.
 const CF_WA_BEACON = CF_WA_TOKEN
-  ? `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${CF_WA_TOKEN}"}'></script>`
+  ? `<script>(function(){try{if(window.KAYA_TRACK===false||localStorage.getItem('kaya_notrack')==='1')return;}catch(e){}var cf=document.createElement('script');cf.defer=true;cf.src='https://static.cloudflareinsights.com/beacon.min.js';cf.setAttribute('data-cf-beacon','{"token": "${CF_WA_TOKEN}"}');document.head.appendChild(cf);})();</script>`
   : '';
+// Robin's own visits never count (2026-11-27). /notrack/ sets this cookie (and the
+// localStorage flag); /notrack/?undo=1 clears both. _logEvent skips requests carrying it.
+const NOTRACK_COOKIE = 'kaya_notrack';
+function hasNotrackCookie(request) {
+  return /(?:^|;\s*)kaya_notrack=1(?:;|$)/.test(request.headers.get('Cookie') || '');
+}
 function withHsts(res, csp) {
   const h = new Headers(res.headers);
   h.set('Strict-Transport-Security', HSTS);
@@ -5186,6 +5195,7 @@ export default {
 
   _logEvent(env, request, resp, t0, err) {
     if (!env || !env.KAYA_AE) return;
+    if (hasNotrackCookie(request)) return;
     let url;
     try { url = new URL(request.url); } catch { return; }
     const p = url.pathname;
@@ -5446,6 +5456,20 @@ export default {
       // Support page (App Store / Play require a support URL).
       if (isApex && (path === '/support' || path === '/support/')) {
         return withHsts(await env.ASSETS.fetch(new Request(new URL('/support.html', url.origin), request)), MARKETING_CSP);
+      }
+      // Robin's tracking switch: unlinked, noindex. Sets (or with ?undo=1 clears) the
+      // kaya_notrack cookie that keeps this browser out of the server-side visit log;
+      // the page's own script handles the localStorage flag the trackers check.
+      if (isApex && (path === '/notrack' || path === '/notrack/')) {
+        const page = await env.ASSETS.fetch(new Request(new URL('/notrack.html', url.origin), request));
+        const r = new Response(page.body, page);
+        const undo = url.searchParams.get('undo') === '1';
+        r.headers.set('Cache-Control', 'no-store');
+        r.headers.set('X-Robots-Tag', 'noindex');
+        r.headers.append('Set-Cookie', undo
+          ? `${NOTRACK_COOKIE}=; Path=/; Max-Age=0; Secure; SameSite=Lax`
+          : `${NOTRACK_COOKIE}=1; Path=/; Max-Age=63072000; Secure; SameSite=Lax`);
+        return withHsts(r, MARKETING_CSP);
       }
       // How it works.
       if (isApex && (path === '/how' || path === '/how/')) {

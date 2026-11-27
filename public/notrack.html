@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<script>window.KAYA_TRACK=(function(){try{var k='kaya_notrack',p=location.pathname;
+if(p==='/notrack/'||p==='/notrack'){if(/[?&]undo=1/.test(location.search))localStorage.removeItem(k);else localStorage.setItem(k,'1');return false;}
+return localStorage.getItem(k)!=='1';}catch(e){return true;}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg?v=202611270109">
+<link rel="icon" type="image/png" href="/icon-192.v26.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.v26.png">
+<title>Not counted · Kaya</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --paper:#efeae0; --paper-2:#e7e0d2; --card:#fbf9f4; --ink:#211c17; --ink-2:#574e44; --ink-3:#8b7f72; --line:#e4ddcf; --rust:#a8844a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; font-size:17px; line-height:1.65; }
+  .wrap { max-width:720px; margin:0 auto; padding:48px 22px 90px; }
+  .brand { display:flex; align-items:center; color:var(--ink); text-decoration:none; gap:10px; margin-bottom:34px; }
+  .brand svg { width:30px; height:30px; color:var(--rust); flex:none; }
+  .brand b { font-family:Georgia,'Times New Roman',serif; font-size:26px; font-weight:700; letter-spacing:-0.01em; }
+  h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(30px,5vw,40px); font-weight:700; letter-spacing:-0.01em; margin:0 0 6px; }
+  .lede { color:var(--ink-3); font-size:16px; margin:0 0 30px; }
+  h2 { font-size:20px; margin:36px 0 10px; }
+  p, li { color:var(--ink-2); }
+  a { color:var(--rust); }
+  ul { padding-left:22px; }
+  li { margin:6px 0; }
+  .callout { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--rust); border-radius:12px; padding:16px 18px; margin:22px 0; }
+  .callout b { color:var(--ink); }
+  footer { margin-top:46px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink-3); font-size:14px; }
+  .tag { font-family:Georgia,'Times New Roman',serif; font-style:italic; color:var(--ink-3); }
+  .lang-switch { display:inline-flex; align-items:center; gap:1px; }
+  .lang-switch a { display:inline-block; padding:4px 7px; border-radius:8px; font-size:12.5px; font-weight:600; letter-spacing:.04em; color:var(--ink-3); text-decoration:none; }
+  .lang-switch a:hover { color:var(--ink); }
+  .lang-switch a.on { color:var(--rust); }
+  .foot-lang-label { font-size:13px; color:var(--ink-3); margin-right:6px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper:#1a1712; --paper-2:#221e18; --card:#232019; --ink:#f0e9dd; --ink-2:#c9bfae; --ink-3:#95897a; --line:#332d24; --rust:#e0715c; }
+  }
+
+.wm-word { font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 500; letter-spacing: 0.14em; text-transform: lowercase; font-style: normal; }
+</style>
+<style>
+  .nt h1 { margin-bottom:18px; }
+  .nt p { font-size:18px; color:var(--ink-2); }
+  .nt .actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
+  .nt .btn { display:inline-block; font-size:17px; font-weight:600; padding:12px 22px; border-radius:10px; text-decoration:none; border:1px solid var(--rust); }
+  .nt .btn-solid { background:var(--rust); color:var(--rust-ink,#12100b); }
+  .nt .btn-line { background:transparent; color:var(--ink); }
+</style>
+<link rel="stylesheet" href="/site-legacy.css?v=202611270109">
+</head><body>
+<div class="wrap nt">
+  <a class="brand" href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 22H76M24 78H76M24 22L50 78M76 22L50 78M24 78L50 22M76 78L50 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Kaya</b></a>
+  <div class="nt-off">
+    <h1>Not counted</h1>
+    <p>This browser is no longer counted. Your visits to kaya.so from here stay out of Google Analytics, Visitor Tracking, Cloudflare Web Analytics and Kaya's own server-side visit log.</p>
+    <p>Open this page once in every browser and on every device you use. Clearing this browser's site data switches counting back on.</p>
+    <div class="actions"><a class="btn btn-solid" href="/">Go to the home page</a><a class="btn btn-line" href="/notrack/?undo=1">Count this browser again</a></div>
+  </div>
+  <div class="nt-on" hidden>
+    <h1>Counted again</h1>
+    <p>This browser is counted again, like any other visitor.</p>
+    <div class="actions"><a class="btn btn-solid" href="/notrack/">Stop counting this browser</a><a class="btn btn-line" href="/">Go to the home page</a></div>
+  </div>
+  <footer>
+    <p>Kaya · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+  </footer>
+</div>
+<script>if(/[?&]undo=1/.test(location.search)){document.querySelector('.nt-off').hidden=true;document.querySelector('.nt-on').hidden=false;}</script>
+</body></html>

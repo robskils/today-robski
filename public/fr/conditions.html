@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="fr"><head>
 <meta charset="utf-8">
+<script>window.KAYA_TRACK=(function(){try{var k='kaya_notrack',p=location.pathname;
+if(p==='/notrack/'||p==='/notrack'){if(/[?&]undo=1/.test(location.search))localStorage.removeItem(k);else localStorage.setItem(k,'1');return false;}
+return localStorage.getItem(k)!=='1';}catch(e){return true;}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.svg?v=202611270109">
 <link rel="icon" type="image/png" href="/icon-192.v10.png">
@@ -55,6 +58,7 @@
 (function () {
   var KEY = 'daybook.consent';
   function loadTrackers() {
+    if (window.KAYA_TRACK === false) return;
     try {
       window.init_tracer = function () { try { new Tracer({ websiteId: "b4a0a73f-caf4-44ef-a318-8b9933bd3350", async: true, debug: false }); } catch (e) {} };
       var vt = document.createElement('script'); vt.async = true; vt.defer = true; vt.src = 'https://app.visitortracking.com/assets/js/tracer.js'; document.head.appendChild(vt);
