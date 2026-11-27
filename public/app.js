@@ -10311,17 +10311,37 @@ function homeHasPractices() {
 }
 // Today's one row of tabs (Robin, 2026-11-04): everything sits behind one line, with
 // counts on the tabs so what needs you still shows. Remembers the last tab opened.
+// A Today tab shows only when it holds something. These check the data behind the
+// gated tabs - lazily loading it and re-rendering Today once it lands - so Inbox,
+// First and Messages stay hidden until there's a reason for them. (Robin, 2026-11-27.)
+function homeHasMailAccounts() {
+  state.mail = state.mail || {};
+  if (Array.isArray(state.mail.accounts)) return state.mail.accounts.length > 0;
+  if (!state.__homeMailAcct) { state.__homeMailAcct = true; mailApi('/accounts').then((r) => { state.mail.accounts = Array.isArray(r) ? r : ((r && r.accounts) || []); if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => { state.mail.accounts = state.mail.accounts || []; }); }
+  return false;
+}
+function homeHasOpenTasks() {
+  if (Array.isArray(state.tasks)) return state.tasks.some((t) => t.props && !t.props.done && !t.props.kit);
+  if (!state.__wnTasksLoad) { state.__wnTasksLoad = true; api('/api/blocks?kind=task').then((r) => { state.tasks = r || []; if (state.view && state.view.type === 'home') renderHomeSoon(); }).catch(() => {}); }
+  return (priorityTasks() || []).length > 0;   // best guess from the First list we already hold
+}
+function homeHasMessages() {
+  if (Array.isArray(state.threads)) return state.threads.length > 0;
+  if (unreadMsgs() > 0) return true;
+  if (state.threads === undefined) { state.threads = null; api('/api/messages/threads').then((r) => { state.threads = (r && r.threads) || []; if (state.view && state.view.type === 'home') renderHome(); }).catch(() => { state.threads = []; }); }
+  return false;
+}
 function homeTodayTabDefs() {
   const defs = [];
   const evN = homeCalItems().filter((it) => it.badge !== 'practice').length;
   const r = homeRadarItems(); const radN = r.overdue.length + r.soon.length + r.ahead.length;
   defs.push(['cal', 'Today', evN, false]);
   defs.push(['radar', 'In View', radN, r.overdue.length > 0]);
-  if (modOn('mail')) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Inbox', n, n > 0]); }
-  if (modOn('tasks')) defs.push(['tasks', 'First', priorityTasks().length, false]);
+  if (modOn('mail') && homeHasMailAccounts()) { const n = homeMailGlanceItems().length; defs.push(['mail', 'Inbox', n, n > 0]); }
+  if (modOn('tasks') && homeHasOpenTasks()) defs.push(['tasks', 'First', priorityTasks().length, false]);
   if (modOn('today') && homeHasPractices()) defs.push(['practices', 'Routines', 0, false]);
   if (reflectOn()) { const cn = homeReadingItems().length; if (cn) defs.push(['reflections', 'Cards', cn, false]); }   // only when cards are drawn for the day (Robin, 2026-11-11)
-  if (modOn('contacts')) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }   // Messages last, after Cards (Robin, 2026-11-25)
+  if (modOn('contacts') && homeHasMessages()) { const n = unreadMsgs(); defs.push(['messages', 'Messages', n, n > 0]); }   // Messages last, after Cards (Robin, 2026-11-25)
   return defs;
 }
 function homeTodayTabBody(k, off) {
