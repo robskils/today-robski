@@ -5708,7 +5708,7 @@ function knavRecent() {
 }
 function knavSharedNew() { return (state.sharedItems || []).some((it) => it && it.isNew); }
 // Whether a new-shared notice is worth a gold count: new AND not yet seen this session.
-function knavFindBadge() { return (!state.knav || !state.knav.findSeen) && knavSharedNew() ? '·' : ''; }
+function knavFindBadge() { return ''; }   // search no longer surfaces "shared with me", so no new-shared nudge on it (Robin, 2026-11-27)
 // ── Universal search ──────────────────────────────────────────────────────
 // The top-nav search box searches your CONTENT, not just nav labels. It calls
 // the same /api/search as the command palette (debounced), injects matching
@@ -5780,13 +5780,14 @@ function knavFindBodyHtml(kn, groups, q) {
     if (contentItems.length) sections.push({ label: 'In your Spaces', badge: String(contentItems.length), open: true, items: contentItems });
     if (goItems.length) sections.push({ label: 'Go to', badge: String(goItems.length), open: true, items: goItems });
   } else if (filter === 'all') {
-    const sh = knavShared(); const rc = knavRecent();
-    if (sh.length) sections.push({ id: 'shared', label: 'Shared with you', badge: knavSharedNew() && !kn.findSeen ? `${sh.filter((x) => x.badge).length || ''} new`.trim() : '', open: !kn.fShut.shared, items: sh });
-    sections.push({ id: 'recent', label: 'Recent', badge: '', open: !kn.fShut.recent, items: rc });
+    // Robin (2026-11-27): the search landing shows your recent SEARCHES to re-run,
+    // not "shared with me" or recently-opened items.
+    const rs = recentSearches().map((s) => ({ a: s, b: '', searchq: s }));
+    if (rs.length) sections.push({ id: 'recent', label: 'Recent searches', badge: '', open: !kn.fShut.recent, items: rs });
   }
   const secHtml = sections.map((s) => `<div class="knav-find-sec">
       <button class="knav-find-sh"${s.id ? ` data-knav-fsec="${s.id}"` : ''}><span class="knav-find-sl">${s.label}</span>${s.badge ? `<span class="knav-find-sb">${esc(s.badge)}</span>` : ''}<span class="knav-find-ss">${s.id ? (s.open ? '−' : '+') : ''}</span></button>
-      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.hitIdx != null ? ` data-knav-hit="${it.hitIdx}"` : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
+      ${s.open !== false ? `<div class="knav-find-items">${s.items.map((it) => `<button class="knav-find-it"${it.searchq != null ? ` data-knav-recentq="${esc(it.searchq)}"` : it.attrs ? ' ' + it.attrs + ' data-knav-pick' : it.hitIdx != null ? ` data-knav-hit="${it.hitIdx}"` : it.kind && it.id ? ` data-fav-open="${it.kind}:${esc(String(it.id))}"` : ''}><span class="knav-find-ia"><span class="knav-find-ititle">${it.a}</span><span class="knav-find-isub">${it.b || ''}</span></span>${it.badge ? `<span class="knav-find-ib">${esc(it.badge)}</span>` : ''}</button>`).join('')}</div>` : ''}
     </div>`).join('');
   const searching = !!q && kn.searching && kn.resultsFor !== q;
   const emptyMsg = filter === 'notes' ? 'No notes or tables match' : filter === 'calendar' ? 'No events match' : 'Nothing matches';
@@ -30048,6 +30049,7 @@ document.addEventListener('click', (e) => {
   if (t.closest('[data-knav-findclose]')) { const kn = state.knav || (state.knav = {}); kn.find = false; kn.findSeen = true; renderNav(); return; }
   if (t.closest('[data-knav-close]')) { const kn = state.knav || (state.knav = {}); kn.group = null; renderNav(); return; }
   { const fs = t.closest('[data-knav-fsec]'); if (fs) { const kn = state.knav || (state.knav = {}); kn.fShut = kn.fShut || {}; const id = fs.dataset.knavFsec; kn.fShut[id] = !kn.fShut[id]; renderKnavFindBody(); return; } }
+  { const rq = t.closest('[data-knav-recentq]'); if (rq) { const kn = state.knav || (state.knav = {}); kn.q = rq.dataset.knavRecentq || ''; const el = document.querySelector('[data-knav-q]'); if (el) el.value = kn.q; knavRunSearch(kn.q); renderKnavFindBody(); if (el) try { el.focus(); } catch {} return; } }
   { const fc = t.closest('[data-knav-filter]'); if (fc) { const kn = state.knav || (state.knav = {}); const v = fc.dataset.knavFilter; if (v === 'emails') { const q = (kn.q || '').trim(); kn.find = false; renderNav(); if (modOn('mail')) { openMail().then(() => { if (q) { state.mail.query = q; state.mail.limit = 40; loadMessages(true); } }).catch((x) => toast(x.message)); } return; } kn.filter = v; renderKnavFindBody(); const el = document.querySelector('[data-knav-q]'); if (el) el.focus(); return; } }
   if (t.closest('[data-view-home]')) { if (t.closest('.knav-brand')) { state.home = state.home || {}; state.home.ltab = 'cal'; }   /* the logo opens Today with the calendar tab (Robin, 2026-11-05) */ Promise.resolve(openHome()).then(() => { try { window.scrollTo(0, 0); const p = document.getElementById('pane'); if (p) p.scrollTop = 0; document.querySelector('.main')?.scrollTo(0, 0); } catch {} }).catch((x) => toast(x.message)); return; }
   if (t.closest('[data-open-tables]')) { openTablesList(); return; }   // Tables has its own page (Robin: it opened Notes)
